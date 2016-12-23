@@ -55,7 +55,8 @@ class RedirectingVirtualHostImpl
         if (changedAttributes.contains(DESIRED_STATE) && proxyForValidation.getDesiredState() == State.DELETED)
         {
             throw new IllegalConfigurationException("Directly deleting a redirecting virtualhost is not supported. "
-            + "Delete the parent virtual host node '" + getParent(VirtualHostNode.class) + "' instead.");
+                                                    + "Delete the parent virtual host node '" + (VirtualHostNode) getParent()
+                                                    + "' instead.");
         }
         else
         {
@@ -68,7 +69,7 @@ class RedirectingVirtualHostImpl
     @Override
     public String getRedirectHost(final AmqpPort<?> port)
     {
-        return ((RedirectingVirtualHostNode<?>)(getParent(VirtualHostNode.class))).getRedirects().get(port);
+        return ((RedirectingVirtualHostNode<?>)((VirtualHostNode) getParent())).getRedirects().get(port);
     }
 
 

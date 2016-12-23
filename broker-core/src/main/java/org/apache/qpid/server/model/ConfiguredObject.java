@@ -150,10 +150,9 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
     /**
      * Get the parent of the given type for this object
      *
-     * @param clazz the class of parent being asked for
      * @return the objects parent
      */
-    <T extends ConfiguredObject> T getParent(Class<T> clazz);
+    ConfiguredObject<?> getParent();
 
 
     /**

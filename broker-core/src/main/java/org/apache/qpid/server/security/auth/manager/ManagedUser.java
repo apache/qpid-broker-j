@@ -109,7 +109,7 @@ class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<
     @Override
     protected void logOperation(final String operation)
     {
-        _authenticationManager.getParent(Container.class).getEventLogger().message(AuthenticationProviderMessages.OPERATION(operation));
+        ((Container) _authenticationManager.getParent()).getEventLogger().message(AuthenticationProviderMessages.OPERATION(operation));
     }
 
 }

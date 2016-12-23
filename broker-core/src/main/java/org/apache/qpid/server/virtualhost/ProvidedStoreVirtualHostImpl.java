@@ -55,7 +55,7 @@ public class ProvidedStoreVirtualHostImpl extends AbstractVirtualHost<ProvidedSt
     {
         super.onValidate();
 
-        VirtualHostNode<?> virtualHostNode = getParent(VirtualHostNode.class);
+        VirtualHostNode<?> virtualHostNode = (VirtualHostNode) getParent();
         DurableConfigurationStore configurationStore = virtualHostNode.getConfigurationStore();
         if (!(configurationStore instanceof MessageStoreProvider))
         {
@@ -69,7 +69,7 @@ public class ProvidedStoreVirtualHostImpl extends AbstractVirtualHost<ProvidedSt
     @Override
     protected MessageStore createMessageStore()
     {
-        VirtualHostNode<?> virtualHostNode = getParent(VirtualHostNode.class);
+        VirtualHostNode<?> virtualHostNode = (VirtualHostNode) getParent();
         MessageStoreProvider messageStoreProvider = (MessageStoreProvider) virtualHostNode.getConfigurationStore();
         return messageStoreProvider.getMessageStore();
     }

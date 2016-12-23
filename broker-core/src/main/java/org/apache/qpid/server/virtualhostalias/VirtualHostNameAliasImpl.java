@@ -43,7 +43,7 @@ public class VirtualHostNameAliasImpl
     @Override
     public NamedAddressSpace getAddressSpace(final String name)
     {
-        Broker<?> broker = getPort().getParent(Broker.class);
+        Broker<?> broker = getAncestor(Broker.class);
         NamedAddressSpace addressSpace = broker.getSystemAddressSpace(name);
         if(addressSpace == null)
         {

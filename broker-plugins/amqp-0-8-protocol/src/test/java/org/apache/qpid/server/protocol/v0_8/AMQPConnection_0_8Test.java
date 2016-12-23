@@ -98,7 +98,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         Model model = BrokerModel.getInstance();
 
         _broker = mock(Broker.class);
-        when(_broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
+        when(_broker.getParent()).thenReturn(systemConfig);
         when(_broker.getModel()).thenReturn(model);
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
@@ -107,7 +107,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         when(_broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
 
         _virtualHostNode = mock(VirtualHostNode.class);
-        when(_virtualHostNode.getParent(Broker.class)).thenReturn(_broker);
+        when(_virtualHostNode.getParent()).thenReturn(_broker);
         when(_virtualHostNode.getModel()).thenReturn(model);
         when(_virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
         when(_virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
@@ -115,7 +115,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
 
         _virtualHost = mock(QueueManagingVirtualHost.class);
         VirtualHostPrincipal virtualHostPrincipal = new VirtualHostPrincipal(_virtualHost);
-        when(_virtualHost.getParent(VirtualHostNode.class)).thenReturn(_virtualHostNode);
+        when(_virtualHost.getParent()).thenReturn(_virtualHostNode);
         when(_virtualHost.getModel()).thenReturn(model);
         when(_virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
         when(_virtualHost.getState()).thenReturn(State.ACTIVE);
@@ -142,7 +142,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         when(authenticationProvider.getSubjectCreator(false)).thenReturn(subjectCreator);
 
         _port = mock(AmqpPort.class);
-        when(_port.getParent(Broker.class)).thenReturn(_broker);
+        when(_port.getParent()).thenReturn(_broker);
         when(_port.getCategoryClass()).thenReturn(Port.class);
         when(_port.getChildExecutor()).thenReturn(_taskExecutor);
         when(_port.getModel()).thenReturn(model);

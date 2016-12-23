@@ -91,11 +91,11 @@ public class DirectExchangeTest extends QpidTestCase
 
     public void testAmqpDirectRecreationRejected() throws Exception
     {
-        DirectExchangeImpl ampqDirect = (DirectExchangeImpl) _vhost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
-        assertNotNull(ampqDirect);
+        DirectExchangeImpl amqpDirect = (DirectExchangeImpl) _vhost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
+        assertNotNull(amqpDirect);
 
-        assertSame(ampqDirect, _vhost.getChildById(Exchange.class, ampqDirect.getId()));
-        assertSame(ampqDirect, _vhost.getChildByName(Exchange.class, ampqDirect.getName()));
+        assertSame(amqpDirect, _vhost.getChildById(Exchange.class, amqpDirect.getId()));
+        assertSame(amqpDirect, _vhost.getChildByName(Exchange.class, amqpDirect.getName()));
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(Exchange.NAME, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
@@ -114,8 +114,8 @@ public class DirectExchangeTest extends QpidTestCase
         }
 
         // QPID-6599, defect would mean that the existing exchange was removed from the in memory model.
-        assertSame(ampqDirect, _vhost.getChildById(Exchange.class, ampqDirect.getId()));
-        assertSame(ampqDirect, _vhost.getChildByName(Exchange.class, ampqDirect.getName()));
+        assertSame(amqpDirect, _vhost.getChildById(Exchange.class, amqpDirect.getId()));
+        assertSame(amqpDirect, _vhost.getChildByName(Exchange.class, amqpDirect.getName()));
 
     }
 

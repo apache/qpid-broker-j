@@ -79,7 +79,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         super.setUp();
 
         _broker = BrokerTestHelper.createBrokerMock();
-        SystemConfig<?> systemConfig = _broker.getParent(SystemConfig.class);
+        SystemConfig<?> systemConfig = (SystemConfig<?>) _broker.getParent();
         when(systemConfig.getObjectFactory()).thenReturn(new ConfiguredObjectFactoryImpl(mock(Model.class)));
 
         _taskExecutor = new CurrentThreadTaskExecutor();

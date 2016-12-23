@@ -315,7 +315,7 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         when(authenticationProvider.getAuthorizationEndpointURI()).thenReturn(new URI(TEST_AUTHORIZATION_ENDPOINT));
         when(authenticationProvider.getClientId()).thenReturn(TEST_CLIENT_ID);
         when(authenticationProvider.getScope()).thenReturn(TEST_OAUTH2_SCOPE);
-        when(authenticationProvider.getParent(Broker.class)).thenReturn(mockBroker);
+        when(authenticationProvider.getParent()).thenReturn(mockBroker);
         when(authenticationProvider.getSubjectCreator(any(Boolean.class))).thenReturn(mockSubjectCreator);
         when(authenticationProvider.authenticateViaAuthorizationCode(TEST_VALID_AUTHORIZATION_CODE, TEST_REQUEST_HOST)).thenReturn(mockSuccessfulAuthenticationResult);
         when(authenticationProvider.authenticateViaAuthorizationCode(TEST_INVALID_AUTHORIZATION_CODE, TEST_REQUEST_HOST)).thenReturn(failedAuthenticationResult);

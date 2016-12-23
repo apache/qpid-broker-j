@@ -167,7 +167,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         {
             if (_virtualHost != null)
             {
-                VirtualHostNode<?> node = _virtualHost.getParent(VirtualHostNode.class);
+                VirtualHostNode<?> node = (VirtualHostNode<?>) _virtualHost.getParent();
                 node.close();
             }
         }

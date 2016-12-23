@@ -88,7 +88,7 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
         when(_virtualHostNode.getConfigurationStore()).thenReturn(_configStore);
 
         // Virtualhost needs the EventLogger from the SystemContext.
-        when(_virtualHostNode.getParent(Broker.class)).thenReturn(_broker);
+        when(_virtualHostNode.getParent()).thenReturn(_broker);
         doReturn(VirtualHostNode.class).when(_virtualHostNode).getCategoryClass();
         ConfiguredObjectFactory objectFactory = _broker.getObjectFactory();
         when(_virtualHostNode.getModel()).thenReturn(objectFactory.getModel());

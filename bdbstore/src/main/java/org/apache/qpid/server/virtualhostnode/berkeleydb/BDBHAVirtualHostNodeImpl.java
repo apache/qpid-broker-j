@@ -159,7 +159,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     public BDBHAVirtualHostNodeImpl(Map<String, Object> attributes, Broker<?> broker)
     {
         super(broker, attributes);
-        _systemConfig = broker.getParent(SystemConfig.class);
+        _systemConfig = (SystemConfig) broker.getParent();
         addChangeListener(new BDBCacheSizeSetter());
     }
 
@@ -1224,7 +1224,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
             final String hostAndPort = node.getHostName() + ":" + node.getPort();
             getEventLogger().message(getGroupLogSubject(), HighAvailabilityMessages.INTRUDER_DETECTED(node.getName(), hostAndPort));
 
-            boolean inManagementMode = getParent(Broker.class).isManagementMode();
+            boolean inManagementMode = ((Broker) getParent()).isManagementMode();
             if (inManagementMode)
             {
                 BDBHARemoteReplicationNodeImpl remoteNode = getChildByName(BDBHARemoteReplicationNodeImpl.class, node.getName());

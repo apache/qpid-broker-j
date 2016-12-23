@@ -54,11 +54,11 @@ class TCPandSSLTransport implements AcceptingTransport
     {
         final MultiVersionProtocolEngineFactory protocolEngineFactory =
                 new MultiVersionProtocolEngineFactory(
-                _port.getParent(Broker.class),
-                _supported,
-                _defaultSupportedProtocolReply,
-                _port,
-                _transports.contains(Transport.TCP) ? Transport.TCP : Transport.SSL);
+                        (Broker<?>) _port.getParent(),
+                        _supported,
+                        _defaultSupportedProtocolReply,
+                        _port,
+                        _transports.contains(Transport.TCP) ? Transport.TCP : Transport.SSL);
 
         EnumSet<TransportEncryption> encryptionSet = EnumSet.noneOf(TransportEncryption.class);
         if(_transports.contains(Transport.TCP))

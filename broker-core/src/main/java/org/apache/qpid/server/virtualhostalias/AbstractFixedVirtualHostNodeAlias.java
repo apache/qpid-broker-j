@@ -57,7 +57,7 @@ abstract class AbstractFixedVirtualHostNodeAlias<X extends AbstractFixedVirtualH
             node = getVirtualHostNode();
             if (node == null)
             {
-                Broker<?> broker = getPort().getParent(Broker.class);
+                Broker<?> broker = getAncestor(Broker.class);
                 node = broker.findDefautVirtualHostNode();
             }
 

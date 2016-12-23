@@ -156,8 +156,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
 
     private final Map<String,Object> _attributes = new HashMap<>();
-    private final Map<Class<? extends ConfiguredObject>, ConfiguredObject> _parents =
-            new HashMap<>();
+    private final ConfiguredObject<?> _parent;
     private final Collection<ConfigurationChangeListener> _changeListeners =
             new ArrayList<>();
 
@@ -277,47 +276,34 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         _automatedFields = model.getTypeRegistry().getAutomatedFields(getClass());
         _stateChangeMethods = model.getTypeRegistry().getStateChangeMethods(getClass());
 
+        final Class<? extends ConfiguredObject> parentCategory = model.getParentType(_category);
+        _parent = parents.get(parentCategory);
 
-        for(ConfiguredObject<?> parent : parents.values())
+        if(_parent instanceof AbstractConfiguredObject && ((AbstractConfiguredObject)_parent)._encrypter != null)
         {
-            if(parent instanceof AbstractConfiguredObject && ((AbstractConfiguredObject)parent)._encrypter != null)
-            {
-                _encrypter = ((AbstractConfiguredObject)parent)._encrypter;
-                break;
-            }
-            else if(parent instanceof ConfigurationSecretEncrypterSource && ((ConfigurationSecretEncrypterSource)parent).getEncrypter() != null)
-            {
-                _encrypter = ((ConfigurationSecretEncrypterSource)parent).getEncrypter();
-                break;
-            }
+            _encrypter = ((AbstractConfiguredObject)_parent)._encrypter;
+        }
+        else if(_parent instanceof ConfigurationSecretEncrypterSource && ((ConfigurationSecretEncrypterSource)_parent).getEncrypter() != null)
+        {
+            _encrypter = ((ConfigurationSecretEncrypterSource)_parent).getEncrypter();
         }
 
-        for(ConfiguredObject<?> parent : parents.values())
+        if(_parent instanceof AbstractConfiguredObject && ((AbstractConfiguredObject)_parent).getAccessControl() != null)
         {
-            if(parent instanceof AbstractConfiguredObject && ((AbstractConfiguredObject)parent).getAccessControl() != null)
-            {
-                _parentAccessControl = ((AbstractConfiguredObject)parent).getAccessControl();
-                break;
-            }
-            else if(parent instanceof AccessControlSource && ((AccessControlSource)parent).getAccessControl()!=null)
-            {
-                _parentAccessControl = ((AccessControlSource)parent).getAccessControl();
-                break;
-            }
+            _parentAccessControl = ((AbstractConfiguredObject)_parent).getAccessControl();
+        }
+        else if(_parent instanceof AccessControlSource && ((AccessControlSource)_parent).getAccessControl()!=null)
+        {
+            _parentAccessControl = ((AccessControlSource)_parent).getAccessControl();
         }
 
-        for(ConfiguredObject<?> parent : parents.values())
+        if(_parent instanceof AbstractConfiguredObject && ((AbstractConfiguredObject)_parent).getSystemPrincipal() != null)
         {
-            if(parent instanceof AbstractConfiguredObject && ((AbstractConfiguredObject)parent).getSystemPrincipal() != null)
-            {
-                _systemPrincipal = ((AbstractConfiguredObject)parent).getSystemPrincipal();
-                break;
-            }
-            else if(parent instanceof SystemPrincipalSource && ((SystemPrincipalSource)parent).getSystemPrincipal()!=null)
-            {
-                _systemPrincipal = ((SystemPrincipalSource)parent).getSystemPrincipal();
-                break;
-            }
+            _systemPrincipal = ((AbstractConfiguredObject)_parent).getSystemPrincipal();
+        }
+        else if(_parent instanceof SystemPrincipalSource && ((SystemPrincipalSource)_parent).getSystemPrincipal()!=null)
+        {
+            _systemPrincipal = ((SystemPrincipalSource)_parent).getSystemPrincipal();
         }
 
 
@@ -358,10 +344,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
         populateChildTypeMaps();
 
-        for(Map.Entry<Class<? extends ConfiguredObject>, ConfiguredObject<?>> entry : parents.entrySet())
-        {
-            addParent((Class<ConfiguredObject<?>>) entry.getKey(), entry.getValue());
-        }
 
         Object durableObj = attributes.get(DURABLE);
         _durable = AttributeValueConverter.BOOLEAN_CONVERTER.convert(durableObj == null
@@ -712,17 +694,15 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     public void registerWithParents()
     {
-        for(ConfiguredObject<?> parent : _parents.values())
+        if(_parent instanceof AbstractConfiguredObject<?>)
         {
-            if(parent instanceof AbstractConfiguredObject<?>)
-            {
-                ((AbstractConfiguredObject<?>)parent).registerChild(this);
-            }
-            else if(parent instanceof AbstractConfiguredObjectProxy)
-            {
-                ((AbstractConfiguredObjectProxy)parent).registerChild(this);
-            }
+            ((AbstractConfiguredObject<?>)_parent).registerChild(this);
         }
+        else if(_parent instanceof AbstractConfiguredObjectProxy)
+        {
+            ((AbstractConfiguredObjectProxy)_parent).registerChild(this);
+        }
+
     }
 
     protected final ListenableFuture<Void> closeChildren()
@@ -1734,17 +1714,15 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         // The state transition should be disallowed.
                         if (desiredState != currentDesiredState)
                         {
-                            for(ConfiguredObject<?> parent : _parents.values())
+                            if(_parent instanceof AbstractConfiguredObject)
                             {
-                                if(parent instanceof AbstractConfiguredObject)
-                                {
-                                    ((AbstractConfiguredObject<?>)parent).validateChildDelete(AbstractConfiguredObject.this);
-                                }
-                                else if (parent instanceof AbstractConfiguredObjectProxy)
-                                {
-                                    ((AbstractConfiguredObjectProxy)parent).validateChildDelete(AbstractConfiguredObject.this);
-                                }
+                                ((AbstractConfiguredObject<?>)_parent).validateChildDelete(AbstractConfiguredObject.this);
                             }
+                            else if (_parent instanceof AbstractConfiguredObjectProxy)
+                            {
+                                ((AbstractConfiguredObjectProxy)_parent).validateChildDelete(AbstractConfiguredObject.this);
+                            }
+
 
                             return doAfter(attainState(desiredState), new Runnable()
                             {
@@ -1980,24 +1958,15 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
-    public <T extends ConfiguredObject> T getParent(final Class<T> clazz)
+    @Override
+    public ConfiguredObject<?> getParent()
     {
-        return (T) _parents.get(clazz);
+        return _parent;
     }
 
     public final <T> T getAncestor(final Class<T> clazz)
     {
         return getModel().getAncestor(clazz, this);
-    }
-
-
-    private <T extends ConfiguredObject> void addParent(Class<T> clazz, T parent)
-    {
-        synchronized (_parents)
-        {
-            _parents.put(clazz, parent);
-        }
-
     }
 
     public final Collection<String> getAttributeNames()
@@ -2093,7 +2062,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 Map<String, UUID> parents = new LinkedHashMap<>();
                 Class<? extends ConfiguredObject> parentClass = getModel().getParentType(getCategoryClass());
 
-                ConfiguredObject parent = getParent(parentClass);
+                ConfiguredObject parent = (ConfiguredObject) getParent();
                 if(parent != null)
                 {
                     parents.put(parentClass.getSimpleName(), parent.getId());
@@ -2297,27 +2266,25 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     private void unregister(boolean removed)
     {
-        for (ConfiguredObject<?> parent : _parents.values())
-        {
-            if (parent instanceof AbstractConfiguredObject<?>)
+            if (_parent instanceof AbstractConfiguredObject<?>)
             {
-                AbstractConfiguredObject<?> parentObj = (AbstractConfiguredObject<?>) parent;
+                AbstractConfiguredObject<?> parentObj = (AbstractConfiguredObject<?>) _parent;
                 parentObj.unregisterChild(this);
                 if(removed)
                 {
                     parentObj.childRemoved(this);
                 }
             }
-            else if (parent instanceof AbstractConfiguredObjectProxy)
+            else if (_parent instanceof AbstractConfiguredObjectProxy)
             {
-                AbstractConfiguredObjectProxy parentObj = (AbstractConfiguredObjectProxy) parent;
+                AbstractConfiguredObjectProxy parentObj = (AbstractConfiguredObjectProxy) _parent;
                 parentObj.unregisterChild(this);
                 if(removed)
                 {
                     parentObj.childRemoved(this);
                 }
             }
-        }
+
     }
 
 
@@ -3001,7 +2968,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 {
                     exceptionMessage.append(" on");
                     String objectCategory = parentClass.getSimpleName();
-                    ConfiguredObject<?> parent = configuredObject.getParent(parentClass);
+                    ConfiguredObject<?> parent = configuredObject.getParent();
                     exceptionMessage.append(" ").append(objectCategory);
                     if (parent != null)
                     {
@@ -3313,19 +3280,16 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     private EventLogger getEventLogger()
     {
-        for(ConfiguredObject<?> parent : _parents.values())
+        if(_parent instanceof EventLoggerProvider)
         {
-            if(parent instanceof EventLoggerProvider)
+            return ((EventLoggerProvider)_parent).getEventLogger();
+        }
+        else if(_parent instanceof AbstractConfiguredObject)
+        {
+            final EventLogger eventLogger = ((AbstractConfiguredObject<?>) _parent).getEventLogger();
+            if(eventLogger != null)
             {
-                return ((EventLoggerProvider)parent).getEventLogger();
-            }
-            else if(parent instanceof AbstractConfiguredObject)
-            {
-                final EventLogger eventLogger = ((AbstractConfiguredObject<?>) parent).getEventLogger();
-                if(eventLogger != null)
-                {
-                    return eventLogger;
-                }
+                return eventLogger;
             }
         }
         return null;
@@ -3406,7 +3370,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 model.getParentType(object.getCategoryClass());
         if(parentClass != null)
         {
-            ConfiguredObject parent = object.getParent(parentClass);
+            ConfiguredObject parent = object.getParent();
             if(parent != null)
             {
                 generateInheritedContext(model, parent, inheritedContext);
@@ -3583,7 +3547,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     private static class AuthorisationProxyInvocationHandler extends AttributeGettingHandler
     {
         private final Class<? extends ConfiguredObject> _category;
-        private final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> _parents;
         private final ConfiguredObject<?> _parent   ;
         private Map<String, Object> _attributes;
 
@@ -3595,18 +3558,15 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             super(attributes, attributeTypes, null);
             _parent = parent;
             _category = categoryClass;
-            _parents = new HashMap<>();
             _attributes = attributes;
-            _parents.put(parent.getCategoryClass(), parent);
         }
 
         @Override
         public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable
         {
-            if(method.getName().equals("getParent") && args != null && args.length == 1 && args[0] instanceof Class)
+            if(method.getName().equals("getParent") && (args == null || args.length == 0))
             {
-                Class<ConfiguredObject> parentClass = (Class<ConfiguredObject> )args[0];
-                return _parents.get(parentClass);
+                return _parent;
             }
             else if(method.getName().equals("getCategoryClass"))
             {

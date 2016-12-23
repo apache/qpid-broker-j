@@ -159,7 +159,7 @@ public class TCPandSSLTransportTest extends QpidTestCase
         when(port.getTlsProtocolWhiteList()).thenReturn(whiteList);
         final Broker broker = mock(Broker.class);
         when(broker.getEventLogger()).thenReturn(mock(EventLogger.class));
-        when(port.getParent(Broker.class)).thenReturn(broker);
+        when(port.getParent()).thenReturn(broker);
 
         TCPandSSLTransport transport = new TCPandSSLTransport(new HashSet<>(Arrays.asList(transports)),
                                                               port,

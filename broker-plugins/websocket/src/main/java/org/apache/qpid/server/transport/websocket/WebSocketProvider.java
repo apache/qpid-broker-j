@@ -95,7 +95,7 @@ class WebSocketProvider implements AcceptingTransport
         _defaultSupportedProtocolReply = defaultSupportedProtocolReply;
 
         _factory = new MultiVersionProtocolEngineFactory(
-                        _port.getParent(Broker.class),
+                        (Broker<?>) _port.getParent(),
                         _supported,
                         _defaultSupportedProtocolReply,
                         _port,

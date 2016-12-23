@@ -81,7 +81,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
         Principal systemPrincipal = mock(Principal.class);
         Broker<?> broker = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(Broker.class, systemPrincipal,
                                                                                     accessControlMock);
-        when(broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
+        when(broker.getParent()).thenReturn(systemConfig);
         when(broker.getModel()).thenReturn(BrokerModel.getInstance());
 
         _taskExecutor = new TaskExecutorImpl();
@@ -91,7 +91,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
 
         _node = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(VirtualHostNode.class,
                                                                          systemPrincipal, accessControlMock);
-        when(_node.getParent(Broker.class)).thenReturn(broker);
+        when(_node.getParent()).thenReturn(broker);
         when(_node.getModel()).thenReturn(BrokerModel.getInstance());
         when(_node.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_node.getChildExecutor()).thenReturn(_taskExecutor);

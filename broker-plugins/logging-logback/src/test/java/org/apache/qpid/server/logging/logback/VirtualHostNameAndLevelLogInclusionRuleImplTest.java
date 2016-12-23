@@ -52,7 +52,7 @@ public class VirtualHostNameAndLevelLogInclusionRuleImplTest extends QpidTestCas
 {
     private VirtualHostLogger _virtualHostLogger;
     private TaskExecutor _taskExecutor;
-    private final VirtualHost<?> _virtualhost = mock(VirtualHost.class);
+    private final VirtualHost _virtualhost = mock(VirtualHost.class);
 
     @Override
     public void setUp() throws Exception
@@ -72,17 +72,17 @@ public class VirtualHostNameAndLevelLogInclusionRuleImplTest extends QpidTestCas
         VirtualHostNode<?> node =  mock(VirtualHostNode.class);
         when(node.getModel()).thenReturn(model);
         when(node.getChildExecutor()).thenReturn(_taskExecutor);
-        when(node.getParent(Broker.class)).thenReturn(broker);
+        when(node.getParent()).thenReturn(broker);
         doReturn(VirtualHostNode.class).when(node).getCategoryClass();
 
         when(_virtualhost.getModel()).thenReturn(model);
-        when(_virtualhost.getParent(VirtualHostNode.class)).thenReturn(node);
+        when(_virtualhost.getParent()).thenReturn(node);
         doReturn(VirtualHost.class).when(_virtualhost).getCategoryClass();
 
         _virtualHostLogger = mock(VirtualHostLogger.class);
         when(_virtualHostLogger.getModel()).thenReturn(model);
         when(_virtualHostLogger.getChildExecutor()).thenReturn(_taskExecutor);
-        when(_virtualHostLogger.getParent(VirtualHost.class)).thenReturn(_virtualhost);
+        when(_virtualHostLogger.getParent()).thenReturn(_virtualhost);
         doReturn(VirtualHostLogger.class).when(_virtualHostLogger).getCategoryClass();
     }
 

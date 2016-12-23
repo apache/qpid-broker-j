@@ -213,7 +213,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     {
         super.postResolveChildren();
 
-        final SystemConfig parent = getParent(SystemConfig.class);
+        final SystemConfig parent = (SystemConfig) getParent();
         Runnable task =  parent.getOnContainerResolveTask();
         if(task != null)
         {
@@ -557,7 +557,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     {
         super.onOpen();
 
-        PreferencesRoot preferencesRoot = getParent(SystemConfig.class);
+        PreferencesRoot preferencesRoot = (SystemConfig) getParent();
         _preferenceStore = preferencesRoot.createPreferenceStore();
 
         getEventLogger().message(BrokerMessages.STARTUP(CommonProperties.getReleaseVersion(),
@@ -981,7 +981,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             @Override
             public Void run()
             {
-                final SystemConfig<?> systemConfig = getParent(SystemConfig.class);
+                final SystemConfig<?> systemConfig = (SystemConfig) getParent();
                 // This is deliberately asynchronous as the HTTP thread will be interrupted by restarting
                 doAfter(systemConfig.setAttributesAsync(Collections.<String,Object>singletonMap(ConfiguredObject.DESIRED_STATE,
                                                                                                 State.STOPPED)),

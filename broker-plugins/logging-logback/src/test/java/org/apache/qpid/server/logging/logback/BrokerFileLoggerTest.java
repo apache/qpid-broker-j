@@ -73,7 +73,7 @@ public class BrokerFileLoggerTest extends QpidTestCase
         _broker = mock(Broker.class);
         when(_broker.getModel()).thenReturn(model);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
+        when(_broker.getParent()).thenReturn(systemConfig);
         doReturn(Broker.class).when(_broker).getCategoryClass();
 
         _baseFolder = new File(TMP_FOLDER, "test-sub-folder");

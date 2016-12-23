@@ -86,7 +86,7 @@ public class PortFactoryTest extends QpidTestCase
         when(_broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Collections.singleton(_authProvider));
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
-        when(_broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
+        when(_broker.getParent()).thenReturn(systemConfig);
 
         ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(_broker.getObjectFactory()).thenReturn(objectFactory);

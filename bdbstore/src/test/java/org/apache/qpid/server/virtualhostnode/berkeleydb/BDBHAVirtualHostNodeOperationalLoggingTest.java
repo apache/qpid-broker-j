@@ -60,7 +60,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
         super.setUp();
         _helper = new BDBHAVirtualHostNodeTestHelper(getTestName());
         _eventLogger = mock(EventLogger.class);
-        SystemConfig<?> context = (SystemConfig<?>) _helper.getBroker().getParent(SystemConfig.class);
+        SystemConfig<?> context = (SystemConfig<?>) _helper.getBroker().getParent();
         when(context.getEventLogger()).thenReturn(_eventLogger);
     }
 
@@ -363,7 +363,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
     private EventLogger resetEventLogger()
     {
         EventLogger eventLogger = mock(EventLogger.class);
-        SystemConfig<?> context = (SystemConfig<?>) _helper.getBroker().getParent(SystemConfig.class);
+        SystemConfig<?> context = (SystemConfig<?>) _helper.getBroker().getParent();
         when(context.getEventLogger()).thenReturn(eventLogger);
         return eventLogger;
     }

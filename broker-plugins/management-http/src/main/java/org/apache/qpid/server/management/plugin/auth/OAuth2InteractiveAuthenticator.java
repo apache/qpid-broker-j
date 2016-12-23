@@ -204,7 +204,7 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
 
                     private void authoriseManagement(final Subject subject)
                     {
-                        Broker broker = (Broker) oauth2Provider.getParent(Broker.class);
+                        Broker broker = (Broker) oauth2Provider.getParent();
                         HttpManagementUtil.assertManagementAccess(broker, subject);
                     }
                 };

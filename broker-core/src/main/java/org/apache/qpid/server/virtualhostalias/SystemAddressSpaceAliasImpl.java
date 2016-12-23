@@ -98,6 +98,6 @@ public class SystemAddressSpaceAliasImpl
     @Override
     public NamedAddressSpace getAddressSpace(final String name)
     {
-        return matches(name) ? getParent(Broker.class).getSystemAddressSpace(getSystemAddressSpace()) : null;
+        return matches(name) ? ((Broker) getParent()).getSystemAddressSpace(getSystemAddressSpace()) : null;
     }
 }

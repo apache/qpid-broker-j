@@ -119,7 +119,7 @@ class ManagementOutputConverter
 
             if (parentType != _managementNode.getManagedObject().getCategoryClass())
             {
-                attributes.put(parentType.getSimpleName().toLowerCase(), object.getParent(parentType));
+                attributes.put(parentType.getSimpleName().toLowerCase(), object.getParent());
             }
 
         }

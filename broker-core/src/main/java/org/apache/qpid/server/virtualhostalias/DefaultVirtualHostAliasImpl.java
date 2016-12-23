@@ -45,7 +45,7 @@ public class DefaultVirtualHostAliasImpl
     {
         if(name == null || name.trim().equals(""))
         {
-            Broker<?> broker = getPort().getParent(Broker.class);
+            Broker<?> broker = getAncestor(Broker.class);
             VirtualHostNode defaultVirtualHostNode = broker.findDefautVirtualHostNode();
             return defaultVirtualHostNode == null ? null : defaultVirtualHostNode.getVirtualHost();
         }

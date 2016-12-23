@@ -91,13 +91,13 @@ public class VirtualHostLoggerTest  extends QpidTestCase
                                                                                  accessControlMock);
         when(broker.getModel()).thenReturn(model);
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
-        when(broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
+        when(broker.getParent()).thenReturn(systemConfig);
         doReturn(Broker.class).when(broker).getCategoryClass();
 
         VirtualHostNode node =  BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(VirtualHostNode.class, systemPrincipal, accessControlMock);
         when(node.getModel()).thenReturn(model);
         when(node.getChildExecutor()).thenReturn(_taskExecutor);
-        when(node.getParent(Broker.class)).thenReturn(broker);
+        when(node.getParent()).thenReturn(broker);
         when(node.getConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
         doReturn(VirtualHostNode.class).when(node).getCategoryClass();
         when(node.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));

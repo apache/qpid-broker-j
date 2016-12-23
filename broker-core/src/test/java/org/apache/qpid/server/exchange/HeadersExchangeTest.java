@@ -77,7 +77,7 @@ public class HeadersExchangeTest extends QpidTestCase
 
         VirtualHostNode virtualHostNode = mock(VirtualHostNode.class);
         when(virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
-        when(virtualHostNode.getParent(Broker.class)).thenReturn(broker);
+        when(virtualHostNode.getParent()).thenReturn(broker);
         when(virtualHostNode.getModel()).thenReturn(BrokerModel.getInstance());
 
         when(_virtualHost.getEventLogger()).thenReturn(new EventLogger());
@@ -88,7 +88,7 @@ public class HeadersExchangeTest extends QpidTestCase
         _factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(_virtualHost.getObjectFactory()).thenReturn(_factory);
         when(_virtualHost.getModel()).thenReturn(_factory.getModel());
-        when(_virtualHost.getParent(VirtualHostNode.class)).thenReturn(virtualHostNode);
+        when(_virtualHost.getParent()).thenReturn(virtualHostNode);
         Map<String,Object> attributes = new HashMap<String, Object>();
         attributes.put(Exchange.ID, UUID.randomUUID());
         attributes.put(Exchange.NAME, "test");
@@ -161,7 +161,7 @@ public class HeadersExchangeTest extends QpidTestCase
         when(q.getName()).thenReturn(name);
         when(q.toString()).thenReturn(name);
         when(q.getVirtualHost()).thenReturn(_virtualHost);
-        when(q.getParent(VirtualHost.class)).thenReturn(_virtualHost);
+        when(q.getParent()).thenReturn(_virtualHost);
         when(q.getCategoryClass()).thenReturn(Queue.class);
         when(q.getObjectFactory()).thenReturn(_factory);
         when(q.getModel()).thenReturn(_factory.getModel());

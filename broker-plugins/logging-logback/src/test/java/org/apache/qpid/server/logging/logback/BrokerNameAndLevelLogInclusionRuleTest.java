@@ -66,7 +66,7 @@ public class BrokerNameAndLevelLogInclusionRuleTest extends QpidTestCase
         _brokerLogger = mock(BrokerLogger.class);
         when(_brokerLogger.getModel()).thenReturn(model);
         when(_brokerLogger.getChildExecutor()).thenReturn(_taskExecutor);
-        when(_brokerLogger.getParent(Broker.class)).thenReturn(_broker);
+        when(_brokerLogger.getParent()).thenReturn((Broker)_broker);
         doReturn(BrokerLogger.class).when(_brokerLogger).getCategoryClass();
    }
 

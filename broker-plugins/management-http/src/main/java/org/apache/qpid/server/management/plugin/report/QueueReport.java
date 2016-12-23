@@ -107,7 +107,7 @@ public abstract class QueueReport<T>
      */
     public final String getVirtualHostName()
     {
-        return _queue.getParent(VirtualHost.class).getName();
+        return _queue.getParent().getName();
     }
 
     /**

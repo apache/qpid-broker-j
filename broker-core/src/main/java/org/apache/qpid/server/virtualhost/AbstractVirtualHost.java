@@ -270,12 +270,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public AbstractVirtualHost(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
         super(parentsMap(virtualHostNode), attributes);
-        _broker = virtualHostNode.getParent(Broker.class);
+        _broker = (Broker<?>) virtualHostNode.getParent();
         _virtualHostNode = virtualHostNode;
 
         _dtxRegistry = new DtxRegistry(this);
 
-        _eventLogger = _broker.getParent(SystemConfig.class).getEventLogger();
+        final SystemConfig systemConfig = (SystemConfig) _broker.getParent();
+        _eventLogger = systemConfig.getEventLogger();
 
         _eventLogger.message(VirtualHostMessages.CREATED(getName()));
 
@@ -286,7 +287,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _dataReceived = new StatisticsCounter("bytes-received-" + getName());
         _principal = new VirtualHostPrincipal(this);
 
-        if (_broker.getParent(SystemConfig.class).isManagementMode())
+        if (systemConfig.isManagementMode())
         {
             _accessControl = AccessControl.ALWAYS_ALLOWED;
         }
@@ -310,7 +311,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private void updateAccessControl()
     {
-        if(!_broker.getParent(SystemConfig.class).isManagementMode())
+        if(!((SystemConfig)_broker.getParent()).isManagementMode())
         {
             List<VirtualHostAccessControlProvider> children = new ArrayList<>(getChildren(VirtualHostAccessControlProvider.class));
             _logger.debug("Updating access control list with {} provider children", children.size());
@@ -591,7 +592,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         }
 
-        PreferencesRoot preferencesRoot = getParent(VirtualHostNode.class);
+        PreferencesRoot preferencesRoot = (VirtualHostNode) getParent();
         _preferenceStore = preferencesRoot.createPreferenceStore();
 
         createHousekeepingExecutor();
@@ -1816,8 +1817,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         public void execute()
         {
-            VirtualHostNode<?> virtualHostNode = getParent(VirtualHostNode.class);
-            Broker<?> broker = virtualHostNode.getParent(Broker.class);
+            Broker<?> broker = getAncestor(Broker.class);
             broker.assignTargetSizes();
 
             for (Queue<?> q : getChildren(Queue.class))
@@ -1869,7 +1869,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         @Override
         public VirtualHostNode<?> getVirtualHostNode()
         {
-            return AbstractVirtualHost.this.getParent(VirtualHostNode.class);
+            return (VirtualHostNode) getParent();
         }
 
         @Override

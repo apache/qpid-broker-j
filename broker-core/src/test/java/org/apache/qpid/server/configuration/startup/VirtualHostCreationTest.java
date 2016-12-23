@@ -69,12 +69,12 @@ public class VirtualHostCreationTest extends QpidTestCase
         when(broker.getObjectFactory()).thenReturn(objectFactory);
         when(broker.getModel()).thenReturn(objectFactory.getModel());
         when(broker.getCategoryClass()).thenReturn(Broker.class);
-        when(broker.getParent(eq(SystemConfig.class))).thenReturn(systemConfig);
+        when(broker.getParent()).thenReturn(systemConfig);
         when(broker.getTaskExecutor()).thenReturn(executor);
         when(broker.getChildExecutor()).thenReturn(executor);
 
         _virtualHostNode = BrokerTestHelper.mockWithSystemPrincipal(VirtualHostNode.class, mock(Principal.class));
-        when(_virtualHostNode.getParent(Broker.class)).thenReturn(broker);
+        when(_virtualHostNode.getParent()).thenReturn(broker);
         when(_virtualHostNode.getObjectFactory()).thenReturn(objectFactory);
         when(_virtualHostNode.getConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
         when(_virtualHostNode.getModel()).thenReturn(objectFactory.getModel());

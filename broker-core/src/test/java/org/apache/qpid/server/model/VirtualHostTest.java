@@ -97,7 +97,7 @@ public class VirtualHostTest extends QpidTestCase
 
         Principal systemPrincipal = ((SystemPrincipalSource)_broker).getSystemPrincipal();
         _virtualHostNode = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(VirtualHostNode.class, systemPrincipal, _mockAccessControl);
-        when(_virtualHostNode.getParent(Broker.class)).thenReturn(_broker);
+        when(_virtualHostNode.getParent()).thenReturn(_broker);
         when(_virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
         when(_virtualHostNode.isDurable()).thenReturn(true);
 
@@ -108,7 +108,7 @@ public class VirtualHostTest extends QpidTestCase
 
 
         // Virtualhost needs the EventLogger from the SystemContext.
-        when(_virtualHostNode.getParent(Broker.class)).thenReturn(_broker);
+        when(_virtualHostNode.getParent()).thenReturn(_broker);
 
         ConfiguredObjectFactory objectFactory = _broker.getObjectFactory();
         when(_virtualHostNode.getModel()).thenReturn(objectFactory.getModel());

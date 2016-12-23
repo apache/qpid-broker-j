@@ -65,7 +65,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         {
             boolean defaultVHN = "black".equals(name);
             VirtualHost<?> virtualHost = BrokerTestHelper.createVirtualHost(name, _broker, defaultVHN);
-            VirtualHostNode vhn = virtualHost.getParent(VirtualHostNode.class);
+            VirtualHostNode vhn = (VirtualHostNode) virtualHost.getParent();
             assertNotSame(vhn.getName(), virtualHost.getName());
             _vhosts.put(name, virtualHost);
 
@@ -138,7 +138,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         attributes.put(VirtualHostAlias.NAME, "matcher");
         attributes.put(VirtualHostAlias.TYPE, PatternMatchingAlias.TYPE_NAME);
         attributes.put(PatternMatchingAlias.PATTERN, "orange|pink.*");
-        attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("purple").getParent(VirtualHostNode.class));
+        attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("purple").getParent());
         _port.createChild(VirtualHostAlias.class, attributes);
 
         NamedAddressSpace addressSpace = _port.getAddressSpace("orange");
@@ -185,7 +185,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         attributes.put(VirtualHostAlias.TYPE, PatternMatchingAlias.TYPE_NAME);
         attributes.put(VirtualHostAlias.PRIORITY, 10);
         attributes.put(PatternMatchingAlias.PATTERN, "bl.*");
-        attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("purple").getParent(VirtualHostNode.class));
+        attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("purple").getParent());
         _port.createChild(VirtualHostAlias.class, attributes);
 
         addressSpace = _port.getAddressSpace("blue");
@@ -204,7 +204,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         attributes.put(VirtualHostAlias.TYPE, PatternMatchingAlias.TYPE_NAME);
         attributes.put(VirtualHostAlias.PRIORITY, 5);
         attributes.put(PatternMatchingAlias.PATTERN, ".*u.*");
-        attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("red").getParent(VirtualHostNode.class));
+        attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("red").getParent());
         _port.createChild(VirtualHostAlias.class, attributes);
 
 

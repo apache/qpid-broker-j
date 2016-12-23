@@ -71,7 +71,7 @@ public class FanoutExchangeTest extends QpidTestCase
 
         VirtualHostNode virtualHostNode = mock(VirtualHostNode.class);
         when(virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
-        when(virtualHostNode.getParent(Broker.class)).thenReturn(broker);
+        when(virtualHostNode.getParent()).thenReturn(broker);
         when(virtualHostNode.getModel()).thenReturn(BrokerModel.getInstance());
 
         _taskExecutor = new CurrentThreadTaskExecutor();
@@ -82,7 +82,7 @@ public class FanoutExchangeTest extends QpidTestCase
         when(_virtualHost.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHost.getChildExecutor()).thenReturn(_taskExecutor);
         when(_virtualHost.getModel()).thenReturn(BrokerModel.getInstance());
-        when(_virtualHost.getParent(VirtualHostNode.class)).thenReturn(virtualHostNode);
+        when(_virtualHost.getParent()).thenReturn(virtualHostNode);
         when(_virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
         _exchange = new FanoutExchangeImpl(attributes, _virtualHost);
         _exchange.open();
@@ -151,7 +151,7 @@ public class FanoutExchangeTest extends QpidTestCase
         TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         when(queue.getTaskExecutor()).thenReturn(taskExecutor);
         when(queue.getChildExecutor()).thenReturn(taskExecutor);
-        when(queue.getParent(VirtualHost.class)).thenReturn(_virtualHost);
+        when(queue.getParent()).thenReturn(_virtualHost);
         when(_virtualHost.getAttainedQueue(eq(name))).thenReturn(queue);
         return queue;
     }

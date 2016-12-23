@@ -74,7 +74,7 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
     public BDBHARemoteReplicationNodeImpl(BDBHAVirtualHostNode<?> virtualHostNode, Map<String, Object> attributes, ReplicatedEnvironmentFacade replicatedEnvironmentFacade)
     {
         super(parentsMap(virtualHostNode), attributes);
-        _broker = virtualHostNode.getParent(Broker.class);
+        _broker = (Broker<?>) virtualHostNode.getParent();
         _address = (String)attributes.get(ADDRESS);
         _replicatedEnvironmentFacade = replicatedEnvironmentFacade;
         setRole(NodeRole.UNREACHABLE);

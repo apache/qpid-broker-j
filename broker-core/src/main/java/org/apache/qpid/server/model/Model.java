@@ -94,7 +94,7 @@ public abstract class Model
             Class<? extends ConfiguredObject> parentClass = getParentType(category);
             if(parentClass != null)
             {
-                ConfiguredObject<?> parent = object.getParent(parentClass);
+                ConfiguredObject<?> parent = object.getParent();
                 C ancestor = getAncestor(ancestorClass, parentClass, parent);
                 if (ancestor != null)
                 {

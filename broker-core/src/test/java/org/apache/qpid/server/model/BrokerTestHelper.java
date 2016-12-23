@@ -142,7 +142,7 @@ public class BrokerTestHelper
         when(broker.getModelVersion()).thenReturn(BrokerModel.MODEL_VERSION);
         when(broker.getEventLogger()).thenReturn(eventLogger);
         when(broker.getCategoryClass()).thenReturn(Broker.class);
-        when(broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
+        when(broker.getParent()).thenReturn(systemConfig);
         when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
 
         when(broker.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
@@ -180,7 +180,7 @@ public class BrokerTestHelper
         when(virtualHostNode.getChildExecutor()).thenReturn(TASK_EXECUTOR);
         when(virtualHostNode.isDefaultVirtualHostNode()).thenReturn(defaultVHN);
 
-        when(virtualHostNode.getParent(eq(Broker.class))).thenReturn(broker);
+        when(virtualHostNode.getParent()).thenReturn(broker);
 
         Collection<VirtualHostNode<?>> nodes = broker.getVirtualHostNodes();
         nodes = new ArrayList<>(nodes != null ?  nodes : Collections.<VirtualHostNode<?>>emptyList());
@@ -189,7 +189,6 @@ public class BrokerTestHelper
 
         DurableConfigurationStore dcs = mock(DurableConfigurationStore.class);
         when(virtualHostNode.getConfigurationStore()).thenReturn(dcs);
-        when(virtualHostNode.getParent(eq(VirtualHostNode.class))).thenReturn(virtualHostNode);
         when(virtualHostNode.getModel()).thenReturn(objectFactory.getModel());
         when(virtualHostNode.getObjectFactory()).thenReturn(objectFactory);
         when(virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);

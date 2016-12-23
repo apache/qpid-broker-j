@@ -230,12 +230,12 @@ class LegacyAccessControlAdapter
             properties.put(ObjectProperties.Property.TEMPORARY, lifeTimePolicy != LifetimePolicy.PERMANENT);
             properties.put(ObjectProperties.Property.DURABLE, (Boolean) exchange.getAttribute(ConfiguredObject.DURABLE));
             properties.put(ObjectProperties.Property.TYPE, (String) exchange.getAttribute(Exchange.TYPE));
-            VirtualHost virtualHost = exchange.getParent(VirtualHost.class);
+            VirtualHost virtualHost = (VirtualHost) exchange.getParent();
             properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(virtualHost.NAME));
         }
         else if (configuredObject instanceof QueueConsumer)
         {
-            Queue<?> queue = (Queue<?>)((QueueConsumer<?,?>)configuredObject).getParent(Queue.class);
+            Queue<?> queue = (Queue<?>)((QueueConsumer<?,?>)configuredObject).getParent();
             setQueueProperties(queue, properties);
         }
         else if (isBrokerType(configuredObjectType))
@@ -275,7 +275,7 @@ class LegacyAccessControlAdapter
         {
             properties.put(ObjectProperties.Property.OWNER, owner);
         }
-        VirtualHost virtualHost = queue.getParent(VirtualHost.class);
+        VirtualHost virtualHost = (VirtualHost) queue.getParent();
         properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(virtualHost.NAME));
     }
 
@@ -361,7 +361,7 @@ class LegacyAccessControlAdapter
             {
 
                 final ObjectProperties _props =
-                        new ObjectProperties(queue.getParent(VirtualHost.class).getName(), "", queue.getName(), (Boolean)arguments.get("immediate"));
+                        new ObjectProperties(queue.getParent().getName(), "", queue.getName(), (Boolean)arguments.get("immediate"));
                 return _accessControl.authorise(PUBLISH, EXCHANGE, _props);
             }
         }
@@ -398,7 +398,7 @@ class LegacyAccessControlAdapter
             {
 
                 final ObjectProperties _props =
-                        new ObjectProperties(queue.getParent(VirtualHost.class).getName(), "", queue.getName(), (Boolean)arguments.get("immediate"));
+                        new ObjectProperties(queue.getParent().getName(), "", queue.getName(), (Boolean)arguments.get("immediate"));
                 return _accessControl.authorise(PUBLISH, EXCHANGE, _props);
             }
         }
@@ -416,7 +416,7 @@ class LegacyAccessControlAdapter
             {
                 return _accessControl.authorise(ACCESS_LOGS,
                                                 ObjectType.VIRTUALHOST,
-                                                new ObjectProperties(logger.getParent(VirtualHost.class).getName()));
+                                                new ObjectProperties(logger.getParent().getName()));
             }
         }
         else if(categoryClass == AuthenticationProvider.class)
@@ -445,7 +445,7 @@ class LegacyAccessControlAdapter
         {
             if(BDB_VIRTUAL_HOST_NODE_OPERATIONS.contains(methodName))
             {
-                ObjectProperties properties = getACLObjectProperties(((ConfiguredObject)configuredObject).getParent(Broker.class), LegacyOperation.UPDATE);
+                ObjectProperties properties = getACLObjectProperties(((ConfiguredObject)configuredObject).getParent(), LegacyOperation.UPDATE);
                 return _accessControl.authorise(LegacyOperation.UPDATE, ObjectType.BROKER, properties);
             }
         }

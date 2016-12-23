@@ -606,7 +606,7 @@ class ManagementNode implements MessageSource, MessageDestination
                     String attributeName = parentType.getSimpleName().toLowerCase();
                     final Object parentValue = attributes.remove(attributeName);
                     if (parentValue != null && !String.valueOf(parentValue)
-                                                      .equals(object.getParent(parentType).getName()))
+                                                      .equals(object.getParent().getName()))
                     {
                         return createFailureResponse(message,
                                                      STATUS_CODE_FORBIDDEN,

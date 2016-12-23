@@ -46,8 +46,8 @@ public class TrustStoreMessageSourceCreator implements SystemNodeCreator
     public void register(final SystemNodeRegistry registry)
     {
         final VirtualHost<?> vhost = registry.getVirtualHost();
-        VirtualHostNode<?> virtualHostNode = vhost.getParent(VirtualHostNode.class);
-        final Broker<?> broker = virtualHostNode.getParent(Broker.class);
+        VirtualHostNode<?> virtualHostNode = (VirtualHostNode<?>) vhost.getParent();
+        final Broker<?> broker = (Broker<?>) virtualHostNode.getParent();
 
         final Collection<TrustStore> trustStores = broker.getChildren(TrustStore.class);
 

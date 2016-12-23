@@ -105,7 +105,7 @@ public class RedirectingVirtualHostNodeImpl
             public void onFailure(final Throwable t)
             {
                 setState(State.ERRORED);
-                if (getParent(Broker.class).isManagementMode())
+                if (((Broker) getParent()).isManagementMode())
                 {
                     LOGGER.warn("Failed to make {} active.", this, t);
                     resultFuture.set(null);

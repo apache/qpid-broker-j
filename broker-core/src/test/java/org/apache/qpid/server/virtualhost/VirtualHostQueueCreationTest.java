@@ -79,19 +79,19 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         Broker broker = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(Broker.class, systemPrincipal, accessControl);
         when(broker.getObjectFactory()).thenReturn(objectFactory);
         when(broker.getCategoryClass()).thenReturn(Broker.class);
-        when(broker.getParent(SystemConfig.class)).thenReturn(context);
+        when(broker.getParent()).thenReturn(context);
         when(broker.getModel()).thenReturn(objectFactory.getModel());
         when(broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
 
         _virtualHostNode = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(VirtualHostNode.class, systemPrincipal, accessControl);
-        when(_virtualHostNode.getParent(Broker.class)).thenReturn(broker);
+        when(_virtualHostNode.getParent()).thenReturn(broker);
         when(_virtualHostNode.getConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
         when(_virtualHostNode.getObjectFactory()).thenReturn(objectFactory);
         when(_virtualHostNode.getModel()).thenReturn(objectFactory.getModel());
         when(_virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHostNode.getChildExecutor()).thenReturn(_taskExecutor);
-        when(((VirtualHostNode)_virtualHostNode).getCategoryClass()).thenReturn(VirtualHostNode.class);
+        when(_virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
 
         when(_virtualHostNode.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
         _virtualHost = createHost();

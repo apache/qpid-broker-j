@@ -48,7 +48,7 @@ abstract class AbstractVirtualHostAlias<X extends AbstractVirtualHostAlias<X>>
     @Override
     public Port<?> getPort()
     {
-        return getParent(Port.class);
+        return (Port) getParent();
     }
 
     @Override

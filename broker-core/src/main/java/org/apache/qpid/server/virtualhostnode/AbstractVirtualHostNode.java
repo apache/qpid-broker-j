@@ -128,7 +128,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         });
         _virtualHostExecutor.start();
         _broker = parent;
-        SystemConfig<?> systemConfig = _broker.getParent(SystemConfig.class);
+        SystemConfig<?> systemConfig = getAncestor(SystemConfig.class);
         _eventLogger = systemConfig.getEventLogger();
     }
 
