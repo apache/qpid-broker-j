@@ -1034,15 +1034,15 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
 
-    public Collection<Binding> getBindings()
+    public Collection<PublishingLink> getPublishingLinks()
     {
-        List<Binding> bindings = new ArrayList<>();
+        List<PublishingLink> links = new ArrayList<>();
         for(MessageSender sender : _linkedSenders.keySet())
         {
-            //TODO - eliminate cast
-            bindings.addAll(((Exchange)sender).getBindingsForDestination(this));
+            final Collection<? extends PublishingLink> linksForDestination = sender.getPublishingLinks(this);
+            links.addAll(linksForDestination);
         }
-        return bindings;
+        return links;
     }
 
     @Override
@@ -3397,7 +3397,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public void linkAdded(final MessageSender sender, final String linkName)
+    public void linkAdded(final MessageSender sender, final PublishingLink link)
     {
 
         Integer oldValue = _linkedSenders.putIfAbsent(sender, 1);
@@ -3409,7 +3409,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public void linkRemoved(final MessageSender sender, final String linkName)
+    public void linkRemoved(final MessageSender sender, final PublishingLink link)
     {
         int oldValue = _linkedSenders.remove(sender);
         if(oldValue != 1)

@@ -35,6 +35,7 @@ import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.security.SecurityToken;
@@ -158,13 +159,13 @@ class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanc
     }
 
     @Override
-    public void linkAdded(final MessageSender sender, final String linkName)
+    public void linkAdded(final MessageSender sender, final PublishingLink link)
     {
 
     }
 
     @Override
-    public void linkRemoved(final MessageSender sender, final String linkName)
+    public void linkRemoved(final MessageSender sender, final PublishingLink link)
     {
 
     }

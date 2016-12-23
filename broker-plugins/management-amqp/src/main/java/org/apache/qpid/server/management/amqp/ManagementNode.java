@@ -77,6 +77,7 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.OperationParameter;
+import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
@@ -382,13 +383,13 @@ class ManagementNode implements MessageSource, MessageDestination
     }
 
     @Override
-    public void linkAdded(final MessageSender sender, final String linkName)
+    public void linkAdded(final MessageSender sender, final PublishingLink link)
     {
 
     }
 
     @Override
-    public void linkRemoved(final MessageSender sender, final String linkName)
+    public void linkRemoved(final MessageSender sender, final PublishingLink link)
     {
 
     }

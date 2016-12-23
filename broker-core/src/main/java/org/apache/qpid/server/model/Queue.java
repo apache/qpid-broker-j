@@ -259,7 +259,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     boolean isHoldOnPublishEnabled();
 
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
-    Collection<Binding> getBindings();
+    Collection<PublishingLink> getPublishingLinks();
 
 
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)

@@ -24,6 +24,7 @@ import java.security.AccessControlException;
 import java.util.Map;
 
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -57,6 +58,6 @@ public interface MessageDestination extends MessageNode
 
     boolean isDurable();
 
-    void linkAdded(MessageSender sender, String linkName);
-    void linkRemoved(MessageSender sender, String linkName);
+    void linkAdded(MessageSender sender, PublishingLink link);
+    void linkRemoved(MessageSender sender, PublishingLink link);
 }

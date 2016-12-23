@@ -50,6 +50,7 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -377,13 +378,13 @@ public class ManagementAddressSpace implements NamedAddressSpace
         }
 
         @Override
-        public void linkAdded(final MessageSender sender, final String linkName)
+        public void linkAdded(final MessageSender sender, final PublishingLink link)
         {
 
         }
 
         @Override
-        public void linkRemoved(final MessageSender sender, final String linkName)
+        public void linkRemoved(final MessageSender sender, final PublishingLink link)
         {
 
         }

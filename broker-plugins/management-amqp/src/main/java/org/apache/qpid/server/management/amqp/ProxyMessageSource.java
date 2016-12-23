@@ -50,6 +50,7 @@ import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageDurability;
@@ -109,13 +110,13 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
     }
 
     @Override
-    public void linkAdded(final MessageSender sender, final String linkName)
+    public void linkAdded(final MessageSender sender, final PublishingLink link)
     {
 
     }
 
     @Override
-    public void linkRemoved(final MessageSender sender, final String linkName)
+    public void linkRemoved(final MessageSender sender, final PublishingLink link)
     {
 
     }

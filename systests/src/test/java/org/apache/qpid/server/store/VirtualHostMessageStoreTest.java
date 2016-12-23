@@ -441,13 +441,13 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         bindQueueToExchange(exch, directRouting, _virtualHost.getChildByName(Queue.class, durableQueueName), false);
 
         assertEquals("Incorrect number of bindings registered before recovery",
-                1, _virtualHost.getChildByName(Queue.class, durableQueueName).getBindings().size());
+                1, _virtualHost.getChildByName(Queue.class, durableQueueName).getPublishingLinks().size());
 
         //verify binding is actually normally recovered
         reloadVirtualHost();
 
         assertEquals("Incorrect number of bindings registered after first recovery",
-                1, _virtualHost.getChildByName(Queue.class, durableQueueName).getBindings().size());
+                1, _virtualHost.getChildByName(Queue.class, durableQueueName).getPublishingLinks().size());
 
         exch = (Exchange<?>) _virtualHost.getChildByName(Exchange.class, directExchangeName);
         assertNotNull("Exchange was not recovered", exch);
@@ -459,7 +459,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         reloadVirtualHost();
 
         assertEquals("Incorrect number of bindings registered after second recovery",
-                0, _virtualHost.getChildByName(Queue.class, durableQueueName).getBindings().size());
+                0, _virtualHost.getChildByName(Queue.class, durableQueueName).getPublishingLinks().size());
     }
 
     /**
@@ -499,11 +499,11 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
         assertEquals("Incorrect number of (durable) queues following recovery", 6, _virtualHost.getChildren(Queue.class).size());
 
-        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durablePriorityQueueName).getBindings(), false);
-        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durablePriorityTopicQueueName).getBindings(), true);
-        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durableQueueName).getBindings(), false);
-        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durableTopicQueueName).getBindings(), true);
-        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durableExclusiveQueueName).getBindings(), false);
+        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durablePriorityQueueName).getPublishingLinks(), false);
+        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durablePriorityTopicQueueName).getPublishingLinks(), true);
+        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durableQueueName).getPublishingLinks(), false);
+        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durableTopicQueueName).getPublishingLinks(), true);
+        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durableExclusiveQueueName).getPublishingLinks(), false);
     }
 
     /**

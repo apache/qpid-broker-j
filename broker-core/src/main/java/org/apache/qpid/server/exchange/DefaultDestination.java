@@ -31,6 +31,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PermissionedObject;
+import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
@@ -139,13 +140,13 @@ public class DefaultDestination implements MessageDestination, PermissionedObjec
     }
 
     @Override
-    public void linkAdded(final MessageSender sender, final String linkName)
+    public void linkAdded(final MessageSender sender, final PublishingLink link)
     {
 
     }
 
     @Override
-    public void linkRemoved(final MessageSender sender, final String linkName)
+    public void linkRemoved(final MessageSender sender, final PublishingLink link)
     {
 
     }

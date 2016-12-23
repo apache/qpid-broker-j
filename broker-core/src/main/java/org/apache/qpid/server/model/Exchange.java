@@ -59,7 +59,8 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     @DerivedAttribute
     Collection<Binding> getBindings();
 
-    Collection<Binding> getBindingsForDestination(MessageDestination destination);
+    @Override
+    Collection<Binding> getPublishingLinks(MessageDestination destination);
 
     @DerivedAttribute(persist = true)
     Collection<Binding> getDurableBindings();

@@ -62,6 +62,7 @@ import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Param;
+import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
@@ -172,7 +173,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 if (messageDestination != null)
                 {
                     onBind(new BindingIdentifier(b.getBindingKey(), messageDestination), b.getArguments());
-                    messageDestination.linkAdded(this, b.getBindingKey());
+                    messageDestination.linkAdded(this, b);
                 }
             }
         }
@@ -211,7 +212,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 final MessageDestination messageDestination = getAttainedMessageDestination(b.getDestination());
                 if(messageDestination != null)
                 {
-                    messageDestination.linkRemoved(this, b.getBindingKey());
+                    messageDestination.linkRemoved(this, b);
                 }
             }
             for(MessageSender sender : _linkedSenders.keySet())
@@ -646,13 +647,13 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             getEventLogger().message(_logSubject, BindingMessages.CREATED(String.valueOf(bindArguments)));
 
             onBind(bindingIdentifier, arguments);
-            messageDestination.linkAdded(this, bindingKey);
+            messageDestination.linkAdded(this, newBinding);
         }
         return true;
     }
 
     @Override
-    public Collection<Binding> getBindingsForDestination(MessageDestination destination)
+    public Collection<Binding> getPublishingLinks(MessageDestination destination)
     {
         List<Binding> bindings = new ArrayList<>();
         final String destinationName = destination.getName();
@@ -727,7 +728,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             if(binding.getBindingKey().equals(bindingKey) && binding.getDestination().equals(destination))
             {
                 _bindings.remove(binding);
-                messageDestination.linkRemoved(this, bindingKey);
+                messageDestination.linkRemoved(this, binding);
                 onUnbind(new BindingIdentifier(bindingKey, messageDestination));
                 if(!autoDeleteIfNecessary())
                 {
@@ -946,7 +947,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     }
 
     @Override
-    public void linkAdded(final MessageSender sender, final String linkName)
+    public void linkAdded(final MessageSender sender, final PublishingLink link)
     {
         Integer oldValue = _linkedSenders.putIfAbsent(sender, 1);
         if(oldValue != null)
@@ -956,7 +957,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     }
 
     @Override
-    public void linkRemoved(final MessageSender sender, final String linkName)
+    public void linkRemoved(final MessageSender sender, final PublishingLink link)
     {
         int oldValue = _linkedSenders.remove(sender);
         if(oldValue != 1)

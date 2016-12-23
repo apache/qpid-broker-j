@@ -20,7 +20,13 @@
  */
 package org.apache.qpid.server.message;
 
+import java.util.Collection;
+
+import org.apache.qpid.server.model.PublishingLink;
+
 public interface MessageSender
 {
     void destinationRemoved(MessageDestination destination);
+
+    Collection<? extends PublishingLink> getPublishingLinks(MessageDestination destination);
 }

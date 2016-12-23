@@ -20,11 +20,8 @@
  */
 package org.apache.qpid.server.model;
 
-import java.util.Map;
-
 @ManagedAttributeValueType
-public interface Binding extends PublishingLink
+public interface PublishingLink extends ManagedAttributeValue
 {
-    String getBindingKey();
-    Map<String,Object> getArguments();
+    String getDestination();
 }
