@@ -258,7 +258,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                                      + "visible may depend on how frequently the virtual host housekeeping thread runs.")
     boolean isHoldOnPublishEnabled();
 
-    //children
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Collection<Binding> getBindings();
 

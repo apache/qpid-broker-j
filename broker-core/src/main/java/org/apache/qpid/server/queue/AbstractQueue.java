@@ -271,6 +271,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
     private AdvanceConsumersTask _queueHouseKeepingTask;
+    private volatile int _bindingCount;
 
     private interface HoldMethod
     {
@@ -1044,9 +1045,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return bindings;
     }
 
+    @Override
     public int getBindingCount()
     {
-        return getBindings().size();
+        return _bindingCount;
     }
 
     public LogSubject getLogSubject()
@@ -3397,11 +3399,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public void linkAdded(final MessageSender sender, final String linkName)
     {
+
         Integer oldValue = _linkedSenders.putIfAbsent(sender, 1);
         if(oldValue != null)
         {
             _linkedSenders.put(sender, oldValue+1);
         }
+        _bindingCount++;
     }
 
     @Override
@@ -3412,5 +3416,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             _linkedSenders.put(sender, oldValue-1);
         }
+        _bindingCount--;
     }
 }
