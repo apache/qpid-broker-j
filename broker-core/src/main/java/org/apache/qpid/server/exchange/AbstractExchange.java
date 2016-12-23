@@ -159,9 +159,9 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     protected void onOpen()
     {
         super.onOpen();
-        final ConfiguredDerivedMethodAttribute<Exchange<?>, List<Binding>> durableBindingsAttribute =
-                (ConfiguredDerivedMethodAttribute<Exchange<?>, List<Binding>>) getModel().getTypeRegistry().getAttributeTypes(getTypeClass()).get(DURABLE_BINDINGS);
-        final List<Binding> bindings =
+        final ConfiguredDerivedMethodAttribute<Exchange<?>, Collection<Binding>> durableBindingsAttribute =
+                (ConfiguredDerivedMethodAttribute<Exchange<?>, Collection<Binding>>) getModel().getTypeRegistry().getAttributeTypes(getTypeClass()).get(DURABLE_BINDINGS);
+        final Collection<Binding> bindings =
                 durableBindingsAttribute.convertValue(getActualAttributes().get(DURABLE_BINDINGS), this);
         if (bindings != null)
         {
