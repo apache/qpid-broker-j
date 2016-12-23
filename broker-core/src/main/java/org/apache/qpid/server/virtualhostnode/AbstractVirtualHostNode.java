@@ -111,8 +111,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
 
     public AbstractVirtualHostNode(Broker<?> parent, Map<String, Object> attributes)
     {
-        super(Collections.<Class<? extends ConfiguredObject>,ConfiguredObject<?>>singletonMap(Broker.class, parent),
-              attributes);
+        super(parent, attributes);
         _virtualHostExecutor = getTaskExecutor().getFactory().newInstance("VirtualHostNode-" + getName() + "-Config", new TaskExecutor.PrincipalAccessor()
         {
             @Override

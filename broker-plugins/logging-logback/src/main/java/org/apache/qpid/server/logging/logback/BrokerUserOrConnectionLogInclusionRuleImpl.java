@@ -47,7 +47,7 @@ class BrokerUserOrConnectionLogInclusionRuleImpl
     BrokerUserOrConnectionLogInclusionRuleImpl(final Map<String, Object> attributes,
                                                BrokerLogger<?> logger)
     {
-        super(parentsMap(logger), attributes);
+        super(logger, attributes);
     }
 
     @Override

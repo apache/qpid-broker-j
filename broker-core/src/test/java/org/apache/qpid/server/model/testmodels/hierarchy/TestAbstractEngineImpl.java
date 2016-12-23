@@ -43,10 +43,10 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
     @ManagedAttributeField
     private RuntimeException _stateChangeException;
 
-    public TestAbstractEngineImpl(final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parents,
+    public TestAbstractEngineImpl(final ConfiguredObject<?> parent,
                                   final Map<String, Object> attributes)
     {
-        super(parents, attributes);
+        super(parent, attributes);
     }
 
     @Override

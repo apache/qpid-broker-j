@@ -44,10 +44,10 @@ public abstract class AbstractNameAndLevelLogInclusionRule<X extends AbstractNam
 
     private LoggerNameAndLevelFilter _filter;
 
-    protected AbstractNameAndLevelLogInclusionRule(final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parents,
+    protected AbstractNameAndLevelLogInclusionRule(final ConfiguredObject<?> parent,
                                                    Map<String, Object> attributes)
     {
-        super(parents, attributes);
+        super(parent, attributes);
     }
 
     @Override

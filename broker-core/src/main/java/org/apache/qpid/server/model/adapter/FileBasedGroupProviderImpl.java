@@ -69,7 +69,7 @@ public class FileBasedGroupProviderImpl
     public FileBasedGroupProviderImpl(Map<String, Object> attributes,
                                       Container<?> container)
     {
-        super(parentsMap(container), attributes);
+        super(container, attributes);
 
 
         _container = container;
@@ -317,7 +317,7 @@ public class FileBasedGroupProviderImpl
     {
         public GroupAdapter(Map<String, Object> attributes)
         {
-            super(parentsMap(FileBasedGroupProviderImpl.this), attributes);
+            super(FileBasedGroupProviderImpl.this, attributes);
         }
 
         @Override
@@ -397,7 +397,7 @@ public class FileBasedGroupProviderImpl
             public GroupMemberAdapter(Map<String, Object> attrMap)
             {
                 // TODO - need to relate to the User object
-                super(parentsMap(GroupAdapter.this),attrMap);
+                super(GroupAdapter.this, attrMap);
             }
 
             @Override

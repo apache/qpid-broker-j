@@ -39,18 +39,18 @@ public abstract class AbstractUnresolvedObject<C extends ConfiguredObject<C>> im
     private final Class<C> _clazz;
     private final Collection<ConfiguredObjectDependency<?>> _unresolvedObjects = new ArrayList<ConfiguredObjectDependency<?>>();
     private final ConfiguredObjectRecord _record;
-    private final ConfiguredObject<?>[] _parents;
+    private final ConfiguredObject<?> _parent;
 
     protected AbstractUnresolvedObject(Class<C> clazz,
                                        ConfiguredObjectRecord record,
-                                       ConfiguredObject<?>... parents)
+                                       ConfiguredObject<?> parent)
     {
         _clazz = clazz;
         _record = record;
-        _parents = parents;
+        _parent = parent;
 
         Collection<ConfiguredObjectAttribute<? super C, ?>> attributes =
-                parents[0].getModel().getTypeRegistry().getAttributes(clazz);
+                parent.getModel().getTypeRegistry().getAttributes(clazz);
         for(ConfiguredObjectAttribute<? super C, ?> attribute : attributes)
         {
             if(attribute.isPersisted())
@@ -139,9 +139,9 @@ public abstract class AbstractUnresolvedObject<C extends ConfiguredObject<C>> im
         return _record;
     }
 
-    public ConfiguredObject<?>[] getParents()
+    public ConfiguredObject<?> getParent()
     {
-        return _parents;
+        return _parent;
     }
 
     private void addUnresolvedObject(final Class<? extends ConfiguredObject> clazz,
@@ -169,7 +169,7 @@ public abstract class AbstractUnresolvedObject<C extends ConfiguredObject<C>> im
         }
         else if(attrValue instanceof String)
         {
-            String interpolatedValue = AbstractConfiguredObject.interpolate(_parents[0], (String) attrValue);
+            String interpolatedValue = AbstractConfiguredObject.interpolate(_parent, (String) attrValue);
 
             try
             {

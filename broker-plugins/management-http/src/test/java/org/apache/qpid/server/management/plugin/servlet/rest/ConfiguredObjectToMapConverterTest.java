@@ -480,7 +480,7 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         carContext.put(PARENT_CONTEXT_PROPERTY1_NAME, PARENT_CONTEXT_PROPERTY1_ACTUAL_VALUE);
         carContext.put(PARENT_CONTEXT_PROPERTY2_NAME, PARENT_CONTEXT_PROPERTY2_ACTUAL_VALUE);
         carAttributes.put(ConfiguredObject.CONTEXT, carContext);
-        TestCar car = model.getObjectFactory().create(TestCar.class, carAttributes);
+        TestCar car = model.getObjectFactory().create(TestCar.class, carAttributes, null);
         final Map<String, Object> engineAttributes = new HashMap<>();
         engineAttributes.put(ConfiguredObject.NAME, "myEngine");
         engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);

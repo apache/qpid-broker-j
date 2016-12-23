@@ -35,7 +35,7 @@ public class BrokerNameAndLevelLogInclusionRuleImpl extends AbstractNameAndLevel
     @ManagedObjectFactoryConstructor
     protected BrokerNameAndLevelLogInclusionRuleImpl(final Map<String, Object> attributes, BrokerLogger<?> logger)
     {
-        super(parentsMap(logger), attributes);
+        super(logger, attributes);
     }
 
     @Override

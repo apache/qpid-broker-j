@@ -48,7 +48,7 @@ class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<
     @ManagedObjectFactoryConstructor
     ManagedUser(final Map<String, Object> attributes, ConfigModelPasswordManagingAuthenticationProvider<?> parent)
     {
-        super(parentsMap(parent), attributes);
+        super(parent, attributes);
         _authenticationManager = parent;
 
         setState(State.ACTIVE);

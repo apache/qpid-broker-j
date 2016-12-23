@@ -47,7 +47,7 @@ class VirtualHostUserOrConnectionLogInclusionRuleImpl
     protected VirtualHostUserOrConnectionLogInclusionRuleImpl(final Map<String, Object> attributes,
                                                               BrokerLogger<?> logger)
     {
-        super(parentsMap(logger), attributes);
+        super(logger, attributes);
     }
 
     @Override

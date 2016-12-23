@@ -26,6 +26,7 @@ import java.util.Map;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
@@ -41,7 +42,7 @@ abstract class AbstractVirtualHostAlias<X extends AbstractVirtualHostAlias<X>>
 
     protected AbstractVirtualHostAlias(Map<String, Object> attributes, Port port)
     {
-        super(parentsMap(port), attributes);
+        super((ConfiguredObject<?>) port, attributes);
         setState(State.ACTIVE);
     }
 

@@ -49,10 +49,10 @@ public abstract class AbstractNonConnectionAcceptingVirtualHost<X extends Abstra
 {
     private final VirtualHostPrincipal _principal;
 
-    public AbstractNonConnectionAcceptingVirtualHost(final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parents,
+    public AbstractNonConnectionAcceptingVirtualHost(final ConfiguredObject<?> parent,
                                                      final Map<String, Object> attributes)
     {
-        super(parents, attributes);
+        super(parent, attributes);
 
         _principal = new VirtualHostPrincipal(this);
         setState(State.UNAVAILABLE);

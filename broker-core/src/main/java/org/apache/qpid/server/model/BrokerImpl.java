@@ -151,7 +151,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     public BrokerImpl(Map<String, Object> attributes,
                       SystemConfig parent)
     {
-        super(parentsMap(parent), attributes, parent);
+        super(attributes, parent);
         _principal = new BrokerPrincipal(this);
 
         if (parent.isManagementMode())

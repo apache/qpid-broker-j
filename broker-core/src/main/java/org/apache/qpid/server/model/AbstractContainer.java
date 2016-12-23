@@ -78,11 +78,10 @@ public abstract class AbstractContainer<X extends AbstractContainer<X>> extends 
     private String _preConfidentialConfigurationEncryptionProvider;
 
     AbstractContainer(
-            final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parents,
             final Map<String, Object> attributes,
             SystemConfig parent)
     {
-        super(parents, attributes);
+        super(parent, attributes);
         _parent = parent;
         _eventLogger = parent.getEventLogger();
         _jvmArguments = ManagementFactory.getRuntimeMXBean().getInputArguments();

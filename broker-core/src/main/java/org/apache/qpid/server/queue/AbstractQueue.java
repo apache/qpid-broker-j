@@ -279,7 +279,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     protected AbstractQueue(Map<String, Object> attributes, QueueManagingVirtualHost<?> virtualHost)
     {
-        super(parentsMap(virtualHost), attributes);
+        super(virtualHost, attributes);
         _queueConsumerManager = new QueueConsumerManagerImpl(this);
 
         _virtualHost = virtualHost;

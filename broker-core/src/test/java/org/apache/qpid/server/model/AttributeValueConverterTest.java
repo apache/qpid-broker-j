@@ -66,7 +66,7 @@ public class AttributeValueConverterTest extends QpidTestCase
         _context.put("mapWithInterpolatedContents", "{\"${mykey}\" : \"b\"}");
         _context.put("mykey", "mykey1");
 
-        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
 
         AttributeValueConverter<Map> mapConverter = getConverter(Map.class, Map.class);
 
@@ -102,7 +102,7 @@ public class AttributeValueConverterTest extends QpidTestCase
         final long nowMillis = System.currentTimeMillis();
         final Date now = new Date(nowMillis);
 
-        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
 
         AttributeValueConverter<Date> converter = getConverter(Date.class, Date.class);
 
@@ -135,7 +135,7 @@ public class AttributeValueConverterTest extends QpidTestCase
     {
         _context.put("simpleCollection", "[\"a\", \"b\"]");
 
-        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
 
         AttributeValueConverter<Collection> collectionConverter = getConverter(Collection.class, Collection.class);
 
@@ -170,7 +170,7 @@ public class AttributeValueConverterTest extends QpidTestCase
     {
         _context.put("simpleList", "[\"a\", \"b\"]");
 
-        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
 
         AttributeValueConverter<List> listConverter = getConverter(List.class, List.class);
 
@@ -203,7 +203,7 @@ public class AttributeValueConverterTest extends QpidTestCase
     {
         _context.put("simpleSet", "[\"a\", \"b\"]");
 
-        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
 
         AttributeValueConverter<Set> setConverter = getConverter(Set.class, Set.class);;
 
@@ -252,7 +252,7 @@ public class AttributeValueConverterTest extends QpidTestCase
 
     public void testBase64EncodedCertificateConverter() throws ParseException
     {
-        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
         AttributeValueConverter<Certificate> certificateConverter = getConverter(Certificate.class, Certificate.class);
         Certificate certificate = certificateConverter.convert(BASE_64_ENCODED_CERTIFICATE, object);
         assertTrue("Unexpected certificate", certificate instanceof X509Certificate);
@@ -263,7 +263,7 @@ public class AttributeValueConverterTest extends QpidTestCase
 
     public void testPEMCertificateConverter() throws ParseException
     {
-        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
         AttributeValueConverter<Certificate> certificateConverter = getConverter(Certificate.class, Certificate.class);
         StringBuffer pemCertificate = new StringBuffer("-----BEGIN CERTIFICATE-----\n");
         int offset = 0;
@@ -284,7 +284,7 @@ public class AttributeValueConverterTest extends QpidTestCase
 
     public void testMapToManagedAttributeValue()
     {
-        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
 
         final AttributeValueConverter<TestManagedAttributeValue> converter =
                 getConverter(TestManagedAttributeValue.class, TestManagedAttributeValue.class);
@@ -323,7 +323,7 @@ public class AttributeValueConverterTest extends QpidTestCase
 
     public void testMapToManagedAttributeValueEquality()
     {
-        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
 
         final AttributeValueConverter<SimpleTestManagedAttributeValue> converter =
                 getConverter(SimpleTestManagedAttributeValue.class, SimpleTestManagedAttributeValue.class);

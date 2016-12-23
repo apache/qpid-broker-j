@@ -26,7 +26,7 @@ import java.util.Collection;
 
 public interface UnresolvedConfiguredObject<X extends ConfiguredObject<X>>
 {
-    ConfiguredObject<?>[] getParents();
+    ConfiguredObject<?> getParent();
 
     Collection<ConfiguredObjectDependency<?>> getUnresolvedDependencies();
 

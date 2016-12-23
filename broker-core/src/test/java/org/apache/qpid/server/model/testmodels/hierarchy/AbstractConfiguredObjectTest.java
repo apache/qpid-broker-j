@@ -53,7 +53,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         final String objectName = "testCreateCategoryDefault";
         Map<String, Object> attributes = Collections.<String, Object>singletonMap(ConfiguredObject.NAME, objectName);
 
-        TestCar object = _model.getObjectFactory().create(TestCar.class, attributes);
+        TestCar object = _model.getObjectFactory().create(TestCar.class, attributes, null);
 
         assertEquals(objectName, object.getName());
         assertEquals(TestStandardCarImpl.TEST_STANDARD_CAR_TYPE, object.getType());
@@ -69,7 +69,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         try
         {
-            _model.getObjectFactory().create(TestCar.class, attributes);
+            _model.getObjectFactory().create(TestCar.class, attributes, null);
             fail("Exception not thrown");
         }
         catch (IllegalConfigurationException ice)
@@ -85,7 +85,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         carAttributes.put(ConfiguredObject.NAME, carName);
         carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes);
+        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
         assertEquals(carName, car.getName());
 
@@ -108,7 +108,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
     public void testGetChildren_NewChild()
     {
-        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"));
+        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"), null);
 
         String engineName = "myEngine";
         Map<String, Object> engineAttributes = new HashMap<>();
@@ -212,7 +212,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
     {
         SettableFuture stateChangeFuture = SettableFuture.create();
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"));
+        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"), null);
 
         Map<String, Object> engineAttributes = new HashMap<>();
         engineAttributes.put(ConfiguredObject.NAME, "myEngine");
@@ -231,7 +231,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         SettableFuture stateChangeFuture = SettableFuture.create();
         RuntimeException stateChangeException = new RuntimeException("state change error");
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"));
+        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"), null);
 
         Map<String, Object> engineAttributes = new HashMap<>();
         engineAttributes.put(ConfiguredObject.NAME, "myEngine");
@@ -258,7 +258,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
     {
         RuntimeException stateChangeException = new RuntimeException("state change error");
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"));
+        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"), null);
 
         Map<String, Object> engineAttributes = new HashMap<>();
         engineAttributes.put(ConfiguredObject.NAME, "myEngine");
@@ -284,7 +284,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         TestCar car = _model.getObjectFactory().create(TestCar.class,
                                                        Collections.<String, Object>singletonMap(ConfiguredObject.NAME,
-                                                                                                "myCar"));
+                                                                                                "myCar"), null);
 
         String engineName = "myEngine";
         Map<String, Object> engineAttributes = new HashMap<>();
@@ -310,7 +310,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         carAttributes.put(ConfiguredObject.NAME, carName);
         carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes);
+        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
         assertEquals(carName, car.getName());
 
@@ -343,7 +343,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         carAttributes.put(ConfiguredObject.NAME, "myCar");
         carAttributes.put(ConfiguredObject.TYPE, TestStandardCarImpl.TEST_STANDARD_CAR_TYPE);
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes);
+        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
         Map<String, Object> engineAttributes = new HashMap<>();
         engineAttributes.put(ConfiguredObject.NAME, "myEngine");
@@ -372,7 +372,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         carAttributes.put(ConfiguredObject.NAME, carName);
         carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes);
+        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
         assertEquals(0, car.getChildren(TestEngine.class).size());
 
         String engineName = "myEngine";

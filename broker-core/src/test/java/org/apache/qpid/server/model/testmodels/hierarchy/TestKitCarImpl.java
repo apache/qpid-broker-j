@@ -51,7 +51,7 @@ public class TestKitCarImpl extends AbstractConfiguredObject<TestKitCarImpl>
     @ManagedObjectFactoryConstructor
     public TestKitCarImpl(final Map<String, Object> attributes)
     {
-        super(parentsMap(), attributes, newTaskExecutor(), TestModel.getInstance());
+        super(null, attributes, newTaskExecutor(), TestModel.getInstance());
     }
 
     @Override

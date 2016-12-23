@@ -50,7 +50,7 @@ public class AncestorAttributeResolverTest extends QpidTestCase
         carAttributes.put(ConfiguredObject.NAME, CAR_NAME);
         carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
 
-        _car = _model.getObjectFactory().create(TestCar.class, carAttributes);
+        _car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
         assertEquals(CAR_NAME, _car.getName());
 
@@ -111,7 +111,7 @@ public class AncestorAttributeResolverTest extends QpidTestCase
         parameters.put("string", "value");
         carAttributes.put("parameters", parameters);
 
-        _car = _model.getObjectFactory().create(TestCar.class, carAttributes);
+        _car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
         _ancestorAttributeResolver = new AncestorAttributeResolver(_car);
         String actual = _ancestorAttributeResolver.resolve("ancestor:testcar:parameters", null);
@@ -128,7 +128,7 @@ public class AncestorAttributeResolverTest extends QpidTestCase
         carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
         carAttributes.put("alternateEngine", _engine);
 
-        _car = _model.getObjectFactory().create(TestCar.class, carAttributes);
+        _car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
         _ancestorAttributeResolver = new AncestorAttributeResolver(_car);
         String actual = _ancestorAttributeResolver.resolve("ancestor:testcar:alternateEngine", null);

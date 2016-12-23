@@ -111,7 +111,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
                       EnumSet<ConsumerOption> optionSet,
                       final Integer priority)
     {
-        super(parentsMap(queue),
+        super(queue,
               createAttributeMap(target.getSessionModel(), consumerName, filters, optionSet, priority));
         _messageClass = messageClass;
         _sessionReference = target.getSessionModel().getConnectionReference();

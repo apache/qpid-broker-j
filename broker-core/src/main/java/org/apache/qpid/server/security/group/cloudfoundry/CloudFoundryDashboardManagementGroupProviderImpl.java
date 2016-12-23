@@ -96,7 +96,7 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
     @ManagedObjectFactoryConstructor
     public CloudFoundryDashboardManagementGroupProviderImpl(Map<String, Object> attributes, Container<?> container)
     {
-        super(parentsMap(container), attributes);
+        super(container, attributes);
         _container = container;
     }
 

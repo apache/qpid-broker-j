@@ -86,7 +86,7 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
         attributes.put(ConfiguredObject.NAME, objectName);
         attributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
 
-        TestCar object = TestModel.getInstance().getObjectFactory().create(TestCar.class, attributes);
+        TestCar object = TestModel.getInstance().getObjectFactory().create(TestCar.class, attributes, null);
 
         assertEquals(TestKitCarImpl.class, object.getTypeClass());
 
@@ -132,7 +132,7 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
         attributes.put(ConfiguredObject.NAME, objectName);
         attributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
 
-        TestCar object = TestModel.getInstance().getObjectFactory().create(TestCar.class, attributes);
+        TestCar object = TestModel.getInstance().getObjectFactory().create(TestCar.class, attributes, null);
         Map<String, ConfiguredObjectOperation<?>> operations = _typeRegistry.getOperations(object.getClass());
 
         ConfiguredObjectOperation<TestCar<?>> operation = (ConfiguredObjectOperation<TestCar<?>>) operations.get("startEngine");

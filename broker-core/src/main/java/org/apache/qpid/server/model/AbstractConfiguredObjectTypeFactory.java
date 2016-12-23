@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
@@ -58,9 +57,9 @@ abstract public class AbstractConfiguredObjectTypeFactory<X extends AbstractConf
     @Override
     public X create(final ConfiguredObjectFactory factory,
                     final Map<String, Object> attributes,
-                    final ConfiguredObject<?>... parents)
+                    final ConfiguredObject<?> parent)
     {
-        X instance = createInstance(attributes, parents);
+        X instance = createInstance(attributes, parent);
         instance.create();
         return instance;
     }
@@ -69,10 +68,10 @@ abstract public class AbstractConfiguredObjectTypeFactory<X extends AbstractConf
     @Override
     public ListenableFuture<X> createAsync(final ConfiguredObjectFactory factory,
                     final Map<String, Object> attributes,
-                    final ConfiguredObject<?>... parents)
+                    final ConfiguredObject<?> parent)
     {
         final SettableFuture<X> returnVal = SettableFuture.create();
-        final X instance = createInstance(attributes, parents);
+        final X instance = createInstance(attributes, parent);
         final ListenableFuture<Void> createFuture = instance.createAsync();
         AbstractConfiguredObject.addFutureCallback(createFuture, new FutureCallback<Void>()
         {
@@ -92,35 +91,23 @@ abstract public class AbstractConfiguredObjectTypeFactory<X extends AbstractConf
         return returnVal;
     }
 
-    protected abstract X createInstance(Map<String, Object> attributes, ConfiguredObject<?>... parents);
-
-    public final <C extends ConfiguredObject<?>> C getParent(Class<C> parentClass, ConfiguredObject<?>... parents)
-    {
-        for(ConfiguredObject<?> parent : parents)
-        {
-            if(parentClass.isInstance(parent))
-            {
-                return (C) parent;
-            }
-        }
-        throw new IllegalArgumentException("No parent of class " + parentClass.getSimpleName() + " found.");
-    }
+    protected abstract X createInstance(Map<String, Object> attributes, ConfiguredObject<?> parent);
 
     @Override
     public UnresolvedConfiguredObject<X> recover(final ConfiguredObjectFactory factory,
                                                  final ConfiguredObjectRecord record,
-                                                 final ConfiguredObject<?>... parents)
+                                                 final ConfiguredObject<?> parent)
     {
-        return new GenericUnresolvedConfiguredObject( record, parents );
+        return new GenericUnresolvedConfiguredObject(record, parent);
     }
 
 
     private class GenericUnresolvedConfiguredObject extends AbstractUnresolvedObject<X>
     {
         public GenericUnresolvedConfiguredObject(
-                final ConfiguredObjectRecord record, final ConfiguredObject<?>[] parents)
+                final ConfiguredObjectRecord record, final ConfiguredObject<?> parent)
         {
-            super(_clazz, record, parents);
+            super(_clazz, record, parent);
         }
 
         @Override
@@ -135,7 +122,7 @@ abstract public class AbstractConfiguredObjectTypeFactory<X extends AbstractConf
         {
             Map<String,Object> attributesWithId = new HashMap<String, Object>(getRecord().getAttributes());
             attributesWithId.put(ConfiguredObject.ID, getRecord().getId());
-            X instance = createInstance(attributesWithId, getParents());
+            X instance = createInstance(attributesWithId, getParent());
             instance.registerWithParents();
             return instance;
         }

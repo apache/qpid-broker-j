@@ -106,25 +106,25 @@ public class PortFactory<X extends Port<X>> implements ConfiguredObjectTypeFacto
     @Override
     public X create(final ConfiguredObjectFactory factory,
                     final Map<String, Object> attributes,
-                    final ConfiguredObject<?>... parents)
+                    final ConfiguredObject<?> parent)
     {
-        return getPortFactory(factory, attributes, (Broker<?>)parents[0]).create(factory, attributes,parents);
+        return getPortFactory(factory, attributes, (Broker<?>) parent).create(factory, attributes, parent);
     }
 
     @Override
     public ListenableFuture<X> createAsync(final ConfiguredObjectFactory factory,
                                            final Map<String, Object> attributes,
-                                           final ConfiguredObject<?>... parents)
+                                           final ConfiguredObject<?> parent)
     {
-        return getPortFactory(factory, attributes, (Broker<?>)parents[0]).createAsync(factory, attributes,parents);
+        return getPortFactory(factory, attributes, (Broker<?>) parent).createAsync(factory, attributes, parent);
     }
 
     @Override
     public UnresolvedConfiguredObject<X> recover(final ConfiguredObjectFactory factory,
                                                  final ConfiguredObjectRecord record,
-                                                 final ConfiguredObject<?>... parents)
+                                                 final ConfiguredObject<?> parent)
     {
-        return getPortFactory(factory, record.getAttributes(), (Broker<?>)parents[0]).recover(factory, record, parents);
+        return getPortFactory(factory, record.getAttributes(), (Broker<?>) parent).recover(factory, record, parent);
     }
 
     public ConfiguredObjectTypeFactory<X> getPortFactory(final ConfiguredObjectFactory factory,

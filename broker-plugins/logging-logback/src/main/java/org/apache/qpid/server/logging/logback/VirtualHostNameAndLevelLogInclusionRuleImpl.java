@@ -35,7 +35,7 @@ public class VirtualHostNameAndLevelLogInclusionRuleImpl extends AbstractNameAnd
     @ManagedObjectFactoryConstructor
     protected VirtualHostNameAndLevelLogInclusionRuleImpl(final Map<String, Object> attributes, VirtualHostLogger<?> logger)
     {
-        super(parentsMap(logger), attributes);
+        super(logger, attributes);
     }
 
     @Override

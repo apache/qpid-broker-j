@@ -37,7 +37,7 @@ public class TestElecEngineImpl
     @ManagedObjectFactoryConstructor
     public TestElecEngineImpl(final Map<String, Object> attributes, TestCar<?> parent)
     {
-        super(parentsMap(parent), attributes);
+        super(parent, attributes);
     }
 
     @SuppressWarnings("unused")

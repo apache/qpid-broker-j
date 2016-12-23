@@ -32,6 +32,6 @@ public class TestHybridEngineImpl extends TestAbstractEngineImpl<TestHybridEngin
     @ManagedObjectFactoryConstructor
     public TestHybridEngineImpl(final Map<String, Object> attributes, TestCar<?> parent)
     {
-        super(parentsMap(parent), attributes);
+        super(parent, attributes);
     }
 }

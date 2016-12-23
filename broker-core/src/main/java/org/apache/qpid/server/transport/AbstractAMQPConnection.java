@@ -128,7 +128,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
                                   long connectionId,
                                   AggregateTicker aggregateTicker)
     {
-        super(parentsMap(port),createAttributes(connectionId, network));
+        super(port, createAttributes(connectionId, network));
 
         _broker = broker;
         _eventLoggerProvider = broker;

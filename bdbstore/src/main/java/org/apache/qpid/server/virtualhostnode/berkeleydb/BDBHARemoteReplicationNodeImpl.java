@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.logging.messages.HighAvailabilityMessages;
 import org.apache.qpid.server.logging.subjects.BDBHAVirtualHostNodeLogSubject;
 import org.apache.qpid.server.logging.subjects.GroupLogSubject;
@@ -73,7 +72,7 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
 
     public BDBHARemoteReplicationNodeImpl(BDBHAVirtualHostNode<?> virtualHostNode, Map<String, Object> attributes, ReplicatedEnvironmentFacade replicatedEnvironmentFacade)
     {
-        super(parentsMap(virtualHostNode), attributes);
+        super(virtualHostNode, attributes);
         _broker = (Broker<?>) virtualHostNode.getParent();
         _address = (String)attributes.get(ADDRESS);
         _replicatedEnvironmentFacade = replicatedEnvironmentFacade;

@@ -96,7 +96,7 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
     @ManagedObjectFactoryConstructor
     public FileTrustStoreImpl(Map<String, Object> attributes, Broker<?> broker)
     {
-        super(parentsMap(broker), attributes);
+        super(broker, attributes);
         _broker = broker;
         _eventLogger = _broker.getEventLogger();
         _eventLogger.message(TrustStoreMessages.CREATE(getName()));

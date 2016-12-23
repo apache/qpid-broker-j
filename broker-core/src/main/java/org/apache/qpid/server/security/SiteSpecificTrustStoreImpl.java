@@ -95,7 +95,7 @@ public class SiteSpecificTrustStoreImpl
     @ManagedObjectFactoryConstructor
     public SiteSpecificTrustStoreImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
-        super(parentsMap(broker), attributes);
+        super(broker, attributes);
         _broker = broker;
         _eventLogger = _broker.getEventLogger();
         _eventLogger.message(TrustStoreMessages.CREATE(getName()));

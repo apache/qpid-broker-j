@@ -45,25 +45,25 @@ public class QueueFactory<X extends Queue<X>>  implements ConfiguredObjectTypeFa
     @Override
     public X create(final ConfiguredObjectFactory factory,
                     final Map<String, Object> attributes,
-                    final ConfiguredObject<?>... parents)
+                    final ConfiguredObject<?> parent)
     {
-        return getQueueFactory(factory, attributes).create(factory, attributes, parents);
+        return getQueueFactory(factory, attributes).create(factory, attributes, parent);
     }
 
     @Override
     public ListenableFuture<X> createAsync(final ConfiguredObjectFactory factory,
                                            final Map<String, Object> attributes,
-                                           final ConfiguredObject<?>... parents)
+                                           final ConfiguredObject<?> parent)
     {
-        return getQueueFactory(factory, attributes).createAsync(factory, attributes, parents);
+        return getQueueFactory(factory, attributes).createAsync(factory, attributes, parent);
     }
 
     @Override
     public UnresolvedConfiguredObject<X> recover(final ConfiguredObjectFactory factory,
                                                  final ConfiguredObjectRecord record,
-                                                 final ConfiguredObject<?>... parents)
+                                                 final ConfiguredObject<?> parent)
     {
-        return getQueueFactory(factory, record.getAttributes()).recover(factory, record, parents);
+        return getQueueFactory(factory, record.getAttributes()).recover(factory, record, parent);
     }
 
     private ConfiguredObjectTypeFactory<X> getQueueFactory(final ConfiguredObjectFactory factory,

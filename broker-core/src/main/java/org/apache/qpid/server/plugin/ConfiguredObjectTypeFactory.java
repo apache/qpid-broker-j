@@ -33,11 +33,11 @@ public interface ConfiguredObjectTypeFactory<X extends ConfiguredObject<X>> exte
 {
     Class<? super X> getCategoryClass();
 
-    X create(final ConfiguredObjectFactory factory, Map<String, Object> attributes, ConfiguredObject<?>... parents);
+    X create(final ConfiguredObjectFactory factory, Map<String, Object> attributes, ConfiguredObject<?> parent);
 
-    ListenableFuture<X> createAsync(final ConfiguredObjectFactory factory, Map<String, Object> attributes, ConfiguredObject<?>... parents);
+    ListenableFuture<X> createAsync(final ConfiguredObjectFactory factory, Map<String, Object> attributes, ConfiguredObject<?> parent);
 
     UnresolvedConfiguredObject<X> recover(final ConfiguredObjectFactory factory,
                                           ConfiguredObjectRecord record,
-                                          ConfiguredObject<?>... parents);
+                                          ConfiguredObject<?> parent);
 }

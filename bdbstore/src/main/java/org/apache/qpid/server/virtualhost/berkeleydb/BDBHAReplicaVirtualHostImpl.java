@@ -40,7 +40,7 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractNonConnectionAcceptingV
     @ManagedObjectFactoryConstructor(conditionallyAvailable = true, condition = "org.apache.qpid.server.JECheck#isAvailable()")
     public BDBHAReplicaVirtualHostImpl(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
-        super(parentsMap(virtualHostNode), attributes);
+        super(virtualHostNode, attributes);
 
     }
 

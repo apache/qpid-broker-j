@@ -122,7 +122,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     public AbstractExchange(Map<String, Object> attributes, QueueManagingVirtualHost<?> vhost)
     {
-        super(parentsMap(vhost), attributes);
+        super(vhost, attributes);
         Set<String> providedAttributeNames = new HashSet<>(attributes.keySet());
         providedAttributeNames.removeAll(getAttributeNames());
         if(!providedAttributeNames.isEmpty())

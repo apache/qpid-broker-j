@@ -61,7 +61,7 @@ public class PreferencesRecovererTest extends QpidTestCase
         _store = mock(PreferenceStore.class);
         _testObject = _model.getObjectFactory()
                             .create(TestCar.class,
-                                    Collections.<String, Object>singletonMap(ConfiguredObject.NAME, getTestName()));
+                                    Collections.<String, Object>singletonMap(ConfiguredObject.NAME, getTestName()), null);
         _testChildObject = _testObject.createChild(TestEngine.class,
                                                    Collections.<String, Object>singletonMap(ConfiguredObject.NAME, getTestName()));
         _testSubject = TestPrincipalUtils.createTestSubject(TEST_USERNAME);

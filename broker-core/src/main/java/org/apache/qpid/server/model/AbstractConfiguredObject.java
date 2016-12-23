@@ -230,33 +230,21 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     private volatile Date _lastOpenedTime;
     private volatile int _awaitAttainmentTimeout;
 
-    protected static Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parentsMap(ConfiguredObject<?>... parents)
-    {
-        final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parentsMap =
-                new HashMap<Class<? extends ConfiguredObject>, ConfiguredObject<?>>();
-
-        for(ConfiguredObject<?> parent : parents)
-        {
-            parentsMap.put(parent.getCategoryClass(), parent);
-        }
-        return parentsMap;
-    }
-
-    protected AbstractConfiguredObject(final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parents,
+    protected AbstractConfiguredObject(final ConfiguredObject<?> parent,
                                        Map<String, Object> attributes)
     {
-        this(parents, attributes, parents.values().iterator().next().getChildExecutor());
+        this(parent, attributes, parent.getChildExecutor());
     }
 
 
-    protected AbstractConfiguredObject(final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parents,
+    protected AbstractConfiguredObject(final ConfiguredObject<?> parent,
                                        Map<String, Object> attributes,
                                        TaskExecutor taskExecutor)
     {
-        this(parents, attributes, taskExecutor, parents.values().iterator().next().getModel());
+        this(parent, attributes, taskExecutor, parent.getModel());
     }
 
-    protected AbstractConfiguredObject(final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parents,
+    protected AbstractConfiguredObject(final ConfiguredObject<?> parent,
                                        Map<String, Object> attributes,
                                        TaskExecutor taskExecutor,
                                        Model model)
@@ -267,6 +255,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             throw new NullPointerException("task executor is null");
         }
         _model = model;
+        _parent = parent;
 
         _category = ConfiguredObjectTypeRegistry.getCategory(getClass());
         Class<? extends ConfiguredObject> typeClass = model.getTypeRegistry().getTypeClass(getClass());
@@ -276,8 +265,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         _automatedFields = model.getTypeRegistry().getAutomatedFields(getClass());
         _stateChangeMethods = model.getTypeRegistry().getStateChangeMethods(getClass());
 
-        final Class<? extends ConfiguredObject> parentCategory = model.getParentType(_category);
-        _parent = parents.get(parentCategory);
 
         if(_parent instanceof AbstractConfiguredObject && ((AbstractConfiguredObject)_parent)._encrypter != null)
         {

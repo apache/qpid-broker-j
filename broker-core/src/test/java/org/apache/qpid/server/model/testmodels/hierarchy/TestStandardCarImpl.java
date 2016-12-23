@@ -63,7 +63,7 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
 
     public TestStandardCarImpl(final Map<String, Object> attributes, Model model)
     {
-        super(parentsMap(), attributes, newTaskExecutor(), model);
+        super(null, attributes, newTaskExecutor(), model);
         _preferenceStore = new NoopPreferenceStoreFactoryService().createInstance(this, null);
     }
 

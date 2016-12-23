@@ -83,7 +83,7 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     public AbstractPort(Map<String, Object> attributes,
                         Container<?> container)
     {
-        super(parentsMap(container), attributes);
+        super(container, attributes);
 
         _container = container;
         _eventLogger = container.getEventLogger();

@@ -26,6 +26,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupMember;
 import org.apache.qpid.server.model.ManagedObject;
@@ -41,7 +42,7 @@ public class GroupMemberImpl extends AbstractConfiguredObject<GroupMemberImpl> i
     @ManagedObjectFactoryConstructor
     public GroupMemberImpl(Map<String, Object> attributes, Group group)
     {
-        super(parentsMap(group), attributes);
+        super((ConfiguredObject<?>) group, attributes);
     }
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.ERRORED }, desiredState = State.ACTIVE )

@@ -176,11 +176,15 @@ public class GenericRecoverer
                         parents.add(resolvedObjects.get(parentId));
                     }
                 }
+                if (parents.size() > 1)
+                {
+                    throw new IllegalStateException(String.format("Unexpected number of parents %d for record %s ", parents.size(), record));
+                }
                 if (foundParents)
                 {
                     iter.remove();
                     ConfiguredObject<?>[] parentArray = parents.toArray(new ConfiguredObject<?>[parents.size()]);
-                    UnresolvedConfiguredObject<? extends ConfiguredObject> recovered =  factory.recover(record, parentArray);
+                    UnresolvedConfiguredObject<? extends ConfiguredObject> recovered =  factory.recover(record, parentArray[0]);
                     Collection<ConfiguredObjectDependency<?>> dependencies = recovered.getUnresolvedDependencies();
                     if (dependencies.isEmpty())
                     {
@@ -221,14 +225,8 @@ public class GenericRecoverer
                     else if(dependency instanceof ConfiguredObjectNameDependency)
                     {
                         ConfiguredObject<?> dependentObject = null;
-                        for(ConfiguredObject<?> parent : unresolvedObject.getParents())
-                        {
-                            dependentObject = parent.findConfiguredObject(dependency.getCategoryClass(), ((ConfiguredObjectNameDependency)dependency).getName());
-                            if(dependentObject != null)
-                            {
-                                break;
-                            }
-                        }
+                        ConfiguredObject<?> parent = unresolvedObject.getParent();
+                        dependentObject = parent.findConfiguredObject(dependency.getCategoryClass(), ((ConfiguredObjectNameDependency)dependency).getName());
                         if(dependentObject != null)
                         {
                             dependency.resolve(dependentObject);

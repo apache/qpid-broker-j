@@ -48,7 +48,7 @@ public abstract class AbstractAccessControlProvider<X extends AbstractAccessCont
 
     public AbstractAccessControlProvider(Map<String, Object> attributes, T parent)
     {
-        super(parentsMap(parent), attributes);
+        super(parent, attributes);
 
         _eventLogger = parent.getEventLogger();
         _eventLogger.message(AccessControlMessages.CREATE(getName()));

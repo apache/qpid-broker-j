@@ -123,7 +123,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
                                 final Principal systemPrincipal,
                                 final Map<String, Object> attributes)
     {
-        super(parentsMap(),
+        super(null,
               updateAttributes(attributes),
               taskExecutor, SystemConfigBootstrapModel.getInstance());
         _eventLogger = eventLogger;

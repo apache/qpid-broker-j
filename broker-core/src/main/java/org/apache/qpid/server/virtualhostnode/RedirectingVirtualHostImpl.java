@@ -44,7 +44,7 @@ class RedirectingVirtualHostImpl
     @ManagedObjectFactoryConstructor
     public RedirectingVirtualHostImpl(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
-        super(parentsMap(virtualHostNode), attributes);
+        super(virtualHostNode, attributes);
     }
 
     @Override

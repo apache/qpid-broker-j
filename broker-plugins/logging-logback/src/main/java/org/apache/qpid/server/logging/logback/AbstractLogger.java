@@ -56,7 +56,7 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
 
     protected AbstractLogger(Map<String, Object> attributes, ConfiguredObject<?> parent)
     {
-        super(parentsMap(parent), attributes);
+        super(parent, attributes);
         addChangeListener(new LogInclusionRuleListener());
     }
 

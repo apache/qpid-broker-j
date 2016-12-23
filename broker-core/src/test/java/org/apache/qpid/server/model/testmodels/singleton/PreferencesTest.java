@@ -68,7 +68,7 @@ public class PreferencesTest extends QpidTestCase
         final String objectName = getTestName();
         _testObject = _model.getObjectFactory()
                             .create(TestSingleton.class,
-                                    Collections.<String, Object>singletonMap(ConfiguredObject.NAME, objectName));
+                                    Collections.<String, Object>singletonMap(ConfiguredObject.NAME, objectName), null);
 
         _preferenceTaskExecutor = new CurrentThreadTaskExecutor();
         _preferenceTaskExecutor.start();

@@ -44,10 +44,10 @@ public abstract class AbstractPredicateLogInclusionRule<X extends AbstractPredic
 
     private PredicateAndLoggerNameAndLevelFilter _filter;
 
-    protected AbstractPredicateLogInclusionRule(final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parents,
+    protected AbstractPredicateLogInclusionRule(final ConfiguredObject<?> parent,
                                                 Map<String, Object> attributes)
     {
-        super(parents, attributes);
+        super(parent, attributes);
     }
 
     @Override

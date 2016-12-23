@@ -269,7 +269,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     public AbstractVirtualHost(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
-        super(parentsMap(virtualHostNode), attributes);
+        super(virtualHostNode, attributes);
         _broker = (Broker<?>) virtualHostNode.getParent();
         _virtualHostNode = virtualHostNode;
 

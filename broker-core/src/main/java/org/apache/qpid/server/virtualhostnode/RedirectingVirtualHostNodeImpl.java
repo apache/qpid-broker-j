@@ -75,8 +75,7 @@ public class RedirectingVirtualHostNodeImpl
     @ManagedObjectFactoryConstructor
     public RedirectingVirtualHostNodeImpl(Map<String, Object> attributes, Broker<?> parent)
     {
-        super(Collections.<Class<? extends ConfiguredObject>,ConfiguredObject<?>>singletonMap(Broker.class, parent),
-              attributes);
+        super(parent, attributes);
         _broker = parent;
     }
 

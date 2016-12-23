@@ -62,7 +62,7 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
     public SessionAdapter(final AbstractAMQPConnection<?,?> amqpConnection,
                           final AMQSessionModel<?,?> session)
     {
-        super(parentsMap(amqpConnection), createAttributes(session));
+        super(amqpConnection, createAttributes(session));
         _amqpConnection = amqpConnection;
         _session = session;
         _session.addConsumerListener(new ConsumerListener()

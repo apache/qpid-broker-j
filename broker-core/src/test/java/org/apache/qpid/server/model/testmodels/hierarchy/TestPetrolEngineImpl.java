@@ -34,7 +34,7 @@ public class TestPetrolEngineImpl
     @ManagedObjectFactoryConstructor
     public TestPetrolEngineImpl(final Map<String, Object> attributes, TestCar<?> parent)
     {
-        super(parentsMap(parent), attributes);
+        super(parent, attributes);
     }
 
 }

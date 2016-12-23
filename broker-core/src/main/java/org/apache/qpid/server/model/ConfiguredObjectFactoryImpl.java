@@ -87,7 +87,7 @@ public class ConfiguredObjectFactoryImpl implements ConfiguredObjectFactory
 
     @Override
     public <X extends ConfiguredObject<X>> UnresolvedConfiguredObject<X> recover(ConfiguredObjectRecord record,
-                                                                                 ConfiguredObject<?>... parents)
+                                                                                 ConfiguredObject<?> parent)
     {
         String category = record.getType();
 
@@ -101,28 +101,28 @@ public class ConfiguredObjectFactoryImpl implements ConfiguredObjectFactory
             throw new NoFactoryForTypeException(category, type);
         }
 
-        return factory.recover(this, record, parents);
+        return factory.recover(this, record, parent);
     }
 
     @Override
     public <X extends ConfiguredObject<X>> X create(Class<X> clazz,
                                                     final Map<String, Object> attributes,
-                                                    final ConfiguredObject<?>... parents)
+                                                    final ConfiguredObject<?> parent)
     {
         ConfiguredObjectTypeFactory<X> factory = getConfiguredObjectTypeFactory(clazz, attributes);
 
-        return factory.create(this, attributes, parents);
+        return factory.create(this, attributes, parent);
     }
 
 
     @Override
     public <X extends ConfiguredObject<X>> ListenableFuture<X> createAsync(Class<X> clazz,
                                                     final Map<String, Object> attributes,
-                                                    final ConfiguredObject<?>... parents)
+                                                    final ConfiguredObject<?> parent)
     {
         ConfiguredObjectTypeFactory<X> factory = getConfiguredObjectTypeFactory(clazz, attributes);
 
-        return factory.createAsync(this, attributes, parents);
+        return factory.createAsync(this, attributes, parent);
     }
 
 

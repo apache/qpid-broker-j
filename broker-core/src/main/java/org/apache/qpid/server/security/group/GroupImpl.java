@@ -45,7 +45,7 @@ public class GroupImpl extends AbstractConfiguredObject<GroupImpl> implements Gr
     public GroupImpl(Map<String, Object> attributes,
                      GroupProvider<?> provider)
     {
-        super(parentsMap(provider), attributes);
+        super(provider, attributes);
     }
 
     @Override

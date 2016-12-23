@@ -19,8 +19,6 @@
 
 package org.apache.qpid.server.model.testmodels.lifecycle;
 
-import static org.mockito.Mockito.mock;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,29 +54,19 @@ public class TestConfiguredObject extends AbstractConfiguredObject
     private boolean _throwExceptionOnCreate;
     private boolean _throwExceptionOnValidate;
 
-    public final static Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> createParents(ConfiguredObject<?> parent)
-    {
-        return Collections.<Class<? extends ConfiguredObject>, ConfiguredObject<?>>singletonMap(parent.getCategoryClass(), parent);
-    }
-
     public TestConfiguredObject(String name)
     {
-        this(name, mock(ConfiguredObject.class), CurrentThreadTaskExecutor.newStartedInstance());
+        this(name, null, CurrentThreadTaskExecutor.newStartedInstance());
     }
 
     public TestConfiguredObject(String name, ConfiguredObject<?> parent, TaskExecutor taskExecutor)
     {
-        this(createParents(parent), Collections.<String, Object>singletonMap(ConfiguredObject.NAME, name), taskExecutor, TestConfiguredObjectModel.INSTANCE);
+        this(parent, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, name), taskExecutor, TestConfiguredObjectModel.INSTANCE);
     }
 
-    public TestConfiguredObject(ConfiguredObject<?> parent, Map<String, Object> attributes)
+    public TestConfiguredObject(ConfiguredObject<?> parent, Map<String, Object> attributes, TaskExecutor taskExecutor, Model model)
     {
-        this(createParents(parent), attributes, parent.getTaskExecutor(), TestConfiguredObjectModel.INSTANCE);
-    }
-
-    public TestConfiguredObject(Map parents, Map<String, Object> attributes, TaskExecutor taskExecutor, Model model)
-    {
-        super(parents, attributes, taskExecutor, model);
+        super(parent, attributes, taskExecutor, model);
         _opened = false;
     }
 

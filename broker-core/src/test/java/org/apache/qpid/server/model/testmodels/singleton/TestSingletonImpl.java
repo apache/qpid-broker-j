@@ -113,7 +113,7 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     @ManagedObjectFactoryConstructor
     public TestSingletonImpl(final Map<String, Object> attributes)
     {
-        super(parentsMap(), attributes, newTaskExecutor(), TestModel.getInstance());
+        super(null, attributes, newTaskExecutor(), TestModel.getInstance());
     }
 
     private static CurrentThreadTaskExecutor newTaskExecutor()
@@ -126,7 +126,7 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     public TestSingletonImpl(final Map<String, Object> attributes,
                              final TaskExecutor taskExecutor)
     {
-        super(parentsMap(), attributes, taskExecutor);
+        super(null, attributes, taskExecutor);
     }
 
 

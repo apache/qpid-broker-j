@@ -61,7 +61,7 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
 
     public AbstractKeyStore(Map<String, Object> attributes, Broker<?> broker)
     {
-        super(parentsMap(broker), attributes);
+        super(broker, attributes);
 
         _broker = broker;
         _eventLogger = broker.getEventLogger();

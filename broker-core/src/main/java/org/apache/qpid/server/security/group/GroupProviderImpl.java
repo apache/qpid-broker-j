@@ -51,7 +51,7 @@ public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImp
     @ManagedObjectFactoryConstructor
     public GroupProviderImpl(Map<String, Object> attributes, Container<?> container)
     {
-        super(parentsMap(container), attributes);
+        super(container, attributes);
         _container = container;
     }
 

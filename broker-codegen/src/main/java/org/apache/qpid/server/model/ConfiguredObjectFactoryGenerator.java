@@ -585,7 +585,7 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
             pw.println("    }");
             pw.println();
             pw.println("    @Override");
-            pw.println("    protected "+objectSimpleName+" createInstance(final Map<String, Object> attributes, final ConfiguredObject<?>... parents)");
+            pw.println("    protected "+objectSimpleName+" createInstance(final Map<String, Object> attributes, final ConfiguredObject<?> parent)");
             pw.println("    {");
             pw.print("        return new "+objectSimpleName+ "WithAccessChecking(attributes");
             boolean first = true;
@@ -598,7 +598,7 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
                 else
                 {
                     TypeMirror erasureType = processingEnv.getTypeUtils().erasure(param.asType());
-                    pw.print(", getParent("+erasureType.toString()+".class,parents)");
+                    pw.print(String.format(", (%s)parent", erasureType.toString()));
                 }
             }
             pw.println(");");

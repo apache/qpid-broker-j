@@ -29,6 +29,7 @@ import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
@@ -43,7 +44,7 @@ public class AllowAllAccessControlProviderImpl extends AbstractConfiguredObject<
     @ManagedObjectFactoryConstructor
     public AllowAllAccessControlProviderImpl(Map<String, Object> attributes, Broker broker)
     {
-        super(parentsMap(broker), attributes);
+        super((ConfiguredObject<?>) broker, attributes);
         _broker = broker;
     }
 

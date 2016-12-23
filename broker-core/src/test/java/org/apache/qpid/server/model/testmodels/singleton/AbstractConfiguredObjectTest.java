@@ -58,8 +58,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         TestSingleton object =
                 _model.getObjectFactory().create(TestSingleton.class,
                                                 Collections.<String, Object>singletonMap(ConfiguredObject.NAME,
-                                                                                         objectName)
-                                               );
+                                                                                         objectName),
+                                               null);
 
         assertEquals(objectName, object.getName());
         assertNull(object.getAutomatedNonPersistedValue());
@@ -102,7 +102,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestSingleton.NAME, objectName);
 
         TestSingleton object1 = _model.getObjectFactory().create(TestSingleton.class,
-                                                                   attributes);
+                                                                    attributes, null);
 
         assertEquals(objectName, object1.getName());
         assertEquals(TestSingleton.DEFAULTED_VALUE_DEFAULT, object1.getDefaultedValue());
@@ -117,7 +117,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(TestSingleton.DEFAULTED_VALUE, "override");
 
         TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
-                                                                   attributes);
+                                                                    attributes, null);
 
         assertEquals(objectName, object.getName());
         assertEquals("override", object.getDefaultedValue());
@@ -133,7 +133,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(TestSingleton.DEFAULTED_VALUE, "override");
 
         TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
-                                                                   attributes);
+                                                                    attributes, null);
 
         assertEquals(objectName, object.getName());
         assertEquals("override", object.getDefaultedValue());
@@ -148,8 +148,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         TestSingleton object =
                 _model.getObjectFactory().create(TestSingleton.class,
                                                  Collections.<String, Object>singletonMap(ConfiguredObject.NAME,
-                                                                                          "testDefaultInitialization")
-                                                );
+                                                                                          "testDefaultInitialization"), null);
         assertEquals(object.getAttrWithDefaultFromContextNoInit(), TestSingleton.testGlobalDefault);
         assertEquals(object.getAttrWithDefaultFromContextCopyInit(), TestSingleton.testGlobalDefault);
         assertEquals(object.getAttrWithDefaultFromContextMaterializeInit(), TestSingleton.testGlobalDefault);
@@ -163,8 +162,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(ConfiguredObject.NAME, "testDefaultInitialization2");
         attributes.put(ConfiguredObject.CONTEXT, Collections.singletonMap(TestSingleton.TEST_CONTEXT_DEFAULT, "foo"));
         object = _model.getObjectFactory().create(TestSingleton.class,
-                                         attributes
-                                        );
+                                         attributes, null);
         assertEquals("foo", object.getAttrWithDefaultFromContextNoInit());
         assertEquals("foo", object.getAttrWithDefaultFromContextCopyInit());
         assertEquals("foo", object.getAttrWithDefaultFromContextMaterializeInit());
@@ -177,8 +175,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         setTestSystemProperty(TestSingleton.TEST_CONTEXT_DEFAULT, "bar");
         object = _model.getObjectFactory().create(TestSingleton.class,
                                         Collections.<String, Object>singletonMap(ConfiguredObject.NAME,
-                                                                                 "testDefaultInitialization3")
-                                       );
+                                                                                 "testDefaultInitialization3"), null);
 
         assertEquals("bar", object.getAttrWithDefaultFromContextNoInit());
         assertEquals("bar", object.getAttrWithDefaultFromContextCopyInit());
@@ -199,7 +196,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(TestSingleton.ENUM_VALUE, TestEnum.TEST_ENUM1.name());
 
         TestSingleton object1 = _model.getObjectFactory().create(TestSingleton.class,
-                                                                    attributes);
+                                                                    attributes, null);
 
         assertEquals(objectName, object1.getName());
         assertEquals(TestEnum.TEST_ENUM1, object1.getEnumValue());
@@ -214,7 +211,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(TestSingleton.ENUM_VALUE, TestEnum.TEST_ENUM1);
 
         TestSingleton object1 = _model.getObjectFactory().create(TestSingleton.class,
-                                                                    attributes);
+                                                                    attributes, null);
 
         assertEquals(objectName, object1.getName());
         assertEquals(TestEnum.TEST_ENUM1, object1.getEnumValue());
@@ -229,7 +226,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(TestSingleton.INT_VALUE, "-4");
 
         TestSingleton object1 = _model.getObjectFactory().create(TestSingleton.class,
-                                                                     attributes);
+                                                                    attributes, null);
 
         assertEquals(objectName, object1.getName());
         assertEquals(-4, object1.getIntValue());
@@ -244,7 +241,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(TestSingleton.INT_VALUE, 5);
 
         TestSingleton object1 = _model.getObjectFactory().create(TestSingleton.class,
-                                                                     attributes);
+                                                                    attributes, null);
 
         assertEquals(objectName, object1.getName());
         assertEquals(5, object1.getIntValue());
@@ -258,7 +255,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(TestSingleton.NAME, objectName);
         attributes.put(TestSingleton.INT_VALUE, 6.1);
 
-        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
 
         assertEquals(objectName, object.getName());
         assertEquals(6, object.getIntValue());
@@ -273,7 +271,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(TestSingleton.NAME, objectName);
         attributes.put(TestSingleton.DATE_VALUE, now);
 
-        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
 
         assertEquals(objectName, object.getName());
         assertEquals(new Date(now), object.getDateValue());
@@ -288,7 +287,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(TestSingleton.NAME, objectName);
         attributes.put(TestSingleton.DATE_VALUE, date);
 
-        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
 
         assertEquals(objectName, object.getName());
         assertEquals(new Date(0), object.getDateValue());
@@ -308,7 +308,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(TestSingleton.STRING_VALUE, contextToken);
 
         TestSingleton object1 = _model.getObjectFactory().create(TestSingleton.class,
-                                                                    attributes);
+                                                                    attributes, null);
 
         assertEquals(objectName, object1.getName());
         assertEquals("myValue", object1.getStringValue());
@@ -317,7 +317,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         System.setProperty(sysPropertyName, "");
         TestSingleton object2 = _model.getObjectFactory().create(TestSingleton.class,
-                                                                    attributes);
+                                                                    attributes, null);
 
         assertEquals("", object2.getStringValue());
 
@@ -325,7 +325,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         System.clearProperty(sysPropertyName);
 
         TestSingleton object3 = _model.getObjectFactory().create(TestSingleton.class,
-                                                                    attributes);
+                                                                    attributes, null);
 
         // yields the unexpanded token - not sure if this is really useful behaviour?
         assertEquals(contextToken, object3.getStringValue());
@@ -349,7 +349,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(TestSingleton.MAP_VALUE, contextToken);
 
         TestSingleton object1 = _model.getObjectFactory().create(TestSingleton.class,
-                                                                    attributes);
+                                                                    attributes, null);
 
         assertEquals(objectName, object1.getName());
         assertEquals(expectedMap, object1.getMapValue());
@@ -370,7 +370,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(TestSingleton.STRING_VALUE, contextToken);
 
         TestSingleton object1 = _model.getObjectFactory().create(TestSingleton.class,
-                                                                    attributes);
+                                                                    attributes, null);
         // Check the object's context itself
         assertTrue(object1.getContext().containsKey("myReplacement"));
         assertEquals("myValue", object1.getContext().get("myReplacement"));
@@ -390,7 +390,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         try
         {
-            _model.getObjectFactory().create(TestSingleton.class, attributes);
+            _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
             fail("creation of child object should have failed due to invalid value");
         }
         catch (IllegalArgumentException e)
@@ -413,7 +414,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         try
         {
-            _model.getObjectFactory().create(TestSingleton.class, illegalCreateAttributes);
+            _model.getObjectFactory().create(TestSingleton.class, illegalCreateAttributes, null);
             fail("Exception not thrown");
         }
         catch (IllegalConfigurationException ice)
@@ -425,7 +426,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         legalCreateAttributes.put(ConfiguredObject.NAME, objectName);
         legalCreateAttributes.put(TestSingleton.VALID_VALUE, TestSingleton.VALID_VALUE1);
 
-        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributes);
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributes, null);
         assertEquals(TestSingleton.VALID_VALUE1, object.getValidValue());
     }
 
@@ -438,7 +439,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         try
         {
-            _model.getObjectFactory().create(TestSingleton.class, illegalCreateAttributes);
+            _model.getObjectFactory().create(TestSingleton.class, illegalCreateAttributes, null);
             fail("Exception not thrown");
         }
         catch (IllegalConfigurationException ice)
@@ -452,7 +453,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         try
         {
-            _model.getObjectFactory().create(TestSingleton.class, illegalCreateAttributes);
+            _model.getObjectFactory().create(TestSingleton.class, illegalCreateAttributes, null);
             fail("Exception not thrown");
         }
         catch (IllegalConfigurationException ice)
@@ -466,7 +467,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         legalCreateAttributes.put(TestSingleton.VALUE_WITH_PATTERN, "foozzzzzbar");
         legalCreateAttributes.put(TestSingleton.LIST_VALUE_WITH_PATTERN, Arrays.asList("1.1.1.1", "255.255.255.255"));
 
-        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributes);
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributes, null);
         assertEquals("foozzzzzbar", object.getValueWithPattern());
     }
 
@@ -478,7 +479,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         legalCreateAttributes.put(ConfiguredObject.NAME, objectName);
         legalCreateAttributes.put(TestSingleton.VALID_VALUE, TestSingleton.VALID_VALUE1);
 
-        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributes);
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributes, null);
         assertEquals(TestSingleton.VALID_VALUE1, object.getValidValue());
 
         object.setAttributes(Collections.singletonMap(TestSingleton.VALID_VALUE, TestSingleton.VALID_VALUE2));
@@ -511,7 +512,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         try
         {
-            _model.getObjectFactory().create(TestSingleton.class, illegalCreateAttributes);
+            _model.getObjectFactory().create(TestSingleton.class, illegalCreateAttributes, null);
             fail("Exception not thrown");
         }
         catch (IllegalConfigurationException ice)
@@ -524,7 +525,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
             legalCreateAttributesEnums.put(TestSingleton.ENUMSET_VALUES,
                                            Arrays.asList(TestEnum.TEST_ENUM2, TestEnum.TEST_ENUM3));
 
-            TestSingleton obj = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributesEnums);
+            TestSingleton obj = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributesEnums, null);
             assertTrue(obj.getEnumSetValues().containsAll(Arrays.asList(TestEnum.TEST_ENUM2, TestEnum.TEST_ENUM3)));
         }
 
@@ -534,7 +535,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                                              Arrays.asList(TestEnum.TEST_ENUM2.name(), TestEnum.TEST_ENUM3.name()));
 
             TestSingleton
-                    obj = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributesStrings);
+                    obj = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributesStrings, null);
             assertTrue(obj.getEnumSetValues().containsAll(Arrays.asList(TestEnum.TEST_ENUM2, TestEnum.TEST_ENUM3)));
         }
     }
@@ -548,7 +549,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         legalCreateAttributes.put(TestSingleton.VALUE_WITH_PATTERN, "foozzzzzbar");
         legalCreateAttributes.put(TestSingleton.LIST_VALUE_WITH_PATTERN, Arrays.asList("1.1.1.1", "255.255.255.255"));
 
-        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributes);
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributes, null);
         assertEquals("foozzzzzbar", object.getValueWithPattern());
         assertEquals(Arrays.asList("1.1.1.1", "255.255.255.255"), object.getListValueWithPattern());
 
@@ -603,7 +604,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(ConfiguredObject.NAME, objectName);
 
         TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
-                                                                    attributes);
+                                                                    attributes, null);
 
 
         assertTrue("context default not in contextKeys",
@@ -625,7 +626,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(ConfiguredObject.NAME, objectName);
 
         TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
-                                                                attributes);
+                                                                    attributes, null);
 
         assertTrue("context default not in contextKeys",
                    object.getContextKeys(true).contains(TestSingleton.TEST_CONTEXT_DEFAULT_WITH_THISREF));
@@ -641,7 +642,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(ConfiguredObject.NAME, objectName);
 
-        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
         assertEquals(TestSingletonImpl.DERIVED_VALUE, object.getDerivedValue());
 
         // Check that update is ignored
@@ -659,7 +661,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(ConfiguredObject.NAME, objectName);
         attributes.put(TestSingleton.SECURE_VALUE, secret);
 
-        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
 
         assertEquals(AbstractConfiguredObject.SECURED_STRING_VALUE, object.getAttribute(TestSingleton.SECURE_VALUE));
         assertEquals(secret, object.getSecureValue());
@@ -686,7 +689,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(ConfiguredObject.NAME, "myName");
         attributes.put(TestSingleton.IMMUTABLE_VALUE, originalValue);
 
-        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
 
         assertEquals("Immutable value unexpectedly changed", originalValue, object.getImmutableValue());
 
@@ -723,7 +727,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(ConfiguredObject.NAME, "myName");
         attributes.put(TestSingleton.IMMUTABLE_VALUE, null);
 
-        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
 
         assertNull(object.getImmutableValue());
 
@@ -748,7 +753,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(ConfiguredObject.NAME, "myName");
 
-        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
         UUID originalUuid = object.getId();
         String originalType = object.getType();
 
@@ -785,7 +791,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(ConfiguredObject.NAME, objectName);
         attributes.put(TestSingleton.STRING_VALUE, "first");
 
-        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
 
         final AtomicInteger listenerCount = new AtomicInteger();
         final LinkedHashMap<String, String> updates = new LinkedHashMap<>();
@@ -841,7 +848,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(ConfiguredObject.NAME, getTestName());
         attributes.put(TestSingleton.STRING_VALUE, "${foo1}");
 
-        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
 
         final AtomicInteger listenerCount = new AtomicInteger();
         object.addChangeListener(new AbstractConfigurationChangeListener()
@@ -885,7 +893,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(TestSingleton.NAME, objectName);
 
-        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
 
         Date createdTime = object.getCreatedTime();
         assertTrue("Create date not populated", createdTime.compareTo(now) >= 0);
@@ -904,7 +913,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(TestSingleton.NAME, objectName);
 
-        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
 
         final Map<String, Object> stats = object.getStatistics();
         assertEquals("Unexpected number of statistics", 1, stats.size());
@@ -930,7 +940,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                          @Override
                          public TestSingleton run()
                          {
-                             return _model.getObjectFactory().create(TestSingleton.class, attributes);
+                             return _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
                          }
                      });
 
@@ -983,7 +994,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                                                       @Override
                                                       public TestSingleton run()
                                                       {
-                                                          return _model.getObjectFactory().create(TestSingleton.class, attributes);
+                                                          return _model.getObjectFactory().create(TestSingleton.class,
+                                                                    attributes, null);
                                                       }
                                                   });
 
@@ -1040,7 +1052,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                                                       public TestSingleton run()
                                                       {
                                                           return _model.getObjectFactory()
-                                                                  .create(TestSingleton.class, attributes);
+                                                                  .create(TestSingleton.class,
+                                                                    attributes, null);
                                                       }
                                                   });
 
