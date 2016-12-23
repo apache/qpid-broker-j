@@ -544,6 +544,7 @@
             <exclude>lib/**</exclude>
             <exclude>test-profiles/test_resources/ssl/**</exclude>
             <exclude>DEPENDENCIES</exclude>
+            <exclude>.travis.yml</exclude>
           </excludes>
         </configuration>
       </plugin>
