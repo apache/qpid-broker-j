@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -105,11 +106,10 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
                     return null;
                 }};
 
-        int enqueues = _exchange.send(message,
-                                      routingAddress,
-                                      instanceProperties,
-                                      txn,
-                                      action);
+        final RoutingResult result = _exchange.route(message,
+                                                     routingAddress,
+                                                     instanceProperties);
+        int enqueues = result.send(txn, action);
 
         if(enqueues == 0)
         {

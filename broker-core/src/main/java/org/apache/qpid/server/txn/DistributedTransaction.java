@@ -21,6 +21,8 @@
 
 package org.apache.qpid.server.txn;
 
+import java.util.Collection;
+
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -28,9 +30,6 @@ import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.transport.Xid;
-
-import java.util.Collection;
-import java.util.List;
 
 public class DistributedTransaction implements ServerTransaction
 {
@@ -137,7 +136,7 @@ public class DistributedTransaction implements ServerTransaction
         }
     }
 
-    public void enqueue(List<? extends BaseQueue> queues, EnqueueableMessage message,
+    public void enqueue(Collection<? extends BaseQueue> queues, EnqueueableMessage message,
                         final EnqueueAction postTransactionAction)
     {
         if(_branch != null)

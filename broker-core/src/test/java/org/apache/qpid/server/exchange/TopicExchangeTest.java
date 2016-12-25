@@ -25,6 +25,8 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -34,15 +36,20 @@ import org.junit.Assert;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class TopicExchangeTest extends QpidTestCase
@@ -353,24 +360,31 @@ public class TopicExchangeTest extends QpidTestCase
         _exchange.bind(queue.getName(), bindingKey, bindArgs, false);
 
         ServerMessage matchMsg1 = mock(ServerMessage.class);
+        when(matchMsg1.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
         AMQMessageHeader msgHeader1 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 6));
         when(matchMsg1.getMessageHeader()).thenReturn(msgHeader1);
         routeMessage(matchMsg1, bindingKey, 1);
         Assert.assertEquals("First message should be routed to queue", 1, queue.getQueueDepthMessages());
 
         ServerMessage nonmatchMsg2 = mock(ServerMessage.class);
+        when(nonmatchMsg2.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
+
         AMQMessageHeader msgHeader2 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 5));
         when(nonmatchMsg2.getMessageHeader()).thenReturn(msgHeader2);
         routeMessage(nonmatchMsg2, bindingKey, 2);
         Assert.assertEquals("Second message should not be routed to queue", 1, queue.getQueueDepthMessages());
 
         ServerMessage nonmatchMsg3 = mock(ServerMessage.class);
+        when(nonmatchMsg3.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
+
         AMQMessageHeader msgHeader3 = createMessageHeader(Collections.<String, Object>emptyMap());
         when(nonmatchMsg3.getMessageHeader()).thenReturn(msgHeader3);
         routeMessage(nonmatchMsg3, bindingKey, 3);
         Assert.assertEquals("Third message should not be routed to queue", 1, queue.getQueueDepthMessages());
 
         ServerMessage matchMsg4 = mock(ServerMessage.class);
+        when(matchMsg4.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
+
         AMQMessageHeader msgHeader4 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 7));
         when(matchMsg4.getMessageHeader()).thenReturn(msgHeader4);
         routeMessage(matchMsg4, bindingKey, 4);
@@ -388,6 +402,7 @@ public class TopicExchangeTest extends QpidTestCase
 
         AMQMessageHeader mgsHeader1 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 6));
         ServerMessage msg1 = mock(ServerMessage.class);
+        when(msg1.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
         when(msg1.getMessageHeader()).thenReturn(mgsHeader1);
 
         routeMessage(msg1, bindingKey, 1);
@@ -400,6 +415,7 @@ public class TopicExchangeTest extends QpidTestCase
         // Message that would have matched the original selector but not the new
         AMQMessageHeader mgsHeader2 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 6));
         ServerMessage msg2 = mock(ServerMessage.class);
+        when(msg2.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
         when(msg2.getMessageHeader()).thenReturn(mgsHeader2);
 
         routeMessage(msg2, bindingKey, 2);
@@ -408,6 +424,7 @@ public class TopicExchangeTest extends QpidTestCase
         // Message that matches only the second
         AMQMessageHeader mgsHeader3 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 7));
         ServerMessage msg3 = mock(ServerMessage.class);
+        when(msg3.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
         when(msg3.getMessageHeader()).thenReturn(mgsHeader3);
 
         routeMessage(msg3, bindingKey, 2);
@@ -425,7 +442,7 @@ public class TopicExchangeTest extends QpidTestCase
         _exchange.bind(queue.getName(), bindingKey, null, false);
 
         ServerMessage msg1 = mock(ServerMessage.class);
-
+        when(msg1.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
         routeMessage(msg1, bindingKey, 1);
         Assert.assertEquals(1, queue.getQueueDepthMessages());
 
@@ -436,6 +453,7 @@ public class TopicExchangeTest extends QpidTestCase
         // Message that does not match the new selector
         AMQMessageHeader mgsHeader2 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 6));
         ServerMessage msg2 = mock(ServerMessage.class);
+        when(msg2.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
         when(msg2.getMessageHeader()).thenReturn(mgsHeader2);
 
         routeMessage(msg2, bindingKey, 2);
@@ -444,6 +462,8 @@ public class TopicExchangeTest extends QpidTestCase
         // Message that matches the selector
         AMQMessageHeader mgsHeader3 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 7));
         ServerMessage msg3 = mock(ServerMessage.class);
+        when(msg3.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
+
         when(msg3.getMessageHeader()).thenReturn(mgsHeader3);
 
         routeMessage(msg3, bindingKey, 2);
@@ -455,13 +475,14 @@ public class TopicExchangeTest extends QpidTestCase
     private int routeMessage(String routingKey, long messageNumber)
     {
         ServerMessage message = mock(ServerMessage.class);
+        when(message.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
         return routeMessage(message, routingKey, messageNumber);
     }
 
     private int routeMessage(ServerMessage message, String routingKey, long messageNumber)
     {
         when(message.getInitialRoutingAddress()).thenReturn(routingKey);
-        List<? extends BaseQueue> queues = _exchange.route(message, routingKey, InstanceProperties.EMPTY);
+        List<? extends BaseQueue> queues = routeToQueues(message, routingKey, InstanceProperties.EMPTY);
         MessageReference ref = mock(MessageReference.class);
         when(ref.getMessage()).thenReturn(message);
         when(message.newReference()).thenReturn(ref);
@@ -473,6 +494,88 @@ public class TopicExchangeTest extends QpidTestCase
         }
 
         return queues.size();
+    }
+
+    private List<? extends BaseQueue> routeToQueues(final ServerMessage message,
+                                                    final String routingAddress,
+                                                    final InstanceProperties instanceProperties)
+    {
+        RoutingResult result = _exchange.route(message, routingAddress, instanceProperties);
+        final List<BaseQueue> resultQueues = new ArrayList<>();
+        result.send(new ServerTransaction()
+        {
+            @Override
+            public long getTransactionStartTime()
+            {
+                return 0;
+            }
+
+            @Override
+            public long getTransactionUpdateTime()
+            {
+                return 0;
+            }
+
+            @Override
+            public void addPostTransactionAction(final Action postTransactionAction)
+            {
+
+            }
+
+            @Override
+            public void dequeue(final MessageEnqueueRecord record, final Action postTransactionAction)
+            {
+
+            }
+
+            @Override
+            public void dequeue(final Collection<MessageInstance> messages, final Action postTransactionAction)
+            {
+
+            }
+
+            @Override
+            public void enqueue(final TransactionLogResource queue,
+                                final EnqueueableMessage message,
+                                final EnqueueAction postTransactionAction)
+            {
+                resultQueues.add((BaseQueue) queue);
+            }
+
+            @Override
+            public void enqueue(final Collection<? extends BaseQueue> queues,
+                                final EnqueueableMessage message,
+                                final EnqueueAction postTransactionAction)
+            {
+                resultQueues.addAll(queues);
+            }
+
+            @Override
+            public void commit()
+            {
+
+            }
+
+            @Override
+            public void commit(final Runnable immediatePostTransactionAction)
+            {
+
+            }
+
+            @Override
+            public void rollback()
+            {
+
+            }
+
+            @Override
+            public boolean isTransactional()
+            {
+                return false;
+            }
+        }, null);
+
+        return resultQueues;
     }
 
     private AMQMessageHeader createMessageHeader(Map<String, Object> headers)

@@ -20,11 +20,15 @@
  */
 package org.apache.qpid.server.exchange;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anySet;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,15 +44,22 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.store.MessageEnqueueRecord;
+import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -79,6 +90,7 @@ public class FanoutExchangeTest extends QpidTestCase
         _virtualHost = mock(QueueManagingVirtualHost.class);
 
         when(_virtualHost.getEventLogger()).thenReturn(new EventLogger());
+        when(_virtualHost.getState()).thenReturn(State.ACTIVE);
         when(_virtualHost.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHost.getChildExecutor()).thenReturn(_taskExecutor);
         when(_virtualHost.getModel()).thenReturn(BrokerModel.getInstance());
@@ -153,6 +165,9 @@ public class FanoutExchangeTest extends QpidTestCase
         when(queue.getChildExecutor()).thenReturn(taskExecutor);
         when(queue.getParent()).thenReturn(_virtualHost);
         when(_virtualHost.getAttainedQueue(eq(name))).thenReturn(queue);
+        RoutingResult result = new RoutingResult(null);
+        result.addQueue(queue);
+        when(queue.route(any(ServerMessage.class),anyString(),any(InstanceProperties.class))).thenReturn(result);
         return queue;
     }
 
@@ -165,8 +180,8 @@ public class FanoutExchangeTest extends QpidTestCase
         _exchange.addBinding("key",queue1, null);
         _exchange.addBinding("key",queue2, null);
 
-
-        List<? extends BaseQueue> result = _exchange.route(mockMessage(true), "", InstanceProperties.EMPTY);
+        List<? extends BaseQueue> result;
+        result = routeToQueues(mockMessage(true), "", InstanceProperties.EMPTY);
 
         assertEquals("Expected message to be routed to both queues", 2, result.size());
         assertTrue("Expected queue1 to be routed to", result.contains(queue1));
@@ -174,8 +189,7 @@ public class FanoutExchangeTest extends QpidTestCase
 
         _exchange.addBinding("key2",queue2, Collections.singletonMap(AMQPFilterTypes.JMS_SELECTOR.toString(),(Object)"select = True"));
 
-
-        result = _exchange.route(mockMessage(true), "", InstanceProperties.EMPTY);
+        result = routeToQueues(mockMessage(true), "", InstanceProperties.EMPTY);
 
         assertEquals("Expected message to be routed to both queues", 2, result.size());
         assertTrue("Expected queue1 to be routed to", result.contains(queue1));
@@ -183,14 +197,13 @@ public class FanoutExchangeTest extends QpidTestCase
 
         _exchange.deleteBinding("key",queue2);
 
-        result = _exchange.route(mockMessage(true), "", InstanceProperties.EMPTY);
+        result = routeToQueues(mockMessage(true), "", InstanceProperties.EMPTY);
 
         assertEquals("Expected message to be routed to both queues", 2, result.size());
         assertTrue("Expected queue1 to be routed to", result.contains(queue1));
         assertTrue("Expected queue2 to be routed to", result.contains(queue2));
 
-
-        result = _exchange.route(mockMessage(false), "", InstanceProperties.EMPTY);
+        result = routeToQueues(mockMessage(false), "", InstanceProperties.EMPTY);
 
         assertEquals("Expected message to be routed to queue1 only", 1, result.size());
         assertTrue("Expected queue1 to be routed to", result.contains(queue1));
@@ -198,13 +211,94 @@ public class FanoutExchangeTest extends QpidTestCase
 
         _exchange.addBinding("key",queue2, Collections.singletonMap(AMQPFilterTypes.JMS_SELECTOR.toString(),(Object)"select = False"));
 
-
-        result = _exchange.route(mockMessage(false), "", InstanceProperties.EMPTY);
+        result = routeToQueues(mockMessage(false), "", InstanceProperties.EMPTY);
         assertEquals("Expected message to be routed to both queues", 2, result.size());
         assertTrue("Expected queue1 to be routed to", result.contains(queue1));
         assertTrue("Expected queue2 to be routed to", result.contains(queue2));
 
 
+    }
+
+    private List<? extends BaseQueue> routeToQueues(final ServerMessage message,
+                                                    final String routingAddress,
+                                                    final InstanceProperties instanceProperties)
+    {
+        RoutingResult result = _exchange.route(message, routingAddress, instanceProperties);
+        final List<BaseQueue> resultQueues = new ArrayList<>();
+        result.send(new ServerTransaction()
+        {
+            @Override
+            public long getTransactionStartTime()
+            {
+                return 0;
+            }
+
+            @Override
+            public long getTransactionUpdateTime()
+            {
+                return 0;
+            }
+
+            @Override
+            public void addPostTransactionAction(final Action postTransactionAction)
+            {
+
+            }
+
+            @Override
+            public void dequeue(final MessageEnqueueRecord record, final Action postTransactionAction)
+            {
+
+            }
+
+            @Override
+            public void dequeue(final Collection<MessageInstance> messages, final Action postTransactionAction)
+            {
+
+            }
+
+            @Override
+            public void enqueue(final TransactionLogResource queue,
+                                final EnqueueableMessage message,
+                                final EnqueueAction postTransactionAction)
+            {
+                resultQueues.add((BaseQueue) queue);
+            }
+
+            @Override
+            public void enqueue(final Collection<? extends BaseQueue> queues,
+                                final EnqueueableMessage message,
+                                final EnqueueAction postTransactionAction)
+            {
+                resultQueues.addAll(queues);
+            }
+
+            @Override
+            public void commit()
+            {
+
+            }
+
+            @Override
+            public void commit(final Runnable immediatePostTransactionAction)
+            {
+
+            }
+
+            @Override
+            public void rollback()
+            {
+
+            }
+
+            @Override
+            public boolean isTransactional()
+            {
+                return false;
+            }
+        }, null);
+
+        return resultQueues;
     }
 
     private ServerMessage mockMessage(boolean val)
@@ -225,6 +319,7 @@ public class FanoutExchangeTest extends QpidTestCase
         });
         final ServerMessage serverMessage = mock(ServerMessage.class);
         when(serverMessage.getMessageHeader()).thenReturn(header);
+        when(serverMessage.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
         return serverMessage;
     }
 }

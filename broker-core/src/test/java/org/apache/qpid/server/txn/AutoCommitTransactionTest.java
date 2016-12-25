@@ -424,7 +424,6 @@ public class AutoCommitTransactionTest extends QpidTestCase
     private BaseQueue createTestAMQQueue(final boolean durable)
     {
         BaseQueue queue = mock(BaseQueue.class);
-        when(queue.isDurable()).thenReturn(durable);
         when(queue.getMessageDurability()).thenReturn(durable ? MessageDurability.DEFAULT : MessageDurability.NEVER);
         return queue;
     }

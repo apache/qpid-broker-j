@@ -33,22 +33,22 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.qpid.server.exchange.AbstractExchange;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.Filterable;
-import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.message.MessageDestination;
 
 public final class TopicExchangeResult implements TopicMatcherResult
 {
     private final List<AbstractExchange.BindingIdentifier> _bindings = new CopyOnWriteArrayList<>();
-    private final Map<Queue<?>, Integer> _unfilteredQueues = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Queue<?>, Map<FilterManager,Integer>> _filteredQueues = new ConcurrentHashMap<>();
-    private volatile ArrayList<Queue<?>> _unfilteredQueueList = new ArrayList<>(0);
+    private final Map<MessageDestination, Integer> _unfilteredQueues = new ConcurrentHashMap<>();
+    private final ConcurrentMap<MessageDestination, Map<FilterManager,Integer>> _filteredQueues = new ConcurrentHashMap<>();
+    private volatile ArrayList<MessageDestination> _unfilteredQueueList = new ArrayList<>(0);
 
-    public void addUnfilteredQueue(Queue<?> queue)
+    public void addUnfilteredQueue(MessageDestination queue)
     {
         Integer instances = _unfilteredQueues.get(queue);
         if(instances == null)
         {
             _unfilteredQueues.put(queue, 1);
-            ArrayList<Queue<?>> newList = new ArrayList<>(_unfilteredQueueList);
+            ArrayList<MessageDestination> newList = new ArrayList<>(_unfilteredQueueList);
             newList.add(queue);
             _unfilteredQueueList = newList;
         }
@@ -58,13 +58,13 @@ public final class TopicExchangeResult implements TopicMatcherResult
         }
     }
 
-    public void removeUnfilteredQueue(Queue<?> queue)
+    public void removeUnfilteredQueue(MessageDestination queue)
     {
         Integer instances = _unfilteredQueues.get(queue);
         if(instances == 1)
         {
             _unfilteredQueues.remove(queue);
-            ArrayList<Queue<?>> newList = new ArrayList<>(_unfilteredQueueList);
+            ArrayList<MessageDestination> newList = new ArrayList<>(_unfilteredQueueList);
             newList.remove(queue);
             _unfilteredQueueList = newList;
 
@@ -76,7 +76,7 @@ public final class TopicExchangeResult implements TopicMatcherResult
 
     }
 
-    public Collection<Queue<?>> getUnfilteredQueues()
+    public Collection<MessageDestination> getUnfilteredQueues()
     {
         return _unfilteredQueues.keySet();
     }
@@ -96,7 +96,7 @@ public final class TopicExchangeResult implements TopicMatcherResult
         return new ArrayList<>(_bindings);
     }
 
-    public void addFilteredQueue(Queue<?> queue, FilterManager filter)
+    public void addFilteredQueue(MessageDestination queue, FilterManager filter)
     {
         Map<FilterManager,Integer> filters = _filteredQueues.get(queue);
         if(filters == null)
@@ -116,7 +116,7 @@ public final class TopicExchangeResult implements TopicMatcherResult
 
     }
 
-    public void removeFilteredQueue(Queue<?> queue, FilterManager filter)
+    public void removeFilteredQueue(MessageDestination queue, FilterManager filter)
     {
         Map<FilterManager,Integer> filters = _filteredQueues.get(queue);
         if(filters != null)
@@ -142,7 +142,7 @@ public final class TopicExchangeResult implements TopicMatcherResult
 
     }
 
-    public void replaceQueueFilter(Queue<?> queue,
+    public void replaceQueueFilter(MessageDestination queue,
                                    FilterManager oldFilter,
                                    FilterManager newFilter)
     {
@@ -169,7 +169,7 @@ public final class TopicExchangeResult implements TopicMatcherResult
         _filteredQueues.put(queue,newFilters);
     }
 
-    public Collection<Queue<?>> processMessage(Filterable msg, Collection<Queue<?>> queues)
+    public Collection<MessageDestination> processMessage(Filterable msg, Collection<MessageDestination> queues)
     {
         if(queues == null)
         {
@@ -179,18 +179,18 @@ public final class TopicExchangeResult implements TopicMatcherResult
             }
             else
             {
-                queues = new HashSet<Queue<?>>();
+                queues = new HashSet<>();
             }
         }
         else if(!(queues instanceof Set))
         {
-            queues = new HashSet<Queue<?>>(queues);
+            queues = new HashSet<>(queues);
         }
 
         queues.addAll(_unfilteredQueues.keySet());
         if(!_filteredQueues.isEmpty())
         {
-            for(Map.Entry<Queue<?>, Map<FilterManager, Integer>> entry : _filteredQueues.entrySet())
+            for(Map.Entry<MessageDestination, Map<FilterManager, Integer>> entry : _filteredQueues.entrySet())
             {
                 if(!queues.contains(entry.getKey()))
                 {

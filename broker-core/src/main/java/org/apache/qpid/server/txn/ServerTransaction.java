@@ -21,7 +21,6 @@
 package org.apache.qpid.server.txn;
 
 import java.util.Collection;
-import java.util.List;
 
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.MessageInstance;
@@ -111,7 +110,7 @@ public interface ServerTransaction
      * 
      * Store operations will result only for a persistent messages on durable queues.
      */
-    void enqueue(List<? extends BaseQueue> queues, EnqueueableMessage message, EnqueueAction postTransactionAction);
+    void enqueue(Collection<? extends BaseQueue> queues, EnqueueableMessage message, EnqueueAction postTransactionAction);
 
     /** 
      * Commit the transaction represented by this object.

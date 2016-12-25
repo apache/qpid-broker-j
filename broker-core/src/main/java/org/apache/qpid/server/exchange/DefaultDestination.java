@@ -24,8 +24,8 @@ import java.util.Map;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageSender;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
@@ -37,8 +37,6 @@ import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.StorableMessageMetaData;
-import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class DefaultDestination implements MessageDestination, PermissionedObject
@@ -94,43 +92,43 @@ public class DefaultDestination implements MessageDestination, PermissionedObjec
     }
 
 
-    public final  <M extends ServerMessage<? extends StorableMessageMetaData>> int send(final M message,
-                                                                                        String routingAddress,
-                                                                                        final InstanceProperties instanceProperties,
-                                                                                        final ServerTransaction txn,
-                                                                                        final Action<? super MessageInstance> postEnqueueAction)
+    @Override
+    public <M extends ServerMessage<? extends StorableMessageMetaData>> RoutingResult<M> route(M message,
+                                                                                               String routingAddress,
+                                                                                               InstanceProperties instanceProperties)
     {
-        if(routingAddress == null || routingAddress.trim().equals(""))
+        RoutingResult<M> result = new RoutingResult<>(message);
+
+        if (routingAddress != null && !routingAddress.trim().equals(""))
         {
-            return 0;
-        }
-        final MessageDestination dest = _virtualHost.getAttainedMessageDestination(routingAddress);
-        if(dest == null)
-        {
-            routingAddress = _virtualHost.getLocalAddress(routingAddress);
-            if(routingAddress.contains("/") && !routingAddress.startsWith("/"))
+            final MessageDestination dest = _virtualHost.getAttainedMessageDestination(routingAddress);
+            if (dest == null)
             {
-                String[] parts = routingAddress.split("/",2);
-                Exchange<?> exchange = _virtualHost.getAttainedChildFromAddress(Exchange.class, parts[0]);
-                if(exchange != null)
+                routingAddress = _virtualHost.getLocalAddress(routingAddress);
+                if (routingAddress.contains("/") && !routingAddress.startsWith("/"))
                 {
-                    return exchange.send(message, parts[1], instanceProperties, txn, postEnqueueAction);
+                    String[] parts = routingAddress.split("/", 2);
+                    Exchange<?> exchange = _virtualHost.getAttainedChildFromAddress(Exchange.class, parts[0]);
+                    if (exchange != null)
+                    {
+                        result.add(exchange.route(message, parts[1], instanceProperties));
+                    }
+                }
+                else if (!routingAddress.contains("/"))
+                {
+                    Exchange<?> exchange = _virtualHost.getAttainedChildFromAddress(Exchange.class, routingAddress);
+                    if (exchange != null)
+                    {
+                        result.add(exchange.route(message, "", instanceProperties));
+                    }
                 }
             }
-            else if(!routingAddress.contains("/"))
+            else
             {
-                Exchange<?> exchange = _virtualHost.getAttainedChildFromAddress(Exchange.class, routingAddress);
-                if(exchange != null)
-                {
-                    return exchange.send(message, "", instanceProperties, txn, postEnqueueAction);
-                }
+                result.add(dest.route(message, routingAddress, instanceProperties));
             }
-            return 0;
         }
-        else
-        {
-            return dest.send(message, routingAddress, instanceProperties, txn, postEnqueueAction);
-        }
+        return result;
     }
 
     @Override

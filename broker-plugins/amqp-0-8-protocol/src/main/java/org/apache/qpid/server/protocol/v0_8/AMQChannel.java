@@ -81,6 +81,7 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -494,11 +495,12 @@ public class AMQChannel
                                     }
                                 };
 
-                        int enqueues = destination.send(amqMessage,
-                                                        amqMessage.getInitialRoutingAddress(),
-                                                        instanceProperties, _transaction,
-                                                        immediate ? _immediateAction : _capacityCheckAction
-                                                       );
+                        final RoutingResult<AMQMessage> result =
+                                destination.route(amqMessage,
+                                                  amqMessage.getInitialRoutingAddress(),
+                                                  instanceProperties);
+
+                        int enqueues = result.send(_transaction, immediate ? _immediateAction : _capacityCheckAction);
                         if (enqueues == 0)
                         {
                             finallyAction = handleUnroutableMessage(amqMessage);

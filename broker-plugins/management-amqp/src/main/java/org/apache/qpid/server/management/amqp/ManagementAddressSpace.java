@@ -43,9 +43,9 @@ import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Connection;
@@ -64,7 +64,6 @@ import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxNotSupportedException;
 import org.apache.qpid.server.txn.DtxRegistry;
-import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNode;
@@ -354,20 +353,18 @@ public class ManagementAddressSpace implements NamedAddressSpace
         }
 
         @Override
-        public <M extends ServerMessage<? extends StorableMessageMetaData>> int send(final M message,
-                                                                                     final String routingAddress,
-                                                                                     final InstanceProperties instanceProperties,
-                                                                                     final ServerTransaction txn,
-                                                                                     final Action<? super MessageInstance> postEnqueueAction)
+        public <M extends ServerMessage<? extends StorableMessageMetaData>> RoutingResult<M> route(final M message,
+                                                                                                   final String routingAddress,
+                                                                                                   final InstanceProperties instanceProperties)
         {
             MessageDestination destination = getAttainedMessageDestination(routingAddress);
             if(destination == null || destination == this)
             {
-                return 0;
+                return new RoutingResult<>(message);
             }
             else
             {
-                return destination.send(message, routingAddress, instanceProperties, txn, postEnqueueAction);
+                return destination.route(message, routingAddress, instanceProperties);
             }
         }
 

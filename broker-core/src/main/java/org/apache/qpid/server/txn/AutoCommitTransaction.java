@@ -185,7 +185,7 @@ public class AutoCommitTransaction implements ServerTransaction
 
     }
 
-    public void enqueue(List<? extends BaseQueue> queues, EnqueueableMessage message, EnqueueAction postTransactionAction)
+    public void enqueue(Collection<? extends BaseQueue> queues, EnqueueableMessage message, EnqueueAction postTransactionAction)
     {
         Transaction txn = null;
         try

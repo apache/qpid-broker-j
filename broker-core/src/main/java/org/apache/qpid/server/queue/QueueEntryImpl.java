@@ -36,6 +36,7 @@ import org.apache.qpid.server.message.MessageDeletedException;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
@@ -569,27 +570,23 @@ public abstract class QueueEntryImpl implements QueueEntry
         final Queue<?> currentQueue = getQueue();
         Exchange<?> alternateExchange = currentQueue.getAlternateExchange();
         boolean autocommit =  txn == null;
-        int enqueues;
 
         if(autocommit)
         {
             txn = new LocalTransaction(getQueue().getVirtualHost().getMessageStore());
         }
 
+        RoutingResult result;
         if (alternateExchange != null)
         {
-            enqueues = alternateExchange.send(getMessage(),
-                                              getMessage().getInitialRoutingAddress(),
-                                              getInstanceProperties(),
-                                              txn,
-                                              action);
+            result = alternateExchange.route(getMessage(), getMessage().getInitialRoutingAddress(),
+                                                           getInstanceProperties());
         }
         else
         {
-            enqueues = 0;
+            result = new RoutingResult<>(getMessage());
         }
-
-        txn.dequeue(getEnqueueRecord(), new ServerTransaction.Action()
+        txn.addPostTransactionAction(new ServerTransaction.Action()
         {
             public void postCommit()
             {
@@ -601,13 +598,13 @@ public abstract class QueueEntryImpl implements QueueEntry
 
             }
         });
+        int enqueues = result.send(txn, null);
 
         if(autocommit)
         {
             txn.commit();
         }
-
-        return enqueues;
+        return  enqueues;
     }
 
     public boolean isQueueDeleted()

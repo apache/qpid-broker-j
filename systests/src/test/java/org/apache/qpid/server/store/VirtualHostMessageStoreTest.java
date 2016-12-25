@@ -48,6 +48,7 @@ import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -615,7 +616,8 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
 
         ServerTransaction trans = new AutoCommitTransaction(_virtualHost.getMessageStore());
-        exchange.send(currentMessage, routingKey, InstanceProperties.EMPTY, trans, null);
+        RoutingResult result = exchange.route(currentMessage, routingKey, InstanceProperties.EMPTY);
+        result.send(trans, null);
 
     }
 

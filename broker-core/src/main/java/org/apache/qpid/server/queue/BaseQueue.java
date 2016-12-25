@@ -30,9 +30,5 @@ import org.apache.qpid.server.util.Action;
 public interface BaseQueue extends TransactionLogResource
 {
     void enqueue(ServerMessage message, Action<? super MessageInstance> action, MessageEnqueueRecord record);
-
-    boolean isDurable();
     boolean isDeleted();
-
-    String getName();
 }

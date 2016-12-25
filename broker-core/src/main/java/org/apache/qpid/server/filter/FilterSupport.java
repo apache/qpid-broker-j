@@ -31,6 +31,7 @@ import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
 import org.apache.qpid.filter.selector.TokenMgrError;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.queue.QueueConsumer;
@@ -94,13 +95,13 @@ public class FilterSupport
                        && ((String)args.get(AMQPFilterTypes.JMS_SELECTOR.toString())).trim().length() != 0;
     }
 
-    public static FilterManager createMessageFilter(final Map<String,Object> args, Queue<?> queue) throws AMQInvalidArgumentException
+    public static FilterManager createMessageFilter(final Map<String,Object> args, MessageDestination queue) throws AMQInvalidArgumentException
     {
         FilterManager filterManager = null;
-        if(argumentsContainNoLocal(args))
+        if(argumentsContainNoLocal(args) && queue instanceof Queue)
         {
             filterManager = new FilterManager();
-            filterManager.add(AMQPFilterTypes.NO_LOCAL.toString(), new NoLocalFilter(queue));
+            filterManager.add(AMQPFilterTypes.NO_LOCAL.toString(), new NoLocalFilter((Queue<?>) queue));
         }
 
         if(argumentsContainJMSSelector(args))

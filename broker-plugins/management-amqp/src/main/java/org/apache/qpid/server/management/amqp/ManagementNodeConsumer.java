@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -32,24 +33,28 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageSender;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.message.MessageContainer;
+import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.store.MessageDurability;
+import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
-import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 
-class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanceConsumer<T>, MessageDestination
+class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanceConsumer<T>, MessageDestination,
+                                                                  BaseQueue
 {
     private final ManagementNode _managementNode;
     private final List<ManagementResponse> _queue = Collections.synchronizedList(new ArrayList<ManagementResponse>());
     private final T _target;
     private final String _name;
-    private final Object _identifier = new Object();
+    private final UUID _identifier = UUID.randomUUID();
 
 
     public ManagementNodeConsumer(final String consumerName, final ManagementNode managementNode, T target)
@@ -142,14 +147,25 @@ class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanc
     }
 
     @Override
-    public <M extends ServerMessage<? extends StorableMessageMetaData>> int send(final M message,
-                                                                                 final String routingAddress,
-                                                                                 final InstanceProperties instanceProperties,
-                                                                                 final ServerTransaction txn,
-                                                                                 final Action<? super MessageInstance> postEnqueueAction)
+    public UUID getId()
     {
-        send((InternalMessage)message);
-        return 1;
+        return _identifier;
+    }
+
+    @Override
+    public MessageDurability getMessageDurability()
+    {
+        return MessageDurability.NEVER;
+    }
+
+    @Override
+    public <M extends ServerMessage<? extends StorableMessageMetaData>> RoutingResult<M> route(final M message,
+                                                                                               final String routingAddress,
+                                                                                               final InstanceProperties instanceProperties)
+    {
+        RoutingResult<M> result = new RoutingResult<>(message);
+        result.addQueue(this);
+        return result;
     }
 
     @Override
@@ -181,10 +197,30 @@ class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanc
         return _managementNode;
     }
 
-    void send(final InternalMessage response)
+    void send(ManagementResponse responseEntry)
     {
-        final ManagementResponse responseEntry = new ManagementResponse(this, response);
         _queue.add(responseEntry);
         _target.notifyWork();
+    }
+
+    @Override
+    public void enqueue(final ServerMessage message,
+                        final Action<? super MessageInstance> action,
+                        final MessageEnqueueRecord record)
+    {
+        final InternalMessage internalMessage = (InternalMessage) message;
+        final ManagementResponse responseEntry = new ManagementResponse(this, internalMessage);
+
+        send(responseEntry);
+        if(action != null)
+        {
+            action.performAction(responseEntry);
+        }
+    }
+
+    @Override
+    public boolean isDeleted()
+    {
+        return isClosed();
     }
 }

@@ -91,6 +91,7 @@ import org.apache.qpid.server.message.MessageInfoImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSender;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.*;
@@ -2567,46 +2568,21 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _notificationListener = listener == null ? NULL_NOTIFICATION_LISTENER : listener;
     }
 
-    public final  <M extends ServerMessage<? extends StorableMessageMetaData>> int send(final M message,
-                                                                                        final String routingAddress,
-                                                                                        final InstanceProperties instanceProperties,
-                                                                                        final ServerTransaction txn,
-                                                                                        final Action<? super MessageInstance> postEnqueueAction)
+    @Override
+    public <M extends ServerMessage<? extends StorableMessageMetaData>> RoutingResult<M> route(final M message,
+                                                                                               final String routingAddress,
+                                                                                               final InstanceProperties instanceProperties)
     {
         if (_virtualHost.getState() != State.ACTIVE)
         {
             throw new VirtualHostUnavailableException(this._virtualHost);
         }
+        RoutingResult<M> result = new RoutingResult<>(message);
         if(message.isResourceAcceptable(this) && !message.isReferenced(this))
         {
-            txn.enqueue(this, message, new ServerTransaction.EnqueueAction()
-            {
-                MessageReference _reference = message.newReference();
-
-                public void postCommit(MessageEnqueueRecord... records)
-                {
-                    try
-                    {
-                        AbstractQueue.this.enqueue(message, postEnqueueAction, records[0]);
-                    }
-                    finally
-                    {
-                        _reference.release();
-                    }
-                }
-
-                public void onRollback()
-                {
-                    _reference.release();
-                }
-            });
-            return 1;
+            result.addQueue(this);
         }
-        else
-        {
-            return 0;
-        }
-
+        return result;
     }
 
     @Override

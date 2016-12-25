@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.exchange;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,11 +38,12 @@ import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.filter.FilterSupport;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
@@ -68,9 +68,9 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
     protected synchronized void onBindingUpdated(final BindingIdentifier binding, final Map<String, Object> newArguments)
     {
         final String bindingKey = binding.getBindingKey();
-        Queue<?> queue = (Queue<?>) binding.getDestination();
+        final MessageDestination destination = binding.getDestination();
 
-        _logger.debug("Updating binding of queue {} with routing key {}", queue.getName(), bindingKey);
+        _logger.debug("Updating binding of queue {} with routing key {}", destination.getName(), bindingKey);
 
 
         String routingKey = TopicNormalizer.normalize(bindingKey);
@@ -87,22 +87,22 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
                 {
                     if (FilterSupport.argumentsContainFilter(oldArgs))
                     {
-                        result.replaceQueueFilter(queue,
-                                                  FilterSupport.createMessageFilter(oldArgs, queue),
-                                                  FilterSupport.createMessageFilter(newArguments, queue));
+                        result.replaceQueueFilter(destination,
+                                                  FilterSupport.createMessageFilter(oldArgs, destination),
+                                                  FilterSupport.createMessageFilter(newArguments, destination));
                     }
                     else
                     {
-                        result.addFilteredQueue(queue, FilterSupport.createMessageFilter(newArguments, queue));
-                        result.removeUnfilteredQueue(queue);
+                        result.addFilteredQueue(destination, FilterSupport.createMessageFilter(newArguments, destination));
+                        result.removeUnfilteredQueue(destination);
                     }
                 }
                 else
                 {
                     if (FilterSupport.argumentsContainFilter(oldArgs))
                     {
-                        result.addUnfilteredQueue(queue);
-                        result.removeFilteredQueue(queue, FilterSupport.createMessageFilter(oldArgs, queue));
+                        result.addUnfilteredQueue(destination);
+                        result.removeFilteredQueue(destination, FilterSupport.createMessageFilter(oldArgs, destination));
                     }
                     else
                     {
@@ -204,38 +204,24 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
     }
 
     @Override
-    public ArrayList<BaseQueue> doRoute(ServerMessage payload,
-                                        final String routingAddress,
-                                        final InstanceProperties instanceProperties)
+    public <M extends ServerMessage<? extends StorableMessageMetaData>> void doRoute(M payload,
+                                                                                     String routingAddress,
+                                                                                     InstanceProperties instanceProperties,
+                                                                                     RoutingResult<M> result)
     {
-
         final String routingKey = routingAddress == null
-                                          ? ""
-                                          : routingAddress;
+                ? ""
+                : routingAddress;
 
-        final Collection<Queue<?>> matchedQueues =
+        final Collection<MessageDestination> matchedQueues =
                 getMatchedQueues(Filterable.Factory.newInstance(payload,instanceProperties), routingKey);
 
-        ArrayList<BaseQueue> queues;
-
-        if(matchedQueues.getClass() == ArrayList.class)
+        for(MessageDestination queue : matchedQueues)
         {
-            queues = (ArrayList) matchedQueues;
+            result.add(queue.route(payload, routingAddress, instanceProperties));
         }
-        else
-        {
-            queues = new ArrayList<BaseQueue>();
-            queues.addAll(matchedQueues);
-        }
-
-        if(queues == null || queues.isEmpty())
-        {
-            _logger.info("Message routing key: " + routingAddress + " No routes.");
-        }
-
-        return queues;
-
     }
+
 
     private synchronized boolean deregisterQueue(final BindingIdentifier binding)
     {
@@ -274,7 +260,7 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
         }
     }
 
-    private Collection<Queue<?>> getMatchedQueues(Filterable message, String routingKey)
+    private Collection<MessageDestination> getMatchedQueues(Filterable message, String routingKey)
     {
 
         Collection<TopicMatcherResult> results = _parser.parse(routingKey);
@@ -287,7 +273,7 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
                 results.toArray(resultQueues);
                 return ((TopicExchangeResult)resultQueues[0]).processMessage(message, null);
             default:
-                Collection<Queue<?>> queues = new HashSet<>();
+                Collection<MessageDestination> queues = new HashSet<>();
                 for(TopicMatcherResult result : results)
                 {
                     TopicExchangeResult res = (TopicExchangeResult)result;

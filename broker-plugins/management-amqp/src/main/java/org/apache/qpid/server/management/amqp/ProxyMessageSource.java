@@ -47,6 +47,7 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -55,8 +56,6 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.StorableMessageMetaData;
-import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.Action;
 
 public class ProxyMessageSource implements MessageSource, MessageDestination
 {
@@ -94,13 +93,11 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
     }
 
     @Override
-    public <M extends ServerMessage<? extends StorableMessageMetaData>> int send(final M message,
-                                                                                 final String routingAddress,
-                                                                                 final InstanceProperties instanceProperties,
-                                                                                 final ServerTransaction txn,
-                                                                                 final Action<? super MessageInstance> postEnqueueAction)
+    public <M extends ServerMessage<? extends StorableMessageMetaData>> RoutingResult<M> route(final M message,
+                                                                                               final String routingAddress,
+                                                                                               final InstanceProperties instanceProperties)
     {
-        return 0;
+        return new RoutingResult<>(message);
     }
 
     @Override

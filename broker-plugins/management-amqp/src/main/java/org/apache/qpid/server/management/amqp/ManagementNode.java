@@ -64,6 +64,7 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.message.internal.InternalMessageHeader;
@@ -81,6 +82,7 @@ import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
+import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -92,7 +94,7 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.StateChangeListener;
 
-class ManagementNode implements MessageSource, MessageDestination
+class ManagementNode implements MessageSource, MessageDestination, BaseQueue
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ManagementNode.class);
 
@@ -172,6 +174,15 @@ class ManagementNode implements MessageSource, MessageDestination
     private final ManagementOutputConverter _managementOutputConverter;
 
     private final ManagementInputConverter _managementInputConverter;
+
+    private static final InstanceProperties CONSUMED_INSTANCE_PROPERTIES = new InstanceProperties()
+    {
+        @Override
+        public Object getProperty(final Property prop)
+        {
+            return null;
+        }
+    };
 
     ManagementNode(final NamedAddressSpace addressSpace,
                    final ConfiguredObject<?> configuredObject)
@@ -332,12 +343,11 @@ class ManagementNode implements MessageSource, MessageDestination
     }
 
     @Override
-    public  <M extends ServerMessage<? extends StorableMessageMetaData>> int send(final M message,
-                                                                                  final String routingAddress,
-                                                                                  final InstanceProperties instanceProperties,
-                                                                                  final ServerTransaction txn,
-                                                                                  final Action<? super MessageInstance> postEnqueueAction)
+    public <M extends ServerMessage<? extends StorableMessageMetaData>> RoutingResult<M> route(final M message,
+                                                                                               final String routingAddress,
+                                                                                               final InstanceProperties instanceProperties)
     {
+        final RoutingResult<M> result = new RoutingResult<>(message);
         if(message.isResourceAcceptable(this))
         {
             @SuppressWarnings("unchecked")
@@ -347,33 +357,12 @@ class ManagementNode implements MessageSource, MessageDestination
 
             if (converter != null)
             {
-                final InternalMessage msg = converter.convert(message, _addressSpace);
-                txn.addPostTransactionAction(new ServerTransaction.Action()
-                {
-                    @Override
-                    public void postCommit()
-                    {
-                        enqueue(msg, instanceProperties, postEnqueueAction);
-                    }
-
-                    @Override
-                    public void onRollback()
-                    {
-
-                    }
-                });
-
-                return 1;
+                result.addQueue(this);
             }
-            else
-            {
-                return 0;
-            }
+
         }
-        else
-        {
-            return 0;
-        }
+        return result;
+
     }
 
     @Override
@@ -408,7 +397,7 @@ class ManagementNode implements MessageSource, MessageDestination
         String id = (String) message.getMessageHeader().getHeader(IDENTITY_ATTRIBUTE);
         String type = (String) message.getMessageHeader().getHeader(TYPE_ATTRIBUTE);
         String operation = (String) message.getMessageHeader().getHeader(OPERATION_HEADER);
-
+        LOGGER.debug("Management Node identity: {}, type: {}, operation {}", id, type, operation);
         InternalMessage response;
 
         // TODO - handle runtime exceptions
@@ -431,6 +420,26 @@ class ManagementNode implements MessageSource, MessageDestination
 
         sendResponse(message, response);
 
+    }
+
+    @Override
+    public void enqueue(final ServerMessage message,
+                        final Action<? super MessageInstance> action,
+                        final MessageEnqueueRecord record)
+    {
+        MessageConverter<ServerMessage, InternalMessage> converter =
+                (MessageConverter<ServerMessage, InternalMessage>) MessageConverterRegistry.getConverter((message.getClass()), InternalMessage.class);
+
+        final InternalMessage msg = converter.convert(message, _addressSpace);
+
+        enqueue(msg, CONSUMED_INSTANCE_PROPERTIES, action);
+
+    }
+
+    @Override
+    public boolean isDeleted()
+    {
+        return false;
     }
 
     private interface StandardOperation
@@ -982,11 +991,9 @@ class ManagementNode implements MessageSource, MessageDestination
         String replyTo = message.getMessageHeader().getReplyTo();
         response.setInitialRoutingAddress(replyTo);
 
-
-        getResponseDestination(replyTo).send(response,
-                                             replyTo, InstanceProperties.EMPTY,
-                                             new AutoCommitTransaction(_addressSpace.getMessageStore()),
-                                             null);
+        final MessageDestination responseDestination = getResponseDestination(replyTo);
+        RoutingResult<InternalMessage> result = responseDestination.route(response, replyTo, InstanceProperties.EMPTY);
+        result.send(new AutoCommitTransaction(_addressSpace.getMessageStore()), null);
 
     }
 
@@ -1533,14 +1540,13 @@ class ManagementNode implements MessageSource, MessageDestination
 
     private class ConsumedMessageInstance implements MessageInstance
     {
+
         private final ServerMessage _message;
-        private final InstanceProperties _properties;
 
         ConsumedMessageInstance(final ServerMessage message,
                                 final InstanceProperties properties)
         {
             _message = message;
-            _properties = properties;
         }
 
         @Override
@@ -1741,7 +1747,7 @@ class ManagementNode implements MessageSource, MessageDestination
         @Override
         public InstanceProperties getInstanceProperties()
         {
-            return _properties;
+            return CONSUMED_INSTANCE_PROPERTIES;
         }
 
         @Override

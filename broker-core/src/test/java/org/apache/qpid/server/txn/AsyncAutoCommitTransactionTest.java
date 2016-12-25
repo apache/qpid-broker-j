@@ -54,7 +54,6 @@ public class AsyncAutoCommitTransactionTest extends QpidTestCase
 
         when(_messageStore.newTransaction()).thenReturn(_storeTransaction);
         when(_storeTransaction.commitTranAsync((Void) null)).thenReturn(_future);
-        when(_queue.isDurable()).thenReturn(true);
         when(_queue.getMessageDurability()).thenReturn(MessageDurability.DEFAULT);
     }
 

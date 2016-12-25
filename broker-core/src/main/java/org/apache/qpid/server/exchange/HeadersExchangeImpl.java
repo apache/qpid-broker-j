@@ -20,9 +20,7 @@
  */
 package org.apache.qpid.server.exchange;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,10 +33,11 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 /**
@@ -86,13 +85,12 @@ public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> i
     }
 
     @Override
-    public ArrayList<BaseQueue> doRoute(ServerMessage payload,
-                                        final String routingKey,
-                                        final InstanceProperties instanceProperties)
+    public <M extends ServerMessage<? extends StorableMessageMetaData>> void doRoute(M payload,
+                                                                                     final String routingKey,
+                                                                                     final InstanceProperties instanceProperties,
+                                                                                     RoutingResult<M> routingResult)
     {
         _logger.debug("Exchange {}: routing message with headers {}", getName(), payload.getMessageHeader());
-
-        LinkedHashSet<BaseQueue> queues = new LinkedHashSet<BaseQueue>();
 
         for (HeadersBinding hb : _bindingHeaderMatchers)
         {
@@ -106,12 +104,11 @@ public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> i
                     _logger.debug("Exchange " + getName() + ": delivering message with headers " +
                                   payload.getMessageHeader() + " to " + b.getDestination().getName());
                 }
-                queues.add((BaseQueue) b.getDestination());
+                routingResult.add(b.getDestination().route(payload, routingKey, instanceProperties));
             }
         }
-
-        return new ArrayList<>(queues);
     }
+
 
     @Override
     protected void onBind(final BindingIdentifier binding, Map<String,Object> arguments)

@@ -24,6 +24,7 @@ import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -49,9 +50,8 @@ import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.logging.subjects.ExchangeLogSubject;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSender;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Binding;
@@ -66,13 +66,9 @@ import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
-import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -85,6 +81,8 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         implements Exchange<T>
 {
     private static final Logger _logger = LoggerFactory.getLogger(AbstractExchange.class);
+
+    private static final ThreadLocal<Map<AbstractExchange<?>, Set<String>>> CURRENT_ROUTING = new ThreadLocal<>();
 
     private static final FixedKeyMapCreator BIND_ARGUMENTS_CREATOR =
             new FixedKeyMapCreator("bindingKey", "destination", "arguments");
@@ -469,131 +467,84 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     }
 
 
-    final List<? extends BaseQueue> route(final ServerMessage message,
-                                          final String routingAddress,
-                                          final InstanceProperties instanceProperties)
-    {
-        _receivedMessageCount.incrementAndGet();
-        _receivedMessageSize.addAndGet(message.getSize());
-        List<? extends BaseQueue> queues = doRoute(message, routingAddress, instanceProperties);
-        List<? extends BaseQueue> allQueues = queues;
-
-        boolean deletedQueues = false;
-
-        for(BaseQueue q : allQueues)
-        {
-            if(q.isDeleted())
-            {
-                if(!deletedQueues)
-                {
-                    deletedQueues = true;
-                    queues = new ArrayList<>(allQueues);
-                }
-                _logger.debug("Exchange: {} - attempt to enqueue message onto deleted queue {}", getName(), q.getName());
-
-                queues.remove(q);
-            }
-        }
-
-
-        if(!queues.isEmpty())
-        {
-            _routedMessageCount.incrementAndGet();
-            _routedMessageSize.addAndGet(message.getSize());
-        }
-        else
-        {
-            _droppedMessageCount.incrementAndGet();
-            _droppedMessageSize.addAndGet(message.getSize());
-        }
-        return queues;
-    }
-
     @Override
-    public final  <M extends ServerMessage<? extends StorableMessageMetaData>> int send(final M message,
-                                                                                        final String routingAddress,
-                                                                                        final InstanceProperties instanceProperties,
-                                                                                        final ServerTransaction txn,
-                                                                                        final Action<? super MessageInstance> postEnqueueAction)
+    public <M extends ServerMessage<? extends StorableMessageMetaData>> RoutingResult<M> route(final M message,
+                                                                                               final String routingAddress,
+                                                                                               final InstanceProperties instanceProperties)
     {
         if (_virtualHost.getState() != State.ACTIVE)
         {
             throw new VirtualHostUnavailableException(this._virtualHost);
         }
 
-        List<? extends BaseQueue> queues = route(message, routingAddress, instanceProperties);
+        final RoutingResult<M> routingResult = new RoutingResult<>(message);
 
-        if(queues == null || queues.isEmpty())
+        Map<AbstractExchange<?>, Set<String>> currentThreadMap = CURRENT_ROUTING.get();
+        boolean topLevel = currentThreadMap == null;
+        try
         {
-            Exchange altExchange = getAlternateExchange();
-            if(altExchange != null)
+            if (topLevel)
             {
-                return altExchange.send(message, routingAddress, instanceProperties, txn, postEnqueueAction);
+                currentThreadMap = new HashMap<>();
+                CURRENT_ROUTING.set(currentThreadMap);
+            }
+            Set<String> existingRoutes = currentThreadMap.get(this);
+            if (existingRoutes == null)
+            {
+                currentThreadMap.put(this, Collections.singleton(routingAddress));
+            }
+            else if (existingRoutes.contains(routingAddress))
+            {
+                return routingResult;
             }
             else
             {
-                return 0;
+                existingRoutes = new HashSet<>(existingRoutes);
+                existingRoutes.add(routingAddress);
+                currentThreadMap.put(this, existingRoutes);
             }
+
+            _receivedMessageCount.incrementAndGet();
+            _receivedMessageSize.addAndGet(message.getSize());
+
+            doRoute(message, routingAddress, instanceProperties, routingResult);
+
+            if (!routingResult.hasRoutes())
+            {
+                Exchange altExchange = getAlternateExchange();
+                if (altExchange != null)
+                {
+                    routingResult.add(altExchange.route(message, routingAddress, instanceProperties));
+                }
+            }
+
+            if (routingResult.hasRoutes())
+            {
+                _routedMessageCount.incrementAndGet();
+                _routedMessageSize.addAndGet(message.getSize());
+            }
+            else
+            {
+                _droppedMessageCount.incrementAndGet();
+                _droppedMessageSize.addAndGet(message.getSize());
+            }
+
+            return routingResult;
         }
-        else
+        finally
         {
-            for(BaseQueue q : queues)
+            if(topLevel)
             {
-                if(!message.isResourceAcceptable(q))
-                {
-                    return 0;
-                }
+                CURRENT_ROUTING.set(null);
             }
-            final BaseQueue[] baseQueues;
-
-            if(message.isReferenced())
-            {
-                ArrayList<BaseQueue> uniqueQueues = new ArrayList<>(queues.size());
-                for(BaseQueue q : queues)
-                {
-                    if(!message.isReferenced(q))
-                    {
-                        uniqueQueues.add(q);
-                    }
-                }
-                baseQueues = uniqueQueues.toArray(new BaseQueue[uniqueQueues.size()]);
-            }
-            else
-            {
-                baseQueues = queues.toArray(new BaseQueue[queues.size()]);
-            }
-
-            txn.enqueue(queues,message, new ServerTransaction.EnqueueAction()
-            {
-                MessageReference _reference = message.newReference();
-
-                public void postCommit(MessageEnqueueRecord... records)
-                {
-                    try
-                    {
-                        for(int i = 0; i < baseQueues.length; i++)
-                        {
-                            baseQueues[i].enqueue(message, postEnqueueAction, records[i]);
-                        }
-                    }
-                    finally
-                    {
-                        _reference.release();
-                    }
-                }
-
-                public void onRollback()
-                {
-                    _reference.release();
-                }
-            });
-            return queues.size();
         }
     }
 
-    protected abstract List<? extends BaseQueue> doRoute(final ServerMessage message,
-                                                         final String routingAddress,
-                                                         final InstanceProperties instanceProperties);
+
+    protected abstract <M extends ServerMessage<? extends StorableMessageMetaData>> void doRoute(final M message,
+                                    final String routingAddress,
+                                    final InstanceProperties instanceProperties,
+                                    final RoutingResult<M> result);
 
     @Override
     public boolean bind(final String destination,

@@ -28,6 +28,7 @@ import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -104,7 +105,8 @@ public class NodeReceivingDestination implements ReceivingDestination
                     return null;
                 }};
 
-        int enqueues = _destination.send(message, routingAddress, instanceProperties, txn, action);
+        RoutingResult result = _destination.route(message, routingAddress, instanceProperties);
+        int enqueues = result.send(txn, action);
 
         if(enqueues == 0)
         {

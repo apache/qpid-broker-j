@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.exchange;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anySet;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,16 +44,23 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.store.MessageEnqueueRecord;
+import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -84,6 +93,7 @@ public class HeadersExchangeTest extends QpidTestCase
         when(_virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
         when(_virtualHost.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHost.getChildExecutor()).thenReturn(_taskExecutor);
+        when(_virtualHost.getState()).thenReturn(State.ACTIVE);
 
         _factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(_virtualHost.getObjectFactory()).thenReturn(_factory);
@@ -106,7 +116,7 @@ public class HeadersExchangeTest extends QpidTestCase
 
     protected void routeAndTest(ServerMessage msg, Queue<?>... expected) throws Exception
     {
-        List<? extends BaseQueue> results = _exchange.route(msg, "", InstanceProperties.EMPTY);
+        List<? extends BaseQueue> results = routeToQueues(msg, "", InstanceProperties.EMPTY);
         List<? extends BaseQueue> unexpected = new ArrayList<BaseQueue>(results);
         unexpected.removeAll(Arrays.asList(expected));
         assertTrue("Message delivered to unexpected queues: " + unexpected, unexpected.isEmpty());
@@ -114,6 +124,88 @@ public class HeadersExchangeTest extends QpidTestCase
         missing.removeAll(results);
         assertTrue("Message not delivered to expected queues: " + missing, missing.isEmpty());
         assertTrue("Duplicates " + results, results.size()==(new HashSet<BaseQueue>(results)).size());
+    }
+
+    private List<? extends BaseQueue> routeToQueues(final ServerMessage message,
+                                                    final String routingAddress,
+                                                    final InstanceProperties instanceProperties)
+    {
+        RoutingResult result = _exchange.route(message, routingAddress, instanceProperties);
+        final List<BaseQueue> resultQueues = new ArrayList<>();
+        result.send(new ServerTransaction()
+        {
+            @Override
+            public long getTransactionStartTime()
+            {
+                return 0;
+            }
+
+            @Override
+            public long getTransactionUpdateTime()
+            {
+                return 0;
+            }
+
+            @Override
+            public void addPostTransactionAction(final Action postTransactionAction)
+            {
+
+            }
+
+            @Override
+            public void dequeue(final MessageEnqueueRecord record, final Action postTransactionAction)
+            {
+
+            }
+
+            @Override
+            public void dequeue(final Collection<MessageInstance> messages, final Action postTransactionAction)
+            {
+
+            }
+
+            @Override
+            public void enqueue(final TransactionLogResource queue,
+                                final EnqueueableMessage message,
+                                final EnqueueAction postTransactionAction)
+            {
+                resultQueues.add((BaseQueue) queue);
+            }
+
+            @Override
+            public void enqueue(final Collection<? extends BaseQueue> queues,
+                                final EnqueueableMessage message,
+                                final EnqueueAction postTransactionAction)
+            {
+                resultQueues.addAll(queues);
+            }
+
+            @Override
+            public void commit()
+            {
+
+            }
+
+            @Override
+            public void commit(final Runnable immediatePostTransactionAction)
+            {
+
+            }
+
+            @Override
+            public void rollback()
+            {
+
+            }
+
+            @Override
+            public boolean isTransactional()
+            {
+                return false;
+            }
+        }, null);
+
+        return resultQueues;
     }
 
 
@@ -169,6 +261,9 @@ public class HeadersExchangeTest extends QpidTestCase
         when(q.getTaskExecutor()).thenReturn(taskExecutor);
         when(q.getChildExecutor()).thenReturn(taskExecutor);
         when(_virtualHost.getAttainedQueue(name)).thenReturn(q);
+        final RoutingResult routingResult = new RoutingResult(null);
+        routingResult.addQueue(q);
+        when(q.route(any(ServerMessage.class), anyString(), any(InstanceProperties.class))).thenReturn(routingResult);
         return q;
     }
 
@@ -282,6 +377,7 @@ public class HeadersExchangeTest extends QpidTestCase
         });
         final ServerMessage serverMessage = mock(ServerMessage.class);
         when(serverMessage.getMessageHeader()).thenReturn(header);
+        when(serverMessage.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
         return serverMessage;
     }
 

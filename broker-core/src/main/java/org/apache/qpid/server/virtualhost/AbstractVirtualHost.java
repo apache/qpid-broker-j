@@ -89,6 +89,7 @@ import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageNode;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.*;
@@ -801,8 +802,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                         }
                     }
                 };
-
-        return destination.send(internalMessage, address, instanceProperties, txn, null);
+        final RoutingResult<InternalMessage> result =
+                destination.route(internalMessage, address, instanceProperties);
+        return result.send(txn, null);
 
     }
 

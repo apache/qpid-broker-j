@@ -35,10 +35,11 @@ import org.apache.qpid.server.filter.FilterSupport;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements FanoutExchange<FanoutExchangeImpl>
@@ -51,15 +52,15 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
     {
         private final Map<MessageDestination,Integer> _queues;
 
-        private final List<Queue<?>> _unfilteredQueues;
-        private final List<Queue<?>> _filteredQueues;
+        private final List<MessageDestination> _unfilteredQueues;
+        private final List<MessageDestination> _filteredQueues;
 
-        private final Map<Queue<?>,Map<BindingIdentifier, FilterManager>> _filteredBindings;
+        private final Map<MessageDestination,Map<BindingIdentifier, FilterManager>> _filteredBindings;
 
         public BindingSet(final Map<MessageDestination, Integer> queues,
-                          final List<Queue<?>> unfilteredQueues,
-                          final List<Queue<?>> filteredQueues,
-                          final Map<Queue<?>, Map<BindingIdentifier, FilterManager>> filteredBindings)
+                          final List<MessageDestination> unfilteredQueues,
+                          final List<MessageDestination> filteredQueues,
+                          final Map<MessageDestination, Map<BindingIdentifier, FilterManager>> filteredBindings)
         {
             _queues = queues;
             _unfilteredQueues = unfilteredQueues;
@@ -81,19 +82,19 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
                 {
                     try
                     {
-                        List<Queue<?>> filteredQueues;
+                        List<MessageDestination> filteredQueues;
                         if (!(_filteredQueues.contains(binding.getDestination())
                               || _unfilteredQueues.contains(binding.getDestination())))
                         {
                             filteredQueues = new ArrayList<>(_filteredQueues);
-                            filteredQueues.add((Queue<?>) binding.getDestination());
+                            filteredQueues.add(binding.getDestination());
                             filteredQueues = Collections.unmodifiableList(filteredQueues);
                         }
                         else
                         {
                             filteredQueues = _filteredQueues;
                         }
-                        Map<Queue<?>, Map<BindingIdentifier, FilterManager>> filteredBindings =
+                        Map<MessageDestination, Map<BindingIdentifier, FilterManager>> filteredBindings =
                                 new HashMap<>(_filteredBindings);
                         Map<BindingIdentifier, FilterManager> bindingsForQueue =
                                 filteredBindings.get(binding.getDestination());
@@ -107,8 +108,8 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
                         }
                         bindingsForQueue.put(binding,
                                              FilterSupport.createMessageFilter(arguments,
-                                                                               (Queue<?>) binding.getDestination()));
-                        filteredBindings.put((Queue<?>) binding.getDestination(), bindingsForQueue);
+                                                                               binding.getDestination()));
+                        filteredBindings.put(binding.getDestination(), bindingsForQueue);
                         return new BindingSet(_queues, _unfilteredQueues, filteredQueues, Collections.unmodifiableMap(filteredBindings));
                     }
                     catch (AMQInvalidArgumentException e)
@@ -122,8 +123,8 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
                 else
                 {
                     Map<MessageDestination, Integer> queues = new HashMap<>(_queues);
-                    List<Queue<?>> unfilteredQueues;
-                    List<Queue<?>> filteredQueues;
+                    List<MessageDestination> unfilteredQueues;
+                    List<MessageDestination> filteredQueues;
                     if (queues.containsKey(binding.getDestination()))
                     {
                         queues.put(binding.getDestination(), queues.get(binding.getDestination()) + 1);
@@ -162,10 +163,10 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
             Queue<?> queue = (Queue<?>) binding.getDestination();
             if(_filteredBindings.containsKey(queue) && _filteredBindings.get(queue).containsKey(binding))
             {
-                final Map<Queue<?>, Map<BindingIdentifier, FilterManager>> filteredBindings = new HashMap<>(_filteredBindings);
+                final Map<MessageDestination, Map<BindingIdentifier, FilterManager>> filteredBindings = new HashMap<>(_filteredBindings);
                 final Map<BindingIdentifier, FilterManager> bindingsForQueue = new HashMap<>(filteredBindings.remove(queue));
                 bindingsForQueue.remove(binding);
-                List<Queue<?>> filteredQueues;
+                List<MessageDestination> filteredQueues;
                 if(bindingsForQueue.isEmpty())
                 {
                     filteredQueues = new ArrayList<>(_filteredQueues);
@@ -183,8 +184,8 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
             {
                 Map<MessageDestination, Integer> queues = new HashMap<>(_queues);
                 int count = queues.remove(queue);
-                List<Queue<?>> unfilteredQueues;
-                List<Queue<?>> filteredQueues;
+                List<MessageDestination> unfilteredQueues;
+                List<MessageDestination> filteredQueues;
                 if(count > 1)
                 {
                     queues.put(queue, --count);
@@ -230,28 +231,29 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
     }
 
     @Override
-    public ArrayList<BaseQueue> doRoute(ServerMessage payload,
-                                        final String routingKey,
-                                        final InstanceProperties instanceProperties)
+    protected <M extends ServerMessage<? extends StorableMessageMetaData>> void doRoute(final M message,
+                                                                                        final String routingAddress,
+                                                                                        final InstanceProperties instanceProperties,
+                                                                                        final RoutingResult<M> result)
     {
-
         BindingSet bindingSet = _bindingSet;
-        final ArrayList<BaseQueue> result = new ArrayList<BaseQueue>(bindingSet._unfilteredQueues);
-
-
-        final Map<Queue<?>, Map<BindingIdentifier, FilterManager>> filteredBindings = bindingSet._filteredBindings;
+        for(MessageDestination destination : bindingSet._unfilteredQueues)
+        {
+            result.add(destination.route(message, routingAddress, instanceProperties));
+        }
+        final Map<MessageDestination, Map<BindingIdentifier, FilterManager>> filteredBindings = bindingSet._filteredBindings;
         if(!bindingSet._filteredQueues.isEmpty())
         {
-            for(Queue<?> q : bindingSet._filteredQueues)
+            for(MessageDestination q : bindingSet._filteredQueues)
             {
                 final Map<BindingIdentifier, FilterManager> bindingMessageFilterMap = filteredBindings.get(q);
-                if(!(bindingMessageFilterMap == null || result.contains(q)))
+                if(!(bindingMessageFilterMap == null || bindingSet._unfilteredQueues.contains(q)))
                 {
                     for(FilterManager filter : bindingMessageFilterMap.values())
                     {
-                        if(filter.allAllow(Filterable.Factory.newInstance(payload, instanceProperties)))
+                        if(filter.allAllow(Filterable.Factory.newInstance(message, instanceProperties)))
                         {
-                            result.add(q);
+                            result.add(q.route(message, routingAddress, instanceProperties));
                             break;
                         }
                     }
@@ -260,10 +262,6 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
 
         }
 
-
-        _logger.debug("Publishing message to queue {}", result);
-
-        return result;
 
     }
 

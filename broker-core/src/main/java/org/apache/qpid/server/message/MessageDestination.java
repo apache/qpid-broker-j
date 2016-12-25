@@ -27,8 +27,6 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.StorableMessageMetaData;
-import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.Action;
 
 public interface MessageDestination extends MessageNode
 {
@@ -46,15 +44,10 @@ public interface MessageDestination extends MessageNode
      * @param message the message to be routed
      * @param routingAddress
      * @param instanceProperties the instance properties
-     * @param txn the transaction to enqueue within
-     * @param postEnqueueAction action to perform on the result of every enqueue (may be null)
-     * @return the number of queues in which the message was enqueued performed
-     */
-    <M extends ServerMessage<? extends StorableMessageMetaData>> int send(M message,
-                                                                          final String routingAddress,
-                                                                          InstanceProperties instanceProperties,
-                                                                          ServerTransaction txn,
-                                                                          Action<? super MessageInstance> postEnqueueAction);
+    */
+    <M extends ServerMessage<? extends StorableMessageMetaData>> RoutingResult<M> route(M message,
+                                                                                        String routingAddress,
+                                                                                        InstanceProperties instanceProperties);
 
     boolean isDurable();
 

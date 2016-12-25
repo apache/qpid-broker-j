@@ -20,11 +20,9 @@
  */
 package org.apache.qpid.server.exchange;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,10 +37,11 @@ import org.apache.qpid.server.filter.FilterSupport;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> implements DirectExchange<DirectExchangeImpl>
@@ -52,8 +51,8 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
 
     private final class BindingSet
     {
-        private final Set<BaseQueue> _unfilteredQueues;
-        private final Map<BaseQueue, FilterManager> _filteredQueues;
+        private final Set<MessageDestination> _unfilteredQueues;
+        private final Map<MessageDestination, FilterManager> _filteredQueues;
 
         public BindingSet()
         {
@@ -61,14 +60,14 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
             _filteredQueues = Collections.emptyMap();
         }
 
-        private BindingSet(final Set<BaseQueue> unfilteredQueues,
-                           final Map<BaseQueue, FilterManager> filteredQueues)
+        private BindingSet(final Set<MessageDestination> unfilteredQueues,
+                           final Map<MessageDestination, FilterManager> filteredQueues)
         {
             _unfilteredQueues = unfilteredQueues;
             _filteredQueues = filteredQueues;
         }
 
-        public Set<BaseQueue> getUnfilteredQueues()
+        public Set<MessageDestination> getUnfilteredQueues()
         {
             return _unfilteredQueues;
         }
@@ -83,7 +82,7 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
             return _unfilteredQueues.isEmpty() && _filteredQueues.isEmpty();
         }
 
-        public Map<BaseQueue,FilterManager> getFilteredQueues()
+        public Map<MessageDestination,FilterManager> getFilteredQueues()
         {
             return _filteredQueues;
         }
@@ -98,8 +97,8 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
             {
                 try
                 {
-                    Set<BaseQueue> unfilteredQueues;
-                    Map<BaseQueue, FilterManager> filteredQueues;
+                    Set<MessageDestination> unfilteredQueues;
+                    Map<MessageDestination, FilterManager> filteredQueues;
                     if (_unfilteredQueues.contains(destination))
                     {
                         unfilteredQueues = new HashSet<>(_unfilteredQueues);
@@ -111,7 +110,7 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
                     }
 
                     filteredQueues = new HashMap<>(_filteredQueues);
-                    filteredQueues.put((BaseQueue) destination,
+                    filteredQueues.put(destination,
                                        FilterSupport.createMessageFilter(arguments, (Queue<?>) destination));
 
                     return new BindingSet(Collections.unmodifiableSet(unfilteredQueues), Collections.unmodifiableMap(filteredQueues));
@@ -128,8 +127,8 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
             }
             else
             {
-                Set<BaseQueue> unfilteredQueues;
-                Map<BaseQueue, FilterManager> filteredQueues;
+                Set<MessageDestination> unfilteredQueues;
+                Map<MessageDestination, FilterManager> filteredQueues;
                 if (_filteredQueues.containsKey(destination))
                 {
                     filteredQueues = new HashMap<>(_filteredQueues);
@@ -141,7 +140,7 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
                 }
 
                 unfilteredQueues = new HashSet<>(_unfilteredQueues);
-                unfilteredQueues.add((BaseQueue)destination);
+                unfilteredQueues.add(destination);
 
                 return new BindingSet(Collections.unmodifiableSet(unfilteredQueues), Collections.unmodifiableMap(filteredQueues));
 
@@ -150,8 +149,8 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
 
         public BindingSet removeBinding(final MessageDestination destination)
         {
-            Set<BaseQueue> unfilteredQueues;
-            Map<BaseQueue, FilterManager> filteredQueues;
+            Set<MessageDestination> unfilteredQueues;
+            Map<MessageDestination, FilterManager> filteredQueues;
             if (_unfilteredQueues.contains(destination))
             {
                 unfilteredQueues = new HashSet<>(_unfilteredQueues);
@@ -182,48 +181,42 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
         super(attributes, vhost);
     }
 
+
     @Override
-    public List<? extends BaseQueue> doRoute(ServerMessage payload,
-                                             final String routingKey,
-                                             final InstanceProperties instanceProperties)
+    public  <M extends ServerMessage<? extends StorableMessageMetaData>> void doRoute(final M payload,
+                                                                                      final String routingKey,
+                                                                                      final InstanceProperties instanceProperties,
+                                                                                      final RoutingResult<M> result)
     {
 
         BindingSet bindings = _bindingsByKey.get(routingKey == null ? "" : routingKey);
 
         if(bindings != null)
         {
-            // TODO - remove this garbage generation
-            List<BaseQueue> queues = new ArrayList<>(bindings.getUnfilteredQueues());
+            final Set<MessageDestination> unfilteredQueues = bindings.getUnfilteredQueues();
+            for(MessageDestination destination : unfilteredQueues)
+            {
+                result.add(destination.route(payload, routingKey, instanceProperties));
+            }
 
             if(bindings.hasFilteredQueues())
             {
-                Set<BaseQueue> queuesSet = new HashSet<BaseQueue>(queues);
                 Filterable filterable = Filterable.Factory.newInstance(payload, instanceProperties);
 
-                Map<BaseQueue, FilterManager> filteredQueues = bindings.getFilteredQueues();
-                for(Map.Entry<BaseQueue, FilterManager> entry : filteredQueues.entrySet())
+                Map<MessageDestination, FilterManager> filteredQueues = bindings.getFilteredQueues();
+                for(Map.Entry<MessageDestination, FilterManager> entry : filteredQueues.entrySet())
                 {
-                    if(!queuesSet.contains(entry.getKey()))
+                    if(!unfilteredQueues.contains(entry.getKey()))
                     {
                         FilterManager filter = entry.getValue();
                         if(filter.allAllow(filterable))
                         {
-                            queuesSet.add(entry.getKey());
+                            result.add(entry.getKey().route(payload, routingKey, instanceProperties));
                         }
                     }
                 }
-                if(queues.size() != queuesSet.size())
-                {
-                    queues = new ArrayList<>(queuesSet);
-                }
             }
-            return queues;
         }
-        else
-        {
-            return Collections.emptyList();
-        }
-
 
     }
 

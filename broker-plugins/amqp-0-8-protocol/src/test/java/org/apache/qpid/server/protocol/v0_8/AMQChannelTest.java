@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v0_8;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -37,6 +38,10 @@ import java.util.Set;
 
 import javax.security.auth.Subject;
 
+import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.MethodRegistry;
@@ -46,6 +51,7 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
@@ -61,8 +67,6 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.NullMessageStore;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMemoryMessage;
-import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -213,7 +217,16 @@ public class AMQChannelTest extends QpidTestCase
                 return messageHandle;
             }
         });
-
+        final ArgumentCaptor<ServerMessage> messageCaptor = ArgumentCaptor.forClass(ServerMessage.class);
+        doAnswer(new Answer()
+        {
+            @Override
+            public Object answer(final InvocationOnMock invocation) throws Throwable
+            {
+                ServerMessage message = messageCaptor.getValue();
+                return new RoutingResult(message);
+            }
+        }).when(_messageDestination).route(messageCaptor.capture(), eq(ROUTING_KEY.toString()), any(InstanceProperties.class));
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _virtualHost.getMessageStore());
 
         BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
@@ -221,10 +234,8 @@ public class AMQChannelTest extends QpidTestCase
         channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, ROUTING_KEY, false, false);
         channel.receiveMessageHeader(properties, 0);
 
-        verify(_messageDestination).send((ServerMessage) any(),
+        verify(_messageDestination).route((ServerMessage) any(),
                                          eq(ROUTING_KEY.toString()),
-                                         any(InstanceProperties.class),
-                                         any(ServerTransaction.class),
-                                         any(Action.class) );
+                                         any(InstanceProperties.class));
     }
 }
