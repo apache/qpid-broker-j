@@ -393,6 +393,20 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return server;
     }
 
+    @Override
+    public int getBoundPort(final HttpPort httpPort)
+    {
+        Connector c = _portConnectorMap.get(httpPort);
+        if (c != null)
+        {
+            return c.getLocalPort();
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
     private SelectChannelConnector createConnector(final HttpPort<?> port)
     {
         port.setPortManager(this);

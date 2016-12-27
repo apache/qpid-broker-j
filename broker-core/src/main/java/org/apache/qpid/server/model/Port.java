@@ -59,8 +59,13 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
 
     // Attributes
 
-    @ManagedAttribute( mandatory = true )
+    @ManagedAttribute( mandatory = true, description = "Port used to accept incoming connections. A value of 0"
+                                                       + " will cause a dynamically allocated port to be assigned.")
     int getPort();
+
+    @DerivedAttribute( description = "Actual port used to accept incoming connections. Will be -1 if the port"
+                                     + " is not currently bound.")
+    int getBoundPort();
 
     @ManagedAttribute
     Set<Protocol> getProtocols();

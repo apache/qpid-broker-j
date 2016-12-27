@@ -111,6 +111,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     private SSLContext _sslContext;
     private volatile int _connectionWarnCount;
     private volatile long _protocolHandshakeTimeout;
+    private volatile int _boundPort = -1;
 
     @ManagedObjectFactoryConstructor
     public AmqpPortImpl(Map<String, Object> attributes, Container<?> container)
@@ -241,6 +242,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
                                                                defaultSupportedProtocolReply);
 
                 _transport.start();
+                _boundPort = _transport.getAcceptingPort();
                 for (Transport transport : getTransports())
                 {
                     _container.getEventLogger()
@@ -283,6 +285,12 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     public int getNetworkBufferSize()
     {
         return _container.getNetworkBufferSize();
+    }
+
+    @Override
+    public int getBoundPort()
+    {
+        return _boundPort;
     }
 
     @Override

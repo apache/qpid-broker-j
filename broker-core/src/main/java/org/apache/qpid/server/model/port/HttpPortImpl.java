@@ -72,6 +72,11 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         _portManager = manager;
     }
 
+    @Override
+    public int getBoundPort()
+    {
+        return _portManager == null ? -1 : _portManager.getBoundPort(this);
+    }
 
     @Override
     public String getBindingAddress()
