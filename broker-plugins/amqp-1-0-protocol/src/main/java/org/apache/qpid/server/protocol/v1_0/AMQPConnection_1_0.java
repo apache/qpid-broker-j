@@ -336,6 +336,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         closeSaslWithFailure();
     }
 
+    @Override
     public void receiveClose(final short channel, final Close close)
     {
         assertState(FrameReceivingState.ANY_FRAME);
@@ -353,10 +354,11 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                 _connectionState = ConnectionState.CLOSE_RECEIVED;
                 if(close.getError() != null)
                 {
-                    ErrorCondition condition = _remoteError.getCondition();
+                    final Error error = close.getError();
+                    ErrorCondition condition = error.getCondition();
                     Symbol errorCondition = condition == null ? null : condition.getValue();
                     LOGGER.info("{} : Connection closed with error : {} - {}", getLogSubject(),
-                                errorCondition, _remoteError.getDescription());
+                                errorCondition, close.getError().getDescription());
                 }
                 sendClose(new Close());
                 _connectionState = ConnectionState.CLOSED;
