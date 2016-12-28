@@ -150,71 +150,11 @@ define(["dojo/_base/connect",
 
         var node = construct.create("div", null, win.body(), "last");
 
-        var convertToBinding = function convertToBinding(formValues)
-        {
-            var newBinding = {};
-
-            newBinding.name = formValues.name;
-            for (var propName in formValues)
-            {
-                if (formValues.hasOwnProperty(propName))
-                {
-                    if (propName === "durable")
-                    {
-                        if (formValues.durable[0] && formValues.durable[0] == "durable")
-                        {
-                            newBinding.durable = true;
-                        }
-                    }
-                    else
-                    {
-                        if (formValues[propName] !== "")
-                        {
-                            newBinding[propName] = formValues[propName];
-                        }
-                    }
-
-                }
-            }
-            if (addBinding.queue)
-            {
-                newBinding.queue = addBinding.queue;
-            }
-            if (addBinding.exchange)
-            {
-                newBinding.exchange = addBinding.exchange;
-            }
-
-            addBinding.bindingArgumentsGrid.store.fetch({
-                onComplete: function (items, request)
-                {
-                    if (items.length)
-                    {
-                        array.forEach(items, function (item)
-                        {
-                            if (item && item.name && item.value)
-                            {
-                                var bindingArguments = newBinding.arguments;
-                                if (!bindingArguments)
-                                {
-                                    bindingArguments = {};
-                                    newBinding.arguments = bindingArguments;
-                                }
-                                bindingArguments[item.name] = item.value;
-                            }
-                        });
-                    }
-                }
-            });
-            return newBinding;
-        };
-
-        var theForm;
         node.innerHTML = template;
         addBinding.dialogNode = dom.byId("addBinding");
         parser.instantiate([addBinding.dialogNode]);
 
-        theForm = registry.byId("formAddBinding");
+        var theForm = registry.byId("formAddBinding");
         array.forEach(theForm.getDescendants(), function (widget)
         {
             if (widget.name === "type")
@@ -360,35 +300,55 @@ define(["dojo/_base/connect",
             event.stop(e);
             if (theForm.validate())
             {
-
-                var newBinding = convertToBinding(util.getFormWidgetValues(registry.byId("formAddBinding")));
-                var that = this;
-                var model = null;
-                if (addBinding.modelObj.type == "exchange")
-                {
-                    model = {
-                        name: newBinding.queue,
-                        type: "queue",
-                        parent: addBinding.modelObj
-                    };
-                }
-                else
-                {
-                    model = {
-                        name: newBinding.queue,
-                        type: "queue",
-                        parent: {
-                            name: newBinding.exchange,
-                            type: "exchange",
-                            parent: addBinding.modelObj.parent
+                var formValues = util.getFormWidgetValues(registry.byId("formAddBinding"));
+                var parameters = {
+                    destination: formValues.queue,
+                    bindingKey: formValues.name,
+                    replaceExistingArguments: false
+                };
+                addBinding.bindingArgumentsGrid.store.fetch({
+                    onComplete: function (items, request)
+                    {
+                        if (items.length)
+                        {
+                            array.forEach(items, function (item)
+                            {
+                                if (item && item.name && item.value)
+                                {
+                                    parameters.arguments = parameters.arguments || {};
+                                    parameters.arguments[item.name] = item.value;
+                                }
+                            });
                         }
+                    }
+                });
+
+                var exchangeModelObj = addBinding.modelObj;
+                if (exchangeModelObj.type !== "exchange")
+                {
+                    exchangeModelObj = {
+                        name: formValues.exchange,
+                        type: "exchange",
+                        parent: exchangeModelObj.parent
                     };
                 }
-                addBinding.management.create("binding", model, newBinding)
+                var operationModelObj = {
+                    name: "bind",
+                    type: "exchange",
+                    parent: exchangeModelObj
+                };
+                addBinding.management.update(operationModelObj, parameters)
                     .then(function (x)
                     {
-                        registry.byId("addBinding")
-                            .hide();
+                        if (x !== 'true' && x !== true)
+                        {
+                            alert("Binding was not created.");
+                        }
+                        else
+                        {
+                            registry.byId("addBinding")
+                                .hide();
+                        }
                     });
                 return false;
             }

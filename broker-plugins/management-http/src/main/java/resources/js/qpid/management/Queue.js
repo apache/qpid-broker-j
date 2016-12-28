@@ -26,6 +26,7 @@ define(["dojo/_base/declare",
         "dojo/_base/connect",
         "dojo/_base/event",
         "dojo/json",
+        "dojo/promise/all",
         "qpid/common/properties",
         "qpid/common/updater",
         "qpid/common/util",
@@ -51,6 +52,7 @@ define(["dojo/_base/declare",
               connect,
               event,
               json,
+              all,
               properties,
               updater,
               util,
@@ -419,17 +421,17 @@ define(["dojo/_base/declare",
 
             that.queueData = {};
             that.bindingsGrid = new UpdatableStore([], findNode("bindings"), [{
-                name: "Exchange",
-                field: "exchange",
-                width: "40%"
-            }, {
                 name: "Binding Key",
-                field: "name",
-                width: "30%"
+                field: "bindingKey",
+                width: "60%"
             }, {
                 name: "Arguments",
-                field: "argumentString",
-                width: "30%"
+                field: "arguments",
+                width: "40%",
+                formatter: function (arguments)
+                {
+                    return arguments ? json.stringify(arguments) : ""
+                }
             }]);
 
             that.consumersGrid = new UpdatableStore([], findNode("consumers"), [{
@@ -523,14 +525,14 @@ define(["dojo/_base/declare",
 
             var thisObj = this;
 
-            this.management.load(this.modelObj, {
-                    excludeInheritedContext: true,
-                    depth: 1
-                })
+            var queuePromise = this.management.load(this.modelObj, {excludeInheritedContext: true, depth: 1 });
+            var publishingLinkPromise = this.management.load({type: "queue", name: "getPublishingLinks", parent: this.modelObj});
+
+            all({queue: queuePromise, publishingLinks: publishingLinkPromise})
                 .then(function (data)
                 {
                     var i, j;
-                    thisObj.queueData = data[0];
+                    thisObj.queueData = data.queue[0];
                     util.flattenStatistics(thisObj.queueData);
                     if (callback)
                     {
@@ -539,12 +541,10 @@ define(["dojo/_base/declare",
                     var bindings = thisObj.queueData["bindings"];
                     var consumers = thisObj.queueData["consumers"];
 
-                    if (bindings)
+                    var bindings = data.publishingLinks || [];
+                    for (i = 0; i < bindings.length; i++)
                     {
-                        for (i = 0; i < bindings.length; i++)
-                        {
-                            bindings[i].argumentString = json.stringify(bindings[i].arguments);
-                        }
+                        bindings[i].id = i;
                     }
                     thisObj.updateHeader();
 
@@ -630,7 +630,7 @@ define(["dojo/_base/declare",
                     thisObj.consumers = consumers;
 
                     // update bindings
-                    thisObj.bindingsGrid.update(thisObj.queueData.bindings);
+                    thisObj.bindingsGrid.update(bindings);
 
                     // update consumers
                     thisObj.consumersGrid.update(thisObj.queueData.consumers)

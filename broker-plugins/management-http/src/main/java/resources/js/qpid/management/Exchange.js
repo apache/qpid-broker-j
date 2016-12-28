@@ -22,6 +22,9 @@ define(["dojo/_base/xhr",
         "dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
+        "dojo/json",
+        "dojo/_base/lang",
+        "dojo/promise/all",
         "dijit/registry",
         "qpid/common/properties",
         "qpid/common/updater",
@@ -37,6 +40,9 @@ define(["dojo/_base/xhr",
               parser,
               query,
               connect,
+              json,
+              lang,
+              all,
               registry,
               properties,
               updater,
@@ -129,15 +135,38 @@ define(["dojo/_base/xhr",
 
         Exchange.prototype.deleteBindings = function ()
         {
-            util.deleteSelectedObjects(this.exchangeUpdater.bindingsGrid.grid,
-                "Are you sure you want to delete binding",
-                this.management,
+            var deletePromises = [];
+            var deleteSelectedBindings = lang.hitch(this, function (data)
+            {
+                for (var i = 0; i < data.length; i++)
                 {
-                    type: "binding",
-                    parent: this.modelObj
-                },
-                this.exchangeUpdater);
-        }
+                    var selectedItem = data[i];
+                    var promise = this.management.update({
+                            type: "exchange",
+                            name: "unbind",
+                            parent: this.modelObj
+                        },
+                        {
+                            destination: selectedItem.destination,
+                            bindingKey: selectedItem.bindingKey
+                        });
+                    promise.then(lang.hitch(this, function ()
+                    {
+                        this.exchangeUpdater.bindingsGrid.grid.selection.setSelected(selectedItem, false);
+                    }));
+                    deletePromises.push(promise);
+                }
+            });
+            util.confirmAndDeleteGridSelection(
+                this.exchangeUpdater.bindingsGrid.grid,
+                "Are you sure you want to delete binding",
+                deleteSelectedBindings);
+            all(deletePromises)
+                .then(lang.hitch(this, function ()
+                {
+                    this.exchangeUpdater.update();
+                }));
+        };
 
         function ExchangeUpdater(exchangeTab)
         {
@@ -186,16 +215,20 @@ define(["dojo/_base/xhr",
 
             that.bindingsGrid = new UpdatableStore([], findNode("bindings"), [{
                 name: "Queue",
-                field: "queue",
+                field: "destination",
                 width: "40%"
             }, {
                 name: "Binding Key",
-                field: "name",
+                field: "bindingKey",
                 width: "30%"
             }, {
                 name: "Arguments",
-                field: "argumentString",
-                width: "30%"
+                field: "arguments",
+                width: "30%",
+                formatter: function (arguments)
+                {
+                    return arguments ? json.stringify(arguments) : ""
+                }
             }], null, {
                 keepSelection: true,
                 plugins: {
@@ -246,21 +279,11 @@ define(["dojo/_base/xhr",
 
                     util.flattenStatistics(thisObj.exchangeData);
 
-                    var bindings = thisObj.exchangeData["bindings"];
-
-                    if (bindings)
+                    var bindings = thisObj.exchangeData.bindings || [];
+                    for (var i = 0; i < bindings.length; i++)
                     {
-                        for (var i = 0; i < bindings.length; i++)
-                        {
-                            if (bindings[i].arguments)
-                            {
-                                bindings[i].argumentString = dojo.toJson(bindings[i].arguments);
-                            }
-                            else
-                            {
-                                bindings[i].argumentString = "";
-                            }
-                        }
+                        bindings[i].name = bindings[i].bindingKey + "\" for \"" + bindings[i].destination;
+                        bindings[i].id = bindings[i].destination + "/" + bindings[i].bindingKey;
                     }
 
                     var sampleTime = new Date();
@@ -300,7 +323,10 @@ define(["dojo/_base/xhr",
                     thisObj.bytesDrop = bytesDrop;
 
                     // update bindings
-                    thisObj.bindingsGrid.update(thisObj.exchangeData.bindings)
+                    if (thisObj.bindingsGrid.update(bindings))
+                    {
+                        thisObj.bindingsGrid.grid._refresh();
+                    }
 
                 }, function (error)
                 {
@@ -327,7 +353,7 @@ define(["dojo/_base/xhr",
                         that.contentPane.destroyRecursive();
                     }, util.xhrErrorHandler);
             }
-        }
+        };
 
         return Exchange;
     });
