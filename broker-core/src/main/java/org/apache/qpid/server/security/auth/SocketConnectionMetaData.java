@@ -24,7 +24,7 @@ import org.apache.qpid.server.model.ManagedAttributeValueType;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 
-@ManagedAttributeValueType
+@ManagedAttributeValueType(isAbstract = true)
 public interface SocketConnectionMetaData
 {
     String getLocalAddress();

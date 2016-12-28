@@ -2024,7 +2024,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 {
                     if(value instanceof Collection || value instanceof Map)
                     {
-                        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
+                        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper(false);
                         try(StringWriter stringWriter = new StringWriter())
                         {
                             mapper.writeValue(stringWriter, value);

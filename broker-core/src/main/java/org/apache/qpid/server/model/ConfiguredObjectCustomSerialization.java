@@ -58,14 +58,28 @@ public class ConfiguredObjectCustomSerialization
     }
 
     private static final Map<Class<?>, Converter<?>> REGISTERED_CONVERTERS = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Converter<?>> REGISTERED_PERSISTENCE_CONVERTERS = new ConcurrentHashMap<>();
 
     private abstract static class AbstractConverter<T> implements Converter<T>
     {
         private final Class<T> _conversionClass;
 
+
         public AbstractConverter(Class<T> conversionClass)
         {
-            REGISTERED_CONVERTERS.put(conversionClass, this);
+            this(conversionClass, true, true);
+        }
+
+        public AbstractConverter(Class<T> conversionClass, boolean nonPersistenceConverter, boolean persistenceConverted)
+        {
+            if(nonPersistenceConverter)
+            {
+                REGISTERED_CONVERTERS.put(conversionClass, this);
+            }
+            if(persistenceConverted)
+            {
+                REGISTERED_PERSISTENCE_CONVERTERS.put(conversionClass, this);
+            }
             _conversionClass = conversionClass;
         }
 
@@ -76,9 +90,9 @@ public class ConfiguredObjectCustomSerialization
         }
     }
 
-    public static Collection<Converter<?>> getConverters()
+    public static Collection<Converter<?>> getConverters(final boolean forPersistence)
     {
-        return REGISTERED_CONVERTERS.values();
+        return forPersistence ? REGISTERED_PERSISTENCE_CONVERTERS.values() : REGISTERED_CONVERTERS.values();
     }
 
     @SuppressWarnings("unused")
@@ -137,41 +151,111 @@ public class ConfiguredObjectCustomSerialization
 
     @SuppressWarnings("unused")
     private static final Converter<ManagedAttributeValue> MANAGED_ATTRIBUTE_VALUE_CONVERTER =
-            new AbstractConverter<ManagedAttributeValue>(ManagedAttributeValue.class)
-            {
-                @Override
-                public Object convert(final ManagedAttributeValue value)
-                {
+            new ManagedAttributeValueAbstractConverter(true);
 
-                    Map<String, Object> valueAsMap = new LinkedHashMap<>();
-                    for (Method method : value.getClass().getMethods())
+
+    @SuppressWarnings("unused")
+    private static final Converter<ManagedAttributeValue> MANAGED_ATTRIBUTE_VALUE_PERSISTENCE_CONVERTER =
+            new ManagedAttributeValueAbstractConverter(false);
+
+    private static class ManagedAttributeValueAbstractConverter extends AbstractConverter<ManagedAttributeValue>
+    {
+        private final boolean _includeDerivedAttributes;
+
+        public ManagedAttributeValueAbstractConverter(final boolean includeDerivedAttributes)
+        {
+            super(ManagedAttributeValue.class, includeDerivedAttributes, !includeDerivedAttributes);
+            _includeDerivedAttributes = includeDerivedAttributes;
+        }
+
+        @Override
+        public Object convert(final ManagedAttributeValue value)
+        {
+
+            Map<String, Object> valueAsMap = new LinkedHashMap<>();
+            for (Method method : value.getClass().getMethods())
+            {
+                final String methodName = method.getName();
+                if (method.getParameterTypes().length == 0
+                    && !OBJECT_METHOD_NAMES.contains(methodName)
+                    && (methodName.startsWith("is")
+                        || methodName.startsWith("has")
+                        || methodName.startsWith("get")))
+                {
+                    if(_includeDerivedAttributes || !isDerivedMethod(method))
                     {
-                        final String methodName = method.getName();
-                        if (method.getParameterTypes().length == 0
-                            && !OBJECT_METHOD_NAMES.contains(methodName)
-                            && (methodName.startsWith("is")
-                                || methodName.startsWith("has")
-                                || methodName.startsWith("get")))
+                        String propertyName =
+                                methodName.startsWith("is") ? methodName.substring(2) : methodName.substring(3);
+                        propertyName = Character.toLowerCase(propertyName.charAt(0)) + propertyName.substring(1);
+                        try
                         {
-                            String propertyName =
-                                    methodName.startsWith("is") ? methodName.substring(2) : methodName.substring(3);
-                            propertyName = Character.toLowerCase(propertyName.charAt(0)) + propertyName.substring(1);
-                            try
+                            final Object attrValue = method.invoke(value);
+                            if (attrValue != null)
                             {
-                                final Object attrValue = method.invoke(value);
-                                if (attrValue != null)
-                                {
-                                    valueAsMap.put(propertyName, attrValue);
-                                }
-                            }
-                            catch (IllegalAccessException | InvocationTargetException e)
-                            {
-                                throw new ServerScopedRuntimeException(e);
+                                valueAsMap.put(propertyName, attrValue);
                             }
                         }
+                        catch (IllegalAccessException | InvocationTargetException e)
+                        {
+                            throw new ServerScopedRuntimeException(e);
+                        }
                     }
-                    return valueAsMap;
                 }
-            };
+            }
+            return valueAsMap;
+        }
 
+        private boolean isDerivedMethod(final Method method)
+        {
+            final boolean annotationPresent = method.isAnnotationPresent(ManagedAttributeValueTypeDerivedMethod.class);
+            if(!annotationPresent)
+            {
+
+                final Class<?> clazz = method.getDeclaringClass();
+                final String methodName = method.getName();
+                if (isDerivedMethod(clazz, methodName))
+                {
+                    return true;
+                }
+            }
+            return annotationPresent;
+        }
+
+        private boolean isDerivedMethod(final Class<?> clazz, final String methodName)
+        {
+            for(Method method : clazz.getDeclaredMethods())
+            {
+                if(method.getName().equals(methodName)
+                   && method.getParameterTypes().length==0)
+                {
+                    if(method.isAnnotationPresent(ManagedAttributeValueTypeDerivedMethod.class))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+            for(Class<?> iface : clazz.getInterfaces())
+            {
+                if(ManagedAttributeValue.class.isAssignableFrom(iface))
+                {
+                    if(isDerivedMethod(iface, methodName))
+                    {
+                        return true;
+                    }
+                }
+            }
+            if(clazz.getSuperclass() != null && ManagedAttributeValue.class.isAssignableFrom(clazz.getSuperclass()))
+            {
+                if(isDerivedMethod(clazz.getSuperclass(), methodName))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
 }

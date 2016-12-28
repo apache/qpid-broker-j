@@ -44,7 +44,7 @@ public class MapBinding extends TupleBinding<Map<String, Object>>
     public Map<String, Object> entryToObject(final TupleInput input)
     {
         String json = input.readString();
-        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
+        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
         try
         {
             Map<String, Object> value = mapper.readValue(json, Map.class);
@@ -63,7 +63,7 @@ public class MapBinding extends TupleBinding<Map<String, Object>>
         try
         {
             StringWriter writer = new StringWriter();
-            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
+            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
             objectMapper.writeValue(writer, map);
             output.writeString(writer.toString());
         }

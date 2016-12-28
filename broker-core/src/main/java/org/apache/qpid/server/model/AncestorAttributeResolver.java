@@ -42,7 +42,7 @@ public class AncestorAttributeResolver implements Strings.Resolver
     public AncestorAttributeResolver(final ConfiguredObject<?> object)
     {
         _object = object;
-        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
+        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(false);
     }
 
     @Override

@@ -1,4 +1,4 @@
-/*
+package org.apache.qpid.server.model;/*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,20 +18,15 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.connection;
 
-import java.util.UUID;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import org.apache.qpid.server.model.ManagedAttributeValueType;
-import org.apache.qpid.server.model.Port;
-import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
-
-@ManagedAttributeValueType
-public interface AmqpConnectionMetaData extends SocketConnectionMetaData
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface ManagedAttributeValueTypeDerivedMethod
 {
-    UUID getConnectionId();
-    Port getPort();
-    String getClientId();
-    String getClientVersion();
-    String getClientProduct();
+    String value();
 }

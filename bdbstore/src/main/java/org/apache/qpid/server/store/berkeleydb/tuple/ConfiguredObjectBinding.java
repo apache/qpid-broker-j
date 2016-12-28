@@ -25,13 +25,13 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
-import org.apache.qpid.server.store.ConfiguredObjectRecord;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
+
+import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
+import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.BDBConfiguredObjectRecord;
 
@@ -75,7 +75,7 @@ public class ConfiguredObjectBinding extends TupleBinding<ConfiguredObjectRecord
         try
         {
             StringWriter writer = new StringWriter();
-            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
+            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
             objectMapper.writeValue(writer, object.getAttributes());
             tupleOutput.writeString(object.getType());
             tupleOutput.writeString(writer.toString());

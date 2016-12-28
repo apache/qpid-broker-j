@@ -86,8 +86,8 @@ public class AttributeAnnotationValidator extends AbstractProcessor
         typeUtils = processingEnv.getTypeUtils();
         messager = processingEnv.getMessager();
 
-        processAttributes(roundEnv, MANAGED_ATTRIBUTE_CLASS_NAME, false);
-        processAttributes(roundEnv, DERIVED_ATTRIBUTE_CLASS_NAME, true);
+        processAttributes(roundEnv, MANAGED_ATTRIBUTE_CLASS_NAME, false, false);
+        processAttributes(roundEnv, DERIVED_ATTRIBUTE_CLASS_NAME, true, true);
 
         processStatistics(roundEnv, MANAGED_STATISTIC_CLASS_NAME);
 
@@ -95,7 +95,9 @@ public class AttributeAnnotationValidator extends AbstractProcessor
     }
 
     public void processAttributes(final RoundEnvironment roundEnv,
-                                  String elementName, final boolean allowedNamed)
+                                  String elementName,
+                                  final boolean allowedNamed,
+                                  final boolean allowAbstractManagedTypes)
     {
 
         TypeElement annotationElement = elementUtils.getTypeElement(elementName);
@@ -323,11 +325,11 @@ public class AttributeAnnotationValidator extends AbstractProcessor
 
     boolean isValidType(final TypeMirror type)
     {
-        return isValidType(processingEnv, type);
+        return isValidType(processingEnv, type, false);
     }
 
     static boolean isValidType(ProcessingEnvironment processingEnv,
-                               final TypeMirror type)
+                               final TypeMirror type, final boolean allowAbstractManagedTypes)
     {
         Types typeUtils = processingEnv.getTypeUtils();
         Elements elementUtils = processingEnv.getElementUtils();
@@ -365,7 +367,23 @@ public class AttributeAnnotationValidator extends AbstractProcessor
             {
                 if (annotation.getAnnotationType().asElement().equals(managedAttributeTypeValueElement))
                 {
-                    return true;
+                    if(allowAbstractManagedTypes)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        final Map<? extends ExecutableElement, ? extends AnnotationValue> annotationValues =
+                                elementUtils.getElementValuesWithDefaults(annotation);
+                        for(Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> element : annotationValues.entrySet())
+                        {
+                            if("isAbstract".contentEquals(element.getKey().getSimpleName()))
+                            {
+                                return element.getValue().getValue().equals(Boolean.FALSE);
+                            }
+                        }
+                        return false;
+                    }
                 }
             }
         }
@@ -413,7 +431,7 @@ public class AttributeAnnotationValidator extends AbstractProcessor
         {
             for(TypeMirror paramType : ((DeclaredType)type).getTypeArguments())
             {
-                if(!isValidType(processingEnv, paramType))
+                if(!isValidType(processingEnv, paramType, allowAbstractManagedTypes))
                 {
                     return false;
                 }
@@ -428,8 +446,8 @@ public class AttributeAnnotationValidator extends AbstractProcessor
             {
                 throw new IllegalArgumentException("Map types " + type + " must have exactly two type arguments");
             }
-            return isValidType(processingEnv, args.get(0))
-                   && (isValidType(processingEnv, args.get(1))
+            return isValidType(processingEnv, args.get(0), false)
+                   && (isValidType(processingEnv, args.get(1), false)
                        || typeUtils.isSameType(args.get(1), getErasure(processingEnv, "java.lang.Object")));
         }
 

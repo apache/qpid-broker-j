@@ -25,6 +25,17 @@ import java.util.Map;
 @ManagedAttributeValueType
 public interface Binding extends PublishingLink
 {
+
+    String TYPE = "binding";
+
+    @Override
+    @ManagedAttributeValueTypeDerivedMethod("#getBindingKey()")
+    String getName();
+
+    @Override
+    @ManagedAttributeValueTypeDerivedMethod(TYPE)
+    String getType();
+
     String getBindingKey();
     Map<String,Object> getArguments();
 }

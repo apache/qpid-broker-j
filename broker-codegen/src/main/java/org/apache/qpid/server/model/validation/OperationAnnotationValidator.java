@@ -93,7 +93,7 @@ public class OperationAnnotationValidator extends AbstractProcessor
     public void checkMethodReturnType(final TypeElement annotationElement, final ExecutableElement methodElement)
     {
         final TypeMirror returnType = methodElement.getReturnType();
-        if (!(returnType.getKind() == TypeKind.VOID || isValidType(returnType)))
+        if (!(returnType.getKind() == TypeKind.VOID || isValidType(returnType, true)))
         {
             processingEnv.getMessager()
                     .printMessage(Diagnostic.Kind.ERROR,
@@ -113,6 +113,17 @@ public class OperationAnnotationValidator extends AbstractProcessor
 
         for (VariableElement varElem : methodElement.getParameters())
         {
+            if(!isValidType(varElem.asType(), false))
+            {
+                processingEnv.getMessager()
+                             .printMessage(Diagnostic.Kind.ERROR,
+                                           "@"
+                                           + paramElement.getSimpleName()
+                                           + " cannot be applied to variables of type "
+                                           + varElem.asType().toString(),
+                                           methodElement
+                                          );
+            }
             String name = varElem.getSimpleName().toString();
             final List<? extends AnnotationMirror> annotationMirrors = varElem.getAnnotationMirrors();
             AnnotationMirror paramAnnotation = null;
@@ -204,9 +215,9 @@ public class OperationAnnotationValidator extends AbstractProcessor
         }
     }
 
-    boolean isValidType(final TypeMirror type)
+    boolean isValidType(final TypeMirror type, final boolean allowAbstractManagedTypes)
     {
-        return AttributeAnnotationValidator.isValidType(processingEnv, type);
+        return AttributeAnnotationValidator.isValidType(processingEnv, type, allowAbstractManagedTypes);
     }
 
     private TypeMirror getErasure(final String className)

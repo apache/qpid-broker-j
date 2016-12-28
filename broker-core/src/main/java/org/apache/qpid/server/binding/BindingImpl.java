@@ -40,6 +40,18 @@ public class BindingImpl implements Binding
     }
 
     @Override
+    public String getName()
+    {
+        return getBindingKey();
+    }
+
+    @Override
+    public String getType()
+    {
+        return TYPE;
+    }
+
+    @Override
     public String getBindingKey()
     {
         return _bindingKey;

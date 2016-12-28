@@ -247,7 +247,7 @@ public abstract class AbstractServlet extends HttpServlet
     private void writeObjectToResponse(Object object, HttpServletRequest request,  HttpServletResponse response) throws IOException
     {
         OutputStream stream = getOutputStream(request, response);
-        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
+        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper(false);
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         mapper.writeValue(stream, object);
     }

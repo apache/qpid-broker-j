@@ -28,4 +28,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface ManagedAttributeValueType
 {
+    boolean isAbstract() default false;
 }

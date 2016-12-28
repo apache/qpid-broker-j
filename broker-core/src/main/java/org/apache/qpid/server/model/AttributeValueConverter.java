@@ -23,6 +23,7 @@ package org.apache.qpid.server.model;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
@@ -1125,10 +1126,85 @@ abstract class AttributeValueConverter<T>
         throw new ServerScopedRuntimeException("Unable to process type when constructing configuration model: " + t);
     }
 
+    private interface ValueMethod<X extends ManagedAttributeValue>
+    {
+        Object getValue(X object);
+    }
+
+
+    private static class ConstantValueMethod<X extends ManagedAttributeValue> implements ValueMethod<X>
+    {
+
+        private final String _value;
+
+        public ConstantValueMethod(final String derivedMethodValue)
+        {
+            _value = derivedMethodValue;
+        }
+
+        @Override
+        public Object getValue(final X object)
+        {
+            return _value;
+        }
+    }
+
+
+    private static class ObjectMethodValueMethod<X extends ManagedAttributeValue> implements ValueMethod<X>
+    {
+        private final Method _sourceMethod;
+
+        public ObjectMethodValueMethod(final Method sourceMethod)
+        {
+            _sourceMethod = sourceMethod;
+        }
+
+        @Override
+        public Object getValue(final X object)
+        {
+            try
+            {
+                return _sourceMethod.invoke(object);
+            }
+            catch (IllegalAccessException | InvocationTargetException e)
+            {
+                throw new IllegalArgumentException(e);
+            }
+        }
+    }
+
+
+    private static class StaticMethodValueMethod<X extends ManagedAttributeValue> implements ValueMethod<X>
+    {
+        private final Method _sourceMethod;
+
+        public StaticMethodValueMethod(final Method sourceMethod)
+        {
+            _sourceMethod = sourceMethod;
+        }
+
+        @Override
+        public Object getValue(final X object)
+        {
+            try
+            {
+                return _sourceMethod.invoke(null, object);
+            }
+            catch (IllegalAccessException | InvocationTargetException e)
+            {
+                throw new IllegalArgumentException(e);
+            }
+        }
+    }
+
     static final class ManageableAttributeTypeConverter<X extends ManagedAttributeValue> extends AttributeValueConverter<X>
     {
+        private static final Pattern STATIC_METHOD_PATTERN = Pattern.compile("([\\w][\\w\\d_]+\\.)+[\\w][\\w\\d_\\$]*#[\\w\\d_]+\\s*\\(\\s*\\)");
+        private static final Pattern OBJECT_METHOD_PATTERN = Pattern.compile("#[\\w\\d_]+\\s*\\(\\s*\\)");
+
         private final Class<X> _klazz;
         private final Map<Method, AttributeValueConverter<?>> _propertyConverters = new HashMap<>();
+        private final Map<Method, ValueMethod<X>> _derivedValueMethod = new HashMap<>();
 
         private ManageableAttributeTypeConverter(final Class<X> klazz)
         {
@@ -1141,6 +1217,46 @@ abstract class AttributeValueConverter<T>
                    && (methodName.startsWith("get") || methodName.startsWith("is") || methodName.startsWith("has")))
                 {
                     _propertyConverters.put(method, AttributeValueConverter.getConverter(getTypeFromMethod(method), method.getGenericReturnType()));
+                }
+
+                final ManagedAttributeValueTypeDerivedMethod derivedMethodAnnotation =
+                        method.getAnnotation(ManagedAttributeValueTypeDerivedMethod.class);
+                if (derivedMethodAnnotation != null)
+                {
+                    String derivedMethodValue = derivedMethodAnnotation.value();
+                    if (STATIC_METHOD_PATTERN.matcher(derivedMethodValue).matches())
+                    {
+                        try
+                        {
+                            String className = derivedMethodValue.split("#")[0].trim();
+                            String sourceMethodName = derivedMethodValue.split("#")[1].split("\\(")[0].trim();
+                            Class<?> sourceMethodClass = Class.forName(className);
+                            Method sourceMethod = sourceMethodClass.getMethod(sourceMethodName, klazz);
+                            _derivedValueMethod.put(method, new StaticMethodValueMethod<X>(sourceMethod));
+
+                        }
+                        catch (ClassNotFoundException | NoSuchMethodException e)
+                        {
+                            throw new IllegalArgumentException(e);
+                        }
+                    }
+                    else if (OBJECT_METHOD_PATTERN.matcher(derivedMethodValue).matches())
+                    {
+                        try
+                        {
+                            final Method sourceMethod =
+                                    klazz.getMethod(derivedMethodValue.substring(1, derivedMethodValue.indexOf((int) '(')));
+                            _derivedValueMethod.put(method, new ObjectMethodValueMethod<X>(sourceMethod));
+                        }
+                        catch (NoSuchMethodException e)
+                        {
+                            throw new IllegalArgumentException(e);
+                        }
+                    }
+                    else
+                    {
+                        _derivedValueMethod.put(method, new ConstantValueMethod<X>(derivedMethodValue));
+                    }
                 }
             }
 
@@ -1159,61 +1275,79 @@ abstract class AttributeValueConverter<T>
             }
             else if(value instanceof Map)
             {
-                return (X) Proxy.newProxyInstance(_klazz.getClassLoader(), new Class[]{_klazz}, new InvocationHandler()
-                {
-                    @Override
-                    public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable
-                    {
-                        AttributeValueConverter<?> converter = _propertyConverters.get(method);
-                        Map map = (Map) value;
-                        if(converter != null)
+                @SuppressWarnings("unchecked")
+                final X proxyObject =
+                        (X) Proxy.newProxyInstance(_klazz.getClassLoader(), new Class[]{_klazz}, new InvocationHandler()
                         {
-                            return convertValue(map, converter, method);
-                        }
-                        else if("toString".equals(method.getName()) && method.getParameterTypes().length == 0)
-                        {
-                            return _klazz.getSimpleName() + " : " + map.toString();
-                        }
-                        else if("hashCode".equals(method.getName()) && method.getParameterTypes().length == 0)
-                        {
-                            return map.hashCode();
-                        }
-                        else if("equals".equals(method.getName()) && method.getParameterTypes().length == 1 && method.getParameterTypes()[0] == Object.class)
-                        {
-                            if(_klazz.isInstance(args[0]))
+                            @Override
+                            public Object invoke(final Object proxy, final Method method, final Object[] args)
+                                    throws Throwable
                             {
-                                for(Map.Entry<Method, AttributeValueConverter<?>> entry : _propertyConverters.entrySet())
+                                AttributeValueConverter<?> converter = _propertyConverters.get(method);
+                                Map map = (Map) value;
+                                if (converter != null)
                                 {
-                                    AttributeValueConverter<?> conv = entry.getValue();
-                                    Method meth = entry.getKey();
+                                    return convertValue(map, converter, method, proxy);
+                                }
+                                else if ("toString".equals(method.getName()) && method.getParameterTypes().length == 0)
+                                {
+                                    return _klazz.getSimpleName() + " : " + map.toString();
+                                }
+                                else if ("hashCode".equals(method.getName()) && method.getParameterTypes().length == 0)
+                                {
+                                    return map.hashCode();
+                                }
+                                else if ("equals".equals(method.getName())
+                                         && method.getParameterTypes().length == 1
+                                         && method.getParameterTypes()[0] == Object.class)
+                                {
+                                    if (_klazz.isInstance(args[0]))
+                                    {
+                                        for (Map.Entry<Method, AttributeValueConverter<?>> entry : _propertyConverters.entrySet())
+                                        {
+                                            AttributeValueConverter<?> conv = entry.getValue();
+                                            Method meth = entry.getKey();
 
-                                    Object lvalue = convertValue(map, conv, meth);
-                                    Object rvalue = meth.invoke(args[0]);
-                                    if((lvalue == null && rvalue != null) || (lvalue != null && !lvalue.equals(rvalue)))
+                                            Object lvalue = convertValue(map, conv, meth, proxy);
+                                            Object rvalue = meth.invoke(args[0]);
+                                            if ((lvalue == null && rvalue != null) || (lvalue != null && !lvalue.equals(
+                                                    rvalue)))
+                                            {
+                                                return false;
+                                            }
+                                        }
+                                        return true;
+                                    }
+                                    else
                                     {
                                         return false;
                                     }
                                 }
-                                return true;
+                                throw new UnsupportedOperationException(
+                                        "The proxy class implements only attribute getters and toString(), hashCode() and equals()");
                             }
-                            else
-                            {
-                                return false;
-                            }
-                        }
-                        throw new UnsupportedOperationException("The proxy class implements only attribute getters and toString(), hashCode() and equals()");
-                    }
 
-                    private Object convertValue(final Map map,
-                                                final AttributeValueConverter<?> converter,
-                                                final Method method)
-                    {
-                        String attributeName = getNameFromMethod(method, getTypeFromMethod(method));
-                        return map.containsKey(attributeName)
-                                ? converter.convert(map.get(attributeName), object)
-                                : Defaults.defaultValue(method.getReturnType());
-                    }
-                });
+                            private Object convertValue(final Map map,
+                                                        final AttributeValueConverter<?> converter,
+                                                        final Method method, final Object proxy)
+                            {
+                                String attributeName = getNameFromMethod(method, getTypeFromMethod(method));
+                                if (_derivedValueMethod.containsKey(method))
+                                {
+                                    return converter.convert(_derivedValueMethod.get(method).getValue((X) proxy),
+                                                             object);
+                                }
+                                else if (map.containsKey(attributeName))
+                                {
+                                    return converter.convert(map.get(attributeName), object);
+                                }
+                                else
+                                {
+                                    return Defaults.defaultValue(method.getReturnType());
+                                }
+                            }
+                        });
+                return proxyObject;
             }
             else if(value instanceof String)
             {
@@ -1231,6 +1365,7 @@ abstract class AttributeValueConverter<T>
             }
             throw new IllegalArgumentException("Cannot convert type " + value.getClass() + " to a " + _klazz.getName());
         }
+
     }
 
 }

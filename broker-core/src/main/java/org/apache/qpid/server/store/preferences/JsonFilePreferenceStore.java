@@ -50,7 +50,7 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
         super();
         _storePath = path;
         _posixFilePermissions = posixFilePermissions;
-        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true).enable(SerializationFeature.INDENT_OUTPUT);
         _recordMap = new LinkedHashMap<>();
     }
 

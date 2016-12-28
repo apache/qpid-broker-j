@@ -959,7 +959,7 @@ public class ConfiguredObjectTypeRegistry
                         {
                             try
                             {
-                                stringValue = ConfiguredObjectJacksonModule.newObjectMapper().writeValueAsString(value);
+                                stringValue = ConfiguredObjectJacksonModule.newObjectMapper(false).writeValueAsString(value);
                             }
                             catch (JsonProcessingException e)
                             {

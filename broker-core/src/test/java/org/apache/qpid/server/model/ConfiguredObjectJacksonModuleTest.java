@@ -52,7 +52,7 @@ public class ConfiguredObjectJacksonModuleTest extends QpidTestCase
         when(authProvider.getType()).thenReturn(originType);
         when(authProvider.getName()).thenReturn(originName);
         Principal p = new UsernamePrincipal(username, authProvider);
-        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
+        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper(false);
         String json = mapper.writeValueAsString(p);
         assertEquals("unexpected principal serialisation", expectedSerialisation, json);
     }
@@ -61,7 +61,7 @@ public class ConfiguredObjectJacksonModuleTest extends QpidTestCase
     {
         ManagedAttributeValue testType = new TestManagedAttributeValue();
 
-        ObjectMapper encoder = ConfiguredObjectJacksonModule.newObjectMapper();
+        ObjectMapper encoder = ConfiguredObjectJacksonModule.newObjectMapper(false);
         String encodedValue = encoder.writeValueAsString(testType);
         ObjectMapper decoder = new ObjectMapper();
         Map decodedMap = decoder.readValue(encodedValue, Map.class);

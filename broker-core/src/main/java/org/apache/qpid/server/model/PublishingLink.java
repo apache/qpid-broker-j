@@ -20,8 +20,10 @@
  */
 package org.apache.qpid.server.model;
 
-@ManagedAttributeValueType
+@ManagedAttributeValueType(isAbstract = true)
 public interface PublishingLink extends ManagedAttributeValue
 {
+    String getName();
+    String getType();
     String getDestination();
 }

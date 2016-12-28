@@ -350,7 +350,7 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
                                      final Map<String, Object> attributes)
             throws JsonProcessingException, SQLException
     {
-        final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
+        final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
         if (attributes != null)
         {
             byte[] attributesAsBytes = objectMapper.writeValueAsBytes(attributes);

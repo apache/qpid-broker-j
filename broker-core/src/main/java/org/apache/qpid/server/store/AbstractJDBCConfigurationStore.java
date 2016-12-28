@@ -290,7 +290,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
             Map<UUID,Map<String,Object>> bindingsToUpdate = new HashMap<UUID, Map<String, Object>>();
             List<UUID> others = new ArrayList<UUID>();
-            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
+            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
 
             PreparedStatement stmt = connection.prepareStatement("SELECT id, object_type, attributes FROM " + getConfiguredObjectsTableName());
             try
@@ -632,7 +632,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                         else
                         {
                             final Map<String, Object> attributes = configuredObject.getAttributes();
-                            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
+                            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
                             byte[] attributesAsBytes = objectMapper.writeValueAsBytes(attributes);
 
                             ByteArrayInputStream bis = new ByteArrayInputStream(attributesAsBytes);
@@ -742,7 +742,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             try (ResultSet rs = stmt.executeQuery())
             {
 
-                final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
+                final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
                 if (rs.next())
                 {
                     try (PreparedStatement stmt2 = conn.prepareStatement("UPDATE " + getConfiguredObjectsTableName()

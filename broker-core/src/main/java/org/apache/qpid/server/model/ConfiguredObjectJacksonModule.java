@@ -38,7 +38,9 @@ public class ConfiguredObjectJacksonModule extends SimpleModule
 {
     private static final long serialVersionUID = 1L;
 
-    private static final ConfiguredObjectJacksonModule INSTANCE = new ConfiguredObjectJacksonModule();
+    private static final ConfiguredObjectJacksonModule INSTANCE = new ConfiguredObjectJacksonModule(false);
+    private static final ConfiguredObjectJacksonModule PERSISTENCE_INSTANCE = new ConfiguredObjectJacksonModule(true);
+
 
     private static final Set<String> OBJECT_METHOD_NAMES = Collections.synchronizedSet(new HashSet<String>());
 
@@ -50,10 +52,11 @@ public class ConfiguredObjectJacksonModule extends SimpleModule
         }
     }
 
-    private  ConfiguredObjectJacksonModule()
+    private  ConfiguredObjectJacksonModule(final boolean forPersistence)
     {
         super("ConfiguredObjectSerializer", new Version(1,0,0,null, "org.apache.qpid", "broker-core"));
-        for(final ConfiguredObjectCustomSerialization.Converter converter : ConfiguredObjectCustomSerialization.getConverters())
+        for(final ConfiguredObjectCustomSerialization.Converter converter :
+                ConfiguredObjectCustomSerialization.getConverters(forPersistence))
         {
             addSerializer(converter.getConversionClass(), new JsonSerializer()
             {
@@ -68,10 +71,10 @@ public class ConfiguredObjectJacksonModule extends SimpleModule
 
     }
 
-    public static ObjectMapper newObjectMapper()
+    public static ObjectMapper newObjectMapper(final boolean forPersistence)
     {
         final ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(INSTANCE);
+        objectMapper.registerModule(forPersistence ? PERSISTENCE_INSTANCE : INSTANCE);
         return objectMapper;
     }
 

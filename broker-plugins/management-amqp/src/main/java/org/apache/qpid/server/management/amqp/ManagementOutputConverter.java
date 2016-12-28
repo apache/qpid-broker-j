@@ -92,7 +92,8 @@ class ManagementOutputConverter
         }
         else
         {
-            for(ConfiguredObjectCustomSerialization.Converter converter : ConfiguredObjectCustomSerialization.getConverters())
+            for(ConfiguredObjectCustomSerialization.Converter converter : ConfiguredObjectCustomSerialization.getConverters(
+                    false))
             {
                 if(converter.getConversionClass().isAssignableFrom(value.getClass()))
                 {
