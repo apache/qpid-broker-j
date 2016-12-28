@@ -332,7 +332,7 @@ public class AMQChannel
     }
 
     /** Sets this channel to be part of a local transaction */
-    public void setLocalTransactional()
+    private void setLocalTransactional()
     {
         _transaction = new LocalTransaction(_messageStore, new ActivityTimeAccessor()
         {
@@ -345,7 +345,7 @@ public class AMQChannel
         _txnStarts.incrementAndGet();
     }
 
-    public boolean isTransactional()
+    private boolean isTransactional()
     {
         return _transaction.isTransactional();
     }
@@ -384,33 +384,37 @@ public class AMQChannel
         }
     }
 
+    @Override
     public long getTxnCommits()
     {
         return _txnCommits.get();
     }
 
+    @Override
     public long getTxnRejects()
     {
         return _txnRejects.get();
     }
 
+    @Override
     public long getTxnStart()
     {
         return _txnStarts.get();
     }
 
+    @Override
     public int getChannelId()
     {
         return _channelId;
     }
 
-    public void setPublishFrame(MessagePublishInfo info, final MessageDestination e)
+    private void setPublishFrame(MessagePublishInfo info, final MessageDestination e)
     {
         _currentMessage = new IncomingMessage(info);
         _currentMessage.setMessageDestination(e);
     }
 
-    public void publishContentHeader(ContentHeaderBody contentHeaderBody)
+    private void publishContentHeader(ContentHeaderBody contentHeaderBody)
     {
         if (_logger.isDebugEnabled())
         {
@@ -645,7 +649,7 @@ public class AMQChannel
         return returnVal;
     }
 
-    public void publishContentBody(ContentBody contentBody)
+    private void publishContentBody(ContentBody contentBody)
     {
         if (_logger.isDebugEnabled())
         {
@@ -680,7 +684,7 @@ public class AMQChannel
         return ++_deliveryTag;
     }
 
-    public int getNextConsumerTag()
+    private int getNextConsumerTag()
     {
         return ++_consumerTag;
     }
@@ -699,7 +703,7 @@ public class AMQChannel
      * @param exclusive Flag requesting exclusive access to the queue
      * @return the consumer tag. This is returned to the subscriber and used in subsequent unsubscribe requests
      */
-    public AMQShortString consumeFromSource(AMQShortString tag, Collection<MessageSource> sources, boolean acks,
+    private AMQShortString consumeFromSource(AMQShortString tag, Collection<MessageSource> sources, boolean acks,
                                             FieldTable arguments, boolean exclusive, boolean noLocal)
             throws MessageSource.ExistingConsumerPreventsExclusive,
                    MessageSource.ExistingExclusiveConsumer,
@@ -858,7 +862,7 @@ public class AMQChannel
      * @param consumerTag
      * @return true if the consumerTag had a mapped queue that could be unregistered.
      */
-    public boolean unsubscribeConsumer(AMQShortString consumerTag)
+    private boolean unsubscribeConsumer(AMQShortString consumerTag)
     {
         if (_logger.isDebugEnabled())
         {
@@ -977,7 +981,7 @@ public class AMQChannel
 
     private final String id = "(" + System.identityHashCode(this) + ")";
 
-    public String debugIdentity()
+    private String debugIdentity()
     {
         return _channelId + id;
     }
@@ -1034,7 +1038,7 @@ public class AMQChannel
      * @param deliveryTag The message to requeue
      *
      */
-    public void requeue(long deliveryTag)
+    private void requeue(long deliveryTag)
     {
 
         final MessageConsumerAssociation association = _unacknowledgedMessageMap.remove(deliveryTag, true);
@@ -1055,7 +1059,7 @@ public class AMQChannel
 
     }
 
-    public boolean isMaxDeliveryCountEnabled(final long deliveryTag)
+    private boolean isMaxDeliveryCountEnabled(final long deliveryTag)
     {
         final MessageInstance queueEntry = _unacknowledgedMessageMap.get(deliveryTag);
         if (queueEntry != null)
@@ -1067,7 +1071,7 @@ public class AMQChannel
         return false;
     }
 
-    public boolean isDeliveredTooManyTimes(final long deliveryTag)
+    private boolean isDeliveredTooManyTimes(final long deliveryTag)
     {
         final MessageInstance queueEntry = _unacknowledgedMessageMap.get(deliveryTag);
         if (queueEntry != null)
@@ -1172,7 +1176,7 @@ public class AMQChannel
      * Called from the ChannelFlowHandler to suspend this Channel
      * @param suspended boolean, should this Channel be suspended
      */
-    public void setSuspended(boolean suspended)
+    private void setSuspended(boolean suspended)
     {
         boolean wasSuspended = _suspended.getAndSet(suspended);
         if (wasSuspended != suspended)
@@ -1314,12 +1318,13 @@ public class AMQChannel
         }
     }
 
+    @Override
     public String toString()
     {
         return "("+ _suspended.get() + ", " + _closing.get() + ", " + _connection.isClosing() + ") "+"["+ _connection.toString()+":"+_channelId+"]";
     }
 
-    public boolean isClosing()
+    boolean isClosing()
     {
         return _closing.get();
     }
@@ -1329,7 +1334,7 @@ public class AMQChannel
         return _connection;
     }
 
-    public void setCredit(final long prefetchSize, final int prefetchCount)
+    private void setCredit(final long prefetchSize, final int prefetchCount)
     {
         if (!_prefetchLoggedForChannel)
         {
@@ -1347,11 +1352,6 @@ public class AMQChannel
         {
             updateAllConsumerNotifyWorkDesired();
         }
-    }
-
-    public MessageStore getMessageStore()
-    {
-        return _messageStore;
     }
 
     public ClientDeliveryMethod getClientDeliveryMethod()
@@ -1408,12 +1408,12 @@ public class AMQChannel
         return _subject;
     }
 
-    public boolean hasCurrentMessage()
+    private boolean hasCurrentMessage()
     {
         return _currentMessage != null;
     }
 
-    public long getMaxUncommittedInMemorySize()
+    private long getMaxUncommittedInMemorySize()
     {
         return _maxUncommittedInMemorySize;
     }
@@ -1578,6 +1578,7 @@ public class AMQChannel
             _ackedMessages = ackedMessages;
         }
 
+        @Override
         public void postCommit()
         {
             try
@@ -1594,6 +1595,7 @@ public class AMQChannel
 
         }
 
+        @Override
         public void onRollback()
         {
             // explicit rollbacks resend the message after the rollback-ok is sent
@@ -1639,6 +1641,7 @@ public class AMQChannel
             _reference = message.newReference();
         }
 
+        @Override
         public void postCommit()
         {
             AMQMessage message = _reference.getMessage();
@@ -1657,6 +1660,7 @@ public class AMQChannel
         }
     }
 
+    @Override
     public synchronized void block()
     {
         if(_blockingEntities.add(this))
@@ -1672,6 +1676,7 @@ public class AMQChannel
         }
     }
 
+    @Override
     public synchronized void unblock()
     {
         if(_blockingEntities.remove(this))
@@ -1684,7 +1689,7 @@ public class AMQChannel
         }
     }
 
-
+    @Override
     public synchronized void block(Queue<?> queue)
     {
         if(_blockingEntities.add(queue))
@@ -1699,6 +1704,7 @@ public class AMQChannel
         }
     }
 
+    @Override
     public synchronized void unblock(Queue<?> queue)
     {
         if(_blockingEntities.remove(queue))
@@ -1737,6 +1743,7 @@ public class AMQChannel
         return getConnection().getReference();
     }
 
+    @Override
     public int getUnacknowledgedMessageCount()
     {
         return getUnacknowledgedMessageMap().size();
@@ -1829,6 +1836,7 @@ public class AMQChannel
         }
     }
 
+    @Override
     public void recordFuture(final ListenableFuture<Void> future, final ServerTransaction.Action action)
     {
         _unfinishedCommandsQueue.add(new AsyncCommand(future, action));
