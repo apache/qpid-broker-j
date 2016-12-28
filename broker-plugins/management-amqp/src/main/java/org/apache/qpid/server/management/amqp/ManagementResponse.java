@@ -24,6 +24,7 @@ import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
+import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -35,16 +36,19 @@ import org.apache.qpid.server.util.StateChangeListener;
 class ManagementResponse implements MessageInstance
 {
     private final ManagementNodeConsumer _consumer;
+    private final MessageReference _messageReference;
     private int _deliveryCount;
     private boolean _isRedelivered;
     private boolean _isDelivered;
     private boolean _isDeleted;
     private InternalMessage _message;
 
-    ManagementResponse(final ManagementNodeConsumer consumer, final InternalMessage message)
+    ManagementResponse(final ManagementNodeConsumer consumer,
+                       final InternalMessage message)
     {
         _consumer = consumer;
         _message = message;
+        _messageReference = _message.newReference(consumer);
     }
 
     @Override
@@ -252,5 +256,10 @@ class ManagementResponse implements MessageInstance
     public TransactionLogResource getOwningResource()
     {
         return _consumer.getManagementNode();
+    }
+
+    public MessageReference getMessageReference()
+    {
+        return _messageReference;
     }
 }
