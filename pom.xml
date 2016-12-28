@@ -463,6 +463,7 @@
             <exclude>test-profiles/test_resources/ssl/**</exclude>
             <exclude>specs/**</exclude>
             <exclude>DEPENDENCIES</exclude>
+            <exclude>.travis.yml</exclude>
           </excludes>
         </configuration>
       </plugin>
