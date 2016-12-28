@@ -352,7 +352,16 @@ public class AMQChannel
 
     public void receivedComplete()
     {
-        sync();
+        AccessController.doPrivileged(new PrivilegedAction<Void>()
+        {
+            @Override
+            public Void run()
+            {
+                sync();
+                return null;
+            }
+        }, getAccessControllerContext());
+
     }
 
     private void incrementOutstandingTxnsIfNecessary()
@@ -1825,7 +1834,7 @@ public class AMQChannel
         _unfinishedCommandsQueue.add(new AsyncCommand(future, action));
     }
 
-    public void sync()
+    private void sync()
     {
         if(_logger.isDebugEnabled())
         {
