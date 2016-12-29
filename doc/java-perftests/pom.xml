@@ -27,7 +27,7 @@
     <parent>
         <groupId>org.apache.qpid</groupId>
         <artifactId>qpid-java-doc</artifactId>
-        <version>6.2.0-SNAPSHOT</version>
+        <version>7.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>qpid-java-doc-perftests</artifactId>
