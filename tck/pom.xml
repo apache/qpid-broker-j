@@ -107,10 +107,10 @@
                                 <echo>
                                     TCK: To run all TCK tests, set system property -Dtck to a name of a JMS client e.g. qpid-jms-client
                                     and set -Dtck.directory to the location of the exploded TCK distribution.
-                                    To run tests from a single, use the system property -Dtck.test to specify the test source:
-                                    e.g. -Dtck.test=com/sun/ts/tests/jms/ee/all/sessiontests/SessionTests.java:
-                                    To run only a single test, append the test name
-                                    e.g. -Dtck.test=com/sun/ts/tests/jms/ee/all/sessiontests/SessionTests.java#SubscriberTests_from_standalone
+                                    To run all tests from a single class, use the system property -Dtck.test to specify the test source:
+                                    e.g. -Dtck.test=com/sun/ts/tests/jms/ee/all/sessiontests/SessionTests.java
+                                    To run only a single test, append the test name:
+                                    e.g. -Dtck.test=com/sun/ts/tests/jms/ee/all/sessiontests/SessionTests.java#InvalidDestinationTests_from_standalone
                                 </echo>
                             </target>
                         </configuration>
@@ -339,12 +339,6 @@
                                     </systemProperties>
                                 </configuration>
                             </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <executions>
                             <execution>
                                 <id>delete-jms-resources</id>
                                 <goals>
