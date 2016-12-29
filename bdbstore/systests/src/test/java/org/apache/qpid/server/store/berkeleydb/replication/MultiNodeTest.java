@@ -459,7 +459,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
 
     public void testInFlightTransactionsWhilstMajorityIsLost() throws Exception
     {
-        int connectionNumber = 20;
+        int connectionNumber = Integer.getInteger("MultiNodeTest.testInFlightTransactionsWhilstMajorityIsLost.numberOfConnections", 20);
         ExecutorService executorService = Executors.newFixedThreadPool(connectionNumber + NUMBER_OF_NODES -1);
         try
         {
@@ -619,7 +619,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
                 }
                 else
                 {
-                    LOGGER.info("Failover did not occur");
+                    LOGGER.info("Failover never started");
                 }
             }
         }
