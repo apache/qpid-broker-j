@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
-    <version>16</version>
+    <version>17</version>
   </parent>
 
   <groupId>org.apache.qpid</groupId>
@@ -166,10 +166,6 @@
     <qpid.legacy.jms.client.artifactid>qpid-client</qpid.legacy.jms.client.artifactid>
     <qpid.legacy.jms.client.version>${project.version}</qpid.legacy.jms.client.version>
     <qpid.legacy.jms.client.type>jar</qpid.legacy.jms.client.type>
-
-    <!-- These versions needs to be kept in sync with versions in parent pom-->
-    <maven-project-info-reports-plugin-version>2.8</maven-project-info-reports-plugin-version>
-    <maven-failsafe-and-surefire-plugins-version>2.18.1</maven-failsafe-and-surefire-plugins-version>
   </properties>
 
   <modules>
@@ -297,21 +293,6 @@
           <artifactId>maven-release-plugin</artifactId>
           <configuration>
             <tagNameFormat>@{project.version}</tagNameFormat>
-          </configuration>
-        </plugin>
-        <!-- REMOVE 2 PLUGINS BELOW AFTER CHANGING APACHE PARENT TO V 17 -->
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>${maven-project-info-reports-plugin-version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-report-plugin</artifactId>
-          <version>${maven-failsafe-and-surefire-plugins-version}</version>
-          <configuration>
-            <alwaysGenerateSurefireReport>false</alwaysGenerateSurefireReport>
-            <reportsDirectory>${test.output.dir}</reportsDirectory>
           </configuration>
         </plugin>
       </plugins>
@@ -491,9 +472,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-project-info-reports-plugin</artifactId>
-        <!--While the version is specified in pluginManagement, it has to be set here otherwise the
-            version specified within the build.plugins section of the parent pom takes precendece -->
-        <version>${maven-project-info-reports-plugin-version}</version>
         <configuration>
           <dependencyDetailsEnabled>false</dependencyDetailsEnabled>
           <dependencyLocationsEnabled>false</dependencyLocationsEnabled>
@@ -509,7 +487,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-report-plugin</artifactId>
-        <version>${maven-failsafe-and-surefire-plugins-version}</version>
         <reportSets>
           <reportSet>
             <reports>
