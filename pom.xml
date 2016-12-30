@@ -342,7 +342,6 @@
             <!-- Defaults -->
             <QPID_HOME>${qpid.home}</QPID_HOME>
             <broker.config>${qpid.home}${file.separator}etc${file.separator}config-systests.json</broker.config>
-            <max_prefetch>1000</max_prefetch>
             <qpid.dest_syntax>BURL</qpid.dest_syntax>
             <test.port>0</test.port>
             <test.hport>0</test.hport>
