@@ -22,6 +22,7 @@ package org.apache.qpid.server.security;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
@@ -118,6 +119,26 @@ public class SiteSpecificTrustStoreImpl
     }
 
     @Override
+    protected void validateOnCreate()
+    {
+        super.validateOnCreate();
+
+        try
+        {
+            URL url = new URL(_siteUrl);
+
+            if (url.getHost() == null || (url.getPort() == -1 && url.getDefaultPort() == -1))
+            {
+                throw new IllegalConfigurationException(String.format("URL '%s' does not provide a hostname and port number", _siteUrl));
+            }
+        }
+        catch (MalformedURLException e)
+        {
+            throw new IllegalConfigurationException(String.format("'%s' is not a valid URL", _siteUrl));
+        }
+    }
+
+    @Override
     public String getCertificate()
     {
         if (_x509Certificate != null)
@@ -156,7 +177,7 @@ public class SiteSpecificTrustStoreImpl
         // verify that it is not in use
         String storeName = getName();
 
-        Collection<Port<?>> ports = new ArrayList<Port<?>>(_broker.getPorts());
+        Collection<Port<?>> ports = new ArrayList<>(_broker.getPorts());
         for (Port port : ports)
         {
             Collection<TrustStore> trustStores = port.getTrustStores();

@@ -34,7 +34,7 @@ public interface SiteSpecificTrustStore<X extends SiteSpecificTrustStore<X>> ext
 {
     String CERTIFICATE = "certificate";
 
-    @ManagedAttribute(immutable = true, description = "The URL from which to obtain the trusted certificate. This must include the protocol and port. Example: https://example.com:443")
+    @ManagedAttribute(immutable = true, description = "The URL from which to obtain the trusted certificate. Example: https://example.com or https://example.com:8443")
     String getSiteUrl();
 
     @DerivedAttribute(persist = true, description = "The X.509 certificate obtained from the given URL as base64 encoded representation of the ASN.1 DER encoding")
