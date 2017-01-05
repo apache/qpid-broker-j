@@ -108,12 +108,7 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
                 updated = _refCountUpdater.compareAndSet(this, count, -1);
                 if (updated)
                 {
-                    // must check if the handle is null since there may be cases where we decide to throw away a message
-                    // and the handle has not yet been constructed
-                    if (_handle != null)
-                    {
-                        _handle.remove();
-                    }
+                    _handle.remove();
                 }
             }
             else

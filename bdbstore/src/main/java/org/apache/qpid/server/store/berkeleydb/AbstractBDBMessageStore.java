@@ -1311,7 +1311,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             if(message.getStoredMessage() instanceof StoredBDBMessage)
             {
                 final StoredBDBMessage storedMessage = (StoredBDBMessage) message.getStoredMessage();
-                final long contentSize = storedMessage.getMetaData().getContentSize();
+                final long contentSize = storedMessage.getContentSize();
                 _preCommitActions.add(new Runnable()
                 {
                     @Override

@@ -119,15 +119,13 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
     {
     }
 
-    public long send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
+    public void send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
     {
-        long size = entry.getMessage().getSize();
         if (_messages.contains(entry))
         {
             entry.setRedelivered();
         }
         _messages.add(entry);
-        return size;
     }
 
     @Override

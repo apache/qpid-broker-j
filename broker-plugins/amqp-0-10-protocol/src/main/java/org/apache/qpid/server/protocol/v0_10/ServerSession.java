@@ -302,11 +302,11 @@ public class ServerSession extends Session
     {
         if (isTransactional() && !(_transaction instanceof DistributedTransaction))
         {
-            _uncommittedMessageSize += handle.getMetaData().getContentSize();
+            _uncommittedMessageSize += handle.getContentSize();
             if (_uncommittedMessageSize > getMaxUncommittedInMemorySize())
             {
                 handle.flowToDisk();
-                if(!_uncommittedMessages.isEmpty() || _uncommittedMessageSize == handle.getMetaData().getContentSize())
+                if(!_uncommittedMessages.isEmpty() || _uncommittedMessageSize == handle.getContentSize())
                 {
                     getAMQPConnection().getEventLogger()
                                        .message(_logSubject, ChannelMessages.LARGE_TRANSACTION_WARN(_uncommittedMessageSize));

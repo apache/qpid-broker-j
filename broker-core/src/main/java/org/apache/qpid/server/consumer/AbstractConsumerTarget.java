@@ -203,17 +203,14 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
     }
 
     @Override
-    public final long send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
+    public final void send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
     {
-        // NoAck consumer might delete the message during doSend so we must locally cache the size
-        final long messageSize = entry.getMessage().getSize();
         doSend(consumer, entry, batch);
 
         if (consumer.acquires())
         {
             entry.makeAcquisitionStealable();
         }
-        return messageSize;
     }
 
     protected abstract void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch);

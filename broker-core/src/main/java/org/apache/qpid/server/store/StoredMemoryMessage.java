@@ -60,7 +60,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
             }
             else
             {
-                final int contentSize = _metaData.getContentSize();
+                final int contentSize = getContentSize();
                 int size = (contentSize < _content.position() + src.remaining())
                         ? _content.position() + src.remaining()
                         : contentSize;

@@ -42,9 +42,9 @@ class MessageRecord implements Record
         buf.dispose();
 
 
-        _content = new byte[storedMessage.getMetaData().getContentSize()];
+        _content = new byte[storedMessage.getContentSize()];
         buf = QpidByteBuffer.wrap(_content);
-        for(QpidByteBuffer content : storedMessage.getContent(0, storedMessage.getMetaData().getContentSize()))
+        for(QpidByteBuffer content : storedMessage.getContent(0, storedMessage.getContentSize()))
         {
             buf.put(content);
             content.dispose();

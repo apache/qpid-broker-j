@@ -560,11 +560,11 @@ public class AMQChannel
     {
         if (isTransactional())
         {
-            _uncommittedMessageSize += handle.getMetaData().getContentSize();
+            _uncommittedMessageSize += handle.getContentSize();
             if (_uncommittedMessageSize > getMaxUncommittedInMemorySize())
             {
                 handle.flowToDisk();
-                if(!_uncommittedMessages.isEmpty() || _uncommittedMessageSize == handle.getMetaData().getContentSize())
+                if(!_uncommittedMessages.isEmpty() || _uncommittedMessageSize == handle.getContentSize())
                 {
                     messageWithSubject(ChannelMessages.LARGE_TRANSACTION_WARN(_uncommittedMessageSize));
                 }

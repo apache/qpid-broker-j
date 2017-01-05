@@ -379,11 +379,11 @@ abstract class AbstractQueueTestBase extends QpidTestCase
             }
 
             @Override
-            public long send(MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
+            public void send(MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
             {
                 try
                 {
-                    return super.send(consumer, entry, batch);
+                    super.send(consumer, entry, batch);
                 }
                 finally
                 {

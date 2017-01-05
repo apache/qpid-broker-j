@@ -60,7 +60,7 @@ public interface ConsumerTarget<T extends ConsumerTarget<T>>
 
     AMQSessionModel<?,T> getSessionModel();
 
-    long send(final MessageInstanceConsumer<T> consumer, MessageInstance entry, boolean batch);
+    void send(final MessageInstanceConsumer<T> consumer, MessageInstance entry, boolean batch);
 
     boolean sendNextMessage();
 

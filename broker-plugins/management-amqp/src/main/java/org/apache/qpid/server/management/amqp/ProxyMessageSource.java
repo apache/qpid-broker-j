@@ -279,11 +279,11 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
         }
 
         @Override
-        public long send(final MessageInstanceConsumer consumer,
+        public void send(final MessageInstanceConsumer consumer,
                          final MessageInstance entry,
                          final boolean batch)
         {
-            return _underlying.send(_consumer, entry, batch);
+            _underlying.send(_consumer, entry, batch);
         }
 
         @Override

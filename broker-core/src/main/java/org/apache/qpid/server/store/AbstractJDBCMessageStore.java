@@ -1145,7 +1145,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                         try
                         {
                             ((StoredJDBCMessage) storedMessage).store(_connWrapper.getConnection());
-                            _storeSizeIncrease += storedMessage.getMetaData().getContentSize();
+                            _storeSizeIncrease += storedMessage.getContentSize();
                         }
                         catch (SQLException e)
                         {
