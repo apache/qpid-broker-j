@@ -20,17 +20,14 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -124,13 +121,8 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
     }
 
     @Override
-    public Symbol[] getCapabilities()
+    public MessageDestination getMessageDestination()
     {
-        Set<Symbol> capabilities = new HashSet<>(Arrays.asList(super.getCapabilities()));
-        if(_queue.isHoldOnPublishEnabled())
-        {
-            capabilities.add(DELAYED_DELIVERY);
-        }
-        return capabilities.toArray(new Symbol[capabilities.size()]);
+        return _queue;
     }
 }

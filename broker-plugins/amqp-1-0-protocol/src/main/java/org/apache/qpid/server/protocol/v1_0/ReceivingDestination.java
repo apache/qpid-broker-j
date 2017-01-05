@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -34,7 +35,6 @@ public interface ReceivingDestination extends Destination
 
     Symbol REJECT_UNROUTABLE = Symbol.valueOf("REJECT_UNROUTABLE");
     Symbol DISCARD_UNROUTABLE = Symbol.valueOf("DISCARD_UNROUTABLE");
-    Symbol DELAYED_DELIVERY = Symbol.valueOf("DELAYED_DELIVERY");
 
 
     Outcome[] getOutcomes();
@@ -51,4 +51,6 @@ public interface ReceivingDestination extends Destination
     String getAddress();
 
     void authorizePublish(SecurityToken securityToken, final String routingAddress);
+
+    MessageDestination getMessageDestination();
 }

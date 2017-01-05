@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -114,6 +115,7 @@ import org.apache.qpid.transport.network.Ticker;
 
 public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_1_0>, LogSubject
 {
+    public static final Symbol DELAYED_DELIVERY = Symbol.valueOf("DELAYED_DELIVERY");
     private static final Logger _logger = LoggerFactory.getLogger(Session_1_0.class);
     private static final Symbol LIFETIME_POLICY = Symbol.valueOf("lifetime-policy");
     private static final EnumSet<SessionState> END_STATES =
@@ -776,7 +778,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
         Error error = null;
 
         final LinkRegistry linkRegistry = getAddressSpace().getLinkRegistry(getConnection().getRemoteContainerId());
-
+        Set<Symbol> capabilities = new HashSet<>();
 
         if (endpoint.getRole() == Role.SENDER)
         {
@@ -910,105 +912,128 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
             }
         }
-        else
+        else if (endpoint.getTarget() instanceof Coordinator)
         {
-            if (endpoint.getTarget() instanceof Coordinator)
+            Coordinator coordinator = (Coordinator) endpoint.getTarget();
+            TxnCapability[] coordinatorCapabilities = coordinator.getCapabilities();
+            boolean localTxn = false;
+            boolean multiplePerSession = false;
+            if (coordinatorCapabilities != null)
             {
-                Coordinator coordinator = (Coordinator) endpoint.getTarget();
-                TxnCapability[] capabilities = coordinator.getCapabilities();
-                boolean localTxn = false;
-                boolean multiplePerSession = false;
-                if (capabilities != null)
+                for (TxnCapability capability : coordinatorCapabilities)
                 {
-                    for (TxnCapability capability : capabilities)
+                    if (capability.equals(TxnCapability.LOCAL_TXN))
                     {
-                        if (capability.equals(TxnCapability.LOCAL_TXN))
-                        {
-                            localTxn = true;
-                        }
-                        else if (capability.equals(TxnCapability.MULTI_TXNS_PER_SSN))
-                        {
-                            multiplePerSession = true;
-                        }
-                        else
-                        {
-                            error = new Error();
-                            error.setCondition(AmqpError.NOT_IMPLEMENTED);
-                            error.setDescription("Unsupported capability: " + capability);
-                            break;
-                        }
+                        localTxn = true;
+                    }
+                    else if (capability.equals(TxnCapability.MULTI_TXNS_PER_SSN))
+                    {
+                        multiplePerSession = true;
+                    }
+                    else
+                    {
+                        error = new Error();
+                        error.setCondition(AmqpError.NOT_IMPLEMENTED);
+                        error.setDescription("Unsupported capability: " + capability);
+                        break;
                     }
                 }
+            }
 
        /*         if(!localTxn)
                 {
-                    capabilities.add(TxnCapabilities.LOCAL_TXN);
+                    coordinatorCapabilities.add(TxnCapabilities.LOCAL_TXN);
                 }*/
 
-                final ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
-                final TxnCoordinatorReceivingLink_1_0 coordinatorLink =
-                        new TxnCoordinatorReceivingLink_1_0(getAddressSpace(),
-                                                            this,
-                                                            receivingLinkEndpoint,
-                                                            _openTransactions);
-                receivingLinkEndpoint.setLink(coordinatorLink);
-                link = coordinatorLink;
+            final ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
+            final TxnCoordinatorReceivingLink_1_0 coordinatorLink =
+                    new TxnCoordinatorReceivingLink_1_0(getAddressSpace(),
+                                                        this,
+                                                        receivingLinkEndpoint,
+                                                        _openTransactions);
+            receivingLinkEndpoint.setLink(coordinatorLink);
+            link = coordinatorLink;
+        }
+        else // standard  (non-Coordinator) receiver
+        {
 
+            StandardReceivingLink_1_0 previousLink =
+                    (StandardReceivingLink_1_0) linkRegistry.getDurableReceivingLink(endpoint.getName());
 
-            }
-            else
+            if (previousLink == null)
             {
 
-                StandardReceivingLink_1_0 previousLink =
-                        (StandardReceivingLink_1_0) linkRegistry.getDurableReceivingLink(endpoint.getName());
+                Target target = (Target) endpoint.getTarget();
 
-                if (previousLink == null)
+                if (target != null)
                 {
-
-                    Target target = (Target) endpoint.getTarget();
-
-                    if (target != null)
+                    if (Boolean.TRUE.equals(target.getDynamic()))
                     {
-                        if (Boolean.TRUE.equals(target.getDynamic()))
-                        {
 
-                            MessageDestination tempQueue = createDynamicDestination(target.getDynamicNodeProperties());
-                            target.setAddress(tempQueue.getName());
+                        MessageDestination tempQueue = createDynamicDestination(target.getDynamicNodeProperties());
+                        target.setAddress(tempQueue.getName());
+                    }
+
+                    String addr = target.getAddress();
+                    if (addr == null || "".equals(addr.trim()))
+                    {
+                        MessageDestination messageDestination = getAddressSpace().getDefaultDestination();
+                        destination = new NodeReceivingDestination(messageDestination, target.getDurable(),
+                                                                   target.getExpiryPolicy(), "",
+                                                                   target.getCapabilities(),
+                                                                   _connection.getEventLogger());
+                        target.setCapabilities(destination.getCapabilities());
+
+                        if (_blockingEntities.contains(messageDestination))
+                        {
+                            endpoint.setStopped(true);
                         }
-
-                        String addr = target.getAddress();
-                        if (addr == null || "".equals(addr.trim()))
+                    }
+                    else if (!addr.startsWith("/") && addr.contains("/"))
+                    {
+                        String[] parts = addr.split("/", 2);
+                        Exchange<?> exchange = getExchange(parts[0]);
+                        if (exchange != null)
                         {
-                            MessageDestination messageDestination = getAddressSpace().getDefaultDestination();
-                            destination = new NodeReceivingDestination(messageDestination, target.getDurable(),
-                                                                       target.getExpiryPolicy(), "",
-                                                                       target.getCapabilities(),
-                                                                       _connection.getEventLogger());
+                            ExchangeDestination exchangeDestination =
+                                    new ExchangeDestination(exchange,
+                                                            target.getDurable(),
+                                                            target.getExpiryPolicy(),
+                                                            parts[0],
+                                                            target.getCapabilities());
+
+                            exchangeDestination.setInitialRoutingAddress(parts[1]);
+                            target.setCapabilities(exchangeDestination.getCapabilities());
+                            destination = exchangeDestination;
+                        }
+                        else
+                        {
+                            endpoint.setTarget(null);
+                            destination = null;
+                        }
+                    }
+                    else
+                    {
+                        MessageDestination messageDestination =
+                                getAddressSpace().getAttainedMessageDestination(addr);
+                        if (messageDestination != null)
+                        {
+                            destination =
+                                    new NodeReceivingDestination(messageDestination,
+                                                                 target.getDurable(),
+                                                                 target.getExpiryPolicy(),
+                                                                 addr,
+                                                                 target.getCapabilities(),
+                                                                 _connection.getEventLogger());
                             target.setCapabilities(destination.getCapabilities());
-
-                            if(_blockingEntities.contains(messageDestination))
-                            {
-                                endpoint.setStopped(true);
-                            }
-
                         }
-                        else if (!addr.startsWith("/") && addr.contains("/"))
+                        else
                         {
-                            String[] parts = addr.split("/", 2);
-                            Exchange<?> exchange =getExchange(parts[0]);
-                            if (exchange != null)
+                            Queue<?> queue = getQueue(addr);
+                            if (queue != null)
                             {
-                                ExchangeDestination exchangeDestination =
-                                        new ExchangeDestination(exchange,
-                                                                target.getDurable(),
-                                                                target.getExpiryPolicy(),
-                                                                parts[0],
-                                                                target.getCapabilities());
 
-                                exchangeDestination.setInitialRoutingAddress(parts[1]);
-                                target.setCapabilities(exchangeDestination.getCapabilities());
-                                destination = exchangeDestination;
-
+                                destination = new QueueDestination(queue, addr);
                             }
                             else
                             {
@@ -1016,69 +1041,47 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
                                 destination = null;
                             }
                         }
-                        else
-                        {
-                            MessageDestination messageDestination =
-                                    getAddressSpace().getAttainedMessageDestination(addr);
-                            if (messageDestination != null)
-                            {
-                                destination =
-                                        new NodeReceivingDestination(messageDestination, target.getDurable(),
-                                                                     target.getExpiryPolicy(), addr, target.getCapabilities(), _connection.getEventLogger());
-                                target.setCapabilities(destination.getCapabilities());
-
-                            }
-                            else
-                            {
-                                Queue<?> queue = getQueue(addr);
-                                if (queue != null)
-                                {
-
-                                    destination = new QueueDestination(queue, addr);
-                                }
-                                else
-                                {
-                                    endpoint.setTarget(null);
-                                    destination = null;
-                                }
-
-                            }
-                        }
-
-                    }
-                    else
-                    {
-                        destination = null;
-                    }
-                    if (destination != null)
-                    {
-                        final ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
-                        final StandardReceivingLink_1_0 receivingLink =
-                                new StandardReceivingLink_1_0(new ReceivingLinkAttachment(this, receivingLinkEndpoint),
-                                                              getAddressSpace(),
-                                                              (ReceivingDestination) destination);
-
-                        receivingLinkEndpoint.setLink(receivingLink);
-                        link = receivingLink;
-                        if (TerminusDurability.UNSETTLED_STATE.equals(target.getDurable())
-                            || TerminusDurability.CONFIGURATION.equals(target.getDurable()))
-                        {
-                            linkRegistry.registerReceivingLink(endpoint.getName(), receivingLink);
-                        }
                     }
                 }
                 else
                 {
-                    ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
-                    previousLink.setLinkAttachment(new ReceivingLinkAttachment(this, receivingLinkEndpoint));
-                    receivingLinkEndpoint.setLink(previousLink);
-                    link = previousLink;
-                    endpoint.setLocalUnsettled(previousLink.getUnsettledOutcomeMap());
-
+                    destination = null;
                 }
+                if (destination != null)
+                {
+                    final ReceivingDestination receivingDestination = (ReceivingDestination) destination;
+                    MessageDestination messageDestination = receivingDestination.getMessageDestination();
+                    if(!(messageDestination instanceof Queue) || ((Queue<?>)messageDestination).isHoldOnPublishEnabled())
+                    {
+                        capabilities.add(DELAYED_DELIVERY);
+                    }
+                    final ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
+                    final StandardReceivingLink_1_0 receivingLink =
+                            new StandardReceivingLink_1_0(new ReceivingLinkAttachment(this, receivingLinkEndpoint),
+                                                          getAddressSpace(),
+                                                          receivingDestination);
+
+                    receivingLinkEndpoint.setLink(receivingLink);
+                    link = receivingLink;
+                    if (TerminusDurability.UNSETTLED_STATE.equals(target.getDurable())
+                        || TerminusDurability.CONFIGURATION.equals(target.getDurable()))
+                    {
+                        linkRegistry.registerReceivingLink(endpoint.getName(), receivingLink);
+                    }
+                }
+            }
+            else
+            {
+                ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
+                previousLink.setLinkAttachment(new ReceivingLinkAttachment(this, receivingLinkEndpoint));
+                receivingLinkEndpoint.setLink(previousLink);
+                link = previousLink;
+                endpoint.setLocalUnsettled(previousLink.getUnsettledOutcomeMap());
             }
         }
 
+
+        endpoint.setCapabilities(capabilities);
         endpoint.attach();
 
         if (link == null)

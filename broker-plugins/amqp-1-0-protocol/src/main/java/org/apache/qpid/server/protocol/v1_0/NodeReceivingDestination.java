@@ -131,6 +131,12 @@ public class NodeReceivingDestination implements ReceivingDestination
     }
 
     @Override
+    public MessageDestination getMessageDestination()
+    {
+        return _destination;
+    }
+
+    @Override
     public void authorizePublish(final SecurityToken securityToken,
                                  final String routingAddress)
     {
@@ -203,9 +209,8 @@ public class NodeReceivingDestination implements ReceivingDestination
     @Override
     public Symbol[] getCapabilities()
     {
-        Symbol[] capabilities = new Symbol[2];
+        Symbol[] capabilities = new Symbol[1];
         capabilities[0] = _discardUnroutable ? DISCARD_UNROUTABLE : REJECT_UNROUTABLE;
-        capabilities[1] = DELAYED_DELIVERY;
         return capabilities;
     }
 }

@@ -21,15 +21,18 @@
 
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
-import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
-import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
@@ -52,6 +55,7 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     private UnsignedInteger _lastSentCreditLimit;
     private volatile boolean _stopped;
     private volatile boolean _stoppedUpdated;
+    private Symbol[] _capabilities;
 
     private enum State
     {
@@ -303,6 +307,7 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         attachToSend.setRcvSettleMode(getReceivingSettlementMode());
         attachToSend.setUnsettled(_localUnsettled);
         attachToSend.setProperties(_properties);
+        attachToSend.setOfferedCapabilities(_capabilities);
 
         if (getRole() == Role.SENDER)
         {
@@ -486,6 +491,16 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     public void setReceivingSettlementMode(ReceiverSettleMode receivingSettlementMode)
     {
         _receivingSettlementMode = receivingSettlementMode;
+    }
+
+    public List<Symbol> getCapabilities()
+    {
+        return _capabilities == null ? null : Collections.unmodifiableList(Arrays.asList(_capabilities));
+    }
+
+    public void setCapabilities(Collection<Symbol> capabilities)
+    {
+        _capabilities = capabilities == null ? null : capabilities.toArray(new Symbol[capabilities.size()]);
     }
 
     public Map getInitialUnsettledMap()

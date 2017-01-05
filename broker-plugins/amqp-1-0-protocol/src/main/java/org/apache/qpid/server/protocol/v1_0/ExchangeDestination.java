@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
@@ -134,6 +135,12 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
     }
 
     @Override
+    public MessageDestination getMessageDestination()
+    {
+        return _exchange;
+    }
+
+    @Override
     public void authorizePublish(final SecurityToken securityToken,
                                  final String routingAddress)
     {
@@ -232,9 +239,8 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
     @Override
     public Symbol[] getCapabilities()
     {
-        Symbol[] capabilities = new Symbol[2];
+        Symbol[] capabilities = new Symbol[1];
         capabilities[0] = _discardUnroutable ? DISCARD_UNROUTABLE : REJECT_UNROUTABLE;
-        capabilities[1] = DELAYED_DELIVERY;
         return capabilities;
     }
 }
