@@ -22,6 +22,7 @@ package org.apache.qpid.server.security;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
@@ -35,6 +36,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -44,13 +48,16 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import javax.xml.bind.DatatypeConverter;
 
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.TrustStoreMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -90,7 +97,8 @@ public class SiteSpecificTrustStoreImpl
 
     private volatile TrustManager[] _trustManagers = new TrustManager[0];
 
-
+    private volatile int _connectTimeout;
+    private volatile int _readTimeout;
     private volatile X509Certificate _x509Certificate;
 
     @ManagedObjectFactoryConstructor
@@ -106,6 +114,14 @@ public class SiteSpecificTrustStoreImpl
     public String getSiteUrl()
     {
         return _siteUrl;
+    }
+
+    @Override
+    protected void onOpen()
+    {
+        super.onOpen();
+        _connectTimeout = getContextValue(Integer.class, TRUST_STORE_SITE_SPECIFIC_CONNECT_TIMEOUT);
+        _readTimeout = getContextValue(Integer.class, TRUST_STORE_SITE_SPECIFIC_READ_TIMEOUT);
     }
 
     @Override
@@ -222,83 +238,116 @@ public class SiteSpecificTrustStoreImpl
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     protected ListenableFuture<Void> doActivate()
     {
+        final SettableFuture<Void> result = SettableFuture.create();
         if(_x509Certificate == null)
         {
-            downloadCertificate();
-        }
-        if(_x509Certificate != null)
-        {
-            generateTrustManagers();
+            final String currentCertificate = getCertificate();
 
-            setState(State.ACTIVE);
+            final ListenableFuture<X509Certificate> certFuture = downloadCertificate(getSiteUrl());
+            addFutureCallback(certFuture, new FutureCallback<X509Certificate>()
+            {
+                @Override
+                public void onSuccess(final X509Certificate cert)
+                {
+                    _x509Certificate = cert;
+                    attributeSet(CERTIFICATE, currentCertificate, _x509Certificate);
+                    generateTrustAndSetState(result);
+                }
+
+                @Override
+                public void onFailure(final Throwable t)
+                {
+                    _trustManagers = new TrustManager[0];
+                    setState(State.ERRORED);
+                    result.setException(t);
+
+                }
+            }, getTaskExecutor());
+            return result;
         }
         else
         {
-            setState(State.ERRORED);
+            generateTrustAndSetState(result);
         }
-        return Futures.immediateFuture(null);
+        return result;
     }
 
-    private void downloadCertificate()
+    private void generateTrustAndSetState(final SettableFuture<Void> result)
     {
+        State state = State.ERRORED;
         try
         {
-
-            URL url = new URL(getSiteUrl());
-            SSLContext sslContext = SSLUtil.tryGetSSLContext();
-            sslContext.init(new KeyManager[0], new TrustManager[] {new AlwaysTrustManager()}, null);
-
-            final int port = url.getPort() == -1 ? url.getDefaultPort() : url.getPort();
-            try(SSLSocket socket = (SSLSocket) sslContext.getSocketFactory().createSocket(url.getHost(), port))
-            {
-                socket.startHandshake();
-                final Certificate[] certificateChain = socket.getSession().getPeerCertificates();
-                if (certificateChain != null && certificateChain.length != 0 && certificateChain[0] instanceof X509Certificate)
-                {
-                    runTask(new Task<Void, RuntimeException>()
-                    {
-                        @Override
-                        public Void execute() throws RuntimeException
-                        {
-                            _x509Certificate = (X509Certificate) certificateChain[0];
-
-                            final String certificate = getCertificate();
-                            attributeSet(CERTIFICATE, certificate, certificate);
-                            return null;
-                        }
-
-                        @Override
-                        public String getObject()
-                        {
-                            return SiteSpecificTrustStoreImpl.this.getName();
-                        }
-
-                        @Override
-                        public String getAction()
-                        {
-                            return "downloadCertificate";
-                        }
-
-                        @Override
-                        public String getArguments()
-                        {
-                            return null;
-                        }
-                    });
-                }
-                else
-                {
-                    LOGGER.info("No valid certificates available from " + getSiteUrl());
-                }
-            }
-
+            generateTrustManagers();
+            state = State.ACTIVE;
+            result.set(null);
         }
-        catch (GeneralSecurityException | IOException e)
+        catch(IllegalConfigurationException e)
         {
-            LOGGER.info("Unable to download certificate from " + getSiteUrl(), e);
+            result.setException(e);
+        }
+        finally
+        {
+            setState(state);
+            result.set(null);
         }
     }
 
+    private ListenableFuture<X509Certificate> downloadCertificate(final String url)
+    {
+        final ListeningExecutorService workerService = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor(
+                getThreadFactory("download-certificate-worker-" + getName())));
+        try
+        {
+            return workerService.submit(new Callable<X509Certificate>()
+            {
+
+                @Override
+                public X509Certificate call()
+                {
+                    try
+                    {
+                        final URL siteUrl = new URL(url);
+                        final int port = siteUrl.getPort() == -1 ? siteUrl.getDefaultPort() : siteUrl.getPort();
+                        SSLContext sslContext = SSLUtil.tryGetSSLContext();
+                        sslContext.init(new KeyManager[0], new TrustManager[]{new AlwaysTrustManager()}, null);
+                        try (SSLSocket socket = (SSLSocket) sslContext.getSocketFactory().createSocket())
+                        {
+                            socket.setSoTimeout(_readTimeout);
+                            socket.connect(new InetSocketAddress(siteUrl.getHost(), port), _connectTimeout);
+                            socket.startHandshake();
+                            final Certificate[] certificateChain = socket.getSession().getPeerCertificates();
+                            if (certificateChain != null
+                                && certificateChain.length != 0
+                                && certificateChain[0] instanceof X509Certificate)
+                            {
+                                final X509Certificate x509Certificate = (X509Certificate) certificateChain[0];
+                                LOGGER.debug("Successfully downloaded X509Certificate with DN {} certificate from {}",
+                                             x509Certificate.getSubjectDN(), url);
+                                return x509Certificate;
+                            }
+                            else
+                            {
+                                throw new IllegalConfigurationException(String.format("TLS handshake for '%s' from '%s' "
+                                                                                      + "did not provide a X509Certificate",
+                                                                                     getName(),
+                                                                                     url));
+                            }
+                        }
+                    }
+                    catch (IOException | GeneralSecurityException e)
+                    {
+                        throw new IllegalConfigurationException(String.format("Unable to get certificate for '%s' from '%s'",
+                                                                              getName(),
+                                                                              url), e);
+                    }
+                }
+            });
+        }
+        finally
+        {
+            workerService.shutdown();
+        }
+    }
 
     private void decodeCertificate()
     {
@@ -361,12 +410,12 @@ public class SiteSpecificTrustStoreImpl
         return _x509Certificate == null ? null : _x509Certificate.getIssuerX500Principal().toString();
     }
 
-
     @Override
     public String getCertificateSubject()
     {
         return _x509Certificate == null ? null : _x509Certificate.getSubjectX500Principal().toString();
     }
+
 
     @Override
     public String getCertificateSerialNumber()
@@ -386,7 +435,6 @@ public class SiteSpecificTrustStoreImpl
         return _x509Certificate == null ? null : _x509Certificate.getNotBefore();
     }
 
-
     @Override
     public Date getCertificateValidUntilDate()
     {
@@ -396,7 +444,26 @@ public class SiteSpecificTrustStoreImpl
     @Override
     public void refreshCertificate()
     {
-        downloadCertificate();
+        logOperation("refreshCertificate");
+        final String currentCertificate = getCertificate();
+        final ListenableFuture<X509Certificate> certFuture = downloadCertificate(getSiteUrl());
+        final ListenableFuture<Void> modelFuture = doAfter(certFuture, new CallableWithArgument<ListenableFuture<Void>, X509Certificate>()
+        {
+            @Override
+            public ListenableFuture<Void> call(final X509Certificate cert) throws Exception
+            {
+                _x509Certificate = cert;
+                attributeSet(CERTIFICATE, currentCertificate, _x509Certificate);
+                return Futures.immediateFuture(null);
+            }
+        });
+        doSync(modelFuture);
+    }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        _broker.getEventLogger().message(TrustStoreMessages.OPERATION(operation));
     }
 
     private static class AlwaysTrustManager implements X509TrustManager
@@ -407,7 +474,6 @@ public class SiteSpecificTrustStoreImpl
         {
 
         }
-
         @Override
         public void checkServerTrusted(final X509Certificate[] chain, final String authType)
                 throws CertificateException
@@ -422,10 +488,22 @@ public class SiteSpecificTrustStoreImpl
         }
     }
 
-
-    @Override
-    protected void logOperation(final String operation)
+    private ThreadFactory getThreadFactory(final String name)
     {
-        _broker.getEventLogger().message(TrustStoreMessages.OPERATION(operation));
+        return new ThreadFactory()
+        {
+            @Override
+            public Thread newThread(final Runnable r)
+            {
+
+                final Thread thread = Executors.defaultThreadFactory().newThread(r);
+                if (!thread.isDaemon())
+                {
+                    thread.setDaemon(true);
+                }
+                thread.setName(name);
+                return thread;
+            }
+        };
     }
 }

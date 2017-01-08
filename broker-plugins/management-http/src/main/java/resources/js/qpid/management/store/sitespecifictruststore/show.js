@@ -17,8 +17,8 @@
  * under the License.
  */
 
-define(["dojo/query", "qpid/common/util", "dojox/grid/DataGrid", "qpid/common/UpdatableStore", "dojo/domReady!"],
-    function (query, util, DataGrid, UpdatableStore)
+define(["dojo/_base/lang", "dojo/query", "dijit/registry", "dojo/_base/connect", "dojo/_base/event", "qpid/common/util", "dojox/grid/DataGrid", "qpid/common/UpdatableStore", "dojo/domReady!"],
+    function (lang, query, registry, connect, event, util, DataGrid, UpdatableStore)
     {
 
         function SiteSpecificTrustStore(data)
@@ -26,6 +26,7 @@ define(["dojo/query", "qpid/common/util", "dojox/grid/DataGrid", "qpid/common/Up
             var that = this;
             this.fields = [];
             this.management = data.parent.management;
+            this.modelObj = data.parent.modelObj;
             this.dateTimeFormatter = function (value)
             {
                 return value ? that.management.userPreferences.formatDateTime(value, {
@@ -38,13 +39,33 @@ define(["dojo/query", "qpid/common/util", "dojox/grid/DataGrid", "qpid/common/Up
             {
                 this.fields.push(name);
             }
-            util.buildUI(data.containerNode, data.parent, "store/sitespecifictruststore/show.html", this.fields, this);
+            util.buildUI(data.containerNode, data.parent, "store/sitespecifictruststore/show.html", this.fields, this,
+                function ()
+                {
+                    var refreshCertificateButton = query(".refreshCertificateButton", data.containerNode)[0];
+                    var refreshCertificateWidget = registry.byNode(refreshCertificateButton);
+                    connect.connect(refreshCertificateWidget, "onClick", function (evt)
+                    {
+                        event.stop(evt);
+                        that.refreshCertificate();
+                    });
+                });
         }
 
         SiteSpecificTrustStore.prototype.update = function (data)
         {
             util.updateUI(data, this.fields, this, {datetime: this.dateTimeFormatter});
-        }
+        };
+
+        SiteSpecificTrustStore.prototype.refreshCertificate = function ()
+        {
+            var modelObj = this.modelObj;
+            this.management.update({
+                parent: modelObj,
+                name: "refreshCertificate",
+                type: modelObj.type
+            }, {}).then(lang.hitch(this, this.update));
+        };
 
         return SiteSpecificTrustStore;
     });

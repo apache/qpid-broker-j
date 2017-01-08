@@ -24,6 +24,7 @@ import java.util.Date;
 
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.TrustStore;
@@ -33,6 +34,14 @@ import org.apache.qpid.server.model.TrustStore;
 public interface SiteSpecificTrustStore<X extends SiteSpecificTrustStore<X>> extends TrustStore<X>
 {
     String CERTIFICATE = "certificate";
+
+    String TRUST_STORE_SITE_SPECIFIC_CONNECT_TIMEOUT = "qpid.trustStore.siteSpecific.connectTimeout";
+    @ManagedContextDefault(name = TRUST_STORE_SITE_SPECIFIC_CONNECT_TIMEOUT)
+    int DEFAULT_TRUST_STORE_SITE_SPECIFIC_CONNECT_TIMEOUT = 60000;
+
+    String TRUST_STORE_SITE_SPECIFIC_READ_TIMEOUT = "qpid.trustStore.siteSpecific.readTimeout";
+    @ManagedContextDefault(name = TRUST_STORE_SITE_SPECIFIC_READ_TIMEOUT)
+    int DEFAULT_TRUST_STORE_SITE_SPECIFIC_READ_TIMEOUT = 60000;
 
     @ManagedAttribute(immutable = true, description = "The URL from which to obtain the trusted certificate. Example: https://example.com or https://example.com:8443")
     String getSiteUrl();
