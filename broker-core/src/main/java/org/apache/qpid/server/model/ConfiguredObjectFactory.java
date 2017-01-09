@@ -38,11 +38,6 @@ public interface ConfiguredObjectFactory
 
     <X extends ConfiguredObject<X>> ListenableFuture<X> createAsync(Class<X> clazz, Map<String, Object> attributes, ConfiguredObject<?> parent);
 
-
-
-    <X extends ConfiguredObject<X>> ConfiguredObjectTypeFactory<X> getConfiguredObjectTypeFactory(Class<X> categoryClass,
-                                                                                                  Map<String, Object> attributes);
-
     <X extends ConfiguredObject<X>> ConfiguredObjectTypeFactory<X> getConfiguredObjectTypeFactory(String category,
                                                                                                   String type);
 

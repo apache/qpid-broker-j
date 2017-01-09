@@ -38,7 +38,7 @@ import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
 import org.apache.qpid.server.security.auth.sasl.scram.ScramNegotiator;
 import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSourceAdapter;
 
-@ManagedObject(category = false, type = "Plain")
+@ManagedObject(category = false, type = "Plain", validChildTypes = "org.apache.qpid.server.security.auth.manager.ConfigModelPasswordManagingAuthenticationProvider#getSupportedUserTypes()")
 public class PlainAuthenticationProvider
         extends ConfigModelPasswordManagingAuthenticationProvider<PlainAuthenticationProvider>
 {

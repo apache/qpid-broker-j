@@ -94,6 +94,11 @@ public class ConfiguredObjectFactoryImpl implements ConfiguredObjectFactory
 
         String type = (String) record.getAttributes().get(ConfiguredObject.TYPE);
 
+        if(type == null || "".equals(type))
+        {
+            type = getOnlyValidChildTypeIfKnown(parent, category);
+        }
+
         ConfiguredObjectTypeFactory<X> factory = getConfiguredObjectTypeFactory(category, type);
 
         if(factory == null)
@@ -104,12 +109,24 @@ public class ConfiguredObjectFactoryImpl implements ConfiguredObjectFactory
         return factory.recover(this, record, parent);
     }
 
+    private String getOnlyValidChildTypeIfKnown(final ConfiguredObject<?> parent, final String category)
+    {
+        String foo = null;
+        final Collection<String> validChildTypes =
+                _model.getTypeRegistry().getValidChildTypes(parent.getTypeClass(), category);
+        if (validChildTypes != null && validChildTypes.size() == 1)
+        {
+            foo = validChildTypes.iterator().next();
+        }
+        return foo;
+    }
+
     @Override
     public <X extends ConfiguredObject<X>> X create(Class<X> clazz,
                                                     final Map<String, Object> attributes,
                                                     final ConfiguredObject<?> parent)
     {
-        ConfiguredObjectTypeFactory<X> factory = getConfiguredObjectTypeFactory(clazz, attributes);
+        ConfiguredObjectTypeFactory<X> factory = getConfiguredObjectTypeFactory(clazz, attributes, parent);
 
         return factory.create(this, attributes, parent);
     }
@@ -120,15 +137,14 @@ public class ConfiguredObjectFactoryImpl implements ConfiguredObjectFactory
                                                     final Map<String, Object> attributes,
                                                     final ConfiguredObject<?> parent)
     {
-        ConfiguredObjectTypeFactory<X> factory = getConfiguredObjectTypeFactory(clazz, attributes);
+        ConfiguredObjectTypeFactory<X> factory = getConfiguredObjectTypeFactory(clazz, attributes, parent);
 
         return factory.createAsync(this, attributes, parent);
     }
 
-
-    @Override
-    public <X extends ConfiguredObject<X>> ConfiguredObjectTypeFactory<X> getConfiguredObjectTypeFactory(final Class<X> categoryClass,
-                                                                                                         Map<String, Object> attributes)
+    private <X extends ConfiguredObject<X>> ConfiguredObjectTypeFactory<X> getConfiguredObjectTypeFactory(final Class<X> categoryClass,
+                                                                                                          Map<String, Object> attributes,
+                                                                                                          ConfiguredObject<?> parent)
     {
         final String category = categoryClass.getSimpleName();
         Map<String, ConfiguredObjectTypeFactory> categoryFactories = _allFactories.get(category);
@@ -150,7 +166,7 @@ public class ConfiguredObjectFactoryImpl implements ConfiguredObjectFactory
         }
         else
         {
-            factory = getConfiguredObjectTypeFactory(category, null);
+            factory = getConfiguredObjectTypeFactory(category, getOnlyValidChildTypeIfKnown(parent, category));
         }
         return factory;
     }

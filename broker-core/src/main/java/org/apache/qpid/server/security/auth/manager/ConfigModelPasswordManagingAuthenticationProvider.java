@@ -22,6 +22,7 @@ package org.apache.qpid.server.security.auth.manager;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -241,4 +242,10 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
     }
 
     abstract void validateUser(final ManagedUser managedUser);
+
+    @SuppressWarnings("unused")
+    public static Map<String, Collection<String>> getSupportedUserTypes()
+    {
+        return Collections.<String, Collection<String>>singletonMap(User.class.getSimpleName(), Collections.singleton(ManagedUser.MANAGED_USER_TYPE));
+    }
 }

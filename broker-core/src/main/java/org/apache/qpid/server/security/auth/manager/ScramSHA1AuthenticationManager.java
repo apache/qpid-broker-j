@@ -26,7 +26,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
-@ManagedObject( category = false, type = "SCRAM-SHA-1" )
+@ManagedObject( category = false, type = "SCRAM-SHA-1" , validChildTypes = "org.apache.qpid.server.security.auth.manager.ConfigModelPasswordManagingAuthenticationProvider#getSupportedUserTypes()")
 public class ScramSHA1AuthenticationManager
         extends AbstractScramAuthenticationManager<ScramSHA1AuthenticationManager>
 {

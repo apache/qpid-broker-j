@@ -1290,11 +1290,17 @@ public class ConfiguredObjectTypeRegistry
     public Collection<String> getValidChildTypes(Class<? extends ConfiguredObject> type,
                                                  Class<? extends ConfiguredObject> childType)
     {
+        return getValidChildTypes(type, getCategory(childType).getSimpleName());
+    }
+
+    public Collection<String> getValidChildTypes(Class<? extends ConfiguredObject> type,
+                                                 String childCategory)
+    {
         final Map<String, Collection<String>> allValidChildTypes = _validChildTypes.get(getTypeClass(type));
         if (allValidChildTypes != null)
         {
             final Collection<String> validTypesForSpecificChild =
-                    allValidChildTypes.get(getCategory(childType).getSimpleName());
+                    allValidChildTypes.get(childCategory);
             return validTypesForSpecificChild == null
                     ? null
                     : Collections.unmodifiableCollection(validTypesForSpecificChild);

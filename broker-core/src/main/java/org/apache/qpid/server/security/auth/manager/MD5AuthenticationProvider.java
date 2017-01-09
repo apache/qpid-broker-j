@@ -44,7 +44,7 @@ import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5HexNegotiator;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
-@ManagedObject(category = false, type = "MD5")
+@ManagedObject(category = false, type = "MD5", validChildTypes = "org.apache.qpid.server.security.auth.manager.ConfigModelPasswordManagingAuthenticationProvider#getSupportedUserTypes()")
 public class MD5AuthenticationProvider
         extends ConfigModelPasswordManagingAuthenticationProvider<MD5AuthenticationProvider>
 {
