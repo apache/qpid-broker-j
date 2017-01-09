@@ -87,3 +87,5 @@ org.apache.qpid.test.unit.basic.PropertyValueTest#testOverlyLargeHeaderRejected_
 // There is no way in the 0-10 client to cause a send to fail when the message does not reach any queue
 org.apache.qpid.server.queue.NodeAutoCreationPolicyTest#testSendingToNonMatchingQueuePatternBURL
 
+# Exclude the JMS 2.0 test suite
+org.apache.qpid.systests.jms_2_0.*

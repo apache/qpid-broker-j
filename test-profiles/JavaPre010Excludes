@@ -78,3 +78,6 @@ org.apache.qpid.test.unit.client.connection.ConnectionTest#testExceptionWhenUser
 
 // Testing of large 0-10 headers (QPID-6786)
 org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_010_HeadersFillContentHeaderFrame
+
+# Exclude the JMS 2.0 test suite
+org.apache.qpid.systests.jms_2_0.*

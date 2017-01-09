@@ -131,6 +131,7 @@
     <commons-lang-version>2.6</commons-lang-version>
 
     <geronimo-jms-1-1-version>1.1.1</geronimo-jms-1-1-version>
+    <geronimo-jms-2-0-version>1.0-alpha-2</geronimo-jms-2-0-version>
     <geronimo-jta-version>1.1.1</geronimo-jta-version>
     <geronimo-servlet-version>1.0</geronimo-servlet-version>
     <geronimo-j2ee-connector-version>2.0.0</geronimo-j2ee-connector-version>
@@ -198,6 +199,7 @@
     <module>qpid-systests-parent</module>
     <module>qpid-test-utils</module>
     <module>systests</module>
+    <module>systests/qpid-systests-jms_2.0</module>
     <module>perftests</module>
     <module>qpid-perftests-systests</module>
 
