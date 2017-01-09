@@ -42,6 +42,7 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
 
     String ALTERNATE_EXCHANGE                   = "alternateExchange";
     String DURABLE_BINDINGS = "durableBindings";
+    String UNROUTABLE_MESSAGE_BEHAVIOUR = "unroutableMessageBehaviour";
 
     enum UnroutableMessageBehaviour
     {
