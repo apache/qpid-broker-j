@@ -20,7 +20,7 @@
 
 -->
 
-<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Runtime-Flow-To-Disk">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Runtime-Consumers">
   <title>Consumers</title>
 
   <para>A Consumer is created when an AMQP connection wishes to receive messages from a message source (such as a
