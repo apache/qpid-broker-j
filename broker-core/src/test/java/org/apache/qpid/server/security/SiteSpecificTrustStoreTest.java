@@ -68,8 +68,10 @@ public class SiteSpecificTrustStoreTest extends QpidTestCase
     public void setUp() throws Exception
     {
         super.setUp();
-        setTestSystemProperty(SiteSpecificTrustStore.TRUST_STORE_SITE_SPECIFIC_CONNECT_TIMEOUT, "100");
-        setTestSystemProperty(SiteSpecificTrustStore.TRUST_STORE_SITE_SPECIFIC_READ_TIMEOUT, "100");
+        int connectTimeout = Integer.getInteger("SiteSpecificTrustStoreTest.connectTimeout", 100);
+        int readTimeout = Integer.getInteger("SiteSpecificTrustStoreTest.readTimeout", 100);
+        setTestSystemProperty(SiteSpecificTrustStore.TRUST_STORE_SITE_SPECIFIC_CONNECT_TIMEOUT, String.valueOf(connectTimeout));
+        setTestSystemProperty(SiteSpecificTrustStore.TRUST_STORE_SITE_SPECIFIC_READ_TIMEOUT, String.valueOf(readTimeout));
 
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
