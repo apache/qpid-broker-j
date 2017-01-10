@@ -258,6 +258,7 @@
             <optimize>true</optimize>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>
+            <useIncrementalCompilation>false</useIncrementalCompilation>
           </configuration>
         </plugin>
         <plugin>
