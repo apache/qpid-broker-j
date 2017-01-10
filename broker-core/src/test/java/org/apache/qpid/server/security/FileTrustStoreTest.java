@@ -66,6 +66,7 @@ public class FileTrustStoreTest extends QpidTestCase
         when(_broker.getModel()).thenReturn(_model);
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
+        when(_broker.getTypeClass()).thenReturn(Broker.class);
     }
 
     public void testCreateTrustStoreFromFile_Success() throws Exception

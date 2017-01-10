@@ -111,14 +111,17 @@ public class ConfiguredObjectFactoryImpl implements ConfiguredObjectFactory
 
     private String getOnlyValidChildTypeIfKnown(final ConfiguredObject<?> parent, final String category)
     {
-        String foo = null;
-        final Collection<String> validChildTypes =
-                _model.getTypeRegistry().getValidChildTypes(parent.getTypeClass(), category);
-        if (validChildTypes != null && validChildTypes.size() == 1)
+        if(parent != null)
         {
-            foo = validChildTypes.iterator().next();
+            final Collection<String> validChildTypes =
+                    _model.getTypeRegistry().getValidChildTypes(parent.getTypeClass(), category);
+            if (validChildTypes != null && validChildTypes.size() == 1)
+            {
+                return validChildTypes.iterator().next();
+            }
         }
-        return foo;
+        return null;
+
     }
 
     @Override
