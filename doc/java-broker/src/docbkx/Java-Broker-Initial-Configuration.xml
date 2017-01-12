@@ -135,24 +135,6 @@ $ ./qpid-server -cic ./initial-config.json
 
     </section>
 
-    <section xml:id="Java-Broker-Initial-Configuration-Overwrite-Config-Store">
-        <title>Overwriting An Existing Configuration Store</title>
-        <para> If a configuration store already exists at the configured <link linkend="Java-Broker-Initial-Configuration-Location">store location</link> then it
-            is used and the current <link linkend="Java-Broker-Initial-Configuration-Initial-Config-Location">'Initial
-                Configuration'</link> is ignored. </para>
-        <para> The command line argument <emphasis>-os</emphasis> (or
-                <emphasis>--overwrite-store</emphasis>) can be used to force a new broker
-            configuration store to be initialised from the current 'Initial Configuration' even if
-            one exists: </para>
-        <screen>
-$ ./qpid-server -os -icp ./my-initial-configuration.json
-        </screen>
-        <para> This can be useful to effectively play configuration into one or more broker to
-            pre-configure them to a particular state, or alternatively to ensure a broker is always
-            started with a fixed configuration. In the latter case, use of the Memory <link linkend="Java-Broker-Initial-Configuration-Type">Configuration Store Type</link> may
-            also be useful. </para>
-    </section>
-
     <section xml:id="Java-Broker-Initial-Configuration-Type">
         <title>Configuration Store Type</title>
         <para> There are currently several implementations of the pluggable Broker Configuration Store:
