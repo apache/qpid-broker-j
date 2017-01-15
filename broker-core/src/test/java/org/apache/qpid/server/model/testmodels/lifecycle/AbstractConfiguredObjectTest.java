@@ -52,6 +52,18 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected state", State.ACTIVE, object.getState());
     }
 
+    public void testOpeningResultsInErroredStateWhenActivationFails() throws Exception
+    {
+        TestConfiguredObject object = new TestConfiguredObject(getName());
+        object.setThrowExceptionOnActivate(true);
+        object.open();
+        assertEquals("Unexpected state", State.ERRORED, object.getState());
+
+        object.setThrowExceptionOnActivate(false);
+        object.setAttributes(Collections.<String, Object>singletonMap(Port.DESIRED_STATE, State.ACTIVE));
+        assertEquals("Unexpected state", State.ACTIVE, object.getState());
+    }
+
     public void testOpeningInERROREDStateAfterFailedOpenOnDesiredStateChangeToActive() throws Exception
     {
         TestConfiguredObject object = new TestConfiguredObject(getName());
@@ -165,6 +177,23 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         }
 
         assertFalse("Unexpected opened", object.isOpened());
+        assertEquals("Unexpected state", State.DELETED, object.getState());
+    }
+
+    public void testCreationWithExceptionThrownFromActivate() throws Exception
+    {
+        TestConfiguredObject object = new TestConfiguredObject(getName());
+        object.setThrowExceptionOnActivate(true);
+        try
+        {
+            object.create();
+            fail("Exception should have been re-thrown");
+        }
+        catch (RuntimeException re)
+        {
+            // pass
+        }
+
         assertEquals("Unexpected state", State.DELETED, object.getState());
     }
 

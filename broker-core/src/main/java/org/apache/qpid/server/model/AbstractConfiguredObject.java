@@ -1082,9 +1082,16 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                 {
                                                     if (t instanceof RuntimeException)
                                                     {
-                                                        exceptionHandler.handleException((RuntimeException) t,
-                                                                                         AbstractConfiguredObject.this);
-                                                        returnVal.set(null);
+                                                        try
+                                                        {
+                                                            exceptionHandler.handleException((RuntimeException) t,
+                                                                                             AbstractConfiguredObject.this);
+                                                            returnVal.set(null);
+                                                        }
+                                                        catch (RuntimeException r)
+                                                        {
+                                                            returnVal.setException(r);
+                                                        }
                                                     }
                                                 }
                                                 finally

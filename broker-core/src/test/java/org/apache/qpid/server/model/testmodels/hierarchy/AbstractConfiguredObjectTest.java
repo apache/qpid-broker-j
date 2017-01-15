@@ -252,6 +252,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         {
             assertSame(stateChangeException, ee.getCause());
         }
+
+        assertEquals("Failed engine should not be registered with parent", 0,  car.getChildren(TestEngine.class).size());
     }
 
     public void testCreateAwaitsAttainState_StateChangeSyncErrors() throws Exception
@@ -276,6 +278,9 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         {
             assertSame(stateChangeException, ee.getCause());
         }
+
+        assertEquals("Failed engine should not be registered with parent", 0,  car.getChildren(TestEngine.class).size());
+
     }
 
     public void testCloseAwaitsChildCloseCompletion()

@@ -53,6 +53,7 @@ public class TestConfiguredObject extends AbstractConfiguredObject
     private boolean _throwExceptionOnPostResolve;
     private boolean _throwExceptionOnCreate;
     private boolean _throwExceptionOnValidate;
+    private boolean _throwExceptionOnActivate;
 
     public TestConfiguredObject(String name)
     {
@@ -127,8 +128,16 @@ public class TestConfiguredObject extends AbstractConfiguredObject
     @StateTransition( currentState = {State.ERRORED, State.UNINITIALIZED}, desiredState = State.ACTIVE )
     protected ListenableFuture<Void> activate()
     {
-        setState(State.ACTIVE);
-        return Futures.immediateFuture(null);
+        if (_throwExceptionOnActivate)
+        {
+            setState(State.ERRORED);
+            return Futures.immediateFailedFuture(new IllegalConfigurationException("failed to activate"));
+        }
+        else
+        {
+            setState(State.ACTIVE);
+            return Futures.immediateFuture(null);
+        }
     }
 
     @StateTransition( currentState = {State.ERRORED, State.UNINITIALIZED, State.ACTIVE}, desiredState = State.DELETED )
@@ -161,6 +170,11 @@ public class TestConfiguredObject extends AbstractConfiguredObject
     public void setThrowExceptionOnCreate(boolean throwExceptionOnCreate)
     {
         _throwExceptionOnCreate = throwExceptionOnCreate;
+    }
+
+    public void setThrowExceptionOnActivate(final boolean throwExceptionOnActivate)
+    {
+        _throwExceptionOnActivate = throwExceptionOnActivate;
     }
 
     public void setThrowExceptionOnValidate(boolean throwException)
