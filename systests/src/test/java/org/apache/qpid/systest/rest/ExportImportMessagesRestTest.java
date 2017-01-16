@@ -27,7 +27,6 @@ import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.Destination;
-import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.Session;
@@ -36,14 +35,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.apache.qpid.url.URLSyntaxException;
 import org.apache.qpid.util.DataUrlUtils;
 
 public class ExportImportMessagesRestTest extends QpidRestTestCase
@@ -177,11 +174,8 @@ public class ExportImportMessagesRestTest extends QpidRestTestCase
         getRestTestHelper().submitRequest(String.format("virtualhostnode/%s", virtualHostNodeName), "DELETE", HttpServletResponse.SC_OK);
     }
 
-    private Connection createConnection(final String virtualHostName) throws JMSException, URLSyntaxException
+    private Connection createConnection(final String virtualHostName) throws Exception
     {
-        return getConnection(new AMQConnectionURL(String.format(CONNECTION_URL_TEMPLATE,
-                                                                virtualHostName,
-                                                                getDefaultAmqpPort())));
+        return getConnection(String.format(CONNECTION_URL_TEMPLATE, virtualHostName, getDefaultAmqpPort()));
     }
-
 }

@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,13 +39,11 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
-import javax.naming.NamingException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
 
 import org.apache.qpid.client.AMQConnectionFactory;
-import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Port;
@@ -54,7 +51,6 @@ import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.apache.qpid.url.URLSyntaxException;
 
 public class MessageCompressionTest extends QpidBrokerTestCase
 {
@@ -132,7 +128,6 @@ public class MessageCompressionTest extends QpidBrokerTestCase
 
         String messageText = createMessageText();
         Connection senderConnection = getConnection(senderCompresses);
-        String virtualPath = ((AMQConnectionFactory)getConnectionFactory()).getVirtualPath();
         Session senderSession = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Queue testQueue = createTestQueue(senderSession);
 
@@ -195,7 +190,7 @@ public class MessageCompressionTest extends QpidBrokerTestCase
 
         String messageText = createMessageText();
         Connection senderConnection = getConnection(true);
-        String virtualPath = ((AMQConnectionFactory)getConnectionFactory()).getVirtualPath();
+        String virtualPath = ((AMQConnectionFactory) getConnectionFactory()).getVirtualPath();
         Session session = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Queue testQueue = createTestQueue(session);
 
@@ -224,7 +219,7 @@ public class MessageCompressionTest extends QpidBrokerTestCase
 
         String messageText = createMessageText();
         Connection senderConnection = getConnection(true);
-        String virtualPath = ((AMQConnectionFactory)getConnectionFactory()).getVirtualPath();
+        String virtualPath = ((AMQConnectionFactory) getConnectionFactory()).getVirtualPath();
         Session session = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Queue testQueue = createTestQueue(session);
 
@@ -435,16 +430,11 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         return stringBuilder.toString();
     }
 
-    private Connection getConnection(final boolean compress) throws URLSyntaxException, NamingException, JMSException
+    private Connection getConnection(final boolean compress) throws Exception
     {
-        AMQConnectionURL url = new AMQConnectionURL(((AMQConnectionFactory)getConnectionFactory()).getConnectionURLString());
-
-        url.setOption(ConnectionURL.OPTIONS_COMPRESS_MESSAGES,String.valueOf(compress));
-        url = new AMQConnectionURL(url.toString());
-        url.setUsername(GUEST_USERNAME);
-        url.setPassword(GUEST_PASSWORD);
-        url.setOption(ConnectionURL.OPTIONS_COMPRESS_MESSAGES,String.valueOf(compress));
-        return getConnection(url);
+        Map<String, String> options = new HashMap<>();
+        options.put(ConnectionURL.OPTIONS_COMPRESS_MESSAGES,String.valueOf(compress));
+        return getConnectionWithOptions(options);
     }
 
 }

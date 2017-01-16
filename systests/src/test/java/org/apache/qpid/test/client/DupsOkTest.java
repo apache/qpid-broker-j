@@ -45,6 +45,7 @@ public class DupsOkTest extends QpidBrokerTestCase
     private static final int MSG_COUNT = 100;
     private CountDownLatch _awaitCompletion = new CountDownLatch(1);
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

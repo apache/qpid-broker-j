@@ -30,15 +30,12 @@ import java.util.concurrent.TimeUnit;
 import javax.jms.Connection;
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
-import javax.naming.NamingException;
 
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.jms.ConnectionListener;
 import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.url.URLSyntaxException;
 
 /**
  * Abstract test case for ACLs.
@@ -119,7 +116,7 @@ public abstract class AbstractACLTestCase extends QpidBrokerTestCase implements 
      * with a {@link CountDownLatch} to synchronise in the {@link #check403Exception(Throwable)} method and allow the
      * {@link #tearDown()} method to complete properly.
      */
-    public Connection getConnection(String vhost, String username, String password) throws NamingException, JMSException, URLSyntaxException
+    public Connection getConnection(String vhost, String username, String password) throws Exception
     {
         AMQConnection connection = (AMQConnection) getConnection(createConnectionURL(vhost, username, password));
 
@@ -166,13 +163,11 @@ public abstract class AbstractACLTestCase extends QpidBrokerTestCase implements 
     {
     }
 
-    /**
-     * Convenience method to build an {@link AMQConnectionURL} with the right parameters.
-     */
-    public AMQConnectionURL createConnectionURL(String vhost, String username, String password) throws URLSyntaxException
+    private String createConnectionURL(String vhost, String username, String password)
     {
-        String url = "amqp://" + username + ":" + password + "@clientid/" + vhost + "?brokerlist='" + getBrokerDetailsFromDefaultConnectionUrl() + "?retries='0''";
-        return new AMQConnectionURL(url);
+        String url = "amqp://" + username + ":" + password + "@clientid/" + vhost + "?brokerlist='" + getBrokerDetailsFromDefaultConnectionUrl()
+                     + "?retries='0''";
+        return url;
     }
 
     /**

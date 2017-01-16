@@ -23,7 +23,6 @@ package org.apache.qpid.server;
 import javax.jms.Connection;
 import javax.jms.JMSException;
 
-import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.server.logging.AbstractTestLogging;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -50,17 +49,8 @@ public class BrokerStartupTest extends AbstractTestLogging
         if (isJavaBroker())
         {
             super.startDefaultBroker();
-            int port = getDefaultBroker().getAmqpPort();
-            assert (port > 0) : "port should be >0";
-
-            AMQConnectionURL url = new AMQConnectionURL(String.format("amqp://"
-                                                                      + GUEST_USERNAME
-                                                                      + ":"
-                                                                      + GUEST_PASSWORD
-                                                                      + "@clientid/?brokerlist='localhost:%d'", port));
-            Connection conn = getConnection(url);
+            Connection conn = getConnection();
             assertNotNull(conn);
-            conn.close();
         }
     }
 
@@ -78,20 +68,11 @@ public class BrokerStartupTest extends AbstractTestLogging
             setTestSystemProperty("broker.failStartupWithErroredChild", String.valueOf(Boolean.TRUE));
 
             super.startDefaultBroker();
-            int port = getDefaultBroker().getAmqpPort();
-            assert (port > 0) : "port should be >0";
-
-            AMQConnectionURL url = new AMQConnectionURL(String.format("amqp://"
-                    + GUEST_USERNAME
-                    + ":"
-                    + GUEST_PASSWORD
-                    + "@clientid/?brokerlist='localhost:%d'", port));
 
             try
             {
-                Connection conn = getConnection(url);
+                Connection conn = getConnection();
                 fail("Connection should fail as broker startup should have failed due to ERRORED children (port)");
-                conn.close();
             }
             catch (JMSException jmse)
             {

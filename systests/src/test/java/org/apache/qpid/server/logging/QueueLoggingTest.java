@@ -48,6 +48,7 @@ public class QueueLoggingTest extends AbstractTestLogging
     protected Session _session;
     private static final String QUEUE_PREFIX = "QUE-";
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

@@ -155,7 +155,10 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
         {
             Map<String, Object> attributes = new HashMap<>();
             attributes.put(org.apache.qpid.server.model.Queue.HOLD_ON_PUBLISH_ENABLED, holdsOnPublish);
-            createEntityUsingAmqpManagement(queueName, session, "org.apache.qpid.Queue", attributes);
+            createEntityUsingAmqpManagement(queueName,
+                                            session,
+                                            "org.apache.qpid.Queue",
+                                            attributes);
             return session.createQueue(queueName);
         }
     }
@@ -166,7 +169,10 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
         {
             Map<String, Object> attributes = new HashMap<>();
             attributes.put(org.apache.qpid.server.model.Exchange.UNROUTABLE_MESSAGE_BEHAVIOUR, "REJECT");
-            createEntityUsingAmqpManagement(exchangeName, session, "org.apache.qpid.FanoutExchange", attributes);
+            createEntityUsingAmqpManagement(exchangeName,
+                                            session,
+                                            "org.apache.qpid.FanoutExchange",
+                                            attributes);
             return session.createQueue(exchangeName);
         }
     }
@@ -180,7 +186,11 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
             final Map<String, Object> arguments = new HashMap<>();
             arguments.put("destination", queueName);
             arguments.put("bindingKey", queueName);
-            performOperationUsingAmqpManagement(exchangeName, "bind", session, "org.apache.qpid.FanoutExchange", arguments);
+            performOperationUsingAmqpManagement(exchangeName,
+                                                "bind",
+                                                session,
+                                                "org.apache.qpid.FanoutExchange",
+                                                arguments);
         }
     }
 

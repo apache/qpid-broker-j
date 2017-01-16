@@ -54,6 +54,7 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
     private volatile String _failMsg;
     private Queue _queue;
 
+    @Override
     public void setUp() throws Exception
     {
         _receivedLatch = new CountDownLatch(MESSAGE_COUNT * NUM_PRODUCERS);

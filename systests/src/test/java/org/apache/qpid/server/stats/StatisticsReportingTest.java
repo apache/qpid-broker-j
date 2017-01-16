@@ -47,7 +47,6 @@ public class StatisticsReportingTest extends QpidBrokerTestCase
     private static long STATISTICS_REPORTING_PERIOD_IN_SECONDS = 10l;
 
     protected LogMonitor _monitor;
-    protected static final String USER = "admin";
 
     protected Connection _conToVhost1, _conToVhost2, _conToVhost3;
     protected String _queueName = "statistics";
@@ -73,24 +72,15 @@ public class StatisticsReportingTest extends QpidBrokerTestCase
         super.setUp();
         _monitor = new LogMonitor(getOutputFile());
 
-        _conToVhost1 = getConnectionForVHost(VHOST_NAME1, "admin", "admin");
-        _conToVhost2 = getConnectionForVHost(VHOST_NAME2, "admin", "admin");
-        _conToVhost3 = getConnectionForVHost(VHOST_NAME3, "admin", "admin");
+        _conToVhost1 = getConnectionForVHost(VHOST_NAME1);
+        _conToVhost2 = getConnectionForVHost(VHOST_NAME2);
+        _conToVhost3 = getConnectionForVHost(VHOST_NAME3);
 
         _conToVhost1.start();
         _conToVhost2.start();
         _conToVhost3.start();
     }
 
-    @Override
-    public void tearDown() throws Exception
-    {
-        _conToVhost1.close();
-        _conToVhost2.close();
-        _conToVhost3.close();
-
-        super.tearDown();
-    }
 
     /**
      * Test enabling reporting.

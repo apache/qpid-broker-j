@@ -52,10 +52,11 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
     private int _count = 100;
     public String _connectionString = "vm://:1";
 
-    protected void setUp() throws Exception
+    @Override
+    public void setUp() throws Exception
     {
         super.setUp();
-        _connection = getConnection("guest", "guest");
+        _connection = getConnection();
         _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         _destination = createTestQueue(_session);
 

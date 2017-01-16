@@ -44,12 +44,14 @@ public class InvalidDestinationTest extends QpidBrokerTestCase
 {
     private Connection _connection;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
-        _connection = getConnection("guest", "guest");
+        _connection = getConnection();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _connection.close();

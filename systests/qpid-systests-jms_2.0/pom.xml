@@ -46,14 +46,10 @@
           <groupId>org.apache.geronimo.specs</groupId>
           <artifactId>geronimo-jms_1.1_spec</artifactId>
         </exclusion>
-        <!--
-        TODO: QBTC method signature references the old client:
-         QpidBrokerTestCase.getConnection(org.apache.qpid.jms.ConnectionURL)
         <exclusion>
           <groupId>org.apache.qpid</groupId>
           <artifactId>qpid-client</artifactId>
         </exclusion>
-        -->
       </exclusions>
     </dependency>
 

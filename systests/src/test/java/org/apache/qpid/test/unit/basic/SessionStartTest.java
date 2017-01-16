@@ -44,7 +44,8 @@ public class SessionStartTest extends QpidBrokerTestCase implements MessageListe
     private Session _session;
     private CountDownLatch _countdownLatch;
 
-    protected void setUp() throws Exception
+    @Override
+    public void setUp() throws Exception
     {
         super.setUp();
         _connection = getConnection();
@@ -56,7 +57,8 @@ public class SessionStartTest extends QpidBrokerTestCase implements MessageListe
         _countdownLatch = new CountDownLatch(1);
     }
 
-    protected void tearDown() throws Exception
+    @Override
+    public void tearDown() throws Exception
     {
         super.tearDown();
     }

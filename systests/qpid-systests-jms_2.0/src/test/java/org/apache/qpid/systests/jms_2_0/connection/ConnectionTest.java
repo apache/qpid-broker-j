@@ -21,8 +21,6 @@
 package org.apache.qpid.systests.jms_2_0.connection;
 
 import javax.jms.Connection;
-import javax.jms.Destination;
-import javax.jms.Session;
 
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
@@ -32,5 +30,6 @@ public class ConnectionTest extends QpidBrokerTestCase
     {
         Connection con = getConnection();
         assertNotNull(con);
+
     }
 }

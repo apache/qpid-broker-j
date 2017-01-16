@@ -26,7 +26,6 @@ import java.net.Socket;
 import javax.jms.Connection;
 import javax.jms.JMSException;
 
-import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.transport.network.io.IoNetworkTransport;
@@ -47,7 +46,7 @@ public class ExistingSocketTest extends QpidBrokerTestCase
 
             String url = String.format("amqp://guest:guest@/test?brokerlist='socket://%s'", SOCKET_NAME);
 
-            Connection conn = getConnection(new AMQConnectionURL(url));
+            Connection conn = getConnection(url);
             conn.createSession(true, javax.jms.Session.SESSION_TRANSACTED);
             conn.close();
         }
@@ -61,7 +60,7 @@ public class ExistingSocketTest extends QpidBrokerTestCase
 
         try
         {
-            getConnection(new AMQConnectionURL(url));
+            getConnection(url);
         }
         catch (JMSException e)
         {

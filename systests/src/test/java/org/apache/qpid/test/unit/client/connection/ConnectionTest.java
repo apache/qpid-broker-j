@@ -35,7 +35,6 @@ import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.AMQTopic;
-import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.jms.ConnectionURL;
@@ -74,8 +73,8 @@ public class ConnectionTest extends QpidBrokerTestCase
         AMQConnection conn = null;
         try
         {
-            BrokerDetails broker = getBrokerDetailsFromDefaultConnectionUrl();
-            broker.setProperty(BrokerDetails.OPTIONS_RETRY, "1");
+            String broker = getBrokerDetailsFromDefaultConnectionUrl();
+            //broker.setProperty(BrokerDetails.OPTIONS_RETRY, "1");
             ConnectionURL url = new AMQConnectionURL("amqp://guest:guest@clientid/test?brokerlist='"
                                      + broker
                                      + "'&defaultQueueExchange='test.direct'"
@@ -123,7 +122,8 @@ public class ConnectionTest extends QpidBrokerTestCase
         }
         catch (Exception e)
         {
-            fail("Connection to " + getBrokerDetailsFromDefaultConnectionUrl() + " should succeed. Reason: " + e);
+            fail("Connection to " + getBrokerDetailsFromDefaultConnectionUrl()
+                 + " should succeed. Reason: " + e);
         }
         finally
         {
@@ -136,8 +136,7 @@ public class ConnectionTest extends QpidBrokerTestCase
         AMQConnection conn = null;
         try
         {
-            BrokerDetails broker = getBrokerDetailsFromDefaultConnectionUrl();
-            broker.setProperty(BrokerDetails.OPTIONS_RETRY, "0");
+            String broker = getBrokerDetailsFromDefaultConnectionUrl();
             conn = new AMQConnection("amqp://guest:rubbishpassword@clientid/test?brokerlist='" + broker + "'");
             fail("Connection should not be established password is wrong.");
         }
@@ -210,8 +209,7 @@ public class ConnectionTest extends QpidBrokerTestCase
         AMQConnection conn = null;
         try
         {
-            BrokerDetails broker = getBrokerDetailsFromDefaultConnectionUrl();
-            broker.setProperty(BrokerDetails.OPTIONS_RETRY, "0");
+            String broker = getBrokerDetailsFromDefaultConnectionUrl();
             conn = new AMQConnection("amqp://guest:guest@clientid/rubbishhost?brokerlist='" + broker + "'");
             fail("Connection should not be established");
         }
@@ -270,8 +268,7 @@ public class ConnectionTest extends QpidBrokerTestCase
 
     public void testUnsupportedSASLMechanism() throws Exception
     {
-        BrokerDetails broker = getBrokerDetailsFromDefaultConnectionUrl();
-        broker.setProperty(BrokerDetails.OPTIONS_SASL_MECHS, "MY_MECH");
+        String broker = getBrokerDetailsFromDefaultConnectionUrl() + String.format("?sasl_mechs='%s'", "MY_MECH");
 
         try
         {
@@ -300,7 +297,7 @@ public class ConnectionTest extends QpidBrokerTestCase
     {
         setTestSystemProperty(ClientProperties.QPID_VERIFY_CLIENT_ID, "true");
 
-        BrokerDetails broker = getBrokerDetailsFromDefaultConnectionUrl();
+        String broker = getBrokerDetailsFromDefaultConnectionUrl();
         Connection con = new AMQConnection(broker.toString(), "guest", "guest",
                                            "client_id", "test");
         try
@@ -336,7 +333,7 @@ public class ConnectionTest extends QpidBrokerTestCase
     {
         setTestSystemProperty(ClientProperties.QPID_VERIFY_CLIENT_ID, "true");
 
-        BrokerDetails broker = getBrokerDetailsFromDefaultConnectionUrl();
+        String broker = getBrokerDetailsFromDefaultConnectionUrl();
         Connection con = null;
         Connection con2 = null;
         try
@@ -375,7 +372,7 @@ public class ConnectionTest extends QpidBrokerTestCase
         AMQConnection conn = null;
         try
         {
-            BrokerDetails broker = getBrokerDetailsFromDefaultConnectionUrl();
+            String broker = getBrokerDetailsFromDefaultConnectionUrl();
             String url = "amqp:///test?brokerlist='" + broker + "?sasl_mechs='PLAIN%2520CRAM-MD5''";
             conn = new AMQConnection(url);
             conn.close();

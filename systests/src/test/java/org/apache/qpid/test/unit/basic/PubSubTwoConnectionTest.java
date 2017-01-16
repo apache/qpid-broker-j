@@ -34,16 +34,6 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
  */
 public class PubSubTwoConnectionTest extends QpidBrokerTestCase
 {
-    protected void setUp() throws Exception
-    {
-        super.setUp();
-    }
-
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-
     /**
      * This tests that a consumer is set up synchronously
      * @throws Exception
@@ -51,14 +41,14 @@ public class PubSubTwoConnectionTest extends QpidBrokerTestCase
     public void testTwoConnections() throws Exception
     {
 
-        Connection con1 = getConnection("guest", "guest");
+        Connection con1 = getConnection();
 
         Topic topic = createTopic(con1, "MyTopic");
 
         Session session1 = con1.createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageProducer producer = session1.createProducer(topic);
 
-        Connection con2 = getConnection("guest", "guest") ;
+        Connection con2 = getConnection();
         Session session2 = con2.createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageConsumer consumer = session2.createConsumer(topic);
         con2.start();        

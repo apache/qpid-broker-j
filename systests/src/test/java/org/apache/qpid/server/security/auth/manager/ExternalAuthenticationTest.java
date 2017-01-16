@@ -32,7 +32,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
@@ -40,9 +39,7 @@ import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.Session;
-import javax.naming.InitialContext;
 
-import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.DefaultVirtualHostAlias;
 import org.apache.qpid.server.model.Port;
@@ -59,9 +56,11 @@ import org.apache.qpid.test.utils.TestSSLConstants;
 public class ExternalAuthenticationTest extends QpidBrokerTestCase
 {
     @Override
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         super.setUp();
+        setSystemProperty(PROFILE_USE_SSL, "true");
+
         setSystemProperty("javax.net.debug", "ssl");
         setSystemProperty("javax.net.ssl.keyStore", null);
         setSystemProperty("javax.net.ssl.keyStorePassword", null);
@@ -78,7 +77,6 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
 
     /**
      * Tests that when EXTERNAL authentication is used on the SSL port, clients presenting certificates are able to connect.
-     * Also, checks that default authentication manager PrincipalDatabaseAuthenticationManager is used on non SSL port.
      */
     public void testExternalAuthenticationManagerOnSSLPort() throws Exception
     {
@@ -95,16 +93,6 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
         {
             fail("Should be able to create a connection to the SSL port: " + e.getMessage());
         }
-
-        try
-        {
-            getConnection();
-        }
-        catch (JMSException e)
-        {
-            fail("Should be able to create a connection with credentials to the standard port: " + e.getMessage());
-        }
-
     }
 
     /**
@@ -357,34 +345,36 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
     {
         if(isBroker10())
         {
-            final Hashtable<String, String> env = new Hashtable<>();
-            final StringBuilder uri = new StringBuilder("amqps://localhost:").append(String.valueOf(getDefaultBroker().getAmqpTlsPort())).append("?amqp.vhost=test&amqp.saslMechanisms=EXTERNAL");
+            System.setProperty("test.port.ssl", ""+getDefaultBroker().getAmqpTlsPort());
+
+            Map<String, String> options = new HashMap<>();
+
             if(trustStoreLocation != null)
             {
-                uri.append("&transport.trustStoreLocation=").append(trustStoreLocation);
+                options.put("transport.trustStoreLocation", trustStoreLocation);
             }
             if(trustStorePassword != null)
             {
-                uri.append("&transport.trustStorePassword=").append(trustStorePassword);
+                options.put("transport.trustStorePassword", trustStorePassword);
             }
             if(keyStoreLocation != null)
             {
-                uri.append("&transport.keyStoreLocation=").append(keyStoreLocation);
+                options.put("transport.keyStoreLocation", keyStoreLocation);
+
             }
             if(keyStorePassword != null)
             {
-                uri.append("&transport.keyStorePassword=").append(keyStorePassword);
+                options.put("transport.keyStorePassword", keyStorePassword);
             }
             if(certAlias != null)
             {
-                uri.append("&transport.keyAlias=").append(certAlias);
+                options.put("transport.keyAlias", certAlias);
+
             }
-            env.put("connectionfactory.externalauth", uri.toString());
-            InitialContext initialContext = new InitialContext(env);
-            final ConnectionFactory connectionFactory = (ConnectionFactory) initialContext.lookup("externalauth");
+            ConnectionFactory connectionFactory = getConnectionFactory(options);
             if(includeUserNameAndPassword)
             {
-                return connectionFactory.createConnection("guest","guest");
+                return connectionFactory.createConnection(GUEST_USERNAME, GUEST_PASSWORD);
             }
             else
             {
@@ -408,7 +398,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
             {
                 url = String.format(url, ":", String.valueOf(amqpTlsPort), certAliasOption);
             }
-            return getConnection(new AMQConnectionURL(url));
+            return getConnection(url);
         }
     }
 

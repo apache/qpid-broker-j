@@ -48,12 +48,12 @@ public class StreamMessageTest extends QpidBrokerTestCase
 
     public void testStreamMessageEOF() throws Exception
     {
-        Connection con = getConnection("guest", "guest");
+        Connection con = getConnection();
         Session consumerSession = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         Queue queue = createTestQueue(consumerSession);
         MessageConsumer consumer = consumerSession.createConsumer(queue);
 
-        Connection con2 = getConnection("guest", "guest");
+        Connection con2 = getConnection();
 
         Session producerSession = con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
 
@@ -95,7 +95,7 @@ public class StreamMessageTest extends QpidBrokerTestCase
         final CountDownLatch awaitMessages = new CountDownLatch(1);
         final AtomicReference<Throwable> listenerCaughtException = new AtomicReference<Throwable>();
 
-        Connection con = getConnection("guest", "guest");
+        Connection con = getConnection();
         Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Queue queue = createTestQueue(session);
         session.close();
@@ -125,7 +125,7 @@ public class StreamMessageTest extends QpidBrokerTestCase
                 }
             });
 
-        Connection con2 = getConnection("guest", "guest");
+        Connection con2 = getConnection();
         Session producerSession = con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         MessageProducer producer = producerSession.createProducer(queue);
         con.start();

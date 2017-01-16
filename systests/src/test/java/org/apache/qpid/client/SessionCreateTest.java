@@ -42,7 +42,7 @@ public class SessionCreateTest extends QpidBrokerTestCase
     public void testSessionCreationLimit() throws Exception
     {
         // Create Client
-        _clientConnection = getConnection("guest", "guest");
+        _clientConnection = getConnection();
 
         _clientConnection.start();
 

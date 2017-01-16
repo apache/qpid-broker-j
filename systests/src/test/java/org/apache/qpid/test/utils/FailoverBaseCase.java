@@ -23,6 +23,7 @@ package org.apache.qpid.test.utils;
 import java.util.concurrent.CountDownLatch;
 
 import javax.jms.ConnectionFactory;
+import javax.jms.JMSException;
 import javax.naming.NamingException;
 
 import org.slf4j.Logger;
@@ -41,6 +42,7 @@ public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionLi
     protected BrokerHolder _alternativeBroker;
     protected int _port;
     protected int _alternativePort;
+    private ConnectionFactory _connectionFactory;
 
     @Override
     protected void setUp() throws Exception
@@ -61,7 +63,7 @@ public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionLi
     /**
      * We are using failover factories
      *
-     * @return a connection 
+     * @return a connection
      * @throws Exception
      */
     @Override
@@ -80,6 +82,12 @@ public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionLi
             }
         }
         return _connectionFactory;
+    }
+
+    @Override
+    public javax.jms.Connection getConnection() throws JMSException, NamingException
+    {
+        return getConnectionFactory().createConnection(GUEST_USERNAME, GUEST_PASSWORD);
     }
 
     public void failDefaultBroker()

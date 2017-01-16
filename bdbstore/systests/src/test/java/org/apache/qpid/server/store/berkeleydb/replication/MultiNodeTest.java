@@ -53,7 +53,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.jms.ConnectionListener;
-import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
@@ -74,10 +73,10 @@ public class MultiNodeTest extends QpidBrokerTestCase
     private FailoverAwaitingListener _failoverListener;
 
     /** Used when expectation is client will (re)-connect */
-    private ConnectionURL _positiveFailoverUrl;
+    private String _positiveFailoverUrl;
 
     /** Used when expectation is client will not (re)-connect */
-    private ConnectionURL _negativeFailoverUrl;
+    private String _negativeFailoverUrl;
 
     @Override
     protected void setUp() throws Exception
@@ -463,7 +462,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
         ExecutorService executorService = Executors.newFixedThreadPool(connectionNumber + NUMBER_OF_NODES -1);
         try
         {
-            ConnectionURL connectionUrl = _groupCreator.getConnectionUrlForAllClusterNodes(100, 0, 100);
+            String connectionUrl = _groupCreator.getConnectionUrlForAllClusterNodes(100, 0, 100);
 
             final Connection consumerConnection = getConnection(connectionUrl);
             consumerConnection.start();

@@ -147,8 +147,7 @@ public class ChannelLoggingTest extends AbstractTestLogging
         // Create a session to fill up
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-        Queue queue = (Queue) getInitialContext().lookup(QUEUE);
-        MessageConsumer consumer = session.createConsumer(queue);
+        Queue queue = createTestQueue(session);
 
         connection.start();
 
@@ -205,7 +204,8 @@ public class ChannelLoggingTest extends AbstractTestLogging
         // Create a session to fill up
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-        Queue queue = (Queue) getInitialContext().lookup(QUEUE);
+        Queue queue = createTestQueue(session);
+
         MessageConsumer consumer = session.createConsumer(queue);
 
         connection.start();

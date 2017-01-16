@@ -54,6 +54,7 @@ public class JMSDestinationTest extends QpidBrokerTestCase
     private CountDownLatch _receiveMessage;
     private Message _message;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

@@ -19,6 +19,8 @@
 package org.apache.qpid.test.client.message;
 
 
+import java.util.Collections;
+
 import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.Message;
@@ -27,7 +29,6 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class JMSXUserIDTest extends QpidBrokerTestCase
@@ -53,9 +54,7 @@ public class JMSXUserIDTest extends QpidBrokerTestCase
     public void testJMSXUserIDDisabled() throws Exception
     {
 
-        String url = String.format("amqp://guest:guest@test/?brokerlist='tcp://localhost:%s'&populateJMSXUserID='false'",
-                                   getDefaultBroker().getAmqpPort());
-        Connection connection = getConnection(new AMQConnectionURL(url));
+        Connection connection =getConnectionWithOptions(Collections.singletonMap("populateJMSXUserID", "false"));
         Destination destination = getTestQueue();
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
         MessageConsumer consumer = session.createConsumer(destination);

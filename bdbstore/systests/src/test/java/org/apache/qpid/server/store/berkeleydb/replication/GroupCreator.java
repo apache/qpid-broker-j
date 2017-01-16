@@ -51,8 +51,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -283,12 +281,12 @@ public class GroupCreator
         return ports;
     }
 
-    public ConnectionURL getConnectionUrlForAllClusterNodes() throws Exception
+    public String getConnectionUrlForAllClusterNodes() throws Exception
     {
         return  getConnectionUrlForAllClusterNodes(FAILOVER_CONNECTDELAY, FAILOVER_RETRIES, FAILOVER_CYCLECOUNT);
     }
 
-    public ConnectionURL getConnectionUrlForAllClusterNodes(int connectDelay, int retries, final int cyclecount) throws Exception
+    public String getConnectionUrlForAllClusterNodes(int connectDelay, int retries, final int cyclecount) throws Exception
     {
         final StringBuilder brokerList = new StringBuilder();
 
@@ -303,7 +301,7 @@ public class GroupCreator
             }
         }
 
-        return new AMQConnectionURL(String.format(MANY_BROKER_URL_FORMAT, _virtualHostName, brokerList, cyclecount));
+        return String.format(MANY_BROKER_URL_FORMAT, _virtualHostName, brokerList, cyclecount);
     }
 
     public String getGroupName()
@@ -356,7 +354,7 @@ public class GroupCreator
 
     public String getIpAddressOfBrokerHost()
     {
-        String brokerHost = _testcase.getBrokerDetailsFromDefaultConnectionUrl().getHost();
+        String brokerHost = "localhost";
         try
         {
             return InetAddress.getByName(brokerHost).getHostAddress();

@@ -49,6 +49,7 @@ public class MessageToStringTest extends QpidBrokerTestCase
     private MessageConsumer _consumer;
     private static final String BYTE_TEST = "MapByteTest";
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -69,6 +70,7 @@ public class MessageToStringTest extends QpidBrokerTestCase
         _connection.start();
     }
 
+    @Override
     public void tearDown() throws Exception
     {
         //clean up

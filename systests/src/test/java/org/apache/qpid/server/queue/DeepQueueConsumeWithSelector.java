@@ -72,6 +72,7 @@ public class DeepQueueConsumeWithSelector extends QpidBrokerTestCase implements 
     protected long SYNC_WRITE_TIMEOUT = 120000L;
 
 
+    @Override
     public void setUp() throws Exception
     {
         //Set the syncWrite timeout to be just larger than the delay on the commitTran.
@@ -86,10 +87,7 @@ public class DeepQueueConsumeWithSelector extends QpidBrokerTestCase implements 
         Connection connection = getConnection();
         Session session = ((AMQConnection)connection).createSession(true, Session.SESSION_TRANSACTED, 100000);
 
-        Queue queue = (Queue) getInitialContext().lookup("queue");
-
-        // Validate that the destination exists
-        session.createConsumer(queue).close();
+        Queue queue = createTestQueue(session);
 
         // Send Messages
         sendMessage(session, queue, MESSAGE_COUNT, BATCH_SIZE);

@@ -56,7 +56,7 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
     protected void setUp() throws Exception
     {
         super.setUp();
-        _connection = getConnection("guest", "guest");
+        _connection = getConnection();
         _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         _destination = createTestQueue(_session);
 

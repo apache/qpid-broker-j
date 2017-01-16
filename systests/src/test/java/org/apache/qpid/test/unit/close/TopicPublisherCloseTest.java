@@ -47,7 +47,7 @@ public class TopicPublisherCloseTest extends QpidBrokerTestCase
 
     public void testAllMethodsThrowAfterConnectionClose() throws Exception
     {
-        TopicConnection connection =   (TopicConnection) getConnection("guest", "guest");
+        TopicConnection connection =   (TopicConnection) getConnection();
 
         Topic destination1 = createTopic(connection, "t1");
         TopicSession session1 = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);

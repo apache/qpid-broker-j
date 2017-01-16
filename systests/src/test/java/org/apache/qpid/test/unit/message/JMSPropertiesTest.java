@@ -56,25 +56,15 @@ public class JMSPropertiesTest extends QpidBrokerTestCase
     protected static final String NULL_OBJECT_PROPERTY = "NullObject";
     protected static final String INVALID_OBJECT_PROPERTY = "InvalidObject";
 
-    protected void setUp() throws Exception
-    {
-        super.setUp();
-    }
-
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-
     public void testJMSProperties() throws Exception
     {
-        Connection con = getConnection("guest", "guest");
+        Connection con = getConnection();
         Session consumerSession = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
 
         Queue queue = createTestQueue(consumerSession, "someQ");
         MessageConsumer consumer = consumerSession.createConsumer(queue);
 
-        Connection con2 = getConnection("guest", "guest");
+        Connection con2 = getConnection();
         Session producerSession = con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         MessageProducer producer = producerSession.createProducer(queue);
         Destination JMS_REPLY_TO = createTestQueue(producerSession, "my.replyto");
@@ -156,7 +146,7 @@ public class JMSPropertiesTest extends QpidBrokerTestCase
      */
     public void testQpidExtensionProperties() throws Exception
     {
-        Connection con = getConnection("guest", "guest");
+        Connection con = getConnection();
         Session ssn = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         con.start();
 

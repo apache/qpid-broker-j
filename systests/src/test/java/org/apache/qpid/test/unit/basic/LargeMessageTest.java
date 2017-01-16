@@ -41,8 +41,9 @@ public class LargeMessageTest extends QpidBrokerTestCase
     private Destination _destination;
     private Session _session;
     private Connection _connection;
-    
-    protected void setUp() throws Exception
+
+    @Override
+    public void setUp() throws Exception
     {
         super.setUp();
         _connection = getConnection();
@@ -52,7 +53,8 @@ public class LargeMessageTest extends QpidBrokerTestCase
         _connection.start();
     }
 
-    protected void tearDown() throws Exception
+    @Override
+    public void tearDown() throws Exception
     {
         _connection.close();
         super.tearDown();

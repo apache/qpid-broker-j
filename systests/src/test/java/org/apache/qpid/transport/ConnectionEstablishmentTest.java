@@ -90,7 +90,7 @@ public class ConnectionEstablishmentTest extends QpidBrokerTestCase
     public void testAuthenticationBypass() throws Exception
     {
         String virtualHost = TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST;
-        ConnectionURL connectionURL = ((AMQConnectionFactory)getConnectionFactory()).getConnectionURL();
+        ConnectionURL connectionURL = ((AMQConnectionFactory) getConnectionFactory()).getConnectionURL();
         BrokerDetails brokerDetails = connectionURL.getAllBrokerDetails().get(0);
         try (Socket socket = new Socket(brokerDetails.getHost(), brokerDetails.getPort());
              OutputStream os = socket.getOutputStream())

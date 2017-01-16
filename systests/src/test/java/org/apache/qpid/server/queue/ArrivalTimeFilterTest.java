@@ -42,7 +42,8 @@ public class ArrivalTimeFilterTest extends QpidBrokerTestCase
     private Session _session;
     private Queue _queue;
 
-    protected void setUp() throws Exception
+    @Override
+    public void setUp() throws Exception
     {
         super.setUp();
 

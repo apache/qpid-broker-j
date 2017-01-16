@@ -176,11 +176,24 @@ org.apache.qpid.test.unit.close.JavaServerCloseRaceConditionTest#*
 org.apache.qpid.server.logging.ConsumerLoggingTest#testSubscriptionCreateDurable
 org.apache.qpid.server.logging.ConsumerLoggingTest#testSubscriptionCreateDurableWithArguments
 
+// Qpid JMS Client does not accept key material in forms apart from JKS and PKCS
+org.apache.qpid.client.ssl.SSLTest#testCreateSSLConnectionWithCertificateTrust
+org.apache.qpid.client.ssl.SSLTest#testCreateSSLWithCertFileAndPrivateKey
+// Test requires modification of javax.net.ssl system properties but Qpid JMS Client reads them only once
+org.apache.qpid.client.ssl.SSLTest#testCreateSSLConnectionUsingSystemProperties
+org.apache.qpid.client.ssl.SSLTest#testSslConnectionOption
+org.apache.qpid.client.ssl.SSLTest#testVerifyLocalHost
+// Test frame does not allow us to override hostname
+org.apache.qpid.client.ssl.SSLTest#testHostVerificationIsOnByDefault
+org.apache.qpid.client.ssl.SSLTest#testVerifyHostNameWithIncorrectHostname
+// 0-x client specific feature
+org.apache.qpid.client.ssl.SSLTest#testSslConnectionOptionOverridesBrokerlistOption
 
+// Test assumes BURL and Connection URL format
+org.apache.qpid.systest.rest.ExportImportMessagesRestTest#testExtractImportEndToEnd
 
-
-
-
+// Qpid JMS Client does not support the use of preestablished socket
+org.apache.qpid.client.connection.ExistingSocketTest#*
 
 
 

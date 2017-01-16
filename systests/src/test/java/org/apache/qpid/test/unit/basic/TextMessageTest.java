@@ -61,7 +61,7 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
         super.setUp();
         try
         {
-            init(getConnection("guest", "guest"));
+            init(getConnection());
         }
         catch (Exception e)
         {

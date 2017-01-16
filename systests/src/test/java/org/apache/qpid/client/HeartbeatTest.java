@@ -61,7 +61,7 @@ public class HeartbeatTest extends QpidBrokerTestCase
     public void testHeartbeatsEnabledUsingUrl() throws Exception
     {
         final String url = String.format(CONNECTION_URL_WITH_HEARTBEAT, getDefaultBroker().getAmqpPort(), 1);
-        AMQConnection conn = (AMQConnection) getConnection(new AMQConnectionURL(url));
+        AMQConnection conn = (AMQConnection) getConnection(url);
         conn.setHeartbeatListener(_listener);
         conn.start();
 
@@ -220,7 +220,7 @@ public class HeartbeatTest extends QpidBrokerTestCase
 
             final CountDownLatch exceptionLatch = new CountDownLatch(1);
             final String url = String.format(CONNECTION_URL_WITH_HEARTBEAT,  tcpTunneler.getLocalPort(), 1);
-            AMQConnection conn = (AMQConnection) getConnection(new AMQConnectionURL(url));
+            AMQConnection conn = (AMQConnection) getConnection(url);
             conn.setHeartbeatListener(_listener);
             conn.setExceptionListener(new ExceptionListener()
             {

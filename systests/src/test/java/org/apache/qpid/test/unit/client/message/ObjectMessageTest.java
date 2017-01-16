@@ -54,7 +54,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
     protected void setUp() throws Exception
     {
         super.setUp();
-        connection =  getConnection("guest", "guest");
+        connection =  getConnection();
         session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         destination = createTestQueue(session);
 

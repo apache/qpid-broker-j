@@ -22,11 +22,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -44,19 +41,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import org.apache.qpid.QpidException;
-import org.apache.qpid.client.AMQConnectionFactory;
-import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.AMQTopic;
-import org.apache.qpid.client.BrokerDetails;
-import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.store.MemoryConfigurationStore;
-import org.apache.qpid.url.URLSyntaxException;
 
 /**
  * Qpid base class for system testing test cases.
@@ -79,7 +65,6 @@ public class QpidBrokerTestCase extends QpidTestCase
     protected static final String INDEX = "index";
     protected static final String CONTENT = "content";
     protected static final int DEFAULT_MESSAGE_SIZE = 1024;
-    private static final String DEFAULT_INITIAL_CONTEXT = "org.apache.qpid.jndi.PropertiesFileInitialContextFactory";
     private static final String JAVA = "java";
     private static final String BROKER_LANGUAGE = System.getProperty("broker.language", JAVA);
     private static final BrokerHolder.BrokerType DEFAULT_BROKER_TYPE = BrokerHolder.BrokerType.valueOf(
@@ -90,28 +75,20 @@ public class QpidBrokerTestCase extends QpidTestCase
             Protocol.valueOf("AMQP_" + System.getProperty("broker.version", "v0_9").substring(1));
     private static List<BrokerHolder> _brokerList = new ArrayList<>();
 
-    static
-    {
-        String initialContext = System.getProperty(Context.INITIAL_CONTEXT_FACTORY);
-
-        if (initialContext == null || initialContext.length() == 0)
-        {
-            System.setProperty(Context.INITIAL_CONTEXT_FACTORY, DEFAULT_INITIAL_CONTEXT);
-        }
-    }
-
     private final Map<String, String> _propertiesSetForBroker = new HashMap<>();
     private final List<Connection> _connections = new ArrayList<>();
-    protected ConnectionFactory _connectionFactory;
+    private final AmqpManagementFacade _managementFacade = new AmqpManagementFacade(this);
     private BrokerHolder _defaultBroker;
     private MessageType _messageType = MessageType.TEXT;
-    private Hashtable _initialContextEnvironment = new Hashtable();
+    private JmsProvider _jmsProvider;
 
     @Override
     public void runBare() throws Throwable
     {
         try
         {
+            _jmsProvider = isBroker10() ? new QpidJmsClientProvider(_managementFacade) : new QpidJmsClient0xProvider(_managementFacade);
+
             _defaultBroker = new BrokerHolderFactory().create(DEFAULT_BROKER_TYPE, DEFAULT_PORT, this);
             super.runBare();
         }
@@ -215,101 +192,6 @@ public class QpidBrokerTestCase extends QpidTestCase
         getDefaultBroker().restart();
     }
 
-    /**
-     * we assume that the environment is correctly set
-     * i.e. -Djava.naming.provider.url="..//example010.properties"
-     *
-     * @return an initial context
-     * @throws NamingException if there is an error getting the context
-     */
-    public InitialContext getInitialContext() throws NamingException
-    {
-        return new InitialContext(_initialContextEnvironment);
-    }
-
-    /**
-     * Get the default connection factory for the currently used broker
-     * Default factory is "local"
-     *
-     * @return A connection factory
-     * @throws NamingException if there is an error getting the factory
-     */
-    public ConnectionFactory getConnectionFactory() throws NamingException
-    {
-        if (_connectionFactory == null)
-        {
-            if (Boolean.getBoolean(PROFILE_USE_SSL))
-            {
-                _connectionFactory = getConnectionFactory("default.ssl");
-            }
-            else
-            {
-                _connectionFactory = getConnectionFactory("default");
-            }
-        }
-        return _connectionFactory;
-    }
-
-    /**
-     * Get a connection factory for the currently used broker
-     *
-     * @param factoryName The factory name
-     * @return A connection factory
-     * @throws NamingException if there is an error getting the factory
-     */
-    public ConnectionFactory getConnectionFactory(String factoryName)
-            throws NamingException
-    {
-        return getConnectionFactory(factoryName, "test", "clientid");
-    }
-    public ConnectionFactory getConnectionFactory(String factoryName, String vhost, String clientId)
-            throws NamingException
-    {
-        return getConnectionFactory(factoryName, vhost, clientId, Collections.<String, String>emptyMap());
-    }
-    public ConnectionFactory getConnectionFactory(String factoryName, String vhost, String clientId, Map<String,String> options)
-            throws NamingException
-    {
-
-        if(isBroker10())
-        {
-            Map<String,String> actualOptions = new LinkedHashMap<>();
-            actualOptions.put("amqp.vhost", vhost);
-            actualOptions.put("jms.clientID", clientId);
-            actualOptions.put("jms.forceSyncSend", "true");
-            actualOptions.put("jms.populateJMSXUserID", "true");
-            actualOptions.putAll(options);
-            if("failover".equals(factoryName))
-            {
-                if(!actualOptions.containsKey("failover.maxReconnectAttempts"))
-                {
-                    actualOptions.put("failover.maxReconnectAttempts", "2");
-                }
-                final StringBuilder stem = new StringBuilder("failover:(amqp://localhost:")
-                                                  .append(System.getProperty("test.port"))
-                                                  .append(",amqp://localhost:")
-                                                  .append(System.getProperty("test.port.alt"))
-                                                  .append(")");
-                appendOptions(actualOptions, stem);
-
-                _initialContextEnvironment.put("property.connectionfactory.failover.remoteURI",
-                                               stem.toString());
-            }
-            else if("default".equals(factoryName))
-            {
-                final StringBuilder stem = new StringBuilder("amqp://localhost:").append(System.getProperty("test.port"));
-
-
-                appendOptions(actualOptions, stem);
-
-                _initialContextEnvironment.put("property.connectionfactory.default.remoteURI",
-                                               stem.toString());
-
-            }
-        }
-        return (ConnectionFactory) getInitialContext().lookup(factoryName);
-    }
-
     protected void appendOptions(final Map<String, String> actualOptions, final StringBuilder stem)
     {
         boolean first = true;
@@ -335,140 +217,108 @@ public class QpidBrokerTestCase extends QpidTestCase
         }
     }
 
+    public InitialContext getInitialContext() throws NamingException
+    {
+        return _jmsProvider.getInitialContext();
+    }
+
+    /**
+     * Get the default connection factory for the currently used broker
+     * Default factory is "local"
+     *
+     * @return A connection factory
+     * @throws NamingException if there is an error getting the factory
+     */
+    public ConnectionFactory getConnectionFactory() throws NamingException
+    {
+        return _jmsProvider.getConnectionFactory();
+    }
+
+    public ConnectionFactory getConnectionFactory(final Map<String, String> options) throws NamingException
+    {
+        return _jmsProvider.getConnectionFactory(options);
+    }
+
+    public ConnectionFactory getConnectionFactory(String factoryName)
+            throws NamingException
+    {
+        return _jmsProvider.getConnectionFactory(factoryName);
+    }
+
+    public ConnectionFactory getConnectionFactory(String factoryName, String vhost, String clientId)
+            throws NamingException
+    {
+        return _jmsProvider.getConnectionFactory(factoryName, vhost, clientId);
+    }
+
     public Connection getConnection() throws JMSException, NamingException
     {
-        return getConnection(GUEST_USERNAME, GUEST_PASSWORD);
-    }
-
-    public Connection getConnectionWithPrefetch(int prefetch) throws JMSException, NamingException, URLSyntaxException
-    {
-        if(isBroker10())
-        {
-            String factoryName = Boolean.getBoolean(PROFILE_USE_SSL) ? "default.ssl" : "default";
-
-            final Map<String, String> options =
-                    Collections.singletonMap("jms.prefetchPolicy.all", String.valueOf(prefetch));
-            final ConnectionFactory connectionFactory = getConnectionFactory(factoryName, "test", "clientid", options);
-            return connectionFactory.createConnection(GUEST_USERNAME, GUEST_PASSWORD);
-
-        }
-        else
-        {
-            return getConnectionWithOptions(Collections.singletonMap("maxprefetch", String.valueOf(prefetch)));
-        }
-    }
-
-    public Connection getConnectionWithOptions(Map<String, String> options)
-            throws URLSyntaxException, NamingException, JMSException
-    {
-        ConnectionURL curl = new AMQConnectionURL(((AMQConnectionFactory)getConnectionFactory()).getConnectionURLString());
-        for (Map.Entry<String, String> entry : options.entrySet())
-        {
-            curl.setOption(entry.getKey(), entry.getValue());
-        }
-        curl = new AMQConnectionURL(curl.toString());
-
-        curl.setUsername(GUEST_USERNAME);
-        curl.setPassword(GUEST_PASSWORD);
-        return getConnection(curl);
-    }
-
-    public Connection getConnectionForVHost(String vhost)
-            throws URLSyntaxException, NamingException, JMSException
-    {
-        return getConnectionForVHost(vhost, GUEST_USERNAME, GUEST_PASSWORD);
-    }
-
-    public Connection getConnectionForVHost(String vhost, String username, String password)
-            throws URLSyntaxException, NamingException, JMSException
-    {
-
-        if(isBroker10())
-        {
-            return getConnectionFactory(Boolean.getBoolean(PROFILE_USE_SSL) ? "default.ssl" : "default", vhost, "clientId").createConnection(username, password);
-        }
-        else
-        {
-            ConnectionURL curl =
-                    new AMQConnectionURL(((AMQConnectionFactory) getConnectionFactory()).getConnectionURLString());
-            curl.setVirtualHost("/"+vhost);
-            curl = new AMQConnectionURL(curl.toString());
-
-            curl.setUsername(username);
-            curl.setPassword(password);
-            return getConnection(curl);
-        }
-    }
-
-
-    public Connection getConnection(ConnectionURL url) throws JMSException
-    {
-        _logger.debug("get connection for " + url.getURL());
-        Connection connection = new AMQConnectionFactory(url).createConnection(url.getUsername(), url.getPassword());
-
+        Connection connection = _jmsProvider.getConnection();
         _connections.add(connection);
-
         return connection;
     }
 
-    /**
-     * Get a connection (remote or in-VM)
-     *
-     * @param username The user name
-     * @param password The user password
-     * @return a newly created connection
-     * @throws JMSException NamingException if there is an error getting the connection
-     */
     public Connection getConnection(String username, String password) throws JMSException, NamingException
     {
-        _logger.debug("get connection for username " + username);
-        Connection con = getConnectionFactory().createConnection(username, password);
-        //add the connection in the list of connections
-        _connections.add(con);
-        return con;
+        Connection connection = _jmsProvider.getConnection(username, password);
+        _connections.add(connection);
+        return connection;
     }
 
-    /**
-     * Return a Queue specific for this test.
-     * Uses getTestQueueName() as the name of the queue
-     */
+    public Connection getConnectionWithPrefetch(int prefetch) throws Exception
+    {
+        Connection connection = _jmsProvider.getConnectionWithPrefetch(prefetch);
+        _connections.add(connection);
+        return connection;
+    }
+
+    public Connection getConnectionWithOptions(Map<String, String> options) throws Exception
+    {
+        Connection connection = _jmsProvider.getConnectionWithOptions(options);
+        _connections.add(connection);
+        return connection;
+    }
+
+    public Connection getConnectionWithOptions(String vhost, Map<String, String> options) throws Exception
+    {
+
+        Connection connection = _jmsProvider.getConnectionWithOptions(vhost, options);
+        _connections.add(connection);
+        return connection;
+    }
+
+    public Connection getConnectionForVHost(String vhost) throws Exception
+    {
+        Connection connection = _jmsProvider.getConnectionForVHost(vhost);
+        _connections.add(connection);
+        return connection;
+    }
+
+    public Connection getConnection(String urlString) throws Exception
+    {
+        Connection connection = _jmsProvider.getConnection(urlString);
+        _connections.add(connection);
+        return connection;
+    }
+
     public Queue getTestQueue()
     {
-        return new AMQQueue(ExchangeDefaults.DIRECT_EXCHANGE_NAME, getTestQueueName());
+        return _jmsProvider.getTestQueue(getTestQueueName());
     }
 
     public Queue getQueueFromName(Session session, String name) throws JMSException
     {
-        if(isBroker10())
-        {
-            return session.createQueue(name);
-        }
-        else
-        {
-            return session.createQueue("ADDR: '" + name + "'");
-        }
+        return _jmsProvider.getQueueFromName(session, name);
     }
 
     public Queue createTestQueue(Session session) throws JMSException
     {
-        return createTestQueue(session, getTestQueueName());
+        return _jmsProvider.createTestQueue(session, getTestQueueName());
     }
 
     public Queue createTestQueue(Session session, String queueName) throws JMSException
     {
-        if(isBroker10())
-        {
-            createEntityUsingAmqpManagement(queueName, session, "org.apache.qpid.Queue");
-
-            return session.createQueue(queueName);
-        }
-        else
-        {
-
-            AMQQueue amqQueue = new AMQQueue(ExchangeDefaults.DIRECT_EXCHANGE_NAME, queueName);
-            session.createConsumer(amqQueue).close();
-            return amqQueue;
-        }
+        return _jmsProvider.createTestQueue(session, queueName);
     }
 
     /**
@@ -477,227 +327,61 @@ public class QpidBrokerTestCase extends QpidTestCase
      */
     public Topic getTestTopic()
     {
-        return new AMQTopic(ExchangeDefaults.TOPIC_EXCHANGE_NAME, getTestQueueName());
+        return _jmsProvider.getTestTopic(getTestQueueName());
     }
 
     protected Topic createTopic(final Connection con, final String topicName) throws JMSException
     {
-        if(isBroker10())
-        {
-            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            createEntityUsingAmqpManagement(topicName, session, "org.apache.qpid.TopicExchange");
-
-            return session.createTopic(topicName);
-
-        }
-        else
-        {
-            return new AMQTopic(ExchangeDefaults.TOPIC_EXCHANGE_NAME, topicName);
-        }
+        return _jmsProvider.createTopic(con, topicName);
     }
 
     protected Topic createTopicOnDirect(final Connection con, String topicName) throws JMSException, URISyntaxException
     {
-        if(isBroker10())
-        {
-            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            return session.createTopic("amq.direct/"+topicName);
-        }
-        else
-        {
-            return new AMQTopic(
-                    "direct://amq.direct/"+topicName+"/"+topicName+"?routingkey='"+topicName+"',exclusive='true',autodelete='true'");
-        }
+        return _jmsProvider.createTopicOnDirect(con, topicName);
     }
-
 
     protected Topic createTopicOnFanout(final Connection con, String topicName) throws JMSException, URISyntaxException
     {
-        if(isBroker10())
-        {
-            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            return session.createTopic("amq.fanout/"+topicName);
-        }
-        else
-        {
-            return new AMQTopic(
-                    "fanout://amq.fanout/"+topicName+"/"+topicName+"?routingkey='"+topicName+"',exclusive='true',autodelete='true'");
-        }
+        return _jmsProvider.createTopicOnFanout(con, topicName);
     }
 
     protected void createEntityUsingAmqpManagement(final String name, final Session session, final String type)
             throws JMSException
     {
-        createEntityUsingAmqpManagement(name, session, type, Collections.<String,Object>emptyMap());
+        _managementFacade.createEntityUsingAmqpManagement(name, session, type);
     }
 
     protected void createEntityUsingAmqpManagement(final String name, final Session session, final String type, Map<String, Object> attributes)
             throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue(isBroker10() ? "$management" : "ADDR:$management"));
 
-        MapMessage createMessage = session.createMapMessage();
-        createMessage.setStringProperty("type", type);
-        createMessage.setStringProperty("operation", "CREATE");
-        createMessage.setString("name", name);
-        createMessage.setString("object-path", name);
-        for(Map.Entry<String,Object> entry : attributes.entrySet())
-        {
-            createMessage.setObject(entry.getKey(), entry.getValue());
-        }
-        producer.send(createMessage);
-        if(session.getTransacted())
-        {
-            session.commit();
-        }
+        _managementFacade.createEntityUsingAmqpManagement(name, session, type, attributes);
     }
 
     protected void deleteEntityUsingAmqpManagement(final String name, final Session session, final String type)
             throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue(isBroker10() ? "$management" : "ADDR:$management"));
 
-        MapMessage createMessage = session.createMapMessage();
-        createMessage.setStringProperty("type", type);
-        createMessage.setStringProperty("operation", "DELETE");
-        createMessage.setStringProperty("index", "object-path");
-
-        createMessage.setStringProperty("key", name);
-        producer.send(createMessage);
-        if(session.getTransacted())
-        {
-            session.commit();
-        }
+        _managementFacade.deleteEntityUsingAmqpManagement(name, session, type);
     }
 
     protected void performOperationUsingAmqpManagement(final String name, final String operation, final Session session, final String type, Map<String,Object> arguments)
             throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue(isBroker10() ? "$management" : "ADDR:$management"));
 
-        MapMessage opMessage = session.createMapMessage();
-        opMessage.setStringProperty("type", type);
-        opMessage.setStringProperty("operation", operation);
-        opMessage.setStringProperty("index", "object-path");
-
-        opMessage.setStringProperty("key", name);
-        for(Map.Entry<String,Object> argument : arguments.entrySet())
-        {
-            opMessage.setObjectProperty(argument.getKey(), argument.getValue());
-        }
-
-        producer.send(opMessage);
-        if(session.getTransacted())
-        {
-            session.commit();
-        }
+        _managementFacade.performOperationUsingAmqpManagement(name, operation, session, type, arguments);
     }
-
 
     protected List managementQueryObjects(final Session session, final String type) throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue("$management"));
-        final TemporaryQueue responseQ = session.createTemporaryQueue();
-        MessageConsumer consumer = session.createConsumer(responseQ);
-        MapMessage message = session.createMapMessage();
-        message.setStringProperty("identity", "self");
-        message.setStringProperty("type", "org.amqp.management");
-        message.setStringProperty("operation", "QUERY");
-        message.setStringProperty("entityType", type);
-        message.setString("attributeNames", "[]");
-        message.setJMSReplyTo(responseQ);
 
-        producer.send(message);
-
-        Message response = consumer.receive();
-        try
-        {
-            if (response instanceof MapMessage)
-            {
-                return (List) ((MapMessage) response).getObject("results");
-            }
-            else if (response instanceof ObjectMessage)
-            {
-                Object body = ((ObjectMessage) response).getObject();
-                if (body instanceof Map)
-                {
-                    return (List) ((Map) body).get("results");
-                }
-            }
-            throw new IllegalArgumentException("Cannot parse the results from a management query");
-        }
-        finally
-        {
-            consumer.close();
-            responseQ.delete();
-        }
+        return _managementFacade.managementQueryObjects(session, type);
     }
 
-    public long getQueueDepth(final Connection con, final Queue destination) throws JMSException, QpidException
+    public long getQueueDepth(final Connection con, final Queue destination) throws Exception
     {
-        if(isBroker10())
-        {
-            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            try
-            {
-
-                MessageProducer producer = session.createProducer(session.createQueue("$management"));
-                final TemporaryQueue responseQ = session.createTemporaryQueue();
-                MessageConsumer consumer = session.createConsumer(responseQ);
-                MapMessage message = session.createMapMessage();
-                message.setStringProperty("index", "object-path");
-                final String escapedName = destination.getQueueName().replaceAll("([/\\\\])", "\\\\$1");
-                message.setStringProperty("key", escapedName);
-                message.setStringProperty("type", "org.apache.qpid.Queue");
-                message.setStringProperty("operation", "getStatistics");
-                message.setStringProperty("statistics", "[\"queueDepthMessages\"]");
-
-                message.setJMSReplyTo(responseQ);
-
-                producer.send(message);
-
-                Message response = consumer.receive();
-                try
-                {
-                    if (response instanceof MapMessage)
-                    {
-                        return ((MapMessage) response).getLong("queueDepthMessages");
-                    }
-                    else if (response instanceof ObjectMessage)
-                    {
-                        Object body = ((ObjectMessage) response).getObject();
-                        if (body instanceof Map)
-                        {
-                            return Long.valueOf(((Map) body).get("queueDepthMessages").toString());
-                        }
-                    }
-                    throw new IllegalArgumentException("Cannot parse the results from a management operation");
-                }
-                finally
-                {
-                    consumer.close();
-                    responseQ.delete();
-                }
-            }
-            finally
-            {
-                session.close();
-            }
-        }
-        else
-        {
-            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            try
-            {
-                return ((AMQSession<?, ?>) session).getQueueDepth((AMQDestination) destination);
-            }
-            finally
-            {
-                session.close();
-            }
-        }
+        return _jmsProvider.getQueueDepth(con, destination);
     }
-
 
     /**
      * Send messages to the given destination.
@@ -829,26 +513,9 @@ public class QpidBrokerTestCase extends QpidTestCase
         return message;
     }
 
-    public BrokerDetails getBrokerDetailsFromDefaultConnectionUrl()
+    public String getBrokerDetailsFromDefaultConnectionUrl()
     {
-        try
-        {
-            if (((AMQConnectionFactory)getConnectionFactory()).getConnectionURL().getBrokerCount() > 0)
-            {
-                return ((AMQConnectionFactory)getConnectionFactory()).getConnectionURL().getBrokerDetails(0);
-            }
-            else
-            {
-                fail("No broker details are available.");
-            }
-        }
-        catch (NamingException e)
-        {
-            fail(e.getMessage());
-        }
-
-        //keep compiler happy
-        return null;
+        return _jmsProvider.getBrokerDetailsFromDefaultConnectionUrl();
     }
 
     /**
@@ -1053,37 +720,16 @@ public class QpidBrokerTestCase extends QpidTestCase
         return BROKER_PERSISTENT;
     }
 
-    protected Connection getConnectionWithSyncPublishing() throws URLSyntaxException, NamingException, JMSException
+    protected Connection getConnectionWithSyncPublishing() throws Exception
     {
-        if(isBroker10())
-        {
-            return getConnection();
-        }
-        else
-        {
-            Map<String, String> options = new HashMap<>();
-            options.put(ConnectionURL.OPTIONS_SYNC_PUBLISH, "all");
-            return getConnectionWithOptions(options);
-        }
+        return _jmsProvider.getConnectionWithSyncPublishing();
     }
 
     protected Connection getClientConnection(String username, String password, String id)
-            throws JMSException, URLSyntaxException,
-                   QpidException, NamingException
+            throws Exception
     {
-        _logger.debug("get connection for id " + id);
-        Connection con;
-        if(isBroker10())
-        {
-            con = getConnectionFactory("default", "test", id).createConnection(username, password);
-        }
-        else
-        {
-            con = ((AMQConnectionFactory)getConnectionFactory()).createConnection(username, password, id);
-        }
         //add the connection in the list of connections
-        _connections.add(con);
-        return con;
+        return _jmsProvider.getClientConnection(username, password, id);
     }
 
     /**

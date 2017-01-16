@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.jms.ConnectionListener;
 import org.apache.qpid.test.utils.BrokerHolder;
 import org.apache.qpid.test.utils.FailoverBaseCase;
@@ -62,7 +61,7 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
     private static final int NUMBER_OF_BROKERS = 4;
 
     private BrokerHolder[] _brokerHolders;
-    private AMQConnectionURL _connectionURL;
+    private String _connectionURL;
     private Connection _connection;
     private CountDownLatch _failoverComplete;
     private CountDownLatch _failoverStarted;
@@ -106,7 +105,7 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
             _brokerHolders[i] = brokerHolder;
         }
 
-        _connectionURL = new AMQConnectionURL(generateUrlString(NUMBER_OF_BROKERS));
+        _connectionURL = generateUrlString(NUMBER_OF_BROKERS);
 
         _connection = getConnection(_connectionURL);
         ((AMQConnection) _connection).setConnectionListener(this);

@@ -46,7 +46,7 @@ public class MultipleConnectionTest extends QpidBrokerTestCase
 
         Receiver(Destination dest, int sessions) throws Exception
         {
-            this(getConnection("guest", "guest"), dest, sessions);
+            this(getConnection(), dest, sessions);
         }
 
         Receiver(Connection connection, Destination dest, int sessions) throws Exception
@@ -83,7 +83,7 @@ public class MultipleConnectionTest extends QpidBrokerTestCase
 
         Publisher(Destination dest) throws Exception
         {
-            this(getConnection("guest", "guest"), dest);
+            this(getConnection(), dest);
         }
 
         Publisher(Connection connection, Destination dest) throws Exception

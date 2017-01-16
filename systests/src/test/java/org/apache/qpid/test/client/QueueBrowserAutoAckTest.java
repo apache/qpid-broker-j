@@ -434,8 +434,8 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
 
         try
         {
-            QueueBrowser browser = _clientSession.createBrowser(getTestQueue());
-            Enumeration messages = browser.getEnumeration();
+            QueueBrowser browser = _clientSession.createBrowser(_queue);
+            browser.getEnumeration();
             // it is not a requirement to fail - but it shouldn't hang... so failure for this test is simply
             // non-completion
         }

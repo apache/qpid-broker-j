@@ -43,7 +43,8 @@ public class ConnectionStartTest extends QpidBrokerTestCase
     private Session _consumerSess;
     private MessageConsumer _consumer;
 
-    protected void setUp() throws Exception
+    @Override
+    public void setUp() throws Exception
     {
         super.setUp();
 
@@ -69,7 +70,8 @@ public class ConnectionStartTest extends QpidBrokerTestCase
 
     }
 
-    protected void tearDown() throws Exception
+    @Override
+    public void tearDown() throws Exception
     {
         _connection.close();
         super.tearDown();

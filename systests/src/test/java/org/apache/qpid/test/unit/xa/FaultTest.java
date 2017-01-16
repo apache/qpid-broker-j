@@ -96,6 +96,7 @@ public class FaultTest extends AbstractXATestCase
         junit.textui.TestRunner.run(getSuite());
     }
 
+    @Override
     public void tearDown() throws Exception
     {
         if (!isBroker08())

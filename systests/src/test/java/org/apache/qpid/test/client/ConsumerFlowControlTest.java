@@ -28,40 +28,28 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.qpid.client.AMQSession_0_8;
 import org.apache.qpid.client.message.AbstractJMSMessage;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class ConsumerFlowControlTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(ConsumerFlowControlTest.class);
-
     private Connection _clientConnection;
     private Session _clientSession;
     private Queue _queue;
 
-    /**
-     * Simply
-     *
-     * @throws Exception
-     */
+    @Override
+    public void setUp() throws Exception
+    {
+        super.setUp();
+        _clientConnection = getConnection();
+        _clientConnection.start();
+        _clientSession = _clientConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        _queue = createTestQueue(_clientSession);
+    }
+
     public void testBasicBytesFlowControl() throws Exception
     {
-        _queue = (Queue) getInitialContext().lookup("queue");
-
-        //Create Client
-        _clientConnection = getConnection();
-
-        _clientConnection.start();
-
-        _clientSession = _clientConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-        //Ensure _queue is created
-        _clientSession.createConsumer(_queue).close();
-
         Connection producerConnection = getConnection();
 
         producerConnection.start();
@@ -111,17 +99,6 @@ public class ConsumerFlowControlTest extends QpidBrokerTestCase
 
     public void testTwoConsumersBytesFlowControl() throws Exception
     {
-        _queue = (Queue) getInitialContext().lookup("queue");
-
-        //Create Client
-        _clientConnection = getConnection();
-
-        _clientConnection.start();
-
-        _clientSession = _clientConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-        //Ensure _queue is created
-        _clientSession.createConsumer(_queue).close();
 
         Connection producerConnection = getConnection();
 
@@ -179,7 +156,6 @@ public class ConsumerFlowControlTest extends QpidBrokerTestCase
 
     public void testDeliverMessageLargerThanBytesLimit() throws Exception
     {
-        _queue = (Queue) getInitialContext().lookup("queue");
         Connection connection = getConnection();
         connection.start();
 

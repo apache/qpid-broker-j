@@ -35,7 +35,6 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.client.message.JMSBytesMessage;
 import org.apache.qpid.client.message.JMSTextMessage;
 import org.apache.qpid.server.model.TrustStore;
@@ -227,11 +226,8 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
                                                                           EXCLUDED_VIRTUAL_HOST_NODE_NAME));
             super.startDefaultBroker();
 
-            String connectionUrlString = "amqp://guest:guest@clientId/" + EXCLUDED_VIRTUAL_HOST_NODE_NAME
-                                         + "?brokerlist='tcp://localhost:" + getDefaultAmqpPort() + "'"
-                                         + "&encryption_remote_trust_store='$certificates%5c/peerstore'";
-            final AMQConnectionURL connectionUrl = new AMQConnectionURL(connectionUrlString);
-            Connection producerConnection = getConnection(connectionUrl);
+            Map<String, String> options = Collections.singletonMap("encryption_remote_trust_store", "$certificates/peerstore");
+            Connection producerConnection = getConnectionWithOptions(EXCLUDED_VIRTUAL_HOST_NODE_NAME, options);
 
             Queue queue = getTestQueue();
             final Session prodSession = producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -266,16 +262,10 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
             addPeerStoreToBroker(additionalPeerStoreAttributes);
             super.startDefaultBroker();
 
-            String connectionUrlString;
 
-            connectionUrlString = "amqp://guest:guest@clientId/" + INCLUDED_VIRTUAL_HOST_NODE_NAME
-                                  + "?brokerlist='tcp://localhost:" + getDefaultAmqpPort() + "'"
-                                  + "&encryption_remote_trust_store='$certificates%5c/peerstore'";
-            final AMQConnectionURL connectionUrl = new AMQConnectionURL(connectionUrlString);
-            Connection successfulProducerConnection = getConnection(connectionUrl);
-
-            Connection failingProducerConnection = getConnectionWithOptions(Collections.singletonMap("encryption_remote_trust_store",
-                                                                                                     "$certificates%5c/peerstore"));
+            Map<String, String> options = Collections.singletonMap("encryption_remote_trust_store", "$certificates/peerstore");
+            Connection successfulProducerConnection = getConnectionWithOptions(INCLUDED_VIRTUAL_HOST_NODE_NAME, options);
+            Connection failingProducerConnection = getConnectionWithOptions(options);
 
             Queue queue = getTestQueue();
             final Session successfulSession = successfulProducerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);

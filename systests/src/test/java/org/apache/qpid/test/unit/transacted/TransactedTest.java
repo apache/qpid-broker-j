@@ -55,13 +55,14 @@ public class TransactedTest extends QpidBrokerTestCase
     private MessageConsumer testConsumer2;
     private static final Logger _logger = LoggerFactory.getLogger(TransactedTest.class);
 
-    protected void setUp() throws Exception
+    @Override
+    public void setUp() throws Exception
     {
         try
         {
             super.setUp();
             _logger.info("Create Connection");
-            con = getConnection("guest", "guest");
+            con = getConnection();
             _logger.info("Create Session");
             session = con.createSession(true, Session.SESSION_TRANSACTED);
             _logger.info("Create Q1");
@@ -85,7 +86,7 @@ public class TransactedTest extends QpidBrokerTestCase
             con.start();
 
             _logger.info("Create prep connection");
-            prepCon = getConnection("guest", "guest");
+            prepCon = getConnection();
 
             _logger.info("Create prep session");
             prepSession = prepCon.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -97,7 +98,7 @@ public class TransactedTest extends QpidBrokerTestCase
             prepCon.start();
 
             _logger.info("Create test connection");
-            testCon = getConnection("guest", "guest");
+            testCon = getConnection();
             _logger.info("Create test session");
             testSession = testCon.createSession(false, Session.AUTO_ACKNOWLEDGE);
             _logger.info("Create test consumer of q2");
@@ -111,7 +112,8 @@ public class TransactedTest extends QpidBrokerTestCase
         }
     }
 
-    protected void tearDown() throws Exception
+    @Override
+    public void tearDown() throws Exception
     {
         try
         {
@@ -224,14 +226,14 @@ public class TransactedTest extends QpidBrokerTestCase
 
     public void testResendsMsgsAfterSessionClose() throws Exception
     {
-        Connection con = getConnection("guest", "guest");
+        Connection con = getConnection();
 
         Session consumerSession = con.createSession(true, Session.SESSION_TRANSACTED);
         Queue queue3 = createTestQueue(session, "Q3");
         session.commit();
         MessageConsumer consumer = consumerSession.createConsumer(queue3);
 
-        Connection con2 = getConnection("guest", "guest");
+        Connection con2 = getConnection();
         Session producerSession = con2.createSession(true, Session.SESSION_TRANSACTED);
         MessageProducer producer = producerSession.createProducer(queue3);
 

@@ -26,7 +26,6 @@ import java.util.Map;
 import javax.jms.Connection;
 import javax.jms.JMSException;
 
-import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
@@ -39,10 +38,10 @@ public class TwoNodeTest extends QpidBrokerTestCase
     private GroupCreator _groupCreator;
 
     /** Used when expectation is client will not (re)-connect */
-    private ConnectionURL _positiveFailoverUrl;
+    private String _positiveFailoverUrl;
 
     /** Used when expectation is client will not (re)-connect */
-    private ConnectionURL _negativeFailoverUrl;
+    private String _negativeFailoverUrl;
 
     @Override
     protected void setUp() throws Exception

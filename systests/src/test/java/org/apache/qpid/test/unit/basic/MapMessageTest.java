@@ -55,12 +55,13 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
     private byte[] _bytes = { 99, 98, 97, 96, 95 };
     private static final float _smallfloat = 100.0f;
 
-    protected void setUp() throws Exception
+    @Override
+    public void setUp() throws Exception
     {
         super.setUp();
         try
         {
-            _connection = getConnection("guest", "guest");
+            _connection = getConnection();
             _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             _destination = createTestQueue(_session);
 
@@ -74,6 +75,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         }
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _logger.info("Tearing Down unit.basic.MapMessageTest");
