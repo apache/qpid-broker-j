@@ -41,27 +41,27 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class RecoverTest extends QpidBrokerTestCase
 {
-    static final Logger _logger = LoggerFactory.getLogger(RecoverTest.class);
+    private static final Logger _logger = LoggerFactory.getLogger(RecoverTest.class);
 
-    private static final int POSIITIVE_TIMEOUT = 2000;
+    private static final int SENT_COUNT = 4;
 
     private volatile Exception _error;
-    private AtomicInteger count;
-
-    protected Connection _connection;
-    protected Session _consumerSession;
-    protected MessageConsumer _consumer;
-    static final int SENT_COUNT = 4;
+    private AtomicInteger _count;
+    private long _timeout;
+    private Connection _connection;
+    private Session _consumerSession;
+    private MessageConsumer _consumer;
 
     @Override
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         super.setUp();
         _error = null;
-        count = new AtomicInteger();
+        _count = new AtomicInteger();
+        _timeout = getReceiveTimeout();
     }
 
-    protected void initTest() throws Exception
+    private void initTest() throws Exception
     {
         _connection = getConnection();
 
@@ -76,27 +76,29 @@ public class RecoverTest extends QpidBrokerTestCase
         _connection.start();
     }
 
-    protected Message validateNextMessages(int nextCount, int startIndex) throws JMSException
+    private Message validateNextMessages(int nextCount, int startIndex) throws JMSException
     {
         Message message = null;
+
         for (int index = 0; index < nextCount; index++)
         {
-            message = _consumer.receive(3000);
+            message = _consumer.receive(_timeout);
             assertEquals(startIndex + index, message.getIntProperty(INDEX));
         }
         return message;
     }
 
-    protected void validateRemainingMessages(int remaining) throws JMSException
+    private void validateRemainingMessages(int remaining) throws JMSException
     {
         int index = SENT_COUNT - remaining;
 
         Message message = null;
         while (index != SENT_COUNT)
         {
-            message =  _consumer.receive(3000);
+            message =  _consumer.receive(_timeout);
             assertNotNull(message);
-            assertEquals(index++, message.getIntProperty(INDEX));
+            int expected = index++;
+            assertEquals("Message has unexpected index", expected, message.getIntProperty(INDEX));
         }
 
         if (message != null)
@@ -147,11 +149,11 @@ public class RecoverTest extends QpidBrokerTestCase
         // no ack for last three messages so when I call recover I expect to get three messages back
         _consumerSession.recover();
 
-        Message message2 = _consumer.receive(3000);
+        Message message2 = _consumer.receive(_timeout);
         assertNotNull(message2);
         assertEquals(2, message2.getIntProperty(INDEX));
 
-        Message message3 = _consumer.receive(3000);
+        Message message3 = _consumer.receive(_timeout);
         assertNotNull(message3);
         assertEquals(3, message3.getIntProperty(INDEX));
 
@@ -162,7 +164,7 @@ public class RecoverTest extends QpidBrokerTestCase
         // all acked so no messages to be delivered
         _consumerSession.recover();
 
-        message3 = _consumer.receive(3000);
+        message3 = _consumer.receive(_timeout);
         assertNotNull(message3);
         assertEquals(3, message3.getIntProperty(INDEX));
         ((org.apache.qpid.jms.Message) message3).acknowledgeThis();
@@ -194,14 +196,14 @@ public class RecoverTest extends QpidBrokerTestCase
         _logger.info("Starting connection");
         con.start();
 
-        TextMessage tm2 = (TextMessage) consumer2.receive(2000);
+        TextMessage tm2 = (TextMessage) consumer2.receive(_timeout);
         assertNotNull(tm2);
         assertEquals("msg2", tm2.getText());
 
         tm2.acknowledge();
         consumerSession.recover();
 
-        TextMessage tm1 = (TextMessage) consumer.receive(2000);
+        TextMessage tm1 = (TextMessage) consumer.receive(_timeout);
         assertNotNull(tm1);
         assertEquals("msg1", tm1.getText());
 
@@ -228,8 +230,8 @@ public class RecoverTest extends QpidBrokerTestCase
             {
                 try
                 {
-                    count.incrementAndGet();
-                    if (count.get() == 1)
+                    _count.incrementAndGet();
+                    if (_count.get() == 1)
                     {
                         if (message.getJMSRedelivered())
                         {
@@ -238,7 +240,7 @@ public class RecoverTest extends QpidBrokerTestCase
 
                         consumerSession.recover();
                     }
-                    else if (count.get() == 2)
+                    else if (_count.get() == 2)
                     {
                         if (!message.getJMSRedelivered())
                         {
@@ -248,7 +250,7 @@ public class RecoverTest extends QpidBrokerTestCase
                     else
                     {
                         _logger.error(message.toString());
-                        setError(new Exception("Message delivered too many times!: " + count));
+                        setError(new Exception("Message delivered too many times!: " + _count));
                     }
                 }
                 catch (JMSException e)
@@ -271,10 +273,10 @@ public class RecoverTest extends QpidBrokerTestCase
 
         synchronized (lock)
         {
-            while ((count.get() <= 1) && (waitTime > 0))
+            while ((_count.get() <= 1) && (waitTime > 0))
             {
                 lock.wait(waitTime);
-                if (count.get() <= 1)
+                if (_count.get() <= 1)
                 {
                     waitTime = waitUntilTime - System.currentTimeMillis();
                 }
@@ -289,7 +291,7 @@ public class RecoverTest extends QpidBrokerTestCase
         }
 
         assertEquals("Message not received the correct number of times.",
-                     2, count.get());
+                     2, _count.get());
     }
 
     private void setError(Exception e)
@@ -331,7 +333,7 @@ public class RecoverTest extends QpidBrokerTestCase
                      expectedIndex + " msgs so far. Please check the logs");
             }
             
-            Message message = cons.receive(POSIITIVE_TIMEOUT);
+            Message message = cons.receive(_timeout);
             int actualIndex = message.getIntProperty(INDEX);
             
             assertEquals("Received Message Out Of Order",expectedIndex, actualIndex);
@@ -449,7 +451,7 @@ public class RecoverTest extends QpidBrokerTestCase
 
         setTestClientSystemProperty(ClientProperties.MAX_PREFETCH_PROP_NAME, String.valueOf(maxPrefetch));
 
-        Connection con = (Connection) getConnection();
+        Connection con = getConnection();
         final javax.jms.Session session = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         Destination dest = session.createQueue(getTestQueueName());
         MessageConsumer cons = session.createConsumer(dest);
@@ -459,7 +461,7 @@ public class RecoverTest extends QpidBrokerTestCase
 
         for (int i=0; i< maxPrefetch; i++)
         {
-            final Message message = cons.receive(POSIITIVE_TIMEOUT);
+            final Message message = cons.receive(_timeout);
             assertNotNull("Received:" + i, message);
             assertEquals("Unexpected message received", i, message.getIntProperty(INDEX));
         }
@@ -467,7 +469,7 @@ public class RecoverTest extends QpidBrokerTestCase
         _logger.info("Recovering");
         session.recover();
 
-        Message result = cons.receive(POSIITIVE_TIMEOUT);
+        Message result = cons.receive(_timeout);
         // Expect the first message
         assertEquals("Unexpected message received", 0, result.getIntProperty(INDEX));
     }
