@@ -19,18 +19,19 @@
  */
 package org.apache.qpid.systest.rest;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
 import javax.jms.Destination;
+import javax.jms.JMSException;
 import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -98,23 +99,15 @@ public class PublishMessageRestTest extends QpidRestTestCase
         assertNotSame("Unexpected JMSTimestamp", 0, message.getJMSTimestamp());
 
         // remove any JMSX properties which may be added by the client library
-        ArrayList propertyNames = new ArrayList(Collections.list(message.getPropertyNames()));
-        Iterator iter = propertyNames.iterator();
-        while(iter.hasNext())
-        {
-            if(iter.next().toString().startsWith("JMSX"))
-            {
-                iter.remove();
-            }
-        }
-        assertTrue("Unexpected number of mesage properties: " + propertyNames, propertyNames.isEmpty());
+        List<String> applicationHeaders = getApplicationHeaders(message.getPropertyNames());
+        assertTrue("Unexpected number of message properties: " + applicationHeaders, applicationHeaders.isEmpty());
     }
 
     public void testPublishMessageWithPropertiesAndHeaders() throws Exception
     {
         final String messageId = "ID:" + UUID.randomUUID().toString();
         final long tomorrow = TimeUnit.DAYS.toMillis(1) + System.currentTimeMillis();
-        final Map<String, Object> headers =  new HashMap<>();
+        final Map<String, Object> headers = new HashMap<>();
         headers.put("stringprop", "mystring");
         headers.put("longstringprop", Strings.repeat("*", 256));
         headers.put("intprop", Integer.MIN_VALUE);
@@ -133,26 +126,21 @@ public class PublishMessageRestTest extends QpidRestTestCase
         assertNotNull("Expected message not received", message);
         final String jmsMessageID = message.getJMSMessageID();
         assertEquals("Unexpected JMSMessageID", messageId, jmsMessageID);
-        assertEquals("Unexpected JMSExpiration", tomorrow, message.getJMSExpiration());
+        assertFalse("Unexpected JMSRedelivered", message.getJMSRedelivered());
+        // In AMQP 1.0 TTLs are compute relative to the message's arrival time at server.
+        assertTrue(String.format("Unexpected JMSExpiration expected %d actual %d", tomorrow, message.getJMSExpiration()),
+                   message.getJMSExpiration() >= tomorrow && message.getJMSExpiration() - tomorrow < 5000);
 
-        final Enumeration propertyEnumeration = message.getPropertyNames();
-        int count = 0;
-        while(propertyEnumeration.hasMoreElements())
+        // remove any JMSX properties which may be added by the client library
+        List<String> applicationHeaders = getApplicationHeaders(message.getPropertyNames());
+
+        for(String key : applicationHeaders)
         {
-            String key = (String) propertyEnumeration.nextElement();
-            assertEquals("Unexpected property value fo key : " + key, headers.get(key), message.getObjectProperty(key));
-            count++;
+            assertEquals("Unexpected property value fo key : " + key,
+                         headers.get(key),
+                         message.getObjectProperty(key));
         }
-        assertEquals("Unexpected number of properties", headers.size(), count);
-    }
-
-    private void expectPublishFailure(final Map<String, Object> headers, final int responseCode) throws IOException
-    {
-        final Map<String, Object> messageBody = Collections.<String, Object>singletonMap("headers", headers);
-
-        getRestTestHelper().submitRequest(_publishMessageOpUrl, "POST",
-                                          Collections.singletonMap("message", messageBody),
-                                          responseCode);
+        assertEquals("Unexpected number of properties", headers.size(), applicationHeaders.size());
     }
 
     public void testPublishStringMessage() throws Exception
@@ -216,5 +204,19 @@ public class PublishMessageRestTest extends QpidRestTestCase
         assertTrue(String.format("Unexpected message type. Expecting %s got %s", expectedMessageClass, message.getClass()),
                    expectedMessageClass.isAssignableFrom(message.getClass()));
         return message;
+    }
+
+    private List<String> getApplicationHeaders(final Enumeration propertyNames1) throws JMSException
+    {
+        List<String> copy = new ArrayList<>(Collections.list((Enumeration<String>) propertyNames1));
+        Iterator iter = copy.iterator();
+        while(iter.hasNext())
+        {
+            if(iter.next().toString().startsWith("JMSX"))
+            {
+                iter.remove();
+            }
+        }
+        return copy;
     }
 }
