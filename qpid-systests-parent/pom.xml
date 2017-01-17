@@ -234,4 +234,39 @@
     </plugins>
   </reporting>
 
+  <profiles>
+    <profile>
+      <id>java-mms.1-0</id>
+      <activation>
+        <property>
+          <name>profile</name>
+          <value>java-mms.1-0</value>
+        </property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.qpid</groupId>
+          <artifactId>qpid-jms-client</artifactId>
+          <version>${qpid-jms-client-version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <!-- The 0-x client does not have a dependency on the JMS 1.1 spec.  Add it now. -->
+      <id>addJms11IfNecessary</id>
+      <activation>
+        <property>
+          <name>profile</name>
+          <value>!java-mms.1-0</value>
+        </property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.geronimo.specs</groupId>
+          <artifactId>geronimo-jms_1.1_spec</artifactId>
+          <version>${geronimo-jms-1-1-version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

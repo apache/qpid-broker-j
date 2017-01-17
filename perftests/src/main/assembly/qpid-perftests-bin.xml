@@ -57,7 +57,6 @@
       <useProjectArtifact>false</useProjectArtifact>
       <scope>provided</scope>
       <includes>
-        <include>org.apache.geronimo.specs:geronimo-jms_1.1_spec</include>
         <include>org.apache.derby:derby</include>
       </includes>
     </dependencySet>

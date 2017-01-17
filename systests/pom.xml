@@ -37,24 +37,11 @@
       <version>${project.version}</version>
     </dependency>
 
-    <!-- client deps -->
+    <!-- Many systests have a compile/runtime dependency on qpid-client -->
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-client</artifactId>
       <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-jms_1.1_spec</artifactId>
-      <version>${geronimo-jms-1-1-version}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-jms-client</artifactId>
-      <version>${qpid-jms-client-version}</version>
     </dependency>
 
     <!-- jca deps -->
