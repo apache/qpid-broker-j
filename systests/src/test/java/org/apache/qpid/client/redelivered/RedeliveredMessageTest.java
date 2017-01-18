@@ -30,42 +30,42 @@ import javax.jms.Session;
 
 public class RedeliveredMessageTest extends QpidBrokerTestCase
 {
-    private Connection _connection;
-
-    public void setUp() throws Exception
+    public void testRedeliveredFlagSetAfterRedelivery() throws Exception
     {
-        super.setUp();
-        _connection = getConnection();
-    }
-
-    public void testRedeliveredFlagOnSessionClose() throws Exception
-    {
-        Session session = _connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        Destination destination = session.createQueue(getTestQueueName());
+        Connection connection = getConnectionWithPrefetch(0);
+        connection.start();
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        Destination destination = createTestQueue(session);
         MessageConsumer consumer = session.createConsumer(destination);
 
         final int numberOfMessages = 3;
         sendMessage(session, destination, numberOfMessages);
 
-        _connection.start();
+        // Receive only the first message. Leave messages 2 and 3 unseen.
+        receiveAssertingJmsDelivery(consumer, 0, false);
 
-        for(int i = 0; i < numberOfMessages; i++)
-        {
-            final Message m = consumer.receive(1000l);
-            assertNotNull("Message is not recieved at " + i, m);
-            assertFalse("Redelivered should be not set", m.getJMSRedelivered());
-        }
+        session.rollback();
+        connection.close();
 
-        session.close();
-        session = _connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        destination = session.createQueue(getTestQueueName());
+        connection =  getConnectionWithPrefetch(0);
+        connection.start();
+        session = connection.createSession(true, Session.SESSION_TRANSACTED);
         consumer = session.createConsumer(destination);
 
-        for(int i = 0; i < numberOfMessages; i++)
-        {
-            final Message m = consumer.receive(1000l);
-            assertNotNull("Message is not recieved at " + i, m);
-            assertTrue("Redelivered should be set", m.getJMSRedelivered());
-        }
+        receiveAssertingJmsDelivery(consumer, 0, true);
+        receiveAssertingJmsDelivery(consumer, 1, false);
+        receiveAssertingJmsDelivery(consumer, 2, false);
+
+    }
+
+    private void receiveAssertingJmsDelivery(MessageConsumer consumer,
+                                             int expectedIndex,
+                                             boolean expectedJMSRedelivered) throws Exception
+    {
+        Message m = consumer.receive(getReceiveTimeout());
+        assertNotNull("Message is not received" , m);
+        assertEquals("Unexpected message expectedIndex" , expectedIndex, m.getIntProperty(INDEX));
+
+        assertEquals("Redelivered should be not set on message expectedIndex " + expectedIndex, expectedJMSRedelivered, m.getJMSRedelivered());
     }
 }
