@@ -81,7 +81,7 @@
     <java.target>1.7</java.target>
 
     <!-- enforcer plugin config properties -->
-    <supported-test-profiles-regex>(java-mms.0-9|java-mms.0-9-1|java-mms.0-10|java-mms.1-0|java-bdb.0-9|java-bdb.0-9-1|java-bdb.0-10|java-dby.0-9|java-dby.0-9-1|java-dby.0-10|java-dby-mem.0-9|java-dby-mem.0-9-1|java-dby-mem.0-10|cpp|java-json.0-9-1|java-json.0-10)</supported-test-profiles-regex>
+    <supported-test-profiles-regex>(java-mms.0-9|java-mms.0-9-1|java-mms.0-10|java-mms.1-0|java-bdb.0-9|java-bdb.0-9-1|java-bdb.0-10|java-bdb.1-0|java-dby.0-9|java-dby.0-9-1|java-dby.0-10|java-dby.1-0|java-dby-mem.0-9|java-dby-mem.0-9-1|java-dby-mem.0-10|cpp|java-json.0-9-1|java-json.0-10|java-json.1-0)</supported-test-profiles-regex>
 
     <!-- surefire forked jvm arguments -->
     <argLine>-Xmx512m</argLine>
@@ -418,6 +418,35 @@
                   <regex>${supported-test-profiles-regex}</regex>
                   <regexMessage>You have set an unsupported test profile! Allowed values match: ${supported-test-profiles-regex}</regexMessage>
                 </requireProperty>
+              </rules>
+              <fail>true</fail>
+            </configuration>
+          </execution>
+          <execution>
+            <id>enforce-enableAmqp10</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <evaluateBeanshell>
+                  <condition><![CDATA[
+                    boolean enableAmqp10Set = System.getProperties().stringPropertyNames().contains("enableAmqp1-0");
+                    boolean amqp10Profile = java.util.regex.Pattern.matches("java-.*\\.1-0", "${profile}");
+
+                    if (amqp10Profile && !enableAmqp10Set)
+                    {
+                      return false;
+                    }
+                    else if (!amqp10Profile && enableAmqp10Set)
+                    {
+                      return false;
+                    }
+                    return true;
+                  ]]>
+                  </condition>
+                  <message>System property 'enableAmqp1-0' must be set only when running a 1-0 test profile. You appear to be running '${profile}'.</message>
+                </evaluateBeanshell>
               </rules>
               <fail>true</fail>
             </configuration>
@@ -787,6 +816,68 @@
       </properties>
     </profile>
 
+    <profile>
+      <id>java-bdb.1-0</id>
+      <activation>
+        <property>
+          <name>profile</name>
+          <value>java-bdb.1-0</value>
+        </property>
+      </activation>
+      <properties>
+        <profile>java-bdb.1-0</profile>
+        <profile.specific.excludes>JavaPersistentExcludes JavaBDBExcludes Java10Excludes Java10BrokenTestsExcludes Java10UninvestigatedTestsExcludes</profile.specific.excludes>
+        <profile.broker.version>v1_0</profile.broker.version>
+        <profile.test.amqp_port_protocols>["AMQP_1_0"]</profile.test.amqp_port_protocols>
+        <profile.broker.persistent>true</profile.broker.persistent>
+        <profile.virtualhostnode.type>BDB</profile.virtualhostnode.type>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
+        <profile.java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</profile.java.naming.factory.initial>
+        <profile.java.naming.provider.url>test-profiles${file.separator}test-provider-1-0.properties</profile.java.naming.provider.url>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>java-dby.1-0</id>
+      <activation>
+        <property>
+          <name>profile</name>
+          <value>java-dby.1-0</value>
+        </property>
+      </activation>
+      <properties>
+        <profile>java-dby.1-0</profile>
+        <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes Java10Excludes Java10BrokenTestsExcludes Java10UninvestigatedTestsExcludes</profile.specific.excludes>
+        <profile.broker.version>v1_0</profile.broker.version>
+        <profile.test.amqp_port_protocols>["AMQP_1_0"]</profile.test.amqp_port_protocols>
+        <profile.broker.persistent>true</profile.broker.persistent>
+        <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
+        <profile.java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</profile.java.naming.factory.initial>
+        <profile.java.naming.provider.url>test-profiles${file.separator}test-provider-1-0.properties</profile.java.naming.provider.url>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>java-json.1-0</id>
+      <activation>
+        <property>
+          <name>profile</name>
+          <value>java-json.1-0</value>
+        </property>
+      </activation>
+      <properties>
+        <profile>java-json.1-0</profile>
+        <profile.specific.excludes>JavaPersistentExcludes JavaJsonExcludes Java10Excludes Java10BrokenTestsExcludes Java10UninvestigatedTestsExcludes</profile.specific.excludes>
+        <profile.broker.version>v1_0</profile.broker.version>
+        <profile.test.amqp_port_protocols>["AMQP_1_0"]</profile.test.amqp_port_protocols>
+        <profile.broker.persistent>true</profile.broker.persistent>
+        <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
+        <profile.virtualhostnode.context.blueprint>{"type":"DERBY","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
+        <profile.java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</profile.java.naming.factory.initial>
+        <profile.java.naming.provider.url>test-profiles${file.separator}test-provider-1-0.properties</profile.java.naming.provider.url>
+      </properties>
+    </profile>
     <!--
     Split store profiles.
     Virtual host configuration can be overridden by setting blueprint property like below

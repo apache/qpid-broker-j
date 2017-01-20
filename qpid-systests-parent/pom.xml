@@ -236,11 +236,10 @@
 
   <profiles>
     <profile>
-      <id>java-mms.1-0</id>
+      <id>addQpidJmsClientIfNecessary</id>
       <activation>
         <property>
-          <name>profile</name>
-          <value>java-mms.1-0</value>
+          <name>enableAmqp1-0</name>
         </property>
       </activation>
       <dependencies>
@@ -256,8 +255,7 @@
       <id>addJms11IfNecessary</id>
       <activation>
         <property>
-          <name>profile</name>
-          <value>!java-mms.1-0</value>
+          <name>!enableAmqp1-0</name>
         </property>
       </activation>
       <dependencies>
