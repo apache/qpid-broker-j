@@ -31,6 +31,7 @@ org.apache.qpid.test.unit.xa.QueueTest#*
 org.apache.qpid.jms.xa.XAResourceTest#*
 org.apache.qpid.ra.QpidRAConnectionTest#*
 org.apache.qpid.ra.QpidRAXAResourceTest#*
+org.apache.qpid.ra.admin.QpidConnectionFactoryProxyTest#*
 
 
 // Exclude tests of AMQP 0-x features
@@ -183,11 +184,13 @@ org.apache.qpid.client.ssl.SSLTest#testCreateSSLWithCertFileAndPrivateKey
 org.apache.qpid.client.ssl.SSLTest#testCreateSSLConnectionUsingSystemProperties
 org.apache.qpid.client.ssl.SSLTest#testSslConnectionOption
 org.apache.qpid.client.ssl.SSLTest#testVerifyLocalHost
-// Test frame does not allow us to override hostname
+// Test framework does not allow us to override hostname
 org.apache.qpid.client.ssl.SSLTest#testHostVerificationIsOnByDefault
 org.apache.qpid.client.ssl.SSLTest#testVerifyHostNameWithIncorrectHostname
 // 0-x client specific feature
 org.apache.qpid.client.ssl.SSLTest#testSslConnectionOptionOverridesBrokerlistOption
+/ Test is 0-10 specific
+org.apache.qpid.client.ssl.SSLTest#testMultipleCertsInSingleStore
 
 // Test assumes BURL and Connection URL format
 org.apache.qpid.systest.rest.ExportImportMessagesRestTest#testExtractImportEndToEnd
