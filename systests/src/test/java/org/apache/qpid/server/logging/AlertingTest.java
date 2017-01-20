@@ -40,6 +40,7 @@ public class AlertingTest extends AbstractTestLogging
     private static final int ALERT_LOG_WAIT_PERIOD = 5000;
     private static final String MESSAGE_COUNT_ALERT = "MESSAGE_COUNT_ALERT";
 
+    @Override
     public void setUp() throws Exception
     {
         _numMessages = 50;
@@ -71,11 +72,10 @@ public class AlertingTest extends AbstractTestLogging
             throws Exception
     {
         _connection = getConnection();
+        _connection.start();
         _session = _connection.createSession(true, Session.SESSION_TRANSACTED);
         _destination = createTestQueue(_session);
 
-        // Consumer is only used to actually create the destination
-        _session.createConsumer(_destination).close();
     }
 
     /**
