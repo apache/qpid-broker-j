@@ -90,5 +90,7 @@ public interface JmsProvider
 
     long getQueueDepth(Connection con, Queue destination) throws Exception;
 
+    boolean isQueueExist(Connection con, Queue destination) throws Exception;
+
     String getBrokerDetailsFromDefaultConnectionUrl();
 }

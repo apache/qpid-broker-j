@@ -220,7 +220,7 @@ public class QpidJmsClient0xProvider implements JmsProvider
     @Override
     public Queue getQueueFromName(Session session, String name) throws JMSException
     {
-        return session.createQueue("ADDR: '" + name + "'");
+        return new AMQQueue("", name);
     }
 
     @Override
@@ -277,6 +277,21 @@ public class QpidJmsClient0xProvider implements JmsProvider
         try
         {
             return ((AMQSession<?, ?>) session).getQueueDepth((AMQDestination) destination);
+        }
+        finally
+        {
+            session.close();
+        }
+    }
+
+    @Override
+    public boolean isQueueExist(final Connection con, final Queue destination) throws Exception
+    {
+        Queue queue = new AMQQueue("", destination.getQueueName());
+        Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        try
+        {
+            return ((AMQSession<?, ?>) session).isQueueBound((AMQDestination) queue);
         }
         finally
         {

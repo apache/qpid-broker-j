@@ -383,6 +383,11 @@ public class QpidBrokerTestCase extends QpidTestCase
         return _jmsProvider.getQueueDepth(con, destination);
     }
 
+    public boolean isQueueExist(final Connection con, final Queue destination) throws Exception
+    {
+        return _jmsProvider.isQueueExist(con, destination);
+    }
+
     /**
      * Send messages to the given destination.
      * <p/>

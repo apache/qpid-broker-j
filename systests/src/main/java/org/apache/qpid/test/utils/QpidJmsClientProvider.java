@@ -381,6 +381,52 @@ public class QpidJmsClientProvider implements JmsProvider
     }
 
     @Override
+    public boolean isQueueExist(final Connection con, final Queue destination) throws Exception
+    {
+        Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        try
+        {
+            MessageProducer producer = session.createProducer(session.createQueue("$management"));
+            final TemporaryQueue responseQ = session.createTemporaryQueue();
+            MessageConsumer consumer = session.createConsumer(responseQ);
+            MapMessage message = session.createMapMessage();
+            message.setStringProperty("index", "object-path");
+            final String escapedName = destination.getQueueName().replaceAll("([/\\\\])", "\\\\$1");
+            message.setStringProperty("key", escapedName);
+            message.setStringProperty("type", "org.apache.qpid.Queue");
+            message.setStringProperty("operation", "READ");
+
+            message.setJMSReplyTo(responseQ);
+
+            producer.send(message);
+
+            Message response = consumer.receive();
+            try
+            {
+                int statusCode = response.getIntProperty("statusCode");
+                switch(statusCode)
+                {
+                    case 200:
+                        return true;
+                    case 404:
+                        return false;
+                    default:
+                        throw new RuntimeException(String.format("Unexpected response for queue query '%s' :  %d", destination.getQueueName(), statusCode));
+                }
+            }
+            finally
+            {
+                consumer.close();
+                responseQ.delete();
+            }
+        }
+        finally
+        {
+            session.close();
+        }
+    }
+
+    @Override
     public Connection getConnectionWithSyncPublishing() throws Exception
     {
         return getConnection();
