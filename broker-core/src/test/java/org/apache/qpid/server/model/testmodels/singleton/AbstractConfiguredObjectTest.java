@@ -1007,6 +1007,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         final Date originalLastUpdatedTime = object.getLastUpdatedTime();
         assertEquals("Unexpected created and updated time", originalCreatedTime, originalLastUpdatedTime);
 
+        // Let a small amount of time pass before we update
+        Thread.sleep(50);
 
         Subject.doAs(userSubject,
                      new PrivilegedAction<Void>()
@@ -1025,8 +1027,6 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                              return null;
                          }
                      });
-
-        Thread.sleep(50);  // Let a small amount of time pass
 
         assertEquals("Creating user should not be changed by update", user, object.getCreatedBy());
         assertEquals("Created time should not be changed by update", originalCreatedTime, object.getCreatedTime());
