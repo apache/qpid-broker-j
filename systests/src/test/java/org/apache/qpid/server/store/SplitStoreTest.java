@@ -89,8 +89,7 @@ public class SplitStoreTest extends QpidBrokerTestCase
 
         Connection connection = getConnection();
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        Queue queue = session.createQueue(getTestQueueName());
-        session.createConsumer(queue).close(); // Create durable queue by side effect
+        Queue queue = createTestQueue(session);
         sendMessage(session, queue, 1);
         connection.close();
 

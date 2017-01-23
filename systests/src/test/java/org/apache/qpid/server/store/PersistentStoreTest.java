@@ -33,7 +33,6 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 
-import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class PersistentStoreTest extends QpidBrokerTestCase
@@ -43,6 +42,7 @@ public class PersistentStoreTest extends QpidBrokerTestCase
     private Session _session;
     private Destination _destination;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -94,10 +94,12 @@ public class PersistentStoreTest extends QpidBrokerTestCase
 
     public void testHeaderPersistence() throws Exception
     {
+        String testQueueName = getTestQueueName();
+        String replyToQueue = testQueueName + "_reply";
         _con.start();
         _session = _con.createSession(true, Session.SESSION_TRANSACTED);
-        _destination = _session.createQueue(getTestQueueName());
-        Destination replyTo = _session.createQueue(getTestQueueName() + "_reply");
+        _destination = createTestQueue(_session, testQueueName);
+        Destination replyTo = createTestQueue(_session, replyToQueue);
         MessageConsumer consumer = _session.createConsumer(_destination);
         MessageProducer producer = _session.createProducer(_destination);
 
@@ -116,7 +118,7 @@ public class PersistentStoreTest extends QpidBrokerTestCase
 
         final String sentMessageId = msg.getJMSMessageID();
 
-        Message receivedMessage = consumer.receive(1000);
+        Message receivedMessage = consumer.receive(getReceiveTimeout());
         long receivedJmsExpiration = receivedMessage.getJMSExpiration();
         assertEquals("Unexpected JMS message id", sentMessageId, receivedMessage.getJMSMessageID());
         assertEquals("Unexpected JMS replyto", replyTo, receivedMessage.getJMSReplyTo());
@@ -134,7 +136,7 @@ public class PersistentStoreTest extends QpidBrokerTestCase
         _session = _con.createSession(true, Session.SESSION_TRANSACTED);
         consumer = _session.createConsumer(_destination);
 
-        Message rereceivedMessage = consumer.receive(1000);
+        Message rereceivedMessage = consumer.receive(getReceiveTimeout());
         assertEquals("Unexpected JMS message id", sentMessageId, rereceivedMessage.getJMSMessageID());
         assertEquals("Unexpected JMS replyto", replyTo, rereceivedMessage.getJMSReplyTo());
         assertEquals("Unexpected JMS priority", priority, rereceivedMessage.getJMSPriority());
@@ -147,9 +149,7 @@ public class PersistentStoreTest extends QpidBrokerTestCase
     private void sendAndCommitMessages() throws Exception
     {
         _session = _con.createSession(true, Session.SESSION_TRANSACTED);
-        _destination = _session.createQueue(getTestQueueName());
-        // Create queue by consumer side-effect
-        _session.createConsumer(_destination).close();
+        _destination = createTestQueue(_session);
 
         sendMessage(_session, _destination, NUM_MESSAGES);
         _session.commit();
@@ -157,9 +157,7 @@ public class PersistentStoreTest extends QpidBrokerTestCase
 
     private void sendMoreMessagesWithoutCommitting() throws Exception
     {
-        sendMessage(_session, _destination, 5);
-        // sync to ensure that messages have reached the broker
-        ((AMQSession<?,?>) _session).sync();
+        sendMessage(_session, _destination, NUM_MESSAGES);
     }
 
     private void confirmBrokerStillHasCommittedMessages() throws Exception
@@ -171,12 +169,12 @@ public class PersistentStoreTest extends QpidBrokerTestCase
         MessageConsumer consumer = session.createConsumer(destination);
         for (int i = 1; i <= NUM_MESSAGES; i++)
         {
-            Message msg = consumer.receive(RECEIVE_TIMEOUT);
+            Message msg = consumer.receive(getReceiveTimeout());
             assertNotNull("Message " + i + " not received", msg);
             assertEquals("Did not receive the expected message", i, msg.getIntProperty(INDEX));
         }
 
-        Message msg = consumer.receive(100);
+        Message msg = consumer.receive(getShortReceiveTimeout());
         if(msg != null)
         {
             fail("No more messages should be received, but received additional message with index: " + msg.getIntProperty(INDEX));
@@ -199,11 +197,11 @@ public class PersistentStoreTest extends QpidBrokerTestCase
     public List<Message> sendMessage(Session session, Destination destination,
                                      int count) throws Exception
     {
-        List<Message> messages = new ArrayList<Message>(count);
+        List<Message> messages = new ArrayList<>(count);
 
         MessageProducer producer = session.createProducer(destination);
 
-        for (int i = 1;i <= (count); i++)
+        for (int i = 1; i <= count; i++)
         {
             Message next = createNextMessage(session, i);
 

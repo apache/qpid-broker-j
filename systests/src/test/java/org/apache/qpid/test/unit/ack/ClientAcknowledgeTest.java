@@ -31,7 +31,6 @@ public class ClientAcknowledgeTest extends QpidBrokerTestCase
 {
     private static final long ONE_DAY_MS = 1000l * 60 * 60 * 24;
     private Connection _connection;
-    private Queue _queue;
     private Session _consumerSession;
     private MessageConsumer _consumer;
     private MessageProducer _producer;
@@ -40,7 +39,6 @@ public class ClientAcknowledgeTest extends QpidBrokerTestCase
     protected void setUp() throws Exception
     {
         super.setUp();
-        _queue = getTestQueue();
         _connection = getConnection();
     }
 
@@ -52,30 +50,36 @@ public class ClientAcknowledgeTest extends QpidBrokerTestCase
      */
     public void testClientAckWithLargeFlusherPeriod() throws Exception
     {
-        setTestClientSystemProperty("qpid.session.max_ack_delay", Long.toString(ONE_DAY_MS));
+        if (isBroker010())
+        {
+            setTestClientSystemProperty("qpid.session.max_ack_delay", Long.toString(ONE_DAY_MS));
+        }
+
         _consumerSession = _connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        _consumer = _consumerSession.createConsumer(_queue);
+        Queue queue = createTestQueue(_consumerSession);
+        _consumer = _consumerSession.createConsumer(queue);
         _connection.start();
 
-        _producer = _consumerSession.createProducer(_queue);
+        _producer = _consumerSession.createProducer(queue);
         _producer.send(createNextMessage(_consumerSession, 1));
         _producer.send(createNextMessage(_consumerSession, 2));
 
-        Message message = _consumer.receive(1000l);
+        Message message = _consumer.receive(getReceiveTimeout());
         assertNotNull("Message has not been received", message);
         assertEquals("Unexpected message is received", 1, message.getIntProperty(INDEX));
         message.acknowledge();
 
         //restart broker to allow verification of the acks
         //without explicitly closing connection (which acks)
+        //Seems to be contrary to the JMS spec " Closing a connection does NOT force an acknowledgment of client-acknowledged sessions."
         restartDefaultBroker();
 
         // try to receive the message again, which should fail (as it was ackd)
         _connection = getConnection();
         _connection.start();
         _consumerSession = _connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        _consumer = _consumerSession.createConsumer(_queue);
-        message = _consumer.receive(1000l);
+        _consumer = _consumerSession.createConsumer(queue);
+        message = _consumer.receive(getReceiveTimeout());
         assertNotNull("Message has not been received", message);
         assertEquals("Unexpected message is received", 2, message.getIntProperty(INDEX));
     }

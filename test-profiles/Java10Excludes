@@ -184,6 +184,7 @@ org.apache.qpid.client.ssl.SSLTest#testCreateSSLWithCertFileAndPrivateKey
 org.apache.qpid.client.ssl.SSLTest#testCreateSSLConnectionUsingSystemProperties
 org.apache.qpid.client.ssl.SSLTest#testSslConnectionOption
 org.apache.qpid.client.ssl.SSLTest#testVerifyLocalHost
+org.apache.qpid.server.security.auth.manager.MultipleAuthenticationManagersTest#testMultipleAuthenticationManagers
 // Test framework does not allow us to override hostname
 org.apache.qpid.client.ssl.SSLTest#testHostVerificationIsOnByDefault
 org.apache.qpid.client.ssl.SSLTest#testVerifyHostNameWithIncorrectHostname
