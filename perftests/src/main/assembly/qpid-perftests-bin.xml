@@ -30,14 +30,14 @@
   <fileSets>
     <fileSet>
       <directory>${project.basedir}</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory/>
       <includes>
         <include>etc/</include>
       </includes>
     </fileSet>
     <fileSet>
       <directory>${basedir}/src/main/assembly/</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory/>
       <includes>
         <include>README.txt</include>
         <include>NOTICE</include>

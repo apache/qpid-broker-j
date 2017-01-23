@@ -31,7 +31,7 @@
   <fileSets>
     <fileSet>
       <directory>${project.basedir}</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory/>
       <includes>
         <include>etc/</include>
       </includes>
@@ -40,7 +40,7 @@
     </fileSet>
     <fileSet>
       <directory>${basedir}/src/main/assembly/</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory/>
       <includes>
         <include>LICENSE</include>
         <include>NOTICE</include>
@@ -51,7 +51,7 @@
     </fileSet>
     <fileSet>
       <directory>${project.basedir}</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory/>
       <includes>
         <include>bin/</include>
       </includes>
@@ -60,7 +60,7 @@
     </fileSet>
     <fileSet>
       <directory>${project.basedir}/../common</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory/>
       <includes>
         <include>bin/qpid-run</include>
       </includes>
