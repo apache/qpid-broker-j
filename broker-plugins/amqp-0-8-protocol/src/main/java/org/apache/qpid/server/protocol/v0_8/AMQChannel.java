@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -60,20 +59,16 @@ import org.apache.qpid.framing.*;
 import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
-import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.filter.ArrivalTimeFilter;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.FilterManagerFactory;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.filter.MessageFilter;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogMessage;
-import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
-import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
@@ -103,7 +98,6 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
-import org.apache.qpid.transport.network.Ticker;
 
 public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0_8>
         implements AMQSessionModel<AMQChannel, ConsumerTarget_0_8>,
@@ -155,10 +149,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     /** Maps from consumer tag to subscription instance. Allows us to unsubscribe from a queue. */
     private final Map<AMQShortString, ConsumerTarget_0_8> _tag2SubscriptionTargetMap = new HashMap<AMQShortString, ConsumerTarget_0_8>();
 
-    private final Set<ConsumerTarget_0_8> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
-
-    private Iterator<ConsumerTarget_0_8> _processPendingIterator;
-
     private final MessageStore _messageStore;
 
     private final LinkedList<AsyncCommand> _unfinishedCommandsQueue = new LinkedList<AsyncCommand>();
@@ -205,7 +195,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     private long _confirmedMessageCounter;
     private volatile long _uncommittedMessageSize;
     private final List<StoredMessage<MessageMetaData>> _uncommittedMessages = new ArrayList<>();
-    private long _maxUncommittedInMemorySize;
 
     private boolean _wireBlockingState;
 
@@ -231,8 +220,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         _connection = connection;
         _channelId = channelId;
 
-
-        _maxUncommittedInMemorySize = connection.getContextProvider().getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
         _messageStore = messageStore;
         _blockingTimeout = connection.getBroker().getContextValue(Long.class,
                                                                   Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
@@ -1294,7 +1281,8 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         return "("+ _suspended.get() + ", " + _closing.get() + ", " + _connection.isClosing() + ") "+"["+ _connection.toString()+":"+_channelId+"]";
     }
 
-    boolean isClosing()
+    @Override
+    public boolean isClosing()
     {
         return _closing.get();
     }
@@ -3666,63 +3654,14 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
     }
 
-    @Override
-    public boolean processPending()
+    protected void updateBlockedStateIfNecessary()
     {
-        if (!getAMQPConnection().isIOThread() || isClosing())
-        {
-            return false;
-        }
-
         boolean desiredBlockingState = _blocking.get();
         if (desiredBlockingState != _wireBlockingState)
         {
             _wireBlockingState = desiredBlockingState;
             sendFlow(!desiredBlockingState);
             _blockTime = desiredBlockingState ? System.currentTimeMillis() : 0;
-        }
-
-        if(!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
-        {
-            if (_processPendingIterator == null || !_processPendingIterator.hasNext())
-            {
-                _processPendingIterator = _consumersWithPendingWork.iterator();
-            }
-
-            if(_processPendingIterator.hasNext())
-            {
-                ConsumerTarget_0_8 target = _processPendingIterator.next();
-                _processPendingIterator.remove();
-                if (target.processPending())
-                {
-                    _consumersWithPendingWork.add(target);
-                }
-            }
-        }
-
-        return !_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting();
-    }
-
-    @Override
-    public void addTicker(final Ticker ticker)
-    {
-        getConnection().getAggregateTicker().addTicker(ticker);
-        // trigger a wakeup to ensure the ticker will be taken into account
-        getAMQPConnection().notifyWork();
-    }
-
-    @Override
-    public void removeTicker(final Ticker ticker)
-    {
-        getConnection().getAggregateTicker().removeTicker(ticker);
-    }
-
-    @Override
-    public void notifyWork(final ConsumerTarget_0_8 target)
-    {
-        if(_consumersWithPendingWork.add(target))
-        {
-            getAMQPConnection().notifyWork(this);
         }
     }
 

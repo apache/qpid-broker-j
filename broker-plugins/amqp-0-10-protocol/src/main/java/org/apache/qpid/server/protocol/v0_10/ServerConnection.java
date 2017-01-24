@@ -482,7 +482,7 @@ public class ServerConnection extends Connection
     {
         for (ServerSession ssn : getSessionModels())
         {
-            ssn.transportStateChanged();
+            ssn.getModelObject().transportStateChanged();
         }
     }
 

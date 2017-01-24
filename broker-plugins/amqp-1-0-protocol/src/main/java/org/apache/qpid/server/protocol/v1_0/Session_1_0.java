@@ -125,8 +125,11 @@ import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+<<<<<<< HEAD
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.transport.network.Ticker;
+=======
+>>>>>>> QPID-7633: Pull up the processPendingIterator and associated methods.
 
 public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget_1_0>
         implements AMQSessionModel<Session_1_0, ConsumerTarget_1_0>, LogSubject
@@ -149,8 +152,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
     private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
     private Session<?> _modelObject = this;
-    private final Set<ConsumerTarget_1_0> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
-    private Iterator<ConsumerTarget_1_0> _processPendingIterator;
 
     private SessionState _sessionState;
 
@@ -1920,56 +1921,15 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     }
 
     @Override
-    public boolean processPending()
+    protected void updateBlockedStateIfNecessary()
     {
-        if (!getAMQPConnection().isIOThread() || END_STATES.contains(getSessionState()))
-        {
-            return false;
-        }
 
-
-        if(!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
-        {
-            if (_processPendingIterator == null || !_processPendingIterator.hasNext())
-            {
-                _processPendingIterator = _consumersWithPendingWork.iterator();
-            }
-
-            if(_processPendingIterator.hasNext())
-            {
-                ConsumerTarget_1_0 target = _processPendingIterator.next();
-                _processPendingIterator.remove();
-                if (target.processPending())
-                {
-                    _consumersWithPendingWork.add(target);
-                }
-            }
-        }
-
-        return !_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting();
     }
 
     @Override
-    public void addTicker(final Ticker ticker)
+    public boolean isClosing()
     {
-        getConnection().getAggregateTicker().addTicker(ticker);
-        // trigger a wakeup to ensure the ticker will be taken into account
-        getAMQPConnection().notifyWork();
-    }
-
-    @Override
-    public void removeTicker(final Ticker ticker)
-    {
-        getConnection().getAggregateTicker().removeTicker(ticker);
-    }
-
-    @Override
-    public void notifyWork(final ConsumerTarget_1_0 target)
-    {
-        if(_consumersWithPendingWork.add(target))
-        {
-            getAMQPConnection().notifyWork(this);
-        }
+        return END_STATES.contains(getSessionState());
     }
 
     @Override

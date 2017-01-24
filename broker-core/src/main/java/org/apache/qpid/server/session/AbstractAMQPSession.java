@@ -25,8 +25,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.security.auth.Subject;
@@ -36,7 +38,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.connection.SessionPrincipal;
+import org.apache.qpid.server.consumer.AbstractConsumerTarget;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogSubject;
@@ -76,9 +80,14 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     protected final SecurityToken _token;
     protected final PublishAuthorisationCache _publishAuthCache;
 
+    protected final long _maxUncommittedInMemorySize;
+
     protected final LogSubject _logSubject;
 
     protected final List<Action<? super S>> _taskList = new CopyOnWriteArrayList<>();
+
+    protected final Set<AbstractConsumerTarget> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
+    private Iterator<AbstractConsumerTarget> _processPendingIterator;
 
     protected AbstractAMQPSession(final Connection<?> parent, final int sessionId)
     {
@@ -115,6 +124,9 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         final long authCacheTimeout = _connection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT);
         final int authCacheSize = _connection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE);
         _publishAuthCache = new PublishAuthorisationCache(_token, authCacheTimeout, authCacheSize);
+
+        _maxUncommittedInMemorySize = _connection.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+
         _logSubject = new ChannelLogSubject(this);
 
         setState(State.ACTIVE);
@@ -349,9 +361,19 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         }
     }
 
-    public abstract void addTicker(final Ticker ticker);
+    @Override
+    public void addTicker(final Ticker ticker)
+    {
+        _connection.getAggregateTicker().addTicker(ticker);
+        // trigger a wakeup to ensure the ticker will be taken into account
+        getAMQPConnection().notifyWork();
+    }
 
-    public abstract void removeTicker(final Ticker ticker);
+    @Override
+    public void removeTicker(final Ticker ticker)
+    {
+        _connection.getAggregateTicker().removeTicker(ticker);
+    }
 
     public abstract void doTimeoutAction(final String idleTransactionTimeoutError);
 
@@ -364,11 +386,54 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
 
     public abstract long getTransactionStartTimeLong();
 
-
     @Override
     protected void logOperation(final String operation)
     {
         getEventLogger().message(ChannelMessages.OPERATION(operation));
     }
 
+    @Override
+    public boolean processPending()
+    {
+        if (!getAMQPConnection().isIOThread() || isClosing())
+        {
+            return false;
+        }
+
+        updateBlockedStateIfNecessary();
+
+        if(!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
+        {
+            if (_processPendingIterator == null || !_processPendingIterator.hasNext())
+            {
+                _processPendingIterator = _consumersWithPendingWork.iterator();
+            }
+
+            if(_processPendingIterator.hasNext())
+            {
+                AbstractConsumerTarget target = _processPendingIterator.next();
+                _processPendingIterator.remove();
+                if (target.processPending())
+                {
+                    _consumersWithPendingWork.add(target);
+                }
+            }
+        }
+
+        return !_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting();
+    }
+
+    public void notifyWork(final X target)
+    {
+        if(_consumersWithPendingWork.add((AbstractConsumerTarget) target))
+        {
+            getAMQPConnection().notifyWork(this);
+        }
+    }
+
+    public abstract void transportStateChanged();
+
+    protected abstract void updateBlockedStateIfNecessary();
+
+    public abstract boolean isClosing();
 }

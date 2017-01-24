@@ -75,6 +75,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     boolean hasSessionWithName(byte[] name);
 
+    AggregateTicker getAggregateTicker();
 
     enum CloseReason
     {

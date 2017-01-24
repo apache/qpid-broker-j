@@ -54,11 +54,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
-import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
@@ -93,10 +91,8 @@ import org.apache.qpid.server.txn.SuspendAndFailDtxException;
 import org.apache.qpid.server.txn.TimeoutDtxException;
 import org.apache.qpid.server.txn.UnknownDtxBranchException;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.*;
-import org.apache.qpid.transport.network.Ticker;
 
 public class ServerSession extends Session
         implements LogSubject, AsyncAutoCommitTransaction.FutureRecorder
@@ -125,8 +121,6 @@ public class ServerSession extends Session
     private long _blockTime;
     private long _blockingTimeout;
     private boolean _wireBlockingState;
-    private final Set<ConsumerTarget_0_10> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
-    private Iterator<ConsumerTarget_0_10> _processPendingIterator;
 
     public static interface MessageDispositionChangeListener
     {
@@ -154,13 +148,10 @@ public class ServerSession extends Session
     private Map<String, ConsumerTarget_0_10> _subscriptions = new ConcurrentHashMap<String, ConsumerTarget_0_10>();
     private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_0_10>> _consumers = new CopyOnWriteArrayList<>();
 
-    private final List<Action<? super ServerSession>> _taskList = new CopyOnWriteArrayList<Action<? super ServerSession>>();
-
     private AtomicReference<LogMessage> _forcedCloseLogMessage = new AtomicReference<LogMessage>();
 
     private volatile long _uncommittedMessageSize;
     private final List<StoredMessage<MessageMetaData_0_10>> _uncommittedMessages = new ArrayList<>();
-    private long _maxUncommittedInMemorySize;
 
     public ServerSession(Connection connection, SessionDelegate delegate, Binary name, long expiry)
     {
@@ -170,7 +161,6 @@ public class ServerSession extends Session
         ServerConnection serverConnection = (ServerConnection) connection;
 
         _blockingTimeout = serverConnection.getBroker().getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
-        _maxUncommittedInMemorySize = getAMQPConnection().getContextProvider().getContextValue(Long.class, org.apache.qpid.server.model.Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
     }
 
     public AccessControlContext getAccessControllerContext()
@@ -832,16 +822,24 @@ public class ServerSession extends Session
         return b;
     }
 
-    public void transportStateChanged()
+    public void updateBlockedStateIfNecesssary()
     {
-        for(ConsumerTarget_0_10 consumerTarget : getSubscriptions())
+        boolean desiredBlockingState = _blocking.get();
+        if (desiredBlockingState != _wireBlockingState)
         {
-            consumerTarget.transportStateChanged();
+            _wireBlockingState = desiredBlockingState;
+
+            if (desiredBlockingState)
+            {
+                invokeBlock();
+            }
+            else
+            {
+                invokeUnblock();
+            }
+            _blockTime = desiredBlockingState ? System.currentTimeMillis() : 0;
         }
-        if (!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
-        {
-            getAMQPConnection().notifyWork(_modelObject);
-        }
+
     }
 
     public Object getConnectionReference()
@@ -1100,70 +1098,6 @@ public class ServerSession extends Session
         }
     }
 
-    public boolean processPending()
-    {
-        if (!getAMQPConnection().isIOThread() || isClosing())
-        {
-            return false;
-        }
-
-        boolean desiredBlockingState = _blocking.get();
-        if (desiredBlockingState != _wireBlockingState)
-        {
-            _wireBlockingState = desiredBlockingState;
-
-            if (desiredBlockingState)
-            {
-                invokeBlock();
-            }
-            else
-            {
-                invokeUnblock();
-            }
-            _blockTime = desiredBlockingState ? System.currentTimeMillis() : 0;
-        }
-
-        if (!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
-        {
-            if (_processPendingIterator == null || !_processPendingIterator.hasNext())
-            {
-                _processPendingIterator = _consumersWithPendingWork.iterator();
-            }
-
-            if (_processPendingIterator.hasNext())
-            {
-                ConsumerTarget_0_10 target = _processPendingIterator.next();
-                _processPendingIterator.remove();
-                if (target.processPending())
-                {
-                    _consumersWithPendingWork.add(target);
-                }
-            }
-        }
-
-        return !_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting();
-    }
-
-    public void addTicker(final Ticker ticker)
-    {
-        getAMQPConnection().getAggregateTicker().addTicker(ticker);
-        // trigger a wakeup to ensure the ticker will be taken into account
-        getAMQPConnection().notifyWork();
-    }
-
-    public void removeTicker(final Ticker ticker)
-    {
-        getAMQPConnection().getAggregateTicker().removeTicker(ticker);
-    }
-
-    public void notifyWork(final ConsumerTarget_0_10 target)
-    {
-        if(_consumersWithPendingWork.add(target))
-        {
-            getAMQPConnection().notifyWork(_modelObject);
-        }
-    }
-
     public void doTimeoutAction(final String reason)
     {
         getAMQPConnection().closeSessionAsync(_modelObject,
@@ -1172,7 +1106,7 @@ public class ServerSession extends Session
 
     public final long getMaxUncommittedInMemorySize()
     {
-        return _maxUncommittedInMemorySize;
+        return _modelObject.getMaxUncommittedInMemorySize();
     }
 
     public int compareTo(AMQSessionModel o)

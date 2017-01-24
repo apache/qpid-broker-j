@@ -35,9 +35,7 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.session.AbstractAMQPSession;
-import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.transport.network.Ticker;
 
 public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarget_0_10>
         implements AMQSessionModel<Session_0_10, ConsumerTarget_0_10>, LogSubject
@@ -115,19 +113,20 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     @Override
     public void transportStateChanged()
     {
-        _serverSession.transportStateChanged();
+        for(ConsumerTarget_0_10 consumerTarget : _serverSession.getSubscriptions())
+        {
+            consumerTarget.transportStateChanged();
+        }
+        if (!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
+        {
+            getAMQPConnection().notifyWork(this);
+        }
     }
 
     @Override
-    public boolean processPending()
+    protected void updateBlockedStateIfNecessary()
     {
-        return _serverSession.processPending();
-    }
-
-    @Override
-    public void notifyWork(final ConsumerTarget_0_10 target)
-    {
-        _serverSession.notifyWork(target);
+        _serverSession.updateBlockedStateIfNecesssary();
     }
 
     @Override
@@ -176,18 +175,6 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     public int getUnacknowledgedMessageCount()
     {
         return _serverSession.getUnacknowledgedMessageCount();
-    }
-
-    @Override
-    public void addTicker(final Ticker ticker)
-    {
-        _serverSession.addTicker(ticker);
-    }
-
-    @Override
-    public void removeTicker(final Ticker ticker)
-    {
-        _serverSession.removeTicker(ticker);
     }
 
     @Override
@@ -241,5 +228,10 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     public ServerSession getServerSession()
     {
         return _serverSession;
+    }
+
+    public long getMaxUncommittedInMemorySize()
+    {
+        return _maxUncommittedInMemorySize;
     }
 }
