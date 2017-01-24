@@ -193,13 +193,18 @@ org.apache.qpid.client.ssl.SSLTest#testSslConnectionOptionOverridesBrokerlistOpt
 / Test is 0-10 specific
 org.apache.qpid.client.ssl.SSLTest#testMultipleCertsInSingleStore
 
-// Test assumes BURL and Connection URL format
+// Tests assume BURL and/or Connection URL formats
 org.apache.qpid.systest.rest.ExportImportMessagesRestTest#testExtractImportEndToEnd
+org.apache.qpid.server.store.berkeleydb.replication.MultiNodeTest#*
+org.apache.qpid.server.store.berkeleydb.replication.TwoNodeTest#*
 
 // Qpid JMS Client does not support the use of preestablished socket
 org.apache.qpid.client.connection.ExistingSocketTest#*
 
-
+// These tests assume names of queues backing durable subscriptions
+org.apache.qpid.server.store.berkeleydb.BDBUpgradeTest#testConsumptionOfUpgradedMessages
+org.apache.qpid.server.store.berkeleydb.BDBUpgradeTest#testDurableSubscriptionWithoutSelector
+org.apache.qpid.server.store.berkeleydb.BDBUpgradeTest#testSelectorDurability
 
 
 

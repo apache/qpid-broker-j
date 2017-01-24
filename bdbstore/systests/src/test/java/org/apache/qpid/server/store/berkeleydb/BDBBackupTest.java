@@ -52,7 +52,7 @@ public class BDBBackupTest extends QpidBrokerTestCase
     private File _backupFromDir;
 
     @Override
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         super.setUp();
         _backupToDir = new File(SYSTEM_TMP_DIR + File.separator + getTestName());
@@ -66,7 +66,7 @@ public class BDBBackupTest extends QpidBrokerTestCase
     }
 
     @Override
-    protected void tearDown() throws Exception
+    public void tearDown() throws Exception
     {
         try
         {
@@ -97,9 +97,7 @@ public class BDBBackupTest extends QpidBrokerTestCase
     {
         Connection con = getConnection();
         Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Destination destination = session.createQueue(getTestQueueName());
-        // Create queue by consumer side-effect
-        session.createConsumer(destination).close();
+        Destination destination = createTestQueue(session);
 
         final int numOfMessages = endIndex - startIndex;
         final int batchSize = 0;
