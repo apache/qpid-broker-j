@@ -91,7 +91,16 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
         }
         catch (Exception e)
         {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Error: " + e.getLocalizedMessage());
+            try(StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw))
+            {
+                e.printStackTrace(pw);
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Unexpected Error: " + sw.toString());
+            }
+            catch (IOException ioe)
+            {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Error: " + ioe.getLocalizedMessage());
+            }
         }
 
         return true;
