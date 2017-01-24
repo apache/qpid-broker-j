@@ -62,16 +62,12 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.RoutingResult;
-import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
-import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
@@ -103,54 +99,48 @@ public class ServerSession extends Session
     private static final int PRODUCER_CREDIT_TOPUP_THRESHOLD = 1 << 30;
     private static final int UNFINISHED_COMMAND_QUEUE_THRESHOLD = 500;
 
-    public Subject getSubject()
-    {
-        return _modelObject.getSubject();
-    }
-
-    private long _createTime = System.currentTimeMillis();
-
     private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<Object>());
 
     private final AtomicBoolean _blocking = new AtomicBoolean(false);
     private final AtomicInteger _outstandingCredit = new AtomicInteger(UNLIMITED_CREDIT);
     private final CheckCapacityAction _checkCapacityAction = new CheckCapacityAction();
-    private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
-    private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
     private Session_0_10 _modelObject;
     private long _blockTime;
     private long _blockingTimeout;
     private boolean _wireBlockingState;
 
-    public static interface MessageDispositionChangeListener
+    public interface MessageDispositionChangeListener
     {
-        public void onAccept();
+        void onAccept();
 
-        public void onRelease(boolean setRedelivered);
+        void onRelease(boolean setRedelivered);
 
-        public void onReject();
+        void onReject();
 
-        public boolean acquire();
+        boolean acquire();
+    }
 
-
+    private interface MessageDispositionAction
+    {
+        void performAction(MessageDispositionChangeListener  listener);
     }
 
     private final SortedMap<Integer, MessageDispositionChangeListener> _messageDispositionListenerMap =
             new ConcurrentSkipListMap<Integer, MessageDispositionChangeListener>();
 
     private ServerTransaction _transaction;
-
     private final AtomicLong _txnStarts = new AtomicLong(0);
     private final AtomicLong _txnCommits = new AtomicLong(0);
     private final AtomicLong _txnRejects = new AtomicLong(0);
-    private final AtomicLong _txnCount = new AtomicLong(0);
 
+    private final AtomicLong _txnCount = new AtomicLong(0);
     private Map<String, ConsumerTarget_0_10> _subscriptions = new ConcurrentHashMap<String, ConsumerTarget_0_10>();
+
     private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_0_10>> _consumers = new CopyOnWriteArrayList<>();
 
     private AtomicReference<LogMessage> _forcedCloseLogMessage = new AtomicReference<LogMessage>();
-
     private volatile long _uncommittedMessageSize;
+
     private final List<StoredMessage<MessageMetaData_0_10>> _uncommittedMessages = new ArrayList<>();
 
     public ServerSession(Connection connection, SessionDelegate delegate, Binary name, long expiry)
@@ -161,6 +151,11 @@ public class ServerSession extends Session
         ServerConnection serverConnection = (ServerConnection) connection;
 
         _blockingTimeout = serverConnection.getBroker().getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
+    }
+
+    public Subject getSubject()
+    {
+        return _modelObject.getSubject();
     }
 
     public AccessControlContext getAccessControllerContext()
@@ -259,6 +254,7 @@ public class ServerSession extends Session
         _uncommittedMessages.clear();
     }
 
+
     private void incrementUncommittedMessageSize(final StoredMessage<MessageMetaData_0_10> handle)
     {
         if (isTransactional() && !(_transaction instanceof DistributedTransaction))
@@ -289,7 +285,6 @@ public class ServerSession extends Session
         }
     }
 
-
     public void sendMessage(MessageTransfer xfr,
                             Runnable postIdSettingAction)
     {
@@ -297,15 +292,10 @@ public class ServerSession extends Session
         invoke(xfr, postIdSettingAction);
     }
 
+
     public void onMessageDispositionChange(MessageTransfer xfr, MessageDispositionChangeListener acceptListener)
     {
         _messageDispositionListenerMap.put(xfr.getId(), acceptListener);
-    }
-
-
-    private static interface MessageDispositionAction
-    {
-        void performAction(MessageDispositionChangeListener  listener);
     }
 
     public void accept(RangeSet ranges)
@@ -529,8 +519,6 @@ public class ServerSession extends Session
         {
             final Consumer<?,ConsumerTarget_0_10> consumer = (Consumer<?,ConsumerTarget_0_10>) messageInstanceConsumer;
             _consumers.add(consumer);
-            consumer.addChangeListener(_consumerClosedListener);
-            consumerAdded(consumer);
         }
     }
 
@@ -1036,16 +1024,6 @@ public class ServerSession extends Session
         return Collections.unmodifiableCollection(_consumers);
     }
 
-    public void addConsumerListener(final ConsumerListener listener)
-    {
-        _consumerListeners.add(listener);
-    }
-
-    public void removeConsumerListener(final ConsumerListener listener)
-    {
-        _consumerListeners.remove(listener);
-    }
-
     public void setModelObject(final Session_0_10 session)
     {
         _modelObject = session;
@@ -1082,22 +1060,6 @@ public class ServerSession extends Session
         }
     }
 
-    private void consumerAdded(Consumer<?, ConsumerTarget_0_10> consumer)
-    {
-        for(ConsumerListener l : _consumerListeners)
-        {
-            l.consumerAdded(consumer);
-        }
-    }
-
-    private void consumerRemoved(Consumer<?, ConsumerTarget_0_10> consumer)
-    {
-        for(ConsumerListener l : _consumerListeners)
-        {
-            l.consumerRemoved(consumer);
-        }
-    }
-
     public void doTimeoutAction(final String reason)
     {
         getAMQPConnection().closeSessionAsync(_modelObject,
@@ -1129,18 +1091,6 @@ public class ServerSession extends Session
             if(queue instanceof CapacityChecker)
             {
                 ((CapacityChecker)queue).checkCapacity(_modelObject);
-            }
-        }
-    }
-
-    private class ConsumerClosedListener extends AbstractConfigurationChangeListener
-    {
-        @Override
-        public void stateChanged(final ConfiguredObject object, final org.apache.qpid.server.model.State oldState, final org.apache.qpid.server.model.State newState)
-        {
-            if(newState == org.apache.qpid.server.model.State.DELETED)
-            {
-                consumerRemoved((Consumer<?, ConsumerTarget_0_10>)object);
             }
         }
     }

@@ -30,9 +30,7 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.session.AbstractAMQPSession;
 import org.apache.qpid.server.util.Action;
@@ -84,30 +82,6 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     public Object getConnectionReference()
     {
         return _serverSession.getConnectionReference();
-    }
-
-    @Override
-    public void addConsumerListener(final ConsumerListener listener)
-    {
-        _serverSession.addConsumerListener(listener);
-    }
-
-    @Override
-    public void removeConsumerListener(final ConsumerListener listener)
-    {
-        _serverSession.removeConsumerListener(listener);
-    }
-
-    @Override
-    public void setModelObject(final Session<?> session)
-    {
-        _serverSession.setModelObject(this);
-    }
-
-    @Override
-    public Session<?> getModelObject()
-    {
-        return this;
     }
 
     @Override
@@ -205,17 +179,17 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
         return _subject;
     }
 
-    public AccessControlContext getAccessControllerContext()
+    AccessControlContext getAccessControllerContext()
     {
         return _accessControllerContext;
     }
 
-    public PublishAuthorisationCache getPublishAuthCache()
+    PublishAuthorisationCache getPublishAuthCache()
     {
         return _publishAuthCache;
     }
 
-    public List<Action<? super Session_0_10>> getTaskList()
+    List<Action<? super Session_0_10>> getTaskList()
     {
         return _taskList;
     }
@@ -225,12 +199,12 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
         return _serverSession.isClosing();
     }
 
-    public ServerSession getServerSession()
+    ServerSession getServerSession()
     {
         return _serverSession;
     }
 
-    public long getMaxUncommittedInMemorySize()
+    long getMaxUncommittedInMemorySize()
     {
         return _maxUncommittedInMemorySize;
     }

@@ -80,7 +80,6 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
-import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.v0_8.UnacknowledgedMessageMap.Visitor;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.session.AbstractAMQPSession;
@@ -180,14 +179,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     private final ClientDeliveryMethod _clientDeliveryMethod;
 
-    private final UUID _id = UUID.randomUUID();
-
-
     private final CapacityCheckAction _capacityCheckAction = new CapacityCheckAction();
     private final ImmediateAction _immediateAction = new ImmediateAction();
     private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_0_8>> _consumers = new CopyOnWriteArrayList<>();
-    private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
-    private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
     private Session<?> _modelObject;
     private long _blockTime;
     private long _blockingTimeout;
@@ -794,8 +788,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 if (sub instanceof Consumer<?, ?>)
                 {
                     final Consumer<?,ConsumerTarget_0_8> modelConsumer = (Consumer<?,ConsumerTarget_0_8>) sub;
-                    consumerAdded(modelConsumer);
-                    modelConsumer.addChangeListener(_consumerClosedListener);
                     _consumers.add(modelConsumer);
                 }
             }
@@ -1853,58 +1845,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     public Collection<Consumer<?,ConsumerTarget_0_8>> getConsumers()
     {
         return Collections.unmodifiableCollection(_consumers);
-    }
-
-    private class ConsumerClosedListener extends AbstractConfigurationChangeListener
-    {
-        @Override
-        public void stateChanged(final ConfiguredObject object, final State oldState, final State newState)
-        {
-            if(newState == State.DELETED)
-            {
-                consumerRemoved((Consumer<?,?>)object);
-            }
-        }
-    }
-
-    private void consumerAdded(final Consumer<?,?> consumer)
-    {
-        for(ConsumerListener l : _consumerListeners)
-        {
-            l.consumerAdded(consumer);
-        }
-    }
-
-    private void consumerRemoved(final Consumer<?,?> consumer)
-    {
-        for(ConsumerListener l : _consumerListeners)
-        {
-            l.consumerRemoved(consumer);
-        }
-    }
-
-    @Override
-    public void addConsumerListener(ConsumerListener listener)
-    {
-        _consumerListeners.add(listener);
-    }
-
-    @Override
-    public void removeConsumerListener(ConsumerListener listener)
-    {
-        _consumerListeners.remove(listener);
-    }
-
-    @Override
-    public void setModelObject(final Session<?> session)
-    {
-        _modelObject = session;
-    }
-
-    @Override
-    public Session<?> getModelObject()
-    {
-        return _modelObject;
     }
 
     @Override

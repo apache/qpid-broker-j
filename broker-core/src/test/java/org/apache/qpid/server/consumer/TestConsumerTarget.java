@@ -44,7 +44,6 @@ import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.Action;
@@ -359,24 +358,6 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         }
 
         @Override
-        public void addConsumerListener(final ConsumerListener listener)
-        {
-
-        }
-
-        @Override
-        public void setModelObject(final Session session)
-        {
-            _modelObject = session;
-        }
-
-        @Override
-        public Session<?> getModelObject()
-        {
-            return _modelObject;
-        }
-
-        @Override
         public long getTransactionStartTimeLong()
         {
             return 0;
@@ -386,12 +367,6 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         public long getTransactionUpdateTimeLong()
         {
             return 0;
-        }
-
-        @Override
-        public void removeConsumerListener(final ConsumerListener listener)
-        {
-
         }
 
         @Override

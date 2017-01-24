@@ -62,7 +62,6 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageSource;
-import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
@@ -77,7 +76,6 @@ import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
-import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.framing.OversizeFrameException;
@@ -125,11 +123,8 @@ import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-<<<<<<< HEAD
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.transport.network.Ticker;
-=======
->>>>>>> QPID-7633: Pull up the processPendingIterator and associated methods.
 
 public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget_1_0>
         implements AMQSessionModel<Session_1_0, ConsumerTarget_1_0>, LogSubject
@@ -149,8 +144,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_1_0>> _consumers = new CopyOnWriteArrayList<>();
 
-    private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
-    private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
     private Session<?> _modelObject = this;
 
     private SessionState _sessionState;
@@ -1409,8 +1402,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         {
             Consumer<?,ConsumerTarget_1_0> modelConsumer = (Consumer<?,ConsumerTarget_1_0>) consumer;
             _consumers.add(modelConsumer);
-            modelConsumer.addChangeListener(_consumerClosedListener);
-            consumerAdded(modelConsumer);
         }
     }
 
@@ -1885,30 +1876,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     }
 
     @Override
-    public void addConsumerListener(final ConsumerListener listener)
-    {
-        _consumerListeners.add(listener);
-    }
-
-    @Override
-    public void removeConsumerListener(final ConsumerListener listener)
-    {
-        _consumerListeners.remove(listener);
-    }
-
-    @Override
-    public void setModelObject(final Session<?> session)
-    {
-        _modelObject = session;
-    }
-
-    @Override
-    public Session<?> getModelObject()
-    {
-        return _modelObject;
-    }
-
-    @Override
     public long getTransactionStartTimeLong()
     {
         return 0L;
@@ -1936,22 +1903,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     public void doTimeoutAction(final String reason)
     {
         getAMQPConnection().closeSessionAsync(this, AMQPConnection.CloseReason.TRANSACTION_TIMEOUT, reason);
-    }
-
-    private void consumerAdded(Consumer<?, ConsumerTarget_1_0> consumer)
-    {
-        for(ConsumerListener l : _consumerListeners)
-        {
-            l.consumerAdded(consumer);
-        }
-    }
-
-    private void consumerRemoved(Consumer<?, ConsumerTarget_1_0> consumer)
-    {
-        for(ConsumerListener l : _consumerListeners)
-        {
-            l.consumerRemoved(consumer);
-        }
     }
 
     void incrementStartedTransactions()
@@ -1982,18 +1933,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     public CapacityCheckAction getCapacityCheckAction()
     {
         return _capacityCheckAction;
-    }
-
-    private class ConsumerClosedListener extends AbstractConfigurationChangeListener
-    {
-        @Override
-        public void stateChanged(final ConfiguredObject object, final org.apache.qpid.server.model.State oldState, final org.apache.qpid.server.model.State newState)
-        {
-            if(newState == org.apache.qpid.server.model.State.DELETED)
-            {
-                consumerRemoved((Consumer<?, ConsumerTarget_1_0>)object);
-            }
-        }
     }
 
     @Override

@@ -74,14 +74,6 @@ public interface AMQSessionModel<T extends AMQSessionModel<T,X>, X extends Consu
 
     Collection<Consumer<?,X>> getConsumers();
 
-    void addConsumerListener(ConsumerListener listener);
-
-    void removeConsumerListener(ConsumerListener listener);
-
-    void setModelObject(Session<?> session);
-
-    Session<?> getModelObject();
-
     /**
      * Return the time the current transaction started.
      *
