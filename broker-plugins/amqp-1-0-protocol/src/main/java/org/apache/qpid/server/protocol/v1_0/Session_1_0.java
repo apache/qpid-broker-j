@@ -186,10 +186,10 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private volatile long _rolledBackTransactions;
     private volatile int _unacknowledgedMessages;
 
-    public Session_1_0(final AMQPConnection_1_0 connection, Begin begin, short channelId)
+    public Session_1_0(final AMQPConnection_1_0 connection, Begin begin, short sendingChannelId)
     {
-        super(connection, channelId);
-        _sendingChannel = channelId;
+        super(connection, sendingChannelId);
+        _sendingChannel = sendingChannelId;
         _sessionState = SessionState.BEGIN_RECVD;
         _nextIncomingTransferId = new SequenceNumber(begin.getNextOutgoingId().intValue());
         _connection = connection;
@@ -758,7 +758,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 link = createSendingLink(endpoint, attach);
                 if (link != null)
                 {
-                    capabilities.add(AMQPConnection_1_0.SHARED_SUBSCRIPTIONS);
+                    capabilities.add(AMQPConnection_1_0Impl.SHARED_SUBSCRIPTIONS);
                 }
             }
             else if (endpoint.getTarget() instanceof Coordinator)

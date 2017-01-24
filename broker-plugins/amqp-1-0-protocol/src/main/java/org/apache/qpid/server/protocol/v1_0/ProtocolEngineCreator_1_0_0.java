@@ -89,8 +89,8 @@ public class ProtocolEngineCreator_1_0_0 implements ProtocolEngineCreator
         if(supportedMechanisms.contains(AnonymousAuthenticationManager.MECHANISM_NAME)
                 || (supportedMechanisms.contains(ExternalAuthenticationManagerImpl.MECHANISM_NAME) && network.getPeerPrincipal() != null))
         {
-            final AMQPConnection_1_0 amqpConnection_1_0 =
-                    new AMQPConnection_1_0(broker, network, port, transport, id, aggregateTicker);
+            final AMQPConnection_1_0Impl amqpConnection_1_0 =
+                    new AMQPConnection_1_0Impl(broker, network, port, transport, id, aggregateTicker);
             amqpConnection_1_0.create();
             return amqpConnection_1_0;
         }

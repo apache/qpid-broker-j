@@ -79,7 +79,7 @@ import org.apache.qpid.transport.ByteBufferSender;
 
 public class ProtocolEngine_1_0_0Test extends QpidTestCase
 {
-    private AMQPConnection_1_0 _protocolEngine_1_0_0;
+    private AMQPConnection_1_0Impl _protocolEngine_1_0_0;
     private ServerNetworkConnection _networkConnection;
     private Broker<?> _broker;
     private AmqpPort _port;
@@ -293,7 +293,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     private void createEngine(Transport transport)
     {
         _protocolEngine_1_0_0 =
-                new AMQPConnection_1_0(_broker, _networkConnection, _port, transport, 1, new AggregateTicker());
+                new AMQPConnection_1_0Impl(_broker, _networkConnection, _port, transport, 1, new AggregateTicker());
     }
 
     private void allowMechanisms(String... mechanisms)

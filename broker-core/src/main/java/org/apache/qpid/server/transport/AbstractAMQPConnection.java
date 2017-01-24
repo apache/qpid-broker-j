@@ -372,6 +372,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         return maxMessageSize > 0 ? maxMessageSize : Long.MAX_VALUE;
     }
 
+    @Override
     public long getMaxMessageSize()
     {
         return _maxMessageSize.get();
@@ -818,6 +819,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         logConnectionOpen();
     }
 
+    @Override
     public int getMessageCompressionThreshold()
     {
         return _messageCompressionThreshold;

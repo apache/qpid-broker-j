@@ -27,18 +27,19 @@ import java.util.List;
 
 import javax.security.auth.Subject;
 
+import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.Binary;
 import org.apache.qpid.transport.ExecutionErrorCode;
@@ -50,12 +51,15 @@ public class ServerSessionTest extends QpidTestCase
 {
 
     private VirtualHost<?> _virtualHost;
+    private CurrentThreadTaskExecutor _taskExecutor;
 
     @Override
     public void setUp() throws Exception
     {
         super.setUp();
         BrokerTestHelper.setUp();
+        _taskExecutor = new CurrentThreadTaskExecutor();
+        _taskExecutor.start();
         _virtualHost = BrokerTestHelper.createVirtualHost(getName());
     }
 
@@ -71,30 +75,37 @@ public class ServerSessionTest extends QpidTestCase
         }
         finally
         {
-            BrokerTestHelper.tearDown();
-            super.tearDown();
+            try
+            {
+                if (_taskExecutor != null)
+                {
+                    _taskExecutor.stop();
+                }
+            }
+            finally
+            {
+                BrokerTestHelper.tearDown();
+                super.tearDown();
+            }
         }
     }
 
     public void testOverlargeMessageTest() throws Exception
     {
-        if (true) return;
-
-        TaskExecutor taskExecutor = mock(TaskExecutor.class);
-
         final Broker<?> broker = mock(Broker.class);
         when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
 
         AmqpPort port = createMockPort();
 
-        final AMQPConnection_0_10 modelConnection = mock(AMQPConnection_0_10.class); // TODO needs to be an interface
+        final AMQPConnection_0_10 modelConnection = mock(AMQPConnection_0_10.class);
         when(modelConnection.getAddressSpace()).thenReturn(_virtualHost);
         when(modelConnection.getContextProvider()).thenReturn(_virtualHost);
         when(modelConnection.getBroker()).thenReturn((Broker)broker);
         when(modelConnection.getEventLogger()).thenReturn(mock(EventLogger.class));
         when(modelConnection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
         when(modelConnection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
-        when(modelConnection.getChildExecutor()).thenReturn(taskExecutor);
+        when(modelConnection.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE)).thenReturn(Connection.DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+        when(modelConnection.getChildExecutor()).thenReturn(_taskExecutor);
         when(modelConnection.getModel()).thenReturn(BrokerModel.getInstance());
 
         Subject subject = new Subject();

@@ -32,6 +32,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.ContextProvider;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.util.Deletable;
 
@@ -44,6 +46,8 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
     AccessControlContext getAccessControlContextFromSubject(Subject subject);
 
     Subject getSubject();
+
+    int getMessageCompressionThreshold();
 
     Principal getAuthorizedPrincipal();
 
@@ -104,4 +108,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
     void notifyWork(AMQSessionModel<?,?> sessionModel);
 
     boolean isTransportBlockedForWriting();
+
+    long getMaxMessageSize();
+
 }

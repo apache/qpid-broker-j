@@ -69,8 +69,6 @@ public interface AMQPConnection_0_8<C extends AMQPConnection_0_8<C>> extends AMQ
 
     int getBinaryDataLimit();
 
-    long getMaxMessageSize();
-
     boolean ignoreAllButCloseOk();
 
     boolean channelAwaitingClosure(int channelId);

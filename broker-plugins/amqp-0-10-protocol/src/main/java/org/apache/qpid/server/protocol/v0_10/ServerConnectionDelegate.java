@@ -45,6 +45,7 @@ import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
@@ -479,7 +480,8 @@ public class ServerConnectionDelegate extends ConnectionDelegate
             return;
         }
 
-        _saslNegotiator = _subjectCreator.createSaslNegotiator(mechanism, serverConnection.getAmqpConnection());
+        _saslNegotiator = _subjectCreator.createSaslNegotiator(mechanism,
+                                                               (SaslSettings) serverConnection.getAmqpConnection());
         if (_saslNegotiator == null)
         {
             serverConnection.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED,
