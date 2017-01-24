@@ -362,7 +362,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         {
             try
             {
-                byte versionByte = buf.get(0);
+                byte versionByte = buf.get(buf.position());
                 long arrivalTime;
                 long contentSize = 0;
                 if (versionByte == 1)
@@ -372,9 +372,15 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
                     arrivalTime = buf.getLong();
                     contentSize = buf.getLong();
                 }
-                else
+                else if (versionByte == 0)
                 {
                     arrivalTime = System.currentTimeMillis();
+                }
+                else
+                {
+                    throw new ConnectionScopedRuntimeException(String.format(
+                            "Unexpected version byte %d encountered at head of metadata. Unable to decode message.",
+                            versionByte));
                 }
 
                 SectionDecoder sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
