@@ -20,6 +20,13 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import static org.apache.qpid.server.model.LifetimePolicy.PERMANENT;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -31,11 +38,26 @@ public class MessageSourceDestination implements SendingDestination
     private static final Outcome[] OUTCOMES = new Outcome[] { ACCEPTED };
 
 
-    private MessageSource _queue;
+    private final MessageSource _messageSource;
+    private final Symbol[] _capabilities;
 
-    public MessageSourceDestination(MessageSource queue)
+    public MessageSourceDestination(MessageSource messageSource)
     {
-        _queue = queue;
+        _messageSource = messageSource;
+        List<Symbol> capabilities = new ArrayList<>();
+        if (_messageSource instanceof Queue)
+        {
+            LifetimePolicy queueLifetimePolicy = ((Queue<?>) _messageSource).getLifetimePolicy();
+            if (PERMANENT == queueLifetimePolicy)
+            {
+                capabilities.add(Symbol.getSymbol("queue"));
+            }
+            else
+            {
+                capabilities.add(Symbol.getSymbol("temporary-queue"));
+            }
+        }
+        _capabilities = capabilities.toArray(new Symbol[capabilities.size()]);
     }
 
     public Outcome[] getOutcomes()
@@ -49,14 +71,15 @@ public class MessageSourceDestination implements SendingDestination
         return 100;
     }
 
-    public MessageSource getQueue()
+    @Override
+    public MessageSource getMessageSource()
     {
-        return _queue;
+        return _messageSource;
     }
 
     @Override
     public Symbol[] getCapabilities()
     {
-        return new Symbol[0];
+        return _capabilities;
     }
 }

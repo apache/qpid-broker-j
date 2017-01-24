@@ -117,10 +117,14 @@ public class QpidJmsClientProvider implements JmsProvider
             options = new HashMap<>(options);
             options.put("amqp.vhost", "test");
         }
-        if (!options.containsKey("amqp.clientID"))
+        if (!options.containsKey("jms.clientID"))
         {
             options = new HashMap<>(options);
             options.put("jms.clientID", CLIENTID);
+        }
+        else if (options.get("jms.clientID") == null)
+        {
+            options.remove("jms.clientID");
         }
         if (!options.containsKey("amqp.forceSyncSend"))
         {

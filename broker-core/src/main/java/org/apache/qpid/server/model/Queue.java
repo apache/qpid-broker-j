@@ -110,8 +110,9 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                                                  + "\"image/tiff\":\".tiff\","
                                                  + "\"text/plain\":\".txt\"}";
 
+    String QUEUE_DEFAULT_EXCLUSIVITY_POLICY = "queue.defaultExclusivityPolicy";
     @SuppressWarnings("unused")
-    @ManagedContextDefault( name = "queue.defaultExclusivityPolicy",
+    @ManagedContextDefault( name = QUEUE_DEFAULT_EXCLUSIVITY_POLICY,
             description = "the ExclusivityPolicy to apply to queues where none is explicitly set")
     String DEFAULT_EXCLUSIVITY = "NONE";
 

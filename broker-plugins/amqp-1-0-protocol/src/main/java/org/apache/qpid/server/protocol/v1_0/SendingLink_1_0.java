@@ -27,14 +27,12 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
 import org.apache.qpid.filter.selector.TokenMgrError;
@@ -44,12 +42,8 @@ import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageSource;
-import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.ExclusivityPolicy;
-import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -58,9 +52,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.ExactSubjectFilter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Filter;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.MatchingSubjectFilter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.NoLocalFilter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
@@ -75,13 +67,16 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class SendingLink_1_0 implements Link_1_0
 {
     private static final Logger _logger = LoggerFactory.getLogger(SendingLink_1_0.class);
+    private final EnumSet<ConsumerOption> _consumerOptions;
+    private final FilterManager _consumerFilters;
 
     private NamedAddressSpace _addressSpace;
-    private SendingDestination _destination;
+    private volatile SendingDestination _destination;
 
     private MessageInstanceConsumer _consumer;
     private ConsumerTarget_1_0 _target;
@@ -97,7 +92,6 @@ public class SendingLink_1_0 implements Link_1_0
     private List<MessageInstance> _resumeFullTransfers = new ArrayList<MessageInstance>();
     private List<Binary> _resumeAcceptedTransfers = new ArrayList<Binary>();
     private Runnable _closeAction;
-    private final MessageSource _queue;
 
 
     public SendingLink_1_0(final SendingLinkAttachment linkAttachment,
@@ -110,19 +104,22 @@ public class SendingLink_1_0 implements Link_1_0
         _linkAttachment = linkAttachment;
         final Source source = (Source) linkAttachment.getSource();
         _durability = source.getDurable();
-        QueueDestination qd = null;
 
         EnumSet<ConsumerOption> options = EnumSet.noneOf(ConsumerOption.class);
-
 
         boolean noLocal = false;
         JMSSelectorFilter messageFilter = null;
 
-        if(destination instanceof MessageSourceDestination)
+        if(destination instanceof ExchangeDestination)
         {
-            _queue = ((MessageSourceDestination) _destination).getQueue();
+            options.add(ConsumerOption.ACQUIRES);
+            options.add(ConsumerOption.SEES_REQUEUES);
+        }
+        else if(destination instanceof MessageSourceDestination)
+        {
+            MessageSource messageSource = _destination.getMessageSource();
 
-            if(_queue instanceof Queue && ((Queue<?>)_queue).getAvailableAttributes().contains("topic"))
+            if(messageSource instanceof Queue && ((Queue<?>)messageSource).getAvailableAttributes().contains("topic"))
             {
                 source.setDistributionMode(StdDistMode.COPY);
             }
@@ -165,261 +162,93 @@ public class SendingLink_1_0 implements Link_1_0
             }
             source.setFilter(actualFilters.isEmpty() ? null : actualFilters);
 
-            _target = new ConsumerTarget_1_0(this, source.getDistributionMode() != StdDistMode.COPY);
             if(source.getDistributionMode() != StdDistMode.COPY)
             {
                 options.add(ConsumerOption.ACQUIRES);
                 options.add(ConsumerOption.SEES_REQUEUES);
             }
-
-        }
-        else if(destination instanceof ExchangeDestination)
-        {
-            try
-            {
-
-                ExchangeDestination exchangeDestination = (ExchangeDestination) destination;
-
-                boolean isDurable = exchangeDestination.getDurability() == TerminusDurability.CONFIGURATION
-                                    || exchangeDestination.getDurability() == TerminusDurability.UNSETTLED_STATE;
-                String name;
-                if(isDurable)
-                {
-                    String remoteContainerId = getEndpoint().getSession().getConnection().getRemoteContainerId();
-                    remoteContainerId = remoteContainerId.replace("_","__").replace(".", "_:");
-
-                    String endpointName = linkAttachment.getEndpoint().getName();
-                    endpointName = endpointName
-                                    .replace("_", "__")
-                                    .replace(".", "_:")
-                                    .replace("(", "_O")
-                                    .replace(")", "_C")
-                                    .replace("<", "_L")
-                                    .replace(">", "_R");
-                    name = "qpid_/" + remoteContainerId + "_/" + endpointName;
-                }
-                else
-                {
-                    name = UUID.randomUUID().toString();
-                }
-
-                Queue<?> queue = getQueue(name);
-                Exchange<?> exchange = exchangeDestination.getExchange();
-
-                if(queue == null)
-                {
-                    Map<String,Object> attributes = new HashMap<String,Object>();
-                    attributes.put(Queue.ID, UUID.randomUUID());
-                    attributes.put(Queue.NAME, name);
-                    attributes.put(Queue.DURABLE, isDurable);
-                    attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
-                    attributes.put(Queue.EXCLUSIVE, ExclusivityPolicy.LINK);
-
-                    queue = _addressSpace.createMessageSource(Queue.class, attributes);
-                }
-                else
-                {
-                    // TODO - check the configuration of the existing durable subscription queue, and modify if necessary
-                    /*
-                    Collection<? extends Binding<?>> bindings = queue.getBindings();
-                    List<Binding<?>> bindingsToRemove = new ArrayList<>();
-                    for(Binding<?> existingBinding : bindings)
-                    {
-                        if(existingBinding.getExchange() != exchange)
-                        {
-                            bindingsToRemove.add(existingBinding);
-                        }
-                    }
-                    for(Binding<?> existingBinding : bindingsToRemove)
-                    {
-                        existingBinding.delete();
-                    }
-                    */
-                }
-
-
-                String binding = null;
-
-                Map<Symbol,Filter> filters = source.getFilter();
-                Map<Symbol,Filter> actualFilters = new HashMap<Symbol,Filter>();
-                boolean hasBindingFilter = false;
-                if(filters != null && !filters.isEmpty())
-                {
-
-                    for(Map.Entry<Symbol,Filter> entry : filters.entrySet())
-                    {
-                        if(!hasBindingFilter
-                           && entry.getValue() instanceof ExactSubjectFilter
-                           && exchange.getType().equals(ExchangeDefaults.DIRECT_EXCHANGE_CLASS))
-                        {
-                            ExactSubjectFilter filter = (ExactSubjectFilter) filters.values().iterator().next();
-                            source.setFilter(filters);
-                            binding = filter.getValue();
-                            actualFilters.put(entry.getKey(), entry.getValue());
-                            hasBindingFilter = true;
-                        }
-                        else if(!hasBindingFilter
-                                && entry.getValue() instanceof MatchingSubjectFilter
-                                && exchange.getType().equals(ExchangeDefaults.TOPIC_EXCHANGE_CLASS))
-                        {
-                            MatchingSubjectFilter filter = (MatchingSubjectFilter) filters.values().iterator().next();
-                            source.setFilter(filters);
-                            binding = filter.getValue();
-                            actualFilters.put(entry.getKey(), entry.getValue());
-                            hasBindingFilter = true;
-                        }
-                        else if(entry.getValue() instanceof NoLocalFilter)
-                        {
-                            actualFilters.put(entry.getKey(), entry.getValue());
-                            noLocal = true;
-                        }
-                        else if(messageFilter == null && entry.getValue() instanceof org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter)
-                        {
-
-                            org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter selectorFilter = (org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter) entry.getValue();
-                            try
-                            {
-                                messageFilter = new JMSSelectorFilter(selectorFilter.getValue());
-
-                                actualFilters.put(entry.getKey(), entry.getValue());
-                            }
-                            catch (ParseException | SelectorParsingException | TokenMgrError e)
-                            {
-                                Error error = new Error();
-                                error.setCondition(AmqpError.INVALID_FIELD);
-                                error.setDescription("Invalid JMS Selector: " + selectorFilter.getValue());
-                                error.setInfo(Collections.singletonMap(Symbol.valueOf("field"), Symbol.valueOf("filter")));
-                                throw new AmqpErrorException(error);
-                            }
-
-
-                        }
-                    }
-                }
-                _queue = queue;
-                source.setFilter(actualFilters.isEmpty() ? null : actualFilters);
-                if(binding != null)
-                {
-                    exchange.addBinding(binding, queue,null);
-                }
-                if(exchangeDestination.getInitialRoutingAddress() != null)
-                {
-                    exchange.addBinding(exchangeDestination.getInitialRoutingAddress(),queue,null);
-                }
-                if(binding == null
-                   && exchangeDestination.getInitialRoutingAddress() == null
-                   && exchange.getType().equals(ExchangeDefaults.FANOUT_EXCHANGE_CLASS))
-                {
-                    exchange.addBinding(queue.getName(), queue, null);
-                }
-                else if(binding == null
-                     && exchangeDestination.getInitialRoutingAddress() == null
-                     && exchange.getType().equals(ExchangeDefaults.TOPIC_EXCHANGE_CLASS))
-                {
-                    exchange.addBinding("#", queue, null);
-                }
-
-                source.setDistributionMode(StdDistMode.COPY);
-
-                qd = new QueueDestination(queue, name);
-            }
-            catch (AbstractConfiguredObject.DuplicateNameException e)
-            {
-                _logger.error("A randomly generated temporary queue name collided with an existing queue",e);
-                throw new ConnectionScopedRuntimeException(e);
-            }
-
-
-            _target = new ConsumerTarget_1_0(this, true);
-            options.add(ConsumerOption.ACQUIRES);
-            options.add(ConsumerOption.SEES_REQUEUES);
-
         }
         else
         {
             throw new ConnectionScopedRuntimeException("Unknown destination type");
         }
-
-        if(_target != null)
+        if(noLocal)
         {
-            if(noLocal)
-            {
-                options.add(ConsumerOption.NO_LOCAL);
-            }
-
-            if(_durability == TerminusDurability.CONFIGURATION ||
-               _durability == TerminusDurability.UNSETTLED_STATE )
-            {
-                options.add(ConsumerOption.DURABLE);
-            }
-
-            try
-            {
-                final String name;
-                if(getEndpoint().getTarget() instanceof Target)
-                {
-                    Target target = (Target) getEndpoint().getTarget();
-                    name = target.getAddress() == null ? getEndpoint().getName() : target.getAddress();
-                }
-                else
-                {
-                    name = getEndpoint().getName();
-                }
-
-                FilterManager filters = null;
-                if(messageFilter != null)
-                {
-                    filters = new FilterManager();
-                    filters.add(messageFilter.getName(), messageFilter);
-                }
-
-                _consumer = _queue.addConsumer(_target,
-                                               filters,
-                                               Message_1_0.class,
-                                               name,
-                                               options,
-                                               getEndpoint().getPriority());
-                _target.updateNotifyWorkDesired();
-            }
-            catch (MessageSource.ExistingExclusiveConsumer e)
-            {
-                _logger.info("Cannot add a consumer to the destination as there is already an exclusive consumer");
-                throw new ConnectionScopedRuntimeException(e);
-            }
-            catch (MessageSource.ExistingConsumerPreventsExclusive e)
-            {
-                _logger.info("Cannot add an exclusive consumer to the destination as there is already a consumer");
-                throw new ConnectionScopedRuntimeException(e);
-            }
-            catch (MessageSource.ConsumerAccessRefused e)
-            {
-                _logger.info("Cannot add an exclusive consumer to the destination as there is an incompatible exclusivity policy");
-                throw new ConnectionScopedRuntimeException(e);
-            }
-            catch (MessageSource.QueueDeleted e)
-            {
-                _logger.info("Cannot add a consumer to the destination as the destination has been deleted");
-                throw new ConnectionScopedRuntimeException(e);
-            }
+            options.add(ConsumerOption.NO_LOCAL);
         }
 
+        FilterManager filters = null;
+        if(messageFilter != null)
+        {
+            filters = new FilterManager();
+            filters.add(messageFilter.getName(), messageFilter);
+        }
+        _consumerOptions = options;
+        _consumerFilters = filters;
+    }
+
+    void createConsumerTarget() throws AmqpErrorException
+    {
+        final Source source = (Source) getEndpoint().getSource();
+        _target = new ConsumerTarget_1_0(this, _destination instanceof ExchangeDestination ? true : source.getDistributionMode() != StdDistMode.COPY);
+        try
+        {
+            final String name;
+            if(getEndpoint().getTarget() instanceof Target)
+            {
+                Target target = (Target) getEndpoint().getTarget();
+                name = target.getAddress() == null ? getEndpoint().getName() : target.getAddress();
+            }
+            else
+            {
+                name = getEndpoint().getName();
+            }
+
+            _consumer = _destination.getMessageSource()
+                                    .addConsumer(_target,
+                                                 _consumerFilters,
+                                                 Message_1_0.class,
+                                                 name,
+                                                 _consumerOptions,
+                                                 getEndpoint().getPriority());
+            _target.updateNotifyWorkDesired();
+        }
+        catch (MessageSource.ExistingExclusiveConsumer e)
+        {
+            String msg = "Cannot add a consumer to the destination as there is already an exclusive consumer";
+            throw new AmqpErrorException(new Error(AmqpError.RESOURCE_LOCKED, msg), e);
+        }
+        catch (MessageSource.ExistingConsumerPreventsExclusive e)
+        {
+            String msg = "Cannot add an exclusive consumer to the destination as there is already a consumer";
+            throw new AmqpErrorException(new Error(AmqpError.RESOURCE_LOCKED, msg), e);
+        }
+        catch (MessageSource.ConsumerAccessRefused e)
+        {
+            String msg = "Cannot add an exclusive consumer to the destination as there is an incompatible exclusivity policy";
+            throw new AmqpErrorException(new Error(AmqpError.RESOURCE_LOCKED, msg), e);
+        }
+        catch (MessageSource.QueueDeleted e)
+        {
+            String msg = "Cannot add a consumer to the destination as the destination has been deleted";
+            throw new AmqpErrorException(new Error(AmqpError.RESOURCE_DELETED, msg), e);
+        }
     }
 
     public void remoteDetached(final LinkEndpoint endpoint, final Detach detach)
     {
+        _target.close();
         //TODO
         // if not durable or close
-        if(Boolean.TRUE.equals(detach.getClosed())
-           || !(TerminusDurability.UNSETTLED_STATE.equals(_durability)|| TerminusDurability.CONFIGURATION.equals(_durability)))
+        if (Boolean.TRUE.equals(detach.getClosed())
+            || !(TerminusDurability.UNSETTLED_STATE.equals(_durability) || TerminusDurability.CONFIGURATION.equals( _durability)))
         {
-            _target.close();
 
             Modified state = new Modified();
             state.setDeliveryFailed(true);
 
             for(UnsettledAction action : _unsettledActionMap.values())
             {
-
                 action.process(state,Boolean.TRUE);
             }
             _unsettledActionMap.clear();
@@ -432,12 +261,23 @@ public class SendingLink_1_0 implements Link_1_0
             {
                 try
                 {
-                    ((ConfiguredObject<?>)_queue).delete();
+                    if (getAddressSpace() instanceof QueueManagingVirtualHost)
+                    {
+                        ((QueueManagingVirtualHost) getAddressSpace()).removeSubscriptionQueue(((ExchangeDestination) _destination).getQueue().getName());
+                    }
                 }
                 catch (AccessControlException e)
                 {
-                    //TODO
                     _logger.error("Error unregistering subscription", e);
+                    endpoint.detach(new Error(AmqpError.NOT_ALLOWED, "Error unregistering subscription"));
+                }
+                catch (IllegalStateException e)
+                {
+                    endpoint.detach(new Error(AmqpError.RESOURCE_LOCKED, e.getMessage()));
+                }
+                catch (NotFoundException e)
+                {
+                    endpoint.detach(new Error(AmqpError.NOT_FOUND, e.getMessage()));
                 }
             }
 
@@ -447,8 +287,9 @@ public class SendingLink_1_0 implements Link_1_0
             }
 
         }
-        else if(detach.getError() != null
-                && !_linkAttachment.getEndpoint().getSession().isSyntheticError(detach.getError()))
+        else if (detach.getError() != null && !_linkAttachment.getEndpoint()
+                                                              .getSession()
+                                                              .isSyntheticError(detach.getError()))
         {
             _linkAttachment = null;
             _target.flowStateChanged();
@@ -590,7 +431,7 @@ public class SendingLink_1_0 implements Link_1_0
         return _linkAttachment != null && getEndpoint().isAttached();
     }
 
-    public synchronized void setLinkAttachment(SendingLinkAttachment linkAttachment)
+    public synchronized void setLinkAttachment(SendingLinkAttachment linkAttachment) throws AmqpErrorException
     {
         _linkAttachment = linkAttachment;
 
@@ -601,6 +442,8 @@ public class SendingLink_1_0 implements Link_1_0
             Map<Binary, MessageInstance> unsettledCopy = new HashMap<Binary, MessageInstance>(_unsettledMap);
             _resumeAcceptedTransfers.clear();
             _resumeFullTransfers.clear();
+
+            createConsumerTarget();
 
             for (Map.Entry<Binary, MessageInstance> entry : unsettledCopy.entrySet())
             {
@@ -705,9 +548,13 @@ public class SendingLink_1_0 implements Link_1_0
         return _target;
     }
 
-    private Queue<?> getQueue(String name)
+    public SendingDestination getDestination()
     {
-        MessageSource source = getAddressSpace().getAttainedMessageSource(name);
-        return source instanceof Queue ? (Queue<?>) source : null;
+        return _destination;
+    }
+
+    public void setDestination(final SendingDestination destination)
+    {
+        _destination = destination;
     }
 }

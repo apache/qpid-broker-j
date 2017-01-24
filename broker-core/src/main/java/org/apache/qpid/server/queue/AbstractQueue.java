@@ -391,7 +391,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     break;
                 case NONE:
                 case LINK:
-                    // nothing to do as if link no link associated until there is a consumer associated
+                case SHARED_SUBSCRIPTION:
                     break;
                 default:
                     throw new ServerScopedRuntimeException("Unknown exclusivity policy: "
@@ -848,6 +848,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         throw new ConsumerAccessRefused();
                     }
                 }
+                break;
+            case SHARED_SUBSCRIPTION:
                 break;
             case NONE:
                 break;

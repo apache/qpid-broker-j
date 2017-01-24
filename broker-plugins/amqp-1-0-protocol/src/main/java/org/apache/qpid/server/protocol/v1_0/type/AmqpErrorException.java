@@ -34,6 +34,12 @@ public class AmqpErrorException extends Exception
         _error = error;
     }
 
+    public AmqpErrorException(final Error error, final Throwable cause)
+    {
+        super(cause);
+        _error = error;
+    }
+
     public AmqpErrorException(ErrorCondition condition)
     {
         _error = new Error();

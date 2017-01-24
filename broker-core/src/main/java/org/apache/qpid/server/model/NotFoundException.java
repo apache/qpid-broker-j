@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,17 +15,19 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
+
 package org.apache.qpid.server.model;
 
-public enum ExclusivityPolicy
+public class NotFoundException extends RuntimeException
 {
-    NONE,
-    SESSION,
-    CONNECTION,
-    CONTAINER,
-    PRINCIPAL,
-    LINK,
-    SHARED_SUBSCRIPTION
+    public NotFoundException(String message)
+    {
+        super(message);
+    }
+
+    public NotFoundException(String message, Throwable cause)
+    {
+        super(message, cause);
+    }
 }

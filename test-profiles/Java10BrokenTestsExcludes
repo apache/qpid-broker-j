@@ -66,5 +66,3 @@ org.apache.qpid.test.unit.topic.TemporaryTopicTest#testDurableSubscriptionProhib
 org.apache.qpid.server.queue.ConsumerPriorityTest#*
 org.apache.qpid.server.queue.ArrivalTimeFilterTest#*
 
-// Theses tests require durable subscriptions
-org.apache.qpid.server.persistent.NoLocalAfterRecoveryTest#*

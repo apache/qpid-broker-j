@@ -25,6 +25,7 @@ import java.util.Collections;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
+import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -34,18 +35,15 @@ import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 
-public class QueueDestination extends MessageSourceDestination implements SendingDestination, ReceivingDestination
+public class QueueDestination extends MessageSourceDestination implements ReceivingDestination
 {
     private static final Accepted ACCEPTED = new Accepted();
     private static final Outcome[] OUTCOMES = new Outcome[] { ACCEPTED };
     private final String _address;
-    private final Queue<?> _queue;
-
 
     public QueueDestination(Queue<?> queue, final String address)
     {
         super(queue);
-        _queue = queue;
         _address = address;
     }
 
@@ -59,7 +57,7 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
                         final Action<MessageInstance> action)
     {
 
-        txn.enqueue(getQueue(),message, new ServerTransaction.EnqueueAction()
+        txn.enqueue(getMessageSource(), message, new ServerTransaction.EnqueueAction()
         {
             MessageReference _reference = message.newReference();
 
@@ -94,7 +92,7 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
 
     public Queue<?> getQueue()
     {
-        return (Queue<?>) super.getQueue();
+        return (Queue<?>) getMessageSource();
     }
 
     @Override
@@ -108,10 +106,7 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
                                  final String routingAddress)
     {
 
-        _queue.authorisePublish(securityToken,
-                                Collections.<String,Object>emptyMap());
-
-
+        getQueue().authorisePublish(securityToken, Collections.<String, Object>emptyMap());
     }
 
     @Override
@@ -123,6 +118,6 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
     @Override
     public MessageDestination getMessageDestination()
     {
-        return _queue;
+        return getQueue();
     }
 }

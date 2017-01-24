@@ -246,7 +246,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     }
 
     @Override
-    public final AggregateTicker getAggregateTicker()
+    public AggregateTicker getAggregateTicker()
     {
         return _aggregateTicker;
     }

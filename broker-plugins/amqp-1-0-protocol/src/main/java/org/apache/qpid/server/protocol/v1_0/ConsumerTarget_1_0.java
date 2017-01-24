@@ -61,7 +61,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerTarget_1_0.class);
     private final boolean _acquires;
-    private SendingLink_1_0 _link;
+    private final SendingLink_1_0 _link;
 
     private long _deliveryTag = 0L;
 

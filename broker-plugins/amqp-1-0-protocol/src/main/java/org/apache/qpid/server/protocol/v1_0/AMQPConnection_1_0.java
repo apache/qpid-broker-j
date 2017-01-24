@@ -154,6 +154,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
             };
 
     private static final Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
+    public static final Symbol SHARED_SUBSCRIPTIONS = Symbol.valueOf("SHARED-SUBS");
 
     private FrameWriter _frameWriter;
     private ProtocolHandler _frameHandler;
@@ -260,6 +261,8 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
         List<Symbol> offeredCapabilities = new ArrayList<>();
         offeredCapabilities.add(ANONYMOUS_RELAY);
+        offeredCapabilities.add(SHARED_SUBSCRIPTIONS);
+
         setOfferedCapabilities(offeredCapabilities);
 
         setRemoteAddress(network.getRemoteAddress());

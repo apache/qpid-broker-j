@@ -367,7 +367,7 @@ public class TimeToLiveTest extends QpidBrokerTestCase
         // check Queue depth for up to TIMEOUT seconds after the Queue Depth hasn't changed for 100ms.
         long messageCount = MSG_COUNT;
         long lastPass;
-        Queue subcriptionQueue = isBroker10() ? producerSession.createQueue("qpid_/clientid_/MyDurableTTLSubscription") : new AMQQueue("amq.topic","clientid" + ":" + "MyDurableTTLSubscription");
+        Queue subcriptionQueue = isBroker10() ? producerSession.createQueue("qpidsub_/clientid_/MyDurableTTLSubscription_/durable") : new AMQQueue("amq.topic","clientid" + ":" + "MyDurableTTLSubscription");
         do
         {
             lastPass = messageCount;

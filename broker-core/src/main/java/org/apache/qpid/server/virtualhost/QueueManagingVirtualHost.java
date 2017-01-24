@@ -35,6 +35,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Content;
+import org.apache.qpid.server.model.DoOnConfigThread;
 import org.apache.qpid.server.model.ManageableMessage;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
@@ -242,6 +243,12 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
             description = "Returns metadata concerning the current connection",
             changesConfiguredObjectState = false)
     SocketConnectionMetaData getConnectionMetaData();
+
+    Queue<?> getSubscriptionQueue(final String exchangeName,
+                                  final Map<String, Object> attributes,
+                                  final Map<String, Map<String, Object>> bindings);
+
+    void removeSubscriptionQueue(final String queueName);
 
     Broker<?> getBroker();
 

@@ -40,70 +40,6 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
     private final String _topicName = "durableSubscriberTopic";
 
     /**
-     * test strategy:
-     * create and register a durable subscriber then close it
-     * create a publisher and send a persistent message followed by a non persistant message
-     * crash and restart the broker
-     * recreate the durable subscriber and check that only the first message is received
-     */
-    public void testDurSubRestoredAfterNonPersistentMessageSent() throws Exception
-    {
-        if (isBrokerStorePersistent())
-        {
-            TopicConnection durConnection = (TopicConnection) getConnection();
-            Topic topic = createTopic(durConnection, _topicName);
-            //create and register a durable subscriber then close it
-            TopicSession durSession = durConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-            TopicSubscriber durSub1 = durSession.createDurableSubscriber(topic, "dursub");
-            durConnection.start();
-            durSub1.close();
-            durSession.close();
-            durConnection.stop();
-
-            //create a publisher and send a persistant message followed by a non persistant message
-            TopicConnection pubConnection = (TopicConnection) getConnection();
-            TopicSession pubSession = pubConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-            TopicPublisher publisher = pubSession.createPublisher(topic);
-            Message message = pubSession.createMessage();
-            message.setIntProperty("count", 1);
-            publisher.publish(message, javax.jms.DeliveryMode.PERSISTENT, javax.jms.Message.DEFAULT_PRIORITY,
-                              javax.jms.Message.DEFAULT_TIME_TO_LIVE);
-            message.setIntProperty("count", 2);
-            publisher.publish(message, javax.jms.DeliveryMode.NON_PERSISTENT, javax.jms.Message.DEFAULT_PRIORITY,
-                              javax.jms.Message.DEFAULT_TIME_TO_LIVE);
-            publisher.close();
-            pubSession.close();
-            //now stop the server
-            try
-            {
-                restartDefaultBroker();
-            }
-            catch (Exception e)
-            {
-                _logger.error("problems restarting broker: " + e);
-                throw e;
-            }
-            //now recreate the durable subscriber and check the received messages
-            TopicConnection durConnection2 = (TopicConnection) getConnection();
-            TopicSession durSession2 = durConnection2.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
-            TopicSubscriber durSub2 = durSession2.createDurableSubscriber(topic, "dursub");
-            durConnection2.start();
-            Message m1 = durSub2.receive(1000);
-            if (m1 == null)
-            {
-                assertTrue("testDurSubRestoredAfterNonPersistentMessageSent test failed. no message was returned",
-                           false);
-            }
-            assertTrue("testDurSubRestoredAfterNonPersistentMessageSent test failed. Wrong message was returned.",
-                       m1.getIntProperty("count") == 1);
-            durSession2.unsubscribe("dursub");
-            durConnection2.close();
-        }
-    }
-
-
-
-    /**
      * create and register a durable subscriber with a message selector and then close it
      * crash the broker
      * create a publisher and send  5 right messages and 5 wrong messages
@@ -165,6 +101,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
                                message.getStringProperty("testprop").equals("true"));
                 }
             }
+            durSub2.close();
             durSession2.unsubscribe("dursub");
             durConnection2.close();
         }
@@ -378,17 +315,14 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         msg.setBooleanProperty("Match", false);
         producer.send(msg);
 
-        Message rMsg = subA.receive(1000);
+        Message rMsg = subA.receive(getReceiveTimeout());
         assertNotNull(rMsg);
         assertEquals("Content was wrong", 
                      "testResubscribeWithChangedSelectorAndRestart1",
                      ((TextMessage) rMsg).getText());
 
         // Queue has no messages left
-        AMQQueue subQueue = new AMQQueue("amq.topic", "clientid" + ":" + "testResubscribeWithChangedSelectorAndRestart");
-        assertEquals("Msg count should be 0", 0, ((AMQSession<?, ?>) session).getQueueDepth(subQueue, true));
-        
-        rMsg = subA.receive(1000);
+        rMsg = subA.receive(getReceiveTimeout());
         assertNull(rMsg);
         
         // Send another 1 matching message and 1 non-matching message
@@ -411,7 +345,8 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         //verify no messages are now present on the queue as changing selector should have issued
         //an unsubscribe and thus deleted the previous durable backing queue for the subscription.
         //check the dur sub's underlying queue now has msg count 0
-        assertEquals("Msg count should be 0", 0, ((AMQSession<?, ?>) session).getQueueDepth(subQueue, true));
+        rMsg = subB.receive(getReceiveTimeout());
+        assertNull(rMsg);
         
         // Check that new messages are received properly
         msg = session.createTextMessage("testResubscribeWithChangedSelectorAndRestart1");
@@ -421,17 +356,16 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         msg.setBooleanProperty("Match", false);
         producer.send(msg);
         
-        rMsg = subB.receive(1000);
+        rMsg = subB.receive(getReceiveTimeout());
         assertNotNull(rMsg);
         assertEquals("Content was wrong", 
                      "testResubscribeWithChangedSelectorAndRestart2",
                      ((TextMessage) rMsg).getText());
-        
-        rMsg = subB.receive(1000);
-        assertNull(rMsg);
 
         //check the dur sub's underlying queue now has msg count 0
-        assertEquals("Msg count should be 0", 0, ((AMQSession<?, ?>) session).getQueueDepth(subQueue, true));
+        rMsg = subB.receive(getReceiveTimeout());
+        assertNull(rMsg);
+
         conn.close();
 
         //now restart the server
@@ -452,15 +386,16 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         topic = createTopic(connection, "testResubscribeWithChangedSelectorAndRestart");
         producer = session.createProducer(topic);
 
-        //verify no messages now present on the queue after we restart the broker
-        //check the dur sub's underlying queue now has msg count 0
-        assertEquals("Msg count should be 0", 0, ((AMQSession<?, ?>) session).getQueueDepth(subQueue, true));
-
         // Reconnect with new selector that matches B
         TopicSubscriber subC = session.createDurableSubscriber(topic, 
                 "testResubscribeWithChangedSelectorAndRestart",
                 "Match = False", false);
-        
+
+        //verify no messages now present on the queue after we restart the broker
+        //check the dur sub's underlying queue now has msg count 0
+        rMsg = subC.receive(getReceiveTimeout());
+        assertNull(rMsg);
+
         // Check that new messages are still sent and recieved properly
         msg = session.createTextMessage("testResubscribeWithChangedSelectorAndRestart1");
         msg.setBooleanProperty("Match", true);
@@ -470,20 +405,18 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         producer.send(msg);
 
         //check the dur sub's underlying queue now has msg count 1
-        assertEquals("Msg count should be 1", 1, ((AMQSession<?, ?>) session).getQueueDepth(subQueue, true));
-        
-        rMsg = subC.receive(1000);
+        rMsg = subC.receive(getReceiveTimeout());
         assertNotNull(rMsg);
         assertEquals("Content was wrong", 
                      "testResubscribeWithChangedSelectorAndRestart2",
                      ((TextMessage) rMsg).getText());
         
-        rMsg = subC.receive(1000);
+        rMsg = subC.receive(getReceiveTimeout());
         assertNull(rMsg);
-        
-        session.unsubscribe("testResubscribeWithChangedSelectorAndRestart");
-        
+
         subC.close();
+        session.unsubscribe("testResubscribeWithChangedSelectorAndRestart");
+
         session.close();
         connection.close();
     }

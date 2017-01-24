@@ -20,7 +20,9 @@
 
 package org.apache.qpid.test.utils;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -123,7 +125,7 @@ public class AmqpManagementFacade
         }
     }
 
-    public List managementQueryObjects(final Session session, final String type) throws JMSException
+    public List<Map<String, Object>> managementQueryObjects(final Session session, final String type) throws JMSException
     {
         MessageProducer producer = session.createProducer(session.createQueue("$management"));
         final TemporaryQueue responseQ = session.createTemporaryQueue();
@@ -143,14 +145,20 @@ public class AmqpManagementFacade
         {
             if (response instanceof MapMessage)
             {
-                return (List) ((MapMessage) response).getObject("results");
+                MapMessage bodyMap = (MapMessage) response;
+                List<String> attributeNames = (List<String>) bodyMap.getObject("attributeNames");
+                List<List<Object>> attributeValues = (List<List<Object>>) bodyMap.getObject("results");
+                return getResultsAsMap(attributeNames, attributeValues);
             }
             else if (response instanceof ObjectMessage)
             {
                 Object body = ((ObjectMessage) response).getObject();
                 if (body instanceof Map)
                 {
-                    return (List) ((Map) body).get("results");
+                    Map<String, ?> bodyMap = (Map<String, ?>) body;
+                    List<String> attributeNames = (List<String>) bodyMap.get("attributeNames");
+                    List<List<Object>> attributeValues = (List<List<Object>>) bodyMap.get("results");
+                    return getResultsAsMap(attributeNames, attributeValues);
                 }
             }
             throw new IllegalArgumentException("Cannot parse the results from a management query");
@@ -160,5 +168,20 @@ public class AmqpManagementFacade
             consumer.close();
             responseQ.delete();
         }
+    }
+
+    private List<Map<String, Object>> getResultsAsMap(final List<String> attributeNames, final List<List<Object>> attributeValues)
+    {
+        List<Map<String, Object>> results = new ArrayList<>();
+        for (List<Object> resultObject : attributeValues)
+        {
+            Map<String, Object> result = new HashMap<>();
+            for (int i = 0; i < attributeNames.size(); ++i)
+            {
+                result.put(attributeNames.get(i), resultObject.get(i));
+            }
+            results.add(result);
+        }
+        return results;
     }
 }

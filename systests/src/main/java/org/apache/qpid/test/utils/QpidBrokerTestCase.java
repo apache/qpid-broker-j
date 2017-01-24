@@ -372,7 +372,7 @@ public class QpidBrokerTestCase extends QpidTestCase
         _managementFacade.performOperationUsingAmqpManagement(name, operation, session, type, arguments);
     }
 
-    protected List managementQueryObjects(final Session session, final String type) throws JMSException
+    protected List<Map<String, Object>> managementQueryObjects(final Session session, final String type) throws JMSException
     {
 
         return _managementFacade.managementQueryObjects(session, type);

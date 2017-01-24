@@ -51,7 +51,7 @@ public class NoLocalAfterRecoveryTest extends QpidBrokerTestCase
 
         Connection connection = getConnection();
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        Topic topic = session.createTopic(MY_TOPIC_SUBSCRIPTION_NAME);
+        Topic topic = createTopic(connection, MY_TOPIC_SUBSCRIPTION_NAME);
 
         TopicSubscriber noLocalSubscriber = session.
                 createDurableSubscriber(topic, MY_TOPIC_SUBSCRIPTION_NAME + "-NoLocal",
@@ -113,7 +113,7 @@ public class NoLocalAfterRecoveryTest extends QpidBrokerTestCase
 
         Connection connection = getConnection();
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        Topic topic = session.createTopic(MY_TOPIC_SUBSCRIPTION_NAME);
+        Topic topic = createTopic(connection, MY_TOPIC_SUBSCRIPTION_NAME);
 
         TopicSubscriber noLocalSubscriber =
                 session.createDurableSubscriber(topic, MY_TOPIC_SUBSCRIPTION_NAME + "-NoLocal", null, true);
@@ -146,7 +146,7 @@ public class NoLocalAfterRecoveryTest extends QpidBrokerTestCase
         connection2.start();
 
         Session session2 = connection2.createSession(true, Session.SESSION_TRANSACTED);
-        Topic topic2 = session2.createTopic(MY_TOPIC_SUBSCRIPTION_NAME);
+        Topic topic2 = createTopic(connection2, MY_TOPIC_SUBSCRIPTION_NAME);
 
         TopicSubscriber noLocalSubscriber2 =
                 session2.createDurableSubscriber(topic2, MY_TOPIC_SUBSCRIPTION_NAME + "-NoLocal",null, true);

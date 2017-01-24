@@ -2750,6 +2750,123 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return !(_systemNodeSources.isEmpty() && getChildren(Queue.class).isEmpty());
     }
 
+    @Override
+    @DoOnConfigThread
+    public Queue<?> getSubscriptionQueue(@Param(name = "exchangeName", mandatory = true) final String exchangeName,
+                                         @Param(name = "attributes", mandatory = true) final Map<String, Object> attributes,
+                                         @Param(name = "bindings", mandatory = true) final Map<String, Map<String, Object>> bindings)
+    {
+        Queue queue;
+        Object exclusivityPolicy = attributes.get(Queue.EXCLUSIVE);
+        if (exclusivityPolicy == null)
+        {
+            exclusivityPolicy = getContextValue(ExclusivityPolicy.class, Queue.QUEUE_DEFAULT_EXCLUSIVITY_POLICY);
+        }
+        if (!(exclusivityPolicy instanceof ExclusivityPolicy))
+        {
+            throw new IllegalArgumentException("Exclusivity policy is required");
+        }
+        Exchange<?> exchange = findConfiguredObject(Exchange.class, exchangeName);
+        if (exchange == null)
+        {
+            throw new NotFoundException(String.format("Exchange '%s' was not found", exchangeName));
+        }
+        try
+        {
+            queue = createMessageDestination(Queue.class, attributes);
+
+            for (String binding : bindings.keySet())
+            {
+                exchange.addBinding(binding, queue, bindings.get(binding));
+            }
+        }
+        catch (AbstractConfiguredObject.DuplicateNameException e)
+        {
+            Queue<?> existingQueue = (Queue) e.getExisting();
+
+            if (existingQueue.getExclusive() == exclusivityPolicy)
+            {
+                if (hasDifferentBindings(exchange, existingQueue, bindings))
+                {
+                    if (existingQueue.getConsumers().isEmpty())
+                    {
+                        existingQueue.delete();
+
+                        queue = createMessageDestination(Queue.class, attributes);
+
+                        for (String binding : bindings.keySet())
+                        {
+                            exchange.addBinding(binding, queue, bindings.get(binding));
+                        }
+                    }
+                    else
+                    {
+                        throw new IllegalStateException("subscription already in use");
+                    }
+                }
+                else
+                {
+                    queue = existingQueue;
+                }
+            }
+            else
+            {
+                throw new IllegalStateException("subscription already in use");
+            }
+        }
+        return queue;
+    }
+
+    @Override
+    @DoOnConfigThread
+    public void removeSubscriptionQueue(@Param(name = "queueName", mandatory = true) final String queueName) throws NotFoundException
+    {
+        Queue<?> queue = findConfiguredObject(Queue.class, queueName);
+        if (queue == null)
+        {
+            throw new NotFoundException(String.format("Queue '%s' was not found", queueName));
+        }
+
+        if (queue.getConsumers().isEmpty())
+        {
+            queue.delete();
+        }
+        else
+        {
+            throw new IllegalStateException("There are consumers on Queue '" + queueName + "'");
+        }
+    }
+
+    private boolean hasDifferentBindings(final Exchange<?> exchange,
+                                         final Queue queue,
+                                         final Map<String, Map<String,Object>> bindings)
+    {
+        for(String binding: bindings.keySet())
+        {
+            boolean theSameBindingFound = false;
+            for (Binding publishingLink : exchange.getPublishingLinks(queue))
+            {
+                if (publishingLink.getBindingKey().equals(binding))
+                {
+                    Map<String, Object> expectedArguments = bindings.get(binding);
+                    Map<String, Object> actualArguments = publishingLink.getArguments();
+
+
+                    if (new HashMap<>(expectedArguments == null ? Collections.emptyMap() : expectedArguments).equals(new HashMap<>(actualArguments == null? Collections.emptyMap() : actualArguments)))
+                    {
+                        theSameBindingFound = true;
+                    }
+
+                }
+            }
+            if (!theSameBindingFound)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private final class AccessControlProviderListener extends AbstractConfigurationChangeListener
     {
         private final Set<ConfiguredObject<?>> _bulkChanges = new HashSet<>();

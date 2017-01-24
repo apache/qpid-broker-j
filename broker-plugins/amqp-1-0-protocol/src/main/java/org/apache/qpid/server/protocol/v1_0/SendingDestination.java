@@ -21,7 +21,9 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 
+import org.apache.qpid.server.message.MessageSource;
+
 public interface SendingDestination extends Destination
 {
-
+    MessageSource getMessageSource();
 }
