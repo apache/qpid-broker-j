@@ -401,7 +401,7 @@ public class ServerSessionDelegate extends SessionDelegate
 
     protected boolean verifySessionAccess(final ServerSession session, final MessageSource queue)
     {
-        return queue.verifySessionAccess(session);
+        return queue.verifySessionAccess(session.getModelObject());
     }
 
     private static String getMessageUserId(MessageTransfer xfr)

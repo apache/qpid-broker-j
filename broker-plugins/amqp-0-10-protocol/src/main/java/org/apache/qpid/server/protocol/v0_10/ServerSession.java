@@ -54,7 +54,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
@@ -75,8 +74,6 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
-import org.apache.qpid.server.protocol.PublishAuthorisationCache;
-import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
@@ -102,9 +99,7 @@ import org.apache.qpid.transport.*;
 import org.apache.qpid.transport.network.Ticker;
 
 public class ServerSession extends Session
-        implements AMQSessionModel<ServerSession, ConsumerTarget_0_10>, LogSubject, AsyncAutoCommitTransaction.FutureRecorder,
-                   Deletable<ServerSession>
-
+        implements LogSubject, AsyncAutoCommitTransaction.FutureRecorder
 {
     private static final Logger _logger = LoggerFactory.getLogger(ServerSession.class);
 
@@ -112,29 +107,26 @@ public class ServerSession extends Session
     private static final int PRODUCER_CREDIT_TOPUP_THRESHOLD = 1 << 30;
     private static final int UNFINISHED_COMMAND_QUEUE_THRESHOLD = 500;
 
-    private final UUID _id = UUID.randomUUID();
-    private final Subject _subject = new Subject();
-    private final AccessControlContext _accessControllerContext;
-    private final SecurityToken _token;
+    public Subject getSubject()
+    {
+        return _modelObject.getSubject();
+    }
+
     private long _createTime = System.currentTimeMillis();
 
     private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<Object>());
 
     private final AtomicBoolean _blocking = new AtomicBoolean(false);
-    private ChannelLogSubject _logSubject;
     private final AtomicInteger _outstandingCredit = new AtomicInteger(UNLIMITED_CREDIT);
     private final CheckCapacityAction _checkCapacityAction = new CheckCapacityAction();
     private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
     private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
-    private org.apache.qpid.server.model.Session<?> _modelObject;
+    private Session_0_10 _modelObject;
     private long _blockTime;
     private long _blockingTimeout;
     private boolean _wireBlockingState;
     private final Set<ConsumerTarget_0_10> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
     private Iterator<ConsumerTarget_0_10> _processPendingIterator;
-
-    private final PublishAuthorisationCache _publishAuthCache;
-
 
     public static interface MessageDispositionChangeListener
     {
@@ -170,41 +162,20 @@ public class ServerSession extends Session
     private final List<StoredMessage<MessageMetaData_0_10>> _uncommittedMessages = new ArrayList<>();
     private long _maxUncommittedInMemorySize;
 
-
     public ServerSession(Connection connection, SessionDelegate delegate, Binary name, long expiry)
     {
         super(connection, delegate, name, expiry);
         _transaction = new AsyncAutoCommitTransaction(this.getMessageStore(),this);
-        _logSubject = new ChannelLogSubject(this);
 
         ServerConnection serverConnection = (ServerConnection) connection;
-        AMQPConnection_0_10 amqpConnection = serverConnection.getAmqpConnection();
-
-        _subject.getPrincipals().addAll(serverConnection.getAuthorizedSubject().getPrincipals());
-        _subject.getPrincipals().add(new SessionPrincipal(this));
-        _accessControllerContext = amqpConnection.getAccessControlContextFromSubject(_subject);
-        final NamedAddressSpace addressSpace = serverConnection.getAddressSpace();
-
-        if(addressSpace instanceof ConfiguredObject)
-        {
-            _token = ((ConfiguredObject)addressSpace).newToken(_subject);
-        }
-        else
-        {
-            _token = amqpConnection.getBroker().newToken(_subject);
-        }
 
         _blockingTimeout = serverConnection.getBroker().getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
         _maxUncommittedInMemorySize = getAMQPConnection().getContextProvider().getContextValue(Long.class, org.apache.qpid.server.model.Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
-        _publishAuthCache = new PublishAuthorisationCache(_token,
-                                                          amqpConnection.getContextValue(Long.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_TIMEOUT),
-                                                          amqpConnection.getContextValue(Integer.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_SIZE));
-
     }
 
     public AccessControlContext getAccessControllerContext()
     {
-        return _accessControllerContext;
+        return _modelObject.getAccessControllerContext();
     }
 
     protected void setState(final State state)
@@ -264,7 +235,7 @@ public class ServerSession extends Session
                           final boolean immediate,
                           final long currentTime)
     {
-        _publishAuthCache.authorisePublish(destination, routingKey, immediate, currentTime);
+        _modelObject.getPublishAuthCache().authorisePublish(destination, routingKey, immediate, currentTime);
     }
 
     @Override
@@ -309,7 +280,7 @@ public class ServerSession extends Session
                 if(!_uncommittedMessages.isEmpty() || _uncommittedMessageSize == handle.getContentSize())
                 {
                     getAMQPConnection().getEventLogger()
-                                       .message(_logSubject, ChannelMessages.LARGE_TRANSACTION_WARN(_uncommittedMessageSize));
+                                       .message(getLogSubject(), ChannelMessages.LARGE_TRANSACTION_WARN(_uncommittedMessageSize));
                 }
 
                 if(!_uncommittedMessages.isEmpty())
@@ -497,7 +468,7 @@ public class ServerSession extends Session
         }
         else if(_transaction instanceof DistributedTransaction)
         {
-            getAddressSpace().getDtxRegistry().endAssociations(this);
+            getAddressSpace().getDtxRegistry().endAssociations(_modelObject);
         }
 
         for(MessageDispositionChangeListener listener : _messageDispositionListenerMap.values())
@@ -506,9 +477,9 @@ public class ServerSession extends Session
         }
         _messageDispositionListenerMap.clear();
 
-        for (Action<? super ServerSession> task : _taskList)
+        for (Action<? super Session_0_10> task : _modelObject.getTaskList())
         {
-            task.performAction(this);
+            task.performAction(_modelObject);
         }
 
         LogMessage operationalLoggingMessage = _forcedCloseLogMessage.get();
@@ -598,7 +569,7 @@ public class ServerSession extends Session
 
     public void selectDtx()
     {
-        _transaction = new DistributedTransaction(this, getAddressSpace().getDtxRegistry());
+        _transaction = new DistributedTransaction(_modelObject, getAddressSpace().getDtxRegistry());
 
     }
 
@@ -753,17 +724,7 @@ public class ServerSession extends Session
 
     public Subject getAuthorizedSubject()
     {
-        return _subject;
-    }
-
-    public void addDeleteTask(Action<? super ServerSession> task)
-    {
-        _taskList.add(task);
-    }
-
-    public void removeDeleteTask(Action<? super ServerSession> task)
-    {
-        _taskList.remove(task);
+        return getSubject();
     }
 
     public Object getReference()
@@ -787,18 +748,11 @@ public class ServerSession extends Session
     }
 
 
-    public long getCreateTime()
-    {
-        return _createTime;
-    }
-
-    @Override
     public UUID getId()
     {
-        return _id;
+        return _modelObject.getId();
     }
 
-    @Override
     public AMQPConnection_0_10 getAMQPConnection()
     {
         return getConnection().getAmqpConnection();
@@ -813,7 +767,7 @@ public class ServerSession extends Session
 
     public LogSubject getLogSubject()
     {
-        return this;
+        return _modelObject.getLogSubject();
     }
 
     public void block(Queue<?> queue)
@@ -836,10 +790,10 @@ public class ServerSession extends Session
 
                 if(_blocking.compareAndSet(false,true))
                 {
-                    getAMQPConnection().getEventLogger().message(_logSubject, ChannelMessages.FLOW_ENFORCED(name));
+                    getAMQPConnection().getEventLogger().message(getLogSubject(), ChannelMessages.FLOW_ENFORCED(name));
                     if(getState() == State.OPEN)
                     {
-                        getAMQPConnection().notifyWork(this);
+                        getAMQPConnection().notifyWork(_modelObject);
                     }
                 }
 
@@ -864,8 +818,8 @@ public class ServerSession extends Session
         {
             if(_blocking.compareAndSet(true,false) && !isClosing())
             {
-                getAMQPConnection().getEventLogger().message(_logSubject, ChannelMessages.FLOW_REMOVED());
-                getAMQPConnection().notifyWork(this);
+                getAMQPConnection().getEventLogger().message(getLogSubject(), ChannelMessages.FLOW_REMOVED());
+                getAMQPConnection().notifyWork(_modelObject);
             }
         }
     }
@@ -878,7 +832,6 @@ public class ServerSession extends Session
         return b;
     }
 
-    @Override
     public void transportStateChanged()
     {
         for(ConsumerTarget_0_10 consumerTarget : getSubscriptions())
@@ -887,11 +840,10 @@ public class ServerSession extends Session
         }
         if (!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
         {
-            getAMQPConnection().notifyWork(this);
+            getAMQPConnection().notifyWork(_modelObject);
         }
     }
 
-    @Override
     public Object getConnectionReference()
     {
         return getConnection().getReference();
@@ -1075,44 +1027,37 @@ public class ServerSession extends Session
         super.setClose(close);
     }
 
-    @Override
     public long getConsumerCount()
     {
         return _subscriptions.values().size();
     }
 
-    @Override
     public Collection<Consumer<?, ConsumerTarget_0_10>> getConsumers()
     {
 
         return Collections.unmodifiableCollection(_consumers);
     }
 
-    @Override
     public void addConsumerListener(final ConsumerListener listener)
     {
         _consumerListeners.add(listener);
     }
 
-    @Override
     public void removeConsumerListener(final ConsumerListener listener)
     {
         _consumerListeners.remove(listener);
     }
 
-    @Override
-    public void setModelObject(final org.apache.qpid.server.model.Session<?> session)
+    public void setModelObject(final Session_0_10 session)
     {
         _modelObject = session;
     }
 
-    @Override
-    public org.apache.qpid.server.model.Session<?> getModelObject()
+    public Session_0_10 getModelObject()
     {
         return _modelObject;
     }
 
-    @Override
     public long getTransactionStartTimeLong()
     {
         ServerTransaction serverTransaction = _transaction;
@@ -1126,7 +1071,6 @@ public class ServerSession extends Session
         }
     }
 
-    @Override
     public long getTransactionUpdateTimeLong()
     {
         ServerTransaction serverTransaction = _transaction;
@@ -1156,7 +1100,6 @@ public class ServerSession extends Session
         }
     }
 
-    @Override
     public boolean processPending()
     {
         if (!getAMQPConnection().isIOThread() || isClosing())
@@ -1201,7 +1144,6 @@ public class ServerSession extends Session
         return !_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting();
     }
 
-    @Override
     public void addTicker(final Ticker ticker)
     {
         getAMQPConnection().getAggregateTicker().addTicker(ticker);
@@ -1209,25 +1151,22 @@ public class ServerSession extends Session
         getAMQPConnection().notifyWork();
     }
 
-    @Override
     public void removeTicker(final Ticker ticker)
     {
         getAMQPConnection().getAggregateTicker().removeTicker(ticker);
     }
 
-    @Override
     public void notifyWork(final ConsumerTarget_0_10 target)
     {
         if(_consumersWithPendingWork.add(target))
         {
-            getAMQPConnection().notifyWork(this);
+            getAMQPConnection().notifyWork(_modelObject);
         }
     }
 
-    @Override
     public void doTimeoutAction(final String reason)
     {
-        getAMQPConnection().closeSessionAsync(ServerSession.this,
+        getAMQPConnection().closeSessionAsync(_modelObject,
                                               AMQPConnection.CloseReason.TRANSACTION_TIMEOUT, reason);
     }
 
@@ -1236,7 +1175,6 @@ public class ServerSession extends Session
         return _maxUncommittedInMemorySize;
     }
 
-    @Override
     public int compareTo(AMQSessionModel o)
     {
         return getId().compareTo(o.getId());
@@ -1256,7 +1194,7 @@ public class ServerSession extends Session
             TransactionLogResource queue = entry.getOwningResource();
             if(queue instanceof CapacityChecker)
             {
-                ((CapacityChecker)queue).checkCapacity(ServerSession.this);
+                ((CapacityChecker)queue).checkCapacity(_modelObject);
             }
         }
     }

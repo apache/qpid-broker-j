@@ -302,7 +302,7 @@ public class ServerConnection extends Connection
         if(!_blocking)
         {
             _blocking = true;
-            for(AMQSessionModel ssn : getSessionModels())
+            for(ServerSession ssn : getSessionModels())
             {
                 ssn.block();
             }
@@ -314,7 +314,7 @@ public class ServerConnection extends Connection
         if(_blocking)
         {
             _blocking = false;
-            for(AMQSessionModel ssn : getSessionModels())
+            for(ServerSession ssn : getSessionModels())
             {
                 ssn.unblock();
             }
@@ -480,7 +480,7 @@ public class ServerConnection extends Connection
 
     public void transportStateChanged()
     {
-        for (AMQSessionModel ssn : getSessionModels())
+        for (ServerSession ssn : getSessionModels())
         {
             ssn.transportStateChanged();
         }

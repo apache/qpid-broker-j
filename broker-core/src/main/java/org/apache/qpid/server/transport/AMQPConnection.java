@@ -30,16 +30,20 @@ import javax.security.auth.Subject;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.util.Deletable;
 
 public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<C>, Deletable<C>, EventLoggerProvider
 {
+    Broker<?> getBroker();
+
+    long getConnectionId();
 
     AccessControlContext getAccessControlContextFromSubject(Subject subject);
 
-    long getConnectionId();
+    Subject getSubject();
 
     Principal getAuthorizedPrincipal();
 
@@ -70,6 +74,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
     NetworkConnectionScheduler popScheduler();
 
     boolean hasSessionWithName(byte[] name);
+
 
     enum CloseReason
     {

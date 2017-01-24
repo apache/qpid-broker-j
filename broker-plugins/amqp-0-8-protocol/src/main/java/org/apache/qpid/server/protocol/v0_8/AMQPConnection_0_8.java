@@ -51,8 +51,6 @@ public interface AMQPConnection_0_8<C extends AMQPConnection_0_8<C>> extends AMQ
     @ManagedContextDefault(name= BATCH_LIMIT)
     long DEFAULT_BATCH_LIMIT = 10L;
 
-    Broker<?> getBroker();
-
     MethodRegistry getMethodRegistry();
 
     void writeFrame(AMQDataBlock frame);

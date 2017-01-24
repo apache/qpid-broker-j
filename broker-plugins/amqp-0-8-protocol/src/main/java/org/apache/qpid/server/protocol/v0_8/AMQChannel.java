@@ -58,7 +58,6 @@ import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.protocol.ErrorCodes;
-import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
@@ -87,10 +86,8 @@ import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
-import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.protocol.v0_8.UnacknowledgedMessageMap.Visitor;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
-import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.session.AbstractAMQPSession;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
@@ -134,11 +131,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
 
     private final Pre0_10CreditManager _creditManager;
-    private final AccessControlContext _accessControllerContext;
-    private final SecurityToken _token;
-
-    private final PublishAuthorisationCache _publishAuthCahe;
-
 
 
     /**
@@ -190,7 +182,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     private final AtomicBoolean _blocking = new AtomicBoolean(false);
 
 
-    private LogSubject _logSubject;
     private volatile boolean _rollingBack;
 
     private List<MessageConsumerAssociation> _resendList = new ArrayList<>();
@@ -201,13 +192,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     private final UUID _id = UUID.randomUUID();
 
-    private final List<Action<? super AMQChannel>> _taskList =
-            new CopyOnWriteArrayList<Action<? super AMQChannel>>();
-
 
     private final CapacityCheckAction _capacityCheckAction = new CapacityCheckAction();
     private final ImmediateAction _immediateAction = new ImmediateAction();
-    private final Subject _subject;
     private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_0_8>> _consumers = new CopyOnWriteArrayList<>();
     private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
     private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
@@ -244,21 +231,8 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         _connection = connection;
         _channelId = channelId;
 
-        _subject = new Subject(false, connection.getSubject().getPrincipals(),
-                               connection.getSubject().getPublicCredentials(),
-                               connection.getSubject().getPrivateCredentials());
-        _subject.getPrincipals().add(new SessionPrincipal(this));
-
-        _accessControllerContext = connection.getAccessControlContextFromSubject(_subject);
-        _token = (_connection.getAddressSpace() instanceof ConfiguredObject)
-                ? ((ConfiguredObject)_connection.getAddressSpace()).newToken(_subject)
-                :_connection.getBroker().newToken(_subject);
 
         _maxUncommittedInMemorySize = connection.getContextProvider().getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
-        _logSubject = new ChannelLogSubject(this);
-        _publishAuthCahe = new PublishAuthorisationCache(_token,
-                                                         connection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT),
-                                                         connection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE));
         _messageStore = messageStore;
         _blockingTimeout = connection.getBroker().getContextValue(Long.class,
                                                                   Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
@@ -404,12 +378,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         return _txnStarts.get();
     }
 
-    @Override
-    public int getChannelId()
-    {
-        return _channelId;
-    }
-
     private void setPublishFrame(MessagePublishInfo info, final MessageDestination e)
     {
         _currentMessage = new IncomingMessage(info);
@@ -443,7 +411,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 ContentHeaderBody contentHeader = _currentMessage.getContentHeader();
                 _connection.checkAuthorizedMessagePrincipal(AMQShortString.toString(contentHeader.getProperties().getUserId()));
 
-                _publishAuthCahe.authorisePublish(destination, routingKey, info.isImmediate(), _connection.getLastReadTime());
+                _publishAuthCache.authorisePublish(destination, routingKey, info.isImmediate(), _connection.getLastReadTime());
 
                 if (_confirmOnPublish)
                 {
@@ -1371,32 +1339,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     }
 
     @Override
-    public AMQPConnection_0_8<?> getAMQPConnection()
-    {
-        return _connection;
-    }
-
-    public LogSubject getLogSubject()
-    {
-        return _logSubject;
-    }
-
-    @Override
     public int compareTo(AMQSessionModel o)
     {
         return getId().compareTo(o.getId());
-    }
-
-    @Override
-    public void addDeleteTask(final Action<? super AMQChannel> task)
-    {
-        _taskList.add(task);
-    }
-
-    @Override
-    public void removeDeleteTask(final Action<? super AMQChannel> task)
-    {
-        _taskList.remove(task);
     }
 
     public Subject getSubject()
@@ -2338,12 +2283,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 }
             }
         }
-    }
-
-    @Override
-    public EventLogger getEventLogger()
-    {
-        return getConnection().getEventLogger();
     }
 
     private boolean blockingTimeoutExceeded()

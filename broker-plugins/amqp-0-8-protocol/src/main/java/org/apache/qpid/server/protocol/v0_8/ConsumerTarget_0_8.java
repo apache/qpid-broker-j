@@ -344,7 +344,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
     @Override
     public void updateNotifyWorkDesired()
     {
-        final AMQPConnection_0_8<?> amqpConnection = _channel.getAMQPConnection();
+        final AMQPConnection_0_8 amqpConnection = (AMQPConnection_0_8) _channel.getAMQPConnection();
 
         boolean state = _channel.isChannelFlow()
                         && !amqpConnection.isTransportBlockedForWriting()

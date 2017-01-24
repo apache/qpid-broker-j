@@ -20,9 +20,12 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
+import java.security.AccessControlContext;
 import java.util.Collection;
+import java.util.List;
 
-import org.apache.qpid.server.logging.EventLogger;
+import javax.security.auth.Subject;
+
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Consumer;
@@ -30,6 +33,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
+import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.session.AbstractAMQPSession;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.Action;
@@ -49,21 +53,9 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     }
 
     @Override
-    public EventLogger getEventLogger()
-    {
-        return getConnection().getEventLogger();
-    }
-
-    @Override
     public String toLogString()
     {
         return _serverSession.toLogString();
-    }
-
-    @Override
-    public AMQPConnection<?> getAMQPConnection()
-    {
-        return _connection;
     }
 
     @Override
@@ -75,7 +67,7 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     @Override
     public void unblock(final Queue<?> queue)
     {
-        _serverSession.unblock();
+        _serverSession.unblock(queue);
     }
 
     @Override
@@ -145,25 +137,6 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     }
 
     @Override
-    public void addDeleteTask(final Action<? super Session_0_10> task)
-    {
-        _serverSession.addDeleteTask((Action<? super ServerSession>) task);
-    }
-
-    @Override
-    public void removeDeleteTask(final Action<? super Session_0_10> task)
-    {
-        _serverSession.removeDeleteTask((Action<? super ServerSession>) task);
-
-    }
-
-    @Override
-    public int getChannelId()
-    {
-        return _serverSession.getChannelId();
-    }
-
-    @Override
     public boolean getBlocking()
     {
         return _serverSession.getBlocking();
@@ -224,12 +197,6 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     }
 
     @Override
-    public LogSubject getLogSubject()
-    {
-        return _serverSession.getLogSubject();
-    }
-
-    @Override
     public long getTransactionUpdateTimeLong()
     {
         return _serverSession.getTransactionUpdateTimeLong();
@@ -244,5 +211,35 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     public AMQPConnection_0_10 getConnection()
     {
         return _connection;
+    }
+
+    public Subject getSubject()
+    {
+        return _subject;
+    }
+
+    public AccessControlContext getAccessControllerContext()
+    {
+        return _accessControllerContext;
+    }
+
+    public PublishAuthorisationCache getPublishAuthCache()
+    {
+        return _publishAuthCache;
+    }
+
+    public List<Action<? super Session_0_10>> getTaskList()
+    {
+        return _taskList;
+    }
+
+    public boolean isClosing()
+    {
+        return _serverSession.isClosing();
+    }
+
+    public ServerSession getServerSession()
+    {
+        return _serverSession;
     }
 }

@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -309,9 +310,9 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     public void closeSessionAsync(final AMQSessionModel<?,?> session,
                                   final CloseReason reason, final String message)
     {
-        _connection.closeSessionAsync((ServerSession) session, reason, message);
+        ServerSession s = ((Session_0_10)session).getServerSession();
+        _connection.closeSessionAsync(s, reason, message);
     }
-
 
     @Override
     protected void addAsyncTask(final Action<? super ServerConnection> action)
@@ -329,9 +330,12 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         return _connection.getRemoteContainerName();
     }
 
-    public Collection<? extends ServerSession> getSessionModels()
+    public Collection<? extends Session_0_10> getSessionModels()
     {
-        return _connection.getSessionModels();
+        final Collection<org.apache.qpid.server.model.Session> sessions =
+                getChildren(org.apache.qpid.server.model.Session.class);
+        final Collection<? extends Session_0_10> session_0_10s = new ArrayList<>((Collection)sessions);
+        return session_0_10s;
     }
 
     public void unblock()

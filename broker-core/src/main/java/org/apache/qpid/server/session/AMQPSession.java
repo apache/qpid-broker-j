@@ -28,8 +28,8 @@ import org.apache.qpid.server.util.Deletable;
 
 public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSession<S, X>,
                              X extends ConsumerTarget<X>> extends Session<S>,
-                                             Deletable<S>,
-                                             EventLoggerProvider,
-                                             AMQSessionModel<S, X>
+                                                                  Deletable<S>,
+                                                                  EventLoggerProvider,
+                                                                  AMQSessionModel<S, X>
 {
 }

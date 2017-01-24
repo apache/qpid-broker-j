@@ -55,11 +55,9 @@ import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
-import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
@@ -138,20 +136,13 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private static final Symbol LIFETIME_POLICY = Symbol.valueOf("lifetime-policy");
     private static final EnumSet<SessionState> END_STATES =
             EnumSet.of(SessionState.END_RECVD, SessionState.END_PIPE, SessionState.END_SENT, SessionState.ENDED);
-    private final AccessControlContext _accessControllerContext;
-    private final SecurityToken _securityToken;
-    private final ChannelLogSubject _logSubject;
     private AutoCommitTransaction _transaction;
 
     private final LinkedHashMap<Integer, ServerTransaction> _openTransactions =
             new LinkedHashMap<Integer, ServerTransaction>();
 
-    private final CopyOnWriteArrayList<Action<? super Session_1_0>> _taskList =
-            new CopyOnWriteArrayList<Action<? super Session_1_0>>();
-
     private final AMQPConnection_1_0 _connection;
     private AtomicBoolean _closed = new AtomicBoolean();
-    private final Subject _subject = new Subject();
 
     private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_1_0>> _consumers = new CopyOnWriteArrayList<>();
 
@@ -213,20 +204,12 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         _sessionState = SessionState.BEGIN_RECVD;
         _nextIncomingTransferId = new SequenceNumber(begin.getNextOutgoingId().intValue());
         _connection = connection;
-        _subject.getPrincipals().addAll(connection.getSubject().getPrincipals());
-        _subject.getPrincipals().add(new SessionPrincipal(this));
-        _accessControllerContext = connection.getAccessControlContextFromSubject(_subject);
-        _securityToken = connection.getAddressSpace() instanceof ConfiguredObject
-                ? ((ConfiguredObject)connection.getAddressSpace()).newToken(_subject)
-                : connection.getBroker().newToken(_subject);
-        _logSubject = new ChannelLogSubject(this);
         _primaryDomain = getPrimaryDomain();
     }
 
     public void setReceivingChannel(final short receivingChannel)
     {
         _receivingChannel = receivingChannel;
-        _logSubject.updateSessionDetails();
         switch(_sessionState)
         {
             case INACTIVE:
@@ -572,7 +555,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     public void setSendingChannel(final short sendingChannel)
     {
-        _logSubject.updateSessionDetails();
         switch(_sessionState)
         {
             case INACTIVE:
@@ -1606,12 +1588,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     }
 
     @Override
-    public AMQPConnection<?> getAMQPConnection()
-    {
-        return _connection;
-    }
-
-    @Override
     public void close()
     {
         performCloseTasks();
@@ -1664,12 +1640,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             getAMQPConnection().notifyWork(this);
         }
 
-    }
-
-    @Override
-    public LogSubject getLogSubject()
-    {
-        return this;
     }
 
     @Override
@@ -1818,11 +1788,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         getEventLogger().message(_logSubject, operationalLogMessage);
     }
 
-    public EventLogger getEventLogger()
-    {
-        return getConnection().getEventLogger();
-    }
-
     @Override
     public Object getConnectionReference()
     {
@@ -1851,12 +1816,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     public long getTxnRejects()
     {
         return _rolledBackTransactions;
-    }
-
-    @Override
-    public int getChannelId()
-    {
-        return _sendingChannel;
     }
 
     @Override
@@ -1896,16 +1855,11 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     @Override
     public void addDeleteTask(final Action<? super Session_1_0> task)
     {
+        // TODO is the closed guard important?
         if(!_closed.get())
         {
-            _taskList.add(task);
+            super.addDeleteTask(task);
         }
-    }
-
-    @Override
-    public void removeDeleteTask(final Action<? super Session_1_0> task)
-    {
-        _taskList.remove(task);
     }
 
     public Subject getSubject()
@@ -1920,7 +1874,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     public SecurityToken getSecurityToken()
     {
-        return _securityToken;
+        return _token;
     }
 
     @Override

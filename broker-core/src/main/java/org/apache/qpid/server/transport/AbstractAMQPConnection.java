@@ -209,6 +209,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         logConnectionOpen();
     }
 
+    @Override
     public Broker<?> getBroker()
     {
         return _broker;

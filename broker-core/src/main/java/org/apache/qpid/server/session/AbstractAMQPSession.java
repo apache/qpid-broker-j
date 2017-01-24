@@ -20,23 +20,31 @@
  */
 package org.apache.qpid.server.session;
 
+import java.security.AccessControlContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import javax.security.auth.Subject;
 
 import com.google.common.base.Supplier;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
+import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.LifetimePolicy;
@@ -44,36 +52,71 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.protocol.PublishAuthorisationCache;
+import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.TransactionTimeoutTicker;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.transport.network.Ticker;
 
-public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>, X extends ConsumerTarget<X>>
+public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
+                                          X extends ConsumerTarget<X>>
         extends AbstractConfiguredObject<S>
         implements AMQPSession<S, X>, EventLoggerProvider
 {
     private static final String OPEN_TRANSACTION_TIMEOUT_ERROR = "Open transaction timed out";
     private static final String IDLE_TRANSACTION_TIMEOUT_ERROR = "Idle transaction timed out";
-
     private final Action _deleteModelTask;
-    private final Connection<?> _amqpConnection;
+    private final AMQPConnection<?> _connection;
+    private final int _sessionId;
 
-    protected AbstractAMQPSession(final Connection<?> parent,
-                                  final int sessionId)
+    protected final AccessControlContext _accessControllerContext;
+    protected final Subject _subject;
+    protected final SecurityToken _token;
+    protected final PublishAuthorisationCache _publishAuthCache;
+
+    protected final LogSubject _logSubject;
+
+    protected final List<Action<? super S>> _taskList = new CopyOnWriteArrayList<>();
+
+    protected AbstractAMQPSession(final Connection<?> parent, final int sessionId)
     {
         super(parent, createAttributes(sessionId));
-        _amqpConnection = parent;
+        _connection = (AMQPConnection) parent;
+        _sessionId = sessionId;
 
-        _deleteModelTask = new Action()
+        _deleteModelTask = new Action<S>()
         {
             @Override
-            public void performAction(final Object object)
+            public void performAction(final S object)
             {
                 removeDeleteTask(this);
                 deleteAsync();
             }
         };
+        _subject = new Subject(false, _connection.getSubject().getPrincipals(),
+                               _connection.getSubject().getPublicCredentials(),
+                               _connection.getSubject().getPrivateCredentials());
+        _subject.getPrincipals().add(new SessionPrincipal(this));
+
+        if  (_connection.getAddressSpace() instanceof ConfiguredObject)
+        {
+            _token = ((ConfiguredObject) _connection.getAddressSpace()).newToken(_subject);
+        }
+        else
+        {
+            final Broker<?> broker = (Broker<?>) _connection.getBroker();
+            _token = broker.newToken(_subject);
+        }
+
+        _accessControllerContext = _connection.getAccessControlContextFromSubject(_subject);
+
+        final long authCacheTimeout = _connection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT);
+        final int authCacheSize = _connection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE);
+        _publishAuthCache = new PublishAuthorisationCache(_token, authCacheTimeout, authCacheSize);
+        _logSubject = new ChannelLogSubject(this);
+
         setState(State.ACTIVE);
     }
 
@@ -97,11 +140,19 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>, X
     protected void postResolveChildren()
     {
         super.postResolveChildren();
-        registerTransactionTimeoutTickers(_amqpConnection);
+        registerTransactionTimeoutTickers(_connection);
     }
 
     @Override
-    public abstract int getChannelId();
+    public int getChannelId()
+    {
+        return _sessionId;
+    }
+
+    public AMQPConnection<?> getAMQPConnection()
+    {
+        return _connection;
+    }
 
     @Override
     public boolean isProducerFlowBlocked()
@@ -146,6 +197,18 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>, X
         return getUnacknowledgedMessageCount();
     }
 
+    @Override
+    public void addDeleteTask(final Action<? super S> task)
+    {
+        _taskList.add(task);
+    }
+
+    @Override
+    public void removeDeleteTask(final Action<? super S> task)
+    {
+        _taskList.remove(task);
+    }
+
     public abstract int getUnacknowledgedMessageCount();
 
     @Override
@@ -170,7 +233,10 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>, X
     }
 
     @Override
-    public abstract EventLogger getEventLogger();
+    public EventLogger getEventLogger()
+    {
+        return _connection.getEventLogger();
+    }
 
     private void registerTransactionTimeoutTickers(Connection<?> amqpConnection)
     {
@@ -289,7 +355,10 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>, X
 
     public abstract void doTimeoutAction(final String idleTransactionTimeoutError);
 
-    public abstract LogSubject getLogSubject();
+    public LogSubject getLogSubject()
+    {
+        return _logSubject;
+    }
 
     public abstract long getTransactionUpdateTimeLong();
 

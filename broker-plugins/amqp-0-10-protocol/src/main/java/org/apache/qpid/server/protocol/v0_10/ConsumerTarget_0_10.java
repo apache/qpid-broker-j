@@ -573,7 +573,12 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         stop();
     }
 
-    public ServerSession getSessionModel()
+    public Session_0_10 getSessionModel()
+    {
+        return _session.getModelObject();
+    }
+
+    public ServerSession getSession()
     {
         return _session;
     }

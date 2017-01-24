@@ -180,16 +180,6 @@ public class ServerConnectionDelegate extends ConnectionDelegate
         return map;
     }
 
-    public ServerSession getSession(Connection conn, SessionAttach atc)
-    {
-        SessionDelegate serverSessionDelegate = new ServerSessionDelegate();
-
-        final ServerSession serverSession =
-                new ServerSession(conn, serverSessionDelegate, new Binary(atc.getName()), 0);
-
-        return serverSession;
-    }
-
     @Override
     public void connectionSecureOk(final Connection conn, final ConnectionSecureOk ok)
     {
@@ -410,21 +400,26 @@ public class ServerConnectionDelegate extends ConnectionDelegate
         ServerConnection serverConnection = (ServerConnection) conn;
         assertState(serverConnection, ConnectionState.OPEN);
 
-        final ServerSession ssn = getSession(conn, atc);
+        SessionDelegate serverSessionDelegate = new ServerSessionDelegate();
+
+        final ServerSession serverSession =
+                new ServerSession(conn, serverSessionDelegate, new Binary(atc.getName()), 0);
+        final Session_0_10 session = new Session_0_10(((ServerConnection) conn).getAmqpConnection(), atc.getChannel(),
+                                                      serverSession);
+        session.create();
+        serverSession.setModelObject(session);
 
         if(isSessionNameUnique(atc.getName(), conn))
         {
-            serverConnection.map(ssn, atc.getChannel());
-            serverConnection.registerSession(ssn);
-            final Session_0_10 session = new Session_0_10(((ServerConnection) conn).getAmqpConnection(), ssn.getChannelId(), ssn);
-            session.create();
-            ssn.sendSessionAttached(atc.getName());
-            ssn.setState(Session.State.OPEN);
+            serverConnection.map(serverSession, atc.getChannel());
+            serverConnection.registerSession(serverSession);
+            serverSession.sendSessionAttached(atc.getName());
+            serverSession.setState(Session.State.OPEN);
         }
         else
         {
-            ssn.invoke(new SessionDetached(atc.getName(), SessionDetachCode.SESSION_BUSY));
-            ssn.closed();
+            serverSession.invoke(new SessionDetached(atc.getName(), SessionDetachCode.SESSION_BUSY));
+            serverSession.closed();
         }
     }
 
