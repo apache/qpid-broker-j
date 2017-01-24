@@ -194,7 +194,6 @@ org.apache.qpid.client.ssl.SSLTest#testSslConnectionOptionOverridesBrokerlistOpt
 org.apache.qpid.client.ssl.SSLTest#testMultipleCertsInSingleStore
 
 // Tests assume BURL and/or Connection URL formats
-org.apache.qpid.systest.rest.ExportImportMessagesRestTest#testExtractImportEndToEnd
 org.apache.qpid.server.store.berkeleydb.replication.MultiNodeTest#*
 org.apache.qpid.server.store.berkeleydb.replication.TwoNodeTest#*
 

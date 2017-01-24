@@ -45,16 +45,12 @@ import org.apache.qpid.util.DataUrlUtils;
 
 public class ExportImportMessagesRestTest extends QpidRestTestCase
 {
-    private static final String CONNECTION_URL_TEMPLATE =
-            "amqp://guest:guest@clientid/%s?brokerlist='localhost:%d?failover='false''";
-
 
     private String _virtualHostNodeName;
     private String _virtualHostName;
     private String _queueName;
     private String _extractOpUrl;
     private String _importOpUrl;
-    private Destination _queue;
     private Destination _jmsQueue;
     private List<Message> _expectedMessages;
 
@@ -73,7 +69,7 @@ public class ExportImportMessagesRestTest extends QpidRestTestCase
 
         Connection connection = createConnection(_virtualHostName);
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        _jmsQueue = session.createQueue(String.format("direct:////%s", _queueName));
+        _jmsQueue = session.createQueue(isBroker10() ? _queueName : String.format("direct:////%s", _queueName));
         _expectedMessages = sendMessage(session, _jmsQueue, 1);
 
         connection.close();
@@ -176,6 +172,6 @@ public class ExportImportMessagesRestTest extends QpidRestTestCase
 
     private Connection createConnection(final String virtualHostName) throws Exception
     {
-        return getConnection(String.format(CONNECTION_URL_TEMPLATE, virtualHostName, getDefaultAmqpPort()));
+        return getConnectionForVHost(virtualHostName);
     }
 }
