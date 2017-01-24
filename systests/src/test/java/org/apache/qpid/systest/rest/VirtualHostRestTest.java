@@ -388,8 +388,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
 
         Connection connection = getConnection();
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        Destination dest = session.createQueue(testQueueName);
-        session.createConsumer(dest).close();
+        Destination dest = createTestQueue(session, testQueueName);
         session.createProducer(dest).send(session.createTextMessage("My test message"));
         session.commit();
         connection.close();
