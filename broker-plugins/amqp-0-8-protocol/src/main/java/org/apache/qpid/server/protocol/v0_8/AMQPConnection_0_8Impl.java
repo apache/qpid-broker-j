@@ -409,7 +409,6 @@ public class AMQPConnection_0_8Impl
         synchronized (_channelAddRemoveLock)
         {
             _channelMap.put(channel.getChannelId(), channel);
-            sessionAdded(channel);
             if(_blocking)
             {
                 channel.block();
@@ -424,7 +423,6 @@ public class AMQPConnection_0_8Impl
         {
             session = _channelMap.remove(channelId);
         }
-        sessionRemoved(session);
         session.dispose();
     }
 
@@ -901,6 +899,7 @@ public class AMQPConnection_0_8Impl
             _logger.debug("Connecting to: {}", virtualHost.getName());
 
             final AMQChannel channel = new AMQChannel(this, channelId, virtualHost.getMessageStore());
+            channel.create();
 
             addChannel(channel);
 

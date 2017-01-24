@@ -450,7 +450,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         if (!_closedOnOpen)
         {
             _sessions.remove(session);
-            sessionRemoved(session);
         }
     }
 
@@ -595,10 +594,11 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                     closeConnection(ConnectionError.FRAMING_ERROR,
                                     "BEGIN received on channel "
                                     + channel
-                                    + ". There are no free channels for the broker to responsd on.");
+                                    + ". There are no free channels for the broker to respond on.");
 
                 }
-                Session_1_0 session = new Session_1_0(this, begin);
+                Session_1_0 session = new Session_1_0(this, begin, myChannelId);
+                session.create();
 
                 _receivingSessions[channel] = session;
                 _sendingSessions[myChannelId] = session;
@@ -614,8 +614,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                 sendFrame(myChannelId, beginToSend);
 
                 _sessions.add(session);
-                sessionAdded(session);
-
             }
             else
             {

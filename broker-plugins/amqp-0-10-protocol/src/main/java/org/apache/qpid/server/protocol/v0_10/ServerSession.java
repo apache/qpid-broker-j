@@ -1076,7 +1076,7 @@ public class ServerSession extends Session
     }
 
     @Override
-    public int getConsumerCount()
+    public long getConsumerCount()
     {
         return _subscriptions.values().size();
     }
@@ -1113,7 +1113,7 @@ public class ServerSession extends Session
     }
 
     @Override
-    public long getTransactionStartTime()
+    public long getTransactionStartTimeLong()
     {
         ServerTransaction serverTransaction = _transaction;
         if (serverTransaction.isTransactional())
@@ -1127,7 +1127,7 @@ public class ServerSession extends Session
     }
 
     @Override
-    public long getTransactionUpdateTime()
+    public long getTransactionUpdateTimeLong()
     {
         ServerTransaction serverTransaction = _transaction;
         if (serverTransaction.isTransactional())

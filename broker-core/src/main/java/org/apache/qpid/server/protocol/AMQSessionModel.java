@@ -70,7 +70,7 @@ public interface AMQSessionModel<T extends AMQSessionModel<T,X>, X extends Consu
 
     int getChannelId();
 
-    int getConsumerCount();
+    long getConsumerCount();
 
     Collection<Consumer<?,X>> getConsumers();
 
@@ -87,14 +87,14 @@ public interface AMQSessionModel<T extends AMQSessionModel<T,X>, X extends Consu
      *
      * @return the time this transaction started or 0 if not in a transaction
      */
-    long getTransactionStartTime();
+    long getTransactionStartTimeLong();
 
     /**
      * Return the time of the last activity on the current transaction.
      *
      * @return the time of the last activity or 0 if not in a transaction
      */
-    long getTransactionUpdateTime();
+    long getTransactionUpdateTimeLong();
 
     void transportStateChanged();
 

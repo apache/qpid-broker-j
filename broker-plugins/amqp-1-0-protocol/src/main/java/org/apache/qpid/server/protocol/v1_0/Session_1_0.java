@@ -120,6 +120,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.session.AbstractAMQPSession;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
@@ -129,7 +130,8 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.transport.network.Ticker;
 
-public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_1_0>, LogSubject
+public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget_1_0>
+        implements AMQSessionModel<Session_1_0, ConsumerTarget_1_0>, LogSubject
 {
     public static final Symbol DELAYED_DELIVERY = Symbol.valueOf("DELAYED_DELIVERY");
     private static final Logger _logger = LoggerFactory.getLogger(Session_1_0.class);
@@ -148,7 +150,6 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
             new CopyOnWriteArrayList<Action<? super Session_1_0>>();
 
     private final AMQPConnection_1_0 _connection;
-    private UUID _id = UUID.randomUUID();
     private AtomicBoolean _closed = new AtomicBoolean();
     private final Subject _subject = new Subject();
 
@@ -156,11 +157,11 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
     private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
     private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
-    private Session<?> _modelObject;
+    private Session<?> _modelObject = this;
     private final Set<ConsumerTarget_1_0> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
     private Iterator<ConsumerTarget_1_0> _processPendingIterator;
 
-    private SessionState _state;
+    private SessionState _sessionState;
 
     private final Map<String, SendingLinkEndpoint> _sendingLinkMap = new HashMap<>();
     private final Map<String, ReceivingLinkEndpoint> _receivingLinkMap = new HashMap<>();
@@ -169,7 +170,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
     private long _lastAttachedTime;
 
     private short _receivingChannel;
-    private short _sendingChannel = -1;
+    private final short _sendingChannel;
 
     private final CapacityCheckAction _capacityCheckAction = new CapacityCheckAction();
 
@@ -205,23 +206,12 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
     private volatile long _rolledBackTransactions;
     private volatile int _unacknowledgedMessages;
 
-
-    public Session_1_0(final AMQPConnection_1_0 connection)
+    public Session_1_0(final AMQPConnection_1_0 connection, Begin begin, short channelId)
     {
-        this(connection, SessionState.INACTIVE, null);
-    }
-
-    public Session_1_0(final AMQPConnection_1_0 connection, Begin begin)
-    {
-        this(connection, SessionState.BEGIN_RECVD, new SequenceNumber(begin.getNextOutgoingId().intValue()));
-    }
-
-
-    private Session_1_0(final AMQPConnection_1_0 connection, SessionState state, SequenceNumber nextIncomingId)
-    {
-
-        _state = state;
-        _nextIncomingTransferId = nextIncomingId;
+        super(connection, channelId);
+        _sendingChannel = channelId;
+        _sessionState = SessionState.BEGIN_RECVD;
+        _nextIncomingTransferId = new SequenceNumber(begin.getNextOutgoingId().intValue());
         _connection = connection;
         _subject.getPrincipals().addAll(connection.getSubject().getPrincipals());
         _subject.getPrincipals().add(new SessionPrincipal(this));
@@ -237,16 +227,16 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
     {
         _receivingChannel = receivingChannel;
         _logSubject.updateSessionDetails();
-        switch(_state)
+        switch(_sessionState)
         {
             case INACTIVE:
-                _state = SessionState.BEGIN_RECVD;
+                _sessionState = SessionState.BEGIN_RECVD;
                 break;
             case BEGIN_SENT:
-                _state = SessionState.ACTIVE;
+                _sessionState = SessionState.ACTIVE;
                 break;
             case END_PIPE:
-                _state = SessionState.END_SENT;
+                _sessionState = SessionState.END_SENT;
                 break;
             default:
                 // TODO error
@@ -261,7 +251,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
     public void receiveAttach(final Attach attach)
     {
-        if(_state == SessionState.ACTIVE)
+        if(_sessionState == SessionState.ACTIVE)
         {
             UnsignedInteger handle = attach.getHandle();
             if(_remoteLinkEndpoints.containsKey(handle))
@@ -439,22 +429,22 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
     public boolean isActive()
     {
-        return _state == SessionState.ACTIVE;
+        return _sessionState == SessionState.ACTIVE;
     }
 
     public void receiveEnd(final End end)
     {
-        switch (_state)
+        switch (_sessionState)
         {
             case END_SENT:
-                _state = SessionState.ENDED;
+                _sessionState = SessionState.ENDED;
                 break;
             case ACTIVE:
                 detachLinks();
                 remoteEnd(end);
                 short sendChannel = _sendingChannel;
                 _connection.sendEnd(sendChannel, new End(), true);
-                _state = SessionState.ENDED;
+                _sessionState = SessionState.ENDED;
                 break;
             default:
                 sendChannel = _sendingChannel;
@@ -570,9 +560,9 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
     }
 
-    public SessionState getState()
+    public SessionState getSessionState()
     {
-        return _state;
+        return _sessionState;
     }
 
     public void sendFlow()
@@ -582,15 +572,14 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
     public void setSendingChannel(final short sendingChannel)
     {
-        _sendingChannel = sendingChannel;
         _logSubject.updateSessionDetails();
-        switch(_state)
+        switch(_sessionState)
         {
             case INACTIVE:
-                _state = SessionState.BEGIN_SENT;
+                _sessionState = SessionState.BEGIN_SENT;
                 break;
             case BEGIN_RECVD:
-                _state = SessionState.ACTIVE;
+                _sessionState = SessionState.ACTIVE;
                 break;
             default:
                 // TODO error
@@ -652,17 +641,17 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
     public void end(final End end)
     {
-        switch (_state)
+        switch (_sessionState)
         {
             case BEGIN_SENT:
                 _connection.sendEnd(_sendingChannel, end, false);
-                _state = SessionState.END_PIPE;
+                _sessionState = SessionState.END_PIPE;
                 break;
             case ACTIVE:
                 detachLinks();
                 short sendChannel = _sendingChannel;
                 _connection.sendEnd(sendChannel, end, true);
-                _state = SessionState.END_SENT;
+                _sessionState = SessionState.END_SENT;
                 break;
             default:
                 sendChannel = _sendingChannel;
@@ -773,7 +762,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
     boolean isEnded()
     {
-        return _state == SessionState.ENDED || _connection.isClosed();
+        return _sessionState == SessionState.ENDED || _connection.isClosed();
     }
 
     UnsignedInteger getIncomingWindowSize()
@@ -1617,12 +1606,6 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
     }
 
     @Override
-    public UUID getId()
-    {
-        return _id;
-    }
-
-    @Override
     public AMQPConnection<?> getAMQPConnection()
     {
         return _connection;
@@ -1877,7 +1860,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
     }
 
     @Override
-    public int getConsumerCount()
+    public long getConsumerCount()
     {
         return getConsumers().size();
     }
@@ -1971,13 +1954,13 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
     }
 
     @Override
-    public long getTransactionStartTime()
+    public long getTransactionStartTimeLong()
     {
         return 0L;
     }
 
     @Override
-    public long getTransactionUpdateTime()
+    public long getTransactionUpdateTimeLong()
     {
         return 0L;
     }
@@ -1985,7 +1968,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
     @Override
     public boolean processPending()
     {
-        if (!getAMQPConnection().isIOThread() || END_STATES.contains(getState()))
+        if (!getAMQPConnection().isIOThread() || END_STATES.contains(getSessionState()))
         {
             return false;
         }

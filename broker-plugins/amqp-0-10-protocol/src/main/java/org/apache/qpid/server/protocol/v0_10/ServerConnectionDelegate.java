@@ -184,9 +184,10 @@ public class ServerConnectionDelegate extends ConnectionDelegate
     {
         SessionDelegate serverSessionDelegate = new ServerSessionDelegate();
 
-        ServerSession ssn = new ServerSession(conn, serverSessionDelegate,  new Binary(atc.getName()), 0);
+        final ServerSession serverSession =
+                new ServerSession(conn, serverSessionDelegate, new Binary(atc.getName()), 0);
 
-        return ssn;
+        return serverSession;
     }
 
     @Override
@@ -413,9 +414,10 @@ public class ServerConnectionDelegate extends ConnectionDelegate
 
         if(isSessionNameUnique(atc.getName(), conn))
         {
-
             serverConnection.map(ssn, atc.getChannel());
             serverConnection.registerSession(ssn);
+            final Session_0_10 session = new Session_0_10(((ServerConnection) conn).getAmqpConnection(), ssn.getChannelId(), ssn);
+            session.create();
             ssn.sendSessionAttached(atc.getName());
             ssn.setState(Session.State.OPEN);
         }

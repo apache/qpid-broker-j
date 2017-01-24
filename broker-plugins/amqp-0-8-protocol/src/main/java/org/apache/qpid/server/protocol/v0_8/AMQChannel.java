@@ -91,6 +91,7 @@ import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.protocol.v0_8.UnacknowledgedMessageMap.Visitor;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.session.AbstractAMQPSession;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
@@ -107,7 +108,7 @@ import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
 import org.apache.qpid.transport.network.Ticker;
 
-public class AMQChannel
+public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0_8>
         implements AMQSessionModel<AMQChannel, ConsumerTarget_0_8>,
                    AsyncAutoCommitTransaction.FutureRecorder,
                    ServerChannelMethodProcessor,
@@ -235,6 +236,7 @@ public class AMQChannel
 
     public AMQChannel(AMQPConnection_0_8 connection, int channelId, final MessageStore messageStore)
     {
+        super(connection, channelId);
         _creditManager = new Pre0_10CreditManager(0L, 0L,
                                                   connection.getContextValue(Long.class, AMQPConnection_0_8.HIGH_PREFETCH_LIMIT),
                                                   connection.getContextValue(Long.class, AMQPConnection_0_8.BATCH_LIMIT));
@@ -1369,12 +1371,6 @@ public class AMQChannel
     }
 
     @Override
-    public UUID getId()
-    {
-        return _id;
-    }
-
-    @Override
     public AMQPConnection_0_8<?> getAMQPConnection()
     {
         return _connection;
@@ -1915,7 +1911,7 @@ public class AMQChannel
     }
 
     @Override
-    public int getConsumerCount()
+    public long getConsumerCount()
     {
         return _tag2SubscriptionTargetMap.size();
     }
@@ -1979,7 +1975,7 @@ public class AMQChannel
     }
 
     @Override
-    public long getTransactionStartTime()
+    public long getTransactionStartTimeLong()
     {
         ServerTransaction serverTransaction = _transaction;
         if (serverTransaction.isTransactional())
@@ -1993,7 +1989,7 @@ public class AMQChannel
     }
 
     @Override
-    public long getTransactionUpdateTime()
+    public long getTransactionUpdateTimeLong()
     {
         ServerTransaction serverTransaction = _transaction;
         if (serverTransaction.isTransactional())

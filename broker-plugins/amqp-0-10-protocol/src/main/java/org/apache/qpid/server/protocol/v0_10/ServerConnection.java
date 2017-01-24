@@ -39,7 +39,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
-import javax.security.sasl.SaslServer;
 
 import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.server.logging.EventLogger;
@@ -326,18 +325,10 @@ public class ServerConnection extends Connection
     public synchronized void registerSession(final Session ssn)
     {
         super.registerSession(ssn);
-        _amqpConnection.sessionAdded((ServerSession) ssn);
         if(_blocking)
         {
             ((ServerSession)ssn).block();
         }
-    }
-
-    @Override
-    public synchronized void removeSession(final Session ssn)
-    {
-        _amqpConnection.sessionRemoved((ServerSession) ssn);
-        super.removeSession(ssn);
     }
 
     public Collection<? extends ServerSession> getSessionModels()

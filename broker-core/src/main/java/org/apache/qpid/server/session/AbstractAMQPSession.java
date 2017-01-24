@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model.adapter;
+package org.apache.qpid.server.session;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,80 +26,68 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import com.google.common.base.Supplier;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.protocol.ConsumerListener;
-import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.TransactionTimeoutTicker;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.transport.network.Ticker;
 
-public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapter> implements Session<SessionAdapter>
+public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>, X extends ConsumerTarget<X>>
+        extends AbstractConfiguredObject<S>
+        implements AMQPSession<S, X>, EventLoggerProvider
 {
     private static final String OPEN_TRANSACTION_TIMEOUT_ERROR = "Open transaction timed out";
     private static final String IDLE_TRANSACTION_TIMEOUT_ERROR = "Idle transaction timed out";
 
-    // Attributes
-    private final AMQSessionModel _session;
     private final Action _deleteModelTask;
-    private final AbstractAMQPConnection<?,?> _amqpConnection;
+    private final Connection<?> _amqpConnection;
 
-    public SessionAdapter(final AbstractAMQPConnection<?,?> amqpConnection,
-                          final AMQSessionModel<?,?> session)
+    protected AbstractAMQPSession(final Connection<?> parent,
+                                  final int sessionId)
     {
-        super(amqpConnection, createAttributes(session));
-        _amqpConnection = amqpConnection;
-        _session = session;
-        _session.addConsumerListener(new ConsumerListener()
-        {
-            @Override
-            public void consumerAdded(final Consumer<?,?> consumer)
-            {
-                childAdded(consumer);
-            }
-
-            @Override
-            public void consumerRemoved(final Consumer<?,?> consumer)
-            {
-                childRemoved(consumer);
-
-            }
-        });
-        session.setModelObject(this);
+        super(parent, createAttributes(sessionId));
+        _amqpConnection = parent;
 
         _deleteModelTask = new Action()
         {
             @Override
             public void performAction(final Object object)
             {
-                session.removeDeleteTask(this);
+                removeDeleteTask(this);
                 deleteAsync();
             }
         };
-        session.addDeleteTask(_deleteModelTask);
         setState(State.ACTIVE);
     }
 
-    private static Map<String, Object> createAttributes(final AMQSessionModel session)
+    @Override
+    protected void onCreate()
+    {
+        super.onCreate();
+        addDeleteTask(_deleteModelTask);
+    }
+
+    private static Map<String, Object> createAttributes(final long sessionId)
     {
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(ID, UUID.randomUUID());
-        attributes.put(NAME, String.valueOf(session.getChannelId()));
+        attributes.put(NAME, sessionId);
         attributes.put(DURABLE, false);
         attributes.put(LIFETIME_POLICY, LifetimePolicy.DELETE_ON_SESSION_END);
         return attributes;
@@ -109,67 +97,67 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
     protected void postResolveChildren()
     {
         super.postResolveChildren();
-        registerTransactionTimeoutTickers(_amqpConnection, _session);
+        registerTransactionTimeoutTickers(_amqpConnection);
     }
 
     @Override
-    public int getChannelId()
-    {
-        return _session.getChannelId();
-    }
+    public abstract int getChannelId();
 
     @Override
     public boolean isProducerFlowBlocked()
     {
-        return _session.getBlocking();
+        return getBlocking();
     }
 
-    public Collection<org.apache.qpid.server.model.Consumer> getConsumers()
-    {
-        return (Collection<Consumer>) _session.getConsumers();
-    }
+    public abstract boolean getBlocking();
+
+    public abstract Collection<Consumer<?,X>> getConsumers();
 
     @Override
-    public long getConsumerCount()
+    public abstract long getConsumerCount();
+
+    @Override
+    public int getLocalTransactionOpen()
     {
-        return _session.getConsumerCount();
+        long open = getTxnStart() - (getTxnCommits() + getTxnRejects());
+        return (open > 0L) ? 1 : 0;
     }
 
     @Override
     public long getLocalTransactionBegins()
     {
-        return _session.getTxnStart();
+        return getTxnStart();
     }
 
-    @Override
-    public int getLocalTransactionOpen()
-    {
-        long open = _session.getTxnStart() - (_session.getTxnCommits() + _session.getTxnRejects());
-        return (open > 0l) ? 1 : 0;
-    }
+    public abstract long getTxnRejects();
 
-    @Override
+    public abstract long getTxnCommits();
+
+    public abstract long getTxnStart();
+
     public long getLocalTransactionRollbacks()
     {
-        return _session.getTxnRejects();
+        return getTxnRejects();
     }
 
     @Override
     public long getUnacknowledgedMessages()
     {
-        return _session.getUnacknowledgedMessageCount();
+        return getUnacknowledgedMessageCount();
     }
+
+    public abstract int getUnacknowledgedMessageCount();
 
     @Override
     public Date getTransactionStartTime()
     {
-        return new Date(_session.getTransactionStartTime());
+        return new Date(getTransactionStartTimeLong());
     }
 
     @Override
     public Date getTransactionUpdateTime()
     {
-        return new Date(_session.getTransactionUpdateTime());
+        return new Date(getTransactionUpdateTimeLong());
     }
 
     @StateTransition(currentState = State.ACTIVE, desiredState = State.DELETED)
@@ -177,17 +165,19 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
     {
         deleted();
         setState(State.DELETED);
-        _session.removeDeleteTask(_deleteModelTask);
+        removeDeleteTask(_deleteModelTask);
         return Futures.immediateFuture(null);
     }
 
-    private void registerTransactionTimeoutTickers(AbstractAMQPConnection<?,?> amqpConnection,
-                                                   final AMQSessionModel session)
+    @Override
+    public abstract EventLogger getEventLogger();
+
+    private void registerTransactionTimeoutTickers(Connection<?> amqpConnection)
     {
         NamedAddressSpace addressSpace = amqpConnection.getAddressSpace();
         if (addressSpace instanceof QueueManagingVirtualHost)
         {
-            final EventLogger eventLogger = amqpConnection.getEventLogger();
+            final EventLogger eventLogger = getEventLogger();
             final QueueManagingVirtualHost<?> virtualhost = (QueueManagingVirtualHost<?>) addressSpace;
             final List<Ticker> tickers = new ArrayList<>(4);
 
@@ -196,7 +186,7 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
                 @Override
                 public Long get()
                 {
-                    return SessionAdapter.this._session.getTransactionStartTime();
+                    return getTransactionStartTimeLong();
                 }
             };
             final Supplier<Long> transactionUpdateTimeSupplier = new Supplier<Long>()
@@ -204,7 +194,7 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
                 @Override
                 public Long get()
                 {
-                    return SessionAdapter.this._session.getTransactionUpdateTime();
+                    return getTransactionUpdateTimeLong();
                 }
             };
 
@@ -221,7 +211,7 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
                             @Override
                             public void performAction(Long age)
                             {
-                                eventLogger.message(_session.getLogSubject(), ChannelMessages.OPEN_TXN(age));
+                                eventLogger.message(getLogSubject(), ChannelMessages.OPEN_TXN(age));
                             }
                         }
                 ));
@@ -236,7 +226,7 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
                             @Override
                             public void performAction(Long age)
                             {
-                                _session.doTimeoutAction(OPEN_TRANSACTION_TIMEOUT_ERROR);
+                                doTimeoutAction(OPEN_TRANSACTION_TIMEOUT_ERROR);
                             }
                         }
                 ));
@@ -251,7 +241,7 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
                             @Override
                             public void performAction(Long age)
                             {
-                                eventLogger.message(_session.getLogSubject(), ChannelMessages.IDLE_TXN(age));
+                                eventLogger.message(getLogSubject(), ChannelMessages.IDLE_TXN(age));
                             }
                         }
                 ));
@@ -266,7 +256,7 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
                             @Override
                             public void performAction(Long age)
                             {
-                                _session.doTimeoutAction(IDLE_TRANSACTION_TIMEOUT_ERROR);
+                                doTimeoutAction(IDLE_TRANSACTION_TIMEOUT_ERROR);
                             }
                         }
                 ));
@@ -274,7 +264,7 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
 
             for (Ticker ticker : tickers)
             {
-                session.addTicker(ticker);
+                addTicker(ticker);
             }
 
             Action deleteTickerTask = new Action()
@@ -282,21 +272,34 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
                 @Override
                 public void performAction(Object o)
                 {
-                    session.removeDeleteTask(this);
+                    removeDeleteTask(this);
                     for (Ticker ticker : tickers)
                     {
-                        session.removeTicker(ticker);
+                        removeTicker(ticker);
                     }
                 }
             };
-            session.addDeleteTask(deleteTickerTask);
+            addDeleteTask(deleteTickerTask);
         }
     }
+
+    public abstract void addTicker(final Ticker ticker);
+
+    public abstract void removeTicker(final Ticker ticker);
+
+    public abstract void doTimeoutAction(final String idleTransactionTimeoutError);
+
+    public abstract LogSubject getLogSubject();
+
+    public abstract long getTransactionUpdateTimeLong();
+
+    public abstract long getTransactionStartTimeLong();
 
 
     @Override
     protected void logOperation(final String operation)
     {
-        _amqpConnection.getEventLogger().message(ChannelMessages.OPERATION(operation));
+        getEventLogger().message(ChannelMessages.OPERATION(operation));
     }
+
 }

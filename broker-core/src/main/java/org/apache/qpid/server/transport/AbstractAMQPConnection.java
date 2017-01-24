@@ -64,9 +64,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.TaskExecutorProvider;
 import org.apache.qpid.server.model.Transport;
-import org.apache.qpid.server.model.adapter.SessionAdapter;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.stats.StatisticsCounter;
@@ -548,18 +546,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     public Subject getSubject()
     {
         return _subject;
-    }
-
-    public void sessionAdded(final AMQSessionModel<?,?> session)
-    {
-        SessionAdapter adapter = new SessionAdapter(this, session);
-        adapter.create();
-        childAdded(adapter);
-
-    }
-
-    public void sessionRemoved(final AMQSessionModel<?,?> session)
-    {
     }
 
     @Override

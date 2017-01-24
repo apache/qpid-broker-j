@@ -347,7 +347,7 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         }
 
         @Override
-        public int getConsumerCount()
+        public long getConsumerCount()
         {
             return 0;
         }
@@ -377,13 +377,13 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         }
 
         @Override
-        public long getTransactionStartTime()
+        public long getTransactionStartTimeLong()
         {
             return 0;
         }
 
         @Override
-        public long getTransactionUpdateTime()
+        public long getTransactionUpdateTimeLong()
         {
             return 0;
         }

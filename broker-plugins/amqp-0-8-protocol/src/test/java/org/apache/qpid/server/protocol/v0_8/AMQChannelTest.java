@@ -83,7 +83,7 @@ public class AMQChannelTest extends QpidTestCase
     private MessageDestination _messageDestination;
 
     @Override
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         super.setUp();
 
@@ -123,6 +123,9 @@ public class AMQChannelTest extends QpidTestCase
         when(_amqConnection.getContextProvider()).thenReturn(_virtualHost);
         when(_amqConnection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
         when(_amqConnection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
+        when(_amqConnection.getTaskExecutor()).thenReturn(taskExecutor);
+        when(_amqConnection.getChildExecutor()).thenReturn(taskExecutor);
+        when(_amqConnection.getModel()).thenReturn(BrokerModel.getInstance());
 
         when(_amqConnection.getContextValue(Long.class, AMQPConnection_0_8.BATCH_LIMIT)).thenReturn(AMQPConnection_0_8.DEFAULT_BATCH_LIMIT);
         when(_amqConnection.getContextValue(Long.class, AMQPConnection_0_8.HIGH_PREFETCH_LIMIT)).thenReturn(AMQPConnection_0_8.DEFAULT_BATCH_LIMIT);
