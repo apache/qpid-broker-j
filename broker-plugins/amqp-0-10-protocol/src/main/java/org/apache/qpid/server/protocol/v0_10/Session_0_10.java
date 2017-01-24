@@ -104,12 +104,6 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     }
 
     @Override
-    public int compareTo(final AMQSessionModel o)
-    {
-        return getId().compareTo(o.getId());
-    }
-
-    @Override
     public boolean getBlocking()
     {
         return _serverSession.getBlocking();

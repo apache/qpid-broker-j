@@ -412,11 +412,6 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
             _connection.notifyWork(this);
         }
 
-        @Override
-        public int compareTo(final AMQSessionModel o)
-        {
-            return 0;
-        }
     }
 
 }

@@ -22,23 +22,19 @@ package org.apache.qpid.server.protocol;
 
 import java.util.Collection;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.transport.network.Ticker;
 
 /**
  * Session model interface.
- * Extends {@link Comparable} to allow objects to be inserted into a {@link ConcurrentSkipListSet}
- * when monitoring the blocking and blocking of queues/sessions in {@link Queue}.
  */
-public interface AMQSessionModel<T extends AMQSessionModel<T,X>, X extends ConsumerTarget<X>> extends Comparable<AMQSessionModel>, Deletable<T>
+public interface AMQSessionModel<T extends AMQSessionModel<T,X>, X extends ConsumerTarget<X>> extends Deletable<T>
 {
     UUID getId();
 

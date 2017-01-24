@@ -47,7 +47,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -209,7 +208,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private AtomicBoolean _stopped = new AtomicBoolean(false);
 
-    private final Set<AMQSessionModel<?,?>> _blockedChannels = new ConcurrentSkipListSet<>();
+    private final Set<AMQSessionModel<?,?>> _blockedChannels = Collections.newSetFromMap(new ConcurrentHashMap<AMQSessionModel<?, ?>, Boolean>());
 
     private final AtomicBoolean _deleted = new AtomicBoolean(false);
     private final SettableFuture<Integer> _deleteFuture = SettableFuture.create();

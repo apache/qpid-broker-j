@@ -1071,11 +1071,6 @@ public class ServerSession extends Session
         return _modelObject.getMaxUncommittedInMemorySize();
     }
 
-    public int compareTo(AMQSessionModel o)
-    {
-        return getId().compareTo(o.getId());
-    }
-
     @Override
     protected void sendSessionAttached(final byte[] name, final Option... options)
     {

@@ -1318,12 +1318,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         return message;
     }
 
-    @Override
-    public int compareTo(AMQSessionModel o)
-    {
-        return getId().compareTo(o.getId());
-    }
-
     public Subject getSubject()
     {
         return _subject;

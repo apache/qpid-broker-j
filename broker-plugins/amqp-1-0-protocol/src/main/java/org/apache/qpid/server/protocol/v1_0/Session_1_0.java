@@ -53,8 +53,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.server.connection.SessionPrincipal;
-import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
@@ -64,8 +62,6 @@ import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Binding;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
@@ -124,7 +120,6 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-import org.apache.qpid.transport.network.Ticker;
 
 public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget_1_0>
         implements AMQSessionModel<Session_1_0, ConsumerTarget_1_0>, LogSubject
@@ -1831,12 +1826,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                                     remoteAddress,
                                     getAddressSpace().getName(),
                                     _sendingChannel) + "] ";
-    }
-
-    @Override
-    public int compareTo(AMQSessionModel o)
-    {
-        return getId().compareTo(o.getId());
     }
 
     public AMQPConnection_1_0 getConnection()
