@@ -22,7 +22,7 @@
 
 env.ts_unix.testsuite=com.sun.ts.lib.harness.TS
 env.ts_unix.command.testExecute=com.sun.ts.lib.harness.ExecTSTestCmd \
-        CLASSPATH=${TS_HOME}/classes:${LOCAL_CLASSES} \
+        CLASSPATH=${TS_HOME}/classes${path.separator}${LOCAL_CLASSES} \
         ${JAVA_HOME}/bin/java \
 		-Ddeliverable.class=${deliverable.class} \
 		-Djava.naming.factory.initial=${java.naming.factory.initial} \
@@ -38,3 +38,7 @@ porting.ts.jmsObjects.class.1=${tck.jmsobjects.class}
 jms_timeout=5000
 user=${tck.management-username}
 password=${tck.management-password}
+
+# properties required for JMS 2.0 TCK
+platform.mode=standalone
+harness.socket.retry.count=10

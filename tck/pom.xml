@@ -44,8 +44,8 @@
         <tck.management-api-topic>/api/latest/exchange/%s/%s/%s</tck.management-api-topic>
 
         <tck.jmsobjects.class>com.sun.ts.lib.implementation.sun.jms.SunRIJMSObjects</tck.jmsobjects.class>
-        <tck.work.directory>${project.build.directory}/${tck}/work</tck.work.directory>
-        <tck.ts.jte>${project.build.testOutputDirectory}/ts.jte</tck.ts.jte>
+        <tck.work.directory>${project.build.directory}${file.separator}${tck}${file.separator}work</tck.work.directory>
+        <tck.ts.jte>${project.build.testOutputDirectory}${file.separator}ts.jte</tck.ts.jte>
         <tck.test>com/</tck.test>
     </properties>
 
@@ -106,6 +106,12 @@
                                     e.g. -Dtck.test=com/sun/ts/tests/jms/ee/all/sessiontests/SessionTests.java
                                     To run only a single test, append the test name:
                                     e.g. -Dtck.test=com/sun/ts/tests/jms/ee/all/sessiontests/SessionTests.java#InvalidDestinationTests_from_standalone
+
+                                    JMS2.0 TCK: As above plus property 'jms-version' needs to be set to '20'
+                                    Example,
+                                    mvn post-integration-test -Dtck=qpid-jms-client -Djms-version=20 \
+                                                              -Dtck.directory=/home/alex/tck/jmstck20 \
+                                                              -Dqpid-jms-client-version=0.20.0
                                 </echo>
                             </target>
                         </configuration>
@@ -133,6 +139,137 @@
         </testResources>
     </build>
     <profiles>
+        <!--
+        A complementary profile for running  jms 2.0 tck tests.
+        It relies on property 'jms-version' set to '20' and property 'tck' set to 'qpid-jms-client'
+        An example how to run jms 2.0 tck suite,
+            mvn post-integration-test -Dtck=qpid-jms-client -Djms-version=20 -Dtck.directory=/home/alex/tck/jmstck20 \
+                                      -Dqpid-jms-client-version=0.20.0 -f tck/pom.xml
+        -->
+        <profile>
+            <id>jms20-tck</id>
+            <activation>
+                <property>
+                    <name>jms-version</name>
+                    <value>20</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>jaxen-core</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/jaxen-core.jar</systemPath>
+                </dependency>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>jaxen-jdom</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/jaxen-jdom.jar</systemPath>
+                </dependency>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>saxpath</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/saxpath.jar</systemPath>
+                </dependency>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>jdom</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/jdom.jar</systemPath>
+                </dependency>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>api-check</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/apiCheck.jar</systemPath>
+                </dependency>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>ant-contrib</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/ant-contrib.jar</systemPath>
+                </dependency>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>ant_sun</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/ant_sun.jar</systemPath>
+                </dependency>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>sigtest</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/sigtest.jar</systemPath>
+                </dependency>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>ant</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/tools/ant/lib/ant.jar</systemPath>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>enforce-property-jms2</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requireProperty>
+                                            <property>tck</property>
+                                            <regex>^qpid-jms-client$</regex>
+                                        </requireProperty>
+                                        <requireProperty>
+                                            <property>jms-version</property>
+                                            <regex>^20$</regex>
+                                        </requireProperty>
+                                    </rules>
+                                    <fail>true</fail>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>jms11-tck</id>
+            <activation>
+                <property>
+                    <name>!jms-version</name>
+                </property>
+            </activation>
+            <properties>
+                <jms-version></jms-version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>parser</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/parser.jar</systemPath>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+        </profile>
         <profile>
             <id>tck</id>
             <activation>
@@ -162,13 +299,6 @@
                     <version>0</version>
                     <scope>system</scope>
                     <systemPath>${tck.directory}/lib/jmstck.jar</systemPath>
-                </dependency>
-                <dependency>
-                    <groupId>oracle-jms-tck</groupId>
-                    <artifactId>parser</artifactId>
-                    <version>0</version>
-                    <scope>system</scope>
-                    <systemPath>${tck.directory}/lib/parser.jar</systemPath>
                 </dependency>
                 <dependency>
                     <groupId>oracle-jms-tck</groupId>
@@ -258,13 +388,13 @@
                                         <argument>-Dtechnology.name=JMS</argument>
                                         <argument>-Ddeliverable.class=com.sun.ts.lib.deliverable.jms.JMSDeliverable</argument>
                                         <!-- This is the classpath used by the JVM spawned by com.sun.javatest.tool.Main to run each individual test -->
-                                        <argument>-DLOCAL_CLASSES=${tck.full.classpath}:${project.build.directory}/${project.build.finalName}.jar</argument>
+                                        <argument>-DLOCAL_CLASSES=${tck.full.classpath}${path.separator}${project.build.directory}${file.separator}${project.build.finalName}.jar</argument>
                                         <argument>-DJAVA_OPTIONS=${tck.test.options}</argument>
                                         <argument>-DJAVA_HOME=${java.home}</argument>
                                         <argument>com.sun.javatest.tool.Main</argument>
                                         <argument>-EsysProps</argument>
                                         <argument>-batch</argument>
-                                        <argument>-testsuite</argument><argument>${tck.directory}/src</argument>
+                                        <argument>-testsuite</argument><argument>${tck.directory}${file.separator}src</argument>
                                         <argument>-workDirectory</argument><argument>${tck.work.directory}</argument>
                                         <argument>-envFiles</argument><argument>${tck.ts.jte}</argument>
                                         <argument>-env</argument><argument>ts_unix</argument>
@@ -305,9 +435,10 @@
                 </property>
             </activation>
             <properties>
+                <jms.client.resource.folder>qpid-jms${jms-version}-client</jms.client.resource.folder>
                 <java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</java.naming.factory.initial>
-                <java.naming.provider.url>${project.build.testOutputDirectory}/qpid-jms-client/jndi.properties</java.naming.provider.url>
-                <tck.ts.jtx>${project.build.testOutputDirectory}/qpid-jms-client/ts.jtx</tck.ts.jtx>
+                <java.naming.provider.url>${project.build.testOutputDirectory}${file.separator}${jms.client.resource.folder}${file.separator}jndi.properties</java.naming.provider.url>
+                <tck.ts.jtx>${project.build.testOutputDirectory}${file.separator}${jms.client.resource.folder}${file.separator}ts.jtx</tck.ts.jtx>
                 <tck.test.options />
             </properties>
             <build>
@@ -407,8 +538,8 @@
             </activation>
             <properties>
                 <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
-                <java.naming.provider.url>${project.build.directory}/test-classes/jms-client/jndi.properties</java.naming.provider.url>
-                <tck.ts.jtx>${project.build.testOutputDirectory}/jms-client/ts.jtx</tck.ts.jtx>
+                <java.naming.provider.url>${project.build.directory}${file.separator}test-classes${file.separator}jms-client${file.separator}jndi.properties</java.naming.provider.url>
+                <tck.ts.jtx>${project.build.testOutputDirectory}${file.separator}jms-client${file.separator}ts.jtx</tck.ts.jtx>
                 <tck.test.options>-Dqpid.amqp.version=0-9 -Dqpid.dest_syntax=BURL</tck.test.options>
             </properties>
             <dependencies>
@@ -432,8 +563,8 @@
             </activation>
             <properties>
                 <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
-                <java.naming.provider.url>${project.build.directory}/test-classes/jms-client/jndi.properties</java.naming.provider.url>
-                <tck.ts.jtx>${project.build.testOutputDirectory}/jms-client/ts.jtx</tck.ts.jtx>
+                <java.naming.provider.url>${project.build.directory}${file.separator}test-classes${file.separator}jms-client${file.separator}jndi.properties</java.naming.provider.url>
+                <tck.ts.jtx>${project.build.testOutputDirectory}${file.separator}jms-client${file.separator}ts.jtx</tck.ts.jtx>
                 <tck.test.options>-Dqpid.amqp.version=0-10 -Dqpid.dest_syntax=BURL</tck.test.options>
             </properties>
             <dependencies>

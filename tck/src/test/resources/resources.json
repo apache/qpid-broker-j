@@ -60,5 +60,33 @@
     "arguments": {
       "type": "fanout"
     }
+  },
+  {
+    "name": "myTopic2",
+    "nodeType": "EXCHANGE",
+    "arguments": {
+      "type": "fanout"
+    }
+  },
+  {
+    "name": "testT0",
+    "nodeType": "EXCHANGE",
+    "arguments": {
+      "type": "fanout"
+    }
+  },
+  {
+    "name": "testT1",
+    "nodeType": "EXCHANGE",
+    "arguments": {
+      "type": "fanout"
+    }
+  },
+  {
+    "name": "testT2",
+    "nodeType": "EXCHANGE",
+    "arguments": {
+      "type": "fanout"
+    }
   }
 ]
