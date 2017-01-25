@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.message.EnqueueableMessage;
-import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.Transaction;
@@ -47,7 +47,7 @@ public class DtxBranch
     private final List<ServerTransaction.Action> _postTransactionActions = new ArrayList<ServerTransaction.Action>();
     private       State                          _state = State.ACTIVE;
     private long _timeout;
-    private Map<AMQSessionModel, State> _associatedSessions = new HashMap<AMQSessionModel, State>();
+    private Map<AMQPSession<?,?>, State> _associatedSessions = new HashMap<>();
     private final List<EnqueueRecord> _enqueueRecords = new ArrayList<>();
     private final List<DequeueRecord> _dequeueRecords = new ArrayList<>();
 
@@ -146,7 +146,7 @@ public class DtxBranch
         return _timeout != 0 && _expiration < System.currentTimeMillis();
     }
 
-    public synchronized boolean isAssociated(AMQSessionModel session)
+    public synchronized boolean isAssociated(AMQPSession<?,?> session)
     {
         return _associatedSessions.containsKey(session);
     }
@@ -177,17 +177,17 @@ public class DtxBranch
         _associatedSessions.clear();
     }
 
-    synchronized boolean associateSession(AMQSessionModel associatedSession)
+    synchronized boolean associateSession(AMQPSession<?,?> associatedSession)
     {
         return _associatedSessions.put(associatedSession, State.ACTIVE) != null;
     }
 
-    synchronized boolean disassociateSession(AMQSessionModel associatedSession)
+    synchronized boolean disassociateSession(AMQPSession<?,?> associatedSession)
     {
         return _associatedSessions.remove(associatedSession) != null;
     }
 
-    public synchronized boolean resumeSession(AMQSessionModel session)
+    public synchronized boolean resumeSession(AMQPSession<?,?> session)
     {
         if(_associatedSessions.containsKey(session) && _associatedSessions.get(session) == State.SUSPENDED)
         {
@@ -197,7 +197,7 @@ public class DtxBranch
         return false;
     }
 
-    public synchronized boolean suspendSession(AMQSessionModel session)
+    public synchronized boolean suspendSession(AMQPSession<?,?> session)
     {
         if(_associatedSessions.containsKey(session) && _associatedSessions.get(session) == State.ACTIVE)
         {

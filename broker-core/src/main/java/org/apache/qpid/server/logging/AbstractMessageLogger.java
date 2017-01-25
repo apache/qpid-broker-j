@@ -36,10 +36,10 @@ import javax.security.auth.Subject;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.logging.subjects.LogSubjectFormat;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.AMQPConnection;
 
 public abstract class AbstractMessageLogger implements MessageLogger
@@ -197,7 +197,7 @@ public abstract class AbstractMessageLogger implements MessageLogger
         }
     }
 
-    protected String generateSessionMessage(final AMQSessionModel session)
+    protected String generateSessionMessage(final AMQPSession session)
     {
         AMQPConnection<?> connection = session.getAMQPConnection();
         return "[" + MessageFormat.format(CHANNEL_FORMAT, connection == null ? -1L : connection.getConnectionId(),

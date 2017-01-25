@@ -70,7 +70,6 @@ import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
@@ -120,9 +119,10 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
+import org.apache.qpid.transport.network.Ticker;
 
 public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget_1_0>
-        implements AMQSessionModel<Session_1_0, ConsumerTarget_1_0>, LogSubject
+        implements LogSubject, org.apache.qpid.server.util.Deletable<Session_1_0>
 {
     public static final Symbol DELAYED_DELIVERY = Symbol.valueOf("DELAYED_DELIVERY");
     private static final Logger _logger = LoggerFactory.getLogger(Session_1_0.class);

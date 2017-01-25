@@ -25,29 +25,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.UUID;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.BrokerModel;
-import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
-import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.Session;
-import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.message.MessageContainer;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.util.Action;
-import org.apache.qpid.transport.network.Ticker;
 
 public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
 {
@@ -56,12 +44,18 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
     private String tag = "mocktag";
     private Queue<?> queue = null;
     private State _state = State.OPEN;
-    private ArrayList<MessageInstance> _messages = new ArrayList<MessageInstance>();
+    private ArrayList<MessageInstance> _messages = new ArrayList<>();
 
     private boolean _isActive = true;
     private MessageInstanceConsumer _consumer;
-    private MockSessionModel _sessionModel = new MockSessionModel();
+    private AMQPSession _sessionModel = mock(AMQPSession.class);
     private boolean _notifyDesired;
+
+    public TestConsumerTarget()
+    {
+        when(_sessionModel.getChannelId()).thenReturn(0);
+        when(_sessionModel.getAMQPConnection()).thenReturn(mock(AMQPConnection.class));
+    }
 
     public boolean close()
     {
@@ -91,7 +85,7 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         return queue;
     }
 
-    public AMQSessionModel getSessionModel()
+    public AMQPSession getSessionModel()
     {
         return _sessionModel;
     }
@@ -236,182 +230,4 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
             _notifyDesired = isNotifyWorkDesired();
         }
     }
-
-    private static class MockSessionModel implements AMQSessionModel<MockSessionModel, TestConsumerTarget>
-    {
-        private final UUID _id = UUID.randomUUID();
-        private Session _modelObject;
-        private AMQPConnection<?> _connection = mock(AMQPConnection.class);
-
-        private MockSessionModel()
-        {
-            _modelObject = mock(Session.class);
-            when(_modelObject.getCategoryClass()).thenReturn(Session.class);
-            ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
-            when(_modelObject.getObjectFactory()).thenReturn(factory);
-            when(_modelObject.getModel()).thenReturn(factory.getModel());
-            TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-            when(_modelObject.getTaskExecutor()).thenReturn(taskExecutor);
-            when(_modelObject.getChildExecutor()).thenReturn(taskExecutor);
-        }
-
-        @Override
-        public UUID getId()
-        {
-            return _id;
-        }
-
-        @Override
-        public AMQPConnection<?> getAMQPConnection()
-        {
-            return _connection;
-        }
-
-        @Override
-        public void close()
-        {
-        }
-
-        @Override
-        public LogSubject getLogSubject()
-        {
-            return null;
-        }
-
-        @Override
-        public void doTimeoutAction(final String reason)
-        {
-        }
-
-        @Override
-        public void block(Queue<?> queue)
-        {
-        }
-
-        @Override
-        public void unblock(Queue<?> queue)
-        {
-        }
-
-        @Override
-        public void block()
-        {
-        }
-
-        @Override
-        public void unblock()
-        {
-        }
-
-        @Override
-        public boolean getBlocking()
-        {
-            return false;
-        }
-
-        @Override
-        public Object getConnectionReference()
-        {
-            return this;
-        }
-
-        @Override
-        public int getUnacknowledgedMessageCount()
-        {
-            return 0;
-        }
-
-        @Override
-        public long getTxnStart()
-        {
-            return 0L;
-        }
-
-        @Override
-        public long getTxnCommits()
-        {
-            return 0L;
-        }
-
-        @Override
-        public long getTxnRejects()
-        {
-            return 0L;
-        }
-
-        @Override
-        public int getChannelId()
-        {
-            return 0;
-        }
-
-        @Override
-        public long getConsumerCount()
-        {
-            return 0;
-        }
-
-        @Override
-        public Collection<Consumer<?,TestConsumerTarget>> getConsumers()
-        {
-            return null;
-        }
-
-        @Override
-        public long getTransactionStartTimeLong()
-        {
-            return 0;
-        }
-
-        @Override
-        public long getTransactionUpdateTimeLong()
-        {
-            return 0;
-        }
-
-        @Override
-        public void addDeleteTask(final Action task)
-        {
-
-        }
-
-        @Override
-        public void removeDeleteTask(final Action task)
-        {
-
-        }
-
-
-        @Override
-        public void transportStateChanged()
-        {
-
-        }
-
-        @Override
-        public boolean processPending()
-        {
-            return false;
-        }
-
-        @Override
-        public void addTicker(final Ticker ticker)
-        {
-
-        }
-
-        @Override
-        public void removeTicker(final Ticker ticker)
-        {
-
-        }
-
-        @Override
-        public void notifyWork(final TestConsumerTarget target)
-        {
-            _connection.notifyWork(this);
-        }
-
-    }
-
 }

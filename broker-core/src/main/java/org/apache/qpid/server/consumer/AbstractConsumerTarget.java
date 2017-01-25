@@ -35,9 +35,9 @@ import org.apache.qpid.server.logging.messages.SubscriptionMessages;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.model.Consumer;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.queue.SuspendedConsumerLoggingTicker;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.AMQPConnection;
 
 public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>> implements ConsumerTarget<T>
@@ -172,8 +172,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
 
     private ListenableFuture<Void> doOnIoThreadAsync(final Runnable task)
     {
-        AMQSessionModel<?,T> sessionModel = getSessionModel();
-        return sessionModel.getAMQPConnection().doOnIOThreadAsync(task);
+        return getSessionModel().getAMQPConnection().doOnIOThreadAsync(task);
     }
 
     private void consumerRemovedInternal(final MessageInstanceConsumer sub)

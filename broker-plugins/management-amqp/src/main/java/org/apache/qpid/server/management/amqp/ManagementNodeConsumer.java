@@ -38,10 +38,10 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PublishingLink;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -106,7 +106,7 @@ class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanc
         }
     }
 
-    AMQSessionModel getSessionModel()
+    AMQPSession<?,?> getSessionModel()
     {
         return _target.getSessionModel();
     }

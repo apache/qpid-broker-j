@@ -32,9 +32,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Connection;
-import org.apache.qpid.server.model.ContextProvider;
-import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.util.Deletable;
 
 public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<C>, Deletable<C>, EventLoggerProvider
@@ -65,7 +63,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     void registerMessageDelivered(long size);
 
-    void closeSessionAsync(AMQSessionModel<?,?> session, CloseReason reason, String message);
+    void closeSessionAsync(AMQPSession<?,?> session, CloseReason reason, String message);
 
     SocketAddress getRemoteSocketAddress();
 
@@ -101,11 +99,11 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
      *
      * @return list of sessions
      */
-    Collection<? extends AMQSessionModel<?,?>> getSessionModels();
+    Collection<? extends AMQPSession<?,?>> getSessionModels();
 
     void resetStatistics();
 
-    void notifyWork(AMQSessionModel<?,?> sessionModel);
+    void notifyWork(AMQPSession<?,?> sessionModel);
 
     boolean isTransportBlockedForWriting();
 

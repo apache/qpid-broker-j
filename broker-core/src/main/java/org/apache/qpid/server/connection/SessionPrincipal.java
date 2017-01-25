@@ -20,23 +20,23 @@
  */
 package org.apache.qpid.server.connection;
 
-import org.apache.qpid.server.protocol.AMQSessionModel;
-
 import java.io.Serializable;
 import java.security.Principal;
+
+import org.apache.qpid.server.session.AMQPSession;
 
 public class SessionPrincipal implements Principal, Serializable
 {
     private static final long serialVersionUID = 1L;
 
-    private final AMQSessionModel _session;
+    private final AMQPSession<?,?> _session;
 
-    public SessionPrincipal(final AMQSessionModel session)
+    public SessionPrincipal(final AMQPSession<?, ?> session)
     {
         _session = session;
     }
 
-    public AMQSessionModel getSession()
+    public AMQPSession<?, ?> getSession()
     {
         return _session;
     }

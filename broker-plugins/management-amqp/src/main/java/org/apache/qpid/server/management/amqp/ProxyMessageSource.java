@@ -52,8 +52,8 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PublishingLink;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 
@@ -172,7 +172,7 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
     }
 
     @Override
-    public boolean verifySessionAccess(final AMQSessionModel<?, ?> session)
+    public boolean verifySessionAccess(final AMQPSession<?,?> session)
     {
         return session.getConnectionReference() == _connectionReference;
     }
@@ -273,7 +273,7 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
         }
 
         @Override
-        public AMQSessionModel getSessionModel()
+        public AMQPSession getSessionModel()
         {
             return _underlying.getSessionModel();
         }

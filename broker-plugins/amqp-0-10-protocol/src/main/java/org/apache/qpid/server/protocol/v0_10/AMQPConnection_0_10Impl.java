@@ -40,8 +40,8 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.SubjectCreator;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
@@ -71,8 +71,8 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
     private ServerDisassembler _disassembler;
 
-    private final Set<AMQSessionModel<?,?>> _sessionsWithWork =
-            Collections.newSetFromMap(new ConcurrentHashMap<AMQSessionModel<?,?>, Boolean>());
+    private final Set<AMQPSession<?,?>> _sessionsWithWork =
+            Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?,?>, Boolean>());
 
 
     public AMQPConnection_0_10Impl(final Broker<?> broker,
@@ -278,7 +278,7 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     }
 
     @Override
-    public void notifyWork(final AMQSessionModel<?,?> sessionModel)
+    public void notifyWork(final AMQPSession<?,?> sessionModel)
     {
         _sessionsWithWork.add(sessionModel);
         notifyWork();
@@ -309,7 +309,7 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     }
 
     @Override
-    public void closeSessionAsync(final AMQSessionModel<?,?> session,
+    public void closeSessionAsync(final AMQPSession<?,?> session,
                                   final CloseReason reason, final String message)
     {
         ServerSession s = ((Session_0_10)session).getServerSession();

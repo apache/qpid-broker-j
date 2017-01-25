@@ -25,7 +25,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.session.AMQPSession;
 
 public interface ConsumerTarget<T extends ConsumerTarget<T>>
 {
@@ -58,7 +58,7 @@ public interface ConsumerTarget<T extends ConsumerTarget<T>>
 
     long getUnacknowledgedMessages();
 
-    AMQSessionModel<?,T> getSessionModel();
+    AMQPSession<?,T> getSessionModel();
 
     void send(final MessageInstanceConsumer<T> consumer, MessageInstance entry, boolean batch);
 

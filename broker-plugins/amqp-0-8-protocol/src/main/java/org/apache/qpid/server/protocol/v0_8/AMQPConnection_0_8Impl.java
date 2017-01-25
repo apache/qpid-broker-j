@@ -63,11 +63,11 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
@@ -158,8 +158,8 @@ public class AMQPConnection_0_8Impl
     private volatile boolean _transportBlockedForWriting;
     private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
 
-    private final Set<AMQSessionModel<?,?>> _sessionsWithWork =
-            Collections.newSetFromMap(new ConcurrentHashMap<AMQSessionModel<?,?>, Boolean>());
+    private final Set<AMQPSession<?,?>> _sessionsWithWork =
+            Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?,?>, Boolean>());
 
 
     public AMQPConnection_0_8Impl(Broker<?> broker,
@@ -739,7 +739,7 @@ public class AMQPConnection_0_8Impl
         return String.valueOf(getNetwork().getRemoteAddress());
     }
 
-    public void closeSessionAsync(final AMQSessionModel<?,?> session, final CloseReason reason, final String message)
+    public void closeSessionAsync(final AMQPSession<?,?> session, final CloseReason reason, final String message)
     {
         final int cause;
         switch (reason)
@@ -1354,7 +1354,7 @@ public class AMQPConnection_0_8Impl
     }
 
     @Override
-    public void notifyWork(final AMQSessionModel<?,?> sessionModel)
+    public void notifyWork(final AMQPSession<?,?> sessionModel)
     {
         _sessionsWithWork.add(sessionModel);
         notifyWork();
@@ -1384,7 +1384,7 @@ public class AMQPConnection_0_8Impl
 
     private class ProcessPendingIterator implements Iterator<Runnable>
     {
-        private Iterator<? extends AMQSessionModel<?,?>> _sessionIterator;
+        private Iterator<? extends AMQPSession<?,?>> _sessionIterator;
 
         private ProcessPendingIterator()
         {
@@ -1436,7 +1436,7 @@ public class AMQPConnection_0_8Impl
                     {
                         _sessionIterator = _sessionsWithWork.iterator();
                     }
-                    final AMQSessionModel<?,?> session = _sessionIterator.next();
+                    final AMQPSession<?,?> session = _sessionIterator.next();
                     return new Runnable()
                     {
                         @Override

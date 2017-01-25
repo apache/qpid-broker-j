@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 
-import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -328,7 +328,7 @@ public class DtxRegistry
         return inDoubt;
     }
 
-    public synchronized void endAssociations(AMQSessionModel session)
+    public synchronized void endAssociations(AMQPSession<?,?> session)
     {
         for(DtxBranch branch : _branches.values())
         {

@@ -57,7 +57,6 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
@@ -103,6 +102,7 @@ import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
@@ -236,8 +236,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     private boolean _closedOnOpen;
 
-    private final Set<AMQSessionModel<?,?>> _sessionsWithWork =
-            Collections.newSetFromMap(new ConcurrentHashMap<AMQSessionModel<?,?>, Boolean>());
+    private final Set<AMQPSession<?,?>> _sessionsWithWork =
+            Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?,?>, Boolean>());
 
     AMQPConnection_1_0Impl(final Broker<?> broker,
                            final ServerNetworkConnection network,
@@ -1387,7 +1387,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void notifyWork(final AMQSessionModel<?,?> sessionModel)
+    public void notifyWork(final AMQPSession<?,?> sessionModel)
     {
         _sessionsWithWork.add(sessionModel);
         notifyWork();
@@ -1439,7 +1439,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         addAsyncTask(action);
     }
 
-    public void closeSessionAsync(final AMQSessionModel<?,?> session,
+    public void closeSessionAsync(final AMQPSession<?,?> session,
                                   final CloseReason reason, final String message)
     {
         final ErrorCondition cause;
@@ -1633,7 +1633,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     private class ProcessPendingIterator implements Iterator<Runnable>
     {
-        private Iterator<? extends AMQSessionModel<?,?>> _sessionIterator;
+        private Iterator<? extends AMQPSession<?,?>> _sessionIterator;
         private ProcessPendingIterator()
         {
             _sessionIterator = _sessionsWithWork.iterator();
@@ -1683,7 +1683,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     {
                         _sessionIterator = _sessionsWithWork.iterator();
                     }
-                    final AMQSessionModel<?,?> session = _sessionIterator.next();
+                    final AMQPSession<?,?> session = _sessionIterator.next();
                     return new Runnable()
                     {
                         @Override

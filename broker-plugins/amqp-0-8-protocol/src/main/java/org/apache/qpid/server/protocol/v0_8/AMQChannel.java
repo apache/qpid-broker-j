@@ -67,6 +67,7 @@ import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -78,7 +79,6 @@ import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.*;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.v0_8.UnacknowledgedMessageMap.Visitor;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
@@ -97,12 +97,12 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
+import org.apache.qpid.transport.network.Ticker;
 
 public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0_8>
-        implements AMQSessionModel<AMQChannel, ConsumerTarget_0_8>,
-                   AsyncAutoCommitTransaction.FutureRecorder,
+        implements AsyncAutoCommitTransaction.FutureRecorder,
                    ServerChannelMethodProcessor,
-                   EventLoggerProvider, CreditRestorer
+                   EventLoggerProvider, CreditRestorer, org.apache.qpid.server.util.Deletable<AMQChannel>
 {
     public static final int DEFAULT_PREFETCH = 4096;
 
@@ -1413,6 +1413,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         {
         }
 
+        @Override
         public void performAction(MessageInstance entry)
         {
             TransactionLogResource queue = entry.getOwningResource();

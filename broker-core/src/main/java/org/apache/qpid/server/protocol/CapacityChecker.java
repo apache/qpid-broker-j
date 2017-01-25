@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.server.protocol;
 
+import org.apache.qpid.server.session.AMQPSession;
+
 public interface CapacityChecker
 {
-    void checkCapacity(AMQSessionModel<?,?> channel);
+    void checkCapacity(AMQPSession<?,?> channel);
 }

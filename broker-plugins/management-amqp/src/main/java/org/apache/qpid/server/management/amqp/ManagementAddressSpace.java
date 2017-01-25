@@ -53,11 +53,11 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MemoryMessageStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -253,7 +253,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
         if (!sessionPrincipals.isEmpty())
         {
             final ProxyMessageSource proxyMessageSource = new ProxyMessageSource(this, attributes);
-            final AMQSessionModel session = sessionPrincipals.iterator().next().getSession();
+            final AMQPSession<?,?> session = sessionPrincipals.iterator().next().getSession();
             final Object connectionReference = session.getConnectionReference();
             ConcurrentMap<String, ProxyMessageSource> connectionSpecificDestinations =
                     _connectionSpecificDestinations.get(connectionReference);

@@ -80,10 +80,10 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.OperationParameter;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.plugin.MessageConverter;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -1004,7 +1004,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
         if (!sessionPrincipals.isEmpty())
         {
-            AMQSessionModel publishingSession = sessionPrincipals.iterator().next().getSession();
+            AMQPSession<?,?> publishingSession = sessionPrincipals.iterator().next().getSession();
             for (ManagementNodeConsumer candidate : _consumers)
             {
                 if (candidate.getTarget().getTargetAddress().equals(replyTo) && candidate.getSessionModel().getConnectionReference() == publishingSession.getConnectionReference())
@@ -1496,7 +1496,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     }
 
     @Override
-    public boolean verifySessionAccess(final AMQSessionModel<?,?> session)
+    public boolean verifySessionAccess(final AMQPSession<?,?> session)
     {
         return true;
     }

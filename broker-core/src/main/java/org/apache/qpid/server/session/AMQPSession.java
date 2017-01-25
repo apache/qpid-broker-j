@@ -20,16 +20,79 @@
  */
 package org.apache.qpid.server.session;
 
+import java.util.Collection;
+import java.util.UUID;
+
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
-import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.Deletable;
+import org.apache.qpid.transport.network.Ticker;
 
 public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSession<S, X>,
                              X extends ConsumerTarget<X>> extends Session<S>,
                                                                   Deletable<S>,
-                                                                  EventLoggerProvider,
-                                                                  AMQSessionModel<S, X>
+                                                                  EventLoggerProvider
 {
+    Object getConnectionReference();
+
+    int getChannelId();
+
+    AMQPConnection<?> getAMQPConnection();
+
+    LogSubject getLogSubject();
+
+    void doTimeoutAction(String reason);
+
+    void block(Queue<?> queue);
+
+    void unblock(Queue<?> queue);
+
+    void block();
+
+    void unblock();
+
+    boolean getBlocking();
+
+    int getUnacknowledgedMessageCount();
+
+    long getTxnStart();
+
+    long getTxnCommits();
+
+    long getTxnRejects();
+
+    long getConsumerCount();
+
+    Collection<Consumer<?,X>> getConsumers();
+
+    /**
+     * Return the time the current transaction started.
+     *
+     * @return the time this transaction started or 0 if not in a transaction
+     */
+    long getTransactionStartTimeLong();
+
+    /**
+     * Return the time of the last activity on the current transaction.
+     *
+     * @return the time of the last activity or 0 if not in a transaction
+     */
+    long getTransactionUpdateTimeLong();
+
+    void transportStateChanged();
+
+    boolean processPending();
+
+    void addTicker(Ticker ticker);
+
+    void removeTicker(Ticker ticker);
+
+    void notifyWork(X target);
+
+    void close();
 }

@@ -49,11 +49,11 @@ import org.apache.bcel.generic.ClassGen;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -225,22 +225,22 @@ public class BrokerTestHelper
         return createVirtualHost(attributes, broker, defaultVHN, accessControl);
     }
 
-    public static AMQSessionModel<?,?> createSession(int channelId, AMQPConnection<?> connection)
+    public static AMQPSession<?,?> createSession(int channelId, AMQPConnection<?> connection)
     {
         @SuppressWarnings("rawtypes")
-        AMQSessionModel session = mock(AMQSessionModel.class);
+        AMQPSession session = mock(AMQPSession.class);
         when(session.getAMQPConnection()).thenReturn(connection);
         when(session.getChannelId()).thenReturn(channelId);
         return session;
     }
 
-    public static AMQSessionModel<?,?> createSession(int channelId) throws Exception
+    public static AMQPSession<?,?> createSession(int channelId) throws Exception
     {
         AMQPConnection<?> session = createConnection();
         return createSession(channelId, session);
     }
 
-    public static AMQSessionModel<?,?> createSession() throws Exception
+    public static AMQPSession<?,?> createSession() throws Exception
     {
         return createSession(1);
     }

@@ -20,10 +20,10 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import org.apache.qpid.server.protocol.AMQSessionModel;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import org.apache.qpid.server.session.AMQPSession;
 
 /**
  * Validate ChannelLogSubjects are logged as expected
@@ -37,7 +37,7 @@ public class ChannelLogSubjectTest extends ConnectionLogSubjectTest
     {
         super.setUp();
 
-        AMQSessionModel session = mock(AMQSessionModel.class);
+        AMQPSession<?,?> session = mock(AMQPSession.class);
         when(session.getAMQPConnection()).thenReturn(getConnection());
         when(session.getChannelId()).thenReturn(_channelID);
         _subject = new ChannelLogSubject(session);

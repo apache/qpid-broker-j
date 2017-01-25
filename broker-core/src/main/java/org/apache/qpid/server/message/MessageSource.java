@@ -26,7 +26,7 @@ import java.util.EnumSet;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
-import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.TransactionLogResource;
 
 public interface MessageSource extends TransactionLogResource, MessageNode
@@ -41,7 +41,7 @@ public interface MessageSource extends TransactionLogResource, MessageNode
 
     Collection<? extends MessageInstanceConsumer> getConsumers();
 
-    boolean verifySessionAccess(AMQSessionModel<?,?> session);
+    boolean verifySessionAccess(AMQPSession<?,?> session);
 
     /**
      * ExistingExclusiveConsumer signals a failure to create a consumer, because an exclusive consumer

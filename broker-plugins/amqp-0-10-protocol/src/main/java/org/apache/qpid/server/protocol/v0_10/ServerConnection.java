@@ -46,8 +46,8 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
@@ -486,16 +486,16 @@ public class ServerConnection extends Connection
         }
     }
 
-    public Iterator<Runnable> processPendingIterator(final Set<AMQSessionModel<?,?>> sessionsWithWork)
+    public Iterator<Runnable> processPendingIterator(final Set<AMQPSession<?,?>> sessionsWithWork)
     {
         return new ProcessPendingIterator(sessionsWithWork);
     }
 
     private class ProcessPendingIterator implements Iterator<Runnable>
     {
-        private final Collection<AMQSessionModel<?,?>> _sessionsWithPending;
-        private Iterator<? extends AMQSessionModel<?,?>> _sessionIterator;
-        private ProcessPendingIterator(final Set<AMQSessionModel<?,?>> sessionsWithWork)
+        private final Collection<AMQPSession<?,?>> _sessionsWithPending;
+        private Iterator<? extends AMQPSession<?,?>> _sessionIterator;
+        private ProcessPendingIterator(final Set<AMQPSession<?,?>> sessionsWithWork)
         {
             _sessionsWithPending = sessionsWithWork;
             _sessionIterator = _sessionsWithPending.iterator();
@@ -547,7 +547,7 @@ public class ServerConnection extends Connection
                     {
                         _sessionIterator = _sessionsWithPending.iterator();
                     }
-                    final AMQSessionModel<?,?> session = _sessionIterator.next();
+                    final AMQPSession<?,?> session = _sessionIterator.next();
                     return new Runnable()
                     {
                         @Override

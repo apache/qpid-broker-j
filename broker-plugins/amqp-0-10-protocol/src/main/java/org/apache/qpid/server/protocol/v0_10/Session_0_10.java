@@ -30,13 +30,12 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.session.AbstractAMQPSession;
 import org.apache.qpid.server.util.Action;
 
 public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarget_0_10>
-        implements AMQSessionModel<Session_0_10, ConsumerTarget_0_10>, LogSubject
+        implements LogSubject, org.apache.qpid.server.util.Deletable<Session_0_10>
 {
     private final AMQPConnection_0_10 _connection;
     private final ServerSession _serverSession;

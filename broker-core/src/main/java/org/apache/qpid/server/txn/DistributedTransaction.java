@@ -25,8 +25,8 @@ import java.util.Collection;
 
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.transport.Xid;
@@ -37,11 +37,11 @@ public class DistributedTransaction implements ServerTransaction
     private final AutoCommitTransaction _autoCommitTransaction;
 
     private DtxBranch _branch;
-    private AMQSessionModel _session;
-    private DtxRegistry _dtxRegistry;
+    private final AMQPSession<?,?> _session;
+    private final DtxRegistry _dtxRegistry;
 
 
-    public DistributedTransaction(AMQSessionModel session, DtxRegistry dtxRegistry)
+    public DistributedTransaction(AMQPSession<?,?> session, DtxRegistry dtxRegistry)
     {
         _session = session;
         _dtxRegistry = dtxRegistry;

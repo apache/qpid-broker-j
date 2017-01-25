@@ -32,5 +32,5 @@ public interface LogSubject
      *
      * @return String the display representation of this LogSubject
      */
-    public String toLogString();
+    String toLogString();
 }

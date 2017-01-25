@@ -98,11 +98,11 @@ import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -208,7 +208,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private AtomicBoolean _stopped = new AtomicBoolean(false);
 
-    private final Set<AMQSessionModel<?,?>> _blockedChannels = Collections.newSetFromMap(new ConcurrentHashMap<AMQSessionModel<?, ?>, Boolean>());
+    private final Set<AMQPSession<?,?>> _blockedChannels = Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?,?>, Boolean>());
 
     private final AtomicBoolean _deleted = new AtomicBoolean(false);
     private final SettableFuture<Integer> _deleteFuture = SettableFuture.create();
@@ -357,7 +357,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _queueHouseKeepingTask = new AdvanceConsumersTask();
         Subject activeSubject = Subject.getSubject(AccessController.getContext());
         Set<SessionPrincipal> sessionPrincipals = activeSubject == null ? Collections.<SessionPrincipal>emptySet() : activeSubject.getPrincipals(SessionPrincipal.class);
-        AMQSessionModel<?,?> sessionModel;
+        AMQPSession<?, ?> sessionModel;
         if(sessionPrincipals.isEmpty())
         {
             sessionModel = null;
@@ -1734,7 +1734,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public void checkCapacity(AMQSessionModel<?,?> channel)
+    public void checkCapacity(AMQPSession<?,?> channel)
     {
         if(_queueFlowControlSizeBytes != 0L)
         {
@@ -1767,6 +1767,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    @Override
     public void checkCapacity()
     {
         if(getEntries() != null)
@@ -1783,7 +1784,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                                          _queueFlowResumeSizeBytes));
                     }
 
-                    for (final AMQSessionModel<?,?> blockedChannel : _blockedChannels)
+                    for (final AMQPSession<?,?> blockedChannel : _blockedChannels)
                     {
                         blockedChannel.unblock(this);
                         _blockedChannels.remove(blockedChannel);
@@ -2587,7 +2588,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public boolean verifySessionAccess(final AMQSessionModel<?,?> session)
+    public boolean verifySessionAccess(final AMQPSession<?,?> session)
     {
         boolean allowed;
         switch(_exclusive)
@@ -2682,7 +2683,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case PRINCIPAL:
             case CONTAINER:
             case CONNECTION:
-                AMQSessionModel session = null;
+                AMQPSession<?,?> session = null;
                 Iterator<QueueConsumer<?,?>> queueConsumerIterator = _queueConsumerManager.getAllIterator();
                 while(queueConsumerIterator.hasNext())
                 {
@@ -2728,7 +2729,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 _exclusiveOwner = con;
                 break;
             case SESSION:
-                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQSessionModel)_exclusiveOwner).getAMQPConnection();
+                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQPSession<?,?>)_exclusiveOwner).getAMQPConnection();
                 break;
             case LINK:
                 _exclusiveOwner = _exclusiveSubscriber == null ? null : _exclusiveSubscriber.getSessionModel().getAMQPConnection();
@@ -2761,7 +2762,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQPConnection)_exclusiveOwner).getRemoteContainerName();
                 break;
             case SESSION:
-                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQSessionModel)_exclusiveOwner).getAMQPConnection().getRemoteContainerName();
+                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQPSession<?,?>)_exclusiveOwner).getAMQPConnection().getRemoteContainerName();
                 break;
             case LINK:
                 _exclusiveOwner = _exclusiveSubscriber == null ? null : _exclusiveSubscriber.getSessionModel().getAMQPConnection().getRemoteContainerName();
@@ -2795,7 +2796,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQPConnection)_exclusiveOwner).getAuthorizedPrincipal();
                 break;
             case SESSION:
-                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQSessionModel)_exclusiveOwner).getAMQPConnection().getAuthorizedPrincipal();
+                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQPSession<?,?>)_exclusiveOwner).getAMQPConnection().getAuthorizedPrincipal();
                 break;
             case LINK:
                 _exclusiveOwner = _exclusiveSubscriber == null ? null : _exclusiveSubscriber.getSessionModel().getAMQPConnection().getAuthorizedPrincipal();

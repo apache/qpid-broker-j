@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
-import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.session.AMQPSession;
 
 @ManagedObject(creatable = false, amqpName = "org.apache.qpid.Consumer")
 public interface Consumer<X extends Consumer<X,T>, T extends ConsumerTarget> extends ConfiguredObject<X>, MessageInstanceConsumer<T>
@@ -80,7 +80,7 @@ public interface Consumer<X extends Consumer<X,T>, T extends ConsumerTarget> ext
     long getUnacknowledgedMessages();
 
 
-    AMQSessionModel getSessionModel();
+    AMQPSession<?,?> getSessionModel();
 
     long getConsumerNumber();
 

@@ -56,9 +56,9 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.util.StateChangeListener;
 
 class QueueConsumerImpl<T extends ConsumerTarget>
@@ -132,7 +132,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
         setupLogging();
     }
 
-    private static Map<String, Object> createAttributeMap(final AMQSessionModel sessionModel,
+    private static Map<String, Object> createAttributeMap(final AMQPSession<?,?> sessionModel,
                                                           String linkName,
                                                           FilterManager filters,
                                                           EnumSet<ConsumerOption> optionSet,
@@ -215,7 +215,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
     }
 
     @Override
-    public AMQSessionModel getSessionModel()
+    public AMQPSession<?,?> getSessionModel()
     {
         return _target.getSessionModel();
     }

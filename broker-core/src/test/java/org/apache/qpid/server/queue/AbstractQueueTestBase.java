@@ -79,7 +79,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     private String _owner = "owner";
     private String _routingKey = "routing key";
     private DirectExchangeImpl _exchange;
-    private TestConsumerTarget _consumerTarget = new TestConsumerTarget();
+    private TestConsumerTarget _consumerTarget = new TestConsumerTarget();  // TODO replace with minimally configured mockito mock
     private QueueConsumer<?,?> _consumer;
     private Map<String,Object> _arguments = Collections.emptyMap();
 

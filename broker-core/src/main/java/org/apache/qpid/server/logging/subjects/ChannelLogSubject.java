@@ -22,13 +22,13 @@ package org.apache.qpid.server.logging.subjects;
 
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
 
-import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.AMQPConnection;
 
 public class ChannelLogSubject extends AbstractLogSubject
 {
-    private final AMQSessionModel<?,?> _sessionModel;
-    public ChannelLogSubject(AMQSessionModel session)
+    private final AMQPSession<?,?> _sessionModel;
+    public ChannelLogSubject(AMQPSession<?,?> session)
     {
         _sessionModel = session;
         updateSessionDetails();

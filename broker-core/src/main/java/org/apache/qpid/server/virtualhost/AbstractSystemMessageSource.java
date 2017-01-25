@@ -40,8 +40,8 @@ import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.message.MessageContainer;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -104,7 +104,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     }
 
     @Override
-    public boolean verifySessionAccess(final AMQSessionModel<?,?> session)
+    public boolean verifySessionAccess(final AMQPSession<?,?> session)
     {
         return true;
     }
