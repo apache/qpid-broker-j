@@ -61,8 +61,12 @@ org.apache.qpid.test.unit.topic.TemporaryTopicTest#testExplicitTemporaryTopicDel
 org.apache.qpid.test.unit.topic.TemporaryTopicTest#testMessageDeliveryUsingTemporaryTopic
 // No exception is thrown when attempting to make a durable subscription to the temporary topic
 org.apache.qpid.test.unit.topic.TemporaryTopicTest#testDurableSubscriptionProhibited
+// Test uses AMQP 0-x ack modes and assumes the name of the queues backing subscriptions
+org.apache.qpid.test.unit.topic.DurableSubscriptionTest#*
 
 // These tests require some way to set properties on the link established by the client
 org.apache.qpid.server.queue.ConsumerPriorityTest#*
 org.apache.qpid.server.queue.ArrivalTimeFilterTest#*
 
+// QPID-7603: broker side delivery count support is not complete
+org.apache.qpid.test.unit.client.MaxDeliveryCountTest#*
