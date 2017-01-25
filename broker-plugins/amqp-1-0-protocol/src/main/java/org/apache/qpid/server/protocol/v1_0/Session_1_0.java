@@ -53,6 +53,9 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
+import org.apache.qpid.filter.SelectorParsingException;
+import org.apache.qpid.filter.selector.ParseException;
+import org.apache.qpid.filter.selector.TokenMgrError;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
@@ -2078,7 +2081,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         private BindingInfo(Exchange<?> exchange,
                             final String queueName,
                             String bindingKey,
-                            Map<Symbol, Filter> filters)
+                            Map<Symbol, Filter> filters) throws AmqpErrorException
         {
             String binding = null;
             final Map<String, Object> arguments = new HashMap<>();
@@ -2111,9 +2114,28 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                         _actualFilters.put(entry.getKey(), entry.getValue());
                         arguments.put(AMQPFilterTypes.NO_LOCAL.toString(), true);
                     }
-                    else if(!hasMessageFilter && entry.getValue() instanceof org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter)
+                    else if (!hasMessageFilter
+                             && entry.getValue() instanceof org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter)
                     {
-                        org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter selectorFilter = (org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter) entry.getValue();
+                        org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter selectorFilter =
+                                (org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter) entry.getValue();
+
+                        // TODO: QPID-7642 - due to inconsistent handling of invalid filters
+                        // by different exchange implementations
+                        // we need to validate filter before creation of binding
+                        try
+                        {
+                            new org.apache.qpid.server.filter.JMSSelectorFilter(selectorFilter.getValue());
+                        }
+                        catch (ParseException | SelectorParsingException | TokenMgrError e)
+                        {
+                            Error error = new Error();
+                            error.setCondition(AmqpError.INVALID_FIELD);
+                            error.setDescription("Invalid JMS Selector: " + selectorFilter.getValue());
+                            error.setInfo(Collections.singletonMap(Symbol.valueOf("field"), Symbol.valueOf("filter")));
+                            throw new AmqpErrorException(error);
+                        }
+
                         arguments.put(AMQPFilterTypes.JMS_SELECTOR.toString(), selectorFilter.getValue());
                         _actualFilters.put(entry.getKey(), selectorFilter);
                         hasMessageFilter = true;
@@ -2168,11 +2190,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
             final BindingInfo that = (BindingInfo) o;
 
-            if (!_actualFilters.equals(that._actualFilters))
-            {
-                return false;
-            }
-            return _bindings.equals(that._bindings);
+            return _actualFilters.equals(that._actualFilters) && _bindings.equals(that._bindings);
         }
 
         @Override
