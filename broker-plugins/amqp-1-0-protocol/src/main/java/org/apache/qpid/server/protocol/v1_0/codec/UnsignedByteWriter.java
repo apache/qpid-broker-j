@@ -22,38 +22,18 @@
 package org.apache.qpid.server.protocol.v1_0.codec;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
-public class UnsignedByteWriter implements ValueWriter<UnsignedByte>
+public class UnsignedByteWriter extends FixedOneWriter<UnsignedByte>
 {
-    private byte _value;
-
-    public UnsignedByteWriter()
+    public UnsignedByteWriter(final UnsignedByte value)
     {
+        super(value.byteValue());
     }
-
-
-    public UnsignedByteWriter(UnsignedByte value)
-    {
-        setValue(value);
-    }
-
 
     @Override
-    public int getEncodedSize()
+    protected byte getFormatCode()
     {
-        return 2;
-    }
-
-    public void writeToBuffer(QpidByteBuffer buffer)
-    {
-        buffer.put((byte)0x50);
-        buffer.put(_value);
-    }
-
-    public void setValue(UnsignedByte value)
-    {
-        _value = value.byteValue();
+        return (byte) 0x50;
     }
 
     private static Factory<UnsignedByte> FACTORY = new Factory<UnsignedByte>()

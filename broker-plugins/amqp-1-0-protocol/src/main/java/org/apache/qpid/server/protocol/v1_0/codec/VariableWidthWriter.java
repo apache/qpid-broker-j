@@ -34,7 +34,8 @@ public abstract class VariableWidthWriter<V> implements ValueWriter<V>
         _size = (_length & 0xFFFFFF00) == 0 ? 1 : 4;
     }
 
-    public void writeToBuffer(QpidByteBuffer buffer)
+    @Override
+    public final void writeToBuffer(QpidByteBuffer buffer)
     {
 
         final int length = getLength();
@@ -54,7 +55,7 @@ public abstract class VariableWidthWriter<V> implements ValueWriter<V>
     }
 
     @Override
-    public int getEncodedSize()
+    public final int getEncodedSize()
     {
         return 1 + _size + getLength();
     }

@@ -42,6 +42,7 @@ public class BooleanWriter implements ValueWriter<Boolean>
         return 1;
     }
 
+    @Override
     public void writeToBuffer(QpidByteBuffer buffer)
     {
         buffer.put(_value ? (byte)0x41 : (byte)0x42);

@@ -72,7 +72,8 @@ public class LongWriter
             super(value.byteValue());
         }
 
-        @Override protected byte getFormatCode()
+        @Override
+        protected byte getFormatCode()
         {
             return ONE_BYTE_FORMAT_CODE;
         }

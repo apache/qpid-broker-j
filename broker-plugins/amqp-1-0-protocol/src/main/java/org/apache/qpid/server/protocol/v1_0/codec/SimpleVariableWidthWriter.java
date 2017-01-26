@@ -33,6 +33,7 @@ public abstract class SimpleVariableWidthWriter<V> extends VariableWidthWriter<V
         _buf = value;
     }
 
+    @Override
     protected final void writeBytes(QpidByteBuffer buf, int offset, int length)
     {
         buf.put(_buf, offset, length);

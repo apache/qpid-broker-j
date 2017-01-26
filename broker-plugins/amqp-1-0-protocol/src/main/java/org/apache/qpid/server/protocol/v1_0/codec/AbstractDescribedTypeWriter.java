@@ -36,17 +36,16 @@ public abstract class AbstractDescribedTypeWriter<V> implements ValueWriter<V>
         _describedWriter = describedWriter;
     }
 
-
-    public void writeToBuffer(QpidByteBuffer buffer)
+    @Override
+    public final void writeToBuffer(QpidByteBuffer buffer)
     {
         buffer.put(DESCRIBED_TYPE);
         _descriptorWriter.writeToBuffer(buffer);
         _describedWriter.writeToBuffer(buffer);
-
     }
 
     @Override
-    public int getEncodedSize()
+    public final int getEncodedSize()
     {
         return 1 + _descriptorWriter.getEncodedSize() + _describedWriter.getEncodedSize();
     }

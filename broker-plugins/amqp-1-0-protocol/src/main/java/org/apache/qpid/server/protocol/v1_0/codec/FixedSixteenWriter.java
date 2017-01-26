@@ -37,8 +37,7 @@ public abstract class FixedSixteenWriter<T extends Object> implements ValueWrite
         setValue(object);
     }
 
-
-
+    @Override
     public final void writeToBuffer(QpidByteBuffer buffer)
     {
         buffer.put(getFormatCode());
@@ -47,7 +46,7 @@ public abstract class FixedSixteenWriter<T extends Object> implements ValueWrite
     }
 
     @Override
-    public int getEncodedSize()
+    public final int getEncodedSize()
     {
         return 17;
     }

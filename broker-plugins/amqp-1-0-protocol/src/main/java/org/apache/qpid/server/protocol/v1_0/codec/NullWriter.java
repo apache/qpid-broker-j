@@ -33,6 +33,7 @@ public class NullWriter implements ValueWriter<Void>
         return 1;
     }
 
+    @Override
     public void writeToBuffer(QpidByteBuffer buffer)
     {
 

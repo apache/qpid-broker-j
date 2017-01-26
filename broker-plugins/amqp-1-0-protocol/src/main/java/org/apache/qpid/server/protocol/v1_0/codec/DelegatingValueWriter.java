@@ -39,13 +39,14 @@ public abstract class DelegatingValueWriter<V> implements ValueWriter<V>
         setValue(object);
     }
 
-    public void writeToBuffer(final QpidByteBuffer buffer)
+    @Override
+    public final void writeToBuffer(final QpidByteBuffer buffer)
     {
         _delegate.writeToBuffer(buffer);
     }
 
     @Override
-    public int getEncodedSize()
+    public final int getEncodedSize()
     {
         return _delegate.getEncodedSize();
     }

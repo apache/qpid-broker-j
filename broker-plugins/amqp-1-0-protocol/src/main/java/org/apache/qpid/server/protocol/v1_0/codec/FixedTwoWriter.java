@@ -36,14 +36,15 @@ public abstract class FixedTwoWriter <T extends Object> implements ValueWriter<T
         setValue(object);
     }
 
-    public void writeToBuffer(QpidByteBuffer buffer)
+    @Override
+    public final void writeToBuffer(QpidByteBuffer buffer)
     {
         buffer.put(getFormatCode());
         buffer.putShort(_value);
     }
 
     @Override
-    public int getEncodedSize()
+    public final int getEncodedSize()
     {
         return 3;
     }

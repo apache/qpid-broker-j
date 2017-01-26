@@ -39,6 +39,7 @@ public class UnsignedLongWriter
             return 1;
         }
 
+        @Override
         public void writeToBuffer(QpidByteBuffer buffer)
         {
             buffer.put(ZERO_BYTE_FORMAT_CODE);
@@ -87,7 +88,8 @@ public class UnsignedLongWriter
             super(value);
         }
 
-        @Override protected byte getFormatCode()
+        @Override
+        protected byte getFormatCode()
         {
             return ONE_BYTE_FORMAT_CODE;
         }

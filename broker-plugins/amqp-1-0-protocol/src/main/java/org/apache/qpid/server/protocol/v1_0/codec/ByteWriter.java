@@ -42,6 +42,7 @@ public class ByteWriter implements ValueWriter<Byte>
         return 2;
     }
 
+    @Override
     public void writeToBuffer(QpidByteBuffer buffer)
     {
 

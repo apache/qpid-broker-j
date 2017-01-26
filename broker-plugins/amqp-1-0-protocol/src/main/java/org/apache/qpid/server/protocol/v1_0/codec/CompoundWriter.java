@@ -40,7 +40,7 @@ public abstract class CompoundWriter<V> implements ValueWriter<V>
 
 
     @Override
-    public int getEncodedSize()
+    public final int getEncodedSize()
     {
         int encodedSize = 1; // byte for the count
         if(_length == -1)
@@ -71,7 +71,7 @@ public abstract class CompoundWriter<V> implements ValueWriter<V>
     }
 
     @Override
-    public void writeToBuffer(QpidByteBuffer buffer)
+    public final void writeToBuffer(QpidByteBuffer buffer)
     {
         if(_length == -1)
         {

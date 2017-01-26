@@ -32,6 +32,7 @@ public abstract class FixedEightWriter<T extends Object> implements ValueWriter<
         _value = value;
     }
 
+    @Override
     public final void writeToBuffer(QpidByteBuffer buffer)
     {
         buffer.put(getFormatCode());
@@ -39,7 +40,7 @@ public abstract class FixedEightWriter<T extends Object> implements ValueWriter<
     }
 
     @Override
-    public int getEncodedSize()
+    public final int getEncodedSize()
     {
         return 9;
     }

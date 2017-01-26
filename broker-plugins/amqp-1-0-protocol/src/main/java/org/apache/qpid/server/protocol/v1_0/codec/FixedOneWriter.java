@@ -31,14 +31,15 @@ public abstract class FixedOneWriter<T> implements ValueWriter<T>
         _value = value;
     }
 
-    public void writeToBuffer(QpidByteBuffer buffer)
+    @Override
+    public final void writeToBuffer(QpidByteBuffer buffer)
     {
         buffer.put(getFormatCode());
         buffer.put(_value);
     }
 
     @Override
-    public int getEncodedSize()
+    public final int getEncodedSize()
     {
         return 2;
     }
