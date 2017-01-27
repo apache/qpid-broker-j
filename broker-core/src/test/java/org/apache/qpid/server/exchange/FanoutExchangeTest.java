@@ -69,6 +69,7 @@ public class FanoutExchangeTest extends QpidTestCase
     private QueueManagingVirtualHost _virtualHost;
     private TaskExecutor _taskExecutor;
 
+    @Override
     public void setUp()
     {
         Map<String,Object> attributes = new HashMap<String, Object>();
@@ -100,6 +101,8 @@ public class FanoutExchangeTest extends QpidTestCase
         _exchange.open();
     }
 
+    @Override
+
     public void tearDown() throws Exception
     {
         super.tearDown();
@@ -125,30 +128,111 @@ public class FanoutExchangeTest extends QpidTestCase
 
     public void testIsBoundStringMapAMQQueue()
     {
-        Queue<?> queue = bindQueue();
+        Queue<?> queue = bindQueue("matters");
         assertTrue("Should return true for a bound queue",
                 _exchange.isBound("matters", null, queue));
     }
 
     public void testIsBoundStringAMQQueue()
     {
-        Queue<?> queue = bindQueue();
+        Queue<?> queue = bindQueue("matters");
         assertTrue("Should return true for a bound queue",
                 _exchange.isBound("matters", queue));
     }
 
     public void testIsBoundAMQQueue()
     {
-        Queue<?> queue = bindQueue();
+        Queue<?> queue = bindQueue("matters");
         assertTrue("Should return true for a bound queue",
                 _exchange.isBound(queue));
     }
 
-    private Queue<?> bindQueue()
+
+    public void testRouteToDestination() throws Exception
+    {
+        List<? extends BaseQueue> result;
+        Queue<?> queue = mockQueue();
+
+        result = routeToQueues(mockMessage(true), null, InstanceProperties.EMPTY);
+        assertEquals("Fanout exchange without bindings routed message to unexpected number of queues", 0, result.size());
+
+        _exchange.addBinding("key", queue, null);
+
+        result = routeToQueues(mockMessage(true), null, InstanceProperties.EMPTY);
+        assertEquals("Fanout exchange with 1 binding routed message to unexpected number of queues", 1, result.size());
+
+        _exchange.deleteBinding("key", queue);
+        result = routeToQueues(mockMessage(true), null, InstanceProperties.EMPTY);
+        assertEquals("Fanout exchange with no bindings routed message to unexpected number of queues", 0, result.size());
+    }
+
+    public void testDestinationRemoved() throws Exception
+    {
+        List<? extends BaseQueue> result;
+        Queue<?> queue = mockQueue();
+
+        result = routeToQueues(mockMessage(true), null, InstanceProperties.EMPTY);
+        assertEquals("Fanout exchange without bindings routed message to unexpected number of queues", 0, result.size());
+
+        _exchange.addBinding("key", queue, null);
+
+        result = routeToQueues(mockMessage(true), null, InstanceProperties.EMPTY);
+        assertEquals("Fanout exchange with 1 binding routed message to unexpected number of queues", 1, result.size());
+
+        _exchange.destinationRemoved(queue);
+        result = routeToQueues(mockMessage(true), null, InstanceProperties.EMPTY);
+        assertEquals("Fanout exchange with no bindings routed message to unexpected number of queues", 0, result.size());
+    }
+
+
+    public void testRoutingWithSelectors() throws Exception
     {
         Queue<?> queue = mockQueue();
 
-        _exchange.addBinding("matters", queue, null);
+        List<? extends BaseQueue> result;
+
+        _exchange.addBinding("key2", queue, Collections.<String, Object>singletonMap(AMQPFilterTypes.JMS_SELECTOR.toString(),"prop = True"));
+
+        result = routeToQueues(mockMessage(true), "", InstanceProperties.EMPTY);
+
+        assertEquals("Expected matching message to be routed to queue", 1, result.size());
+        assertTrue("Expected matching message to be routed to queue", result.contains(queue));
+
+        result = routeToQueues(mockMessage(false), "", InstanceProperties.EMPTY);
+
+        assertEquals("Expected non matching message not to be routed to queue", 0, result.size());
+    }
+
+    public void testMultipleBindings() throws Exception
+    {
+        Queue<?> queue1 = mockQueue();
+        Queue<?> queue2 = mockQueue();
+
+        List<? extends BaseQueue> result;
+
+        _exchange.addBinding("key", queue1, null);
+        _exchange.addBinding("key", queue2, null);
+
+        result = routeToQueues(mockMessage(true), "", InstanceProperties.EMPTY);
+
+        assertEquals("Expected message to be routed to both queues", 2, result.size());
+        assertTrue("Expected queue1 to be in routing result", result.contains(queue1));
+        assertTrue("Expected queue2 to be in routing result", result.contains(queue2));
+
+        _exchange.addBinding("key1", queue2, null);
+
+        result = routeToQueues(mockMessage(false), "", InstanceProperties.EMPTY);
+
+        assertEquals("Expected message to be routed to both queues", 2, result.size());
+        assertTrue("Expected queue1 to be in routing result", result.contains(queue1));
+        assertTrue("Expected queue2 to be in routing result", result.contains(queue2));
+    }
+
+    private Queue<?> bindQueue(final String bindingKey)
+    {
+        Queue<?> queue = mockQueue();
+
+        _exchange.addBinding(bindingKey, queue, null);
         return queue;
     }
 
@@ -169,54 +253,6 @@ public class FanoutExchangeTest extends QpidTestCase
         result.addQueue(queue);
         when(queue.route(any(ServerMessage.class),anyString(),any(InstanceProperties.class))).thenReturn(result);
         return queue;
-    }
-
-    public void testRoutingWithSelectors() throws Exception
-    {
-        Queue<?> queue1 = mockQueue();
-        Queue<?> queue2 = mockQueue();
-
-
-        _exchange.addBinding("key",queue1, null);
-        _exchange.addBinding("key",queue2, null);
-
-        List<? extends BaseQueue> result;
-        result = routeToQueues(mockMessage(true), "", InstanceProperties.EMPTY);
-
-        assertEquals("Expected message to be routed to both queues", 2, result.size());
-        assertTrue("Expected queue1 to be routed to", result.contains(queue1));
-        assertTrue("Expected queue2 to be routed to", result.contains(queue2));
-
-        _exchange.addBinding("key2",queue2, Collections.singletonMap(AMQPFilterTypes.JMS_SELECTOR.toString(),(Object)"select = True"));
-
-        result = routeToQueues(mockMessage(true), "", InstanceProperties.EMPTY);
-
-        assertEquals("Expected message to be routed to both queues", 2, result.size());
-        assertTrue("Expected queue1 to be routed to", result.contains(queue1));
-        assertTrue("Expected queue2 to be routed to", result.contains(queue2));
-
-        _exchange.deleteBinding("key",queue2);
-
-        result = routeToQueues(mockMessage(true), "", InstanceProperties.EMPTY);
-
-        assertEquals("Expected message to be routed to both queues", 2, result.size());
-        assertTrue("Expected queue1 to be routed to", result.contains(queue1));
-        assertTrue("Expected queue2 to be routed to", result.contains(queue2));
-
-        result = routeToQueues(mockMessage(false), "", InstanceProperties.EMPTY);
-
-        assertEquals("Expected message to be routed to queue1 only", 1, result.size());
-        assertTrue("Expected queue1 to be routed to", result.contains(queue1));
-        assertFalse("Expected queue2 not to be routed to", result.contains(queue2));
-
-        _exchange.addBinding("key",queue2, Collections.singletonMap(AMQPFilterTypes.JMS_SELECTOR.toString(),(Object)"select = False"));
-
-        result = routeToQueues(mockMessage(false), "", InstanceProperties.EMPTY);
-        assertEquals("Expected message to be routed to both queues", 2, result.size());
-        assertTrue("Expected queue1 to be routed to", result.contains(queue1));
-        assertTrue("Expected queue2 to be routed to", result.contains(queue2));
-
-
     }
 
     private List<? extends BaseQueue> routeToQueues(final ServerMessage message,
@@ -301,12 +337,12 @@ public class FanoutExchangeTest extends QpidTestCase
         return resultQueues;
     }
 
-    private ServerMessage mockMessage(boolean val)
+    private ServerMessage mockMessage(boolean propValue)
     {
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
-        when(header.containsHeader("select")).thenReturn(true);
-        when(header.getHeader("select")).thenReturn(val);
-        when(header.getHeaderNames()).thenReturn(Collections.singleton("select"));
+        when(header.containsHeader("prop")).thenReturn(true);
+        when(header.getHeader("prop")).thenReturn(propValue);
+        when(header.getHeaderNames()).thenReturn(Collections.singleton("prop"));
         when(header.containsHeaders(anySet())).then(new Answer<Object>()
         {
             @Override

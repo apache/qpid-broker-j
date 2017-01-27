@@ -248,7 +248,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 final Map<String, Object> bindArguments =
                         UNBIND_ARGUMENTS_CREATOR.createMap(b.getBindingKey(), destination);
                 getEventLogger().message(_logSubject, BindingMessages.DELETED(String.valueOf(bindArguments)));
-
+                onUnbind(new BindingIdentifier(b.getBindingKey(), destination));
                 _bindings.remove(b);
             }
         }
