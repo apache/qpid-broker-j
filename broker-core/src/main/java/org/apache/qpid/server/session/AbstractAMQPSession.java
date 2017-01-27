@@ -22,7 +22,6 @@ package org.apache.qpid.server.session;
 
 import java.security.AccessControlContext;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -50,7 +49,6 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
-import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Session;
@@ -172,13 +170,6 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         return getBlocking();
     }
 
-    public abstract boolean getBlocking();
-
-    public abstract Collection<Consumer<?,X>> getConsumers();
-
-    @Override
-    public abstract long getConsumerCount();
-
     @Override
     public int getLocalTransactionOpen()
     {
@@ -191,12 +182,6 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     {
         return getTxnStart();
     }
-
-    public abstract long getTxnRejects();
-
-    public abstract long getTxnCommits();
-
-    public abstract long getTxnStart();
 
     public long getLocalTransactionRollbacks()
     {
@@ -220,8 +205,6 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     {
         _taskList.remove(task);
     }
-
-    public abstract int getUnacknowledgedMessageCount();
 
     @Override
     public Date getTransactionStartTime()
@@ -375,16 +358,10 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         _connection.getAggregateTicker().removeTicker(ticker);
     }
 
-    public abstract void doTimeoutAction(final String idleTransactionTimeoutError);
-
     public LogSubject getLogSubject()
     {
         return _logSubject;
     }
-
-    public abstract long getTransactionUpdateTimeLong();
-
-    public abstract long getTransactionStartTimeLong();
 
     @Override
     protected void logOperation(final String operation)
@@ -430,8 +407,6 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
             getAMQPConnection().notifyWork(this);
         }
     }
-
-    public abstract void transportStateChanged();
 
     protected abstract void updateBlockedStateIfNecessary();
 

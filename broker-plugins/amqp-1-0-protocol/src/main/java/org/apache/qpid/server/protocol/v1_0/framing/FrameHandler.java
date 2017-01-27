@@ -26,7 +26,7 @@ import java.util.Formatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.protocol.v1_0.AMQPConnection_1_0Impl;
+import org.apache.qpid.server.protocol.v1_0.AMQPConnection_1_0;
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.codec.ProtocolHandler;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
@@ -53,7 +53,7 @@ public class FrameHandler implements ProtocolHandler
         _isSasl = isSasl;
     }
 
-    public FrameHandler(final AMQPConnection_1_0Impl connection, final boolean sasl)
+    public FrameHandler(final AMQPConnection_1_0 connection, final boolean sasl)
     {
         this(new ValueHandler(connection.getDescribedTypeRegistry()), connection, sasl);
 

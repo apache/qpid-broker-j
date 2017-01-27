@@ -106,9 +106,9 @@ class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanc
         }
     }
 
-    AMQPSession<?,?> getSessionModel()
+    AMQPSession<?,?> getSession()
     {
-        return _target.getSessionModel();
+        return _target.getSession();
     }
 
     @Override

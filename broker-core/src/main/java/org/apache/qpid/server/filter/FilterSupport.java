@@ -138,7 +138,7 @@ public class FilterSupport
             final Collection<QueueConsumer<?,?>> consumers = _queue.getConsumers();
             for(QueueConsumer<?,?> c : consumers)
             {
-                if(c.getSessionModel().getConnectionReference() == message.getConnectionReference())
+                if(c.getSession().getConnectionReference() == message.getConnectionReference())
                 {
                     return false;
                 }

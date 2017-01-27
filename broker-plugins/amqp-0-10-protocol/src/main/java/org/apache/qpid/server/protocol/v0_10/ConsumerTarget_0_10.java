@@ -411,6 +411,11 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
                            });
    }
 
+    void acknowledge(final MessageInstanceConsumer consumer, final MessageInstance entry)
+    {
+        _session.acknowledge(consumer, this, entry);
+    }
+
     void reject(final MessageInstanceConsumer consumer, final MessageInstance entry)
     {
         entry.setRedelivered();
@@ -429,7 +434,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
             entry.setRedelivered();
         }
 
-        if (getSessionModel().isClosing() || !setRedelivered)
+        if (getSession().isClosing() || !setRedelivered)
         {
             entry.decrementDeliveryCount();
         }
@@ -487,7 +492,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
 
     protected EventLogger getEventLogger()
     {
-        return getSessionModel().getAMQPConnection().getEventLogger();
+        return getSession().getAMQPConnection().getEventLogger();
     }
 
     private boolean isMaxDeliveryLimitReached(MessageInstance entry)
@@ -573,14 +578,9 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         stop();
     }
 
-    public Session_0_10 getSessionModel()
+    public Session_0_10 getSession()
     {
         return _session.getModelObject();
-    }
-
-    public ServerSession getSession()
-    {
-        return _session;
     }
 
     public boolean isDurable()

@@ -58,7 +58,7 @@ public interface ConsumerTarget<T extends ConsumerTarget<T>>
 
     long getUnacknowledgedMessages();
 
-    AMQPSession<?,T> getSessionModel();
+    AMQPSession<?,T> getSession();
 
     void send(final MessageInstanceConsumer<T> consumer, MessageInstance entry, boolean batch);
 

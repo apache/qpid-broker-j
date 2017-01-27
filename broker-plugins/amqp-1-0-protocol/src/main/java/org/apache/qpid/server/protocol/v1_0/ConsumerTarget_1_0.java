@@ -315,6 +315,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         }
     }
 
+    @Override
     public Session_1_0 getSession()
     {
         return _link.getSession();
@@ -491,12 +492,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
             }
             return true;
         }
-    }
-
-    @Override
-    public Session_1_0 getSessionModel()
-    {
-        return getSession();
     }
 
     @Override

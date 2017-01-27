@@ -328,7 +328,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
         return _targetAddress;
     }
 
-    public AMQChannel getSessionModel()
+    public AMQChannel getSession()
     {
         return _channel;
     }

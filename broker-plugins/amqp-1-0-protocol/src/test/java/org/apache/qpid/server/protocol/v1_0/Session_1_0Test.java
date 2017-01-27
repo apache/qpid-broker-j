@@ -684,9 +684,7 @@ public class Session_1_0Test extends QpidTestCase
     {
         Begin begin = mock(Begin.class);
         when(begin.getNextOutgoingId()).thenReturn(new UnsignedInteger(channelId));
-        Session_1_0 session = new Session_1_0(connection, begin, (short) channelId);
-        session.setReceivingChannel((short)channelId);
-        session.setSendingChannel((short)channelId);
+        Session_1_0 session = new Session_1_0(connection, begin, (short) channelId, (short) channelId);
         return session;
     }
 

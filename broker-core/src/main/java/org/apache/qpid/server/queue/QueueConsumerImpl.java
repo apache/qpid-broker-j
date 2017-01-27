@@ -112,9 +112,9 @@ class QueueConsumerImpl<T extends ConsumerTarget>
                       final Integer priority)
     {
         super(queue,
-              createAttributeMap(target.getSessionModel(), consumerName, filters, optionSet, priority));
+              createAttributeMap(target.getSession(), consumerName, filters, optionSet, priority));
         _messageClass = messageClass;
-        _sessionReference = target.getSessionModel().getConnectionReference();
+        _sessionReference = target.getSession().getConnectionReference();
         _consumerNumber = CONSUMER_NUMBER_GENERATOR.getAndIncrement();
         _filters = filters;
         _acquires = optionSet.contains(ConsumerOption.ACQUIRES);
@@ -132,7 +132,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
         setupLogging();
     }
 
-    private static Map<String, Object> createAttributeMap(final AMQPSession<?,?> sessionModel,
+    private static Map<String, Object> createAttributeMap(final AMQPSession<?,?> session,
                                                           String linkName,
                                                           FilterManager filters,
                                                           EnumSet<ConsumerOption> optionSet,
@@ -140,9 +140,9 @@ class QueueConsumerImpl<T extends ConsumerTarget>
     {
         Map<String,Object> attributes = new HashMap<String, Object>();
         attributes.put(ID, UUID.randomUUID());
-        String name = sessionModel.getAMQPConnection().getConnectionId()
+        String name = session.getAMQPConnection().getConnectionId()
                       + "|"
-                      + sessionModel.getChannelId()
+                      + session.getChannelId()
                       + "|"
                       + linkName;
         attributes.put(NAME, name);
@@ -215,9 +215,9 @@ class QueueConsumerImpl<T extends ConsumerTarget>
     }
 
     @Override
-    public AMQPSession<?,?> getSessionModel()
+    public AMQPSession<?,?> getSession()
     {
-        return _target.getSessionModel();
+        return _target.getSession();
     }
 
     @Override

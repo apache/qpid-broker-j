@@ -116,10 +116,10 @@ import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.util.Functions;
 
 public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnection_1_0Impl, ConnectionHandler>
-        implements FrameOutputHandler, DescribedTypeConstructorRegistry.Source,
+        implements FrameOutputHandler,
+                   DescribedTypeConstructorRegistry.Source,
                    ValueWriter.Registry.Source,
                    SASLEndpoint,
-                   ConnectionHandler,
                    AMQPConnection_1_0<AMQPConnection_1_0Impl>
 {
 
@@ -153,9 +153,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     (byte) 0,
                     (byte) 0
             };
-
-    private static final Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
-    public static final Symbol SHARED_SUBSCRIPTIONS = Symbol.valueOf("SHARED-SUBS");
 
     private FrameWriter _frameWriter;
     private ProtocolHandler _frameHandler;
@@ -570,16 +567,16 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     }
 
-    public void receiveBegin(final short channel, final Begin begin)
+    public void receiveBegin(final short receivingChannelId, final Begin begin)
     {
 
         assertState(FrameReceivingState.ANY_FRAME);
-        short myChannelId;
+        short sendingChannelId;
         if (begin.getRemoteChannel() != null)
         {
             closeConnection(ConnectionError.FRAMING_ERROR,
                             "BEGIN received on channel "
-                            + channel
+                            + receivingChannelId
                             + " with given remote-channel "
                             + begin.getRemoteChannel()
                             + ". Since the broker does not spontaneously start channels, this must be an error.");
@@ -588,40 +585,37 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         else // Peer requesting session creation
         {
 
-            if (_receivingSessions[channel] == null)
+            if (_receivingSessions[receivingChannelId] == null)
             {
-                myChannelId = getFirstFreeChannel();
-                if (myChannelId == -1)
+                sendingChannelId = getFirstFreeChannel();
+                if (sendingChannelId == -1)
                 {
 
                     closeConnection(ConnectionError.FRAMING_ERROR,
                                     "BEGIN received on channel "
-                                    + channel
+                                    + receivingChannelId
                                     + ". There are no free channels for the broker to respond on.");
 
                 }
-                Session_1_0 session = new Session_1_0(this, begin, myChannelId);
+                Session_1_0 session = new Session_1_0(this, begin, sendingChannelId, receivingChannelId);
                 session.create();
 
-                _receivingSessions[channel] = session;
-                _sendingSessions[myChannelId] = session;
+                _receivingSessions[receivingChannelId] = session;
+                _sendingSessions[sendingChannelId] = session;
 
                 Begin beginToSend = new Begin();
-
-                session.setReceivingChannel(channel);
-                session.setSendingChannel(myChannelId);
-                beginToSend.setRemoteChannel(UnsignedShort.valueOf(channel));
+                beginToSend.setRemoteChannel(UnsignedShort.valueOf(receivingChannelId));
                 beginToSend.setNextOutgoingId(session.getNextOutgoingId());
                 beginToSend.setOutgoingWindow(session.getOutgoingWindowSize());
                 beginToSend.setIncomingWindow(session.getIncomingWindowSize());
-                sendFrame(myChannelId, beginToSend);
+                sendFrame(sendingChannelId, beginToSend);
 
                 _sessions.add(session);
             }
             else
             {
                 closeConnection(ConnectionError.FRAMING_ERROR,
-                                "BEGIN received on channel " + channel + " which is already in use.");
+                                "BEGIN received on channel " + receivingChannelId + " which is already in use.");
             }
 
         }

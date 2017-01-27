@@ -37,7 +37,6 @@ import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.queue.SuspendedConsumerLoggingTicker;
-import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.AMQPConnection;
 
 public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>> implements ConsumerTarget<T>
@@ -97,7 +96,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
     {
         @SuppressWarnings("unchecked")
         final T target = (T) this;
-        getSessionModel().notifyWork(target);
+        getSession().notifyWork(target);
     }
 
     protected final void setNotifyWorkDesired(final boolean desired)
@@ -108,12 +107,12 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
             {
                 if (desired)
                 {
-                    getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
+                    getSession().removeTicker(_suspendedConsumerLoggingTicker);
                 }
                 else
                 {
                     _suspendedConsumerLoggingTicker.setStartTime(System.currentTimeMillis());
-                    getSessionModel().addTicker(_suspendedConsumerLoggingTicker);
+                    getSession().addTicker(_suspendedConsumerLoggingTicker);
                 }
             }
 
@@ -134,7 +133,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
     @Override
     public boolean processPending()
     {
-        if (!getSessionModel().getAMQPConnection().isIOThread())
+        if (!getSession().getAMQPConnection().isIOThread())
         {
             return false;
         }
@@ -172,7 +171,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
 
     private ListenableFuture<Void> doOnIoThreadAsync(final Runnable task)
     {
-        return getSessionModel().getAMQPConnection().doOnIOThreadAsync(task);
+        return getSession().getAMQPConnection().doOnIOThreadAsync(task);
     }
 
     private void consumerRemovedInternal(final MessageInstanceConsumer sub)
@@ -279,7 +278,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
             }
             if (_suspendedConsumerLoggingTicker != null)
             {
-                getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
+                getSession().removeTicker(_suspendedConsumerLoggingTicker);
             }
 
             return true;

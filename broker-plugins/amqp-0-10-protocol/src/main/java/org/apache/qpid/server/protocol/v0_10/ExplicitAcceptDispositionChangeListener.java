@@ -47,7 +47,7 @@ class ExplicitAcceptDispositionChangeListener implements ServerSession.MessageDi
 
     public void onAccept()
     {
-        _target.getSession().acknowledge(_consumer, _target, _entry);
+        _target.acknowledge(_consumer, _entry);
     }
 
     public void onRelease(boolean setRedelivered)

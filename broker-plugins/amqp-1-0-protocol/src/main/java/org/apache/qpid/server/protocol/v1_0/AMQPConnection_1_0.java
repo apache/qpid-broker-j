@@ -27,6 +27,7 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
@@ -35,8 +36,13 @@ import org.apache.qpid.server.transport.ProtocolEngine;
 
 @ManagedObject(category = false, creatable = false, type="AMQP_1_0")
 public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQPConnection<C>,
-                                                                             ProtocolEngine, EventLoggerProvider
+                                                                             ProtocolEngine,
+                                                                             ConnectionHandler,
+                                                                             EventLoggerProvider
 {
+    Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
+    Symbol SHARED_SUBSCRIPTIONS = Symbol.valueOf("SHARED-SUBS");
+
     Object getReference();
 
     String getRemoteContainerId();

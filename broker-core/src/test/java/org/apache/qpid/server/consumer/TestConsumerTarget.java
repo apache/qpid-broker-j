@@ -85,7 +85,7 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         return queue;
     }
 
-    public AMQPSession getSessionModel()
+    public AMQPSession getSession()
     {
         return _sessionModel;
     }

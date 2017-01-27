@@ -80,7 +80,7 @@ public interface Consumer<X extends Consumer<X,T>, T extends ConsumerTarget> ext
     long getUnacknowledgedMessages();
 
 
-    AMQPSession<?,?> getSessionModel();
+    AMQPSession<?,?> getSession();
 
     long getConsumerNumber();
 

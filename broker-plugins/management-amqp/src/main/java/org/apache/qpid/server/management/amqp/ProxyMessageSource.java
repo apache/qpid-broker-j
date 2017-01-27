@@ -273,9 +273,9 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
         }
 
         @Override
-        public AMQPSession getSessionModel()
+        public AMQPSession getSession()
         {
-            return _underlying.getSessionModel();
+            return _underlying.getSession();
         }
 
         @Override

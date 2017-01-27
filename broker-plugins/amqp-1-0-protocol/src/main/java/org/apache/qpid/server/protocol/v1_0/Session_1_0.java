@@ -122,7 +122,6 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-import org.apache.qpid.transport.network.Ticker;
 
 public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget_1_0>
         implements LogSubject, org.apache.qpid.server.util.Deletable<Session_1_0>
@@ -150,7 +149,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private final Map<String, ReceivingLinkEndpoint> _receivingLinkMap = new HashMap<>();
     private final Map<LinkEndpoint, UnsignedInteger> _localLinkEndpoints = new HashMap<>();
     private final Map<UnsignedInteger, LinkEndpoint> _remoteLinkEndpoints = new HashMap<>();
-    private long _lastAttachedTime;
 
     private short _receivingChannel;
     private final short _sendingChannel;
@@ -189,34 +187,28 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private volatile long _rolledBackTransactions;
     private volatile int _unacknowledgedMessages;
 
-    public Session_1_0(final AMQPConnection_1_0 connection, Begin begin, short sendingChannelId)
+    public Session_1_0(final AMQPConnection_1_0 connection,
+                       Begin begin,
+                       short sendingChannelId,
+                       short receivingChannelId)
     {
         super(connection, sendingChannelId);
         _sendingChannel = sendingChannelId;
-        _sessionState = SessionState.BEGIN_RECVD;
+        _receivingChannel = receivingChannelId;
+        _sessionState = SessionState.ACTIVE;
         _nextIncomingTransferId = new SequenceNumber(begin.getNextOutgoingId().intValue());
         _connection = connection;
         _primaryDomain = getPrimaryDomain();
-    }
 
-    public void setReceivingChannel(final short receivingChannel)
-    {
-        _receivingChannel = receivingChannel;
-        switch(_sessionState)
+        AccessController.doPrivileged((new PrivilegedAction<Object>()
         {
-            case INACTIVE:
-                _sessionState = SessionState.BEGIN_RECVD;
-                break;
-            case BEGIN_SENT:
-                _sessionState = SessionState.ACTIVE;
-                break;
-            case END_PIPE:
-                _sessionState = SessionState.END_SENT;
-                break;
-            default:
-                // TODO error
-
-        }
+            @Override
+            public Object run()
+            {
+                _connection.getEventLogger().message(ChannelMessages.CREATE());
+                return null;
+            }
+        }), _accessControllerContext);
     }
 
     public void sendDetach(final Detach detach)
@@ -545,33 +537,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         sendFlow(new Flow());
     }
 
-    public void setSendingChannel(final short sendingChannel)
-    {
-        switch(_sessionState)
-        {
-            case INACTIVE:
-                _sessionState = SessionState.BEGIN_SENT;
-                break;
-            case BEGIN_RECVD:
-                _sessionState = SessionState.ACTIVE;
-                break;
-            default:
-                // TODO error
-
-        }
-
-        AccessController.doPrivileged((new PrivilegedAction<Object>()
-        {
-            @Override
-            public Object run()
-            {
-                _connection.getEventLogger().message(ChannelMessages.CREATE());
-
-                return null;
-            }
-        }), _accessControllerContext);
-    }
-
     public void sendFlow(final Flow flow)
     {
         if(_nextIncomingTransferId != null)
@@ -761,7 +726,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 link = createSendingLink(endpoint, attach);
                 if (link != null)
                 {
-                    capabilities.add(AMQPConnection_1_0Impl.SHARED_SUBSCRIPTIONS);
+                    capabilities.add(AMQPConnection_1_0.SHARED_SUBSCRIPTIONS);
                 }
             }
             else if (endpoint.getTarget() instanceof Coordinator)

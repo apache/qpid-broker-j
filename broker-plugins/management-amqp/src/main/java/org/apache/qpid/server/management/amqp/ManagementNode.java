@@ -1007,7 +1007,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
             AMQPSession<?,?> publishingSession = sessionPrincipals.iterator().next().getSession();
             for (ManagementNodeConsumer candidate : _consumers)
             {
-                if (candidate.getTarget().getTargetAddress().equals(replyTo) && candidate.getSessionModel().getConnectionReference() == publishingSession.getConnectionReference())
+                if (candidate.getTarget().getTargetAddress().equals(replyTo) && candidate.getSession().getConnectionReference() == publishingSession.getConnectionReference())
                 {
                     consumer = candidate;
                     break;
