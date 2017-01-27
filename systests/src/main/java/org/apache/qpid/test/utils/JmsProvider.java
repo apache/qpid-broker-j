@@ -36,8 +36,6 @@ import javax.naming.NamingException;
 public interface JmsProvider
 {
 
-    InitialContext getInitialContext() throws NamingException;
-
     ConnectionFactory getConnectionFactory() throws NamingException;
 
     ConnectionFactory getConnectionFactory(Map<String, String> options) throws NamingException;

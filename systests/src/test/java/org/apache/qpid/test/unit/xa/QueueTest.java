@@ -33,7 +33,6 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import junit.framework.TestSuite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,12 +52,12 @@ public class QueueTest extends AbstractXATestCase
     /**
      * standard xa queue connection
      */
-    private static XAQueueConnection _xaqueueConnection= null;
+    private static XAQueueConnection _xaqueueConnection = null;
 
     /**
      * standard xa queue connection
      */
-    private static QueueConnection _queueConnection=null;
+    private static QueueConnection _queueConnection = null;
 
 
     /**
@@ -66,109 +65,45 @@ public class QueueTest extends AbstractXATestCase
      */
     private static QueueSession _nonXASession = null;
 
-    /**
-     * the queue name
-     */
-    private static final String QUEUENAME = "xaQueue";
 
     /** ----------------------------------------------------------------------------------- **/
     /**
      * ----------------------------- JUnit support  ----------------------------------------- *
      */
 
-    /**
-     * Gets the test suite tests
-     *
-     * @return the test suite tests
-     */
-    public static TestSuite getSuite()
-    {
-        return new TestSuite(QueueTest.class);
-    }
-
-    /**
-     * Run the test suite.
-     *
-     * @param args Any command line arguments specified to this class.
-     */
-    public static void main(String args[])
-    {
-        junit.textui.TestRunner.run(getSuite());
-    }
-
+    @Override
     public void tearDown() throws Exception
     {
-        if (!isBroker08())
+        try
         {
-            try
+            if (_xaqueueConnection != null)
             {
                 _xaqueueConnection.close();
+            }
+            if (_queueConnection != null)
+            {
                 _queueConnection.close();
             }
-            catch (Exception e)
-            {
-                fail("Exception thrown when cleaning standard connection: " + e.getStackTrace());
-            }
         }
-        super.tearDown();
+        finally
+        {
+            super.tearDown();
+        }
     }
 
     /**
      * Initialize standard actors
      */
-    public void init()
+    public void init() throws Exception
     {
         if (!isBroker08())
         {
-            // lookup test queue
-            try
-            {
-                _queue = (Queue) getInitialContext().lookup(QUEUENAME);
-            }
-            catch (Exception e)
-            {
-                fail("cannot lookup test queue " + e.getMessage());
-            }
-
-            // lookup connection factory
-            try
-            {
-                _queueFactory = (XAQueueConnectionFactory) getConnectionFactory();
-            }
-            catch (Exception e)
-            {
-                fail("enable to lookup connection factory ");
-            }
-            // create standard connection
-            try
-            {
-                _xaqueueConnection= getNewQueueXAConnection();
-            }
-            catch (JMSException e)
-            {
-                fail("cannot create queue connection: " + e.getMessage());
-            }
-            // create xa session
-            XAQueueSession session = null;
-            try
-            {
-                session = _xaqueueConnection.createXAQueueSession();
-            }
-            catch (JMSException e)
-            {
-                fail("cannot create queue session: " + e.getMessage());
-            }
-            // create a standard session
-            try
-            {
-                _queueConnection = _queueFactory.createQueueConnection("guest", "guest");
-                _nonXASession = _queueConnection.createQueueSession(true, Session.AUTO_ACKNOWLEDGE);
-            }
-            catch (JMSException e)
-            {
-                _logger.error("cannot create queue session",e);
-                fail("cannot create queue session: " + e.getMessage());
-            }
+            _queueFactory = (XAQueueConnectionFactory) getConnectionFactory();
+            _xaqueueConnection= getNewQueueXAConnection();
+            final XAQueueSession session = _xaqueueConnection.createXAQueueSession();
+            _queue = session.createQueue(getTestQueueName());
+            _queueConnection = _queueFactory.createQueueConnection(GUEST_USERNAME, GUEST_PASSWORD);
+            _nonXASession = _queueConnection.createQueueSession(true, Session.AUTO_ACKNOWLEDGE);
             init(session, _queue);
         }
     }

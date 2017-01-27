@@ -217,11 +217,6 @@ public class QpidBrokerTestCase extends QpidTestCase
         }
     }
 
-    public InitialContext getInitialContext() throws NamingException
-    {
-        return _jmsProvider.getInitialContext();
-    }
-
     /**
      * Get the default connection factory for the currently used broker
      * Default factory is "local"

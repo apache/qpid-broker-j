@@ -20,9 +20,13 @@
  */
 package org.apache.qpid.test.utils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
+import javax.jms.IllegalStateException;
 import javax.jms.JMSException;
 import javax.naming.NamingException;
 
@@ -43,9 +47,10 @@ public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionLi
     protected int _port;
     protected int _alternativePort;
     private ConnectionFactory _connectionFactory;
+    private final List<Connection> _connections = new ArrayList<>();
 
     @Override
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         super.setUp();
         _failoverComplete = new CountDownLatch(1);
@@ -58,6 +63,28 @@ public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionLi
         _port = getDefaultBroker().getAmqpPort();
         setTestSystemProperty("test.port.alt", String.valueOf(_alternativePort));
         setTestSystemProperty("test.port", String.valueOf(_port));
+    }
+
+    @Override
+    protected void tearDown() throws Exception
+    {
+        try
+        {
+            for(Connection c : _connections)
+            {
+                try
+                {
+                    c.close();
+                }
+                catch (JMSException e)
+                {
+                }
+            }
+        }
+        finally
+        {
+            super.tearDown();
+        }
     }
 
     /**
@@ -87,7 +114,9 @@ public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionLi
     @Override
     public javax.jms.Connection getConnection() throws JMSException, NamingException
     {
-        return getConnectionFactory().createConnection(GUEST_USERNAME, GUEST_PASSWORD);
+        final Connection connection = getConnectionFactory().createConnection(GUEST_USERNAME, GUEST_PASSWORD);
+        _connections.add(connection);
+        return connection;
     }
 
     public void failDefaultBroker()

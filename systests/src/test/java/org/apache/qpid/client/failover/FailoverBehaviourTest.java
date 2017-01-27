@@ -114,7 +114,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Exception
     private JMSException _exceptionListenerException;
 
     @Override
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         super.setUp();
 

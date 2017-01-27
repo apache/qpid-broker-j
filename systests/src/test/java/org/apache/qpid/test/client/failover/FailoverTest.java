@@ -60,7 +60,7 @@ public class FailoverTest extends FailoverBaseCase
     private Random rand;
 
     @Override
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         super.setUp();
 

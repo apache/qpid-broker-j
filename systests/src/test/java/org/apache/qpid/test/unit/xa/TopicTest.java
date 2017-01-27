@@ -26,7 +26,6 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import junit.framework.TestSuite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,26 +76,7 @@ public class TopicTest extends AbstractXATestCase
     /** ----------------------------- JUnit support  ----------------------------------------- **/
     /** -------------------------------------------------------------------------------------- **/
 
-    /**
-     * Gets the test suite tests
-     *
-     * @return the test suite tests
-     */
-    public static TestSuite getSuite()
-    {
-        return new TestSuite(TopicTest.class);
-    }
-
-    /**
-     * Run the test suite.
-     *
-     * @param args Any command line arguments specified to this class.
-     */
-    public static void main(String args[])
-    {
-        junit.textui.TestRunner.run(getSuite());
-    }
-
+    @Override
     public void tearDown() throws Exception
     {
         if (!isBroker08())
@@ -117,56 +97,17 @@ public class TopicTest extends AbstractXATestCase
     /**
      * Initialize standard actors
      */
-    public void init()
+    public void init() throws Exception
     {
         if (!isBroker08())
         {
             setTestClientSystemProperty(ClientProperties.MAX_PREFETCH_PROP_NAME, "1");
             // lookup test queue
-            try
-            {
-                _topic = (Topic) getInitialContext().lookup(TOPICNAME);
-            }
-            catch (Exception e)
-            {
-                fail("cannot lookup test topic " + e.getMessage());
-            }
-            // lookup connection factory
-            try
-            {
-                _topicFactory = (XATopicConnectionFactory) getConnectionFactory();
-            }
-            catch (Exception e)
-            {
-                fail("enable to lookup connection factory ");
-            }
-            // create standard connection
-            try
-            {
-                _topicConnection = getNewTopicXAConnection();
-            }
-            catch (JMSException e)
-            {
-                fail("cannot create queue connection: " + e.getMessage());
-            }
-            // create standard session
-            try
-            {
-                _session = _topicConnection.createXATopicSession();
-            }
-            catch (JMSException e)
-            {
-                fail("cannot create queue session: " + e.getMessage());
-            }
-            // create a standard session
-            try
-            {
-                _nonXASession = _topicConnection.createTopicSession(true, Session.AUTO_ACKNOWLEDGE);
-            }
-            catch (JMSException e)
-            {
-                _logger.error("Error creating topic session", e);
-            }
+            _topicFactory = (XATopicConnectionFactory) getConnectionFactory();
+            _topicConnection = getNewTopicXAConnection();
+            _session = _topicConnection.createXATopicSession();
+            _topic = _session.createTopic(getTestQueueName());
+            _nonXASession = _topicConnection.createTopicSession(true, Session.AUTO_ACKNOWLEDGE);
             init(_session, _topic);
         }
     }

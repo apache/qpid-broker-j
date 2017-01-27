@@ -67,12 +67,6 @@ public class QpidJmsClient0xProvider implements JmsProvider
     }
 
     @Override
-    public InitialContext getInitialContext() throws NamingException
-    {
-        return new InitialContext(_initialContextEnvironment);
-    }
-
-    @Override
     public ConnectionFactory getConnectionFactory() throws NamingException
     {
         if (Boolean.getBoolean(QpidBrokerTestCase.PROFILE_USE_SSL))
@@ -113,8 +107,7 @@ public class QpidJmsClient0xProvider implements JmsProvider
             throws NamingException
     {
 
-
-        return (ConnectionFactory) getInitialContext().lookup(factoryName);
+        return (ConnectionFactory) new InitialContext(_initialContextEnvironment).lookup(factoryName);
     }
 
     @Override
