@@ -590,27 +590,28 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 sendingChannelId = getFirstFreeChannel();
                 if (sendingChannelId == -1)
                 {
-
                     closeConnection(ConnectionError.FRAMING_ERROR,
                                     "BEGIN received on channel "
                                     + receivingChannelId
                                     + ". There are no free channels for the broker to respond on.");
-
                 }
-                Session_1_0 session = new Session_1_0(this, begin, sendingChannelId, receivingChannelId);
-                session.create();
+                else
+                {
+                    Session_1_0 session = new Session_1_0(this, begin, sendingChannelId, receivingChannelId);
+                    session.create();
 
-                _receivingSessions[receivingChannelId] = session;
-                _sendingSessions[sendingChannelId] = session;
+                    _receivingSessions[receivingChannelId] = session;
+                    _sendingSessions[sendingChannelId] = session;
 
-                Begin beginToSend = new Begin();
-                beginToSend.setRemoteChannel(UnsignedShort.valueOf(receivingChannelId));
-                beginToSend.setNextOutgoingId(session.getNextOutgoingId());
-                beginToSend.setOutgoingWindow(session.getOutgoingWindowSize());
-                beginToSend.setIncomingWindow(session.getIncomingWindowSize());
-                sendFrame(sendingChannelId, beginToSend);
+                    Begin beginToSend = new Begin();
+                    beginToSend.setRemoteChannel(UnsignedShort.valueOf(receivingChannelId));
+                    beginToSend.setNextOutgoingId(session.getNextOutgoingId());
+                    beginToSend.setOutgoingWindow(session.getOutgoingWindowSize());
+                    beginToSend.setIncomingWindow(session.getIncomingWindowSize());
+                    sendFrame(sendingChannelId, beginToSend);
 
-                _sessions.add(session);
+                    _sessions.add(session);
+                }
             }
             else
             {
