@@ -46,6 +46,7 @@
         <tck.jmsobjects.class>com.sun.ts.lib.implementation.sun.jms.SunRIJMSObjects</tck.jmsobjects.class>
         <tck.work.directory>${project.build.directory}${file.separator}${tck}${file.separator}work</tck.work.directory>
         <tck.ts.jte>${project.build.testOutputDirectory}${file.separator}ts.jte</tck.ts.jte>
+        <tck.ts.jtx>${tck.directory}${file.separator}bin${file.separator}ts.jtx</tck.ts.jtx>
         <tck.test>com/</tck.test>
     </properties>
 
@@ -149,7 +150,6 @@
             <properties>
                 <java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</java.naming.factory.initial>
                 <java.naming.provider.url>${project.build.testOutputDirectory}${file.separator}qpid-jms20-client${file.separator}jndi.properties</java.naming.provider.url>
-                <tck.ts.jtx>${project.build.testOutputDirectory}${file.separator}qpid-jms20-client${file.separator}ts.jtx</tck.ts.jtx>
                 <tck2.work.directory>${project.build.directory}${file.separator}tck2${file.separator}work</tck2.work.directory>
             </properties>
             <dependencies>
@@ -562,7 +562,6 @@
             <properties>
                 <java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</java.naming.factory.initial>
                 <java.naming.provider.url>${project.build.testOutputDirectory}${file.separator}qpid-jms-client${file.separator}jndi.properties</java.naming.provider.url>
-                <tck.ts.jtx>${project.build.testOutputDirectory}${file.separator}qpid-jms-client${file.separator}ts.jtx</tck.ts.jtx>
                 <tck.test.options />
             </properties>
             <build>
@@ -663,7 +662,6 @@
             <properties>
                 <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
                 <java.naming.provider.url>${project.build.directory}${file.separator}test-classes${file.separator}jms-client${file.separator}jndi.properties</java.naming.provider.url>
-                <tck.ts.jtx>${project.build.testOutputDirectory}${file.separator}jms-client${file.separator}ts.jtx</tck.ts.jtx>
                 <tck.test.options>-Dqpid.amqp.version=0-9 -Dqpid.dest_syntax=BURL</tck.test.options>
             </properties>
             <dependencies>
@@ -688,7 +686,7 @@
             <properties>
                 <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
                 <java.naming.provider.url>${project.build.directory}${file.separator}test-classes${file.separator}jms-client${file.separator}jndi.properties</java.naming.provider.url>
-                <tck.ts.jtx>${project.build.testOutputDirectory}${file.separator}jms-client${file.separator}ts.jtx</tck.ts.jtx>
+
                 <tck.test.options>-Dqpid.amqp.version=0-10 -Dqpid.dest_syntax=BURL</tck.test.options>
             </properties>
             <dependencies>
