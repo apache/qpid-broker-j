@@ -39,6 +39,7 @@ import org.apache.qpid.server.virtualhost.jdbc.JDBCVirtualHost;
 
 public class JDBCMessageStoreTest extends MessageStoreTestCase
 {
+    public static final String TEST_TABLE_PREFIX = "TEST_TABLE_PREFIX_";
     private String _connectionURL;
 
     @Override
@@ -55,6 +56,16 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         {
             super.tearDown();
         }
+    }
+
+    public void testTablePrefix() throws Exception
+    {
+        Collection<String> expectedTables = ((GenericJDBCMessageStore)getStore()).getTableNames();
+        for (String expectedTable : expectedTables)
+        {
+            assertTrue(String.format("Table '%s' does not start with expected prefix '%s'", expectedTable, TEST_TABLE_PREFIX), expectedTable.startsWith(TEST_TABLE_PREFIX));
+        }
+        assertTablesExist(expectedTables, true);
     }
 
     public void testOnDelete() throws Exception
@@ -76,7 +87,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         when(jdbcVirtualHost.getConnectionUrl()).thenReturn(_connectionURL);
         when(jdbcVirtualHost.getUsername()).thenReturn("test");
         when(jdbcVirtualHost.getPassword()).thenReturn("pass");
-        when(jdbcVirtualHost.getTableNamePrefix()).thenReturn("");
+        when(jdbcVirtualHost.getTableNamePrefix()).thenReturn(TEST_TABLE_PREFIX);
         return jdbcVirtualHost;
     }
 

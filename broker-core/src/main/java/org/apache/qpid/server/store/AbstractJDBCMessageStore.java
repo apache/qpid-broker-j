@@ -733,7 +733,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
     }
 
-    public void setTablePrefix(final String tablePrefix)
+    protected void setTablePrefix(final String tablePrefix)
     {
         _tablePrefix = tablePrefix;
     }

@@ -46,7 +46,10 @@ public interface JDBCSystemConfig<X extends JDBCSystemConfig<X>> extends SystemC
     @ManagedContextDefault(name = "systemConfig.tableNamePrefix")
     String DEFAULT_SYSTEM_CONFIG_TABLE_NAME_PREFIX = "";
 
-    @ManagedAttribute(secure=true, defaultValue = "${systemConfig.tableNamePrefix}")
+    @ManagedAttribute(secure = true,
+            description = "Optional database table prefix so multiple SystemConfigs can share the same database",
+            defaultValue = "${systemConfig.tableNamePrefix}",
+            validValuePattern = "[a-zA-Z_0-9]*")
     String getTableNamePrefix();
 
 }
