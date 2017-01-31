@@ -111,7 +111,7 @@ public class AttributeAnnotationValidator extends AbstractProcessor
             checkInterfaceExtendsConfiguredObject(annotationElement, methodElement);
             checkMethodTakesNoArgs(annotationElement, methodElement);
             checkMethodName(annotationElement, methodElement);
-            checkMethodReturnType(annotationElement, methodElement, allowedNamed);
+            checkMethodReturnType(annotationElement, methodElement, allowedNamed, allowAbstractManagedTypes);
 
             checkTypeAgreesWithName(annotationElement, methodElement);
 
@@ -247,9 +247,11 @@ public class AttributeAnnotationValidator extends AbstractProcessor
 
     public void checkMethodReturnType(final TypeElement annotationElement,
                                       final ExecutableElement methodElement,
-                                      final boolean allowNamed)
+                                      final boolean allowNamed,
+                                      final boolean allowAbstractManagedTypes)
     {
-        if (!(isValidType(methodElement.getReturnType()) || (allowNamed && isNamed(methodElement.getReturnType()))))
+        if (!(isValidType(processingEnv, methodElement.getReturnType(), allowAbstractManagedTypes)
+              || (allowNamed && isNamed(methodElement.getReturnType()))))
         {
             messager.printMessage(Diagnostic.Kind.ERROR,
                                   "@"
@@ -321,11 +323,6 @@ public class AttributeAnnotationValidator extends AbstractProcessor
                                   e
                                  );
         }
-    }
-
-    boolean isValidType(final TypeMirror type)
-    {
-        return isValidType(processingEnv, type, false);
     }
 
     static boolean isValidType(ProcessingEnvironment processingEnv,
