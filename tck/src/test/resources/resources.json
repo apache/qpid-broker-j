@@ -21,7 +21,8 @@
 [
   {
     "name": "myQueue",
-    "nodeType": "QUEUE"
+    "nodeType": "QUEUE",
+    "arguments": {"holdOnPublishEnabled": true}
   },
   {
     "name": "myQueue2",
