@@ -31,9 +31,14 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
@@ -49,13 +54,16 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSect
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.util.Action;
 
 class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 {
@@ -375,7 +383,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                     txn.dequeue(_queueEntry.getEnqueueRecord(),
                                 new ServerTransaction.Action()
                                 {
-
+                                    @Override
                                     public void postCommit()
                                     {
                                         if (_queueEntry.isAcquiredBy(getConsumer()))
@@ -384,6 +392,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                                         }
                                     }
 
+                                    @Override
                                     public void onRollback()
                                     {
 
@@ -392,6 +401,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                 }
                 txn.addPostTransactionAction(new ServerTransaction.Action()
                     {
+                        @Override
                         public void postCommit()
                         {
                             if(Boolean.TRUE.equals(settled))
@@ -405,16 +415,13 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                             _link.getEndpoint().sendFlowConditional();
                         }
 
+                        @Override
                         public void onRollback()
                         {
                             if(Boolean.TRUE.equals(settled))
                             {
-                                final Modified modified = new Modified();
-                                modified.setDeliveryFailed(true);
-                                _link.getEndpoint().updateDisposition(_deliveryTag, modified, true);
-                                _link.getEndpoint().sendFlowConditional();
-                                _queueEntry.incrementDeliveryCount();
-                                _queueEntry.release(getConsumer());
+                                // TODO: apply source's default outcome
+                                applyModifiedOutcome();
                             }
                         }
                     });
@@ -423,6 +430,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
             {
                 txn.addPostTransactionAction(new ServerTransaction.Action()
                 {
+                    @Override
                     public void postCommit()
                     {
 
@@ -430,9 +438,12 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                         _link.getEndpoint().settle(_deliveryTag);
                     }
 
+                    @Override
                     public void onRollback()
                     {
                         _link.getEndpoint().settle(_deliveryTag);
+
+                        // TODO: apply source's default outcome if settled
                     }
                 });
             }
@@ -441,31 +452,129 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
             {
                 txn.addPostTransactionAction(new ServerTransaction.Action()
                 {
+                    @Override
                     public void postCommit()
                     {
+                        // TODO: add handling of undeliverable-here
 
-                        _queueEntry.release(getConsumer());
                         if(Boolean.TRUE.equals(((Modified)outcome).getDeliveryFailed()))
                         {
-                            _queueEntry.incrementDeliveryCount();
+                            incrementDeliveryCountOrRouteToAlternateOrDiscard();
+                        }
+                        else
+                        {
+                            _queueEntry.release(getConsumer());
                         }
                         _link.getEndpoint().settle(_deliveryTag);
                     }
 
+                    @Override
                     public void onRollback()
                     {
                         if(Boolean.TRUE.equals(settled))
                         {
-                            final Modified modified = new Modified();
-                            modified.setDeliveryFailed(true);
-                            _link.getEndpoint().updateDisposition(_deliveryTag, modified, true);
-                            _link.getEndpoint().sendFlowConditional();
+                            // TODO: apply source's default outcome
+                            applyModifiedOutcome();
+                        }
+                    }
+                });
+            }
+            else if (outcome instanceof Rejected)
+            {
+                txn.addPostTransactionAction(new ServerTransaction.Action()
+                {
+                    @Override
+                    public void postCommit()
+                    {
+                        _link.getEndpoint().settle(_deliveryTag);
+                        incrementDeliveryCountOrRouteToAlternateOrDiscard();
+                        _link.getEndpoint().sendFlowConditional();
+                    }
+
+                    @Override
+                    public void onRollback()
+                    {
+                        if(Boolean.TRUE.equals(settled))
+                        {
+                            // TODO: apply source's default outcome
+                            applyModifiedOutcome();
                         }
                     }
                 });
             }
 
             return (transactionId == null && outcome != null);
+        }
+
+        private void applyModifiedOutcome()
+        {
+            final Modified modified = new Modified();
+            modified.setDeliveryFailed(true);
+            _link.getEndpoint().updateDisposition(_deliveryTag, modified, true);
+            _link.getEndpoint().sendFlowConditional();
+            incrementDeliveryCountOrRouteToAlternateOrDiscard();
+        }
+
+        private void incrementDeliveryCountOrRouteToAlternateOrDiscard()
+        {
+            _queueEntry.incrementDeliveryCount();
+            if (_queueEntry.getMaximumDeliveryCount() > 0
+                && _queueEntry.getDeliveryCount() >= _queueEntry.getMaximumDeliveryCount())
+            {
+                routeToAlternateOrDiscard();
+            }
+            else
+            {
+                _queueEntry.release(getConsumer());
+            }
+        }
+
+        private void routeToAlternateOrDiscard()
+        {
+            final Session_1_0 session = _link.getSession();
+            final ServerMessage message = _queueEntry.getMessage();
+            final EventLogger eventLogger = session.getEventLogger();
+            final LogSubject logSubject = session.getLogSubject();
+            int requeues = 0;
+            if (_queueEntry.makeAcquisitionUnstealable(getConsumer()))
+            {
+                requeues = _queueEntry.routeToAlternate(new Action<MessageInstance>()
+                {
+                    @Override
+                    public void performAction(final MessageInstance requeueEntry)
+                    {
+
+                        eventLogger.message(logSubject,
+                                            ChannelMessages.DEADLETTERMSG(message.getMessageNumber(),
+                                                                          requeueEntry.getOwningResource().getName()));
+                    }
+                }, null);
+            }
+
+            if (requeues == 0)
+            {
+                final TransactionLogResource owningResource = _queueEntry.getOwningResource();
+                if (owningResource instanceof Queue)
+                {
+                    final Queue<?> queue = (Queue<?>) owningResource;
+
+                    final Exchange altExchange = queue.getAlternateExchange();
+
+                    if (altExchange == null)
+                    {
+                        eventLogger.message(logSubject,
+                                            ChannelMessages.DISCARDMSG_NOALTEXCH(message.getMessageNumber(),
+                                                                                 queue.getName(),
+                                                                                 message.getInitialRoutingAddress()));
+                    }
+                    else
+                    {
+                        eventLogger.message(logSubject,
+                                            ChannelMessages.DISCARDMSG_NOROUTE(message.getMessageNumber(),
+                                                                               altExchange.getName()));
+                    }
+                }
+            }
         }
     }
 

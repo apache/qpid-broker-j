@@ -213,7 +213,11 @@ org.apache.qpid.server.logging.DurableQueueLoggingTest#*
 org.apache.qpid.server.logging.QueueLoggingTest#*
 org.apache.qpid.server.logging.TransientQueueLoggingTest#*
 
-
+// Tests verify the 0-x client's behaviour on recover which is not applicable to new client
+org.apache.qpid.test.unit.client.MaxDeliveryCountTest#testSynchronousClientAckSession
+org.apache.qpid.test.unit.client.MaxDeliveryCountTest#testAsynchronousClientAckSession
+org.apache.qpid.test.unit.client.MaxDeliveryCountTest#testAsynchronousDupsOkSession
+org.apache.qpid.test.unit.client.MaxDeliveryCountTest#testAsynchronousAutoAckSession
 
 
 

@@ -68,5 +68,3 @@ org.apache.qpid.test.unit.topic.DurableSubscriptionTest#*
 org.apache.qpid.server.queue.ConsumerPriorityTest#*
 org.apache.qpid.server.queue.ArrivalTimeFilterTest#*
 
-// QPID-7603: broker side delivery count support is not complete
-org.apache.qpid.test.unit.client.MaxDeliveryCountTest#*

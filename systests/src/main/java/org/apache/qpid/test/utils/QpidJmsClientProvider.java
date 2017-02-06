@@ -363,8 +363,17 @@ public class QpidJmsClientProvider implements JmsProvider
                     {
                         return Long.valueOf(((Map) body).get("queueDepthMessages").toString());
                     }
+                    else
+                    {
+                        throw new IllegalArgumentException("Cannot parse the results from a management operation."
+                                                           + " Unexpected message object type : " + body);
+                    }
                 }
-                throw new IllegalArgumentException("Cannot parse the results from a management operation");
+                else
+                {
+                    throw new IllegalArgumentException("Cannot parse the results from a management operation."
+                                                       + " Unexpected response message type : " + response.getClass());
+                }
             }
             finally
             {
