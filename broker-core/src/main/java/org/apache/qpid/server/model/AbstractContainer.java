@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
@@ -54,7 +54,7 @@ import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.util.HousekeepingExecutor;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.util.SystemUtils;
+import org.apache.qpid.server.util.SystemUtils;
 
 public abstract class AbstractContainer<X extends AbstractContainer<X>> extends AbstractConfiguredObject<X> implements Container<X>
 {

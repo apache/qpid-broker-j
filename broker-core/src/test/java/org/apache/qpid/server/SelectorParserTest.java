@@ -21,8 +21,8 @@
 
 package org.apache.qpid.server;
 
-import org.apache.qpid.filter.SelectorParsingException;
-import org.apache.qpid.filter.selector.ParseException;
+import org.apache.qpid.server.filter.SelectorParsingException;
+import org.apache.qpid.server.filter.selector.ParseException;
 import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.test.utils.QpidTestCase;
 

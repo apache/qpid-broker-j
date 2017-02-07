@@ -19,7 +19,7 @@
  */
 package org.apache.qpid.disttest.charting.definition;
 
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;

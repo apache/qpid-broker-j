@@ -21,7 +21,7 @@ package org.apache.qpid.server.exchange;
 import java.security.AccessControlException;
 import java.util.Map;
 
-import org.apache.qpid.exchange.ExchangeDefaults;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSender;

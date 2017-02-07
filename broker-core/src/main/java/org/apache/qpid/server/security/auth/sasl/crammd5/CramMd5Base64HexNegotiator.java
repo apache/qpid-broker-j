@@ -22,7 +22,7 @@ package org.apache.qpid.server.security.auth.sasl.crammd5;
 
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.sasl.PasswordSource;
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 public class CramMd5Base64HexNegotiator extends AbstractCramMd5Negotiator
 {

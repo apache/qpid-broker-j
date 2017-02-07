@@ -22,7 +22,7 @@ package org.apache.qpid.server.transport;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.qpid.transport.network.Ticker;
+import org.apache.qpid.server.transport.network.Ticker;
 
 public class AggregateTicker implements Ticker, SchedulingDelayNotificationListener
 {

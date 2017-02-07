@@ -50,8 +50,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.BrokerPrincipal;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -87,7 +87,7 @@ import org.apache.qpid.server.store.preferences.PreferencesRoot;
 import org.apache.qpid.server.util.HousekeepingExecutor;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
-import org.apache.qpid.util.SystemUtils;
+import org.apache.qpid.server.util.SystemUtils;
 
 @ManagedObject( category = false, type = "Broker" )
 public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<BrokerImpl>

@@ -40,7 +40,7 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.apache.qpid.common.AMQPFilterTypes;
+import org.apache.qpid.server.common.AMQPFilterTypes;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
@@ -59,7 +59,7 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTestCase
 {

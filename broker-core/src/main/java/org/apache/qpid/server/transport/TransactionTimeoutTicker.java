@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.base.Supplier;
 
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.transport.network.Ticker;
+import org.apache.qpid.server.transport.network.Ticker;
 
 public class TransactionTimeoutTicker implements Ticker, SchedulingDelayNotificationListener
 {

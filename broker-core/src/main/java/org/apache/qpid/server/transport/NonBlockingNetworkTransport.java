@@ -34,10 +34,10 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.transport.TransportException;
-import org.apache.qpid.transport.network.TransportEncryption;
+import org.apache.qpid.server.transport.TransportException;
+import org.apache.qpid.server.transport.network.TransportEncryption;
 
-import static org.apache.qpid.transport.ConnectionSettings.WILDCARD_ADDRESS;
+import static org.apache.qpid.server.transport.ConnectionSettings.WILDCARD_ADDRESS;
 
 public class NonBlockingNetworkTransport
 {

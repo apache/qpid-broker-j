@@ -25,4 +25,4 @@ org.apache.qpid.test.client.queue.QueuePolicyTest#testRingPolicy
 org.apache.qpid.test.client.queue.QueuePolicyTest#testRejectPolicy
 
 // Test runs for 2 minutes testing that subtraction works
-org.apache.qpid.util.SerialTest#testCorollary1
+org.apache.qpid.server.util.SerialTest#testCorollary1

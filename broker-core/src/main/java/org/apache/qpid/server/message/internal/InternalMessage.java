@@ -32,7 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.store.MessageHandle;
@@ -40,8 +40,8 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.util.ByteBufferInputStream;
-import org.apache.qpid.util.ByteBufferUtils;
+import org.apache.qpid.server.util.ByteBufferInputStream;
+import org.apache.qpid.server.util.ByteBufferUtils;
 
 public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, InternalMessageMetaData>
 {

@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.store;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 
 public class TestMessageMetaData implements StorableMessageMetaData

@@ -30,18 +30,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.transport.codec.BBDecoder;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.transport.codec.BBDecoder;
-import org.apache.qpid.typedmessage.TypedBytesContentReader;
-import org.apache.qpid.typedmessage.TypedBytesFormatException;
-import org.apache.qpid.url.AMQBindingURL;
-import org.apache.qpid.util.GZIPUtils;
+import org.apache.qpid.server.typedmessage.TypedBytesContentReader;
+import org.apache.qpid.server.typedmessage.TypedBytesFormatException;
+import org.apache.qpid.server.url.AMQBindingURL;
+import org.apache.qpid.server.util.GZIPUtils;
 
 @PluggableService
 public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMessage, InternalMessage>

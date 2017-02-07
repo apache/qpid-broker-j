@@ -31,7 +31,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 public class BDBPreferenceStore extends AbstractBDBPreferenceStore
 {

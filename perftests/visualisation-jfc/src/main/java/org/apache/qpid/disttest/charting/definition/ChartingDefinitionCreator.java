@@ -31,7 +31,7 @@ import java.util.Properties;
 
 import org.apache.qpid.disttest.charting.ChartType;
 import org.apache.qpid.disttest.charting.ChartingException;
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 public class ChartingDefinitionCreator
 {

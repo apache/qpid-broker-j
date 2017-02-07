@@ -45,9 +45,9 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestSSLConstants;
-import org.apache.qpid.transport.network.security.ssl.QpidMultipleTrustManager;
-import org.apache.qpid.util.DataUrlUtils;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.transport.network.security.ssl.QpidMultipleTrustManager;
+import org.apache.qpid.server.util.DataUrlUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 public class FileTrustStoreTest extends QpidTestCase
 {

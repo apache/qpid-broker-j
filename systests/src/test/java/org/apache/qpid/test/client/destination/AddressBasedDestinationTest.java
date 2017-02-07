@@ -56,7 +56,7 @@ import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.message.QpidMessageProperties;
 import org.apache.qpid.jndi.PropertiesFileInitialContextFactory;
 import org.apache.qpid.messaging.Address;
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.BrokerHolder;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.transport.ExecutionErrorCode;

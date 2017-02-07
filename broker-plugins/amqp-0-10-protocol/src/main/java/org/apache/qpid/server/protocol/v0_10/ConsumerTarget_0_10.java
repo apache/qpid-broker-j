@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
@@ -48,18 +48,18 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.StateChangeListener;
-import org.apache.qpid.transport.DeliveryProperties;
-import org.apache.qpid.transport.Header;
-import org.apache.qpid.transport.MessageAcceptMode;
-import org.apache.qpid.transport.MessageAcquireMode;
-import org.apache.qpid.transport.MessageCreditUnit;
-import org.apache.qpid.transport.MessageFlowMode;
-import org.apache.qpid.transport.MessageProperties;
-import org.apache.qpid.transport.MessageTransfer;
-import org.apache.qpid.transport.Method;
-import org.apache.qpid.transport.Option;
-import org.apache.qpid.util.ByteBufferUtils;
-import org.apache.qpid.util.GZIPUtils;
+import org.apache.qpid.server.transport.DeliveryProperties;
+import org.apache.qpid.server.transport.Header;
+import org.apache.qpid.server.transport.MessageAcceptMode;
+import org.apache.qpid.server.transport.MessageAcquireMode;
+import org.apache.qpid.server.transport.MessageCreditUnit;
+import org.apache.qpid.server.transport.MessageFlowMode;
+import org.apache.qpid.server.transport.MessageProperties;
+import org.apache.qpid.server.transport.MessageTransfer;
+import org.apache.qpid.server.transport.Method;
+import org.apache.qpid.server.transport.Option;
+import org.apache.qpid.server.util.ByteBufferUtils;
+import org.apache.qpid.server.util.GZIPUtils;
 
 public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0_10>
 {

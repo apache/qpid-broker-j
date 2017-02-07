@@ -42,7 +42,7 @@ import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.preferences.AbstractJDBCPreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 /**
  * Implementation of a DurableConfigurationStore backed by Apache Derby

@@ -34,7 +34,7 @@ import javax.jms.JMSException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.jms.ConnectionListener;
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
@@ -177,10 +177,25 @@ public abstract class AbstractACLTestCase extends QpidBrokerTestCase implements 
     {
         assertNotNull("There was no linked exception", t);
         assertTrue("Wrong linked exception type : " + t.getClass(), t instanceof AMQException);
-        assertEquals("Incorrect error code received", 403, ((AMQException) t).getErrorCode());
+        assertAMQException("Incorrect error code received", 403, ((AMQException) t));
 
         //use the latch to ensure the control thread waits long enough for the exception thread
         //to have done enough to mark the connection closed before teardown commences
-        assertTrue("Timed out waiting for conneciton to report close", _exceptionReceived.await(2, TimeUnit.SECONDS));
+        assertTrue("Timed out waiting for connection to report close", _exceptionReceived.await(2, TimeUnit.SECONDS));
+    }
+
+    protected void assertAMQException(final String message, final int expected, final AMQException e)
+    {
+        Object object = e.getErrorCode(); // API change after v6.1
+        if (object instanceof Integer)
+        {
+            assertEquals(message, expected, e.getErrorCode());
+        }
+        else
+        {
+            final String fullMessage = String.format("%s. expected actual : %s to start with %d", message, e.getErrorCode(), expected);
+            final String actual = String.valueOf(e.getErrorCode());
+            assertTrue(fullMessage, actual.startsWith(Integer.toString(expected)));
+        }
     }
 }

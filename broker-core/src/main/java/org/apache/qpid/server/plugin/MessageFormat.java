@@ -22,7 +22,7 @@ package org.apache.qpid.server.plugin;
 
 import java.util.List;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.store.MessageStore;
 

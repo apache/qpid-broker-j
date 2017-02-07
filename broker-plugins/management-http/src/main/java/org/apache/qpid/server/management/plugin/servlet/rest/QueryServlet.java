@@ -32,7 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.filter.SelectorParsingException;
+import org.apache.qpid.server.filter.SelectorParsingException;
 import org.apache.qpid.server.management.plugin.servlet.query.ConfiguredObjectQuery;
 import org.apache.qpid.server.management.plugin.servlet.query.EvaluationException;
 import org.apache.qpid.server.model.ConfiguredObject;

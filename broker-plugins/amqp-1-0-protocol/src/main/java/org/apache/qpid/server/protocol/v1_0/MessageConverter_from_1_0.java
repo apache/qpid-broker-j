@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -53,9 +53,9 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.transport.codec.BBEncoder;
-import org.apache.qpid.typedmessage.TypedBytesContentWriter;
-import org.apache.qpid.typedmessage.TypedBytesFormatException;
+import org.apache.qpid.server.transport.codec.BBEncoder;
+import org.apache.qpid.server.typedmessage.TypedBytesContentWriter;
+import org.apache.qpid.server.typedmessage.TypedBytesFormatException;
 
 public class MessageConverter_from_1_0
 {

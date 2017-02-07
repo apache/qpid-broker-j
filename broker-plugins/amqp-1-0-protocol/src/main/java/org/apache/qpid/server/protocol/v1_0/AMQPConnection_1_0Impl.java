@@ -46,9 +46,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.common.ServerPropertyNames;
-import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.common.ServerPropertyNames;
+import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -112,8 +112,8 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
-import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.util.Functions;
+import org.apache.qpid.server.transport.ByteBufferSender;
+import org.apache.qpid.server.transport.util.Functions;
 
 public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnection_1_0Impl, ConnectionHandler>
         implements FrameOutputHandler,

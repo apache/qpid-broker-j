@@ -29,7 +29,7 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 
 public class HashedUser implements PasswordPrincipal

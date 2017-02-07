@@ -284,7 +284,7 @@
                 <dependency>
                     <groupId>org.apache.qpid</groupId>
                     <artifactId>qpid-client</artifactId>
-                    <version>${project.version}</version>
+                    <version>${qpid-jms-client-ampq-0-x-version}</version>
                 </dependency>
             </dependencies>
         </profile>
@@ -307,7 +307,7 @@
                 <dependency>
                     <groupId>org.apache.qpid</groupId>
                     <artifactId>qpid-client</artifactId>
-                    <version>${project.version}</version>
+                    <version>${qpid-jms-client-ampq-0-x-version}</version>
                 </dependency>
             </dependencies>
         </profile>

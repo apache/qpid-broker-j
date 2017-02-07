@@ -38,8 +38,8 @@ import javax.net.ssl.TrustManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.transport.TransportException;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.transport.TransportException;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
 public class ConnectionBuilder
 {

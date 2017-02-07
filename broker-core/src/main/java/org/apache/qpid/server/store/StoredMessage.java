@@ -22,7 +22,7 @@ package org.apache.qpid.server.store;
 
 import java.util.Collection;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public interface StoredMessage<M extends StorableMessageMetaData>
 {

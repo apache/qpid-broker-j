@@ -42,10 +42,10 @@
       </exclusions>
     </dependency>
 
-
+    <!-- TODO Eliminate - required for org.apache.qpid.util -->
     <dependency>
       <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-common</artifactId>
+      <artifactId>qpid-broker-core</artifactId>
       <version>${project.version}</version>
     </dependency>
 

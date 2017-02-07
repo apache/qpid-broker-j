@@ -64,7 +64,7 @@ import org.apache.qpid.server.model.OperationTimeoutException;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
-import org.apache.qpid.util.DataUrlUtils;
+import org.apache.qpid.server.util.DataUrlUtils;
 
 public class RestServlet extends AbstractServlet
 {

@@ -23,7 +23,7 @@ import java.util.List;
 
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 class ZeroULongConstructor implements TypeConstructor<UnsignedLong>
 {

@@ -73,8 +73,6 @@
 
     <modules>
         <module>java-broker</module>
-        <module>jms-client-0-8</module>
-        <module>jms-client-0-10</module>
         <module>java-perftests</module>
     </modules>
 

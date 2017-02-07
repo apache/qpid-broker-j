@@ -19,7 +19,7 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 
 public abstract class FixedOneWriter<T> implements ValueWriter<T>

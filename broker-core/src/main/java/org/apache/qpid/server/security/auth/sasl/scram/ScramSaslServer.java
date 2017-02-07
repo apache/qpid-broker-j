@@ -34,7 +34,7 @@ import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 import javax.xml.bind.DatatypeConverter;
 
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 class ScramSaslServer implements SaslServer
 {

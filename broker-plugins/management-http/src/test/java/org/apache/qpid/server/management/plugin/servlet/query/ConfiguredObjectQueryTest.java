@@ -39,8 +39,8 @@ import javax.xml.bind.DatatypeConverter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import org.apache.qpid.filter.OrderByExpression;
-import org.apache.qpid.filter.SelectorParsingException;
+import org.apache.qpid.server.filter.OrderByExpression;
+import org.apache.qpid.server.filter.SelectorParsingException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.test.utils.QpidTestCase;
 

@@ -38,12 +38,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.framing.HeartbeatBody;
-import org.apache.qpid.framing.ProtocolInitiation;
-import org.apache.qpid.framing.ProtocolVersion;
+import org.apache.qpid.server.configuration.ClientProperties;
+import org.apache.qpid.server.framing.HeartbeatBody;
+import org.apache.qpid.server.framing.ProtocolInitiation;
+import org.apache.qpid.server.framing.ProtocolVersion;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
@@ -51,7 +51,9 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.v0_10.ServerDisassembler;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.apache.qpid.transport.network.Frame;
+import org.apache.qpid.server.transport.network.Frame;
+import org.apache.qpid.server.transport.ConnectionHeartbeat;
+import org.apache.qpid.server.transport.ByteBufferSender;
 
 public class ProtocolNegotiationTest extends QpidBrokerTestCase
 {
@@ -282,7 +284,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
                 setTestSystemProperty(ClientProperties.AMQP_VERSION, version);
                 AMQConnection connection = (AMQConnection)getConnection();
                 LOGGER.debug("Negotiated version {}", connection.getProtocolVersion());
-                assertEquals("Unexpected version negotiated: " + connection.getProtocolVersion(), convertProtocolToProtocolVersion(_expectedProtocolInit), connection.getProtocolVersion());
+                assertEquals("Unexpected version negotiated: " + connection.getProtocolVersion(), convertProtocolToProtocolVersion(_expectedProtocolInit).toString(), connection.getProtocolVersion().toString());
                 connection.close();
             }
         }

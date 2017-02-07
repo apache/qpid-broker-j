@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import static org.apache.qpid.transport.Connection.State.CLOSE_RCVD;
+import static org.apache.qpid.server.transport.Connection.State.CLOSE_RCVD;
 
 import java.security.AccessControlException;
 import java.security.Principal;
@@ -35,9 +35,9 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.common.ServerPropertyNames;
-import org.apache.qpid.configuration.CommonProperties;
-import org.apache.qpid.properties.ConnectionStartProperties;
+import org.apache.qpid.server.common.ServerPropertyNames;
+import org.apache.qpid.server.configuration.CommonProperties;
+import org.apache.qpid.server.properties.ConnectionStartProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -49,25 +49,25 @@ import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
-import org.apache.qpid.transport.Binary;
-import org.apache.qpid.transport.Connection;
-import org.apache.qpid.transport.ConnectionClose;
-import org.apache.qpid.transport.ConnectionCloseCode;
-import org.apache.qpid.transport.ConnectionDelegate;
-import org.apache.qpid.transport.ConnectionOpen;
-import org.apache.qpid.transport.ConnectionOpenOk;
-import org.apache.qpid.transport.ConnectionRedirect;
-import org.apache.qpid.transport.ConnectionSecureOk;
-import org.apache.qpid.transport.ConnectionStartOk;
-import org.apache.qpid.transport.ConnectionTuneOk;
-import org.apache.qpid.transport.Constant;
-import org.apache.qpid.transport.ProtocolHeader;
-import org.apache.qpid.transport.Session;
-import org.apache.qpid.transport.SessionAttach;
-import org.apache.qpid.transport.SessionDelegate;
-import org.apache.qpid.transport.SessionDetach;
-import org.apache.qpid.transport.SessionDetachCode;
-import org.apache.qpid.transport.SessionDetached;
+import org.apache.qpid.server.transport.Binary;
+import org.apache.qpid.server.transport.Connection;
+import org.apache.qpid.server.transport.ConnectionClose;
+import org.apache.qpid.server.transport.ConnectionCloseCode;
+import org.apache.qpid.server.transport.ConnectionDelegate;
+import org.apache.qpid.server.transport.ConnectionOpen;
+import org.apache.qpid.server.transport.ConnectionOpenOk;
+import org.apache.qpid.server.transport.ConnectionRedirect;
+import org.apache.qpid.server.transport.ConnectionSecureOk;
+import org.apache.qpid.server.transport.ConnectionStartOk;
+import org.apache.qpid.server.transport.ConnectionTuneOk;
+import org.apache.qpid.server.transport.Constant;
+import org.apache.qpid.server.transport.ProtocolHeader;
+import org.apache.qpid.server.transport.Session;
+import org.apache.qpid.server.transport.SessionAttach;
+import org.apache.qpid.server.transport.SessionDelegate;
+import org.apache.qpid.server.transport.SessionDetach;
+import org.apache.qpid.server.transport.SessionDetachCode;
+import org.apache.qpid.server.transport.SessionDetached;
 
 public class ServerConnectionDelegate extends ConnectionDelegate
 {

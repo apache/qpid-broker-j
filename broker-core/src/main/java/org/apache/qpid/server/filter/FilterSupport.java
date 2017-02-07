@@ -27,10 +27,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import org.apache.qpid.common.AMQPFilterTypes;
-import org.apache.qpid.filter.SelectorParsingException;
-import org.apache.qpid.filter.selector.ParseException;
-import org.apache.qpid.filter.selector.TokenMgrError;
+import org.apache.qpid.server.common.AMQPFilterTypes;
+import org.apache.qpid.server.filter.SelectorParsingException;
+import org.apache.qpid.server.filter.selector.ParseException;
+import org.apache.qpid.server.filter.selector.TokenMgrError;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.PluggableService;

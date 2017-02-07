@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
 import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.util.GZIPUtils;
+import org.apache.qpid.server.util.GZIPUtils;
 
 
 public class GunzipOutputStreamTest extends QpidTestCase

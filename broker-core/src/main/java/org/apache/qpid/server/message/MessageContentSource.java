@@ -23,7 +23,7 @@ package org.apache.qpid.server.message;
 
 import java.util.Collection;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public interface MessageContentSource
 {

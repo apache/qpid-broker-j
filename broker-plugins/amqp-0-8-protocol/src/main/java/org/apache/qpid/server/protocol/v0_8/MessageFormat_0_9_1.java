@@ -24,12 +24,12 @@ import java.nio.BufferUnderflowException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.framing.AMQFrameDecodingException;
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.ContentHeaderBody;
-import org.apache.qpid.framing.EncodingUtils;
-import org.apache.qpid.framing.MessagePublishInfo;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.framing.AMQFrameDecodingException;
+import org.apache.qpid.server.framing.AMQShortString;
+import org.apache.qpid.server.framing.ContentHeaderBody;
+import org.apache.qpid.server.framing.EncodingUtils;
+import org.apache.qpid.server.framing.MessagePublishInfo;
 import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;

@@ -35,7 +35,7 @@ import javax.security.auth.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.logging.subjects.PortLogSubject;
@@ -46,8 +46,8 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.network.Ticker;
+import org.apache.qpid.server.transport.ByteBufferSender;
+import org.apache.qpid.server.transport.network.Ticker;
 
 public class MultiVersionProtocolEngine implements ProtocolEngine
 {

@@ -24,16 +24,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.StorableMessageMetaData;
-import org.apache.qpid.transport.DeliveryProperties;
-import org.apache.qpid.transport.Header;
-import org.apache.qpid.transport.MessageDeliveryMode;
-import org.apache.qpid.transport.MessageProperties;
-import org.apache.qpid.transport.MessageTransfer;
-import org.apache.qpid.transport.Struct;
+import org.apache.qpid.server.transport.DeliveryProperties;
+import org.apache.qpid.server.transport.Header;
+import org.apache.qpid.server.transport.MessageDeliveryMode;
+import org.apache.qpid.server.transport.MessageProperties;
+import org.apache.qpid.server.transport.MessageTransfer;
+import org.apache.qpid.server.transport.Struct;
 
 public class MessageMetaData_0_10 implements StorableMessageMetaData
 {

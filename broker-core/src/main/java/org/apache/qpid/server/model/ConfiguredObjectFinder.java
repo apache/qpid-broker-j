@@ -38,7 +38,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 public class ConfiguredObjectFinder
 {

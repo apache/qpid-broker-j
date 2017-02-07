@@ -27,7 +27,7 @@ import javax.jms.Session;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class ExchangeDeleteTest extends QpidBrokerTestCase

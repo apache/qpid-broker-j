@@ -29,7 +29,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessageHeader;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -37,11 +37,11 @@ import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.transport.DeliveryProperties;
-import org.apache.qpid.transport.Header;
-import org.apache.qpid.transport.MessageDeliveryPriority;
-import org.apache.qpid.transport.MessageProperties;
-import org.apache.qpid.transport.codec.BBEncoder;
+import org.apache.qpid.server.transport.DeliveryProperties;
+import org.apache.qpid.server.transport.Header;
+import org.apache.qpid.server.transport.MessageDeliveryPriority;
+import org.apache.qpid.server.transport.MessageProperties;
+import org.apache.qpid.server.transport.codec.BBEncoder;
 
 @PluggableService
 public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, MessageTransferMessage>

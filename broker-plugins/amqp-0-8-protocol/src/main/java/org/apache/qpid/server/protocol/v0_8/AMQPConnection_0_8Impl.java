@@ -44,16 +44,16 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQConnectionException;
-import org.apache.qpid.QpidException;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.AMQDecoder;
-import org.apache.qpid.codec.ServerDecoder;
-import org.apache.qpid.common.ServerPropertyNames;
-import org.apache.qpid.configuration.CommonProperties;
-import org.apache.qpid.framing.*;
-import org.apache.qpid.properties.ConnectionStartProperties;
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.AMQConnectionException;
+import org.apache.qpid.server.QpidException;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.codec.AMQDecoder;
+import org.apache.qpid.server.codec.ServerDecoder;
+import org.apache.qpid.server.common.ServerPropertyNames;
+import org.apache.qpid.server.configuration.CommonProperties;
+import org.apache.qpid.server.framing.*;
+import org.apache.qpid.server.properties.ConnectionStartProperties;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
@@ -77,8 +77,8 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
-import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.TransportException;
+import org.apache.qpid.server.transport.ByteBufferSender;
+import org.apache.qpid.server.transport.TransportException;
 
 public class AMQPConnection_0_8Impl
         extends AbstractAMQPConnection<AMQPConnection_0_8Impl, AMQPConnection_0_8Impl>

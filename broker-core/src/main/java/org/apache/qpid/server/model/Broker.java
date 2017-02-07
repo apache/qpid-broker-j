@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.auth.SocketConnectionMetaData;

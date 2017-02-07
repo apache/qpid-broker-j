@@ -58,7 +58,7 @@ import org.apache.qpid.server.virtualhost.berkeleydb.BDBHAVirtualHostImpl;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
 import org.apache.qpid.server.virtualhostnode.AbstractVirtualHostNode;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 /**
  * Helper class to make the tests of BDB HA Virtual Host Nodes simpler and more concise.

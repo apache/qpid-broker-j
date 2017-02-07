@@ -52,7 +52,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
@@ -71,7 +71,7 @@ import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.util.CipherSuiteAndProtocolRestrictingSSLSocketFactory;
 import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.StringUtil;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
 public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationManager<SimpleLDAPAuthenticationManagerImpl>
         implements SimpleLDAPAuthenticationManager<SimpleLDAPAuthenticationManagerImpl>

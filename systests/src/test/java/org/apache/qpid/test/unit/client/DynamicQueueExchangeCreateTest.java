@@ -36,7 +36,7 @@ import javax.jms.Session;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.systest.rest.RestTestHelper;
@@ -216,7 +216,7 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
         Exception linked = original.getLinkedException();
         assertNotNull("Linked exception should have been set", linked);
         assertTrue("Linked exception should be an AMQProtocolException", linked instanceof AMQException);
-        assertEquals("Error code should be " + code, code, ((AMQException) linked).getErrorCode());
+        assertAMQException("Error code should be " + code, code, ((AMQException) linked));
     }
 
     public void testAutoDeleteExchangeDeclarationByProducer() throws Exception
@@ -305,4 +305,19 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
             return false;
         }
     }
+    protected void assertAMQException(final String message, final int expected, final AMQException e)
+    {
+        Object object = e.getErrorCode(); // API change after v6.1
+        if (object instanceof Integer)
+        {
+            assertEquals(message, expected, e.getErrorCode());
+        }
+        else
+        {
+            final String fullMessage = String.format("%s. expected actual : %s to start with %d", message, e.getErrorCode(), expected);
+            final String actual = String.valueOf(e.getErrorCode());
+            assertTrue(fullMessage, actual.startsWith(Integer.toString(expected)));
+        }
+    }
+
 }

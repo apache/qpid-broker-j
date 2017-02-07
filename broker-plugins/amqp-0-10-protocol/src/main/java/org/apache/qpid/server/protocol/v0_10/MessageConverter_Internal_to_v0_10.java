@@ -24,16 +24,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.transport.DeliveryProperties;
-import org.apache.qpid.transport.Header;
-import org.apache.qpid.transport.MessageDeliveryPriority;
-import org.apache.qpid.transport.MessageProperties;
+import org.apache.qpid.server.transport.DeliveryProperties;
+import org.apache.qpid.server.transport.Header;
+import org.apache.qpid.server.transport.MessageDeliveryPriority;
+import org.apache.qpid.server.transport.MessageProperties;
 
 @PluggableService
 public class MessageConverter_Internal_to_v0_10 implements MessageConverter<InternalMessage, MessageTransferMessage>

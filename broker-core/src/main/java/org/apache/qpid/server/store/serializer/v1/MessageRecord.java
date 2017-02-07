@@ -22,7 +22,7 @@ package org.apache.qpid.server.store.serializer.v1;
 
 import java.io.IOException;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.store.StoredMessage;
 
 class MessageRecord implements Record

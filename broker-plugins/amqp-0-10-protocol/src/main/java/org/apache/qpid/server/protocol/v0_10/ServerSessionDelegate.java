@@ -35,10 +35,10 @@ import com.google.common.util.concurrent.Futures;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.common.AMQPFilterTypes;
-import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.common.AMQPFilterTypes;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.filter.ArrivalTimeFilter;
@@ -82,7 +82,7 @@ import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
-import org.apache.qpid.transport.*;
+import org.apache.qpid.server.transport.*;
 
 public class ServerSessionDelegate extends SessionDelegate
 {

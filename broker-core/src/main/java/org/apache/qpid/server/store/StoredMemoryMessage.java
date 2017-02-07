@@ -24,7 +24,7 @@ package org.apache.qpid.server.store;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public class StoredMemoryMessage<T extends StorableMessageMetaData> implements StoredMessage<T>, MessageHandle<T>
 {

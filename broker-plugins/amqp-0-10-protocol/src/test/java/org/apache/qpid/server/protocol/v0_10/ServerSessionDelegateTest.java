@@ -29,10 +29,10 @@ import static org.mockito.Mockito.when;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.transport.ExchangeDelete;
-import org.apache.qpid.transport.ExecutionErrorCode;
-import org.apache.qpid.transport.ExecutionException;
-import org.apache.qpid.transport.Option;
+import org.apache.qpid.server.transport.ExchangeDelete;
+import org.apache.qpid.server.transport.ExecutionErrorCode;
+import org.apache.qpid.server.transport.ExecutionException;
+import org.apache.qpid.server.transport.Option;
 import org.mockito.ArgumentMatcher;
 
 public class ServerSessionDelegateTest extends QpidTestCase

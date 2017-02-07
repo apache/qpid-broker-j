@@ -20,7 +20,7 @@ package org.apache.qpid.server.protocol.v1_0.framing;
 
 import java.util.List;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 
 public final class TransportFrame extends AMQFrame<FrameBody>

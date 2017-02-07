@@ -36,7 +36,7 @@ import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManager;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
 @PluggableService
 public class SSLClientCertPreemptiveAuthenticator implements HttpRequestPreemptiveAuthenticator

@@ -38,8 +38,8 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-import org.apache.qpid.configuration.CommonProperties;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.configuration.CommonProperties;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
 class OAuth2MockEndpointHolder
 {

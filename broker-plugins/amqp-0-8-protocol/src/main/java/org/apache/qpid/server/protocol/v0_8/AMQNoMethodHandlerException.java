@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.QpidException;
-import org.apache.qpid.framing.AMQMethodBody;
-import org.apache.qpid.protocol.AMQMethodEvent;
+import org.apache.qpid.server.QpidException;
+import org.apache.qpid.server.framing.AMQMethodBody;
+import org.apache.qpid.server.protocol.AMQMethodEvent;
 
 /**
  * AMQNoMethodHandlerException represents the case where no method handler exists to handle an AQMP method.

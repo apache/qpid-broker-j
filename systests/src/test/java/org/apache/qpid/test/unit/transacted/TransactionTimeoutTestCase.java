@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
@@ -40,7 +42,7 @@ import junit.framework.TestCase;
 
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.util.LogMonitor;
 
@@ -231,7 +233,21 @@ public abstract class TransactionTimeoutTestCase extends QpidBrokerTestCase impl
 
         if (jmse.getLinkedException() instanceof AMQException)
         {
-            _linkedExceptionCode = ((AMQException) jmse.getLinkedException()).getErrorCode();
+            final AMQException amqException = (AMQException) jmse.getLinkedException();
+            Object object = amqException.getErrorCode(); // API change after v6.1
+            if (object instanceof Integer)
+            {
+                _linkedExceptionCode = (int) object;
+            }
+            else
+            {
+                final Pattern compile = Pattern.compile("(\\d+)(:.*)");
+                final String input = String.valueOf(object);
+                final Matcher matcher = compile.matcher(input);
+                matcher.find();
+                _linkedExceptionCode = Integer.parseInt(matcher.group(1));
+            }
+
         }
         _exceptionCount.incrementAndGet();
         _exceptionListenerLatch.countDown();

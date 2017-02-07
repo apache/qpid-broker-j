@@ -56,7 +56,7 @@ import com.google.common.base.Defaults;
 
 import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 abstract class AttributeValueConverter<T>
 {

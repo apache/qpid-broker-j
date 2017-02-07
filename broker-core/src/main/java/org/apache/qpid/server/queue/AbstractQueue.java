@@ -19,7 +19,7 @@
 package org.apache.qpid.server.queue;
 
 import static org.apache.qpid.server.util.ParameterizedTypes.MAP_OF_STRING_STRING;
-import static org.apache.qpid.util.GZIPUtils.GZIP_CONTENT_ENCODING;
+import static org.apache.qpid.server.util.GZIPUtils.GZIP_CONTENT_ENCODING;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,10 +65,10 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.bytebuffer.QpidByteBufferInputStream;
-import org.apache.qpid.filter.SelectorParsingException;
-import org.apache.qpid.filter.selector.ParseException;
-import org.apache.qpid.filter.selector.TokenMgrError;
+import org.apache.qpid.server.bytebuffer.QpidByteBufferInputStream;
+import org.apache.qpid.server.filter.SelectorParsingException;
+import org.apache.qpid.server.filter.selector.ParseException;
+import org.apache.qpid.server.filter.selector.TokenMgrError;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.connection.SessionPrincipal;

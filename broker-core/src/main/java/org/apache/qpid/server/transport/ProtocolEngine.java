@@ -24,9 +24,9 @@ import java.util.Iterator;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.transport.network.TransportActivity;
+import org.apache.qpid.server.transport.network.TransportActivity;
 
 /**
  * A ProtocolEngine is a Receiver for java.nio.ByteBuffers. It takes the data passed to it in the received

@@ -83,7 +83,7 @@ public class QueuePolicyTest extends QpidBrokerTestCase
         }
         catch (AMQException e)
         {
-           assertEquals("The correct error code is not set",506, e.getErrorCode());
+           assertAMQException("The correct error code is not set", 506, e);
         }
     }
     
@@ -117,4 +117,20 @@ public class QueuePolicyTest extends QpidBrokerTestCase
         msg = (TextMessage)consumer.receive(1000);
         assertEquals("The consumer should receive the msg with body='Test3'","Test3",msg.getText());
     }
+
+    protected void assertAMQException(final String message, final int expected, final AMQException e)
+    {
+        Object object = e.getErrorCode(); // API change after v6.1
+        if (object instanceof Integer)
+        {
+            assertEquals(message, expected, e.getErrorCode());
+        }
+        else
+        {
+            final String fullMessage = String.format("%s. expected actual : %s to start with %d", message, e.getErrorCode(), expected);
+            final String actual = String.valueOf(e.getErrorCode());
+            assertTrue(fullMessage, actual.startsWith(Integer.toString(expected)));
+        }
+    }
+
 }

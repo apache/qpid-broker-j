@@ -35,7 +35,7 @@ import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.url.URLSyntaxException;
 
 /**
@@ -85,7 +85,7 @@ public class ExternalACLTest extends AbstractACLTestCase
         assertNotNull("Cause was null", cause);
         assertTrue("Wrong linked exception type", cause instanceof QpidException);
         int errorCode = isBroker010() ? ErrorCodes.CONNECTION_FORCED : ErrorCodes.ACCESS_REFUSED;
-        assertEquals("Incorrect error code received", errorCode, ((AMQException) cause).getErrorCode());
+        assertAMQException("Incorrect error code received", errorCode, (AMQException)cause);
     }
 
     public void setUpAccessVirtualHostWithName() throws Exception

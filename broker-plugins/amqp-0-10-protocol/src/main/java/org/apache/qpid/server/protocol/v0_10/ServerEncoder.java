@@ -24,8 +24,8 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.transport.codec.AbstractEncoder;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.transport.codec.AbstractEncoder;
 
 
 public final class ServerEncoder extends AbstractEncoder

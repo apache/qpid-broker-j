@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.filter;
 
-import org.apache.qpid.common.AMQPFilterTypes;
+import org.apache.qpid.server.common.AMQPFilterTypes;
 
 public final class ArrivalTimeFilter implements MessageFilter
 {

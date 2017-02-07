@@ -30,7 +30,7 @@ import java.util.Map;
 import com.sleepycat.je.Transaction;
 
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;

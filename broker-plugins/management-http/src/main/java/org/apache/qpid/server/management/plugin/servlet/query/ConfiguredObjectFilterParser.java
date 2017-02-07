@@ -28,14 +28,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Collections;
 
-import org.apache.qpid.filter.ArithmeticExpression;
-import org.apache.qpid.filter.BooleanExpression;
-import org.apache.qpid.filter.ComparisonExpression;
-import org.apache.qpid.filter.ConstantExpression;
-import org.apache.qpid.filter.Expression;
-import org.apache.qpid.filter.OrderByExpression;
-import org.apache.qpid.filter.LogicExpression;
-import org.apache.qpid.filter.UnaryExpression;
+import org.apache.qpid.server.filter.ArithmeticExpression;
+import org.apache.qpid.server.filter.BooleanExpression;
+import org.apache.qpid.server.filter.ComparisonExpression;
+import org.apache.qpid.server.filter.ConstantExpression;
+import org.apache.qpid.server.filter.Expression;
+import org.apache.qpid.server.filter.OrderByExpression;
+import org.apache.qpid.server.filter.LogicExpression;
+import org.apache.qpid.server.filter.UnaryExpression;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 

@@ -39,13 +39,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.network.TransportEncryption;
-import org.apache.qpid.util.SystemUtils;
+import org.apache.qpid.server.transport.ByteBufferSender;
+import org.apache.qpid.server.transport.network.TransportEncryption;
+import org.apache.qpid.server.util.SystemUtils;
 
 public class NonBlockingConnection implements ServerNetworkConnection, ByteBufferSender
 {

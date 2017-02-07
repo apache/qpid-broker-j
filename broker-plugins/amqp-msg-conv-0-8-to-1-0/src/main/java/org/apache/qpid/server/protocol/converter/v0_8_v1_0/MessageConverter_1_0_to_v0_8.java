@@ -25,12 +25,12 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.BasicContentHeaderProperties;
-import org.apache.qpid.framing.ContentHeaderBody;
-import org.apache.qpid.framing.FieldTable;
-import org.apache.qpid.framing.MessagePublishInfo;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.framing.AMQShortString;
+import org.apache.qpid.server.framing.BasicContentHeaderProperties;
+import org.apache.qpid.server.framing.ContentHeaderBody;
+import org.apache.qpid.server.framing.FieldTable;
+import org.apache.qpid.server.framing.MessagePublishInfo;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;

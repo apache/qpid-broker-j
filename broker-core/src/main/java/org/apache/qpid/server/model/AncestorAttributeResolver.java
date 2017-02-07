@@ -29,7 +29,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 public class AncestorAttributeResolver implements Strings.Resolver
 {

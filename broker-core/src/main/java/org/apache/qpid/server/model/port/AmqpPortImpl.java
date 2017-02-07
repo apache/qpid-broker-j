@@ -75,8 +75,8 @@ import org.apache.qpid.server.transport.PortBindFailureException;
 import org.apache.qpid.server.transport.TransportProvider;
 import org.apache.qpid.server.util.PortUtil;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.transport.network.security.ssl.QpidMultipleTrustManager;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.transport.network.security.ssl.QpidMultipleTrustManager;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
 public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<AmqpPortImpl> implements AmqpPort<AmqpPortImpl>
 {

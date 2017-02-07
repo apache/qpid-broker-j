@@ -65,8 +65,8 @@ import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
-import org.apache.qpid.transport.network.security.ssl.QpidMultipleTrustManager;
-import org.apache.qpid.transport.network.security.ssl.QpidPeersOnlyTrustManager;
+import org.apache.qpid.server.transport.network.security.ssl.QpidMultipleTrustManager;
+import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustManager;
 
 @ManagedObject( category = false )
 public class ManagedPeerCertificateTrustStoreImpl

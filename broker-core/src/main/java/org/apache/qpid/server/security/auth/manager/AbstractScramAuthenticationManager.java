@@ -50,7 +50,7 @@ import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
 import org.apache.qpid.server.security.auth.sasl.scram.ScramNegotiator;
 import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSource;
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 public abstract class AbstractScramAuthenticationManager<X extends AbstractScramAuthenticationManager<X>>
         extends ConfigModelPasswordManagingAuthenticationProvider<X>

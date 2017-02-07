@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import static org.apache.qpid.transport.util.Functions.hex;
+import static org.apache.qpid.server.transport.util.Functions.hex;
 
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
@@ -51,12 +51,12 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQConnectionException;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.common.AMQPFilterTypes;
-import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.framing.*;
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.AMQConnectionException;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.common.AMQPFilterTypes;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
+import org.apache.qpid.server.framing.*;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
@@ -97,7 +97,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
-import org.apache.qpid.transport.network.Ticker;
+import org.apache.qpid.server.transport.network.Ticker;
 
 public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0_8>
         implements AsyncAutoCommitTransaction.FutureRecorder,

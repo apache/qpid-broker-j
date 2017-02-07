@@ -21,7 +21,7 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
-import static org.apache.qpid.util.Serial.gt;
+import static org.apache.qpid.server.util.Serial.gt;
 
 import java.security.AccessControlContext;
 import java.security.AccessController;
@@ -87,7 +87,7 @@ import org.apache.qpid.server.txn.TimeoutDtxException;
 import org.apache.qpid.server.txn.UnknownDtxBranchException;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.transport.*;
+import org.apache.qpid.server.transport.*;
 
 public class ServerSession extends Session
         implements LogSubject, AsyncAutoCommitTransaction.FutureRecorder

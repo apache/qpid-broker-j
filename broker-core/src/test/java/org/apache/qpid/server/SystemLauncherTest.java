@@ -36,7 +36,7 @@ import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 public class SystemLauncherTest extends QpidTestCase
 {

@@ -39,8 +39,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.util.CommandLineParser;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.CommandLineParser;
+import org.apache.qpid.server.util.FileUtils;
 
 /**
  * BDBBackup is a utility for taking hot backups of the current state of a BDB transaction log database.

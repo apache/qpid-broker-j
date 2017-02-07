@@ -20,10 +20,10 @@
  */
 package org.apache.qpid.server.security.group.cloudfoundry;
 
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST;
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST;
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST;
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST;
+import static org.apache.qpid.server.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST;
+import static org.apache.qpid.server.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST;
+import static org.apache.qpid.server.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST;
+import static org.apache.qpid.server.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST;
 import static org.apache.qpid.server.util.ParameterizedTypes.LIST_OF_STRINGS;
 
 import java.io.IOException;

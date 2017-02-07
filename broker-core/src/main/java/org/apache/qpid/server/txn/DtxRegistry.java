@@ -31,7 +31,7 @@ import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-import org.apache.qpid.transport.Xid;
+import org.apache.qpid.server.transport.Xid;
 
 public class DtxRegistry
 {

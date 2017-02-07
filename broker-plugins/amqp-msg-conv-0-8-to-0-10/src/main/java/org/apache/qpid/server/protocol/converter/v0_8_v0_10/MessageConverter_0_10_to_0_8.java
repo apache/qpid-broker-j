@@ -24,14 +24,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.qpid.AMQPInvalidClassException;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.BasicContentHeaderProperties;
-import org.apache.qpid.framing.ContentHeaderBody;
-import org.apache.qpid.framing.FieldTable;
-import org.apache.qpid.framing.MessagePublishInfo;
+import org.apache.qpid.server.AMQPInvalidClassException;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
+import org.apache.qpid.server.framing.AMQShortString;
+import org.apache.qpid.server.framing.BasicContentHeaderProperties;
+import org.apache.qpid.server.framing.ContentHeaderBody;
+import org.apache.qpid.server.framing.FieldTable;
+import org.apache.qpid.server.framing.MessagePublishInfo;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -41,11 +41,11 @@ import org.apache.qpid.server.protocol.v0_10.MessageTransferMessage;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v0_8.MessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.transport.DeliveryProperties;
-import org.apache.qpid.transport.Header;
-import org.apache.qpid.transport.MessageDeliveryMode;
-import org.apache.qpid.transport.MessageProperties;
-import org.apache.qpid.transport.ReplyTo;
+import org.apache.qpid.server.transport.DeliveryProperties;
+import org.apache.qpid.server.transport.Header;
+import org.apache.qpid.server.transport.MessageDeliveryMode;
+import org.apache.qpid.server.transport.MessageProperties;
+import org.apache.qpid.server.transport.ReplyTo;
 
 @PluggableService
 public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTransferMessage, AMQMessage>

@@ -36,13 +36,13 @@ import javax.security.auth.Subject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.apache.qpid.common.AMQPFilterTypes;
-import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.BasicContentHeaderProperties;
-import org.apache.qpid.framing.ContentHeaderBody;
-import org.apache.qpid.framing.FieldTable;
-import org.apache.qpid.framing.MessagePublishInfo;
+import org.apache.qpid.server.common.AMQPFilterTypes;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
+import org.apache.qpid.server.framing.AMQShortString;
+import org.apache.qpid.server.framing.BasicContentHeaderProperties;
+import org.apache.qpid.server.framing.ContentHeaderBody;
+import org.apache.qpid.server.framing.FieldTable;
+import org.apache.qpid.server.framing.MessagePublishInfo;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.connection.SessionPrincipal;

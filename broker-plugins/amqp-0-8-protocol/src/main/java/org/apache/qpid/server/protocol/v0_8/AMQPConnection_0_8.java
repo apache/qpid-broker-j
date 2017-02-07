@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.framing.AMQDataBlock;
-import org.apache.qpid.framing.MethodRegistry;
-import org.apache.qpid.framing.ProtocolVersion;
+import org.apache.qpid.server.framing.AMQDataBlock;
+import org.apache.qpid.server.framing.MethodRegistry;
+import org.apache.qpid.server.framing.ProtocolVersion;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ContextProvider;

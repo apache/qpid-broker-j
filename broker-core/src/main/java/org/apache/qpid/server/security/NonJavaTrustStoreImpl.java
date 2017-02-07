@@ -64,7 +64,7 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
 @ManagedObject( category = false )
 public class NonJavaTrustStoreImpl

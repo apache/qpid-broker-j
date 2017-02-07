@@ -21,7 +21,7 @@
 
 package org.apache.qpid.server.txn;
 
-import org.apache.qpid.transport.Xid;
+import org.apache.qpid.server.transport.Xid;
 
 public class JoinAndResumeDtxException extends DtxException
 {

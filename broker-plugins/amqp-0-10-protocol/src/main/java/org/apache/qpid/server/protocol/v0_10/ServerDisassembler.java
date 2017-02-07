@@ -21,11 +21,11 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 import static java.lang.Math.min;
-import static org.apache.qpid.transport.network.Frame.FIRST_FRAME;
-import static org.apache.qpid.transport.network.Frame.FIRST_SEG;
-import static org.apache.qpid.transport.network.Frame.HEADER_SIZE;
-import static org.apache.qpid.transport.network.Frame.LAST_FRAME;
-import static org.apache.qpid.transport.network.Frame.LAST_SEG;
+import static org.apache.qpid.server.transport.network.Frame.FIRST_FRAME;
+import static org.apache.qpid.server.transport.network.Frame.FIRST_SEG;
+import static org.apache.qpid.server.transport.network.Frame.HEADER_SIZE;
+import static org.apache.qpid.server.transport.network.Frame.LAST_FRAME;
+import static org.apache.qpid.server.transport.network.Frame.LAST_SEG;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,19 +34,19 @@ import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.FrameSizeObserver;
-import org.apache.qpid.transport.Header;
-import org.apache.qpid.transport.Method;
-import org.apache.qpid.transport.ProtocolDelegate;
-import org.apache.qpid.transport.ProtocolError;
-import org.apache.qpid.transport.ProtocolEvent;
-import org.apache.qpid.transport.ProtocolEventSender;
-import org.apache.qpid.transport.ProtocolHeader;
-import org.apache.qpid.transport.SegmentType;
-import org.apache.qpid.transport.Struct;
-import org.apache.qpid.transport.network.Frame;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.transport.ByteBufferSender;
+import org.apache.qpid.server.transport.FrameSizeObserver;
+import org.apache.qpid.server.transport.Header;
+import org.apache.qpid.server.transport.Method;
+import org.apache.qpid.server.transport.ProtocolDelegate;
+import org.apache.qpid.server.transport.ProtocolError;
+import org.apache.qpid.server.transport.ProtocolEvent;
+import org.apache.qpid.server.transport.ProtocolEventSender;
+import org.apache.qpid.server.transport.ProtocolHeader;
+import org.apache.qpid.server.transport.SegmentType;
+import org.apache.qpid.server.transport.Struct;
+import org.apache.qpid.server.transport.network.Frame;
 
 /**
  * Disassembler

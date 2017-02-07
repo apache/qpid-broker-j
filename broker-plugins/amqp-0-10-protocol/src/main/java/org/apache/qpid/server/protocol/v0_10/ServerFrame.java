@@ -20,13 +20,13 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import static org.apache.qpid.transport.util.Functions.str;
+import static org.apache.qpid.server.transport.util.Functions.str;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.transport.SegmentType;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.transport.SegmentType;
 
 
 public final class ServerFrame

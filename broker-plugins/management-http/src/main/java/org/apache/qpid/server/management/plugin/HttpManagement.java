@@ -110,8 +110,8 @@ import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.model.port.PortManager;
 import org.apache.qpid.server.transport.PortBindFailureException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.transport.network.security.ssl.QpidMultipleTrustManager;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.transport.network.security.ssl.QpidMultipleTrustManager;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
 @ManagedObject( category = false, type = HttpManagement.PLUGIN_TYPE )
 public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implements HttpManagementConfiguration<HttpManagement>, PortManager

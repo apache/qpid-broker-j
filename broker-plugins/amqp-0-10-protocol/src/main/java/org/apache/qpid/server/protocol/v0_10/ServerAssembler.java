@@ -31,16 +31,16 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.transport.DeliveryProperties;
-import org.apache.qpid.transport.Header;
-import org.apache.qpid.transport.MessageProperties;
-import org.apache.qpid.transport.Method;
-import org.apache.qpid.transport.ProtocolError;
-import org.apache.qpid.transport.ProtocolEvent;
-import org.apache.qpid.transport.ProtocolHeader;
-import org.apache.qpid.transport.Struct;
-import org.apache.qpid.transport.network.Frame;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.transport.DeliveryProperties;
+import org.apache.qpid.server.transport.Header;
+import org.apache.qpid.server.transport.MessageProperties;
+import org.apache.qpid.server.transport.Method;
+import org.apache.qpid.server.transport.ProtocolError;
+import org.apache.qpid.server.transport.ProtocolEvent;
+import org.apache.qpid.server.transport.ProtocolHeader;
+import org.apache.qpid.server.transport.Struct;
+import org.apache.qpid.server.transport.network.Frame;
 
 public class ServerAssembler
 {

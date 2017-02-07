@@ -42,11 +42,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.BasicContentHeaderProperties;
-import org.apache.qpid.framing.MethodRegistry;
-import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.framing.AMQShortString;
+import org.apache.qpid.server.framing.BasicContentHeaderProperties;
+import org.apache.qpid.server.framing.MethodRegistry;
+import org.apache.qpid.server.framing.ProtocolVersion;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.InstanceProperties;

@@ -24,20 +24,20 @@ import java.nio.BufferUnderflowException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.framing.AMQFrameDecodingException;
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.ContentHeaderBody;
-import org.apache.qpid.framing.MessagePublishInfo;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.framing.AMQFrameDecodingException;
+import org.apache.qpid.server.framing.AMQShortString;
+import org.apache.qpid.server.framing.ContentHeaderBody;
+import org.apache.qpid.server.framing.MessagePublishInfo;
 import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.transport.DeliveryProperties;
-import org.apache.qpid.transport.Header;
-import org.apache.qpid.transport.MessageProperties;
-import org.apache.qpid.transport.Struct;
+import org.apache.qpid.server.transport.DeliveryProperties;
+import org.apache.qpid.server.transport.Header;
+import org.apache.qpid.server.transport.MessageProperties;
+import org.apache.qpid.server.transport.Struct;
 
 public class MessageFormat_0_10 implements MessageFormat<MessageTransferMessage>
 {

@@ -19,7 +19,7 @@
 
 package org.apache.qpid.server.transport;
 
-import org.apache.qpid.transport.network.NetworkConnection;
+import org.apache.qpid.server.transport.network.NetworkConnection;
 
 public interface ServerNetworkConnection extends NetworkConnection
 {

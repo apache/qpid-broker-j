@@ -23,7 +23,7 @@ package org.apache.qpid.server.message.internal;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.plugin.PluggableService;

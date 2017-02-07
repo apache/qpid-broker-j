@@ -27,25 +27,25 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.QpidException;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.framing.AMQBody;
-import org.apache.qpid.framing.AMQDataBlock;
-import org.apache.qpid.framing.AMQFrame;
-import org.apache.qpid.framing.AMQMethodBody;
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.BasicCancelOkBody;
-import org.apache.qpid.framing.BasicContentHeaderProperties;
-import org.apache.qpid.framing.ContentHeaderBody;
-import org.apache.qpid.framing.MessagePublishInfo;
-import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
+import org.apache.qpid.server.QpidException;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.framing.AMQBody;
+import org.apache.qpid.server.framing.AMQDataBlock;
+import org.apache.qpid.server.framing.AMQFrame;
+import org.apache.qpid.server.framing.AMQMethodBody;
+import org.apache.qpid.server.framing.AMQShortString;
+import org.apache.qpid.server.framing.BasicCancelOkBody;
+import org.apache.qpid.server.framing.BasicContentHeaderProperties;
+import org.apache.qpid.server.framing.ContentHeaderBody;
+import org.apache.qpid.server.framing.MessagePublishInfo;
+import org.apache.qpid.server.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageContentSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
-import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.util.GZIPUtils;
+import org.apache.qpid.server.transport.ByteBufferSender;
+import org.apache.qpid.server.util.GZIPUtils;
 
 public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 {

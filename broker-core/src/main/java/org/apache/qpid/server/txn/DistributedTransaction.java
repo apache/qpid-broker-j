@@ -29,7 +29,7 @@ import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.transport.Xid;
+import org.apache.qpid.server.transport.Xid;
 
 public class DistributedTransaction implements ServerTransaction
 {

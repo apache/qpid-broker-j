@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.exchange;
 
-import org.apache.qpid.exchange.ExchangeDefaults;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ManagedObject;
 

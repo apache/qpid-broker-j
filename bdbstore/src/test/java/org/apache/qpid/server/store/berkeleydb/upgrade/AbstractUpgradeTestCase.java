@@ -36,7 +36,7 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.subjects.TestBlankSubject;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 import com.sleepycat.je.Database;
 import com.sleepycat.je.Environment;

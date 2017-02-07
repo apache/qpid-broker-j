@@ -30,15 +30,13 @@
 
   <properties>
     <generated-logmessages-dir>${basedir}/src/main/java</generated-logmessages-dir>
+    <qpid.name>qpid</qpid.name>
+    <qpid.version>${project.version}</qpid.version>
+    <qpid.version.suffix />
+    <buildNumber>Unversioned directory</buildNumber>
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-codegen</artifactId>
@@ -160,6 +158,54 @@
 
     <plugins>
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <version>1.3</version>
+        <executions>
+          <execution>
+            <phase>validate</phase>
+            <goals>
+              <goal>create</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <doCheck>false</doCheck>
+          <doUpdate>false</doUpdate>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <!--version specified in parent pluginManagement -->
+        <executions>
+          <execution>
+            <id>amqp-0-8-generated</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <!-- TODO re-enable/re-work code generation -->
+              <skip>true</skip>
+              <target>
+                <ant antfile="build-generate-sources.xml">
+                  <reference torefid="source.generation.classpathref" refid="maven.plugin.classpath" />
+                  <property name="build.compiler" value="extJavac" />
+                </ant>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.python</groupId>
+            <artifactId>jython-standalone</artifactId>
+            <version>${jython-version}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <!--version specified in parent pluginManagement -->
@@ -194,6 +240,7 @@
       </activation>
       <build>
         <plugins>
+
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
@@ -206,6 +253,8 @@
                     <goal>run</goal>
                   </goals>
                   <configuration>
+                    <!-- TODO re-enable/re-work code generation -->
+                    <skip>true</skip>
                     <target>
                         <ant antfile="build-generate-sources.xml">
                           <reference torefid="source.generation.classpathref" refid="maven.plugin.classpath" />
@@ -231,6 +280,27 @@
                 <version>${velocity-version}</version>
               </dependency>
             </dependencies>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>javacc-maven-plugin</artifactId>
+            <!--version specified in parent pluginManagement -->
+            <executions>
+              <execution>
+                <id>jms-selector-generated</id>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>javacc</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${selector.output.dir}</outputDirectory>
+                  <sourceDirectory>src/main/grammar</sourceDirectory>
+                  <includes>
+                    <include>SelectorParser.jj</include>
+                  </includes>
+                </configuration>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>

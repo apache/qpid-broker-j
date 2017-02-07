@@ -31,7 +31,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.Deletable;
-import org.apache.qpid.transport.network.Ticker;
+import org.apache.qpid.server.transport.network.Ticker;
 
 public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSession<S, X>,
                              X extends ConsumerTarget<X>> extends Session<S>,

@@ -41,11 +41,11 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.transport.Binary;
-import org.apache.qpid.transport.ExecutionErrorCode;
-import org.apache.qpid.transport.ExecutionException;
-import org.apache.qpid.transport.MessageTransfer;
-import org.apache.qpid.transport.Method;
+import org.apache.qpid.server.transport.Binary;
+import org.apache.qpid.server.transport.ExecutionErrorCode;
+import org.apache.qpid.server.transport.ExecutionException;
+import org.apache.qpid.server.transport.MessageTransfer;
+import org.apache.qpid.server.transport.Method;
 
 public class ServerSessionTest extends QpidTestCase
 {

@@ -21,7 +21,7 @@ package org.apache.qpid.server.store.berkeleydb;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
 
-import org.apache.qpid.framing.AMQShortString;
+import org.apache.qpid.server.framing.AMQShortString;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 /**

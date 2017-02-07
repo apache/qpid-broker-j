@@ -54,7 +54,7 @@ import org.apache.qpid.server.plugin.ConfiguredObjectRegistration;
 import org.apache.qpid.server.plugin.ConfiguredObjectTypeFactory;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 public class ConfiguredObjectTypeRegistry
 {

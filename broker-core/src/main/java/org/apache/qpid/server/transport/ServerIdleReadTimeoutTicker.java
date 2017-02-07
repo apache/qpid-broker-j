@@ -20,8 +20,8 @@
 
 package org.apache.qpid.server.transport;
 
-import org.apache.qpid.transport.network.Ticker;
-import org.apache.qpid.transport.network.TransportActivity;
+import org.apache.qpid.server.transport.network.Ticker;
+import org.apache.qpid.server.transport.network.TransportActivity;
 
 public class ServerIdleReadTimeoutTicker implements Ticker
 {

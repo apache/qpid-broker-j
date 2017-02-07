@@ -42,8 +42,8 @@ import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestSSLConstants;
-import org.apache.qpid.util.DataUrlUtils;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.DataUrlUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 public class FileKeyStoreTest extends QpidTestCase
 {

@@ -22,7 +22,7 @@ package org.apache.qpid.server.exchange;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.qpid.exchange.ExchangeDefaults;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;

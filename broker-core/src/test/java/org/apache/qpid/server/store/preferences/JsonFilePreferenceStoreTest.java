@@ -41,7 +41,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 public class JsonFilePreferenceStoreTest extends QpidTestCase
 {

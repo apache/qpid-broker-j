@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
@@ -44,10 +44,10 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSect
 import org.apache.qpid.server.protocol.v1_0.type.messaging.NonEncodingRetainingSection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.transport.codec.BBDecoder;
-import org.apache.qpid.typedmessage.TypedBytesContentReader;
-import org.apache.qpid.typedmessage.TypedBytesFormatException;
-import org.apache.qpid.util.GZIPUtils;
+import org.apache.qpid.server.transport.codec.BBDecoder;
+import org.apache.qpid.server.typedmessage.TypedBytesContentReader;
+import org.apache.qpid.server.typedmessage.TypedBytesFormatException;
+import org.apache.qpid.server.util.GZIPUtils;
 
 public abstract class MessageConverter_to_1_0<M extends ServerMessage> implements MessageConverter<M, Message_1_0>
 {

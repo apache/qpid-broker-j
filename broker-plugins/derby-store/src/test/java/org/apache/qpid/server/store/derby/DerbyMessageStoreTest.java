@@ -27,7 +27,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreTestCase;
 import org.apache.qpid.server.virtualhost.derby.DerbyVirtualHost;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

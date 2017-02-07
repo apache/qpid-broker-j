@@ -26,7 +26,7 @@ import java.util.Set;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.server.configuration.CommonProperties;
 
 @ManagedContextDependency({CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST})
 @ManagedObject( description = Port.CLASS_DESCRIPTION, amqpName = "org.apache.qpid.Port")

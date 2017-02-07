@@ -38,10 +38,10 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
-import org.apache.qpid.transport.DeliveryProperties;
-import org.apache.qpid.transport.MessageDeliveryMode;
-import org.apache.qpid.transport.MessageProperties;
-import org.apache.qpid.util.GZIPUtils;
+import org.apache.qpid.server.transport.DeliveryProperties;
+import org.apache.qpid.server.transport.MessageDeliveryMode;
+import org.apache.qpid.server.transport.MessageProperties;
+import org.apache.qpid.server.util.GZIPUtils;
 
 @PluggableService
 public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<MessageTransferMessage>

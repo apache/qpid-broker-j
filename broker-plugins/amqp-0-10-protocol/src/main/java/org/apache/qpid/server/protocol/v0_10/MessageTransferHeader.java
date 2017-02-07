@@ -22,9 +22,9 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import java.util.*;
 import org.apache.qpid.server.message.AMQMessageHeader;
-import org.apache.qpid.transport.DeliveryProperties;
-import org.apache.qpid.transport.MessageDeliveryPriority;
-import org.apache.qpid.transport.MessageProperties;
+import org.apache.qpid.server.transport.DeliveryProperties;
+import org.apache.qpid.server.transport.MessageDeliveryPriority;
+import org.apache.qpid.server.transport.MessageProperties;
 
 class MessageTransferHeader implements AMQMessageHeader
 {

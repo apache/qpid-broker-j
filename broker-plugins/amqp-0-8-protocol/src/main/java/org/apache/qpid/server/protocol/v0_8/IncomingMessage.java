@@ -23,10 +23,10 @@ package org.apache.qpid.server.protocol.v0_8;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.ContentBody;
-import org.apache.qpid.framing.ContentHeaderBody;
-import org.apache.qpid.framing.MessagePublishInfo;
+import org.apache.qpid.server.framing.AMQShortString;
+import org.apache.qpid.server.framing.ContentBody;
+import org.apache.qpid.server.framing.ContentHeaderBody;
+import org.apache.qpid.server.framing.MessagePublishInfo;
 import org.apache.qpid.server.message.MessageDestination;
 
 public class IncomingMessage

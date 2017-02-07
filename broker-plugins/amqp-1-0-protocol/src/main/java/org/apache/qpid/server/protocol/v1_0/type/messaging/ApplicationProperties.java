@@ -27,7 +27,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 import java.util.Collections;
 import java.util.Map;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 
 public class ApplicationProperties implements NonEncodingRetainingSection<Map<String,Object>>

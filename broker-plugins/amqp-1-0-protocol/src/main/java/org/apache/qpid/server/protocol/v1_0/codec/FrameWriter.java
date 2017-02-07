@@ -23,9 +23,9 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 import java.util.List;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
-import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.server.transport.ByteBufferSender;
 
 public class FrameWriter
 {

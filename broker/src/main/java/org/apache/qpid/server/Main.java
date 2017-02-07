@@ -41,7 +41,7 @@ import org.apache.commons.cli.PosixParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.logback.LogbackLoggingSystemLauncherListener;
 import org.apache.qpid.server.model.AbstractSystemConfig;
@@ -51,7 +51,7 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.util.StringUtil;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 /**
  * Main entry point for AMQPD.

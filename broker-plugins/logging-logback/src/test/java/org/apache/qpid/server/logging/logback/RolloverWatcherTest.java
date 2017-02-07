@@ -33,7 +33,7 @@ import org.apache.qpid.server.logging.ZippedContent;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 public class RolloverWatcherTest extends QpidTestCase
 {

@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.util.BaseAction;
 import org.apache.qpid.server.util.FileHelper;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.util.FileUtils;
 
 public abstract class AbstractJsonFileStore
 {

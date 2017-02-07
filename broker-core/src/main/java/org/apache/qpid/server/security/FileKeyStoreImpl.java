@@ -52,8 +52,8 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
-import org.apache.qpid.transport.network.security.ssl.QpidClientX509KeyManager;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.transport.network.security.ssl.QpidClientX509KeyManager;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
 @ManagedObject( category = false )
 public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> implements FileKeyStore<FileKeyStoreImpl>

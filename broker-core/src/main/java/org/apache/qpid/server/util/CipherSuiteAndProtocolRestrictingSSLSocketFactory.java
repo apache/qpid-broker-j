@@ -31,7 +31,7 @@ import java.util.List;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
 public class CipherSuiteAndProtocolRestrictingSSLSocketFactory extends SSLSocketFactory
 {

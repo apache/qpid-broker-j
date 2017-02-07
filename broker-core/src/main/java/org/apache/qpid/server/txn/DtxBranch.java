@@ -37,7 +37,7 @@ import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.transport.Xid;
+import org.apache.qpid.server.transport.Xid;
 
 public class DtxBranch
 {

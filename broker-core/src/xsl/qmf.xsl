@@ -28,8 +28,8 @@ package org.apache.qpid.qmf.schema;
 import org.apache.qpid.qmf.*;
 import org.apache.qpid.server.virtualhost.VirtualHost;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.transport.codec.BBEncoder;
-import org.apache.qpid.transport.codec.BBDecoder;
+import org.apache.qpid.server.transport.codec.BBEncoder;
+import org.apache.qpid.server.transport.codec.BBDecoder;
 
 import java.util.Arrays;
 import java.util.UUID;

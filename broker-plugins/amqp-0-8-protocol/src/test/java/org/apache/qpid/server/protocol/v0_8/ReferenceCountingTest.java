@@ -22,10 +22,10 @@ package org.apache.qpid.server.protocol.v0_8;
 
 import java.util.UUID;
 
-import org.apache.qpid.QpidException;
-import org.apache.qpid.framing.BasicContentHeaderProperties;
-import org.apache.qpid.framing.ContentHeaderBody;
-import org.apache.qpid.framing.MessagePublishInfo;
+import org.apache.qpid.server.QpidException;
+import org.apache.qpid.server.framing.BasicContentHeaderProperties;
+import org.apache.qpid.server.framing.ContentHeaderBody;
+import org.apache.qpid.server.framing.MessagePublishInfo;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.store.MessageCounter;

@@ -24,8 +24,8 @@ import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.Collection;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.transport.network.TransportEncryption;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.transport.network.TransportEncryption;
 
 public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnectionDelegate
 {

@@ -23,7 +23,7 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
-import org.apache.qpid.transport.Method;
+import org.apache.qpid.server.transport.Method;
 
 public class MessageAcceptCompletionListener implements Method.CompletionListener
 {

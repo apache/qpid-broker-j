@@ -36,7 +36,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.xml.bind.DatatypeConverter;
 
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 class AESKeyFileEncrypter implements ConfigurationSecretEncrypter
 {

@@ -33,7 +33,7 @@ import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticationProvider;
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 @PluggableService
 public class BasicAuthPreemptiveAuthenticator implements HttpRequestPreemptiveAuthenticator

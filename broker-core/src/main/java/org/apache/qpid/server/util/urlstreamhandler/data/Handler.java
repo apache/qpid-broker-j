@@ -31,7 +31,7 @@ import java.net.URLDecoder;
 import java.net.URLStreamHandler;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 public class Handler extends URLStreamHandler
 {

@@ -20,6 +20,7 @@
 package org.apache.qpid.test.unit.message;
 
 import javax.jms.Connection;
+import javax.jms.ConnectionMetaData;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
@@ -33,6 +34,14 @@ public class JMSHeaderTest extends QpidBrokerTestCase
     public void testResentJMSMessageGetsReplacementJMSMessageID() throws Exception
     {
         Connection con = getConnection();
+        final ConnectionMetaData metaData = con.getMetaData();
+
+        if ( metaData.getProviderMajorVersion() < 6 || (metaData.getProviderMajorVersion() == 6 && metaData.getProviderMinorVersion() <= 1))
+        {
+            // TODO  This defect was fixed after 6.1
+            return;
+        }
+
         con.start();
         Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
 

@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQNoConsumersException;
 import org.apache.qpid.client.AMQNoRouteException;
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ErrorCodes;
 
 /**
  * Provides utility methods for checking exceptions that are thrown on the client side when a message is
@@ -120,7 +120,7 @@ public class UnroutableMessageTestExceptionListener implements ExceptionListener
         AMQException noRouteException = (AMQException) exception.getLinkedException();
         assertNotNull("AMQException should be linked to JMSException", noRouteException);
 
-        assertEquals(ErrorCodes.NO_ROUTE, noRouteException.getErrorCode());
+        assertAMQException("Unexpected error code", ErrorCodes.NO_ROUTE, noRouteException);
         assertTrue(
                 "Linked exception " + noRouteException + " message should contain intended queue name",
                 noRouteException.getMessage().contains(intendedQueueName));
@@ -138,4 +138,20 @@ public class UnroutableMessageTestExceptionListener implements ExceptionListener
         assertNotNull("JMSException is expected", exception);
         return exception;
     }
+
+    private void assertAMQException(final String message, final int expected, final AMQException e)
+    {
+        Object object = e.getErrorCode(); // API change after v6.1
+        if (object instanceof Integer)
+        {
+            assertEquals(message, expected, e.getErrorCode());
+        }
+        else
+        {
+            final String fullMessage = String.format("%s. expected actual : %s to start with %d", message, e.getErrorCode(), expected);
+            final String actual = String.valueOf(e.getErrorCode());
+            assertTrue(fullMessage, actual.startsWith(Integer.toString(expected)));
+        }
+    }
+
 }

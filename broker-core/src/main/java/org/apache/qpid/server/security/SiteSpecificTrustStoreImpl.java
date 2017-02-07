@@ -73,9 +73,9 @@ import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
-import org.apache.qpid.transport.util.Functions;
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.transport.util.Functions;
+import org.apache.qpid.server.util.Strings;
 
 @ManagedObject( category = false )
 public class SiteSpecificTrustStoreImpl

@@ -50,7 +50,7 @@ import org.apache.qpid.server.security.auth.manager.ScramSHA1AuthenticationManag
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
 import org.apache.qpid.server.security.auth.sasl.PasswordSource;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.util.Strings;
+import org.apache.qpid.server.util.Strings;
 
 public class ScramNegotiatorTest extends QpidTestCase
 {

@@ -30,10 +30,10 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.filter.BooleanExpression;
-import org.apache.qpid.filter.Expression;
-import org.apache.qpid.filter.SelectorParsingException;
-import org.apache.qpid.filter.OrderByExpression;
+import org.apache.qpid.server.filter.BooleanExpression;
+import org.apache.qpid.server.filter.Expression;
+import org.apache.qpid.server.filter.SelectorParsingException;
+import org.apache.qpid.server.filter.OrderByExpression;
 import org.apache.qpid.server.model.ConfiguredObject;
 
 public final class ConfiguredObjectQuery

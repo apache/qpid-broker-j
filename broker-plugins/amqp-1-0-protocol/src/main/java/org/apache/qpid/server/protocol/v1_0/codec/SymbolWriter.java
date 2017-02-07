@@ -23,7 +23,7 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 import java.nio.charset.Charset;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
 public class SymbolWriter extends VariableWidthWriter<Symbol>

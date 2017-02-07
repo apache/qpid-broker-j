@@ -30,11 +30,11 @@ import java.util.Collections;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.FieldTable;
-import org.apache.qpid.framing.ProtocolInitiation;
-import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.properties.ConnectionStartProperties;
+import org.apache.qpid.server.framing.AMQShortString;
+import org.apache.qpid.server.framing.FieldTable;
+import org.apache.qpid.server.framing.ProtocolInitiation;
+import org.apache.qpid.server.framing.ProtocolVersion;
+import org.apache.qpid.server.properties.ConnectionStartProperties;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.AuthenticationProvider;
@@ -63,7 +63,7 @@ import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.server.transport.ByteBufferSender;
 
 public class AMQPConnection_0_8Test extends QpidTestCase
 {

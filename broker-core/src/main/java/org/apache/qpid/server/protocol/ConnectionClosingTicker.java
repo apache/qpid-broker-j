@@ -21,7 +21,7 @@
 package org.apache.qpid.server.protocol;
 
 import org.apache.qpid.server.transport.ServerNetworkConnection;
-import org.apache.qpid.transport.network.Ticker;
+import org.apache.qpid.server.transport.network.Ticker;
 
 public class ConnectionClosingTicker implements Ticker
 {

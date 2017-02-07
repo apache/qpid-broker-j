@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import static org.apache.qpid.transport.Connection.State.CLOSING;
+import static org.apache.qpid.server.transport.Connection.State.CLOSING;
 
 import java.net.SocketAddress;
 import java.security.AccessControlContext;
@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -52,16 +52,16 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.transport.Connection;
-import org.apache.qpid.transport.ConnectionClose;
-import org.apache.qpid.transport.ConnectionCloseCode;
-import org.apache.qpid.transport.ConnectionCloseOk;
-import org.apache.qpid.transport.ExecutionErrorCode;
-import org.apache.qpid.transport.ExecutionException;
-import org.apache.qpid.transport.Method;
-import org.apache.qpid.transport.Option;
-import org.apache.qpid.transport.ProtocolEvent;
-import org.apache.qpid.transport.Session;
+import org.apache.qpid.server.transport.Connection;
+import org.apache.qpid.server.transport.ConnectionClose;
+import org.apache.qpid.server.transport.ConnectionCloseCode;
+import org.apache.qpid.server.transport.ConnectionCloseOk;
+import org.apache.qpid.server.transport.ExecutionErrorCode;
+import org.apache.qpid.server.transport.ExecutionException;
+import org.apache.qpid.server.transport.Method;
+import org.apache.qpid.server.transport.Option;
+import org.apache.qpid.server.transport.ProtocolEvent;
+import org.apache.qpid.server.transport.Session;
 
 public class ServerConnection extends Connection
 {

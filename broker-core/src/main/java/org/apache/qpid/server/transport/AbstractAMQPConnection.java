@@ -71,8 +71,8 @@ import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
-import org.apache.qpid.transport.network.NetworkConnection;
-import org.apache.qpid.transport.network.Ticker;
+import org.apache.qpid.server.transport.network.NetworkConnection;
+import org.apache.qpid.server.transport.network.Ticker;
 
 public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,T>, T>
         extends AbstractConfiguredObject<C>

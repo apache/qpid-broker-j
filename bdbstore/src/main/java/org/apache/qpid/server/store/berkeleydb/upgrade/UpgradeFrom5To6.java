@@ -51,9 +51,9 @@ import com.sleepycat.je.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.FieldTable;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
+import org.apache.qpid.server.framing.AMQShortString;
+import org.apache.qpid.server.framing.FieldTable;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;

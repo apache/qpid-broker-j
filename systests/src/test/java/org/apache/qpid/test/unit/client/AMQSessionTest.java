@@ -24,10 +24,11 @@ import javax.jms.Connection;
 import javax.jms.Session;
 
 import org.apache.qpid.AMQChannelClosedException;
+import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 
@@ -85,7 +86,22 @@ public class AMQSessionTest extends QpidBrokerTestCase
         }
         catch(AMQChannelClosedException cce)
         {
-            assertEquals(ErrorCodes.NOT_FOUND, cce.getErrorCode());
+            assertAMQException("Unexpected error code", ErrorCodes.NOT_FOUND, cce);
+        }
+    }
+
+    private void assertAMQException(final String message, final int expected, final AMQException e)
+    {
+        Object object = e.getErrorCode(); // API change after v6.1
+        if (object instanceof Integer)
+        {
+            assertEquals(message, expected, e.getErrorCode());
+        }
+        else
+        {
+            final String fullMessage = String.format("%s. expected actual : %s to start with %d", message, e.getErrorCode(), expected);
+            final String actual = String.valueOf(e.getErrorCode());
+            assertTrue(fullMessage, actual.startsWith(Integer.toString(expected)));
         }
     }
 

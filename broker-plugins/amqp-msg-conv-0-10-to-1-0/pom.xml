@@ -46,12 +46,6 @@
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-plugins-amqp-0-10-protocol</artifactId>
       <version>${project.version}</version>
     </dependency> 
