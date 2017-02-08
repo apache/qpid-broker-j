@@ -71,12 +71,19 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
     private static final int MAX_DELIVERY_COUNT = 2;
     private CountDownLatch _awaitCompletion;
 
+    protected long _awaitEmptyQueue;
+    protected long _awaitCompletionTimeout = 20;
+
     /** index numbers of messages to be redelivered */
     private final List<Integer> _redeliverMsgs = Arrays.asList(1, 2, 5, 14);
     private String _testQueueName;
 
+    @Override
     public void setUp() throws Exception
     {
+        _awaitEmptyQueue = Long.parseLong(System.getProperty("MaxDeliveryCountTest.awaitEmptyQueue", "2500"));
+        _awaitCompletionTimeout = Long.parseLong(System.getProperty("MaxDeliveryCountTest.awaitCompletionTimeout", "20000"));
+
         setTestSystemProperty("queue.deadLetterQueueEnabled","true");
         setTestSystemProperty("queue.maximumDeliveryAttempts", String.valueOf(MAX_DELIVERY_COUNT));
 
@@ -237,7 +244,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
 
             try
             {
-                if (!_awaitCompletion.await(20, TimeUnit.SECONDS))
+                if (!_awaitCompletion.await(_awaitCompletionTimeout, TimeUnit.MILLISECONDS))
                 {
                     fail("Test did not complete in 20 seconds.");
                 }
@@ -252,8 +259,20 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
             {
                 fail(_failMsg);
             }
+
         }
         consumer.close();
+
+        // In the non-transaction case, control may return to the client before the messaging transaction is committed.
+        if (clientSession.getAcknowledgeMode() != Session.SESSION_TRANSACTED
+            && clientSession.getAcknowledgeMode() != Session.CLIENT_ACKNOWLEDGE)
+        {
+            final long timeout = System.currentTimeMillis() + _awaitEmptyQueue;
+            while(getQueueDepth(clientConnection, checkQueue) > 0 && System.currentTimeMillis() < timeout)
+            {
+                Thread.sleep(100);
+            }
+        }
 
         //check the source queue is now empty
         assertEquals("The queue should have 0 msgs left", 0, getQueueDepth(clientConnection, checkQueue));
