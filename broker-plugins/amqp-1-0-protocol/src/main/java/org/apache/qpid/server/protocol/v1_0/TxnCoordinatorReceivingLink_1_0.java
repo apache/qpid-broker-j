@@ -21,9 +21,9 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +40,11 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declare;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declared;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TxnCapability;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
@@ -59,19 +61,19 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
 
     private ArrayList<Transfer> _incompleteMessage;
     private SectionDecoder _sectionDecoder;
-    private LinkedHashMap<Integer, ServerTransaction> _openTransactions;
+    private final LinkedHashMap<Integer, ServerTransaction> _createdTransactions = new LinkedHashMap<>();
     private Session_1_0 _session;
 
 
     public TxnCoordinatorReceivingLink_1_0(NamedAddressSpace namedAddressSpace,
-                                           Session_1_0 session_1_0, ReceivingLinkEndpoint endpoint,
-                                           LinkedHashMap<Integer, ServerTransaction> openTransactions)
+                                           Session_1_0 session_1_0,
+                                           ReceivingLinkEndpoint endpoint)
     {
         _namedAddressSpace = namedAddressSpace;
         _session = session_1_0;
         _endpoint  = endpoint;
         _sectionDecoder = new SectionDecoderImpl(endpoint.getSession().getConnection().getDescribedTypeRegistry().getSectionDecoderRegistry());
-        _openTransactions = openTransactions;
+        ((Coordinator)endpoint.getTarget()).setCapabilities(TxnCapability.LOCAL_TXN, TxnCapability.MULTI_SSNS_PER_TXN, TxnCapability.MULTI_TXNS_PER_SSN);
     }
 
     public Error messageTransfer(Transfer xfr)
@@ -127,21 +129,14 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
 
                     if(command instanceof Declare)
                     {
-                        Integer txnId = Integer.valueOf(0);
-                        Iterator<Integer> existingTxn  = _openTransactions.keySet().iterator();
-                        while(existingTxn.hasNext())
-                        {
-                            txnId = existingTxn.next();
-                        }
-                        txnId = Integer.valueOf(txnId.intValue() + 1);
-
-                        _openTransactions.put(txnId, new LocalTransaction(_namedAddressSpace.getMessageStore()));
+                        final IdentifiedTransaction txn = _session.getConnection().createLocalTransaction();
+                        _createdTransactions.put(txn.getId(), txn.getServerTransaction());
 
                         Declared state = new Declared();
 
                         _session.incrementStartedTransactions();
 
-                        state.setTxnId(_session.integerToBinary(txnId));
+                        state.setTxnId(_session.integerToBinary(txn.getId()));
                         _endpoint.updateDisposition(deliveryTag, state, true);
 
                     }
@@ -180,8 +175,16 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
 
     public void remoteDetached(LinkEndpoint endpoint, Detach detach)
     {
+        // force rollback of open transactions
+        for(Map.Entry<Integer, ServerTransaction> entry : _createdTransactions.entrySet())
+        {
+            entry.getValue().rollback();
+            _session.incrementRolledBackTransactions();
+            _session.getConnection().removeTransaction(entry.getKey());
+        }
         endpoint.detach();
     }
+
 
     @Override
     public void handle(final Binary deliveryTag, final DeliveryState state, final Boolean settled)
@@ -192,7 +195,7 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
     private Error discharge(Integer transactionId, boolean fail)
     {
         Error error = null;
-        ServerTransaction txn = _openTransactions.get(transactionId);
+        ServerTransaction txn = _createdTransactions.get(transactionId);
         if(txn != null)
         {
             if(fail)
@@ -212,11 +215,9 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
                 error = new Error();
                 error.setCondition(LinkError.DETACH_FORCED);
                 error.setDescription("The transaction was marked as rollback only due to an earlier issue (e.g. a published message was sent settled but could not be enqueued)");
-                _openTransactions.remove(transactionId);
-
-                return error;
             }
-            _openTransactions.remove(transactionId);
+            _createdTransactions.remove(transactionId);
+            _session.getConnection().removeTransaction(transactionId);
         }
         else
         {

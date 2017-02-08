@@ -62,6 +62,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
+import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 
@@ -239,6 +240,10 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                             }
                         });
                     }
+                    else
+                    {
+                        // TODO - deal with the case of an invalid txn id
+                    }
 
                 }
                 getSession().getAMQPConnection().registerMessageDelivered(message.getSize());
@@ -358,23 +363,28 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
             Binary transactionId = null;
             final Outcome outcome;
+            ServerTransaction txn;
             // If disposition is settled this overrides the txn?
             if(state instanceof TransactionalState)
             {
                 transactionId = ((TransactionalState)state).getTxnId();
                 outcome = ((TransactionalState)state).getOutcome();
+                txn = _link.getTransaction(transactionId);
+                if(txn == null)
+                {
+                    // TODO - invalid txn id supplied
+                }
             }
             else if (state instanceof Outcome)
             {
                 outcome = (Outcome) state;
+                txn = new AutoCommitTransaction(getSession().getConnection().getAddressSpace().getMessageStore());
             }
             else
             {
                 outcome = null;
+                txn = null;
             }
-
-
-            ServerTransaction txn = _link.getTransaction(transactionId);
 
             if(outcome instanceof Accepted)
             {

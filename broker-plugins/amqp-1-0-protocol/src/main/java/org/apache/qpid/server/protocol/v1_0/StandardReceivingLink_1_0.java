@@ -235,10 +235,7 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
                 }
                 else
                 {
-                    Session_1_0 session = getSession();
-                    transaction = session != null
-                            ? session.getTransaction(null)
-                            : new AutoCommitTransaction(_addressSpace.getMessageStore());
+                    transaction = new AutoCommitTransaction(_addressSpace.getMessageStore());
                 }
 
                 try

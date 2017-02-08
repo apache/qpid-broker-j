@@ -62,6 +62,7 @@ import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegist
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ProtocolHandler;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
+import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
 import org.apache.qpid.server.protocol.v1_0.framing.FrameHandler;
@@ -76,7 +77,6 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
-import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslChallenge;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslCode;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
@@ -106,14 +106,16 @@ import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
+import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
+import org.apache.qpid.server.transport.util.Functions;
+import org.apache.qpid.server.txn.LocalTransaction;
+import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
-import org.apache.qpid.server.transport.ByteBufferSender;
-import org.apache.qpid.server.transport.util.Functions;
 
 public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnection_1_0Impl, ConnectionHandler>
         implements FrameOutputHandler,
@@ -235,6 +237,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     private final Set<AMQPSession<?,?>> _sessionsWithWork =
             Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?,?>, Boolean>());
+
+
+    // Multi session transactions
+    private volatile ServerTransaction[] _openTransactions = new ServerTransaction[16];
 
     AMQPConnection_1_0Impl(final Broker<?> broker,
                            final ServerNetworkConnection network,
@@ -1722,5 +1728,95 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     public void initialiseHeartbeating(final long writerDelay, final long readerDelay)
     {
         super.initialiseHeartbeating(writerDelay, readerDelay);
+    }
+
+    @Override
+    public Iterator<IdentifiedTransaction> getOpenTransactions()
+    {
+        return new Iterator<IdentifiedTransaction>()
+        {
+            int _index = 0;
+
+            @Override
+            public boolean hasNext()
+            {
+                for(int i = _index; i < _openTransactions.length; i++)
+                {
+                    if(_openTransactions[i] != null)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public IdentifiedTransaction next()
+            {
+                IdentifiedTransaction txn = null;
+                for( ; _index < _openTransactions.length; _index++)
+                {
+                    if(_openTransactions[_index] != null)
+                    {
+                        txn = new IdentifiedTransaction(_index, _openTransactions[_index]);
+                        _index++;
+                        return txn;
+                    }
+                }
+
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public void remove()
+            {
+                _openTransactions[_index] = null;
+            }
+        };
+    }
+
+    @Override
+    public IdentifiedTransaction createLocalTransaction()
+    {
+        ServerTransaction[] openTransactions = _openTransactions;
+        final int maxOpenTransactions = openTransactions.length;
+        int id = 0;
+        for(; id < maxOpenTransactions; id++)
+        {
+            if(openTransactions[id] == null)
+            {
+                break;
+
+            }
+        }
+
+        // we need to expand the transaction array;
+        if(id == maxOpenTransactions)
+        {
+            final int newSize = maxOpenTransactions < 1024 ? 2*maxOpenTransactions : maxOpenTransactions + 1024;
+
+            _openTransactions = new ServerTransaction[2*maxOpenTransactions];
+            System.arraycopy(openTransactions, 0, _openTransactions, 0, maxOpenTransactions);
+
+        }
+
+        final LocalTransaction serverTransaction =
+                new LocalTransaction(getAddressSpace().getMessageStore());
+        _openTransactions[id] = serverTransaction;
+        return new IdentifiedTransaction(id, serverTransaction);
+    }
+
+    @Override
+    public ServerTransaction getTransaction(final int txnId)
+    {
+        // TODO - bounds check
+        return _openTransactions[txnId];
+    }
+
+    @Override
+    public void removeTransaction(final int txnId)
+    {
+        // TODO - bounds check
+        _openTransactions[txnId] = null;
     }
 }

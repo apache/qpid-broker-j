@@ -20,6 +20,7 @@
 
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -33,6 +34,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
+import org.apache.qpid.server.txn.ServerTransaction;
 
 @ManagedObject(category = false, creatable = false, type="AMQP_1_0")
 public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQPConnection<C>,
@@ -62,4 +64,9 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
     boolean isClosed();
 
     void close(Error error);
+
+    Iterator<IdentifiedTransaction> getOpenTransactions();
+    IdentifiedTransaction createLocalTransaction();
+    ServerTransaction getTransaction(int txnId);
+    void removeTransaction(int txnId);
 }

@@ -42,7 +42,7 @@ public class Coordinator
         return _capabilities;
     }
 
-    public void setCapabilities(TxnCapability[] capabilities)
+    public void setCapabilities(TxnCapability... capabilities)
     {
         _capabilities = capabilities;
     }

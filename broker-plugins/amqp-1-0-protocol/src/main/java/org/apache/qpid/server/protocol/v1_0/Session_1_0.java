@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,7 +116,6 @@ import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.session.AbstractAMQPSession;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -131,12 +129,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private static final Symbol LIFETIME_POLICY = Symbol.valueOf("lifetime-policy");
     private static final EnumSet<SessionState> END_STATES =
             EnumSet.of(SessionState.END_RECVD, SessionState.END_PIPE, SessionState.END_SENT, SessionState.ENDED);
-    private AutoCommitTransaction _transaction;
 
-    private final LinkedHashMap<Integer, ServerTransaction> _openTransactions =
-            new LinkedHashMap<Integer, ServerTransaction>();
-
-    private final AMQPConnection_1_0 _connection;
+    private final AMQPConnection_1_0<?> _connection;
     private AtomicBoolean _closed = new AtomicBoolean();
 
     private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_1_0>> _consumers = new CopyOnWriteArrayList<>();
@@ -149,6 +143,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private final Map<String, ReceivingLinkEndpoint> _receivingLinkMap = new HashMap<>();
     private final Map<LinkEndpoint, UnsignedInteger> _localLinkEndpoints = new HashMap<>();
     private final Map<UnsignedInteger, LinkEndpoint> _remoteLinkEndpoints = new HashMap<>();
+
+    private final List<TxnCoordinatorReceivingLink_1_0> _txnCoordinatorLinks = new ArrayList<>();
 
     private short _receivingChannel;
     private final short _sendingChannel;
@@ -940,8 +936,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         final TxnCoordinatorReceivingLink_1_0 coordinatorLink =
                 new TxnCoordinatorReceivingLink_1_0(getAddressSpace(),
                                                     this,
-                                                    receivingLinkEndpoint,
-                                                    _openTransactions);
+                                                    receivingLinkEndpoint
+                );
         receivingLinkEndpoint.setLink(coordinatorLink);
         return coordinatorLink;
     }
@@ -1469,30 +1465,12 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     ServerTransaction getTransaction(Binary transactionId)
     {
-
-        ServerTransaction transaction = _openTransactions.get(binaryToInteger(transactionId));
-        if(transactionId == null)
-        {
-            if(_transaction == null)
-            {
-                _transaction = new AutoCommitTransaction(_connection.getAddressSpace().getMessageStore());
-            }
-            transaction = _transaction;
-        }
-        return transaction;
+        // TODO - deal with the case where the txn id is invalid
+        return _connection.getTransaction(binaryToInteger(transactionId));
     }
 
     void remoteEnd(End end)
     {
-        // TODO - if the end has a non empty error we should log it
-        Iterator<Map.Entry<Integer, ServerTransaction>> iter = _openTransactions.entrySet().iterator();
-
-        while(iter.hasNext())
-        {
-            Map.Entry<Integer, ServerTransaction> entry = iter.next();
-            entry.getValue().rollback();
-            iter.remove();
-        }
 
         for(LinkEndpoint linkEndpoint : getLocalLinkEndpoints())
         {
@@ -1796,7 +1774,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                                     _sendingChannel) + "] ";
     }
 
-    public AMQPConnection_1_0 getConnection()
+    public AMQPConnection_1_0<?> getConnection()
     {
         return _connection;
     }
