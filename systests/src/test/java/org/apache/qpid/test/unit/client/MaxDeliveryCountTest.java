@@ -99,7 +99,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
 
         Connection connection = getConnection();
         connection.start();
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
         Destination destination;
         if(durableSub)
         {
@@ -126,6 +126,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
             msg.setIntProperty("count", count);
             producer.send(msg);
         }
+        session.commit();
 
         connection.close();
 
