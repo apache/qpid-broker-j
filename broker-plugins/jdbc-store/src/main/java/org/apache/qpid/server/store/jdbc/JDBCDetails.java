@@ -62,6 +62,8 @@ public abstract class JDBCDetails
                                                                          true);
         private static final JDBCDetails DERBY = new KnownJDBCDetails("derby", "blob", "varchar(%d) for bit data", "bigint", false,
                                                                       true);
+        private static final JDBCDetails MYSQL = new KnownJDBCDetails("mysql", "blob", "varbinary(%d)", "bigint", false,
+                true);
 
         static
         {
@@ -73,6 +75,7 @@ public abstract class JDBCDetails
                 map.put(SYBASE.getVendor(), SYBASE);
                 map.put(POSTGRES.getVendor(), POSTGRES);
                 map.put(DERBY.getVendor(), DERBY);
+                map.put(MYSQL.getVendor(), MYSQL);
                 map.put(FALLBACK.getVendor(), FALLBACK);
             }
             finally
