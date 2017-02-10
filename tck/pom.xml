@@ -55,27 +55,22 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>${logback-version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j-version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>${httpclient-version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>${fasterxml-jackson-version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${fasterxml-jackson-version}</version>
         </dependency>
     </dependencies>
 
@@ -156,7 +151,6 @@
                 <dependency>
                     <groupId>org.apache.qpid</groupId>
                     <artifactId>qpid-jms-client</artifactId>
-                    <version>${qpid-jms-client-version}</version>
                 </dependency>
                 <dependency>
                     <groupId>oracle-jms-tck2</groupId>
@@ -546,7 +540,6 @@
                 <dependency>
                     <groupId>org.apache.geronimo.specs</groupId>
                     <artifactId>geronimo-jms_1.1_spec</artifactId>
-                    <version>${geronimo-jms-1-1-version}</version>
                 </dependency>
             </dependencies>
         </profile>
@@ -645,7 +638,6 @@
                 <dependency>
                     <groupId>org.apache.qpid</groupId>
                     <artifactId>qpid-jms-client</artifactId>
-                    <version>${qpid-jms-client-version}</version>
                 </dependency>
             </dependencies>
         </profile>

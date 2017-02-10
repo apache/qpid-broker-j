@@ -52,12 +52,10 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>${logback-version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>${slf4j-version}</version>
         </dependency>
         <dependency>
             <groupId>org.fusesource.joram-jms-tests</groupId>
@@ -67,7 +65,6 @@
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>${httpclient-version}</version>
         </dependency>
 
     </dependencies>
@@ -175,7 +172,6 @@
                 <dependency>
                     <groupId>org.apache.geronimo.specs</groupId>
                     <artifactId>geronimo-jms_1.1_spec</artifactId>
-                    <version>${geronimo-jms-1-1-version}</version>
                 </dependency>
             </dependencies>
         </profile>
@@ -261,7 +257,6 @@
                 <dependency>
                     <groupId>org.apache.qpid</groupId>
                     <artifactId>qpid-jms-client</artifactId>
-                    <version>${qpid-jms-client-version}</version>
                 </dependency>
             </dependencies>
         </profile>
@@ -284,7 +279,6 @@
                 <dependency>
                     <groupId>org.apache.qpid</groupId>
                     <artifactId>qpid-client</artifactId>
-                    <version>${qpid-jms-client-ampq-0-x-version}</version>
                 </dependency>
             </dependencies>
         </profile>
@@ -307,7 +301,6 @@
                 <dependency>
                     <groupId>org.apache.qpid</groupId>
                     <artifactId>qpid-client</artifactId>
-                    <version>${qpid-jms-client-ampq-0-x-version}</version>
                 </dependency>
             </dependencies>
         </profile>

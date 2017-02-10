@@ -47,25 +47,21 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j-version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>${fasterxml-jackson-version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>${fasterxml-jackson-version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.bcel</groupId>
       <artifactId>bcel</artifactId>
-      <version>${bcel-version}</version>
       <exclusions>
         <exclusion>
           <!--  Qpid doesn't require BCEL InstructionFinder, so does not need jakarta-regexp. -->
@@ -78,7 +74,6 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>${guava-version}</version>
     </dependency>
 
      <!-- test dependencies -->
@@ -92,7 +87,6 @@
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-servlet_3.0_spec</artifactId>
-      <version>${geronimo-servlet-version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -100,19 +94,12 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <version>${jetty-version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.servlet</artifactId>
-        </exclusion>
-      </exclusions>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
-      <version>${jetty-version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -272,12 +259,10 @@
               <dependency>
                 <groupId>velocity</groupId>
                 <artifactId>velocity</artifactId>
-                <version>${velocity-version}</version>
               </dependency>
               <dependency>
                 <groupId>velocity</groupId>
                 <artifactId>velocity-dep</artifactId>
-                <version>${velocity-version}</version>
               </dependency>
             </dependencies>
           </plugin>

@@ -52,13 +52,11 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j-version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.derby</groupId>
       <artifactId>derby</artifactId>
-      <version>${derby-version}</version>
       <scope>provided</scope>
     </dependency>
 
@@ -66,14 +64,12 @@
     <dependency>
       <groupId>net.sourceforge.csvjdbc</groupId>
       <artifactId>csvjdbc</artifactId>
-      <version>${csvjdbc-version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>jfree</groupId>
       <artifactId>jfreechart</artifactId>
-      <version>${jfreechart-version}</version>
       <scope>provided</scope>
     </dependency>
 
