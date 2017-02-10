@@ -34,6 +34,10 @@
     <test.working.directory>${basedir}/../..</test.working.directory>
     <test.resource.directory>${basedir}/../..</test.resource.directory>
     <test.systest.resource.directory>${basedir}/../../systests</test.systest.resource.directory>
+    <profile.broker.version>v1_0</profile.broker.version>
+    <profile.test.amqp_port_protocols>["AMQP_1_0"]</profile.test.amqp_port_protocols>
+    <profile.java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</profile.java.naming.factory.initial>
+    <profile.java.naming.provider.url>test-profiles${file.separator}test-provider-1-0.properties</profile.java.naming.provider.url>
   </properties>
 
   <dependencies>
@@ -45,10 +49,6 @@
         <exclusion>
           <groupId>org.apache.geronimo.specs</groupId>
           <artifactId>geronimo-jms_1.1_spec</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.qpid</groupId>
-          <artifactId>qpid-client</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -68,74 +68,10 @@
       <optional>true</optional>
     </dependency>
 
-
-    <!-- TODO remove the following JMS 1.1 exclusion and the explict JMS 2.0 inclusion once the released qpid-jms-client depends on JMS 2.0 -->
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-jms-client</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.geronimo.specs</groupId>
-          <artifactId>geronimo-jms_1.1_spec</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-jms_2.0_spec</artifactId>
     </dependency>
   </dependencies>
 
-  <!-- TODO Turn off the JMS 2.0 tests by default.  Remove once the released qpid-jms-client depends on JMS 2.0 -->
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>integration-test</id>
-            <phase>integration-test</phase>
-            <goals>
-              <goal>test</goal>
-            </goals>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-  <profiles>
-    <profile>
-      <id>jms20systests</id>
-      <activation>
-        <property>
-          <name>qpid-jms-client-version</name>
-          <value>0.20.0-SNAPSHOT</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>integration-test</id>
-                <phase>integration-test</phase>
-                <goals>
-                  <goal>test</goal>
-                </goals>
-                <configuration>
-                  <skip>false</skip>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>
