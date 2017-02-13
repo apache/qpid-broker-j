@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.server.configuration.ClientProperties;
+import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.server.framing.HeartbeatBody;
 import org.apache.qpid.server.framing.ProtocolInitiation;
 import org.apache.qpid.server.framing.ProtocolVersion;

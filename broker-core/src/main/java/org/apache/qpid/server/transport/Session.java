@@ -21,9 +21,6 @@
 package org.apache.qpid.server.transport;
 
 
-import org.apache.qpid.server.configuration.ClientProperties;
-import org.apache.qpid.server.transport.network.Frame;
-import org.apache.qpid.server.transport.util.Waiter;
 import static org.apache.qpid.server.transport.Option.COMPLETED;
 import static org.apache.qpid.server.transport.Option.SYNC;
 import static org.apache.qpid.server.transport.Option.TIMELY_REPLY;
@@ -44,11 +41,13 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.server.transport.network.Frame;
+import org.apache.qpid.server.transport.util.Waiter;
 
 /**
  * Session
@@ -86,18 +85,11 @@ public class Session extends SessionInvoker
 
     private Connection connection;
     private Binary name;
-    private long expiry;
     private boolean closing;
     private int channel;
     private SessionDelegate delegate;
     private SessionListener listener = new DefaultSessionListener();
-    private final long timeout = Long.getLong(ClientProperties.QPID_SYNC_OP_TIMEOUT,
-                                        Long.getLong(LegacyClientProperties.AMQJ_DEFAULT_SYNCWRITE_TIMEOUT,
-                                                     ClientProperties.DEFAULT_SYNC_OPERATION_TIMEOUT));
-    private final long blockedSendTimeout = Long.getLong(ClientProperties.QPID_FLOW_CONTROL_WAIT_FAILURE,
-                                                         ClientProperties.DEFAULT_FLOW_CONTROL_WAIT_FAILURE);
-    private long blockedSendReportingPeriod = Long.getLong(ClientProperties.QPID_FLOW_CONTROL_WAIT_NOTIFY_PERIOD,
-                                                           ClientProperties.DEFAULT_FLOW_CONTROL_WAIT_NOTIFY_PERIOD);
+    private final long timeout = 60000;  // TODO server side close does not require this
 
     private boolean autoSync = false;
 
@@ -122,8 +114,6 @@ public class Session extends SessionInvoker
 
     private State state = NEW;
 
-    // transfer flow control
-    private volatile boolean flowControl = false;
     private Semaphore credit = new Semaphore(0);
 
     private Thread resumer = null;
@@ -133,16 +123,6 @@ public class Session extends SessionInvoker
 
     private final AtomicBoolean _failoverRequired = new AtomicBoolean(false);
     private boolean _isNoReplay = false;
-
-    protected Session(Connection connection, Binary name, long expiry)
-    {
-        this(connection, new SessionDelegate(), name, expiry);
-    }
-
-    protected Session(Connection connection, Binary name, long expiry, boolean noReplay)
-    {
-        this(connection, new SessionDelegate(), name, expiry, noReplay);
-    }
 
     protected Session(Connection connection, SessionDelegate delegate, Binary name, long expiry)
     {
@@ -154,7 +134,6 @@ public class Session extends SessionInvoker
         this.connection = connection;
         this.delegate = delegate;
         this.name = name;
-        this.expiry = expiry;
         this.closing = false;
         this._isNoReplay = noReplay;
         initReceiver();
@@ -168,11 +147,6 @@ public class Session extends SessionInvoker
     public Binary getName()
     {
         return name;
-    }
-
-    void setExpiry(long expiry)
-    {
-        this.expiry = expiry;
     }
 
     protected void setClose(boolean close)
@@ -190,29 +164,9 @@ public class Session extends SessionInvoker
         this.channel = channel;
     }
 
-    public void setSessionListener(SessionListener listener)
-    {
-        if (listener == null)
-        {
-            this.listener = new DefaultSessionListener();
-        }
-        else
-        {
-            this.listener = listener;
-        }
-    }
-
     public SessionListener getSessionListener()
     {
         return listener;
-    }
-
-    public void setAutoSync(boolean value)
-    {
-        synchronized (commandsLock)
-        {
-            this.autoSync = value;
-        }
     }
 
     protected void setState(State state)
@@ -229,11 +183,6 @@ public class Session extends SessionInvoker
         return this.state;
     }
 
-    void setFlowControl(boolean value)
-    {
-        flowControl = value;
-    }
-
     void addCredit(int value)
     {
         credit.release(value);
@@ -242,37 +191,6 @@ public class Session extends SessionInvoker
     void drainCredit()
     {
         credit.drainPermits();
-    }
-
-    void acquireCredit()
-    {
-        if (flowControl)
-        {
-            try
-            {
-                long wait = blockedSendTimeout > blockedSendReportingPeriod ? blockedSendReportingPeriod :
-                           blockedSendTimeout;
-                long totalWait = 1L;
-                while(totalWait <= blockedSendTimeout && !credit.tryAcquire(wait, TimeUnit.MILLISECONDS))
-                {
-                    totalWait+=wait;
-                    LOGGER.warn("Message send delayed by {}s due to broker enforced flow control", (totalWait) / 1000);
-
-
-                }
-                if(totalWait > blockedSendTimeout)
-                {
-                    LOGGER.error("Message send failed due to timeout waiting on broker enforced flow control");
-                    throw new SessionException
-                            ("timed out waiting for message credit");
-                }
-            }
-            catch (InterruptedException e)
-            {
-                throw new SessionException
-                    ("interrupted while waiting for credit", null, e);
-            }
-        }
     }
 
     private void initReceiver()
@@ -617,11 +535,6 @@ public class Session extends SessionInvoker
     {
         if (m.getEncodedTrack() == Frame.L4)
         {
-            if (m.hasPayload())
-            {
-                acquireCredit();
-            }
-
             synchronized (commandsLock)
             {
                 if (state == DETACHED && m.isUnreliable())
@@ -1134,69 +1047,9 @@ public class Session extends SessionInvoker
         return this.detachCode;
     }
 
-    public void awaitOpen()
-    {
-        switch (state)
-        {
-        case NEW:
-            synchronized(stateLock)
-            {
-                Waiter w = new Waiter(stateLock, timeout);
-                while (w.hasTime() && state == NEW)
-                {
-                    checkFailoverRequired("Session opening was interrupted by failover.");
-                    w.await();
-                }
-            }
-
-            if (state != OPEN)
-            {
-                throw new SessionException("Timed out waiting for Session to open");
-            }
-            break;
-        case DETACHED:
-        case CLOSING:
-        case CLOSED:
-            throw new SessionException("Session closed");
-        default :
-            break;
-        }
-    }
-
     public Object getStateLock()
     {
         return stateLock;
-    }
-
-    protected void notifyFailoverRequired()
-    {
-        //ensure any operations waiting are aborted to
-        //prevent them waiting for timeout for 60 seconds
-        //and possibly preventing failover proceeding
-        _failoverRequired.set(true);
-        synchronized (commandsLock)
-        {
-            commandsLock.notifyAll();
-        }
-        synchronized (results)
-        {
-            for (ResultFuture<?> result : results.values())
-            {
-                synchronized(result)
-                {
-                    result.notifyAll();
-                }
-            }
-        }
-    }
-
-    /**
-     * An auxiliary method for test purposes only
-     * @return true if flow is blocked
-     */
-    public boolean isFlowBlocked()
-    {
-        return flowControl && credit.availablePermits() == 0;
     }
 
     protected void sendSessionAttached(final byte[] name, final Option... options)

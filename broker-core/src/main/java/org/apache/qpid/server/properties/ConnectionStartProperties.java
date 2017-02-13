@@ -23,8 +23,6 @@ package org.apache.qpid.server.properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.util.SystemUtils;
-
 /**
  * Constants for the various properties clients can
  * set values for during the ConnectionStartOk reply.
@@ -50,58 +48,11 @@ public class ConnectionStartProperties
     public static final String VERSION_0_8 = "version";
     public static final String VERSION_0_10 = "qpid.client_version";
 
-    public static final String PROCESS = "qpid.client_process";
-
     public static final String PID = "qpid.client_pid";
 
-    public static final String PLATFORM = "platform";
-
     public static final String PRODUCT ="product";
-
-    public static final String SESSION_FLOW = "qpid.session_flow";
 
     public static final String QPID_CONFIRMED_PUBLISH_SUPPORTED = "qpid.confirmed_publish_supported";
 
     public static final String QPID_QUEUE_LIFETIME_SUPPORTED = "qpid.queue_lifetime_supported";
-
-    public static final int _pid;
-
-    public static final String _platformInfo;
-
-    static
-    {
-
-        _pid = SystemUtils.getProcessPidAsInt();
-
-        if (_pid == -1)
-        {
-            LOGGER.warn("Unable to get the process's PID");
-        }
-
-        StringBuilder fullSystemInfo = new StringBuilder(System.getProperty("java.runtime.name"));
-        fullSystemInfo.append(", ");
-        fullSystemInfo.append(System.getProperty("java.runtime.version"));
-        fullSystemInfo.append(", ");
-        fullSystemInfo.append(System.getProperty("java.vendor"));
-        fullSystemInfo.append(", ");
-        fullSystemInfo.append(SystemUtils.getOSArch());
-        fullSystemInfo.append(", ");
-        fullSystemInfo.append(SystemUtils.getOSName());
-        fullSystemInfo.append(", ");
-        fullSystemInfo.append(SystemUtils.getOSVersion());
-        fullSystemInfo.append(", ");
-        fullSystemInfo.append(System.getProperty("sun.os.patch.level"));
-
-        _platformInfo = fullSystemInfo.toString();
-    }
-
-    public static int getPID()
-    {
-        return _pid;
-    }
-
-    public static String getPlatformInfo()
-    {
-        return _platformInfo;
-    }
 }

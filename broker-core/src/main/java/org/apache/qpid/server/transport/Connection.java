@@ -24,36 +24,21 @@ import static org.apache.qpid.server.transport.Connection.State.CLOSED;
 import static org.apache.qpid.server.transport.Connection.State.CLOSING;
 import static org.apache.qpid.server.transport.Connection.State.NEW;
 import static org.apache.qpid.server.transport.Connection.State.OPEN;
-import static org.apache.qpid.server.transport.Connection.State.OPENING;
 
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.security.sasl.SaslClient;
-import javax.security.sasl.SaslServer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.properties.ConnectionStartProperties;
-import org.apache.qpid.server.transport.network.Assembler;
-import org.apache.qpid.server.transport.network.Disassembler;
-import org.apache.qpid.server.transport.network.InputHandler;
 import org.apache.qpid.server.transport.network.NetworkConnection;
-import org.apache.qpid.server.transport.network.TransportActivity;
-import org.apache.qpid.server.transport.network.io.IoNetworkTransport;
-import org.apache.qpid.server.transport.network.security.SecurityLayer;
-import org.apache.qpid.server.transport.network.security.SecurityLayerFactory;
 import org.apache.qpid.server.transport.util.Waiter;
-import org.apache.qpid.server.util.Strings;
 
 
 /**
@@ -71,37 +56,12 @@ public class Connection extends ConnectionInvoker
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Connection.class);
 
-    //Usable channels are numbered 0 to <ChannelMax> - 1
-    public static final int MAX_CHANNEL_MAX = 0xFFFF;
-    public static final int MIN_USABLE_CHANNEL_NUM = 0;
     private long _lastSendTime;
     private long _lastReadTime;
     private NetworkConnection _networkConnection;
     private FrameSizeObserver _frameSizeObserver;
-    private boolean _messageCompressionSupported;
-    private final AtomicBoolean _redirecting = new AtomicBoolean();
-    private boolean _virtualHostPropertiesSupported;
-    private boolean _queueLifetimePolicySupported;
 
     public enum State { NEW, CLOSED, OPENING, OPEN, CLOSING, CLOSE_RCVD, RESUMING }
-
-    public static interface SessionFactory
-    {
-        Session newSession(Connection conn, Binary name, long expiry, boolean isNoReplay);
-    }
-
-    private static final class DefaultSessionFactory implements SessionFactory
-    {
-
-        public Session newSession(final Connection conn, final Binary name, final long expiry, final boolean isNoReplay)
-        {
-            return new Session(conn, name, expiry, isNoReplay);
-        }
-    }
-
-    private static final SessionFactory DEFAULT_SESSION_FACTORY = new DefaultSessionFactory();
-
-    private SessionFactory _sessionFactory = DEFAULT_SESSION_FACTORY;
 
     private ConnectionDelegate delegate;
     private ProtocolEventSender sender;
@@ -111,19 +71,11 @@ public class Connection extends ConnectionInvoker
 
     private State state = NEW;
     final private Object lock = new Object();
-    private long timeout = 60000;
-    private List<ConnectionListener> listeners = new ArrayList<ConnectionListener>();
+    private long timeout = 60000;  // TODO server side close does not require this
     private ConnectionException error = null;
 
     private int channelMax = 1;
     private String locale;
-    private SaslServer saslServer;
-    private SaslClient saslClient;
-    private int idleTimeout = 0;
-    private Map<String,Object> _serverProperties;
-    private String userID;
-    private ConnectionSettings conSettings;
-    private SecurityLayer securityLayer;
 
     private final AtomicBoolean connectionLost = new AtomicBoolean(false);
 
@@ -135,16 +87,6 @@ public class Connection extends ConnectionInvoker
     public void setConnectionDelegate(ConnectionDelegate delegate)
     {
         this.delegate = delegate;
-    }
-
-    public void addConnectionListener(ConnectionListener listener)
-    {
-        listeners.add(listener);
-    }
-
-    public List<ConnectionListener> getListeners()
-    {
-        return Collections.unmodifiableList(listeners);
     }
 
     public ProtocolEventSender getSender()
@@ -176,193 +118,6 @@ public class Connection extends ConnectionInvoker
         return locale;
     }
 
-    void setSaslServer(SaslServer saslServer)
-    {
-        this.saslServer = saslServer;
-    }
-
-    SaslServer getSaslServer()
-    {
-        return saslServer;
-    }
-
-    void setSaslClient(SaslClient saslClient)
-    {
-        this.saslClient = saslClient;
-    }
-
-    public SaslClient getSaslClient()
-    {
-        return saslClient;
-    }
-
-    public void connect(String host, int port, String vhost, String username, String password, boolean ssl, String saslMechs)
-    {
-        connect(host, port, vhost, username, password, ssl, saslMechs, null);
-    }
-
-    public void connect(String host, int port, String vhost, String username, String password, boolean ssl, String saslMechs, Map<String,Object> clientProps)
-    {
-        ConnectionSettings settings = new ConnectionSettings();
-        settings.setHost(host);
-        settings.setPort(port);
-        settings.setVhost(vhost);
-        settings.setUsername(username);
-        settings.setPassword(password);
-        settings.setUseSSL(ssl);
-        settings.setSaslMechs(saslMechs);
-        settings.setClientProperties(clientProps);
-        connect(settings);
-    }
-
-    public void connect(ConnectionSettings settings)
-    {
-
-        synchronized (lock)
-        {
-            conSettings = settings;
-            _redirecting.set(false);
-            state = OPENING;
-            userID = settings.getUsername();
-            connectionLost.set(false);
-
-            securityLayer = SecurityLayerFactory.newInstance(getConnectionSettings());
-
-            IoNetworkTransport transport = new IoNetworkTransport();
-            final InputHandler inputHandler = new InputHandler(new Assembler(this), false);
-            addFrameSizeObserver(inputHandler);
-            ExceptionHandlingByteBufferReceiver secureReceiver = securityLayer.receiver(inputHandler);
-            if(secureReceiver instanceof ConnectionListener)
-            {
-                addConnectionListener((ConnectionListener)secureReceiver);
-            }
-
-            _networkConnection = transport.connect(settings, secureReceiver, new ConnectionActivity());
-
-
-            setRemoteAddress(_networkConnection.getRemoteAddress());
-            setLocalAddress(_networkConnection.getLocalAddress());
-
-            final ByteBufferSender secureSender = securityLayer.sender(_networkConnection.getSender());
-            if(secureSender instanceof ConnectionListener)
-            {
-                addConnectionListener((ConnectionListener)secureSender);
-            }
-            Disassembler disassembler = new Disassembler(secureSender, Constant.MIN_MAX_FRAME_SIZE);
-            sender = disassembler;
-            addFrameSizeObserver(disassembler);
-
-            send(new ProtocolHeader(1, 0, 10));
-
-            Waiter w = new Waiter(lock, timeout);
-            while (w.hasTime() && ((state == OPENING && error == null) || isRedirecting()))
-            {
-                w.await();
-            }
-
-            if (error != null)
-            {
-                ConnectionException t = error;
-                error = null;
-                try
-                {
-                    close();
-                }
-                catch (ConnectionException ce)
-                {
-                    if (!(t instanceof ProtocolVersionException))
-                    {
-                        throw ce;
-                    }
-                }
-                t.rethrow();
-            }
-
-            switch (state)
-            {
-            case OPENING:
-                close();
-                throw new ConnectionException("connect() timed out");
-            case OPEN:
-            case RESUMING:
-                connectionLost.set(false);
-                break;
-            case CLOSED:
-                throw new ConnectionException("connect() aborted");
-            default:
-                throw new IllegalStateException(String.valueOf(state));
-            }
-        }
-
-        for (ConnectionListener listener: listeners)
-        {
-            listener.opened(this);
-        }
-    }
-
-    public Session createSession()
-    {
-        return createSession(0);
-    }
-
-    public Session createSession(long expiry)
-    {
-        return createSession(expiry, false);
-    }
-
-    public Session createSession(long expiry, boolean isNoReplay)
-    {
-        return createSession(UUID.randomUUID().toString(), expiry, isNoReplay);
-    }
-
-    public Session createSession(String name)
-    {
-        return createSession(name, 0);
-    }
-
-    public Session createSession(String name, long expiry)
-    {
-        return createSession(Strings.toUTF8(name), expiry);
-    }
-
-    public Session createSession(String name, long expiry,boolean isNoReplay)
-    {
-        return createSession(new Binary(Strings.toUTF8(name)), expiry, isNoReplay);
-    }
-
-    public Session createSession(byte[] name, long expiry)
-    {
-        return createSession(new Binary(name), expiry);
-    }
-
-    public Session createSession(Binary name, long expiry)
-    {
-        return createSession(name, expiry, false);
-    }
-
-    public Session createSession(Binary name, long expiry, boolean isNoReplay)
-    {
-        synchronized (lock)
-        {
-            Waiter w = new Waiter(lock, timeout);
-            while (w.hasTime() && state != OPEN && error == null)
-            {
-                w.await();
-            }
-
-            if (state != OPEN)
-            {
-                throw new ConnectionException("Timed out waiting for connection to be ready. Current state is :" + state);
-            }
-
-            Session ssn = _sessionFactory.newSession(this, name, expiry, isNoReplay);
-            registerSession(ssn);
-            map(ssn);
-            ssn.attach();
-            return ssn;
-        }
-    }
-
     public void registerSession(Session ssn)
     {
         synchronized (lock)
@@ -377,13 +132,6 @@ public class Connection extends ConnectionInvoker
         {
             sessions.remove(ssn.getName());
         }
-    }
-
-    public void setSessionFactory(SessionFactory sessionFactory)
-    {
-        assert sessionFactory != null;
-
-        _sessionFactory = sessionFactory;
     }
 
     public ConnectionDelegate getConnectionDelegate()
@@ -542,12 +290,6 @@ public class Connection extends ConnectionInvoker
                 return;
             }
         }
-
-        for (ConnectionListener listener: listeners)
-        {
-            listener.exception(this, e);
-        }
-
     }
 
     public void exception(Throwable t)
@@ -594,11 +336,6 @@ public class Connection extends ConnectionInvoker
             }
             sender = null;
             setState(CLOSED);
-        }
-
-        for (ConnectionListener listener: listeners)
-        {
-            listener.closed(this);
         }
     }
 
@@ -672,48 +409,10 @@ public class Connection extends ConnectionInvoker
         }
     }
 
-    public String getUserID()
-    {
-        return userID;
-    }
-
-    public void setUserID(String id)
-    {
-        userID = id;
-    }
-
-    public void setServerProperties(final Map<String, Object> serverProperties)
-    {
-        _serverProperties = serverProperties == null ? Collections.<String, Object>emptyMap() : serverProperties;
-        _messageCompressionSupported = Boolean.parseBoolean(String.valueOf(_serverProperties.get(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED)));
-        _virtualHostPropertiesSupported = Boolean.parseBoolean(String.valueOf(_serverProperties.get(ConnectionStartProperties.QPID_VIRTUALHOST_PROPERTIES_SUPPORTED)));
-        _queueLifetimePolicySupported = Boolean.parseBoolean(String.valueOf(_serverProperties.get(ConnectionStartProperties.QPID_QUEUE_LIFETIME_SUPPORTED)));
-
-    }
-
-    public Map<String, Object> getServerProperties()
-    {
-        return _serverProperties;
-    }
-
+    @Override
     public String toString()
     {
         return String.format("conn:%x", System.identityHashCode(this));
-    }
-
-    public ConnectionSettings getConnectionSettings()
-    {
-        return conSettings;
-    }
-
-    public SecurityLayer getSecurityLayer()
-    {
-        return securityLayer;
-    }
-
-    public boolean isConnectionResuming()
-    {
-        return connectionLost.get();
     }
 
     protected boolean isConnectionLost()
@@ -729,14 +428,6 @@ public class Connection extends ConnectionInvoker
     public boolean hasSessionWithName(final byte[] name)
     {
         return sessions.containsKey(new Binary(name));
-    }
-
-    public void notifyFailoverRequired()
-    {
-        for (Session ssn : getChannels())
-        {
-            ssn.notifyFailoverRequired();
-        }
     }
 
     public SocketAddress getRemoteSocketAddress()
@@ -773,35 +464,6 @@ public class Connection extends ConnectionInvoker
     {
         connectionHeartbeat();
     }
-
-    private class ConnectionActivity implements TransportActivity
-    {
-        @Override
-        public long getLastReadTime()
-        {
-            return _lastReadTime;
-        }
-
-        @Override
-        public long getLastWriteTime()
-        {
-            return _lastSendTime;
-        }
-
-        @Override
-        public void writerIdle()
-        {
-            getConnectionDelegate().writerIdle(Connection.this);
-        }
-
-        @Override
-        public void readerIdle()
-        {
-            LOGGER.error("Closing connection as no heartbeat or other activity detected within specified interval");
-            _networkConnection.close();
-        }
-    }
-
 
     public void setNetworkConnection(NetworkConnection network)
     {
@@ -840,31 +502,6 @@ public class Connection extends ConnectionInvoker
                                         }
                                     };
         }
-    }
-
-    public boolean isMessageCompressionSupported()
-    {
-        return _messageCompressionSupported;
-    }
-
-    public boolean isVirtualHostPropertiesSupported()
-    {
-        return _virtualHostPropertiesSupported;
-    }
-
-    public boolean isQueueLifetimePolicySupported()
-    {
-        return _queueLifetimePolicySupported;
-    }
-
-    public boolean isRedirecting()
-    {
-        return _redirecting.get();
-    }
-
-    public void setRedirecting(final boolean redirecting)
-    {
-        _redirecting.set(redirecting);
     }
 
     public boolean isClosing()

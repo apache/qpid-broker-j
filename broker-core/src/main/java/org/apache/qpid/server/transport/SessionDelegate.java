@@ -192,15 +192,8 @@ public class SessionDelegate
 
     @Override public void messageSetFlowMode(Session ssn, MessageSetFlowMode sfm)
     {
-        if ("".equals(sfm.getDestination()) &&
-            MessageFlowMode.CREDIT.equals(sfm.getFlowMode()))
-        {
-            ssn.setFlowControl(true);
-        }
-        else
-        {
-            super.messageSetFlowMode(ssn, sfm);
-        }
+        // Method overridden in ServerSessionDelegate
+        throw new UnsupportedOperationException();
     }
 
     @Override public void messageFlow(Session ssn, MessageFlow flow)

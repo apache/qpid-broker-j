@@ -30,17 +30,15 @@ import java.nio.channels.SocketChannel;
 import java.util.EnumSet;
 import java.util.Set;
 
-import org.apache.qpid.server.model.port.AmqpPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.transport.TransportException;
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.transport.network.TransportEncryption;
-
-import static org.apache.qpid.server.transport.ConnectionSettings.WILDCARD_ADDRESS;
 
 public class NonBlockingNetworkTransport
 {
+    public static final String WILDCARD_ADDRESS = "*";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingNetworkTransport.class);
 

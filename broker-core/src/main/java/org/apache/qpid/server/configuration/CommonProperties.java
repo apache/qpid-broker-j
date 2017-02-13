@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
  * Qpid build specific information like  project name, version number, and source code repository revision number
  * are captured by this class and exposed via public static methods.
  *
- * @see ClientProperties
  */
 public class CommonProperties
 {
@@ -52,11 +51,6 @@ public class CommonProperties
     public static final String IO_NETWORK_TRANSPORT_TIMEOUT_PROP_NAME = "qpid.io_network_transport_timeout";
     public static final int IO_NETWORK_TRANSPORT_TIMEOUT_DEFAULT = 60000;
 
-    public static final String QPID_CLIENT_SECURITY_TLS_PROTOCOL_WHITE_LIST = "qpid.client.security.tls.protocolWhiteList";
-    public static final String QPID_CLIENT_SECURITY_TLS_PROTOCOL_BLACK_LIST = "qpid.client.security.tls.protocolBlackList";
-    public static final String QPID_CLIENT_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST = "qpid.client.security.tls.cipherSuiteWhiteList";
-    public static final String QPID_CLIENT_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST = "qpid.client.security.tls.cipherSuiteBlackList";
-
     public static final String QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST = "qpid.security.tls.protocolWhiteList";
     public static final String QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST_DEFAULT = "TLSv1\\.[0-9]+";
     public static final String QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST = "qpid.security.tls.protocolBlackList";
@@ -66,9 +60,6 @@ public class CommonProperties
     public static final String QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST_DEFAULT = "";
     public static final String QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST = "qpid.security.tls.cipherSuiteBlackList";
     public static final String QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST_DEFAULT = "";
-
-    public static final String QPID_SECURITY_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST = "qpid.security.objectMessage.classHierarchyWhiteList";
-    public static final String QPID_SECURITY_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST = "qpid.security.objectMessage.classHierarchyBlackList";
 
     /** The name of the version properties file to load from the class path. */
     public static final String VERSION_RESOURCE = "qpidbrokerversion.properties";
