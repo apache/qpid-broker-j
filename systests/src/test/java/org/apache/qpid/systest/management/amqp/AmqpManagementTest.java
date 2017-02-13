@@ -56,6 +56,25 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     private MessageProducer _producer;
     private boolean _runTest = true;
 
+    @Override
+    public void setUp() throws Exception
+    {
+        super.setUp();
+
+        if (isBroker10())
+        {
+            _runTest = true;
+        }
+        else
+        {
+            Connection con = getConnection();
+            final ConnectionMetaData metaData = con.getMetaData();
+            // TODO: Older Qpid JMS Client 0-x (<=6.1.x) didn't support management addresses.
+            _runTest =  !( metaData.getProviderMajorVersion() < 6 || (metaData.getProviderMajorVersion() == 6 && metaData.getProviderMinorVersion() <= 1));
+            con.close();
+        }
+    }
+
     private void setupSession() throws Exception
     {
         _connection.start();
@@ -70,9 +89,6 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         else
         {
             final ConnectionMetaData metaData = _connection.getMetaData();
-            // TODO: Qpid JMS Client 0-x didn't suppport these addresses.
-            _runTest =  !( metaData.getProviderMajorVersion() < 6 || (metaData.getProviderMajorVersion() == 6 && metaData.getProviderMinorVersion() <= 1));
-            getLogger().debug("Run test {}", _runTest);
             _queue = _session.createQueue("ADDR:$management");
             _replyAddress = _session.createQueue("ADDR:!response");
             _replyConsumer = _session.createQueue(
@@ -101,11 +117,11 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     // test get types on $management
     public void testGetTypesOnBrokerManagement() throws Exception
     {
-        setupBrokerManagementConnection();
         if (!_runTest)
         {
             return;
         }
+        setupBrokerManagementConnection();
 
         Message message = _session.createBytesMessage();
 
@@ -171,12 +187,12 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     // test get types on $management
     public void testQueryBrokerManagement() throws Exception
     {
-        setupBrokerManagementConnection();
 
         if (!_runTest)
         {
             return;
         }
+        setupBrokerManagementConnection();
 
 
         MapMessage message = _session.createMapMessage();
@@ -259,12 +275,12 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     // test get types on a virtual host
     public void testGetTypesOnVhostManagement() throws Exception
     {
-        setupVirtualHostManagementConnection();
 
         if (!_runTest)
         {
             return;
         }
+        setupVirtualHostManagementConnection();
 
         Message message = _session.createBytesMessage();
 
@@ -298,12 +314,12 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     // create / update / read / delete a queue via $management
     public void testCreateQueueOnBrokerManagement() throws Exception
     {
-        setupBrokerManagementConnection();
 
         if (!_runTest)
         {
             return;
         }
+        setupBrokerManagementConnection();
 
         MapMessage message = _session.createMapMessage();
 
@@ -381,12 +397,12 @@ public class AmqpManagementTest extends QpidBrokerTestCase
 
     public void testCreateQueueOnVhostManagement() throws Exception
     {
-        setupVirtualHostManagementConnection();
 
         if (!_runTest)
         {
             return;
         }
+        setupVirtualHostManagementConnection();
 
         MapMessage message = _session.createMapMessage();
 
@@ -496,11 +512,11 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     // read virtual host from virtual host management
     public void testReadVirtualHost() throws Exception
     {
-        setupVirtualHostManagementConnection();
         if (!_runTest)
         {
             return;
         }
+        setupVirtualHostManagementConnection();
 
         MapMessage message = _session.createMapMessage();
 
@@ -532,12 +548,11 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     // create a virtual host from $management
     public void testCreateVirtualHost() throws Exception
     {
-        setupBrokerManagementConnection();
-
         if (!_runTest)
         {
             return;
         }
+        setupBrokerManagementConnection();
         MapMessage message = _session.createMapMessage();
 
         message.setStringProperty("type", "org.apache.qpid.JsonVirtualHostNode");
@@ -580,12 +595,11 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     // attempt to delete the virtual host via the virtual host
     public void testDeleteVirtualHost() throws Exception
     {
-        setupVirtualHostManagementConnection();
-
         if (!_runTest)
         {
             return;
         }
+        setupVirtualHostManagementConnection();
         MapMessage message = _session.createMapMessage();
 
         message.setStringProperty("type", "org.apache.qpid.VirtualHost");
@@ -605,11 +619,11 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     // create a queue with the qpid type
     public void testCreateQueueWithQpidType() throws Exception
     {
-        setupVirtualHostManagementConnection();
         if (!_runTest)
         {
             return;
         }
+        setupVirtualHostManagementConnection();
 
         MapMessage message = _session.createMapMessage();
 
@@ -634,12 +648,11 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     // create a queue using the AMQP type
     public void testCreateQueueWithAmqpType() throws Exception
     {
-        setupVirtualHostManagementConnection();
-
         if (!_runTest)
         {
             return;
         }
+        setupVirtualHostManagementConnection();
 
         MapMessage message = _session.createMapMessage();
 
@@ -664,12 +677,11 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     // attempt to create an exchange without a type
     public void testCreateExchangeWithoutType() throws Exception
     {
-        setupVirtualHostManagementConnection();
-
         if (!_runTest)
         {
             return;
         }
+        setupVirtualHostManagementConnection();
 
         MapMessage message = _session.createMapMessage();
 
@@ -693,11 +705,11 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     // attempt to create a connection
     public void testCreateConnectionOnVhostManagement() throws Exception
     {
-        setupVirtualHostManagementConnection();
         if (!_runTest)
         {
             return;
         }
+        setupVirtualHostManagementConnection();
 
         MapMessage message = _session.createMapMessage();
 
@@ -718,11 +730,11 @@ public class AmqpManagementTest extends QpidBrokerTestCase
 
     public void testCreateConnectionOnBrokerManagement() throws Exception
     {
-        setupBrokerManagementConnection();
         if (!_runTest)
         {
             return;
         }
+        setupBrokerManagementConnection();
 
         MapMessage message = _session.createMapMessage();
 
