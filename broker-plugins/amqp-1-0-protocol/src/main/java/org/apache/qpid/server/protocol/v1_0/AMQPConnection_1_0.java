@@ -1304,7 +1304,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         FRAME_LOGGER.debug("SEND[{}|{}] : {}",
                            getNetwork().getRemoteAddress(),
                            amqFrame.getChannel(),
-                           amqFrame.getFrameBody());
+                           amqFrame.getFrameBody() == null ? "<<HEARTBEAT>>" : amqFrame.getFrameBody());
 
         int size = _frameWriter.send(amqFrame);
         if (size > getMaxFrameSize())
