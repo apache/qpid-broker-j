@@ -77,7 +77,8 @@ public class ProducerFlowControlTest extends AbstractTestLogging
     {
         _producer.send(_message);
         _restTestHelper.waitForAttributeChanged(_queueUrl, org.apache.qpid.server.model.Queue.QUEUE_FLOW_STOPPED, Boolean.TRUE);
-        ((AMQSession<?, ?>) _producerSession).sync();  // Ensure that the client has processed the flow control.
+        // Ensure that the client has processed the incoming flow/messagestop
+        _producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE).close();
         try
         {
             _producer.send(_message);
