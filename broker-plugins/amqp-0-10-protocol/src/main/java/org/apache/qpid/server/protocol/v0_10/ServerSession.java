@@ -485,11 +485,13 @@ public class ServerSession extends Session
                                  new ServerTransaction.Action()
                                  {
 
+                                     @Override
                                      public void postCommit()
                                      {
                                          entry.delete();
                                      }
 
+                                     @Override
                                      public void onRollback()
                                      {
                                          // The client has acknowledge the message and therefore have seen it.
@@ -834,6 +836,7 @@ public class ServerSession extends Session
         return getConnection().getReference();
     }
 
+    @Override
     public String toLogString()
     {
         long connectionId = super.getConnection() instanceof ServerConnection
@@ -1007,11 +1010,6 @@ public class ServerSession extends Session
         }
     }
 
-    protected void setClose(boolean close)
-    {
-        super.setClose(close);
-    }
-
     public long getConsumerCount()
     {
         return _subscriptions.values().size();
@@ -1068,12 +1066,6 @@ public class ServerSession extends Session
     public final long getMaxUncommittedInMemorySize()
     {
         return _modelObject.getMaxUncommittedInMemorySize();
-    }
-
-    @Override
-    protected void sendSessionAttached(final byte[] name, final Option... options)
-    {
-        super.sendSessionAttached(name, options);
     }
 
     private class CheckCapacityAction implements Action<MessageInstance>

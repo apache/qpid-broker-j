@@ -68,8 +68,6 @@ public class Connection extends ConnectionInvoker
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Connection.class);
 
-    private long _lastSendTime;
-    private long _lastReadTime;
     private NetworkConnection _networkConnection;
     private FrameSizeObserver _frameSizeObserver;
 
@@ -153,7 +151,6 @@ public class Connection extends ConnectionInvoker
 
     public void received(ProtocolEvent event)
     {
-        _lastReadTime = System.currentTimeMillis();
         if(LOGGER.isDebugEnabled())
         {
             LOGGER.debug("RECV: [{}] {}", this, String.valueOf(event));
@@ -163,7 +160,6 @@ public class Connection extends ConnectionInvoker
 
     public void send(ProtocolEvent event)
     {
-        _lastSendTime = System.currentTimeMillis();
         if(LOGGER.isDebugEnabled())
         {
             LOGGER.debug("SEND: [{}] {}", this, String.valueOf(event));
@@ -321,6 +317,7 @@ public class Connection extends ConnectionInvoker
         }
     }
 
+    @Override
     public void closed()
     {
         if (state == OPEN)
@@ -351,6 +348,7 @@ public class Connection extends ConnectionInvoker
         }
     }
 
+    @Override
     public void close()
     {
         close(ConnectionCloseCode.NORMAL, null);

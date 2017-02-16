@@ -22,7 +22,6 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import static org.apache.qpid.server.protocol.v0_10.Connection.State.CLOSING;
 
-import java.net.SocketAddress;
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Principal;
@@ -30,8 +29,6 @@ import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
@@ -40,26 +37,25 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.transport.ServerNetworkConnection;
-import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.transport.ConnectionClose;
 import org.apache.qpid.server.transport.ConnectionCloseCode;
 import org.apache.qpid.server.transport.ConnectionCloseOk;
 import org.apache.qpid.server.transport.ExecutionErrorCode;
 import org.apache.qpid.server.transport.ExecutionException;
 import org.apache.qpid.server.transport.Method;
-import org.apache.qpid.server.transport.Option;
 import org.apache.qpid.server.transport.ProtocolEvent;
+import org.apache.qpid.server.transport.ServerNetworkConnection;
+import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class ServerConnection extends Connection
 {
@@ -282,14 +278,6 @@ public class ServerConnection extends Connection
         });
     }
 
-    @Override
-    protected void sendConnectionClose(final ConnectionCloseCode replyCode,
-                                       final String replyText,
-                                       final Option... _options)
-    {
-        super.sendConnectionClose(replyCode, replyText, _options);
-    }
-
     protected void performDeleteTasks()
     {
         _amqpConnection.performDeleteTasks();
@@ -340,14 +328,6 @@ public class ServerConnection extends Connection
         return  (Collection<ServerSession>) super.getChannels();
     }
 
-    /**
-     * @return authorizedSubject
-     */
-    public Subject getAuthorizedSubject()
-    {
-        return _amqpConnection.getSubject();
-    }
-
     public void setAuthorizedSubject(final Subject authorizedSubject)
     {
         _amqpConnection.setSubject(authorizedSubject);
@@ -361,11 +341,6 @@ public class ServerConnection extends Connection
     public long getConnectionId()
     {
         return _connectionId;
-    }
-
-    public String getRemoteAddressString()
-    {
-        return String.valueOf(getRemoteSocketAddress());
     }
 
     @Override
@@ -412,53 +387,17 @@ public class ServerConnection extends Connection
         super.send(event);
     }
 
-    public String getClientId()
-    {
-        return getConnectionDelegate().getClientId();
-    }
-
     public String getRemoteContainerName()
     {
         return getConnectionDelegate().getClientId();
     }
 
 
-    public String getClientVersion()
-    {
-        return getConnectionDelegate().getClientVersion();
-    }
-
-    public String getClientProduct()
-    {
-        return getConnectionDelegate().getClientProduct();
-    }
-
     public long getSessionCountLimit()
     {
         return getChannelMax();
     }
 
-    public Principal getPeerPrincipal()
-    {
-        return getNetworkConnection().getPeerPrincipal();
-    }
-
-    @Override
-    public void setRemoteAddress(SocketAddress remoteAddress)
-    {
-        super.setRemoteAddress(remoteAddress);
-    }
-
-    @Override
-    public void setLocalAddress(SocketAddress localAddress)
-    {
-        super.setLocalAddress(localAddress);
-    }
-
-    public void doHeartBeat()
-    {
-        super.doHeartBeat();
-    }
 
     void addAsyncTask(final Action<? super ServerConnection> action)
     {
@@ -595,51 +534,6 @@ public class ServerConnection extends Connection
     public boolean isIgnoreFutureInput()
     {
         return _ignoreFutureInput;
-    }
-
-    @Override
-    public boolean isConnectionLost()
-    {
-        return super.isConnectionLost();
-    }
-
-    @Override
-    protected void setLocale(String locale)
-    {
-        super.setLocale(locale);
-    }
-
-    @Override
-    protected void sendConnectionSecure(byte[] challenge, Option ... options)
-    {
-        super.sendConnectionSecure(challenge, options);
-    }
-
-    @Override
-    protected void sendConnectionTune(int channelMax, int maxFrameSize, int heartbeatMin, int heartbeatMax, Option ... options)
-    {
-        super.sendConnectionTune(channelMax, maxFrameSize, heartbeatMin, heartbeatMax, options);
-    }
-
-    @Override
-    protected void setChannelMax(int max)
-    {
-        super.setChannelMax(max);
-    }
-
-    @Override
-    protected void map(Session ssn, int channel)
-    {
-        super.map(ssn, channel);
-    }
-
-    @Override
-    protected void sendConnectionStart(final Map<String, Object> clientProperties,
-                                       final List<Object> mechanisms,
-                                       final List<Object> locales,
-                                       final Option... options)
-    {
-        super.sendConnectionStart(clientProperties, mechanisms, locales, options);
     }
 
 }
