@@ -37,11 +37,12 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
-public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1_0>
+public abstract class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1_0>
 {
 
 
     private UnsignedInteger _lastDeliveryId;
+    private ReceivingDestination _receivingDestination;
 
     private static class TransientState
     {
@@ -144,13 +145,25 @@ public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1_0>
             {
                 _unsettledMap.remove(deliveryTag);
             }
-            return getLink().messageTransfer(transfer);
+            return messageTransfer(transfer);
         }
         else
         {
             getSession().updateDisposition(Role.RECEIVER, transfer.getDeliveryId(), transfer.getDeliveryId(),null, true);
             return null;
         }
+    }
+
+    protected abstract Error messageTransfer(final Transfer transfer);
+
+    public ReceivingDestination getReceivingDestination()
+    {
+        return _receivingDestination;
+    }
+
+    public void setDestination(final ReceivingDestination receivingDestination)
+    {
+        _receivingDestination = receivingDestination;
     }
 
     @Override public void receiveFlow(final Flow flow)

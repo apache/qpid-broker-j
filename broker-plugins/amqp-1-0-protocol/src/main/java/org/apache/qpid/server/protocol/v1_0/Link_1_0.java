@@ -28,9 +28,4 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 public interface Link_1_0 extends LinkModel
 {
 
-    void remoteDetached(final LinkEndpoint endpoint, Detach detach);
-
-    void handle(final Binary deliveryTag, final DeliveryState state, final Boolean settled);
-
-    void start();
 }

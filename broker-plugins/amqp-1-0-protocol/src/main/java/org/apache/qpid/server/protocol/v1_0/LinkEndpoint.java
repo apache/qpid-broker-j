@@ -24,10 +24,10 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -57,7 +57,7 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     private volatile boolean _stoppedUpdated;
     private Symbol[] _capabilities;
 
-    private enum State
+    protected enum State
     {
         DETACHED,
         ATTACH_SENT,
@@ -72,7 +72,7 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     private Session_1_0 _session;
 
 
-    private volatile State _state = State.DETACHED;
+    protected volatile State _state = State.DETACHED;
 
     private BaseSource _source;
     private BaseTarget _target;
@@ -84,8 +84,6 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     private UnsignedLong _maxMessageSize;
     private Map<Symbol, Object> _properties;
 
-    private Map<Binary,Delivery> _unsettledTransfers = new HashMap<Binary,Delivery>();
-
     LinkEndpoint(final Session_1_0 sessionEndpoint,final Attach attach)
     {
         _session = sessionEndpoint;
@@ -95,6 +93,8 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         _properties = initProperties(attach);
         _state = State.ATTACH_RECVD;
     }
+
+    public abstract void start();
 
     public boolean isStopped()
     {
@@ -123,6 +123,11 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     public BaseSource getSource()
     {
         return _source;
+    }
+
+    public NamedAddressSpace getAddressSpace()
+    {
+        return getSession().getConnection().getAddressSpace();
     }
 
     public void setSource(final BaseSource source)
@@ -189,10 +194,12 @@ public abstract class LinkEndpoint<T extends Link_1_0>
                 break;
             case ATTACHED:
                 _state = State.DETACH_RECVD;
-                _link.remoteDetached(LinkEndpoint.this, detach);
+                remoteDetachedPerformDetach(detach);
                 break;
         }
     }
+
+    protected abstract void remoteDetachedPerformDetach(final Detach detach);
 
     public void receiveFlow(final Flow flow)
     {
@@ -200,18 +207,13 @@ public abstract class LinkEndpoint<T extends Link_1_0>
 
     public void addUnsettled(final Delivery unsettled)
     {
-        _unsettledTransfers.put(unsettled.getDeliveryTag(), unsettled);
     }
 
     public void receiveDeliveryState(final Delivery unsettled,
                                      final DeliveryState state,
                                      final Boolean settled)
     {
-        // TODO
-        if (_link != null)
-        {
-            _link.handle(unsettled.getDeliveryTag(), state, settled);
-        }
+        handle(unsettled.getDeliveryTag(), state, settled);
 
         if (Boolean.TRUE.equals(settled))
         {
@@ -219,9 +221,11 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         }
     }
 
+    protected abstract void handle(final Binary deliveryTag, final DeliveryState state, final Boolean settled);
+
     public void settle(final Binary deliveryTag)
     {
-        _unsettledTransfers.remove(deliveryTag);
+
     }
 
     void setLocalHandle(final UnsignedInteger localHandle)
@@ -287,6 +291,11 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     public Session_1_0 getSession()
     {
         return _session;
+    }
+
+    public void setSession(final Session_1_0 session)
+    {
+        _session = session;
     }
 
     UnsignedInteger getLocalHandle()

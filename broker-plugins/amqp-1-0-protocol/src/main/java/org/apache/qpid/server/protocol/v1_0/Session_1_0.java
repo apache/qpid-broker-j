@@ -228,9 +228,26 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 LinkEndpoint endpoint = linkMap.get(attach.getName());
                 if(endpoint == null)
                 {
-                    endpoint = attach.getRole() == Role.RECEIVER
-                               ? new SendingLinkEndpoint(this, attach)
-                               : new ReceivingLinkEndpoint(this, attach);
+
+                    if (attach.getRole() == Role.RECEIVER)
+                    {
+                        endpoint = new SendingLinkEndpoint(this, attach);
+                    }
+                    else if (attach.getRole() == Role.SENDER)
+                    {
+                        if (attach.getTarget() instanceof Coordinator)
+                        {
+                            endpoint = new TxnCoordinatorReceivingLinkEndpoint(this, attach);
+                        }
+                        else
+                        {
+                            endpoint = new StandardReceivingLinkEndpoint(this, attach);
+                        }
+                    }
+                    else
+                    {
+                        // TODO error handling
+                    }
 
                     if(_blockingEntities.contains(this) && attach.getRole() == Role.SENDER)
                     {
@@ -770,7 +787,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
         else
         {
-            link.start();
+            endpoint.start();
         }
     }
 
@@ -873,17 +890,15 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             if (destination != null)
             {
                 final ReceivingDestination receivingDestination = (ReceivingDestination) destination;
+
                 MessageDestination messageDestination = receivingDestination.getMessageDestination();
                 if(!(messageDestination instanceof Queue) || ((Queue<?>)messageDestination).isHoldOnPublishEnabled())
                 {
                     capabilities.add(DELAYED_DELIVERY);
                 }
                 final ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
-                final StandardReceivingLink_1_0 receivingLink =
-                        new StandardReceivingLink_1_0(new ReceivingLinkAttachment(this, receivingLinkEndpoint),
-                                                      getAddressSpace(),
-                                                      receivingDestination);
-
+                final StandardReceivingLink_1_0 receivingLink = new StandardReceivingLink_1_0(receivingLinkEndpoint);
+                receivingLinkEndpoint.setDestination(receivingDestination);
                 receivingLinkEndpoint.setLink(receivingLink);
                 link = receivingLink;
                 if (TerminusDurability.UNSETTLED_STATE.equals(target.getDurable())
@@ -895,11 +910,11 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
         else
         {
-            ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
-            previousLink.setLinkAttachment(new ReceivingLinkAttachment(this, receivingLinkEndpoint));
+            StandardReceivingLinkEndpoint receivingLinkEndpoint = (StandardReceivingLinkEndpoint) endpoint;
+            previousLink.setLinkAttachment(receivingLinkEndpoint);
             receivingLinkEndpoint.setLink(previousLink);
             link = previousLink;
-            endpoint.setLocalUnsettled(previousLink.getUnsettledOutcomeMap());
+            receivingLinkEndpoint.setLocalUnsettled(receivingLinkEndpoint.getUnsettledOutcomeMap());
         }
         return link;
     }
@@ -934,9 +949,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
         final ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
         final TxnCoordinatorReceivingLink_1_0 coordinatorLink =
-                new TxnCoordinatorReceivingLink_1_0(getAddressSpace(),
-                                                    this,
-                                                    receivingLinkEndpoint
+                new TxnCoordinatorReceivingLink_1_0(
+                        receivingLinkEndpoint
                 );
         receivingLinkEndpoint.setLink(coordinatorLink);
         return coordinatorLink;
@@ -1056,13 +1070,16 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             if (destination != null)
             {
                 final SendingLink_1_0 sendingLink =
-                        new SendingLink_1_0(new SendingLinkAttachment(this, sendingLinkEndpoint),
-                                            getAddressSpace(),
-                                            destination);
-                sendingLink.createConsumerTarget();
+                        new SendingLink_1_0(
+                                sendingLinkEndpoint);
+                //sendingLink.createConsumerTarget();
+
+                sendingLinkEndpoint.doStuff(destination);
+                sendingLinkEndpoint.createConsumerTarget();
 
                 sendingLinkEndpoint.setLink(sendingLink);
-                registerConsumer(sendingLink);
+                sendingLinkEndpoint.setDurability(((Source) attach.getSource()).getDurable());
+                registerConsumer(sendingLinkEndpoint);
 
                 if (destination instanceof ExchangeDestination)
                 {
@@ -1084,31 +1101,42 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             Source newSource = (Source) attach.getSource();
             Source oldSource = (Source) previousLink.getEndpoint().getSource();
 
-            if (previousLink.getDestination() instanceof ExchangeDestination && newSource != null && !Boolean.TRUE.equals(newSource.getDynamic()))
+            if (sendingLinkEndpoint.getDestination() == null)
             {
-                final SendingDestination newDestination = getSendingDestination(previousLink.getEndpoint().getName(), newSource);
-                if (updateSourceForSubscription(previousLink, newSource, newDestination))
+                final SendingDestination oldDestination =
+                        getSendingDestination(previousLink.getEndpoint().getName(), oldSource);
+                sendingLinkEndpoint.doStuff(oldDestination);
+                sendingLinkEndpoint.setDurability(oldSource.getDurable());
+
+            }
+
+            if (sendingLinkEndpoint.getDestination() instanceof ExchangeDestination
+                && newSource != null
+                && !Boolean.TRUE.equals(newSource.getDynamic()))
+            {
+                final SendingDestination newDestination =
+                        getSendingDestination(previousLink.getEndpoint().getName(), newSource);
+                if (updateSourceForSubscription(sendingLinkEndpoint, newSource, newDestination))
                 {
-                    previousLink.setDestination(newDestination);
+                    sendingLinkEndpoint.setDestination(newDestination);
                 }
             }
 
             sendingLinkEndpoint.setSource(oldSource);
-            previousLink.setLinkAttachment(new SendingLinkAttachment(this, sendingLinkEndpoint));
+            previousLink.setLinkAttachment(this, sendingLinkEndpoint);
             sendingLinkEndpoint.setLink(previousLink);
             link = previousLink;
-            sendingLinkEndpoint.setLocalUnsettled(previousLink.getUnsettledOutcomeMap());
-            registerConsumer(previousLink);
+            sendingLinkEndpoint.setLocalUnsettled(sendingLinkEndpoint.getUnsettledOutcomeMap());
+            registerConsumer(sendingLinkEndpoint);
 
         }
         return link;
     }
 
-    private boolean updateSourceForSubscription(final SendingLink_1_0 previousLink,
-                                                final Source newSource,
+    private boolean updateSourceForSubscription(final SendingLinkEndpoint linkEndpoint, final Source newSource,
                                                 final SendingDestination newDestination)
     {
-        SendingDestination oldDestination = previousLink.getDestination();
+        SendingDestination oldDestination = linkEndpoint.getDestination();
         if (oldDestination instanceof ExchangeDestination)
         {
             ExchangeDestination oldExchangeDestination = (ExchangeDestination) oldDestination;
@@ -1118,7 +1146,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 ExchangeDestination newExchangeDestination = (ExchangeDestination) newDestination;
                 if (oldExchangeDestination.getQueue() != newExchangeDestination.getQueue())
                 {
-                    Source oldSource = (Source) previousLink.getEndpoint().getSource();
+                    Source oldSource = (Source) linkEndpoint.getSource();
                     oldSource.setAddress(newAddress);
                     oldSource.setFilter(newSource.getFilter());
                     return true;
@@ -1354,9 +1382,9 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     }
 
 
-    private void registerConsumer(final SendingLink_1_0 link)
+    private void registerConsumer(final SendingLinkEndpoint linkEndpoint)
     {
-        MessageInstanceConsumer consumer = link.getConsumer();
+        MessageInstanceConsumer consumer = linkEndpoint.getConsumer();
         if(consumer instanceof Consumer<?,?>)
         {
             Consumer<?,ConsumerTarget_1_0> modelConsumer = (Consumer<?,ConsumerTarget_1_0>) consumer;
@@ -1563,8 +1591,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     {
         for(SendingLinkEndpoint endpoint : _sendingLinkMap.values())
         {
-            Link_1_0 link = endpoint.getLink();
-            ConsumerTarget_1_0 target = ((SendingLink_1_0)link).getConsumerTarget();
+            ConsumerTarget_1_0 target = endpoint.getConsumerTarget();
             target.flowStateChanged();
         }
 
@@ -1597,9 +1624,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
             for (ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
             {
-                StandardReceivingLink_1_0 link = (StandardReceivingLink_1_0) endpoint.getLink();
-
-                if (isQueueDestinationForLink(queue, link.getDestination()))
+                if (isQueueDestinationForLink(queue, endpoint.getReceivingDestination()))
                 {
                     endpoint.setStopped(true);
                 }
@@ -1639,8 +1664,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             }
             for (ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
             {
-                StandardReceivingLink_1_0 link = (StandardReceivingLink_1_0) endpoint.getLink();
-                if (isQueueDestinationForLink(queue, link.getDestination()))
+                if (isQueueDestinationForLink(queue, endpoint.getReceivingDestination()))
                 {
                     endpoint.setStopped(false);
                 }
@@ -1701,8 +1725,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             }
             for(ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
             {
-                StandardReceivingLink_1_0 link = (StandardReceivingLink_1_0) endpoint.getLink();
-                if(!_blockingEntities.contains(link.getDestination()))
+                if(!_blockingEntities.contains(endpoint.getReceivingDestination()))
                 {
                     endpoint.setStopped(false);
                 }
@@ -1925,7 +1948,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                     {
                         try
                         {
-                            link.setLinkAttachment(new SendingLinkAttachment(null, (SendingLinkEndpoint) linkEndpoint));
+                            link.setLinkAttachment(null, (SendingLinkEndpoint) linkEndpoint);
                         }
                         catch (AmqpErrorException e)
                         {
@@ -1947,7 +1970,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 {
                     if (link.getEndpoint() == linkEndpoint)
                     {
-                        link.setLinkAttachment(new ReceivingLinkAttachment(null, (ReceivingLinkEndpoint) linkEndpoint));
+                        link.setLinkAttachment((ReceivingLinkEndpoint) linkEndpoint);
                     }
                 }
             }

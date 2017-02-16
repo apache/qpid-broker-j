@@ -70,41 +70,40 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerTarget_1_0.class);
     private final boolean _acquires;
-    private final SendingLink_1_0 _link;
 
     private long _deliveryTag = 0L;
 
     private Binary _transactionId;
     private final AMQPDescribedTypeRegistry _typeRegistry;
+    private SendingLinkEndpoint _linkEndpoint;
     private final SectionEncoder _sectionEncoder;
     private boolean _queueEmpty;
 
-    public ConsumerTarget_1_0(final SendingLink_1_0 link,
-                              boolean acquires)
+    public ConsumerTarget_1_0(final SendingLinkEndpoint linkEndpoint, boolean acquires)
     {
-        super(false, link.getSession().getAMQPConnection());
-        _link = link;
-        _typeRegistry = link.getEndpoint().getSession().getConnection().getDescribedTypeRegistry();
+        super(false, linkEndpoint.getSession().getAMQPConnection());
+        _typeRegistry = linkEndpoint.getSession().getConnection().getDescribedTypeRegistry();
+        _linkEndpoint = linkEndpoint;
         _sectionEncoder = new SectionEncoderImpl(_typeRegistry);
         _acquires = acquires;
     }
 
     private SendingLinkEndpoint getEndpoint()
     {
-        return _link.getEndpoint();
+        return _linkEndpoint;
     }
 
     @Override
     public void updateNotifyWorkDesired()
     {
         boolean state = false;
-        Session_1_0 session = _link.getSession();
+        Session_1_0 session = _linkEndpoint.getSession();
         if (session != null)
         {
             final AMQPConnection<?> amqpConnection = session.getAMQPConnection();
 
             state = !amqpConnection.isTransportBlockedForWriting()
-                    && _link.isAttached()
+                    && _linkEndpoint.isAttached()
                     && getEndpoint().hasCreditToSend();
         }
         setNotifyWorkDesired(state);
@@ -125,7 +124,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         {
             converter =
                     (MessageConverter<? super ServerMessage, Message_1_0>) MessageConverterRegistry.getConverter(serverMessage.getClass(), Message_1_0.class);
-            message = converter.convert(serverMessage, _link.getAddressSpace());
+            message = converter.convert(serverMessage, _linkEndpoint.getAddressSpace());
         }
 
         Transfer transfer = new Transfer();
@@ -199,7 +198,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
             transfer.setDeliveryTag(tag);
 
-            if (_link.isAttached())
+            if (_linkEndpoint.isAttached())
             {
                 if (SenderSettleMode.SETTLED.equals(getEndpoint().getSendingSettlementMode()))
                 {
@@ -209,9 +208,9 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                 {
                     UnsettledAction action = _acquires
                             ? new DispositionAction(tag, entry, consumer)
-                            : new DoNothingAction(tag, entry);
+                            : new DoNothingAction();
 
-                    _link.addUnsettled(tag, action, entry);
+                    _linkEndpoint.addUnsettled(tag, action, entry);
                 }
 
                 if (_transactionId != null)
@@ -223,7 +222,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                 // TODO - need to deal with failure here
                 if (_acquires && _transactionId != null)
                 {
-                    ServerTransaction txn = _link.getTransaction(_transactionId);
+                    ServerTransaction txn = _linkEndpoint.getTransaction(_transactionId);
                     if (txn != null)
                     {
                         txn.addPostTransactionAction(new ServerTransaction.Action()
@@ -236,7 +235,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                             public void onRollback()
                             {
                                 entry.release(consumer);
-                                _link.getEndpoint().updateDisposition(tag, (DeliveryState) null, true);
+                                _linkEndpoint.updateDisposition(tag, (DeliveryState) null, true);
                             }
                         });
                     }
@@ -289,14 +288,13 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     public boolean allocateCredit(final ServerMessage msg)
     {
         ProtocolEngine protocolEngine = getSession().getConnection();
-        final boolean hasCredit = _link.isAttached() && getEndpoint().hasCreditToSend();
+        final boolean hasCredit = _linkEndpoint.isAttached() && getEndpoint().hasCreditToSend();
 
         updateNotifyWorkDesired();
 
         if (hasCredit)
         {
-            SendingLinkEndpoint linkEndpoint = _link.getEndpoint();
-            linkEndpoint.setLinkCredit(linkEndpoint.getLinkCredit().subtract(UnsignedInteger.ONE));
+            _linkEndpoint.setLinkCredit(_linkEndpoint.getLinkCredit().subtract(UnsignedInteger.ONE));
         }
 
         return hasCredit;
@@ -305,14 +303,13 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
     public void restoreCredit(final ServerMessage message)
     {
-        final SendingLinkEndpoint endpoint = _link.getEndpoint();
-        endpoint.setLinkCredit(endpoint.getLinkCredit().add(UnsignedInteger.ONE));
+        _linkEndpoint.setLinkCredit(_linkEndpoint.getLinkCredit().add(UnsignedInteger.ONE));
         updateNotifyWorkDesired();
     }
 
     public void queueEmpty()
     {
-        if(_link.drained())
+        if(_linkEndpoint.drained())
         {
             updateNotifyWorkDesired();
         }
@@ -324,14 +321,14 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
         if (isSuspended() && getEndpoint() != null)
         {
-            _transactionId = _link.getTransactionId();
+            _transactionId = _linkEndpoint.getTransactionId();
         }
     }
 
     @Override
     public Session_1_0 getSession()
     {
-        return _link.getSession();
+        return _linkEndpoint.getSession();
     }
 
     public void flush()
@@ -369,7 +366,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
             {
                 transactionId = ((TransactionalState)state).getTxnId();
                 outcome = ((TransactionalState)state).getOutcome();
-                txn = _link.getTransaction(transactionId);
+                txn = _linkEndpoint.getTransaction(transactionId);
                 if(txn == null)
                 {
                     // TODO - invalid txn id supplied
@@ -416,13 +413,13 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                         {
                             if(Boolean.TRUE.equals(settled))
                             {
-                                _link.getEndpoint().settle(_deliveryTag);
+                                _linkEndpoint.settle(_deliveryTag);
                             }
                             else
                             {
-                                _link.getEndpoint().updateDisposition(_deliveryTag, (DeliveryState) outcome, true);
+                                _linkEndpoint.updateDisposition(_deliveryTag, (DeliveryState) outcome, true);
                             }
-                            _link.getEndpoint().sendFlowConditional();
+                            _linkEndpoint.sendFlowConditional();
                         }
 
                         @Override
@@ -445,13 +442,13 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                     {
 
                         _queueEntry.release(getConsumer());
-                        _link.getEndpoint().settle(_deliveryTag);
+                        _linkEndpoint.settle(_deliveryTag);
                     }
 
                     @Override
                     public void onRollback()
                     {
-                        _link.getEndpoint().settle(_deliveryTag);
+                        _linkEndpoint.settle(_deliveryTag);
 
                         // TODO: apply source's default outcome if settled
                     }
@@ -475,7 +472,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                         {
                             _queueEntry.release(getConsumer());
                         }
-                        _link.getEndpoint().settle(_deliveryTag);
+                        _linkEndpoint.settle(_deliveryTag);
                     }
 
                     @Override
@@ -496,9 +493,9 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                     @Override
                     public void postCommit()
                     {
-                        _link.getEndpoint().settle(_deliveryTag);
+                        _linkEndpoint.settle(_deliveryTag);
                         incrementDeliveryCountOrRouteToAlternateOrDiscard();
-                        _link.getEndpoint().sendFlowConditional();
+                        _linkEndpoint.sendFlowConditional();
                     }
 
                     @Override
@@ -520,8 +517,8 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         {
             final Modified modified = new Modified();
             modified.setDeliveryFailed(true);
-            _link.getEndpoint().updateDisposition(_deliveryTag, modified, true);
-            _link.getEndpoint().sendFlowConditional();
+            _linkEndpoint.updateDisposition(_deliveryTag, modified, true);
+            _linkEndpoint.sendFlowConditional();
             incrementDeliveryCountOrRouteToAlternateOrDiscard();
         }
 
@@ -541,7 +538,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
         private void routeToAlternateOrDiscard()
         {
-            final Session_1_0 session = _link.getSession();
+            final Session_1_0 session = _linkEndpoint.getSession();
             final ServerMessage message = _queueEntry.getMessage();
             final EventLogger eventLogger = session.getEventLogger();
             final LogSubject logSubject = session.getLogSubject();
@@ -590,25 +587,12 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
     private class DoNothingAction implements UnsettledAction
     {
-        public DoNothingAction(final Binary tag,
-                               final MessageInstance queueEntry)
+        public DoNothingAction()
         {
         }
 
         public boolean process(final DeliveryState state, final Boolean settled)
         {
-            Binary transactionId = null;
-            Outcome outcome = null;
-            // If disposition is settled this overrides the txn?
-            if(state instanceof TransactionalState)
-            {
-                transactionId = ((TransactionalState)state).getTxnId();
-                outcome = ((TransactionalState)state).getOutcome();
-            }
-            else if (state instanceof Outcome)
-            {
-                outcome = (Outcome) state;
-            }
             return true;
         }
     }
@@ -621,9 +605,9 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     @Override
     public String getTargetAddress()
     {
-        BaseTarget target = _link.getEndpoint().getTarget();
+        BaseTarget target = _linkEndpoint.getTarget();
 
-        return target instanceof org.apache.qpid.server.protocol.v1_0.type.messaging.Target ? ((org.apache.qpid.server.protocol.v1_0.type.messaging.Target) target).getAddress() : _link.getEndpoint().getName();
+        return target instanceof org.apache.qpid.server.protocol.v1_0.type.messaging.Target ? ((org.apache.qpid.server.protocol.v1_0.type.messaging.Target) target).getAddress() : _linkEndpoint.getName();
     }
 
     @Override
@@ -643,6 +627,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     @Override
     public String toString()
     {
-        return "ConsumerTarget_1_0[linkSession=" + _link.getSession().toLogString() + "]";
+        return "ConsumerTarget_1_0[linkSession=" + _linkEndpoint.getSession().toLogString() + "]";
     }
 }
