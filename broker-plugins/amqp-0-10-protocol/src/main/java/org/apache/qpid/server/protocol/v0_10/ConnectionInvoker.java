@@ -1,4 +1,3 @@
-package org.apache.qpid.server.transport;
 /*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -19,13 +18,30 @@ package org.apache.qpid.server.transport;
  * under the License.
  *
  */
+package org.apache.qpid.server.protocol.v0_10;
 
 
 import java.util.Map;
 
+import org.apache.qpid.server.transport.ConnectionClose;
+import org.apache.qpid.server.transport.ConnectionCloseCode;
+import org.apache.qpid.server.transport.ConnectionCloseOk;
+import org.apache.qpid.server.transport.ConnectionHeartbeat;
+import org.apache.qpid.server.transport.ConnectionOpen;
+import org.apache.qpid.server.transport.ConnectionOpenOk;
+import org.apache.qpid.server.transport.ConnectionRedirect;
+import org.apache.qpid.server.transport.ConnectionSecure;
+import org.apache.qpid.server.transport.ConnectionSecureOk;
+import org.apache.qpid.server.transport.ConnectionStart;
+import org.apache.qpid.server.transport.ConnectionStartOk;
+import org.apache.qpid.server.transport.ConnectionTune;
+import org.apache.qpid.server.transport.ConnectionTuneOk;
+import org.apache.qpid.server.transport.Method;
+import org.apache.qpid.server.transport.Option;
+
 public abstract class ConnectionInvoker {
 
-    final void connectionStart(Map<String,Object> serverProperties, java.util.List<Object> mechanisms, java.util.List<Object> locales, Option ... _options) {
+    final void connectionStart(Map<String,Object> serverProperties, java.util.List<Object> mechanisms, java.util.List<Object> locales, Option... _options) {
         invoke(new ConnectionStart(serverProperties, mechanisms, locales, _options));
     }
 

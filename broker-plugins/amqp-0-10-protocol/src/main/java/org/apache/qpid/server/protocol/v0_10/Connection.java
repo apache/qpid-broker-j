@@ -18,12 +18,12 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.transport;
+package org.apache.qpid.server.protocol.v0_10;
 
-import static org.apache.qpid.server.transport.Connection.State.CLOSED;
-import static org.apache.qpid.server.transport.Connection.State.CLOSING;
-import static org.apache.qpid.server.transport.Connection.State.NEW;
-import static org.apache.qpid.server.transport.Connection.State.OPEN;
+import static org.apache.qpid.server.protocol.v0_10.Connection.State.CLOSED;
+import static org.apache.qpid.server.protocol.v0_10.Connection.State.CLOSING;
+import static org.apache.qpid.server.protocol.v0_10.Connection.State.NEW;
+import static org.apache.qpid.server.protocol.v0_10.Connection.State.OPEN;
 
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -37,6 +37,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.transport.Binary;
+import org.apache.qpid.server.transport.ConnectionClose;
+import org.apache.qpid.server.transport.ConnectionCloseCode;
+import org.apache.qpid.server.transport.ConnectionException;
+import org.apache.qpid.server.transport.FrameSizeObserver;
+import org.apache.qpid.server.transport.Method;
+import org.apache.qpid.server.transport.Option;
+import org.apache.qpid.server.transport.ProtocolEvent;
+import org.apache.qpid.server.transport.ProtocolEventReceiver;
+import org.apache.qpid.server.transport.ProtocolEventSender;
+import org.apache.qpid.server.transport.SessionDetachCode;
+import org.apache.qpid.server.transport.SessionDetached;
 import org.apache.qpid.server.transport.network.NetworkConnection;
 import org.apache.qpid.server.transport.util.Waiter;
 
@@ -52,7 +64,7 @@ import org.apache.qpid.server.transport.util.Waiter;
  */
 
 public class Connection extends ConnectionInvoker
-    implements ProtocolEventReceiver, ProtocolEventSender
+        implements ProtocolEventReceiver, ProtocolEventSender
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Connection.class);
 
@@ -345,7 +357,7 @@ public class Connection extends ConnectionInvoker
     }
 
 
-    protected void sendConnectionClose(ConnectionCloseCode replyCode, String replyText, Option ... _options)
+    protected void sendConnectionClose(ConnectionCloseCode replyCode, String replyText, Option... _options)
     {
         connectionClose(replyCode, replyText, _options);
     }

@@ -52,7 +52,6 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ConnectionCloseCode;
-import org.apache.qpid.server.transport.ConnectionDelegate;
 import org.apache.qpid.server.transport.Constant;
 
 

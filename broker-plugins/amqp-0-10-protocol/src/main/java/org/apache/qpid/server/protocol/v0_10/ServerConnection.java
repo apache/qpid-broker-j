@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import static org.apache.qpid.server.transport.Connection.State.CLOSING;
+import static org.apache.qpid.server.protocol.v0_10.Connection.State.CLOSING;
 
 import java.net.SocketAddress;
 import java.security.AccessControlContext;
@@ -52,7 +52,6 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.transport.Connection;
 import org.apache.qpid.server.transport.ConnectionClose;
 import org.apache.qpid.server.transport.ConnectionCloseCode;
 import org.apache.qpid.server.transport.ConnectionCloseOk;
@@ -61,7 +60,6 @@ import org.apache.qpid.server.transport.ExecutionException;
 import org.apache.qpid.server.transport.Method;
 import org.apache.qpid.server.transport.Option;
 import org.apache.qpid.server.transport.ProtocolEvent;
-import org.apache.qpid.server.transport.Session;
 
 public class ServerConnection extends Connection
 {

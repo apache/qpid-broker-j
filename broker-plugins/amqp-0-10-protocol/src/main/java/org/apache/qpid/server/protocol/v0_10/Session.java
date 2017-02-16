@@ -18,18 +18,18 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.transport;
+package org.apache.qpid.server.protocol.v0_10;
 
 
 import static org.apache.qpid.server.transport.Option.COMPLETED;
 import static org.apache.qpid.server.transport.Option.SYNC;
 import static org.apache.qpid.server.transport.Option.TIMELY_REPLY;
-import static org.apache.qpid.server.transport.Session.State.CLOSED;
-import static org.apache.qpid.server.transport.Session.State.CLOSING;
-import static org.apache.qpid.server.transport.Session.State.DETACHED;
-import static org.apache.qpid.server.transport.Session.State.NEW;
-import static org.apache.qpid.server.transport.Session.State.OPEN;
-import static org.apache.qpid.server.transport.Session.State.RESUMING;
+import static org.apache.qpid.server.protocol.v0_10.Session.State.CLOSED;
+import static org.apache.qpid.server.protocol.v0_10.Session.State.CLOSING;
+import static org.apache.qpid.server.protocol.v0_10.Session.State.DETACHED;
+import static org.apache.qpid.server.protocol.v0_10.Session.State.NEW;
+import static org.apache.qpid.server.protocol.v0_10.Session.State.OPEN;
+import static org.apache.qpid.server.protocol.v0_10.Session.State.RESUMING;
 import static org.apache.qpid.server.util.Serial.ge;
 import static org.apache.qpid.server.util.Serial.gt;
 import static org.apache.qpid.server.util.Serial.le;
@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.transport.*;
 import org.apache.qpid.server.transport.network.Frame;
 import org.apache.qpid.server.transport.util.Waiter;
 
@@ -227,32 +228,32 @@ public class Session extends SessionInvoker
                 }
                 else if (m instanceof MessageTransfer)
                 {
-                	MessageTransfer xfr = (MessageTransfer)m;
+                    MessageTransfer xfr = (MessageTransfer)m;
 
                     Header header = xfr.getHeader();
 
                     if (header != null)
-                	{
-                		if (header.getDeliveryProperties() != null)
-                		{
-                		   header.getDeliveryProperties().setRedelivered(true);
-                		}
-                		else
-                		{
-                			DeliveryProperties deliveryProps = new DeliveryProperties();
-                    		deliveryProps.setRedelivered(true);
+                    {
+                        if (header.getDeliveryProperties() != null)
+                        {
+                           header.getDeliveryProperties().setRedelivered(true);
+                        }
+                        else
+                        {
+                            DeliveryProperties deliveryProps = new DeliveryProperties();
+                            deliveryProps.setRedelivered(true);
 
-                    		xfr.setHeader(new Header(deliveryProps, header.getMessageProperties(),
+                            xfr.setHeader(new Header(deliveryProps, header.getMessageProperties(),
                                                      header.getNonStandardProperties()));
-                		}
+                        }
 
-                	}
-                	else
-                	{
-                		DeliveryProperties deliveryProps = new DeliveryProperties();
-                		deliveryProps.setRedelivered(true);
-                		xfr.setHeader(new Header(deliveryProps, null, null));
-                	}
+                    }
+                    else
+                    {
+                        DeliveryProperties deliveryProps = new DeliveryProperties();
+                        deliveryProps.setRedelivered(true);
+                        xfr.setHeader(new Header(deliveryProps, null, null));
+                    }
                 }
                 sessionCommandPoint(m.getId(), 0);
                 send(m);
@@ -413,7 +414,7 @@ public class Session extends SessionInvoker
         sessionExpected(rs, null);
     }
 
-    public void flushProcessed(Option ... options)
+    public void flushProcessed(Option... options)
     {
         RangeSet copy;
         synchronized (processedLock)
@@ -429,7 +430,7 @@ public class Session extends SessionInvoker
             }
             if (copy.size() > 0)
             {
-	            sessionCompleted(copy, options);
+                sessionCompleted(copy, options);
             }
         }
     }
@@ -764,8 +765,8 @@ public class Session extends SessionInvoker
                 if (state != CLOSED)
                 {
                     throw new SessionException(
-		                    String.format("timed out waiting for sync: complete = %s, point = %s",
-		                            maxComplete, point));
+                            String.format("timed out waiting for sync: complete = %s, point = %s",
+                                    maxComplete, point));
                 }
                 else
                 {

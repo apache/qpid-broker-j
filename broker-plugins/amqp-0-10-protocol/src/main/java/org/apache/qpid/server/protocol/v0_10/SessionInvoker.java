@@ -1,4 +1,3 @@
-package org.apache.qpid.server.transport;
 /*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -19,13 +18,16 @@ package org.apache.qpid.server.transport;
  * under the License.
  *
  */
+package org.apache.qpid.server.protocol.v0_10;
 
 
 import java.util.Map;
 
+import org.apache.qpid.server.transport.*;
+
 public abstract class SessionInvoker {
 
-    final void sessionAttach(byte[] name, Option ... _options) {
+    final void sessionAttach(byte[] name, Option... _options) {
         invoke(new SessionAttach(name, _options));
     }
 

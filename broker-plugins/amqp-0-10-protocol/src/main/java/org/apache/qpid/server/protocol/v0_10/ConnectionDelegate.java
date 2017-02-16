@@ -18,13 +18,22 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.transport;
-
-import static org.apache.qpid.server.transport.Connection.State.CLOSE_RCVD;
+package org.apache.qpid.server.protocol.v0_10;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.transport.ConnectionClose;
+import org.apache.qpid.server.transport.ConnectionCloseOk;
+import org.apache.qpid.server.transport.ConnectionException;
+import org.apache.qpid.server.transport.ConnectionHeartbeat;
+import org.apache.qpid.server.transport.Method;
+import org.apache.qpid.server.transport.MethodDelegate;
+import org.apache.qpid.server.transport.ProtocolDelegate;
+import org.apache.qpid.server.transport.ProtocolError;
+import org.apache.qpid.server.transport.SessionDetach;
+import org.apache.qpid.server.transport.SessionDetachCode;
+import org.apache.qpid.server.transport.SessionDetached;
 
 /**
  * ConnectionDelegate
@@ -39,8 +48,8 @@ import org.slf4j.LoggerFactory;
  * the connectionClose is kind of different for both sides
  */
 public abstract class ConnectionDelegate
-    extends MethodDelegate<Connection>
-    implements ProtocolDelegate<Connection>
+        extends MethodDelegate<Connection>
+        implements ProtocolDelegate<Connection>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionDelegate.class);
@@ -74,7 +83,7 @@ public abstract class ConnectionDelegate
     {
         sendConnectionCloseOkAndCloseSender(conn);
         conn.closeCode(close);
-        conn.setState(CLOSE_RCVD);
+        conn.setState(Connection.State.CLOSE_RCVD);
     }
 
     protected void sendConnectionCloseOkAndCloseSender(Connection conn)

@@ -18,8 +18,11 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.transport;
+package org.apache.qpid.server.protocol.v0_10;
 
+
+import org.apache.qpid.server.transport.MessageTransfer;
+import org.apache.qpid.server.transport.SessionException;
 
 /**
  * SessionListener

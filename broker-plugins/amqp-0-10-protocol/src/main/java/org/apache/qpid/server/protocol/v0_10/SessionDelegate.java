@@ -18,11 +18,12 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.transport;
+package org.apache.qpid.server.protocol.v0_10;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.transport.*;
 
 
 /**
@@ -32,8 +33,8 @@ import org.slf4j.LoggerFactory;
  */
 
 public class SessionDelegate
-    extends MethodDelegate<Session>
-    implements ProtocolDelegate<Session>
+        extends MethodDelegate<Session>
+        implements ProtocolDelegate<Session>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SessionDelegate.class);
 

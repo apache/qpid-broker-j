@@ -63,7 +63,7 @@ public abstract class Method extends Struct implements ProtocolEvent
         return id;
     }
 
-    void setId(int id)
+    public void setId(int id)
     {
         this.id = id;
         this.idSet = true;
