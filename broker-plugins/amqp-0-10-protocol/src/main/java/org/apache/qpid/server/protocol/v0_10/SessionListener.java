@@ -32,14 +32,14 @@ import org.apache.qpid.server.transport.SessionException;
 public interface SessionListener
 {
 
-    void opened(Session session);
+    void opened(ServerSession session);
 
-    void resumed(Session session);
+    void resumed(ServerSession session);
 
-    void message(Session ssn, MessageTransfer xfr);
+    void message(ServerSession ssn, MessageTransfer xfr);
 
-    void exception(Session session, SessionException exception);
+    void exception(ServerSession session, SessionException exception);
 
-    void closed(Session session);
+    void closed(ServerSession session);
 
 }

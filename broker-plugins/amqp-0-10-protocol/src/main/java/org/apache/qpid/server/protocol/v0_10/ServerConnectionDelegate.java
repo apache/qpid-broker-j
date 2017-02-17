@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import static org.apache.qpid.server.protocol.v0_10.Connection.State.CLOSE_RCVD;
+import static org.apache.qpid.server.protocol.v0_10.ServerConnection.State.CLOSE_RCVD;
 
 import java.security.AccessControlException;
 import java.security.Principal;
@@ -46,26 +46,18 @@ import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationS
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
-import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.transport.*;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
-import org.apache.qpid.server.transport.Binary;
-import org.apache.qpid.server.transport.ConnectionClose;
-import org.apache.qpid.server.transport.ConnectionCloseCode;
-import org.apache.qpid.server.transport.ConnectionOpen;
-import org.apache.qpid.server.transport.ConnectionOpenOk;
-import org.apache.qpid.server.transport.ConnectionRedirect;
-import org.apache.qpid.server.transport.ConnectionSecureOk;
-import org.apache.qpid.server.transport.ConnectionStartOk;
-import org.apache.qpid.server.transport.ConnectionTuneOk;
-import org.apache.qpid.server.transport.Constant;
-import org.apache.qpid.server.transport.ProtocolHeader;
-import org.apache.qpid.server.transport.SessionAttach;
-import org.apache.qpid.server.transport.SessionDetach;
-import org.apache.qpid.server.transport.SessionDetachCode;
-import org.apache.qpid.server.transport.SessionDetached;
 
-public class ServerConnectionDelegate extends ConnectionDelegate
+/*
+
+Method ConnectionDelegate.connectionClose(ServerConnection, ConnectionClose) is already overridden in class org.apache.qpid.server.protocol.v0_10.ServerConnectionDelegate. Method will not be pushed down to that class.
+
+
+
+ */
+public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> implements ProtocolDelegate<ServerConnection>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnectionDelegate.class);
 
@@ -80,6 +72,58 @@ public class ServerConnectionDelegate extends ConnectionDelegate
 
     private boolean _compressionSupported;
     private volatile SaslNegotiator _saslNegotiator;
+
+    public void control(ServerConnection conn, Method method)
+    {
+        method.dispatch(conn, this);
+    }
+
+    public void command(ServerConnection conn, Method method)
+    {
+        method.dispatch(conn, this);
+    }
+
+    public void error(ServerConnection conn, ProtocolError error)
+    {
+        conn.exception(new ConnectionException(error.getMessage()));
+    }
+
+    public void handle(ServerConnection conn, Method method)
+    {
+        conn.dispatch(method);
+    }
+
+    @Override public void connectionHeartbeat(ServerConnection conn, ConnectionHeartbeat hearbeat)
+    {
+        // do nothing
+    }
+
+    protected void sendConnectionCloseOkAndCloseSender(ServerConnection conn)
+    {
+        conn.connectionCloseOk();
+        conn.getSender().close();
+    }
+
+    @Override public void connectionCloseOk(ServerConnection conn, ConnectionCloseOk ok)
+    {
+        conn.getSender().close();
+    }
+
+    @Override public void sessionDetached(ServerConnection conn, SessionDetached dtc)
+    {
+        ServerSession ssn = conn.getSession(dtc.getChannel());
+        if (ssn != null)
+        {
+            ssn.setDetachCode(dtc.getCode());
+            conn.unmap(ssn);
+            ssn.closed();
+        }
+    }
+
+    public void writerIdle(final ServerConnection connection)
+    {
+        connection.doHeartBeat();
+    }
 
     enum ConnectionState
     {
@@ -134,7 +178,7 @@ public class ServerConnectionDelegate extends ConnectionDelegate
     }
 
     @Override
-    public void init(final Connection conn, final ProtocolHeader hdr)
+    public void init(final ServerConnection conn, final ProtocolHeader hdr)
     {
         ServerConnection serverConnection = (ServerConnection) conn;
         assertState(serverConnection, ConnectionState.INIT);
@@ -178,7 +222,7 @@ public class ServerConnectionDelegate extends ConnectionDelegate
     }
 
     @Override
-    public void connectionSecureOk(final Connection conn, final ConnectionSecureOk ok)
+    public void connectionSecureOk(final ServerConnection conn, final ConnectionSecureOk ok)
     {
         ServerConnection serverConnection = (ServerConnection) conn;
         assertState(serverConnection, ConnectionState.AWAIT_SECURE_OK);
@@ -223,7 +267,7 @@ public class ServerConnectionDelegate extends ConnectionDelegate
     }
 
     @Override
-    public void connectionClose(Connection conn, ConnectionClose close)
+    public void connectionClose(ServerConnection conn, ConnectionClose close)
     {
         final ServerConnection sconn = (ServerConnection) conn;
         sconn.closeCode(close);
@@ -231,7 +275,8 @@ public class ServerConnectionDelegate extends ConnectionDelegate
         sendConnectionCloseOkAndCloseSender(conn);
     }
 
-    public void connectionOpen(Connection conn, ConnectionOpen open)
+
+    public void connectionOpen(ServerConnection conn, ConnectionOpen open)
     {
         final ServerConnection sconn = (ServerConnection) conn;
         assertState(sconn, ConnectionState.AWAIT_OPEN);
@@ -255,7 +300,7 @@ public class ServerConnectionDelegate extends ConnectionDelegate
         {
             if (!addressSpace.isActive())
             {
-                sconn.setState(Connection.State.CLOSING);
+                sconn.setState(ServerConnection.State.CLOSING);
                 final String redirectHost = addressSpace.getRedirectHost(port);
                 if(redirectHost == null)
                 {
@@ -274,25 +319,25 @@ public class ServerConnectionDelegate extends ConnectionDelegate
                 sconn.setVirtualHost(addressSpace);
                 if(!addressSpace.authoriseCreateConnection(sconn.getAmqpConnection()))
                 {
-                    sconn.setState(Connection.State.CLOSING);
+                    sconn.setState(ServerConnection.State.CLOSING);
                     sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, "Connection not authorized");
                     return;
                 }
             }
             catch (AccessControlException | VirtualHostUnavailableException e)
             {
-                sconn.setState(Connection.State.CLOSING);
+                sconn.setState(ServerConnection.State.CLOSING);
                 sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, e.getMessage());
                 return;
             }
 
-            sconn.setState(Connection.State.OPEN);
+            sconn.setState(ServerConnection.State.OPEN);
             _state = ConnectionState.OPEN;
             sconn.invoke(new ConnectionOpenOk(Collections.emptyList()));
         }
         else
         {
-            sconn.setState(Connection.State.CLOSING);
+            sconn.setState(ServerConnection.State.CLOSING);
             sconn.sendConnectionClose(ConnectionCloseCode.INVALID_PATH,
                                              "Unknown virtualhost '" + vhostName + "'");
         }
@@ -300,7 +345,7 @@ public class ServerConnectionDelegate extends ConnectionDelegate
     }
 
     @Override
-    public void connectionTuneOk(final Connection conn, final ConnectionTuneOk ok)
+    public void connectionTuneOk(final ServerConnection conn, final ConnectionTuneOk ok)
     {
         ServerConnection sconn = (ServerConnection) conn;
         assertState(sconn, ConnectionState.AWAIT_TUNE_OK);
@@ -369,18 +414,27 @@ public class ServerConnectionDelegate extends ConnectionDelegate
         return _maximumFrameSize;
     }
 
-    @Override public void sessionDetach(Connection conn, SessionDetach dtc)
+    @Override
+    public void sessionDetach(ServerConnection conn, SessionDetach dtc)
     {
         // To ensure a clean detach, we stop any remaining subscriptions. Stop ensures
         // that any in-progress delivery (QueueRunner) is completed before the stop
         // completes.
         stopAllSubscriptions(conn, dtc);
-        Session ssn = conn.getSession(dtc.getChannel());
+        ServerSession ssn = conn.getSession(dtc.getChannel());
         ((ServerSession)ssn).setClose(true);
-        super.sessionDetach(conn, dtc);
+        sessionDetachSuper(conn, dtc);
     }
 
-    private void stopAllSubscriptions(Connection conn, SessionDetach dtc)
+    private void sessionDetachSuper(ServerConnection conn, SessionDetach dtc)
+    {
+        ServerSession ssn = conn.getSession(dtc.getChannel());
+        ssn.sessionDetached(dtc.getName(), ssn.getDetachCode() == null? SessionDetachCode.NORMAL: ssn.getDetachCode());
+        conn.unmap(ssn);
+        ssn.closed();
+    }
+
+    private void stopAllSubscriptions(ServerConnection conn, SessionDetach dtc)
     {
         final ServerSession ssn = (ServerSession) conn.getSession(dtc.getChannel());
         final Collection<ConsumerTarget_0_10> subs = ssn.getSubscriptions();
@@ -392,12 +446,12 @@ public class ServerConnectionDelegate extends ConnectionDelegate
 
 
     @Override
-    public void sessionAttach(final Connection conn, final SessionAttach atc)
+    public void sessionAttach(final ServerConnection conn, final SessionAttach atc)
     {
         ServerConnection serverConnection = (ServerConnection) conn;
         assertState(serverConnection, ConnectionState.OPEN);
 
-        SessionDelegate serverSessionDelegate = new ServerSessionDelegate();
+        ServerSessionDelegate serverSessionDelegate = new ServerSessionDelegate();
 
         final ServerSession serverSession =
                 new ServerSession(conn, serverSessionDelegate, new Binary(atc.getName()), 0);
@@ -411,7 +465,7 @@ public class ServerConnectionDelegate extends ConnectionDelegate
             serverConnection.map(serverSession, atc.getChannel());
             serverConnection.registerSession(serverSession);
             serverSession.sendSessionAttached(atc.getName());
-            serverSession.setState(Session.State.OPEN);
+            serverSession.setState(ServerSession.State.OPEN);
         }
         else
         {
@@ -420,7 +474,7 @@ public class ServerConnectionDelegate extends ConnectionDelegate
         }
     }
 
-    private boolean isSessionNameUnique(final byte[] name, final Connection conn)
+    private boolean isSessionNameUnique(final byte[] name, final ServerConnection conn)
     {
         final ServerConnection sconn = (ServerConnection) conn;
         final Principal authorizedPrincipal = sconn.getAuthorizedPrincipal();
@@ -444,7 +498,7 @@ public class ServerConnectionDelegate extends ConnectionDelegate
     }
 
     @Override
-    public void connectionStartOk(Connection conn, ConnectionStartOk ok)
+    public void connectionStartOk(ServerConnection conn, ConnectionStartOk ok)
     {
         ServerConnection serverConnection = (ServerConnection)conn;
         assertState(serverConnection, ConnectionState.AWAIT_START_OK);
@@ -530,7 +584,7 @@ public class ServerConnectionDelegate extends ConnectionDelegate
         return _compressionSupported && _broker.isMessageCompressionEnabled();
     }
 
-    private void connectionAuthFailed(final Connection conn, Exception e)
+    private void connectionAuthFailed(final ServerConnection conn, Exception e)
     {
         ServerConnection serverConnection = (ServerConnection)conn;
         if (e != null)

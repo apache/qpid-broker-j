@@ -20,22 +20,35 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import static org.apache.qpid.server.protocol.v0_10.Connection.State.CLOSING;
+import static org.apache.qpid.server.protocol.v0_10.ServerConnection.State.CLOSED;
+import static org.apache.qpid.server.protocol.v0_10.ServerConnection.State.CLOSING;
+import static org.apache.qpid.server.protocol.v0_10.ServerConnection.State.NEW;
+import static org.apache.qpid.server.protocol.v0_10.ServerConnection.State.OPEN;
 
+import java.net.SocketAddress;
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
@@ -45,26 +58,25 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.session.AMQPSession;
-import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.transport.ConnectionClose;
-import org.apache.qpid.server.transport.ConnectionCloseCode;
-import org.apache.qpid.server.transport.ConnectionCloseOk;
-import org.apache.qpid.server.transport.ExecutionErrorCode;
-import org.apache.qpid.server.transport.ExecutionException;
-import org.apache.qpid.server.transport.Method;
-import org.apache.qpid.server.transport.ProtocolEvent;
-import org.apache.qpid.server.transport.ServerNetworkConnection;
+import org.apache.qpid.server.transport.*;
+import org.apache.qpid.server.transport.network.NetworkConnection;
+import org.apache.qpid.server.transport.util.Waiter;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
-public class ServerConnection extends Connection
+public class ServerConnection extends ConnectionInvoker implements ProtocolEventReceiver, ProtocolEventSender
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnection.class);
     private final Broker<?> _broker;
 
     private final long _connectionId;
     private final Object _reference = new Object();
     private final AmqpPort<?> _port;
     private final AtomicLong _lastIoTime = new AtomicLong();
+    final private Map<Binary,ServerSession> sessions = new HashMap<Binary,ServerSession>();
+    final private Map<Integer,ServerSession> channels = new ConcurrentHashMap<Integer,ServerSession>();
+    final private Object lock = new Object();
+    private final AtomicBoolean connectionLost = new AtomicBoolean(false);
     private boolean _blocking;
     private final Transport _transport;
 
@@ -74,6 +86,17 @@ public class ServerConnection extends Connection
     private final AMQPConnection_0_10 _amqpConnection;
     private boolean _ignoreFutureInput;
     private boolean _ignoreAllButConnectionCloseOk;
+    private NetworkConnection _networkConnection;
+    private FrameSizeObserver _frameSizeObserver;
+    private ServerConnectionDelegate delegate;
+    private ProtocolEventSender sender;
+    private State state = NEW;
+    private long timeout = 60000;  // TODO server side close does not require this
+    private ConnectionException error = null;
+    private int channelMax = 1;
+    private String locale;
+    private SocketAddress _remoteAddress;
+    private SocketAddress _localAddress;
 
     public ServerConnection(final long connectionId,
                             Broker<?> broker,
@@ -102,22 +125,32 @@ public class ServerConnection extends Connection
     @Override
     protected void invoke(Method method)
     {
-        super.invoke(method);
+        invokeSuper(method);
         if (method instanceof ConnectionClose)
         {
             _ignoreAllButConnectionCloseOk = true;
         }
     }
 
+    private void invokeSuper(Method method)
+    {
+        method.setChannel(0);
+        send(method);
+        if (!method.isBatch())
+        {
+            flush();
+        }
+    }
+
+
     EventLogger getEventLogger()
     {
         return _amqpConnection.getEventLogger();
     }
 
-    @Override
     protected void setState(State state)
     {
-        super.setState(state);
+        setStateSuper(state);
 
         if(state == State.CLOSING)
         {
@@ -130,10 +163,24 @@ public class ServerConnection extends Connection
         }
     }
 
-    @Override
+    private void setStateSuper(State state)
+    {
+        synchronized (lock)
+        {
+            this.state = state;
+            lock.notifyAll();
+        }
+    }
+
+
     public ServerConnectionDelegate getConnectionDelegate()
     {
-        return (ServerConnectionDelegate) super.getConnectionDelegate();
+        return (ServerConnectionDelegate) getConnectionDelegateSuper();
+    }
+
+    private ServerConnectionDelegate getConnectionDelegateSuper()
+    {
+        return delegate;
     }
 
     public AMQPConnection_0_10 getAmqpConnection()
@@ -209,7 +256,7 @@ public class ServerConnection extends Connection
     {
         try
         {
-            super.exception(t);
+            exceptionSuper(t);
         }
         finally
         {
@@ -223,6 +270,12 @@ public class ServerConnection extends Connection
             }
         }
     }
+
+    private void exceptionSuper(Throwable t)
+    {
+        exception(new ConnectionException(t));
+    }
+
 
     @Override
     public void received(final ProtocolEvent event)
@@ -253,12 +306,22 @@ public class ServerConnection extends Connection
                 @Override
                 public Void run()
                 {
-                    ServerConnection.super.received(event);
+                    receivedSuper(event);
                     return null;
                 }
             }, context);
         }
     }
+
+    private void receivedSuper(ProtocolEvent event)
+    {
+        if(LOGGER.isDebugEnabled())
+        {
+            LOGGER.debug("RECV: [{}] {}", this, String.valueOf(event));
+        }
+        event.delegate(this, delegate);
+    }
+
 
     void sendConnectionCloseAsync(final ConnectionCloseCode replyCode, final String message)
     {
@@ -307,13 +370,20 @@ public class ServerConnection extends Connection
         }
     }
 
-    @Override
-    public synchronized void registerSession(final Session ssn)
+    public synchronized void registerSession(final ServerSession ssn)
     {
-        super.registerSession(ssn);
+        registerSessionSuper(ssn);
         if(_blocking)
         {
             ((ServerSession)ssn).block();
+        }
+    }
+
+    private void registerSessionSuper(ServerSession ssn)
+    {
+        synchronized (lock)
+        {
+            sessions.put(ssn.getName(),ssn);
         }
     }
 
@@ -322,11 +392,16 @@ public class ServerConnection extends Connection
         return Collections.unmodifiableCollection(getChannels());
     }
 
-    @Override
     protected Collection<ServerSession> getChannels()
     {
-        return  (Collection<ServerSession>) super.getChannels();
+        return  (Collection<ServerSession>) getChannelsSuper();
     }
+
+    private Collection<ServerSession> getChannelsSuper()
+    {
+        return new ArrayList<>(channels.values());
+    }
+
 
     public void setAuthorizedSubject(final Subject authorizedSubject)
     {
@@ -349,7 +424,7 @@ public class ServerConnection extends Connection
         try
         {
             performDeleteTasks();
-            super.closed();
+            closedSuper();
         }
         finally
         {
@@ -362,9 +437,39 @@ public class ServerConnection extends Connection
 
     }
 
+    private void closedSuper()
+    {
+        if (state == OPEN)
+        {
+            exception(new ConnectionException("connection aborted"));
+        }
+
+        LOGGER.debug("connection closed: {}", this);
+
+        synchronized (lock)
+        {
+            List<ServerSession> values = new ArrayList<ServerSession>(channels.values());
+            for (ServerSession ssn : values)
+            {
+                ssn.closed();
+            }
+
+            try
+            {
+                sender.close();
+            }
+            catch(Exception e)
+            {
+                // ignore.
+            }
+            sender = null;
+            setState(CLOSED);
+        }
+    }
+
     private void markAllSessionsClosed()
     {
-        for (Session ssn :  getChannels())
+        for (ServerSession ssn :  getChannels())
         {
             final ServerSession session = (ServerSession) ssn;
             ((ServerSession) ssn).setClose(true);
@@ -374,7 +479,7 @@ public class ServerConnection extends Connection
 
     public void receivedComplete()
     {
-        for (Session ssn : getChannels())
+        for (ServerSession ssn : getChannels())
         {
             ((ServerSession)ssn).receivedComplete();
         }
@@ -384,8 +489,23 @@ public class ServerConnection extends Connection
     public void send(ProtocolEvent event)
     {
         _lastIoTime.set(System.currentTimeMillis());
-        super.send(event);
+        sendSuper(event);
     }
+
+    private void sendSuper(ProtocolEvent event)
+    {
+        if(LOGGER.isDebugEnabled())
+        {
+            LOGGER.debug("SEND: [{}] {}", this, String.valueOf(event));
+        }
+        ProtocolEventSender s = sender;
+        if (s == null)
+        {
+            throw new ConnectionException("connection closed");
+        }
+        s.send(event);
+    }
+
 
     public String getRemoteContainerName()
     {
@@ -427,6 +547,355 @@ public class ServerConnection extends Connection
     {
         return new ProcessPendingIterator(sessionsWithWork);
     }
+
+    public void setConnectionDelegate(ServerConnectionDelegate delegate)
+    {
+        this.delegate = delegate;
+    }
+
+    public ProtocolEventSender getSender()
+    {
+        return sender;
+    }
+
+    public void setSender(ProtocolEventSender sender)
+    {
+        this.sender = sender;
+    }
+
+    protected void setLocale(String locale)
+    {
+        this.locale = locale;
+    }
+
+    String getLocale()
+    {
+        return locale;
+    }
+
+    public void removeSession(ServerSession ssn)
+    {
+        synchronized (lock)
+        {
+            sessions.remove(ssn.getName());
+        }
+    }
+
+    @Override
+    public void flush()
+    {
+        if(LOGGER.isDebugEnabled())
+        {
+            LOGGER.debug("FLUSH: [{}]", this);
+        }
+        final ProtocolEventSender theSender = sender;
+        if(theSender != null)
+        {
+            theSender.flush();
+        }
+    }
+
+    public void dispatch(Method method)
+    {
+        int channel = method.getChannel();
+        ServerSession ssn = getSession(channel);
+        if(ssn != null)
+        {
+            ssn.received(method);
+        }
+        else
+        {
+            /*
+             * A peer receiving any other control on a detached transport MUST discard it and
+             * send a session.detached with the "not-attached" reason code.
+             */
+            if(LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("Control received on unattached channel : {}", channel);
+            }
+            invokeSessionDetached(channel, SessionDetachCode.NOT_ATTACHED);
+        }
+    }
+
+    public int getChannelMax()
+    {
+        return channelMax;
+    }
+
+    protected void setChannelMax(int max)
+    {
+        channelMax = max;
+    }
+
+    private int map(ServerSession ssn)
+    {
+        synchronized (lock)
+        {
+            //For a negotiated channelMax N, there are channels 0 to N-1 available.
+            for (int i = 0; i < getChannelMax(); i++)
+            {
+                if (!channels.containsKey(i))
+                {
+                    map(ssn, i);
+                    return i;
+                }
+            }
+
+            throw new RuntimeException("no more channels available");
+        }
+    }
+
+    protected void map(ServerSession ssn, int channel)
+    {
+        synchronized (lock)
+        {
+            channels.put(channel, ssn);
+            ssn.setChannel(channel);
+        }
+    }
+
+    void unmap(ServerSession ssn)
+    {
+        synchronized (lock)
+        {
+            channels.remove(ssn.getChannel());
+        }
+    }
+
+    public ServerSession getSession(int channel)
+    {
+        synchronized (lock)
+        {
+            return channels.get(channel);
+        }
+    }
+
+    public void resume()
+    {
+        synchronized (lock)
+        {
+            for (ServerSession ssn : sessions.values())
+            {
+                map(ssn);
+                ssn.resume();
+            }
+
+            setState(OPEN);
+        }
+    }
+
+    public void exception(ConnectionException e)
+    {
+        connectionLost.set(true);
+        synchronized (lock)
+        {
+            switch (state)
+            {
+            case OPENING:
+            case CLOSING:
+                error = e;
+                lock.notifyAll();
+                return;
+            }
+        }
+    }
+
+    public void closeCode(ConnectionClose close)
+    {
+        synchronized (lock)
+        {
+            ConnectionCloseCode code = close.getReplyCode();
+            if (code != ConnectionCloseCode.NORMAL)
+            {
+                exception(new ConnectionException(close));
+            }
+        }
+    }
+
+    @Override
+    public void close()
+    {
+        close(ConnectionCloseCode.NORMAL, null);
+    }
+
+    protected void sendConnectionClose(ConnectionCloseCode replyCode, String replyText, Option... _options)
+    {
+        connectionClose(replyCode, replyText, _options);
+    }
+
+    public void close(ConnectionCloseCode replyCode, String replyText, Option ... _options)
+    {
+        synchronized (lock)
+        {
+            switch (state)
+            {
+            case OPEN:
+                state = CLOSING;
+                connectionClose(replyCode, replyText, _options);
+                Waiter w = new Waiter(lock, timeout);
+                while (w.hasTime() && state == CLOSING && error == null)
+                {
+                    w.await();
+                }
+
+                if (error != null)
+                {
+                    close(replyCode, replyText, _options);
+                    throw new ConnectionException(error);
+                }
+
+                switch (state)
+                {
+                case CLOSING:
+                    close(replyCode, replyText, _options);
+                    throw new ConnectionException("close() timed out");
+                case CLOSED:
+                    break;
+                default:
+                    throw new IllegalStateException(String.valueOf(state));
+                }
+                break;
+            case CLOSED:
+                break;
+            default:
+                if (sender != null)
+                {
+                    sender.close();
+                    w = new Waiter(lock, timeout);
+                    while (w.hasTime() && sender != null && error == null)
+                    {
+                        w.await();
+                    }
+
+                    if (error != null)
+                    {
+                        throw new ConnectionException(error);
+                    }
+
+                    if (sender != null)
+                    {
+                        throw new ConnectionException("close() timed out");
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("conn:%x", System.identityHashCode(this));
+    }
+
+    protected boolean isConnectionLost()
+    {
+        return connectionLost.get();
+    }
+
+    public boolean hasSessionWithName(final byte[] name)
+    {
+        return sessions.containsKey(new Binary(name));
+    }
+
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return _remoteAddress;
+    }
+
+    public SocketAddress getLocalAddress()
+    {
+        return _localAddress;
+    }
+
+    protected void setRemoteAddress(SocketAddress remoteAddress)
+    {
+        _remoteAddress = remoteAddress;
+    }
+
+    protected void setLocalAddress(SocketAddress localAddress)
+    {
+        _localAddress = localAddress;
+    }
+
+    private void invokeSessionDetached(int channel, SessionDetachCode sessionDetachCode)
+    {
+        SessionDetached sessionDetached = new SessionDetached();
+        sessionDetached.setChannel(channel);
+        sessionDetached.setCode(sessionDetachCode);
+        invoke(sessionDetached);
+    }
+
+    protected void doHeartBeat()
+    {
+        connectionHeartbeat();
+    }
+
+    public void setNetworkConnection(NetworkConnection network)
+    {
+        _networkConnection = network;
+    }
+
+    public NetworkConnection getNetworkConnection()
+    {
+        return _networkConnection;
+    }
+
+    public void setMaxFrameSize(final int maxFrameSize)
+    {
+        if(_frameSizeObserver != null)
+        {
+            _frameSizeObserver.setMaxFrameSize(maxFrameSize);
+        }
+    }
+
+    public void addFrameSizeObserver(final FrameSizeObserver frameSizeObserver)
+    {
+        if(_frameSizeObserver == null)
+        {
+            _frameSizeObserver = frameSizeObserver;
+        }
+        else
+        {
+            final FrameSizeObserver currentObserver = _frameSizeObserver;
+            _frameSizeObserver = new FrameSizeObserver()
+                                    {
+                                        @Override
+                                        public void setMaxFrameSize(final int frameSize)
+                                        {
+                                            currentObserver.setMaxFrameSize(frameSize);
+                                            frameSizeObserver.setMaxFrameSize(frameSize);
+                                        }
+                                    };
+        }
+    }
+
+    public boolean isClosing()
+    {
+        synchronized (lock)
+        {
+            return state == CLOSING || state == CLOSED;
+        }
+    }
+
+    protected void sendConnectionSecure(byte[] challenge, Option ... options)
+    {
+        super.connectionSecure(challenge, options);
+    }
+
+    protected void sendConnectionTune(int channelMax, int maxFrameSize, int heartbeatMin, int heartbeatMax, Option ... options)
+    {
+        super.connectionTune(channelMax, maxFrameSize, heartbeatMin, heartbeatMax, options);
+    }
+
+    protected void sendConnectionStart(final Map<String, Object> clientProperties,
+                                       final List<Object> mechanisms,
+                                       final List<Object> locales, final Option... options)
+    {
+        super.connectionStart(clientProperties, mechanisms, locales, options);
+    }
+
+    public enum State { NEW, CLOSED, OPENING, OPEN, CLOSING, CLOSE_RCVD, RESUMING }
 
     private class ProcessPendingIterator implements Iterator<Runnable>
     {
