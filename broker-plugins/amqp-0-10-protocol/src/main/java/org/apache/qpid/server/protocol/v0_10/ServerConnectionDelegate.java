@@ -50,13 +50,6 @@ import org.apache.qpid.server.transport.*;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
-/*
-
-Method ConnectionDelegate.connectionClose(ServerConnection, ConnectionClose) is already overridden in class org.apache.qpid.server.protocol.v0_10.ServerConnectionDelegate. Method will not be pushed down to that class.
-
-
-
- */
 public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> implements ProtocolDelegate<ServerConnection>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnectionDelegate.class);

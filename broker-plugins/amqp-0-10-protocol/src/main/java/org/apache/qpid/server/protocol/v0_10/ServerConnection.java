@@ -60,11 +60,10 @@ import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.*;
 import org.apache.qpid.server.transport.network.NetworkConnection;
-import org.apache.qpid.server.transport.util.Waiter;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
-public class ServerConnection extends ConnectionInvoker implements ProtocolEventReceiver, ProtocolEventSender
+public class ServerConnection extends ConnectionInvoker
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnection.class);
     private final Broker<?> _broker;
@@ -91,8 +90,6 @@ public class ServerConnection extends ConnectionInvoker implements ProtocolEvent
     private ServerConnectionDelegate delegate;
     private ProtocolEventSender sender;
     private State state = NEW;
-    private long timeout = 60000;  // TODO server side close does not require this
-    private ConnectionException error = null;
     private int channelMax = 1;
     private String locale;
     private SocketAddress _remoteAddress;
@@ -251,7 +248,6 @@ public class ServerConnection extends ConnectionInvoker implements ProtocolEvent
 
     }
 
-    @Override
     public void exception(final Throwable t)
     {
         try
@@ -277,7 +273,6 @@ public class ServerConnection extends ConnectionInvoker implements ProtocolEvent
     }
 
 
-    @Override
     public void received(final ProtocolEvent event)
     {
         _lastIoTime.set(System.currentTimeMillis());
@@ -418,7 +413,6 @@ public class ServerConnection extends ConnectionInvoker implements ProtocolEvent
         return _connectionId;
     }
 
-    @Override
     public void closed()
     {
         try
@@ -485,7 +479,6 @@ public class ServerConnection extends ConnectionInvoker implements ProtocolEvent
         }
     }
 
-    @Override
     public void send(ProtocolEvent event)
     {
         _lastIoTime.set(System.currentTimeMillis());
@@ -581,7 +574,6 @@ public class ServerConnection extends ConnectionInvoker implements ProtocolEvent
         }
     }
 
-    @Override
     public void flush()
     {
         if(LOGGER.isDebugEnabled())
@@ -693,7 +685,6 @@ public class ServerConnection extends ConnectionInvoker implements ProtocolEvent
             {
             case OPENING:
             case CLOSING:
-                error = e;
                 lock.notifyAll();
                 return;
             }
@@ -712,74 +703,9 @@ public class ServerConnection extends ConnectionInvoker implements ProtocolEvent
         }
     }
 
-    @Override
-    public void close()
-    {
-        close(ConnectionCloseCode.NORMAL, null);
-    }
-
     protected void sendConnectionClose(ConnectionCloseCode replyCode, String replyText, Option... _options)
     {
         connectionClose(replyCode, replyText, _options);
-    }
-
-    public void close(ConnectionCloseCode replyCode, String replyText, Option ... _options)
-    {
-        synchronized (lock)
-        {
-            switch (state)
-            {
-            case OPEN:
-                state = CLOSING;
-                connectionClose(replyCode, replyText, _options);
-                Waiter w = new Waiter(lock, timeout);
-                while (w.hasTime() && state == CLOSING && error == null)
-                {
-                    w.await();
-                }
-
-                if (error != null)
-                {
-                    close(replyCode, replyText, _options);
-                    throw new ConnectionException(error);
-                }
-
-                switch (state)
-                {
-                case CLOSING:
-                    close(replyCode, replyText, _options);
-                    throw new ConnectionException("close() timed out");
-                case CLOSED:
-                    break;
-                default:
-                    throw new IllegalStateException(String.valueOf(state));
-                }
-                break;
-            case CLOSED:
-                break;
-            default:
-                if (sender != null)
-                {
-                    sender.close();
-                    w = new Waiter(lock, timeout);
-                    while (w.hasTime() && sender != null && error == null)
-                    {
-                        w.await();
-                    }
-
-                    if (error != null)
-                    {
-                        throw new ConnectionException(error);
-                    }
-
-                    if (sender != null)
-                    {
-                        throw new ConnectionException("close() timed out");
-                    }
-                }
-                break;
-            }
-        }
     }
 
     @Override

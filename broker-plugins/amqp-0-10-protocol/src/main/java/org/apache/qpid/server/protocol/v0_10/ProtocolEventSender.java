@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,13 +17,15 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.transport;
+package org.apache.qpid.server.protocol.v0_10;
 
-public interface ProtocolEventReceiver
+import org.apache.qpid.server.transport.ProtocolEvent;
+
+public interface ProtocolEventSender
 {
-    void received(ProtocolEvent msg);
+    void send(ProtocolEvent msg);
 
-    void exception(Throwable t);
+    void flush();
 
-    void closed();
+    void close();
 }

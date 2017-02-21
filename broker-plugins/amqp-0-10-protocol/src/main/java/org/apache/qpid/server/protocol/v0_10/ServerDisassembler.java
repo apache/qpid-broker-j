@@ -42,7 +42,6 @@ import org.apache.qpid.server.transport.Method;
 import org.apache.qpid.server.transport.ProtocolDelegate;
 import org.apache.qpid.server.transport.ProtocolError;
 import org.apache.qpid.server.transport.ProtocolEvent;
-import org.apache.qpid.server.transport.ProtocolEventSender;
 import org.apache.qpid.server.transport.ProtocolHeader;
 import org.apache.qpid.server.transport.SegmentType;
 import org.apache.qpid.server.transport.Struct;
