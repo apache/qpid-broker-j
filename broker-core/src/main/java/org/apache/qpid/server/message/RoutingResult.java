@@ -88,56 +88,44 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
     public int send(ServerTransaction txn,
                     final Action<? super MessageInstance> postEnqueueAction)
     {
+        final ArrayList<BaseQueue> queues = new ArrayList<>();
         for(BaseQueue q : _queues)
         {
-            if(!_message.isResourceAcceptable(q))
+            if(_message.isResourceAcceptable(q) && !_message.isReferenced(q))
             {
-                return 0;
+                queues.add(q);
             }
         }
-        final BaseQueue[] baseQueues;
 
-        if(_message.isReferenced())
+        if (!queues.isEmpty())
         {
-            ArrayList<BaseQueue> uniqueQueues = new ArrayList<>(_queues.size());
-            for(BaseQueue q : _queues)
+            txn.enqueue(queues, _message, new ServerTransaction.EnqueueAction()
             {
-                if(!_message.isReferenced(q))
-                {
-                    uniqueQueues.add(q);
-                }
-            }
-            baseQueues = uniqueQueues.toArray(new BaseQueue[uniqueQueues.size()]);
-        }
-        else
-        {
-            baseQueues = _queues.toArray(new BaseQueue[_queues.size()]);
-        }
-        txn.enqueue(_queues, _message, new ServerTransaction.EnqueueAction()
-        {
-            MessageReference _reference = _message.newReference();
+                MessageReference _reference = _message.newReference();
 
-            public void postCommit(MessageEnqueueRecord... records)
-            {
-                try
+                public void postCommit(MessageEnqueueRecord... records)
                 {
-                    for(int i = 0; i < baseQueues.length; i++)
+                    try
                     {
-                        baseQueues[i].enqueue(_message, postEnqueueAction, records[i]);
+                        for (int i = 0; i < queues.size(); i++)
+                        {
+                            queues.get(i).enqueue(_message, postEnqueueAction, records[i]);
+                        }
+                    }
+                    finally
+                    {
+                        _reference.release();
                     }
                 }
-                finally
+
+                public void onRollback()
                 {
                     _reference.release();
                 }
-            }
+            });
+        }
 
-            public void onRollback()
-            {
-                _reference.release();
-            }
-        });
-        return _queues.size();
+        return queues.size();
     }
 
     public boolean hasRoutes()
