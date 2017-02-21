@@ -24,14 +24,10 @@ import java.util.Collection;
 import java.util.Set;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.framing.AMQFrameDecodingException;
-import org.apache.qpid.server.framing.AMQProtocolVersionException;
-import org.apache.qpid.server.framing.AMQShortString;
-import org.apache.qpid.server.framing.BasicContentHeaderProperties;
-import org.apache.qpid.server.framing.ContentHeaderBody;
-import org.apache.qpid.server.framing.EncodingUtils;
-import org.apache.qpid.server.framing.FieldTable;
-import org.apache.qpid.server.framing.MessagePublishInfo;
+import org.apache.qpid.server.protocol.v0_8.transport.AMQProtocolVersionException;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
+import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
+import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.StorableMessageMetaData;

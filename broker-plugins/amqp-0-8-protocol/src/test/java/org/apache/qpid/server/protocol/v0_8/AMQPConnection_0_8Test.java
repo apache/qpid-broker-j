@@ -30,10 +30,8 @@ import java.util.Collections;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.framing.AMQShortString;
-import org.apache.qpid.server.framing.FieldTable;
-import org.apache.qpid.server.framing.ProtocolInitiation;
-import org.apache.qpid.server.framing.ProtocolVersion;
+import org.apache.qpid.server.protocol.v0_8.transport.ProtocolInitiation;
+import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.properties.ConnectionStartProperties;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;

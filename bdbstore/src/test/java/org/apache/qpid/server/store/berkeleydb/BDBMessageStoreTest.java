@@ -29,10 +29,10 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.framing.AMQShortString;
-import org.apache.qpid.server.framing.BasicContentHeaderProperties;
-import org.apache.qpid.server.framing.ContentHeaderBody;
-import org.apache.qpid.server.framing.MessagePublishInfo;
+import org.apache.qpid.server.protocol.v0_8.AMQShortString;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
+import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
+import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.v0_10.MessageMetaDataType_0_10;
 import org.apache.qpid.server.protocol.v0_10.MessageMetaData_0_10;

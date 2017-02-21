@@ -25,11 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.framing.AMQFrameDecodingException;
-import org.apache.qpid.server.framing.AMQShortString;
-import org.apache.qpid.server.framing.ContentHeaderBody;
-import org.apache.qpid.server.framing.EncodingUtils;
-import org.apache.qpid.server.framing.MessagePublishInfo;
+import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
+import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;

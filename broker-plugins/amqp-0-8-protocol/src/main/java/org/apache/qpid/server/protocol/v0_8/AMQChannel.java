@@ -51,11 +51,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.AMQConnectionException;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.common.AMQPFilterTypes;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
-import org.apache.qpid.server.framing.*;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -67,7 +65,6 @@ import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogMessage;
-import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -80,7 +77,9 @@ import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.protocol.CapacityChecker;
+import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.UnacknowledgedMessageMap.Visitor;
+import org.apache.qpid.server.protocol.v0_8.transport.*;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.session.AbstractAMQPSession;
 import org.apache.qpid.server.store.MessageHandle;
@@ -97,7 +96,6 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
-import org.apache.qpid.server.transport.network.Ticker;
 
 public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0_8>
         implements AsyncAutoCommitTransaction.FutureRecorder,
@@ -474,7 +472,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                             if (_confirmOnPublish)
                             {
                                 BasicAckBody responseBody = _connection.getMethodRegistry()
-                                        .createBasicAckBody(_confirmedMessageCounter, false);
+                                                                       .createBasicAckBody(_confirmedMessageCounter, false);
                                 _connection.writeFrame(responseBody.generateFrame(_channelId));
                             }
                             incrementUncommittedMessageSize(storedMessage);
@@ -2935,7 +2933,8 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
                         if (!nowait)
                         {
-                            ExchangeDeleteOkBody responseBody = _connection.getMethodRegistry().createExchangeDeleteOkBody();
+                            ExchangeDeleteOkBody
+                                    responseBody = _connection.getMethodRegistry().createExchangeDeleteOkBody();
                             _connection.writeFrame(responseBody.generateFrame(getChannelId()));
                         }
                     }

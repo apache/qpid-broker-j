@@ -29,8 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.codec.ServerDecoder;
-import org.apache.qpid.server.framing.AMQFrameDecodingException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class BrokerDecoder extends ServerDecoder

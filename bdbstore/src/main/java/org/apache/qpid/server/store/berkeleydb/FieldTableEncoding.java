@@ -25,7 +25,7 @@ import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.je.DatabaseException;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.framing.FieldTable;
+import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.store.berkeleydb.tuple.ByteBufferBinding;
 
 import java.nio.ByteBuffer;

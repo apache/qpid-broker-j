@@ -32,11 +32,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.framing.AMQShortString;
-import org.apache.qpid.server.framing.BasicContentHeaderProperties;
-import org.apache.qpid.server.framing.ContentHeaderBody;
-import org.apache.qpid.server.framing.FieldTable;
-import org.apache.qpid.server.framing.MessagePublishInfo;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
+import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
+import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.message.internal.InternalMessageHeader;
 import org.apache.qpid.server.model.NamedAddressSpace;

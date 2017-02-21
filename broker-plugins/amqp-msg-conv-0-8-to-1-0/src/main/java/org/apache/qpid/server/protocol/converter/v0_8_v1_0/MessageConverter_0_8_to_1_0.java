@@ -24,9 +24,9 @@ import java.net.URISyntaxException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.qpid.server.framing.AMQShortString;
-import org.apache.qpid.server.framing.BasicContentHeaderProperties;
-import org.apache.qpid.server.framing.FieldTable;
+import org.apache.qpid.server.protocol.v0_8.AMQShortString;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
+import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v1_0.MessageConverter_to_1_0;

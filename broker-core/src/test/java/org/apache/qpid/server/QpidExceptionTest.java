@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server;
 
-import org.apache.qpid.server.framing.AMQFrameDecodingException;
-import org.apache.qpid.server.framing.AMQShortString;
+import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
+import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.QpidTestCase;
 

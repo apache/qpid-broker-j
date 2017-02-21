@@ -24,8 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.qpid.server.QpidException;
 import org.apache.qpid.server.common.AMQPFilterTypes;
-import org.apache.qpid.server.framing.AMQShortString;
-import org.apache.qpid.server.framing.FieldTable;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
 import org.apache.qpid.server.flow.FlowCreditManager;
 import org.apache.qpid.server.message.InstanceProperties;

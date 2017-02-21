@@ -26,10 +26,9 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.server.framing.AMQDataBlock;
-import org.apache.qpid.server.framing.AMQShortString;
-import org.apache.qpid.server.framing.ContentHeaderBody;
-import org.apache.qpid.server.framing.MessagePublishInfo;
+import org.apache.qpid.server.protocol.v0_8.transport.AMQDataBlock;
+import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
+import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageContentSource;
 import org.apache.qpid.server.message.ServerMessage;
