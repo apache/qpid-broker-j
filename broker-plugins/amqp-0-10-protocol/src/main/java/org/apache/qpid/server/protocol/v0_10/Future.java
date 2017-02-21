@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,7 +17,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.transport;
+package org.apache.qpid.server.protocol.v0_10;
 
 
 /**
@@ -30,7 +29,7 @@ package org.apache.qpid.server.transport;
 public interface Future<T>
 {
 
-    T get();
+    T get(long timeout);
 
     boolean isDone();
 

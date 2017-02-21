@@ -28,7 +28,6 @@ import static org.apache.qpid.server.protocol.v0_10.ServerSession.State.NEW;
 import static org.apache.qpid.server.protocol.v0_10.ServerSession.State.OPEN;
 import static org.apache.qpid.server.protocol.v0_10.ServerSession.State.RESUMING;
 import static org.apache.qpid.server.transport.Option.COMPLETED;
-import static org.apache.qpid.server.transport.Option.SYNC;
 import static org.apache.qpid.server.transport.Option.TIMELY_REPLY;
 import static org.apache.qpid.server.util.Serial.ge;
 import static org.apache.qpid.server.util.Serial.gt;
@@ -140,7 +139,6 @@ public class ServerSession extends SessionInvoker
     private int channel;
     private ServerSessionDelegate delegate;
     private SessionListener listener = new DefaultSessionListener();
-    private boolean autoSync = false;
     private boolean incomingInit;
     // incoming command count
     private int commandsIn;
@@ -153,7 +151,6 @@ public class ServerSession extends SessionInvoker
     private int commandBytes = 0;
     private int byteLimit = Integer.getInteger("qpid.session.byte_limit", 1024 * 1024);
     private int maxComplete = commandsOut - 1;
-    private boolean needSync = false;
     private State state = NEW;
     private Semaphore credit = new Semaphore(0);
     private Thread resumer = null;
@@ -557,12 +554,8 @@ public class ServerSession extends SessionInvoker
                     Thread current = Thread.currentThread();
                     if (!current.equals(resumer) )
                     {
-                        Waiter w = new Waiter(commandsLock, timeout);
-                        while (w.hasTime() && (state != OPEN && state != CLOSED))
-                        {
-                            checkFailoverRequired("Command was interrupted because of failover, before being sent");
-                            w.await();
-                        }
+                        // Should not happen
+                        throw new SessionException(String.format("Unexpected state %s", state));
                     }
                 }
 
@@ -606,32 +599,8 @@ public class ServerSession extends SessionInvoker
 
                 if (isFull(next))
                 {
-                    Waiter w = new Waiter(commandsLock, timeout);
-                    while (w.hasTime() && isFull(next) && state != CLOSED)
-                    {
-                        if (state == OPEN || state == RESUMING)
-                        {
-                            try
-                            {
-                                sessionFlush(COMPLETED);
-                            }
-                            catch (SenderException e)
-                            {
-                                if (!closing)
-                                {
-                                    // if expiry is > 0 then this will
-                                    // happen again on resume
-                                    LOGGER.error("error sending flush (full replay buffer)", e);
-                                }
-                                else
-                                {
-                                    e.rethrow();
-                                }
-                            }
-                        }
-                        checkFailoverRequired("Command was interrupted because of failover, before being sent");
-                        w.await();
-                    }
+                    // Should not happen
+                    throw new SessionException(String.format("Command buffer full next: %d", next));
                 }
 
                 if (state == CLOSED)
@@ -666,11 +635,6 @@ public class ServerSession extends SessionInvoker
                     setCommand(next, m);
                     commandBytes += m.getBodySize();
                 }
-                if (autoSync)
-                {
-                    m.setSync(true);
-                }
-                needSync = !m.isSync();
 
                 try
                 {
@@ -688,10 +652,6 @@ public class ServerSession extends SessionInvoker
                     {
                         e.rethrow();
                     }
-                }
-                if (autoSync)
-                {
-                    sync();
                 }
 
                 // flush every 64K commands to avoid ambiguity on
@@ -735,54 +695,6 @@ public class ServerSession extends SessionInvoker
     protected boolean shouldIssueFlush(int next)
     {
         return (next % 65536) == 0;
-    }
-
-    public void sync()
-    {
-        sync(timeout);
-    }
-
-    public void sync(long timeout)
-    {
-        LOGGER.debug("{} sync()", this);
-        synchronized (commandsLock)
-        {
-            int point = commandsOut - 1;
-
-            if (needSync && lt(maxComplete, point))
-            {
-                executionSync(SYNC);
-            }
-
-            Waiter w = new Waiter(commandsLock, timeout);
-            while (w.hasTime() && state != CLOSED && lt(maxComplete, point))
-            {
-                checkFailoverRequired("Session sync was interrupted by failover.");
-                if(LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug("{}   waiting for[{}]: {}, {}", this, point, maxComplete, commands);
-                }
-                w.await();
-            }
-
-            if (lt(maxComplete, point))
-            {
-                if (state != CLOSED)
-                {
-                    throw new SessionException(
-                            String.format("timed out waiting for sync: complete = %s, point = %s",
-                                    maxComplete, point));
-                }
-                else
-                {
-                    org.apache.qpid.server.transport.ExecutionException ee = getException();
-                    if (ee != null)
-                    {
-                        throw new SessionException(ee);
-                    }
-                }
-            }
-        }
     }
 
     void result(int command, Struct result)
@@ -2049,16 +1961,12 @@ public class ServerSession extends SessionInvoker
             }
         }
 
-        public T get()
-        {
-            return get(timeout);
-        }
-
         public boolean isDone()
         {
             return result != null;
         }
 
+        @Override
         public String toString()
         {
             return String.format("Future(%s)", isDone() ? result : klass);
