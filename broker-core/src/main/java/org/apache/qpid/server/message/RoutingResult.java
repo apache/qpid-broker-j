@@ -88,44 +88,56 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
     public int send(ServerTransaction txn,
                     final Action<? super MessageInstance> postEnqueueAction)
     {
-        final ArrayList<BaseQueue> queues = new ArrayList<>();
         for(BaseQueue q : _queues)
         {
-            if(_message.isResourceAcceptable(q) && !_message.isReferenced(q))
+            if(!_message.isResourceAcceptable(q))
             {
-                queues.add(q);
+                return 0;
             }
         }
+        final BaseQueue[] baseQueues;
 
-        if (!queues.isEmpty())
+        if(_message.isReferenced())
         {
-            txn.enqueue(queues, _message, new ServerTransaction.EnqueueAction()
+            ArrayList<BaseQueue> uniqueQueues = new ArrayList<>(_queues.size());
+            for(BaseQueue q : _queues)
             {
-                MessageReference _reference = _message.newReference();
-
-                public void postCommit(MessageEnqueueRecord... records)
+                if(!_message.isReferenced(q))
                 {
-                    try
+                    uniqueQueues.add(q);
+                }
+            }
+            baseQueues = uniqueQueues.toArray(new BaseQueue[uniqueQueues.size()]);
+        }
+        else
+        {
+            baseQueues = _queues.toArray(new BaseQueue[_queues.size()]);
+        }
+        txn.enqueue(_queues, _message, new ServerTransaction.EnqueueAction()
+        {
+            MessageReference _reference = _message.newReference();
+
+            public void postCommit(MessageEnqueueRecord... records)
+            {
+                try
+                {
+                    for(int i = 0; i < baseQueues.length; i++)
                     {
-                        for (int i = 0; i < queues.size(); i++)
-                        {
-                            queues.get(i).enqueue(_message, postEnqueueAction, records[i]);
-                        }
-                    }
-                    finally
-                    {
-                        _reference.release();
+                        baseQueues[i].enqueue(_message, postEnqueueAction, records[i]);
                     }
                 }
-
-                public void onRollback()
+                finally
                 {
                     _reference.release();
                 }
-            });
-        }
+            }
 
-        return queues.size();
+            public void onRollback()
+            {
+                _reference.release();
+            }
+        });
+        return _queues.size();
     }
 
     public boolean hasRoutes()
