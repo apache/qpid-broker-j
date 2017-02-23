@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 
 public class QueueArgumentsConverter
@@ -92,8 +93,7 @@ public class QueueArgumentsConverter
 
         ATTRIBUTE_MAPPINGS.put(X_QPID_MAXIMUM_DELIVERY_COUNT, Queue.MAXIMUM_DELIVERY_ATTEMPTS);
 
-        ATTRIBUTE_MAPPINGS.put(X_QPID_CAPACITY, Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES);
-        ATTRIBUTE_MAPPINGS.put(X_QPID_FLOW_RESUME_CAPACITY, Queue.QUEUE_FLOW_RESUME_SIZE_BYTES);
+        ATTRIBUTE_MAPPINGS.put(X_QPID_CAPACITY, Queue.MAXIMUM_QUEUE_DEPTH_BYTES);
 
         ATTRIBUTE_MAPPINGS.put(QPID_QUEUE_SORT_KEY, SortedQueue.SORT_KEY);
         ATTRIBUTE_MAPPINGS.put(QPID_LAST_VALUE_QUEUE_KEY, LastValueQueue.LVQ_KEY);
@@ -116,8 +116,8 @@ public class QueueArgumentsConverter
         ATTRIBUTE_MAPPINGS.put(QPID_LIFETIME_POLICY, Queue.LIFETIME_POLICY);
 
         ATTRIBUTE_MAPPINGS.put(QPID_POLICY_TYPE, Queue.OVERFLOW_POLICY);
-        ATTRIBUTE_MAPPINGS.put(QPID_MAX_COUNT, Queue.MAX_COUNT);
-        ATTRIBUTE_MAPPINGS.put(QPID_MAX_SIZE, Queue.MAX_SIZE);
+        ATTRIBUTE_MAPPINGS.put(QPID_MAX_COUNT, Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES);
+        ATTRIBUTE_MAPPINGS.put(QPID_MAX_SIZE, Queue.MAXIMUM_QUEUE_DEPTH_BYTES);
     }
 
 
@@ -141,6 +141,7 @@ public class QueueArgumentsConverter
             {
                 modelArguments.put(Queue.OVERFLOW_POLICY, OverflowPolicy.valueOf(String.valueOf(wireArguments.get(QPID_POLICY_TYPE)).toUpperCase()));
             }
+
             if(wireArguments.containsKey(QPID_SHARED_MSG_GROUP))
             {
                 modelArguments.put(Queue.MESSAGE_GROUP_SHARED_GROUPS,
@@ -154,6 +155,26 @@ public class QueueArgumentsConverter
             if(wireArguments.get(QPID_NO_LOCAL) != null)
             {
                 modelArguments.put(Queue.NO_LOCAL, Boolean.parseBoolean(wireArguments.get(QPID_NO_LOCAL).toString()));
+            }
+
+            if (wireArguments.get(X_QPID_FLOW_RESUME_CAPACITY) != null && wireArguments.get(X_QPID_CAPACITY) != null)
+            {
+                double resumeCapacity = Integer.parseInt(wireArguments.get(X_QPID_FLOW_RESUME_CAPACITY).toString());
+                double maximumCapacity = Integer.parseInt(wireArguments.get(X_QPID_CAPACITY).toString());
+                if (resumeCapacity > maximumCapacity)
+                {
+                    throw new ConnectionScopedRuntimeException(
+                            "Flow resume size can't be greater than flow control size");
+                }
+                Map<String, String> context = (Map<String, String>) modelArguments.get(Queue.CONTEXT);
+                if (context == null)
+                {
+                    context = new HashMap<>();
+                    modelArguments.put(Queue.CONTEXT, context);
+                }
+                double ratio = resumeCapacity / maximumCapacity;
+                context.put(Queue.QUEUE_FLOW_RESUME_LIMIT, String.format("%.2f", ratio * 100.0));
+                modelArguments.put(Queue.OVERFLOW_POLICY, OverflowPolicy.PRODUCER_FLOW_CONTROL);
             }
 
         }

@@ -72,7 +72,6 @@ import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.framing.OversizeFrameException;
@@ -148,8 +147,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     private short _receivingChannel;
     private final short _sendingChannel;
-
-    private final CapacityCheckAction _capacityCheckAction = new CapacityCheckAction();
 
 
     // has to be a power of two
@@ -1888,11 +1885,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         _unacknowledgedMessages--;
     }
 
-    public CapacityCheckAction getCapacityCheckAction()
-    {
-        return _capacityCheckAction;
-    }
-
     @Override
     public String toString()
     {
@@ -2024,19 +2016,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             }
         }
         return primaryDomain;
-    }
-
-    private final class CapacityCheckAction implements Action<MessageInstance>
-    {
-        @Override
-        public void performAction(final MessageInstance entry)
-        {
-            TransactionLogResource queue = entry.getOwningResource();
-            if(queue instanceof CapacityChecker)
-            {
-                ((CapacityChecker)queue).checkCapacity(Session_1_0.this);
-            }
-        }
     }
 
     private final class BindingInfo

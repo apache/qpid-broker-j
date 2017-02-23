@@ -18,11 +18,10 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.protocol;
 
-import org.apache.qpid.server.session.AMQPSession;
+package org.apache.qpid.server.queue;
 
-public interface CapacityChecker
+public interface OverflowPolicyHandler
 {
-    void checkCapacity(AMQPSession<?,?> channel);
+    void checkOverflow();
 }

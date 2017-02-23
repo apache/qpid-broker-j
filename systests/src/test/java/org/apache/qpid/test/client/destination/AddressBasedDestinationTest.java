@@ -877,10 +877,12 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
         prod.send(ssn.createTextMessage("Test2"));
 
         TextMessage msg = (TextMessage)browseCons.receive(1000);
-        assertEquals("Didn't receive the first message",msg.getText(),"Test1");
+        assertNotNull("Didn't receive the first message", msg);
+        assertEquals("Unexpected first message", msg.getText(),"Test1");
 
         msg = (TextMessage)browseCons.receive(1000);
-        assertEquals("Didn't receive the first message",msg.getText(),"Test2");
+        assertNotNull("Didn't receive the second message", msg);
+        assertEquals("Unexpected second message",msg.getText(),"Test2");
 
         browseCons.close();
         prod.send(ssn.createTextMessage("Test3"));

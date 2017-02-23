@@ -207,12 +207,26 @@ abstract public class PriorityQueueList extends OrderedQueueEntryList
             for(PriorityQueueEntrySubList subList : _priorityLists)
             {
                 QueueEntry subListOldest = subList.getOldestEntry();
-                if (subListOldest != null)
+                if(oldest == null || (subListOldest != null && subListOldest.getMessage().getMessageNumber() < oldest.getMessage().getMessageNumber()))
                 {
-                    return subListOldest;
+                    oldest = subListOldest;
                 }
             }
             return oldest;
+        }
+
+        @Override
+        public QueueEntry getLesserOldestEntry()
+        {
+            for(PriorityQueueEntrySubList subList : _priorityLists)
+            {
+                QueueEntry subListLast = subList.getLesserOldestEntry();
+                if(subListLast != null)
+                {
+                    return subListLast;
+                }
+            }
+            return null;
         }
     }
 
@@ -244,6 +258,12 @@ abstract public class PriorityQueueList extends OrderedQueueEntryList
         public int getListPriority()
         {
             return _listPriority;
+        }
+
+        @Override
+        public QueueEntry getLesserOldestEntry()
+        {
+            return getOldestEntry();
         }
     }
 

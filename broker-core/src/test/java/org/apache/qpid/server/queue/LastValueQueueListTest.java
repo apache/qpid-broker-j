@@ -38,7 +38,6 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -208,6 +207,23 @@ public class LastValueQueueListTest extends QpidTestCase
         assertEquals(0, _list.getLatestValuesMap().size());
     }
 
+    public void testGetLesserOldestEntry()
+    {
+        LastValueQueueList queueEntryList = new LastValueQueueList(_queue, _queue.getQueueStatistics());
+
+        QueueEntry entry1 =  queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE1), null);
+        assertEquals("Unexpected last message", entry1, queueEntryList.getLesserOldestEntry());
+
+        QueueEntry entry2 =  queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE2), null);
+        assertEquals("Unexpected last message", entry1,  queueEntryList.getLesserOldestEntry());
+
+        QueueEntry entry3 =  queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE1), null);
+        assertEquals("Unexpected last message", entry2,  queueEntryList.getLesserOldestEntry());
+
+        queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE2), null);
+        assertEquals("Unexpected last message", entry3,  queueEntryList.getLesserOldestEntry());
+    }
+
     private int countEntries(LastValueQueueList list)
     {
         QueueEntryIterator iterator =
@@ -237,12 +253,4 @@ public class LastValueQueueListTest extends QpidTestCase
         return mockMessage;
     }
 
-    private Queue<?> createTestQueue()
-    {
-        Queue<?> queue = mock(Queue.class);
-        VirtualHost virtualHost = mock(VirtualHost.class);
-        when(queue.getVirtualHost()).thenReturn(virtualHost);
-
-        return queue;
-    }
 }

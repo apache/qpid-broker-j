@@ -23,6 +23,7 @@ org.apache.qpid.jndi.PropertiesFileInitialContextFactoryTest#*
 // Exclude Address based tests
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#*
 org.apache.qpid.test.client.destination.AddressBasedDestinationTest#*
+org.apache.qpid.test.client.queue.QueuePolicyTest#*
 
 // Exclude Tests requiring XA
 org.apache.qpid.test.unit.xa.FaultTest#*

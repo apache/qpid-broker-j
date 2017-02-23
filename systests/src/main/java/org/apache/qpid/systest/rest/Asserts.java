@@ -148,10 +148,8 @@ public class Asserts
                          ExclusivityPolicy.NONE.name(), queueData.get(Queue.EXCLUSIVE));
             assertEquals("Unexpected value of queue attribute " + Queue.MAXIMUM_DELIVERY_ATTEMPTS, 0,
                          queueData.get(Queue.MAXIMUM_DELIVERY_ATTEMPTS));
-            assertEquals("Unexpected value of queue attribute " + Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES, 0,
-                         queueData.get(Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES));
-            assertEquals("Unexpected value of queue attribute " + Queue.QUEUE_FLOW_RESUME_SIZE_BYTES, 0,
-                         queueData.get(Queue.QUEUE_FLOW_RESUME_SIZE_BYTES));
+            assertEquals("Unexpected value of queue attribute " + Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, -1,
+                         queueData.get(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES));
             assertEquals("Unexpected value of queue attribute " + Queue.QUEUE_FLOW_STOPPED, Boolean.FALSE,
                          queueData.get(Queue.QUEUE_FLOW_STOPPED));
         }

@@ -387,7 +387,8 @@ define(["dojo/_base/declare",
                         "owner",
                         "lifetimePolicy",
                         "overflowPolicy",
-                        "overflowPolicyQualifier",
+                        "maximumQueueDepthBytes",
+                        "maximumQueueDepthMessages",
                         "type",
                         "typeQualifier",
                         "alertRepeatGap",
@@ -418,8 +419,6 @@ define(["dojo/_base/declare",
                         "msgOutRate",
                         "bytesOutRate",
                         "bytesOutRateUnits",
-                        "queueFlowResumeSizeBytes",
-                        "queueFlowControlSizeBytes",
                         "maximumDeliveryAttempts",
                         "holdOnPublishEnabled",
                         "oldestMessageAge"]);
@@ -503,16 +502,8 @@ define(["dojo/_base/declare",
             }
 
             this["overflowPolicy"].innerHTML = entities.encode(this.queueData["overflowPolicy"]);
-            if (this.queueData["overflowPolicy"] == "NONE")
-            {
-                this.overflowPolicyQualifier.style.display = "none";
-            }
-            else if (this.queueData["overflowPolicy"] == "RING")
-            {
-                bytesDepth = formatter.formatBytes(this.queueData["maxSize"]);
-                this.overflowPolicyQualifier.innerHTML = "(Max count: " + entities.encode(String(this.queueData["maxCount"]))
-                                                    + ", Max Size: " + bytesDepth.value + " " + bytesDepth.units + ")";
-            }
+            this["maximumQueueDepthBytes"].innerHTML = this.queueData["maximumQueueDepthBytes"] ? entities.encode(new String(this.queueData["maximumQueueDepthBytes"])) : "";
+            this["maximumQueueDepthMessages"].innerHTML = this.queueData["maximumQueueDepthMessages"]  ? entities.encode(new String(this.queueData["maximumQueueDepthMessages"])) : "";
 
             if (this.queueData["messageGroupKey"])
             {
@@ -525,11 +516,6 @@ define(["dojo/_base/declare",
             {
                 this.messageGroups.style.display = "none";
             }
-
-            this.queueFlowControlSizeBytes.innerHTML =
-                entities.encode(String(this.queueData["queueFlowControlSizeBytes"]));
-            this.queueFlowResumeSizeBytes.innerHTML =
-                entities.encode(String(this.queueData["queueFlowResumeSizeBytes"]));
 
             this.oldestMessageAge.innerHTML = entities.encode(String(this.queueData["oldestMessageAge"] / 1000));
             var maximumDeliveryAttempts = this.queueData["maximumDeliveryAttempts"];

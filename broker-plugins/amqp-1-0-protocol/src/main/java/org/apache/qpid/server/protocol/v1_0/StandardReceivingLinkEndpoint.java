@@ -242,7 +242,7 @@ public class StandardReceivingLinkEndpoint extends ReceivingLinkEndpoint
                            .checkAuthorizedMessagePrincipal(serverMessage.getMessageHeader().getUserId());
                     getReceivingDestination().authorizePublish(session.getSecurityToken(), routingAddress);
 
-                    Outcome outcome = getReceivingDestination().send(serverMessage, routingAddress, transaction, session.getCapacityCheckAction());
+                    Outcome outcome = getReceivingDestination().send(serverMessage, routingAddress, transaction, null);
                     Source source = (Source) getSource();
 
                     DeliveryState resultantState;

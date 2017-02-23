@@ -607,16 +607,89 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
             }
             else if("Queue".equals(record.getType()))
             {
-                _queues.put(record.getId(), (String) record.getAttributes().get("name"));
-                if(record.getAttributes().containsKey("bindings"))
+                Map<String, Object> attributes = new HashMap<>(record.getAttributes());
+                Object queueFlowControlSizeBytes = attributes.remove("queueFlowControlSizeBytes");
+                Object queueFlowResumeSizeBytes = attributes.remove("queueFlowResumeSizeBytes");
+                if (queueFlowControlSizeBytes != null)
                 {
-                    _queueBindings.put(String.valueOf(record.getAttributes().get("name")),
-                                       (List<Map<String, Object>>) record.getAttributes().get("bindings"));
-                    Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
-                    updatedAttributes.remove("bindings");
-                    getUpdateMap().put(record.getId(), new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents()));
+                    long queueFlowControlSizeBytesValue = convertAttributeValueToLong("queueFlowControlSizeBytes",
+                                                                                      queueFlowControlSizeBytes);
+                    if (queueFlowControlSizeBytesValue > 0)
+                    {
+                        if (queueFlowResumeSizeBytes != null)
+                        {
+                            long queueFlowResumeSizeBytesValue =
+                                    convertAttributeValueToLong("queueFlowResumeSizeBytes", queueFlowResumeSizeBytes);
+                            double ratio = ((double) queueFlowResumeSizeBytesValue)
+                                           / ((double) queueFlowControlSizeBytesValue);
+                            String flowResumeLimit = String.format("%.2f", ratio * 100.0);
+
+                            Object context = attributes.get("context");
+                            Map<String, String> contextMap;
+                            if (context instanceof Map)
+                            {
+                                contextMap = (Map) context;
+                            }
+                            else
+                            {
+                                contextMap = new HashMap<>();
+                                attributes.put("context", contextMap);
+                            }
+                            contextMap.put("queue.queueFlowResumeLimit", flowResumeLimit);
+                        }
+                        attributes.put("overflowPolicy", "ProducerFlowControl");
+                        attributes.put("maximumQueueDepthBytes", queueFlowControlSizeBytes);
+                    }
+                }
+
+                if(attributes.containsKey("bindings"))
+                {
+                    _queueBindings.put(String.valueOf(attributes.get("name")),
+                                       (List<Map<String, Object>>) attributes.get("bindings"));
+                    attributes.remove("bindings");
+                }
+
+                _queues.put(record.getId(), (String) attributes.get("name"));
+
+                if (!attributes.equals(new HashMap<>(record.getAttributes())))
+                {
+                    getUpdateMap().put(record.getId(),
+                                       new ConfiguredObjectRecordImpl(record.getId(),
+                                                                      record.getType(),
+                                                                      attributes,
+                                                                      record.getParents()));
                 }
             }
+        }
+
+        private long convertAttributeValueToLong(final String attributeName,
+                                                 final Object attributeValue)
+        {
+            long value;
+            if (attributeValue instanceof Number)
+            {
+                value = ((Number) attributeValue).longValue();
+            }
+            else if (attributeValue instanceof String)
+            {
+                try
+                {
+                    value = Long.parseLong((String) attributeValue);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalConfigurationException(String.format(
+                            "Cannot evaluate '%s': %s",
+                            attributeName, attributeValue));
+                }
+            }
+            else
+            {
+                throw new IllegalConfigurationException(String.format("Cannot evaluate '%s': %s",
+                                                                      attributeName,
+                                                                      String.valueOf(attributeValue)));
+            }
+            return value;
         }
 
         @Override

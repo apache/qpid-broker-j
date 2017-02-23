@@ -64,6 +64,7 @@ public class QueueMessages
 
     public static final String QUEUE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue";
     public static final String CREATED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.created";
+    public static final String DROPPED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.dropped";
     public static final String OVERFULL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.overfull";
     public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.operation";
     public static final String FLOW_TO_DISK_ACTIVE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.flow_to_disk_active";
@@ -75,6 +76,7 @@ public class QueueMessages
     {
         LoggerFactory.getLogger(QUEUE_LOG_HIERARCHY);
         LoggerFactory.getLogger(CREATED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(DROPPED_LOG_HIERARCHY);
         LoggerFactory.getLogger(OVERFULL_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
         LoggerFactory.getLogger(FLOW_TO_DISK_ACTIVE_LOG_HIERARCHY);
@@ -208,16 +210,74 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
-     * <pre>QUE-1003 : Overfull : Size : {0,number} bytes, Capacity : {1,number}</pre>
+     * <pre>QUE-1005 : Dropped : {0,number} messages, Depth : {1,number} bytes, {2,number} messages, Capacity : {3,number} bytes, {4,number} messages</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage OVERFULL(Number param1, Number param2)
+    public static LogMessage DROPPED(Number param1, Number param2, Number param3, Number param4, Number param5)
+    {
+        String rawMessage = _messages.getString("DROPPED");
+
+        final Object[] messageArguments = {param1, param2, param3, param4, param5};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return DROPPED_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Queue message of the Format:
+     * <pre>QUE-1003 : Overfull : Size : {0,number} bytes, Capacity : {1,number}, Messages : {2,number}, Message Capacity : {3,number}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage OVERFULL(Number param1, Number param2, Number param3, Number param4)
     {
         String rawMessage = _messages.getString("OVERFULL");
 
-        final Object[] messageArguments = {param1, param2};
+        final Object[] messageArguments = {param1, param2, param3, param4};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -382,16 +442,16 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
-     * <pre>QUE-1004 : Underfull : Size : {0,number} bytes, Resume Capacity : {1,number}</pre>
+     * <pre>QUE-1004 : Underfull : Size : {0,number} bytes, Resume Capacity : {1,number}, Messages : {2,number}, Message Capacity : {3,number}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage UNDERFULL(Number param1, Number param2)
+    public static LogMessage UNDERFULL(Number param1, Number param2, Number param3, Number param4)
     {
         String rawMessage = _messages.getString("UNDERFULL");
 
-        final Object[] messageArguments = {param1, param2};
+        final Object[] messageArguments = {param1, param2, param3, param4};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);

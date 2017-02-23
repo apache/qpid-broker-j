@@ -27,16 +27,12 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class QueuePolicyTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(QueuePolicyTest.class);
     private Connection _connection;
     
     @Override
@@ -112,10 +108,12 @@ public class QueuePolicyTest extends QpidBrokerTestCase
         _connection.start();
         
         TextMessage msg = (TextMessage)consumer.receive(1000);
-        assertEquals("The consumer should receive the msg with body='Test2'","Test2",msg.getText());
+        assertNotNull("The consumer should receive the msg with body='Test2'", msg);
+        assertEquals("Unexpected first message","Test2",msg.getText());
         
         msg = (TextMessage)consumer.receive(1000);
-        assertEquals("The consumer should receive the msg with body='Test3'","Test3",msg.getText());
+        assertNotNull("The consumer should receive the msg with body='Test3'", msg);
+        assertEquals("Unexpected second message","Test3", msg.getText());
     }
 
     protected void assertAMQException(final String message, final int expected, final AMQException e)

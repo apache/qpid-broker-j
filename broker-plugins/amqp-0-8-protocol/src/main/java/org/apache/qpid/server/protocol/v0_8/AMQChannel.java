@@ -76,7 +76,6 @@ import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.*;
-import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.UnacknowledgedMessageMap.Visitor;
 import org.apache.qpid.server.protocol.v0_8.transport.*;
@@ -177,7 +176,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     private final ClientDeliveryMethod _clientDeliveryMethod;
 
-    private final CapacityCheckAction _capacityCheckAction = new CapacityCheckAction();
     private final ImmediateAction _immediateAction = new ImmediateAction();
     private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_0_8>> _consumers = new CopyOnWriteArrayList<>();
     private Session<?> _modelObject;
@@ -462,7 +460,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                                   amqMessage.getInitialRoutingAddress(),
                                                   instanceProperties);
 
-                        int enqueues = result.send(_transaction, immediate ? _immediateAction : _capacityCheckAction);
+                        int enqueues = result.send(_transaction, immediate ? _immediateAction : null);
                         if (enqueues == 0)
                         {
                             finallyAction = handleUnroutableMessage(amqMessage);
@@ -1414,8 +1412,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         @Override
         public void performAction(MessageInstance entry)
         {
-            TransactionLogResource queue = entry.getOwningResource();
-
             if (!entry.getDeliveredToConsumer() && entry.acquire())
             {
 
@@ -1456,29 +1452,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 {
                     ref.release();
                 }
-
-
-            }
-            else
-            {
-                if(queue instanceof CapacityChecker)
-                {
-                    ((CapacityChecker)queue).checkCapacity(AMQChannel.this);
-                }
-            }
-
-        }
-    }
-
-    private final class CapacityCheckAction implements Action<MessageInstance>
-    {
-        @Override
-        public void performAction(final MessageInstance entry)
-        {
-            TransactionLogResource queue = entry.getOwningResource();
-            if(queue instanceof CapacityChecker)
-            {
-                ((CapacityChecker)queue).checkCapacity(AMQChannel.this);
             }
         }
     }

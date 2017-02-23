@@ -82,11 +82,9 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.network.Frame;
 import org.apache.qpid.server.txn.AlreadyKnownDtxException;
@@ -120,7 +118,6 @@ public class ServerSession extends SessionInvoker
 
     private final AtomicBoolean _blocking = new AtomicBoolean(false);
     private final AtomicInteger _outstandingCredit = new AtomicInteger(UNLIMITED_CREDIT);
-    private final CheckCapacityAction _checkCapacityAction = new CheckCapacityAction();
     private final long timeout = 60000;  // TODO server side close does not require this
     // completed incoming commands
     private final Object processedLock = new Object();
@@ -1007,24 +1004,11 @@ public class ServerSession extends SessionInvoker
         }
         final RoutingResult<MessageTransferMessage> result =
                 exchange.route(message, message.getInitialRoutingAddress(), instanceProperties);
-        if (result.isRoutingFailure())
-        {
-            org.apache.qpid.server.transport.ExecutionException ex = new org.apache.qpid.server.transport.ExecutionException();
-            ex.setErrorCode(ExecutionErrorCode.get(result.getErrorCodeAmqp_0_10()));
-            ex.setCommandId((int) message.getMessageNumber());
-            ex.setDescription(result.getErrorMessage());
-            invoke(ex);
-            close(ExecutionErrorCode.get(result.getErrorCodeAmqp_0_10()).getValue(), result.getErrorMessage());
-            return 0;
-        }
-        else
-        {
-            int enqueues = result.send(_transaction, _checkCapacityAction);
-            getAMQPConnection().registerMessageReceived(message.getSize(), message.getArrivalTime());
-            incrementOutstandingTxnsIfNecessary();
-            incrementUncommittedMessageSize(message.getStoredMessage());
-            return enqueues;
-        }
+        int enqueues = result.send(_transaction, null);
+        getAMQPConnection().registerMessageReceived(message.getSize(), message.getArrivalTime());
+        incrementOutstandingTxnsIfNecessary();
+        incrementUncommittedMessageSize(message.getStoredMessage());
+        return enqueues;
     }
 
     private void resetUncommittedMessages()
@@ -1904,19 +1888,6 @@ public class ServerSession extends SessionInvoker
 
         @Override
         public void closed(ServerSession ssn) {}
-    }
-
-    private class CheckCapacityAction implements Action<MessageInstance>
-    {
-        @Override
-        public void performAction(final MessageInstance entry)
-        {
-            TransactionLogResource queue = entry.getOwningResource();
-            if(queue instanceof CapacityChecker)
-            {
-                ((CapacityChecker)queue).checkCapacity(_modelObject);
-            }
-        }
     }
 
     private class ResultFuture<T> implements Future<T>

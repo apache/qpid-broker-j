@@ -72,14 +72,8 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         _sqel = _testQueue.getEntries();
         for(int i = 1; i <= 100; i++)
         {
-            final ServerMessage message = mock(ServerMessage.class);
-            when(message.getMessageNumber()).thenReturn((long) i);
-            MessageReference ref = mock(MessageReference.class);
-            when(ref.getMessage()).thenReturn(message);
-            when(message.newReference()).thenReturn(ref);
-            when(message.newReference(any(TransactionLogResource.class))).thenReturn(ref);
 
-            final QueueEntry bleh = _sqel.add(message, null);
+            final QueueEntry bleh = _sqel.add(createServerMessage(i), null);
             assertNotNull("QE should not have been null", bleh);
         }
     }
@@ -132,14 +126,7 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
     @Override
     public ServerMessage getTestMessageToAdd()
     {
-        ServerMessage msg = mock(ServerMessage.class);
-        MessageReference ref = mock(MessageReference.class);
-        when(ref.getMessage()).thenReturn(msg);
-        when(msg.getMessageNumber()).thenReturn(1l);
-        when(msg.newReference()).thenReturn(ref);
-        when(msg.newReference(any(TransactionLogResource.class))).thenReturn(ref);
-
-        return msg;
+        return createServerMessage(1);
     }
 
     @Override
@@ -159,13 +146,7 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         //Add messages to generate QueueEntry's
         for(int i = 1; i <= 100 ; i++)
         {
-            ServerMessage message = mock(ServerMessage.class);
-            when(message.getMessageNumber()).thenReturn((long) i);
-            MessageReference ref = mock(MessageReference.class);
-            when(ref.getMessage()).thenReturn(message);
-            when(message.newReference()).thenReturn(ref);
-            when(message.newReference(any(TransactionLogResource.class))).thenReturn(ref);
-            QueueEntry bleh = sqel.add(message, null);
+            QueueEntry bleh = sqel.add(createServerMessage(i), null);
             assertNotNull("QE should not have been null", bleh);
             entriesMap.put(i,bleh);
         }
@@ -262,13 +243,7 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         // create test entries
         for(int i = 0; i < numberOfEntries; i++)
         {
-            ServerMessage message =  mock(ServerMessage.class);
-            when(message.getMessageNumber()).thenReturn((long)i);
-            final MessageReference reference = mock(MessageReference.class);
-            when(reference.getMessage()).thenReturn(message);
-            when(message.newReference()).thenReturn(reference);
-            when(message.newReference(any(TransactionLogResource.class))).thenReturn(reference);
-            entries[i] = (OrderedQueueEntry) queueEntryList.add(message, null);
+            entries[i] = (OrderedQueueEntry) queueEntryList.add(createServerMessage(i), null);
         }
 
         // test getNext for not acquired entries
@@ -300,5 +275,30 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         assertEquals("expected fifth entry", entries[4], next);
         next = next.getNextValidEntry();
         assertNull("The next entry after the last should be null", next);
+    }
+
+    public void testGetLesserOldestEntry()
+    {
+        StandardQueueEntryList queueEntryList = new StandardQueueEntryList(_testQueue, _testQueue.getQueueStatistics());
+
+        QueueEntry entry1 =  queueEntryList.add(createServerMessage(1), null);
+        assertEquals("Unexpected last message", entry1, queueEntryList.getLesserOldestEntry());
+
+        queueEntryList.add(createServerMessage(2), null);
+        assertEquals("Unexpected last message", entry1,  queueEntryList.getLesserOldestEntry());
+
+        queueEntryList.add(createServerMessage(3), null);
+        assertEquals("Unexpected last message", entry1,  queueEntryList.getLesserOldestEntry());
+    }
+
+    private ServerMessage createServerMessage(final long id)
+    {
+        ServerMessage message =  mock(ServerMessage.class);
+        when(message.getMessageNumber()).thenReturn(id);
+        final MessageReference reference = mock(MessageReference.class);
+        when(reference.getMessage()).thenReturn(message);
+        when(message.newReference()).thenReturn(reference);
+        when(message.newReference(any(TransactionLogResource.class))).thenReturn(reference);
+        return message;
     }
 }

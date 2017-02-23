@@ -21,6 +21,7 @@
 package org.apache.qpid.server.queue;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.server.logging.AbstractTestLogging;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
@@ -249,9 +251,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         //check current attribute values are 0 as expected
         Map<String, Object> queueAttributes = _restTestHelper.getJsonAsSingletonList(queueUrl);
         assertEquals("Capacity was not the expected value", 0,
-                     ((Number) queueAttributes.get(org.apache.qpid.server.model.Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES)).intValue());
-        assertEquals("FlowResumeCapacity was not the expected value", 0,
-                     ((Number) queueAttributes.get(org.apache.qpid.server.model.Queue.QUEUE_FLOW_RESUME_SIZE_BYTES)).intValue());
+                     ((Number) queueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_QUEUE_DEPTH_BYTES)).intValue());
 
         //set new values that will cause flow control to be active, and the queue to become overfull after 1 message is sent
         setFlowLimits(queueUrl, 250, 250);
@@ -319,9 +319,17 @@ public class ProducerFlowControlTest extends AbstractTestLogging
     private void setFlowLimits(final String queueUrl, final int blockValue, final int resumeValue) throws IOException
     {
         final Map<String, Object> attributes = new HashMap<>();
-        attributes.put(org.apache.qpid.server.model.Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES, blockValue);
-        attributes.put(org.apache.qpid.server.model.Queue.QUEUE_FLOW_RESUME_SIZE_BYTES, resumeValue);
+        attributes.put(org.apache.qpid.server.model.Queue.MAXIMUM_QUEUE_DEPTH_BYTES, blockValue);
+        attributes.put(org.apache.qpid.server.model.Queue.OVERFLOW_POLICY, OverflowPolicy.PRODUCER_FLOW_CONTROL);
+        String resumeLimit = getFlowResumeLimit(blockValue, resumeValue);
+        Map<String, String> context = Collections.singletonMap(org.apache.qpid.server.model.Queue.QUEUE_FLOW_RESUME_LIMIT, resumeLimit);
+        attributes.put(org.apache.qpid.server.model.Queue.CONTEXT, context);
         _restTestHelper.submitRequest(queueUrl, "PUT", attributes);
+    }
+
+    private String getFlowResumeLimit(final double blockValue, final double resumeValue)
+    {
+        return String.format("%.2f", resumeValue / blockValue * 100.0);
     }
 
     private boolean isFlowStopped(final String queueUrl) throws IOException
@@ -374,11 +382,18 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         if(isBroker10())
         {
             final Map<String, Object> attributes = new HashMap<>();
-            attributes.put(org.apache.qpid.server.model.Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES, capacity);
-            attributes.put(org.apache.qpid.server.model.Queue.QUEUE_FLOW_RESUME_SIZE_BYTES, resumeCapacity);
+            if (capacity != 0)
+            {
+                attributes.put(org.apache.qpid.server.model.Queue.CONTEXT,
+                               Collections.singletonMap(org.apache.qpid.server.model.Queue.QUEUE_FLOW_RESUME_LIMIT,
+                                                        getFlowResumeLimit(capacity, resumeCapacity)));
+            }
+            attributes.put(org.apache.qpid.server.model.Queue.MAXIMUM_QUEUE_DEPTH_BYTES, capacity);
+            attributes.put(org.apache.qpid.server.model.Queue.OVERFLOW_POLICY, OverflowPolicy.PRODUCER_FLOW_CONTROL);
             attributes.put(org.apache.qpid.server.model.Queue.DURABLE, durable);
             attributes.put(ConfiguredObject.LIFETIME_POLICY, autoDelete ? LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS.name() : LifetimePolicy.PERMANENT.name());
-            createEntityUsingAmqpManagement(getTestQueueName(), session, "org.apache.qpid.Queue", attributes);
+            String queueUrl = String.format("queue/%1$s/%1$s/%2$s", TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, queueName);
+            _restTestHelper.submitRequest(queueUrl, "PUT", attributes, 201);
             _queue = session.createQueue(queueName);
         }
         else

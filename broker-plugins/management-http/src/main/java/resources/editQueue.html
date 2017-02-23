@@ -131,6 +131,58 @@
                         </select>
                     </div>
                 </div>
+
+                <div class="clear formBox">
+                    <fieldset>
+                        <legend>Overflow Settings</legend>
+                        <div class="clear">
+                            <div class="formLabel-labelCell">Overflow policy:</div>
+                            <div class="formLabel-controlCell">
+                                <select id="formEditQueue.overflowPolicy"
+                                        dojoType="dijit.form.FilteringSelect"
+                                        data-dojo-props="
+                              name: 'overflowPolicy',
+                              value: 'None',
+                              searchAttr: 'name',
+                              required: false,
+                              promptMessage: 'Select overflow policy to use',
+                              title: 'Select overflow policy'">
+                                    <option value="NONE">None</option>
+                                    <option value="RING">Ring</option>
+                                    <option value="PRODUCER_FLOW_CONTROL">Producer Flow Control</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="clear">
+                            <div class="formLabel-labelCell">Maximum Queue Depth (Messages):</div>
+                            <div class="formLabel-controlCell">
+                                <input type="text" id="formEditQueue.maximumQueueDepthMessages"
+                                       data-dojo-type="dijit/form/ValidationTextBox"
+                                       data-dojo-props="
+                                      name: 'maximumQueueDepthMessages',
+                                      placeHolder: 'maximum number of messages',
+                                      promptMessage: 'Maximum number of messages in the queue',
+                                      title: 'Enter the maximum number of messages in the queue',
+                                      trim: true"/>
+                            </div>
+                        </div>
+                        <div class="clear">
+                            <div class="formLabel-labelCell">Maximum Queue Depth including headers (Bytes):</div>
+                            <div class="formLabel-controlCell">
+                                <input type="text" id="formEditQueue.maximumQueueDepthBytes"
+                                       data-dojo-type="dijit/form/ValidationTextBox"
+                                       data-dojo-props="
+                                      name: 'maximumQueueDepthBytes',
+                                      placeHolder: 'maximum number of bytes',
+                                      promptMessage: 'Maximum number of bytes (including header) in the queue',
+                                      title: 'Enter the maximum number of bytes (including header) in the queue',
+                                      trim: true"/>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <div class="clear"></div>
+                </div>
+
                 <div class="clear">
                     <div class="formLabel-labelCell">Maximum Ttl:</div>
                     <div class="formLabel-controlCell">
@@ -159,39 +211,6 @@
                 </div>
 
                 <div class="clear"></div>
-
-                <div class="clear formBox">
-                    <fieldset>
-                    <legend>Flow Control Settings</legend>
-                    <div class="clear">
-                        <div class="formLabel-labelCell">Capacity:</div>
-                        <div class="formLabel-controlCell">
-                            <input type="text" id="formEditQueue.queueFlowControlSizeBytes"
-                                   data-dojo-type="dijit/form/ValidationTextBox"
-                                   data-dojo-props="
-                                      name: 'queueFlowControlSizeBytes',
-                                      placeHolder: 'size in bytes',
-                                      promptMessage: 'Ceiling (in bytes) at which queue will begin to throttle sessions producing messages',
-                                      title: 'Enter the ceiling (in bytes) at which queue will begin to throttle sessions producing messages',
-                                      trim: true"/>
-                        </div>
-                    </div>
-                    <div class="clear">
-                        <div class="formLabel-labelCell">Resume Capacity:</div>
-                        <div class="formLabel-controlCell">
-                            <input type="text" id="formEditQueue.queueFlowResumeSizeBytes"
-                                   data-dojo-type="dijit/form/ValidationTextBox"
-                                   data-dojo-props="
-                                      name: 'queueFlowResumeSizeBytes',
-                                      placeHolder: 'size in bytes',
-                                      promptMessage: 'Floor (in bytes) at which queue will cease to throttle sessions producing messages',
-                                      title: 'Enter the floor (in bytes) at which queue will cease to throttle sessions producing messages',
-                                      trim: true"/>
-                        </div>
-                    </div>
-                    </fieldset>
-                    <div class="clear"></div>
-                </div>
 
                 <div class="clear formBox">
                     <fieldset>

@@ -640,8 +640,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         attributes.put(Queue.ALERT_THRESHOLD_MESSAGE_SIZE, 1000000000);
         attributes.put(Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES, 800);
         attributes.put(Queue.MAXIMUM_DELIVERY_ATTEMPTS, 15);
-        attributes.put(Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES, 2000000000);
-        attributes.put(Queue.QUEUE_FLOW_RESUME_SIZE_BYTES, 1500000000);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 2000000000);
 
         createQueue(queueName + "-standard", "standard", attributes);
 

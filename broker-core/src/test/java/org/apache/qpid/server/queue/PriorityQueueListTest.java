@@ -162,4 +162,24 @@ public class PriorityQueueListTest extends QpidTestCase
         assertEquals("second message with priority 4 should be 'later' than second message of priority 5",
                 1, _priority4message2.compareTo(_priority5message2));
     }
+
+    public void testGetLesserOldestEntry()
+    {
+        assertEquals("Unexpected last entry", _priority4message1, _list.getLesserOldestEntry());
+
+        ServerMessage<?> message = mock(ServerMessage.class);
+        AMQMessageHeader header = mock(AMQMessageHeader.class);
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        MessageReference<ServerMessage> ref = mock(MessageReference.class);
+
+        when(message.getMessageHeader()).thenReturn(header);
+        when(message.newReference()).thenReturn(ref);
+        when(message.newReference(any(TransactionLogResource.class))).thenReturn(ref);
+        when(ref.getMessage()).thenReturn(message);
+        when(header.getPriority()).thenReturn((byte)3);
+
+        QueueEntry newEntry = _list.add(message, null);
+
+        assertEquals("Unexpected last entry", newEntry, _list.getLesserOldestEntry());
+    }
 }

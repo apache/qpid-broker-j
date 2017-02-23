@@ -126,15 +126,13 @@ public class QueueRestACLTest extends QpidRestTestCase
 
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Queue.NAME, _queueName);
-        attributes.put(Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES, 100000);
-        attributes.put(Queue.QUEUE_FLOW_RESUME_SIZE_BYTES, 80000);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100000);
 
         responseCode = getRestTestHelper().submitRequest(_queueUrl, "PUT", attributes);
         assertEquals("Setting of queue attribites should be allowed", 200, responseCode);
 
         Map<String, Object> queueData = getRestTestHelper().getJsonAsSingletonList(_queueUrl);
-        assertEquals("Unexpected " + Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES, 100000, queueData.get(Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES) );
-        assertEquals("Unexpected " + Queue.QUEUE_FLOW_RESUME_SIZE_BYTES, 80000, queueData.get(Queue.QUEUE_FLOW_RESUME_SIZE_BYTES) );
+        assertEquals("Unexpected " + Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100000, queueData.get(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES));
     }
 
     public void testSetQueueAttributesDenied() throws Exception
@@ -148,15 +146,13 @@ public class QueueRestACLTest extends QpidRestTestCase
 
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Queue.NAME, _queueName);
-        attributes.put(Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES, 100000);
-        attributes.put(Queue.QUEUE_FLOW_RESUME_SIZE_BYTES, 80000);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100000);
 
         responseCode = getRestTestHelper().submitRequest(_queueUrl, "PUT", attributes);
         assertEquals("Setting of queue attribites should be allowed", 403, responseCode);
 
         Map<String, Object> queueData = getRestTestHelper().getJsonAsSingletonList(_queueUrl);
-        assertEquals("Unexpected " + Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES, 0, queueData.get(Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES) );
-        assertEquals("Unexpected " + Queue.QUEUE_FLOW_RESUME_SIZE_BYTES, 0, queueData.get(Queue.QUEUE_FLOW_RESUME_SIZE_BYTES) );
+        assertEquals("Unexpected " + Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, -1, queueData.get(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES));
     }
 
     private int createQueue() throws Exception

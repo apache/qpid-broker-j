@@ -845,8 +845,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     public void testNoneOverflowPolicy()
     {
         Map<String,Object> attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.MAX_COUNT, 2);
-        attributes.put(Queue.MAX_SIZE, 100);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 2);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 100);
 
         Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
@@ -865,19 +865,13 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         assertEquals("Wrong size of messages in queue",300, queue.getQueueDepthBytesIncludingHeader());
         assertEquals("Wrong oldest message", 10l,
                 ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
-        queue.clearQueue();
-
-        attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.MAX_COUNT, Queue.DEFAULT_MAX_COUNT);
-        attributes.put(Queue.MAX_SIZE, Queue.DEFAULT_MAX_SIZE);
-        queue.setAttributes(attributes);
     }
 
     public void testRingOverflowPolicyMaxCount()
     {
         Map<String,Object> attributes = new HashMap<>(_arguments);
         attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
-        attributes.put(Queue.MAX_COUNT, 4);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 4);
 
         Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
@@ -902,20 +896,14 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         assertEquals("Wrong size of messages in queue",80, queue.getQueueDepthBytesIncludingHeader());
         assertEquals("Wrong oldest message", 50l,
                 ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
-        queue.clearQueue();
-
-        attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.OVERFLOW_POLICY, Queue.DEFAULT_POLICY_TYPE);
-        attributes.put(Queue.MAX_COUNT, Queue.DEFAULT_MAX_COUNT);
-        queue.setAttributes(attributes);
     }
 
     public void testRingOverflowPolicyMaxSize()
     {
         Map<String,Object> attributes = new HashMap<>(_arguments);
         attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
-        attributes.put(Queue.MAX_COUNT, 4);
-        attributes.put(Queue.MAX_SIZE, 100);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 4);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 100);
 
         Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
@@ -944,20 +932,13 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         assertEquals("Wrong size of messages in queue",90, queue.getQueueDepthBytesIncludingHeader());
         assertEquals("Wrong oldest message", 200l,
                 ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
-        queue.clearQueue();
-
-        attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.OVERFLOW_POLICY, Queue.DEFAULT_POLICY_TYPE);
-        attributes.put(Queue.MAX_COUNT, Queue.DEFAULT_MAX_COUNT);
-        attributes.put(Queue.MAX_SIZE, Queue.DEFAULT_MAX_SIZE);
-        queue.setAttributes(attributes);
     }
 
     public void testRingOverflowPolicyMessagesRejected()
     {
         Map<String,Object> attributes = new HashMap<>(_arguments);
         attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
-        attributes.put(Queue.MAX_COUNT, 0);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 0);
 
         Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
@@ -967,26 +948,20 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         message = createMessage(new Long(27), 20, 10);
         result = queue.route(message, message.getInitialRoutingAddress(), null);
-        assertTrue("Result should include routing failure", result.isRoutingFailure());
+        assertTrue("Result should include not accepting route", result.hasNotAcceptingRoutableQueue());
 
         int headerSize = 20;
         int payloadSize = 10;
         int id = 28;
 
         attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.MAX_COUNT, 10);
-        attributes.put(Queue.MAX_SIZE, 10);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 10);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 10);
         queue.setAttributes(attributes);
 
         message = createMessage(new Long(id), headerSize, payloadSize);
         result = queue.route(message, message.getInitialRoutingAddress(), null);
-        assertTrue("Result should include routing failure", result.isRoutingFailure());
-
-        attributes = new HashMap<>(_arguments);
-        attributes.put(Queue.OVERFLOW_POLICY, Queue.DEFAULT_POLICY_TYPE);
-        attributes.put(Queue.MAX_COUNT, Queue.DEFAULT_MAX_COUNT);
-        attributes.put(Queue.MAX_SIZE, Queue.DEFAULT_MAX_SIZE);
-        queue.setAttributes(attributes);
+        assertTrue("Result should include not accepting route", result.hasNotAcceptingRoutableQueue());
     }
 
     private long getExpirationOnQueue(final Queue<?> queue, long arrivalTime, long expiration)

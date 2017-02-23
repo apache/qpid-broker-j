@@ -61,8 +61,6 @@ define(["dojo/dom",
 
     var numericFieldNames = ["maximumMessageTtl",
                              "minimumMessageTtl",
-                             "queueFlowControlSizeBytes",
-                             "queueFlowResumeSizeBytes",
                              "alertThresholdQueueDepthMessages",
                              "alertThresholdQueueDepthBytes",
                              "alertThresholdMessageAge",
@@ -101,27 +99,6 @@ define(["dojo/dom",
         {
             dijit.byId('formAddQueue.' + requiredFields[requiredField]).required = (requiredField == value);
         }
-    });
-
-    var typeSelector = registry.byId("formAddQueue.overflowPolicy");
-    typeSelector.on("change", function (value)
-    {
-        query(".overflowPolicySpecificDiv")
-            .forEach(function (node, index, arr)
-            {
-                if (node.id === "formAddQueueOverflowPolicy:" + value)
-                {
-                    node.style.display = "block";
-                    if (addQueue.management)
-                    {
-                        util.applyMetadataToWidgets(node, "Queue", value, addQueue.management.metadata);
-                    }
-                }
-                else
-                {
-                    node.style.display = "none";
-                }
-            });
     });
 
     theForm.on("submit", function (e)
@@ -172,6 +149,9 @@ define(["dojo/dom",
             registry.byId("formAddQueue." + numericFieldNames[i])
                 .set("regExpGen", util.numericOrContextVarRegexp);
         }
+
+        registry.byId("formAddQueue.maximumQueueDepthBytes").set("regExpGen", util.signedOrContextVarRegexp);
+        registry.byId("formAddQueue.maximumQueueDepthMessages").set("regExpGen", util.signedOrContextVarRegexp);
 
         if (!this.context)
         {

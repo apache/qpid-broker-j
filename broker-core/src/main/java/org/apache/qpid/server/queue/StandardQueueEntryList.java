@@ -47,4 +47,10 @@ public class StandardQueueEntryList extends OrderedQueueEntryList
         return new StandardQueueEntry(this, message, enqueueRecord);
     }
 
+
+    @Override
+    public QueueEntry getLesserOldestEntry()
+    {
+        return getOldestEntry();
+    }
 }

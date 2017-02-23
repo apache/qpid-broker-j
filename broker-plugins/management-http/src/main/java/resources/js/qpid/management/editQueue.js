@@ -46,8 +46,6 @@ define(["dojox/html/entities",
 
         var numericFieldNames = ["maximumMessageTtl",
                                  "minimumMessageTtl",
-                                 "queueFlowControlSizeBytes",
-                                 "queueFlowResumeSizeBytes",
                                  "alertThresholdQueueDepthMessages",
                                  "alertThresholdQueueDepthBytes",
                                  "alertThresholdMessageAge",
@@ -164,6 +162,9 @@ define(["dojox/html/entities",
                     registry.byId("formEditQueue." + numericFieldNames[i])
                         .set("regExpGen", util.numericOrContextVarRegexp);
                 }
+
+                registry.byId("formEditQueue.maximumQueueDepthBytes").set("regExpGen", util.signedOrContextVarRegexp);
+                registry.byId("formEditQueue.maximumQueueDepthMessages").set("regExpGen", util.signedOrContextVarRegexp);
 
                 var queueType = this.typeSelector.get("value");
                 query(".typeSpecificDiv")

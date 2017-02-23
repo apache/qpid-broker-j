@@ -240,6 +240,11 @@ public class StandardQueueTest extends AbstractQueueTestBase
         }
 
 
+        @Override
+        public QueueEntry getLesserOldestEntry()
+        {
+            return getOldestEntry();
+        }
     }
 
     private static class DequeuedQueueEntry extends OrderedQueueEntry

@@ -116,8 +116,7 @@ public class QueueRestTest extends QpidRestTestCase
 
         attributes = new HashMap<String, Object>();
         attributes.put(Queue.NAME, queueName);
-        attributes.put(Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES, 100000);
-        attributes.put(Queue.QUEUE_FLOW_RESUME_SIZE_BYTES, 80000);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100000);
         attributes.put(Queue.ALERT_REPEAT_GAP, 10000);
         attributes.put(Queue.ALERT_THRESHOLD_MESSAGE_AGE, 20000);
         attributes.put(Queue.ALERT_THRESHOLD_MESSAGE_SIZE, 30000);
@@ -129,8 +128,7 @@ public class QueueRestTest extends QpidRestTestCase
         assertEquals("Setting of queue attributes should be allowed", 200, responseCode);
 
         Map<String, Object> queueData = getRestTestHelper().getJsonAsSingletonList(queueUrl);
-        assertEquals("Unexpected " + Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES, 100000, queueData.get(Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES) );
-        assertEquals("Unexpected " + Queue.QUEUE_FLOW_RESUME_SIZE_BYTES, 80000, queueData.get(Queue.QUEUE_FLOW_RESUME_SIZE_BYTES) );
+        assertEquals("Unexpected " + Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100000, queueData.get(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES));
         assertEquals("Unexpected " + Queue.ALERT_REPEAT_GAP, 10000, queueData.get(Queue.ALERT_REPEAT_GAP) );
         assertEquals("Unexpected " + Queue.ALERT_THRESHOLD_MESSAGE_AGE, 20000, queueData.get(Queue.ALERT_THRESHOLD_MESSAGE_AGE) );
         assertEquals("Unexpected " + Queue.ALERT_THRESHOLD_MESSAGE_SIZE, 30000, queueData.get(Queue.ALERT_THRESHOLD_MESSAGE_SIZE) );

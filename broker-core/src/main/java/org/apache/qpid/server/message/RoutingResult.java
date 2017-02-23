@@ -22,7 +22,9 @@ package org.apache.qpid.server.message;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -41,14 +43,7 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
     private final M _message;
 
     private final Set<BaseQueue> _queues = new HashSet<>();
-
-    private int _errorCodeAmqp_0_10;
-
-    private String _errorCodeAmqp_1_0;
-
-    private String _errorMessage;
-
-    private boolean _routingFailure = false;
+    private final Map<BaseQueue, CharSequence> _notAcceptingRoutableQueues = new HashMap<>();
 
     public RoutingResult(final M message)
     {
@@ -67,7 +62,7 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
         }
     }
 
-    public void addQueues(Collection<? extends BaseQueue> queues)
+    private void addQueues(Collection<? extends BaseQueue> queues)
     {
         boolean deletedQueues = false;
         for(BaseQueue q : queues)
@@ -90,16 +85,13 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
 
     public void add(RoutingResult<M> result)
     {
-        if (result.isRoutingFailure())
+        addQueues(result._queues);
+        for (Map.Entry<BaseQueue, CharSequence> e : result._notAcceptingRoutableQueues.entrySet())
         {
-            _routingFailure = result._routingFailure;
-            _errorCodeAmqp_0_10 = result._errorCodeAmqp_0_10;
-            _errorCodeAmqp_1_0 = result._errorCodeAmqp_1_0;
-            _errorMessage = result._errorMessage;
-        }
-        else
-        {
-            addQueues(result._queues);
+            if (!e.getKey().isDeleted())
+            {
+                _notAcceptingRoutableQueues.put(e.getKey(), e.getValue());
+            }
         }
     }
 
@@ -163,31 +155,27 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
         return !_queues.isEmpty();
     }
 
-    public void addRoutingFailure(int errorCodeAmqp_0_10, String errorCodeAmqp_1_0, String reason)
+    public void addNotAcceptingRoutableQueue(BaseQueue q, CharSequence reason)
     {
-        _routingFailure = true;
-        this._errorCodeAmqp_0_10 = errorCodeAmqp_0_10;
-        this._errorCodeAmqp_1_0 = errorCodeAmqp_1_0;
-        _errorMessage = reason;
+        _notAcceptingRoutableQueues.put(q, reason);
     }
 
-    public String getErrorMessage()
+    public boolean hasNotAcceptingRoutableQueue()
     {
-        return _errorMessage;
+        return !_notAcceptingRoutableQueues.isEmpty();
     }
 
-    public int getErrorCodeAmqp_0_10()
+    public String getUnacceptanceCause()
     {
-        return _errorCodeAmqp_0_10;
-    }
-
-    public String getErrorCodeAmqp_1_0()
-    {
-        return _errorCodeAmqp_1_0;
-    }
-
-    public boolean isRoutingFailure()
-    {
-        return _routingFailure;
+        StringBuilder refusalMessages = new StringBuilder();
+        for (CharSequence message : _notAcceptingRoutableQueues.values())
+        {
+            if (refusalMessages.length() > 0)
+            {
+                refusalMessages.append(";");
+            }
+            refusalMessages.append(message);
+        }
+        return refusalMessages.toString();
     }
 }

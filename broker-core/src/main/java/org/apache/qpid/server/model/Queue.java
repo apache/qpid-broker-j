@@ -33,7 +33,6 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.queue.NotificationCheck;
 import org.apache.qpid.server.queue.QueueConsumer;
@@ -50,7 +49,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                                                    Comparable<X>, ExchangeReferrer,
                                                    BaseQueue,
                                                    MessageSource,
-                                                   CapacityChecker,
                                                    MessageDestination,
                                                    Deletable<X>
 {
@@ -74,8 +72,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     String MAXIMUM_DELIVERY_ATTEMPTS = "maximumDeliveryAttempts";
     String NO_LOCAL = "noLocal";
     String OWNER = "owner";
-    String QUEUE_FLOW_CONTROL_SIZE_BYTES = "queueFlowControlSizeBytes";
-    String QUEUE_FLOW_RESUME_SIZE_BYTES = "queueFlowResumeSizeBytes";
+
     String QUEUE_FLOW_STOPPED = "queueFlowStopped";
     String MAXIMUM_MESSAGE_TTL = "maximumMessageTtl";
     String MINIMUM_MESSAGE_TTL = "minimumMessageTtl";
@@ -83,8 +80,8 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     String ENSURE_NONDESTRUCTIVE_CONSUMERS = "ensureNondestructiveConsumers";
     String HOLD_ON_PUBLISH_ENABLED = "holdOnPublishEnabled";
     String OVERFLOW_POLICY = "overflowPolicy";
-    String MAX_COUNT = "maxCount";
-    String MAX_SIZE = "maxSize";
+    String MAXIMUM_QUEUE_DEPTH_MESSAGES = "maximumQueueDepthMessages";
+    String MAXIMUM_QUEUE_DEPTH_BYTES = "maximumQueueDepthBytes";
 
     String QUEUE_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT = "queue.minimumEstimatedMemoryFootprint";
     @SuppressWarnings("unused")
@@ -170,20 +167,12 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedAttribute( defaultValue = "${queue.maximumDeliveryAttempts}")
     int getMaximumDeliveryAttempts();
 
+    String QUEUE_FLOW_RESUME_LIMIT = "queue.queueFlowResumeLimit";
     @SuppressWarnings("unused")
-    @ManagedContextDefault( name = "queue.queueFlowControlSizeBytes")
-    long DEFAULT_FLOW_CONTROL_SIZE_BYTES = 0L;
-
-    @ManagedAttribute( defaultValue = "${queue.queueFlowControlSizeBytes}")
-    long getQueueFlowControlSizeBytes();
-
-    @SuppressWarnings("unused")
-    @ManagedContextDefault( name = "queue.queueFlowResumeSizeBytes")
-    long DEFAULT_FLOW_CONTROL_RESUME_SIZE_BYTES = 0L;
-
-    @ManagedAttribute( defaultValue = "${queue.queueFlowResumeSizeBytes}")
-    long getQueueFlowResumeSizeBytes();
-
+    @ManagedContextDefault( name = QUEUE_FLOW_RESUME_LIMIT,
+            description = "Percentage used to evaluate flow resume limit based on the values of attributes"
+                          + " 'maximumQueueDepthBytes' and 'maximumQueueDepthMessages'.")
+    double DEFAULT_FLOW_CONTROL_RESUME_LIMIT = 80.0;
 
     @SuppressWarnings("unused")
     @DerivedAttribute
@@ -261,25 +250,39 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                                      + "visible may depend on how frequently the virtual host housekeeping thread runs.")
     boolean isHoldOnPublishEnabled();
 
-    @ManagedContextDefault( name = "queue.defaultMaxCount", description = "Maximum count of messages in queue when policy_type set to Ring")
-    long DEFAULT_MAX_COUNT = 10;
+    @ManagedContextDefault(name = "queue.defaultMaximumQueueDepthMessages",
+            description = "Maximum number of messages on queue allowed by overflow policy.")
+    long DEFAULT_MAXIMUM_QUEUE_DEPTH_MESSAGES = -1;
 
-    @ManagedAttribute( defaultValue = "${queue.defaultMaxCount}", description = "Maximum count of messages in queue, when policy_type set to Ring")
-    long getMaxCount();
+    @ManagedAttribute(defaultValue = "${queue.defaultMaximumQueueDepthMessages}",
+            description = "Maximum number of messages on queue allowed by overflow policy."
+                          + " Negative value indicates that queue depth is unlimited. Default, -1.")
+    long getMaximumQueueDepthMessages();
 
-    @ManagedContextDefault( name = "queue.defaultMaxSize", description = "Maximum size of messages in queue in bytes, when policy_type set to Ring")
-    long DEFAULT_MAX_SIZE = 1024;
+    @ManagedContextDefault(name = "queue.defaultMaximumQueueDepthBytes",
+            description = "Maximum number of bytes on queue allowed by overflow policy." )
+    long DEFAULT_MAXIMUM_QUEUE_DEPTH_BYTES = -1;
 
-    @ManagedAttribute( defaultValue = "${queue.defaultMaxSize}", description = "Maximum size of messages in queue in bytes, when policy_type set to Ring")
-    long getMaxSize();
+    @ManagedAttribute(defaultValue = "${queue.defaultMaximumQueueDepthBytes}",
+            description = "Maximum number of bytes on queue allowed by overflow policy."
+                          + "  Negative value indicates that queue depth is unlimited. Default, -1.")
+    long getMaximumQueueDepthBytes();
 
     @SuppressWarnings("unused")
-    @ManagedContextDefault( name = "queue.defaultOverflowPolicy")
-    OverflowPolicy DEFAULT_POLICY_TYPE = OverflowPolicy.NONE;
+    @ManagedContextDefault(name = "queue.defaultOverflowPolicy",
+            description = "Specifies the default value for queue overflow policy. ")
+    OverflowPolicy DEFAULT_OVERFLOW_POLICY = OverflowPolicy.NONE;
 
-    @ManagedAttribute( defaultValue = "${queue.defaultOverflowPolicy}", description = "Queue overflow policy. Current options are Ring and None." +
-            " Ring overflow policy - when queue message count or size of messages in queue exceeds maximum, oldest message(s) is discarded." +
-            " None overflow policy - maximum size and maximum count properties are not applied.")
+    @ManagedAttribute(defaultValue = "${queue.defaultOverflowPolicy}",
+            description = "Queue overflow policy."
+                          + " Current options are ProducerFlowControl, Ring and None."
+                          + " ProducerFlowControl overflow policy - when queue message count or size of messages"
+                          + " in queue exceeds maximum, the producer is blocked until queue depth falls below "
+                          + " the resume threshold."
+                          + " Ring overflow policy - when queue message count or size of messages in queue exceeds"
+                          + " maximum, oldest messages are discarded."
+                          + " None overflow policy - maximum size and maximum count properties are not applied.",
+            mandatory = true)
     OverflowPolicy getOverflowPolicy();
 
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
@@ -297,7 +300,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     int deleteAndReturnCount();
 
-    void deleteEntry(QueueEntry node);
 
     void setNotificationListener(QueueNotificationListener listener);
 
@@ -483,4 +485,9 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     boolean isHeld(QueueEntry queueEntry, final long evaluationTime);
 
     void checkCapacity();
+
+    void deleteEntry(QueueEntry entry);
+
+    QueueEntry getLesserOldestEntry();
+
 }

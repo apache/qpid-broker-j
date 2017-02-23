@@ -23,5 +23,6 @@ package org.apache.qpid.server.model;
 public enum OverflowPolicy
 {
     NONE,
-    RING
+    RING,
+    PRODUCER_FLOW_CONTROL
 }

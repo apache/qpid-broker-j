@@ -182,16 +182,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private long _alertRepeatGap;
 
     @ManagedAttributeField
-    private long _queueFlowControlSizeBytes;
-
-    @ManagedAttributeField( afterSet = "checkCapacity" )
-    private long _queueFlowResumeSizeBytes;
-
-    @ManagedAttributeField
     private ExclusivityPolicy _exclusive;
-
-    @ManagedAttributeField
-    private OverflowPolicy _overflowPolicy;
 
     @ManagedAttributeField
     private MessageDurability _messageDurability;
@@ -211,9 +202,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private AtomicBoolean _stopped = new AtomicBoolean(false);
 
-    private final Set<AMQPSession<?, ?>> _blockedSessions =
-            Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?, ?>, Boolean>());
-
     private final AtomicBoolean _deleted = new AtomicBoolean(false);
     private final SettableFuture<Integer> _deleteFuture = SettableFuture.create();
 
@@ -226,7 +214,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @ManagedAttributeField
     private boolean _noLocal;
 
-    private final AtomicBoolean _overfull = new AtomicBoolean(false);
     private final FlowToDiskChecker _flowToDiskChecker = new FlowToDiskChecker();
     private final CopyOnWriteArrayList<Binding> _bindings = new CopyOnWriteArrayList<>();
     private Map<String, Object> _arguments;
@@ -259,10 +246,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private boolean _ensureNondestructiveConsumers;
     @ManagedAttributeField
     private volatile boolean _holdOnPublishEnabled;
+
     @ManagedAttributeField
-    private long _maxCount;
+    private OverflowPolicy _overflowPolicy;
     @ManagedAttributeField
-    private long _maxSize;
+    private long _maximumQueueDepthMessages;
+    @ManagedAttributeField
+    private long _maximumQueueDepthBytes;
 
     private static final int RECOVERING = 1;
     private static final int COMPLETING_RECOVERY = 2;
@@ -279,6 +269,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
     private AdvanceConsumersTask _queueHouseKeepingTask;
     private volatile int _bindingCount;
+    private volatile OverflowPolicyHandler _overflowPolicyHandler;
 
     private interface HoldMethod
     {
@@ -336,9 +327,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public void onValidate()
     {
         super.onValidate();
-        if (_queueFlowResumeSizeBytes > _queueFlowControlSizeBytes)
+        Double flowResumeLimit = getContextValue(Double.class, QUEUE_FLOW_RESUME_LIMIT);
+        if (flowResumeLimit != null && (flowResumeLimit < 0.0 || flowResumeLimit > 100.0))
         {
-            throw new IllegalConfigurationException("Flow resume size can't be greater than flow control size");
+            throw new IllegalConfigurationException("Flow resume limit value cannot be greater than 100 or lower than 0");
         }
     }
 
@@ -360,6 +352,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         _estimatedMinimumMemoryFootprint = getContextValue(Long.class, QUEUE_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT);
         _estimatedMessageMemoryOverhead = getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD);
+
+        _overflowPolicyHandler = createOverflowPolicyHandler(getOverflowPolicy());
 
         _queueHouseKeepingTask = new AdvanceConsumersTask();
         Subject activeSubject = Subject.getSubject(AccessController.getContext());
@@ -680,15 +674,15 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public long getMaxCount()
+    public long getMaximumQueueDepthMessages()
     {
-        return _maxCount;
+        return _maximumQueueDepthMessages;
     }
 
     @Override
-    public long getMaxSize()
+    public long getMaximumQueueDepthBytes()
     {
-        return _maxSize;
+        return _maximumQueueDepthBytes;
     }
 
     @Override
@@ -1158,7 +1152,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     protected void doEnqueue(final ServerMessage message, final Action<? super MessageInstance> action, MessageEnqueueRecord enqueueRecord)
     {
-        applyOverflowPolicy(message);
         final QueueEntry entry = getEntries().add(message, enqueueRecord);
         updateExpiration(entry);
 
@@ -1178,33 +1171,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 action.performAction(entry);
             }
+            _overflowPolicyHandler.checkOverflow();
         }
 
-    }
-
-    private void applyOverflowPolicy(final ServerMessage message)
-    {
-        if (getOverflowPolicy() != null)
-        {
-            switch (getOverflowPolicy())
-            {
-                case RING:
-                    while (getQueueDepthMessages() == getMaxCount())
-                    {
-                        QueueEntry entry = getEntries().getOldestEntry();
-                        deleteEntry(entry);
-                    }
-                    while (getQueueDepthBytesIncludingHeader() + message.getSizeIncludingHeader() > getMaxSize())
-                    {
-                        QueueEntry entry = getEntries().getOldestEntry();
-                        deleteEntry(entry);
-                    }
-                    break;
-                case NONE:
-                default:
-                    break;
-            }
-        }
     }
 
     private void updateExpiration(final QueueEntry entry)
@@ -1671,6 +1640,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     });
     }
 
+    @Override
     public void deleteEntry(final QueueEntry entry)
     {
         boolean acquiredForDequeueing = entry.acquireOrSteal(new Runnable()
@@ -1684,8 +1654,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         if(acquiredForDequeueing)
         {
-            _logger.debug("Dequeuing expired node {}", entry);
-            // Then dequeue it.
+            _logger.debug("Dequeuing node {}", entry);
             dequeueEntry(entry);
         }
     }
@@ -1804,64 +1773,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public void checkCapacity(AMQPSession<?,?> session)
-    {
-        if(_queueFlowControlSizeBytes != 0L)
-        {
-            if(_queueStatistics.getQueueSize() > _queueFlowControlSizeBytes)
-            {
-                _overfull.set(true);
-                //Overfull log message
-                getEventLogger().message(_logSubject, QueueMessages.OVERFULL(_queueStatistics.getQueueSize(),
-                                                                             _queueFlowControlSizeBytes));
-
-                _blockedSessions.add(session);
-
-                session.block(this);
-
-                if(_queueStatistics.getQueueSize() <= _queueFlowResumeSizeBytes)
-                {
-
-                    //Underfull log message
-                    getEventLogger().message(_logSubject,
-                                             QueueMessages.UNDERFULL(_queueStatistics.getQueueSize(), _queueFlowResumeSizeBytes));
-
-                   session.unblock(this);
-                   _blockedSessions.remove(session);
-
-                }
-            }
-
-
-
-        }
-    }
-
-    @Override
     public void checkCapacity()
     {
-        if(getEntries() != null)
-        {
-            if (_queueFlowControlSizeBytes != 0L)
-            {
-                if (_overfull.get() && _queueStatistics.getQueueSize() <= _queueFlowResumeSizeBytes)
-                {
-                    if (_overfull.compareAndSet(true, false))
-                    {
-                        //Underfull log message
-                        getEventLogger().message(_logSubject,
-                                                 QueueMessages.UNDERFULL(_queueStatistics.getQueueSize(),
-                                                                         _queueFlowResumeSizeBytes));
-                    }
-
-                    for (final AMQPSession<?,?> blockedSession : _blockedSessions)
-                    {
-                        blockedSession.unblock(this);
-                        _blockedSessions.remove(blockedSession);
-                    }
-                }
-            }
-        }
+        _overflowPolicyHandler.checkOverflow();
     }
 
     void notifyConsumers(QueueEntry entry)
@@ -2289,16 +2203,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _alertThresholdMessageSize;
     }
 
-    public long getQueueFlowControlSizeBytes()
-    {
-        return _queueFlowControlSizeBytes;
-    }
-
-    public long getQueueFlowResumeSizeBytes()
-    {
-        return _queueFlowResumeSizeBytes;
-    }
-
     public Set<NotificationCheck> getNotificationChecks()
     {
         return _notificationChecks;
@@ -2636,32 +2540,15 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             throw new VirtualHostUnavailableException(this._virtualHost);
         }
         RoutingResult<M> result = new RoutingResult<>(message);
-
-        if(_overflowPolicy == OverflowPolicy.RING && message.getSizeIncludingHeader() > getMaxSize())
+        if (!message.isResourceAcceptable(this))
         {
-            result.addRoutingFailure(506, "amqp:resource-limit-exceeded", "Message larger than configured maximum depth on " + this.getName()
-                    + ": size=" + message.getSizeIncludingHeader() + ", max-size=" + getMaxSize());
+            result.addNotAcceptingRoutableQueue(this, String.format("Not accepted by queue '%s'", getName()));
         }
-        else if(_overflowPolicy == OverflowPolicy.RING && _maxCount == 0)
+        else if (message.isReferenced(this))
         {
-            result.addRoutingFailure(506, "amqp:resource-limit-exceeded", "Queue '" + getName() + "' maximum count (0) prevents this message from being accepted");
+            result.addNotAcceptingRoutableQueue(this, String.format("Already enqueued on queue '%s'", getName()));
         }
-        else if (this instanceof PriorityQueue && message.isResourceAcceptable(this) && !message.isReferenced(this))
-        {
-            if (getMaxCount() == getQueueDepthMessages())
-            {
-                QueueEntry entry = getEntries().getOldestEntry();
-                if(entry.getMessage().getMessageHeader().getPriority() <= message.getMessageHeader().getPriority())
-                {
-                    result.addQueue(this);
-                }
-            }
-            else
-            {
-                result.addQueue(this);
-            }
-        }
-        else if(message.isResourceAcceptable(this) && !message.isReferenced(this))
+        else
         {
             result.addQueue(this);
         }
@@ -2992,7 +2879,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public boolean isQueueFlowStopped()
     {
-        return _overfull.get();
+        if (_overflowPolicyHandler instanceof ProducerFlowControlOverflowPolicyHandler)
+        {
+            return ((ProducerFlowControlOverflowPolicyHandler)_overflowPolicyHandler).isQueueFlowStopped();
+        }
+        return false;
     }
 
     @Override
@@ -3008,7 +2899,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public boolean changeAttribute(String name, Object desired) throws IllegalStateException, AccessControlException, IllegalArgumentException
+    protected boolean changeAttribute(String name, Object desired) throws IllegalStateException, AccessControlException, IllegalArgumentException
     {
         if(EXCLUSIVE.equals(name))
         {
@@ -3037,14 +2928,39 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     }
 
+    @Override
+    protected void changeAttributes(Map<String,Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException
+    {
+        OverflowPolicy oldOverflowPolicy = getOverflowPolicy();
+        super.changeAttributes(attributes);
+
+        OverflowPolicy newOverflowPolicy = getOverflowPolicy();
+        if (oldOverflowPolicy != newOverflowPolicy)
+        {
+            _overflowPolicyHandler = createOverflowPolicyHandler(newOverflowPolicy);
+            _overflowPolicyHandler.checkOverflow();
+        }
+    }
+
+    private OverflowPolicyHandler createOverflowPolicyHandler(final OverflowPolicy overflowPolicy)
+    {
+        OverflowPolicyHandlerFactory factory =
+                new QpidServiceLoader().getInstancesByType(OverflowPolicyHandlerFactory.class)
+                                       .get(String.valueOf(overflowPolicy));
+        if (factory == null)
+        {
+            throw new IllegalStateException(String.format("Factory for overflow policy '%s' is not found",
+                                                          overflowPolicy.name()));
+        }
+        return factory.create(this, getEventLogger());
+    }
+
     private static final String[] NON_NEGATIVE_NUMBERS = {
         ALERT_REPEAT_GAP,
         ALERT_THRESHOLD_MESSAGE_AGE,
         ALERT_THRESHOLD_MESSAGE_SIZE,
         ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES,
         ALERT_THRESHOLD_QUEUE_DEPTH_BYTES,
-        QUEUE_FLOW_CONTROL_SIZE_BYTES,
-        QUEUE_FLOW_RESUME_SIZE_BYTES,
         MAXIMUM_DELIVERY_ATTEMPTS
     };
 
@@ -3053,12 +2969,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         super.validateChange(proxyForValidation, changedAttributes);
         Queue<?> queue = (Queue) proxyForValidation;
-        long queueFlowControlSize = queue.getQueueFlowControlSizeBytes();
-        long queueFlowControlResumeSize = queue.getQueueFlowResumeSizeBytes();
-        if (queueFlowControlResumeSize > queueFlowControlSize)
-        {
-            throw new IllegalConfigurationException("Flow resume size can't be greater than flow control size");
-        }
 
         for (String attrName : NON_NEGATIVE_NUMBERS)
         {
@@ -3253,6 +3163,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         final MessageFinder messageFinder = new MessageFinder(messageId, includeHeaders);
         visit(messageFinder);
         return messageFinder.getMessageInfo();
+    }
+
+    @Override
+    public QueueEntry getLesserOldestEntry()
+    {
+        return getEntries().getLesserOldestEntry();
     }
 
     private class MessageFinder implements QueueEntryVisitor
