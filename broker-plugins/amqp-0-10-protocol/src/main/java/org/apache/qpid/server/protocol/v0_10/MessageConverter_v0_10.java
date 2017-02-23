@@ -37,11 +37,11 @@ import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.transport.DeliveryProperties;
-import org.apache.qpid.server.transport.Header;
-import org.apache.qpid.server.transport.MessageDeliveryPriority;
-import org.apache.qpid.server.transport.MessageProperties;
-import org.apache.qpid.server.transport.codec.BBEncoder;
+import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.Header;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryPriority;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.BBEncoder;
 
 @PluggableService
 public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, MessageTransferMessage>

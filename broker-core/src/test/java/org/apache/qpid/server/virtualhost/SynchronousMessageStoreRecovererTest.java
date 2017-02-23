@@ -57,7 +57,7 @@ import org.apache.qpid.server.txn.DtxBranch;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.server.transport.Xid;
+import org.apache.qpid.server.protocol.v0_10.transport.Xid;
 
 public class SynchronousMessageStoreRecovererTest extends QpidTestCase
 {

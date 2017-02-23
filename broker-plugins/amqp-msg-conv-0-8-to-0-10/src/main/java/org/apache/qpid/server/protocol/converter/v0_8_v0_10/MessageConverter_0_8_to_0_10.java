@@ -36,11 +36,11 @@ import org.apache.qpid.server.protocol.v0_10.MessageMetaData_0_10;
 import org.apache.qpid.server.protocol.v0_10.MessageTransferMessage;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.server.transport.DeliveryProperties;
-import org.apache.qpid.server.transport.Header;
-import org.apache.qpid.server.transport.MessageDeliveryPriority;
-import org.apache.qpid.server.transport.MessageProperties;
-import org.apache.qpid.server.transport.ReplyTo;
+import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.Header;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryPriority;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.ReplyTo;
 import org.apache.qpid.server.url.AMQBindingURL;
 
 @PluggableService

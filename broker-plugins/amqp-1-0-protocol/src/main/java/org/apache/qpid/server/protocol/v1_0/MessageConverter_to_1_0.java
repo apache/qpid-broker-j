@@ -44,7 +44,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSect
 import org.apache.qpid.server.protocol.v1_0.type.messaging.NonEncodingRetainingSection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.transport.codec.BBDecoder;
+import org.apache.qpid.server.protocol.v0_10.transport.BBDecoder;
 import org.apache.qpid.server.typedmessage.TypedBytesContentReader;
 import org.apache.qpid.server.typedmessage.TypedBytesFormatException;
 import org.apache.qpid.server.util.GZIPUtils;

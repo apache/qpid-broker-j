@@ -45,14 +45,14 @@ import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
-import org.apache.qpid.server.transport.DeliveryProperties;
-import org.apache.qpid.server.transport.Header;
-import org.apache.qpid.server.transport.MessageAcceptMode;
-import org.apache.qpid.server.transport.MessageAcquireMode;
-import org.apache.qpid.server.transport.MessageDeliveryMode;
-import org.apache.qpid.server.transport.MessageDeliveryPriority;
-import org.apache.qpid.server.transport.MessageProperties;
-import org.apache.qpid.server.transport.MessageTransfer;
+import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.Header;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageAcceptMode;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageAcquireMode;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryPriority;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
 import org.apache.qpid.server.util.FileUtils;
 
 /**

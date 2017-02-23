@@ -43,7 +43,6 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.server.util.SystemUtils;
 

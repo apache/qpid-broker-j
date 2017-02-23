@@ -27,8 +27,8 @@ import static org.apache.qpid.server.protocol.v0_10.ServerSession.State.DETACHED
 import static org.apache.qpid.server.protocol.v0_10.ServerSession.State.NEW;
 import static org.apache.qpid.server.protocol.v0_10.ServerSession.State.OPEN;
 import static org.apache.qpid.server.protocol.v0_10.ServerSession.State.RESUMING;
-import static org.apache.qpid.server.transport.Option.COMPLETED;
-import static org.apache.qpid.server.transport.Option.TIMELY_REPLY;
+import static org.apache.qpid.server.protocol.v0_10.transport.Option.COMPLETED;
+import static org.apache.qpid.server.protocol.v0_10.transport.Option.TIMELY_REPLY;
 import static org.apache.qpid.server.util.Serial.ge;
 import static org.apache.qpid.server.util.Serial.gt;
 import static org.apache.qpid.server.util.Serial.le;
@@ -82,11 +82,12 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.protocol.v0_10.transport.*;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.transport.network.Frame;
+import org.apache.qpid.server.protocol.v0_10.transport.Frame;
 import org.apache.qpid.server.txn.AlreadyKnownDtxException;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.DistributedTransaction;
@@ -102,7 +103,6 @@ import org.apache.qpid.server.txn.TimeoutDtxException;
 import org.apache.qpid.server.txn.UnknownDtxBranchException;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.transport.*;
 
 public class ServerSession extends SessionInvoker
         implements LogSubject, AsyncAutoCommitTransaction.FutureRecorder
@@ -154,7 +154,7 @@ public class ServerSession extends SessionInvoker
     private SessionDetachCode detachCode;
     private boolean _isNoReplay = false;
     private Map<Integer,ResultFuture<?>> results = new HashMap<Integer,ResultFuture<?>>();
-    private org.apache.qpid.server.transport.ExecutionException exception = null;
+    private org.apache.qpid.server.protocol.v0_10.transport.ExecutionException exception = null;
 
     public Binary getName()
     {
@@ -569,7 +569,7 @@ public class ServerSession extends SessionInvoker
                     break;
                 case CLOSING:
                 case CLOSED:
-                    org.apache.qpid.server.transport.ExecutionException exc = getException();
+                    org.apache.qpid.server.protocol.v0_10.transport.ExecutionException exc = getException();
                     if (exc != null)
                     {
                         throw new SessionException(exc);
@@ -601,7 +601,7 @@ public class ServerSession extends SessionInvoker
 
                 if (state == CLOSED)
                 {
-                    org.apache.qpid.server.transport.ExecutionException exc = getException();
+                    org.apache.qpid.server.protocol.v0_10.transport.ExecutionException exc = getException();
                     if (exc != null)
                     {
                         throw new SessionException(exc);
@@ -713,7 +713,7 @@ public class ServerSession extends SessionInvoker
         }
     }
 
-    void setException(org.apache.qpid.server.transport.ExecutionException exc)
+    void setException(org.apache.qpid.server.protocol.v0_10.transport.ExecutionException exc)
     {
         synchronized (results)
         {
@@ -726,7 +726,7 @@ public class ServerSession extends SessionInvoker
         }
     }
 
-    org.apache.qpid.server.transport.ExecutionException getException()
+    org.apache.qpid.server.protocol.v0_10.transport.ExecutionException getException()
     {
         synchronized (results)
         {
@@ -1929,7 +1929,7 @@ public class ServerSession extends SessionInvoker
             }
             else if (state == CLOSED)
             {
-                org.apache.qpid.server.transport.ExecutionException ex = getException();
+                org.apache.qpid.server.protocol.v0_10.transport.ExecutionException ex = getException();
                 if(ex == null)
                 {
                     throw new SessionClosedException();

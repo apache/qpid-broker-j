@@ -28,12 +28,12 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.StorableMessageMetaData;
-import org.apache.qpid.server.transport.DeliveryProperties;
-import org.apache.qpid.server.transport.Header;
-import org.apache.qpid.server.transport.MessageDeliveryMode;
-import org.apache.qpid.server.transport.MessageProperties;
-import org.apache.qpid.server.transport.MessageTransfer;
-import org.apache.qpid.server.transport.Struct;
+import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.Header;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
+import org.apache.qpid.server.protocol.v0_10.transport.Struct;
 
 public class MessageMetaData_0_10 implements StorableMessageMetaData
 {

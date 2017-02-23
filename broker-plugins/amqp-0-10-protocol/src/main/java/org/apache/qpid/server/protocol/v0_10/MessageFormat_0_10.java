@@ -30,10 +30,10 @@ import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.transport.DeliveryProperties;
-import org.apache.qpid.server.transport.Header;
-import org.apache.qpid.server.transport.MessageProperties;
-import org.apache.qpid.server.transport.Struct;
+import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.Header;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.Struct;
 
 public class MessageFormat_0_10 implements MessageFormat<MessageTransferMessage>
 {

@@ -51,8 +51,7 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.transport.ByteBufferSender;
-import org.apache.qpid.server.transport.ConnectionCloseCode;
-import org.apache.qpid.server.transport.Constant;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionCloseCode;
 
 
 public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnection_0_10Impl, ServerConnection>

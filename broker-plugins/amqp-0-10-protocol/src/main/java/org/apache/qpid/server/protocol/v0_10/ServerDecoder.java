@@ -23,7 +23,7 @@ package org.apache.qpid.server.protocol.v0_10;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.transport.codec.AbstractDecoder;
+import org.apache.qpid.server.protocol.v0_10.transport.AbstractDecoder;
 
 final class ServerDecoder extends AbstractDecoder
 {

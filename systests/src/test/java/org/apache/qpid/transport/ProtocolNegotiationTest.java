@@ -51,8 +51,8 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.v0_10.ServerDisassembler;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.apache.qpid.server.transport.network.Frame;
-import org.apache.qpid.server.transport.ConnectionHeartbeat;
+import org.apache.qpid.server.protocol.v0_10.transport.Frame;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionHeartbeat;
 import org.apache.qpid.server.transport.ByteBufferSender;
 
 public class ProtocolNegotiationTest extends QpidBrokerTestCase

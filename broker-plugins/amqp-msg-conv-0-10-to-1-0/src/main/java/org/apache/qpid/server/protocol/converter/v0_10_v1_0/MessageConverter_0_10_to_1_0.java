@@ -38,9 +38,9 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
-import org.apache.qpid.server.transport.DeliveryProperties;
-import org.apache.qpid.server.transport.MessageDeliveryMode;
-import org.apache.qpid.server.transport.MessageProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.util.GZIPUtils;
 
 @PluggableService

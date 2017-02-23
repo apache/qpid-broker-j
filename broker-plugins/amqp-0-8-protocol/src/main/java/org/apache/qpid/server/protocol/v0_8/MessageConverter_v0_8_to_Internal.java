@@ -36,7 +36,7 @@ import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
-import org.apache.qpid.server.transport.codec.BBDecoder;
+import org.apache.qpid.server.protocol.v0_10.transport.BBDecoder;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.typedmessage.TypedBytesContentReader;
 import org.apache.qpid.server.typedmessage.TypedBytesFormatException;

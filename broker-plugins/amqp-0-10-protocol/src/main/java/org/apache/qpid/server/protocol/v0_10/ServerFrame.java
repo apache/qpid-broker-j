@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.transport.SegmentType;
+import org.apache.qpid.server.protocol.v0_10.transport.SegmentType;
 
 
 public final class ServerFrame

@@ -27,11 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.transport.Constant;
-import org.apache.qpid.server.transport.FrameSizeObserver;
-import org.apache.qpid.server.transport.ProtocolError;
-import org.apache.qpid.server.transport.ProtocolHeader;
-import org.apache.qpid.server.transport.SegmentType;
+import org.apache.qpid.server.protocol.v0_10.transport.ProtocolError;
+import org.apache.qpid.server.protocol.v0_10.transport.ProtocolHeader;
+import org.apache.qpid.server.protocol.v0_10.transport.SegmentType;
 
 
 public class ServerInputHandler implements FrameSizeObserver

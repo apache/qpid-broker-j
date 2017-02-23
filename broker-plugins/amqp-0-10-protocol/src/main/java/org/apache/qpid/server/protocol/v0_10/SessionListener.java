@@ -21,8 +21,8 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 
-import org.apache.qpid.server.transport.MessageTransfer;
-import org.apache.qpid.server.transport.SessionException;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
+import org.apache.qpid.server.protocol.v0_10.transport.SessionException;
 
 /**
  * SessionListener

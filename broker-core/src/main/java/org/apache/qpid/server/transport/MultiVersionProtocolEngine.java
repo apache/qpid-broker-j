@@ -46,7 +46,6 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.network.Ticker;
 
 public class MultiVersionProtocolEngine implements ProtocolEngine

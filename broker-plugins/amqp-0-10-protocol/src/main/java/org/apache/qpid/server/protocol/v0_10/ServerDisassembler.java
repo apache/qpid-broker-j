@@ -21,11 +21,11 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 import static java.lang.Math.min;
-import static org.apache.qpid.server.transport.network.Frame.FIRST_FRAME;
-import static org.apache.qpid.server.transport.network.Frame.FIRST_SEG;
-import static org.apache.qpid.server.transport.network.Frame.HEADER_SIZE;
-import static org.apache.qpid.server.transport.network.Frame.LAST_FRAME;
-import static org.apache.qpid.server.transport.network.Frame.LAST_SEG;
+import static org.apache.qpid.server.protocol.v0_10.transport.Frame.FIRST_FRAME;
+import static org.apache.qpid.server.protocol.v0_10.transport.Frame.FIRST_SEG;
+import static org.apache.qpid.server.protocol.v0_10.transport.Frame.HEADER_SIZE;
+import static org.apache.qpid.server.protocol.v0_10.transport.Frame.LAST_FRAME;
+import static org.apache.qpid.server.protocol.v0_10.transport.Frame.LAST_SEG;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,16 +36,15 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.transport.ByteBufferSender;
-import org.apache.qpid.server.transport.FrameSizeObserver;
-import org.apache.qpid.server.transport.Header;
-import org.apache.qpid.server.transport.Method;
-import org.apache.qpid.server.transport.ProtocolDelegate;
-import org.apache.qpid.server.transport.ProtocolError;
-import org.apache.qpid.server.transport.ProtocolEvent;
-import org.apache.qpid.server.transport.ProtocolHeader;
-import org.apache.qpid.server.transport.SegmentType;
-import org.apache.qpid.server.transport.Struct;
-import org.apache.qpid.server.transport.network.Frame;
+import org.apache.qpid.server.protocol.v0_10.transport.Header;
+import org.apache.qpid.server.protocol.v0_10.transport.Method;
+import org.apache.qpid.server.protocol.v0_10.transport.ProtocolDelegate;
+import org.apache.qpid.server.protocol.v0_10.transport.ProtocolError;
+import org.apache.qpid.server.protocol.v0_10.transport.ProtocolEvent;
+import org.apache.qpid.server.protocol.v0_10.transport.ProtocolHeader;
+import org.apache.qpid.server.protocol.v0_10.transport.SegmentType;
+import org.apache.qpid.server.protocol.v0_10.transport.Struct;
+import org.apache.qpid.server.protocol.v0_10.transport.Frame;
 
 /**
  * Disassembler

@@ -23,21 +23,21 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import java.util.Map;
 
-import org.apache.qpid.server.transport.ConnectionClose;
-import org.apache.qpid.server.transport.ConnectionCloseCode;
-import org.apache.qpid.server.transport.ConnectionCloseOk;
-import org.apache.qpid.server.transport.ConnectionHeartbeat;
-import org.apache.qpid.server.transport.ConnectionOpen;
-import org.apache.qpid.server.transport.ConnectionOpenOk;
-import org.apache.qpid.server.transport.ConnectionRedirect;
-import org.apache.qpid.server.transport.ConnectionSecure;
-import org.apache.qpid.server.transport.ConnectionSecureOk;
-import org.apache.qpid.server.transport.ConnectionStart;
-import org.apache.qpid.server.transport.ConnectionStartOk;
-import org.apache.qpid.server.transport.ConnectionTune;
-import org.apache.qpid.server.transport.ConnectionTuneOk;
-import org.apache.qpid.server.transport.Method;
-import org.apache.qpid.server.transport.Option;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionClose;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionCloseCode;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionCloseOk;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionHeartbeat;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionOpen;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionOpenOk;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionRedirect;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionSecure;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionSecureOk;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStart;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStartOk;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionTune;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionTuneOk;
+import org.apache.qpid.server.protocol.v0_10.transport.Method;
+import org.apache.qpid.server.protocol.v0_10.transport.Option;
 
 public abstract class ConnectionInvoker {
 

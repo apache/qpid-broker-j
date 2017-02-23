@@ -21,7 +21,7 @@
 
 package org.apache.qpid.server.txn;
 
-import org.apache.qpid.server.transport.Xid;
+import org.apache.qpid.server.protocol.v0_10.transport.Xid;
 
 public class UnknownDtxBranchException extends DtxException
 {

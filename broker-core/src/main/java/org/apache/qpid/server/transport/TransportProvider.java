@@ -27,6 +27,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.transport.AcceptingTransport;
 
 public interface TransportProvider
 {

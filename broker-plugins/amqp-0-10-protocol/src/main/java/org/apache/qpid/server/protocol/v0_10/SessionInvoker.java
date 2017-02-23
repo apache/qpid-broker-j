@@ -23,7 +23,7 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import java.util.Map;
 
-import org.apache.qpid.server.transport.*;
+import org.apache.qpid.server.protocol.v0_10.transport.*;
 
 public abstract class SessionInvoker {
 
