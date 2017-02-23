@@ -85,6 +85,12 @@ class MockServerMessage implements ServerMessage
     }
 
     @Override
+    public long getSizeIncludingHeader()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String getInitialRoutingAddress()
     {
         throw new UnsupportedOperationException();

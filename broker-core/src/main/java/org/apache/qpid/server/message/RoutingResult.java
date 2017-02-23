@@ -42,6 +42,14 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
 
     private final Set<BaseQueue> _queues = new HashSet<>();
 
+    private int _errorCodeAmqp_0_10;
+
+    private String _errorCodeAmqp_1_0;
+
+    private String _errorMessage;
+
+    private boolean _routingFailure = false;
+
     public RoutingResult(final M message)
     {
         _message = message;
@@ -82,7 +90,17 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
 
     public void add(RoutingResult<M> result)
     {
-        addQueues(result._queues);
+        if (result.isRoutingFailure())
+        {
+            _routingFailure = result._routingFailure;
+            _errorCodeAmqp_0_10 = result._errorCodeAmqp_0_10;
+            _errorCodeAmqp_1_0 = result._errorCodeAmqp_1_0;
+            _errorMessage = result._errorMessage;
+        }
+        else
+        {
+            addQueues(result._queues);
+        }
     }
 
     public int send(ServerTransaction txn,
@@ -143,5 +161,33 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
     public boolean hasRoutes()
     {
         return !_queues.isEmpty();
+    }
+
+    public void addRoutingFailure(int errorCodeAmqp_0_10, String errorCodeAmqp_1_0, String reason)
+    {
+        _routingFailure = true;
+        this._errorCodeAmqp_0_10 = errorCodeAmqp_0_10;
+        this._errorCodeAmqp_1_0 = errorCodeAmqp_1_0;
+        _errorMessage = reason;
+    }
+
+    public String getErrorMessage()
+    {
+        return _errorMessage;
+    }
+
+    public int getErrorCodeAmqp_0_10()
+    {
+        return _errorCodeAmqp_0_10;
+    }
+
+    public String getErrorCodeAmqp_1_0()
+    {
+        return _errorCodeAmqp_1_0;
+    }
+
+    public boolean isRoutingFailure()
+    {
+        return _routingFailure;
     }
 }

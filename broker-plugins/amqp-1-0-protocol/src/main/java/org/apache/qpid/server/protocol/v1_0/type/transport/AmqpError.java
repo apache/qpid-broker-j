@@ -149,6 +149,11 @@ public class AmqpError
         }
     }
 
+    public static AmqpError valueOf(String errorCode)
+    {
+        return valueOf(Symbol.valueOf(errorCode));
+    }
+
     public static AmqpError valueOf(Object obj)
     {
         Symbol val = (Symbol) obj;

@@ -106,20 +106,30 @@ public class NodeReceivingDestination implements ReceivingDestination
                 }};
 
         RoutingResult result = _destination.route(message, routingAddress, instanceProperties);
-        int enqueues = result.send(txn, action);
-
-        if(enqueues == 0)
+        if (result.isRoutingFailure())
         {
-            _eventLogger.message(ExchangeMessages.DISCARDMSG(_destination.getName(), routingAddress));
+            return createdRejectedOutcome(AmqpError.valueOf(result.getErrorCodeAmqp_1_0()),
+                    result.getErrorMessage());
         }
+        else
+        {
+            int enqueues = result.send(txn, action);
 
-        return enqueues == 0 && !_discardUnroutable ? createdRejectedOutcome(routingAddress) : ACCEPTED;
+            if(enqueues == 0)
+            {
+                _eventLogger.message(ExchangeMessages.DISCARDMSG(_destination.getName(), routingAddress));
+            }
+
+            return enqueues == 0 && !_discardUnroutable ?
+                    createdRejectedOutcome(AmqpError.NOT_FOUND,
+                            "Unknown destination '" + routingAddress + '"') : ACCEPTED;
+        }
     }
 
-    private Outcome createdRejectedOutcome(String routingAddress)
+    private Outcome createdRejectedOutcome(AmqpError errorCode, String errorMessage)
     {
         Rejected rejected = new Rejected();
-        final Error notFoundError = new Error(AmqpError.NOT_FOUND, "Unknown destination '" + routingAddress + '"');
+        final Error notFoundError = new Error(errorCode, errorMessage);
         rejected.setError(notFoundError);
         return rejected;
     }

@@ -138,6 +138,52 @@
                 </div>
             </div>
             <div class="clear">
+                <div class="formLabel-labelCell">Overflow policy:</div>
+                <div class="formLabel-controlCell">
+                    <select id="formAddQueue.overflowPolicy"
+                            dojoType="dijit.form.FilteringSelect"
+                            data-dojo-props="
+                              name: 'overflowPolicy',
+                              value: '',
+                              searchAttr: 'name',
+                              required: false,
+                              promptMessage: 'Overflow policy override. If not default, messages arriving will have overflow policy setting overridden',
+                              title: 'Enter overflow policy override'">
+                        <option value="NONE">None</option>
+                        <option value="RING">Ring</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="formAddQueueOverflowPolicy:RING" class="hidden overflowPolicySpecificDiv">
+                <div class="clear">
+                    <div class="formLabel-labelCell">Maximum count:</div>
+                    <div class="formLabel-controlCell">
+                        <input type="text" id="formAddQueueOverflowPolicy.maxCount"
+                               data-dojo-type="dijit/form/ValidationTextBox"
+                               data-dojo-props="
+                                  name: 'maxCount',
+                                  placeHolder: 'number of messages',
+                                  promptMessage: 'Maximum number of messages in the queue',
+                                  title: 'Enter the maximum number of messages in the queue',
+                                  trim: true"/>
+                    </div>
+                    <div class="formLabel-labelCell">Maximum size:</div>
+                    <div class="formLabel-controlCell">
+                        <input type="text" id="formAddQueueoverflowPolicy.maxSize"
+                               data-dojo-type="dijit/form/ValidationTextBox"
+                               data-dojo-props="
+                                  name: 'maxSize',
+                                  placeHolder: 'size of messages',
+                                  promptMessage: 'Maximum size of messages (including header) in the queue',
+                                  title: 'Enter the maximum size of messages (including header) in the queue',
+                                  trim: true"/>
+                    </div>
+                </div>
+                <div class="clear"></div>
+            </div>
+
+            <div class="clear">
                 <div class="formLabel-labelCell">Maximum Ttl:</div>
                 <div class="formLabel-controlCell">
                     <input type="text" id="formAddQueue.maximumMessageTtl"

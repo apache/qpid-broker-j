@@ -1007,11 +1007,24 @@ public class ServerSession extends SessionInvoker
         }
         final RoutingResult<MessageTransferMessage> result =
                 exchange.route(message, message.getInitialRoutingAddress(), instanceProperties);
-        int enqueues = result.send(_transaction, _checkCapacityAction);
-        getAMQPConnection().registerMessageReceived(message.getSize(), message.getArrivalTime());
-        incrementOutstandingTxnsIfNecessary();
-        incrementUncommittedMessageSize(message.getStoredMessage());
-        return enqueues;
+        if (result.isRoutingFailure())
+        {
+            org.apache.qpid.server.transport.ExecutionException ex = new org.apache.qpid.server.transport.ExecutionException();
+            ex.setErrorCode(ExecutionErrorCode.get(result.getErrorCodeAmqp_0_10()));
+            ex.setCommandId((int) message.getMessageNumber());
+            ex.setDescription(result.getErrorMessage());
+            invoke(ex);
+            close(ExecutionErrorCode.get(result.getErrorCodeAmqp_0_10()).getValue(), result.getErrorMessage());
+            return 0;
+        }
+        else
+        {
+            int enqueues = result.send(_transaction, _checkCapacityAction);
+            getAMQPConnection().registerMessageReceived(message.getSize(), message.getArrivalTime());
+            incrementOutstandingTxnsIfNecessary();
+            incrementUncommittedMessageSize(message.getStoredMessage());
+            return enqueues;
+        }
     }
 
     private void resetUncommittedMessages()

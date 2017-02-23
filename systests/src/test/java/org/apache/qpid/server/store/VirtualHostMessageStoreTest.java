@@ -38,6 +38,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.common.AMQPFilterTypes;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
+import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
@@ -70,7 +72,6 @@ import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
@@ -106,6 +107,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
     private String durablePriorityQueueName = "MST-PriorityQueue-Durable";
     private String durableLastValueQueueName = "MST-LastValueQueue-Durable";
     private String durableQueueName = "MST-Queue-Durable";
+    private String durableQueueRingOverflowPolicy = "MST-Queue-Ring-OverflowPolicy";
     private String priorityQueueName = "MST-PriorityQueue";
     private String queueName = "MST-Queue";
 
@@ -235,7 +237,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         validateMessageOnTopics(2, true);
 
         assertEquals("Not all queues correctly registered",
-                10, _virtualHost.getChildren(Queue.class).size());
+                11, _virtualHost.getChildren(Queue.class).size());
     }
 
     public void testMessagePersistence() throws Exception
@@ -319,7 +321,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
     public void testDurableQueueRemoval() throws Exception
     {
         //Register Durable Queue
-        createQueue(durableQueueName, false, true, false, false);
+        createQueue(durableQueueName, false, true, false, false, false);
 
         assertEquals("Incorrect number of queues registered before recovery",
                 1,  _virtualHost.getChildren(Queue.class).size());
@@ -438,7 +440,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         //create durable queue and exchange, bind them
         Exchange<?>
                 exch = createExchange(ExchangeDefaults.DIRECT_EXCHANGE_CLASS, directExchangeName, true);
-        createQueue(durableQueueName, false, true, false, false);
+        createQueue(durableQueueName, false, true, false, false, false);
         bindQueueToExchange(exch, directRouting, _virtualHost.getChildByName(Queue.class, durableQueueName), false);
 
         assertEquals("Incorrect number of bindings registered before recovery",
@@ -546,15 +548,16 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
     private void validateDurableQueueProperties()
     {
-        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durablePriorityQueueName), true, true, false, false);
-        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durablePriorityTopicQueueName), true, true, false, false);
-        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durableQueueName), false, true, false, false);
-        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durableTopicQueueName), false, true, false, false);
-        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durableExclusiveQueueName), false, true, true, false);
-        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durableLastValueQueueName), false, true, true, true);
+        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durablePriorityQueueName), true, true, false, false, false);
+        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durablePriorityTopicQueueName), true, true, false, false, false);
+        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durableQueueName), false, true, false, false, false);
+        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durableTopicQueueName), false, true, false, false, false);
+        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durableExclusiveQueueName), false, true, true, false, false);
+        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durableLastValueQueueName), false, true, true, true, false);
+        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durableQueueRingOverflowPolicy), false, true, false, false, true);
     }
 
-    private void validateQueueProperties(Queue queue, boolean usePriority, boolean durable, boolean exclusive, boolean lastValueQueue)
+    private void validateQueueProperties(Queue queue, boolean usePriority, boolean durable, boolean exclusive, boolean lastValueQueue, boolean ringPolicy)
     {
         if(usePriority || lastValueQueue)
         {
@@ -580,6 +583,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         assertEquals("Queue owner is not as expected for queue " + queue.getName(), exclusive ? queueOwner : null, queue.getOwner());
         assertEquals("Queue durability is not as expected for queue " + queue.getName(), durable, queue.isDurable());
         assertEquals("Queue exclusivity is not as expected for queue " + queue.getName(), exclusive, queue.getExclusive() != ExclusivityPolicy.NONE);
+        assertEquals("Queue overflow policy is not as expected for queue " + queue.getName(), ringPolicy, queue.getOverflowPolicy() == OverflowPolicy.RING);
     }
 
     /**
@@ -624,40 +628,43 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
     private void createAllQueues() throws Exception
     {
         //Register Durable Priority Queue
-        createQueue(durablePriorityQueueName, true, true, false, false);
+        createQueue(durablePriorityQueueName, true, true, false, false, false);
 
         //Register Durable Simple Queue
-        createQueue(durableQueueName, false, true, false, false);
+        createQueue(durableQueueName, false, true, false, false, false);
 
         //Register Durable Exclusive Simple Queue
-        createQueue(durableExclusiveQueueName, false, true, true, false);
+        createQueue(durableExclusiveQueueName, false, true, true, false, false);
 
         //Register Durable LastValue Queue
-        createQueue(durableLastValueQueueName, false, true, true, true);
+        createQueue(durableLastValueQueueName, false, true, true, true, false);
+
+        //Register Durable Queue with Ring Overflow Policy
+        createQueue(durableQueueRingOverflowPolicy, false, true, false, false, true);
 
         //Register NON-Durable Priority Queue
-        createQueue(priorityQueueName, true, false, false, false);
+        createQueue(priorityQueueName, true, false, false, false, false);
 
         //Register NON-Durable Simple Queue
-        createQueue(queueName, false, false, false, false);
+        createQueue(queueName, false, false, false, false, false);
     }
 
     private void createAllTopicQueues() throws Exception
     {
         //Register Durable Priority Queue
-        createQueue(durablePriorityTopicQueueName, true, true, false, false);
+        createQueue(durablePriorityTopicQueueName, true, true, false, false, false);
 
         //Register Durable Simple Queue
-        createQueue(durableTopicQueueName, false, true, false, false);
+        createQueue(durableTopicQueueName, false, true, false, false, false);
 
         //Register NON-Durable Priority Queue
-        createQueue(priorityTopicQueueName, true, false, false, false);
+        createQueue(priorityTopicQueueName, true, false, false, false, false);
 
         //Register NON-Durable Simple Queue
-        createQueue(topicQueueName, false, false, false, false);
+        createQueue(topicQueueName, false, false, false, false, false);
     }
 
-    private void createQueue(String queueName, boolean usePriority, boolean durable, boolean exclusive, boolean lastValueQueue)
+    private void createQueue(String queueName, boolean usePriority, boolean durable, boolean exclusive, boolean lastValueQueue, boolean ringPolicy)
             throws Exception
     {
 
@@ -703,7 +710,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
                                          });
 
 
-        validateQueueProperties(queue, usePriority, durable, exclusive, lastValueQueue);
+        validateQueueProperties(queue, usePriority, durable, exclusive, lastValueQueue, ringPolicy);
     }
 
     private Map<String, Exchange<?>> createExchanges() throws Exception

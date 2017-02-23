@@ -82,7 +82,9 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     String DEFAULT_FILTERS = "defaultFilters";
     String ENSURE_NONDESTRUCTIVE_CONSUMERS = "ensureNondestructiveConsumers";
     String HOLD_ON_PUBLISH_ENABLED = "holdOnPublishEnabled";
-
+    String OVERFLOW_POLICY = "overflowPolicy";
+    String MAX_COUNT = "maxCount";
+    String MAX_SIZE = "maxSize";
 
     String QUEUE_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT = "queue.minimumEstimatedMemoryFootprint";
     @SuppressWarnings("unused")
@@ -259,6 +261,27 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                                      + "visible may depend on how frequently the virtual host housekeeping thread runs.")
     boolean isHoldOnPublishEnabled();
 
+    @ManagedContextDefault( name = "queue.defaultMaxCount", description = "Maximum count of messages in queue when policy_type set to Ring")
+    long DEFAULT_MAX_COUNT = 10;
+
+    @ManagedAttribute( defaultValue = "${queue.defaultMaxCount}", description = "Maximum count of messages in queue, when policy_type set to Ring")
+    long getMaxCount();
+
+    @ManagedContextDefault( name = "queue.defaultMaxSize", description = "Maximum size of messages in queue in bytes, when policy_type set to Ring")
+    long DEFAULT_MAX_SIZE = 1024;
+
+    @ManagedAttribute( defaultValue = "${queue.defaultMaxSize}", description = "Maximum size of messages in queue in bytes, when policy_type set to Ring")
+    long getMaxSize();
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = "queue.defaultOverflowPolicy")
+    OverflowPolicy DEFAULT_POLICY_TYPE = OverflowPolicy.NONE;
+
+    @ManagedAttribute( defaultValue = "${queue.defaultOverflowPolicy}", description = "Queue overflow policy. Current options are Ring and None." +
+            " Ring overflow policy - when queue message count or size of messages in queue exceeds maximum, oldest message(s) is discarded." +
+            " None overflow policy - maximum size and maximum count properties are not applied.")
+    OverflowPolicy getOverflowPolicy();
+
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Collection<PublishingLink> getPublishingLinks();
 
@@ -274,6 +297,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     int deleteAndReturnCount();
 
+    void deleteEntry(QueueEntry node);
 
     void setNotificationListener(QueueNotificationListener listener);
 
@@ -308,6 +332,9 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth")
     long getQueueDepthBytes();
+
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth Including Header")
+    long getQueueDepthBytesIncludingHeader();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Queue Depth")
     int getQueueDepthMessages();

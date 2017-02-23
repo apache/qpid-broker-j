@@ -62,6 +62,12 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
         return _handle.getContentSize();
     }
 
+    @Override
+    public long getSizeIncludingHeader()
+    {
+        return _handle.getMetaData().getContentSize() + _handle.getMetaData().getStorableSize();
+    }
+
     public StoredMessage<T> getStoredMessage()
     {
         return _handle;

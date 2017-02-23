@@ -386,6 +386,8 @@ define(["dojo/_base/declare",
                         "exclusive",
                         "owner",
                         "lifetimePolicy",
+                        "overflowPolicy",
+                        "overflowPolicyQualifier",
                         "type",
                         "typeQualifier",
                         "alertRepeatGap",
@@ -404,6 +406,9 @@ define(["dojo/_base/declare",
                         "queueDepthMessages",
                         "queueDepthBytes",
                         "queueDepthBytesUnits",
+                        "queueDepthMessagesIncludingHeader",
+                        "queueDepthBytesIncludingHeader",
+                        "queueDepthBytesUnitsIncludingHeader",
                         "unacknowledgedMessages",
                         "unacknowledgedBytes",
                         "unacknowledgedBytesUnits",
@@ -476,6 +481,11 @@ define(["dojo/_base/declare",
             this.queueDepthBytes.innerHTML = "(" + bytesDepth.value;
             this.queueDepthBytesUnits.innerHTML = bytesDepth.units + ")";
 
+            this.queueDepthMessagesIncludingHeader.innerHTML = entities.encode(String(this.queueData["queueDepthMessages"]));
+            bytesDepth = formatter.formatBytes(this.queueData["queueDepthBytesIncludingHeader"]);
+            this.queueDepthBytesIncludingHeader.innerHTML = "(" + bytesDepth.value;
+            this.queueDepthBytesUnitsIncludingHeader.innerHTML = bytesDepth.units + ")";
+
             this.unacknowledgedMessages.innerHTML = entities.encode(String(this.queueData["unacknowledgedMessages"]));
             bytesDepth = formatter.formatBytes(this.queueData["unacknowledgedBytes"]);
             this.unacknowledgedBytes.innerHTML = "(" + bytesDepth.value;
@@ -490,6 +500,18 @@ define(["dojo/_base/declare",
                 this.typeQualifier.innerHTML = entities.encode("(" + queueTypeKeyNames[this.queueData["type"]] + ": "
                                                                + this.queueData[queueTypeKeys[this.queueData["type"]]]
                                                                + ")");
+            }
+
+            this["overflowPolicy"].innerHTML = entities.encode(this.queueData["overflowPolicy"]);
+            if (this.queueData["overflowPolicy"] == "NONE")
+            {
+                this.overflowPolicyQualifier.style.display = "none";
+            }
+            else if (this.queueData["overflowPolicy"] == "RING")
+            {
+                bytesDepth = formatter.formatBytes(this.queueData["maxSize"]);
+                this.overflowPolicyQualifier.innerHTML = "(Max count: " + entities.encode(String(this.queueData["maxCount"]))
+                                                    + ", Max Size: " + bytesDepth.value + " " + bytesDepth.units + ")";
             }
 
             if (this.queueData["messageGroupKey"])

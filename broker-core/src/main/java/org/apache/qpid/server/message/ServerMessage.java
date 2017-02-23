@@ -38,6 +38,8 @@ public interface ServerMessage<T extends StorableMessageMetaData> extends Enqueu
 
     long getSize();
 
+    long getSizeIncludingHeader();
+
     long getExpiration();
 
     MessageReference newReference();

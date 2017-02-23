@@ -103,6 +103,27 @@ define(["dojo/dom",
         }
     });
 
+    var typeSelector = registry.byId("formAddQueue.overflowPolicy");
+    typeSelector.on("change", function (value)
+    {
+        query(".overflowPolicySpecificDiv")
+            .forEach(function (node, index, arr)
+            {
+                if (node.id === "formAddQueueOverflowPolicy:" + value)
+                {
+                    node.style.display = "block";
+                    if (addQueue.management)
+                    {
+                        util.applyMetadataToWidgets(node, "Queue", value, addQueue.management.metadata);
+                    }
+                }
+                else
+                {
+                    node.style.display = "none";
+                }
+            });
+    });
+
     theForm.on("submit", function (e)
     {
 

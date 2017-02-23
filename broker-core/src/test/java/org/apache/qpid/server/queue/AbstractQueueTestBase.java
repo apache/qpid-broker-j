@@ -57,12 +57,14 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
+import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.queue.AbstractQueue.QueueEntryFilter;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
@@ -840,6 +842,153 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         assertEquals(10l,queue.getOldestMessageArrivalTime());
     }
 
+    public void testNoneOverflowPolicy()
+    {
+        Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.MAX_COUNT, 2);
+        attributes.put(Queue.MAX_SIZE, 100);
+
+        Queue<?> queue = getQueue();
+        queue.setAttributes(attributes);
+
+        ServerMessage message = createMessage(new Long(24), 50, 50);
+        when(message.getArrivalTime()).thenReturn(10l);
+        queue.enqueue(message, null, null);
+        message = createMessage(new Long(25), 50, 50);
+        when(message.getArrivalTime()).thenReturn(50l);
+        queue.enqueue(message, null, null);
+        message = createMessage(new Long(26), 50, 50);
+        when(message.getArrivalTime()).thenReturn(200l);
+        queue.enqueue(message, null, null);
+
+        assertEquals("Wrong number of messages in queue",3, queue.getQueueDepthMessages());
+        assertEquals("Wrong size of messages in queue",300, queue.getQueueDepthBytesIncludingHeader());
+        assertEquals("Wrong oldest message", 10l,
+                ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
+        queue.clearQueue();
+
+        attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.MAX_COUNT, Queue.DEFAULT_MAX_COUNT);
+        attributes.put(Queue.MAX_SIZE, Queue.DEFAULT_MAX_SIZE);
+        queue.setAttributes(attributes);
+    }
+
+    public void testRingOverflowPolicyMaxCount()
+    {
+        Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
+        attributes.put(Queue.MAX_COUNT, 4);
+
+        Queue<?> queue = getQueue();
+        queue.setAttributes(attributes);
+
+        ServerMessage message = createMessage(new Long(24), 10, 10);
+        when(message.getArrivalTime()).thenReturn(10l);
+        queue.enqueue(message, null, null);
+        message = createMessage(new Long(25), 10, 10);
+        when(message.getArrivalTime()).thenReturn(50l);
+        queue.enqueue(message, null, null);
+        message = createMessage(new Long(26), 10, 10);
+        when(message.getArrivalTime()).thenReturn(200l);
+        queue.enqueue(message, null, null);
+        message = createMessage(new Long(27), 10, 10);
+        when(message.getArrivalTime()).thenReturn(500l);
+        queue.enqueue(message, null, null);
+        message = createMessage(new Long(28), 10, 10);
+        when(message.getArrivalTime()).thenReturn(1000l);
+        queue.enqueue(message, null, null);
+
+        assertEquals("Wrong number of messages in queue",4, queue.getQueueDepthMessages());
+        assertEquals("Wrong size of messages in queue",80, queue.getQueueDepthBytesIncludingHeader());
+        assertEquals("Wrong oldest message", 50l,
+                ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
+        queue.clearQueue();
+
+        attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.OVERFLOW_POLICY, Queue.DEFAULT_POLICY_TYPE);
+        attributes.put(Queue.MAX_COUNT, Queue.DEFAULT_MAX_COUNT);
+        queue.setAttributes(attributes);
+    }
+
+    public void testRingOverflowPolicyMaxSize()
+    {
+        Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
+        attributes.put(Queue.MAX_COUNT, 4);
+        attributes.put(Queue.MAX_SIZE, 100);
+
+        Queue<?> queue = getQueue();
+        queue.setAttributes(attributes);
+
+        ServerMessage message = createMessage(new Long(24), 10, 10);
+        when(message.getArrivalTime()).thenReturn(10l);
+        queue.enqueue(message, null, null);
+        message = createMessage(new Long(25), 10, 10);
+        when(message.getArrivalTime()).thenReturn(50l);
+        queue.enqueue(message, null, null);
+        message = createMessage(new Long(26), 20, 10);
+        when(message.getArrivalTime()).thenReturn(200l);
+        queue.enqueue(message, null, null);
+        message = createMessage(new Long(27), 20, 10);
+        when(message.getArrivalTime()).thenReturn(200l);
+        queue.enqueue(message, null, null);
+
+        assertEquals("Wrong number of messages in queue",4, queue.getQueueDepthMessages());
+        assertEquals("Wrong size of messages in queue",100, queue.getQueueDepthBytesIncludingHeader());
+
+        message = createMessage(new Long(27), 20, 10);
+        when(message.getArrivalTime()).thenReturn(500l);
+        queue.enqueue(message, null, null);
+
+        assertEquals("Wrong number of messages in queue",3, queue.getQueueDepthMessages());
+        assertEquals("Wrong size of messages in queue",90, queue.getQueueDepthBytesIncludingHeader());
+        assertEquals("Wrong oldest message", 200l,
+                ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
+        queue.clearQueue();
+
+        attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.OVERFLOW_POLICY, Queue.DEFAULT_POLICY_TYPE);
+        attributes.put(Queue.MAX_COUNT, Queue.DEFAULT_MAX_COUNT);
+        attributes.put(Queue.MAX_SIZE, Queue.DEFAULT_MAX_SIZE);
+        queue.setAttributes(attributes);
+    }
+
+    public void testRingOverflowPolicyMessagesRejected()
+    {
+        Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
+        attributes.put(Queue.MAX_COUNT, 0);
+
+        Queue<?> queue = getQueue();
+        queue.setAttributes(attributes);
+
+        ServerMessage message;
+        RoutingResult result;
+
+        message = createMessage(new Long(27), 20, 10);
+        result = queue.route(message, message.getInitialRoutingAddress(), null);
+        assertTrue("Result should include routing failure", result.isRoutingFailure());
+
+        int headerSize = 20;
+        int payloadSize = 10;
+        int id = 28;
+
+        attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.MAX_COUNT, 10);
+        attributes.put(Queue.MAX_SIZE, 10);
+        queue.setAttributes(attributes);
+
+        message = createMessage(new Long(id), headerSize, payloadSize);
+        result = queue.route(message, message.getInitialRoutingAddress(), null);
+        assertTrue("Result should include routing failure", result.isRoutingFailure());
+
+        attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.OVERFLOW_POLICY, Queue.DEFAULT_POLICY_TYPE);
+        attributes.put(Queue.MAX_COUNT, Queue.DEFAULT_MAX_COUNT);
+        attributes.put(Queue.MAX_SIZE, Queue.DEFAULT_MAX_SIZE);
+        queue.setAttributes(attributes);
+    }
+
     private long getExpirationOnQueue(final Queue<?> queue, long arrivalTime, long expiration)
     {
         final List<QueueEntry> entries = new ArrayList<>();
@@ -1015,6 +1164,13 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         return message;
 
+    }
+
+    protected ServerMessage createMessage(Long id, final int headerSize, final int payloadSize)
+    {
+        ServerMessage message = createMessage(id);
+        when(message.getSizeIncludingHeader()).thenReturn(new Long(headerSize + payloadSize));
+        return message;
     }
 
     protected ServerMessage createMessage(Long id)

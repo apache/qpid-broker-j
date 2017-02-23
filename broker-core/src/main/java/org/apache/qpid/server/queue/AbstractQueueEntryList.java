@@ -48,6 +48,7 @@ abstract class AbstractQueueEntryList implements QueueEntryList
         final long size = entry.getSize();
         final QueueStatistics queueStatistics = _queueStatistics;
         queueStatistics.addToAvailable(size);
+        queueStatistics.addToDepthIncludingHeader(entry.getSizeWithHeader());
         queueStatistics.addToQueue(size);
         queueStatistics.addToEnqueued(size);
         if(_forcePersistent || (_respectPersistent && entry.getMessage().isPersistent()))
@@ -89,6 +90,7 @@ abstract class AbstractQueueEntryList implements QueueEntryList
                 break;
             case DELETED:
                 queueStatistics.removeFromQueue(size);
+                queueStatistics.removeFromDepthIncludingHeader(entry.getSizeWithHeader());
                 queueStatistics.addToDequeued(size);
                 if(_forcePersistent || (_respectPersistent && entry.isPersistent()))
                 {

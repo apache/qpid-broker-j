@@ -49,12 +49,9 @@ qpid_tests.broker_0_10.extensions.ExtensionTests.test_policy_*
 #The broker does not support the timed-autodelete extension
 qpid_tests.broker_0_10.extensions.ExtensionTests.test_timed_autodelete
 
-#The broker does not support ring queues, fairshare, or the priority alias
-qpid_tests.broker_0_10.priority.PriorityTests.test_ring_queue*
+#The broker does not support fairshare, or the priority alias
 qpid_tests.broker_0_10.priority.PriorityTests.test_fairshare*
 qpid_tests.broker_0_10.priority.PriorityTests.test_prioritised_delivery_with_alias
-#QPID-6299 broker does not support ring queue on lvq
-qpid_tests.broker_0_10.lvq.LVQTests.test_ring_lvq2
 
 #QPID-6572 These tests pass a empty binding key argument, which won't match with the Broker for Java's stricter impl.
 qpid_tests.broker_0_10.exchange.AutodeleteTests.testAutodeleteFanout

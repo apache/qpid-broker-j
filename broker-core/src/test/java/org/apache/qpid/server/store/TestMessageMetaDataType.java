@@ -154,6 +154,12 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
 
         @Override
+        public long getSizeIncludingHeader()
+        {
+            return 0;
+        }
+
+        @Override
         public StoredMessage<TestMessageMetaData> getStoredMessage()
         {
             return _storedMsg;

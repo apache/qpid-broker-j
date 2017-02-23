@@ -195,6 +195,11 @@ public abstract class QueueEntryImpl implements QueueEntry
         return getMessage() == null ? 0 : getMessage().getSize();
     }
 
+    public long getSizeWithHeader()
+    {
+        return getMessage() == null ? 0 : getMessage().getSizeIncludingHeader();
+    }
+
     public boolean getDeliveredToConsumer()
     {
         return _deliveryCountUpdater.get(this) != -1;

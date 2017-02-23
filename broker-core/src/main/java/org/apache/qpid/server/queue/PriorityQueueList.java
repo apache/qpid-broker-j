@@ -207,9 +207,9 @@ abstract public class PriorityQueueList extends OrderedQueueEntryList
             for(PriorityQueueEntrySubList subList : _priorityLists)
             {
                 QueueEntry subListOldest = subList.getOldestEntry();
-                if(oldest == null || (subListOldest != null && subListOldest.getMessage().getMessageNumber() < oldest.getMessage().getMessageNumber()))
+                if (subListOldest != null)
                 {
-                    oldest = subListOldest;
+                    return subListOldest;
                 }
             }
             return oldest;

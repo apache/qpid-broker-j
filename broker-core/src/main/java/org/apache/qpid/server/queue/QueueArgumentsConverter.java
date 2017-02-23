@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 
@@ -65,6 +66,11 @@ public class QueueArgumentsConverter
 
     public static final String QPID_EXCLUSIVITY_POLICY = "qpid.exclusivity_policy";
     public static final String QPID_LIFETIME_POLICY = "qpid.lifetime_policy";
+
+    public static final String QPID_POLICY_TYPE = "qpid.policy_type";
+    public static final String QPID_MAX_COUNT = "qpid.max_count";
+    public static final String QPID_MAX_SIZE = "qpid.max_size";
+
     /**
      * No-local queue argument is used to support the no-local feature of Durable Subscribers.
      */
@@ -109,6 +115,9 @@ public class QueueArgumentsConverter
         ATTRIBUTE_MAPPINGS.put(QPID_EXCLUSIVITY_POLICY, Queue.EXCLUSIVE);
         ATTRIBUTE_MAPPINGS.put(QPID_LIFETIME_POLICY, Queue.LIFETIME_POLICY);
 
+        ATTRIBUTE_MAPPINGS.put(QPID_POLICY_TYPE, Queue.OVERFLOW_POLICY);
+        ATTRIBUTE_MAPPINGS.put(QPID_MAX_COUNT, Queue.MAX_COUNT);
+        ATTRIBUTE_MAPPINGS.put(QPID_MAX_SIZE, Queue.MAX_SIZE);
     }
 
 
@@ -127,6 +136,10 @@ public class QueueArgumentsConverter
             if(wireArguments.containsKey(QPID_LAST_VALUE_QUEUE) && !wireArguments.containsKey(QPID_LAST_VALUE_QUEUE_KEY))
             {
                 modelArguments.put(LastValueQueue.LVQ_KEY, LastValueQueue.DEFAULT_LVQ_KEY);
+            }
+            if(wireArguments.containsKey(QPID_POLICY_TYPE))
+            {
+                modelArguments.put(Queue.OVERFLOW_POLICY, OverflowPolicy.valueOf(String.valueOf(wireArguments.get(QPID_POLICY_TYPE)).toUpperCase()));
             }
             if(wireArguments.containsKey(QPID_SHARED_MSG_GROUP))
             {

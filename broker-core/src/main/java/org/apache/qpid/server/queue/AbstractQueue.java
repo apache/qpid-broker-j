@@ -191,6 +191,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private ExclusivityPolicy _exclusive;
 
     @ManagedAttributeField
+    private OverflowPolicy _overflowPolicy;
+
+    @ManagedAttributeField
     private MessageDurability _messageDurability;
 
     @ManagedAttributeField
@@ -256,7 +259,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private boolean _ensureNondestructiveConsumers;
     @ManagedAttributeField
     private volatile boolean _holdOnPublishEnabled;
-
+    @ManagedAttributeField
+    private long _maxCount;
+    @ManagedAttributeField
+    private long _maxSize;
 
     private static final int RECOVERING = 1;
     private static final int COMPLETING_RECOVERY = 2;
@@ -671,6 +677,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public boolean isHoldOnPublishEnabled()
     {
         return _holdOnPublishEnabled;
+    }
+
+    @Override
+    public long getMaxCount()
+    {
+        return _maxCount;
+    }
+
+    @Override
+    public long getMaxSize()
+    {
+        return _maxSize;
     }
 
     @Override
@@ -1140,6 +1158,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     protected void doEnqueue(final ServerMessage message, final Action<? super MessageInstance> action, MessageEnqueueRecord enqueueRecord)
     {
+        applyOverflowPolicy(message);
         final QueueEntry entry = getEntries().add(message, enqueueRecord);
         updateExpiration(entry);
 
@@ -1161,6 +1180,31 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
 
+    }
+
+    private void applyOverflowPolicy(final ServerMessage message)
+    {
+        if (getOverflowPolicy() != null)
+        {
+            switch (getOverflowPolicy())
+            {
+                case RING:
+                    while (getQueueDepthMessages() == getMaxCount())
+                    {
+                        QueueEntry entry = getEntries().getOldestEntry();
+                        deleteEntry(entry);
+                    }
+                    while (getQueueDepthBytesIncludingHeader() + message.getSizeIncludingHeader() > getMaxSize())
+                    {
+                        QueueEntry entry = getEntries().getOldestEntry();
+                        deleteEntry(entry);
+                    }
+                    break;
+                case NONE:
+                default:
+                    break;
+            }
+        }
     }
 
     private void updateExpiration(final QueueEntry entry)
@@ -1333,6 +1377,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public long getQueueDepthBytes()
     {
         return _queueStatistics.getQueueSize();
+    }
+
+    @Override
+    public long getQueueDepthBytesIncludingHeader()
+    {
+        return _queueStatistics.getQueueSizeIncludingHeader();
     }
 
     @Override
@@ -1619,6 +1669,25 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                         }
                     });
+    }
+
+    public void deleteEntry(final QueueEntry entry)
+    {
+        boolean acquiredForDequeueing = entry.acquireOrSteal(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                dequeueEntry(entry);
+            }
+        });
+
+        if(acquiredForDequeueing)
+        {
+            _logger.debug("Dequeuing expired node {}", entry);
+            // Then dequeue it.
+            dequeueEntry(entry);
+        }
     }
 
     @Override
@@ -2086,21 +2155,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 // If the node has expired then acquire it
                 if (node.expired())
                 {
-                    boolean acquiredForDequeueing = node.acquireOrSteal(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            dequeueEntry(node);
-                        }
-                    });
-
-                    if(acquiredForDequeueing)
-                    {
-                        _logger.debug("Dequeuing expired node {}", node);
-                        // Then dequeue it.
-                        dequeueEntry(node);
-                    }
+                    deleteEntry(node);
                 }
                 else
                 {
@@ -2581,7 +2636,32 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             throw new VirtualHostUnavailableException(this._virtualHost);
         }
         RoutingResult<M> result = new RoutingResult<>(message);
-        if(message.isResourceAcceptable(this) && !message.isReferenced(this))
+
+        if(_overflowPolicy == OverflowPolicy.RING && message.getSizeIncludingHeader() > getMaxSize())
+        {
+            result.addRoutingFailure(506, "amqp:resource-limit-exceeded", "Message larger than configured maximum depth on " + this.getName()
+                    + ": size=" + message.getSizeIncludingHeader() + ", max-size=" + getMaxSize());
+        }
+        else if(_overflowPolicy == OverflowPolicy.RING && _maxCount == 0)
+        {
+            result.addRoutingFailure(506, "amqp:resource-limit-exceeded", "Queue '" + getName() + "' maximum count (0) prevents this message from being accepted");
+        }
+        else if (this instanceof PriorityQueue && message.isResourceAcceptable(this) && !message.isReferenced(this))
+        {
+            if (getMaxCount() == getQueueDepthMessages())
+            {
+                QueueEntry entry = getEntries().getOldestEntry();
+                if(entry.getMessage().getMessageHeader().getPriority() <= message.getMessageHeader().getPriority())
+                {
+                    result.addQueue(this);
+                }
+            }
+            else
+            {
+                result.addQueue(this);
+            }
+        }
+        else if(message.isResourceAcceptable(this) && !message.isReferenced(this))
         {
             result.addQueue(this);
         }
@@ -2871,6 +2951,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public ExclusivityPolicy getExclusive()
     {
         return _exclusive;
+    }
+
+    @Override
+    public OverflowPolicy getOverflowPolicy()
+    {
+        return _overflowPolicy;
     }
 
     @Override

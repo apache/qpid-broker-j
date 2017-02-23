@@ -27,6 +27,7 @@ final class QueueStatistics
 {
     private final AtomicInteger _queueCount = new AtomicInteger();
     private final AtomicLong _queueSize = new AtomicLong();
+    private final AtomicLong _queueSizeIncludingHeader = new AtomicLong();
 
     private final AtomicInteger _unackedCount = new AtomicInteger();
     private final AtomicLong _unackedSize = new AtomicLong();
@@ -60,6 +61,11 @@ final class QueueStatistics
     public final long getQueueSize()
     {
         return _queueSize.get();
+    }
+
+    public long getQueueSizeIncludingHeader()
+    {
+        return _queueSizeIncludingHeader.get();
     }
 
     public final int getUnackedCount()
@@ -162,6 +168,16 @@ final class QueueStatistics
     {
         _queueCount.decrementAndGet();
         _queueSize.addAndGet(-size);
+    }
+
+    public void addToDepthIncludingHeader(long size)
+    {
+        _queueSizeIncludingHeader.addAndGet(size);
+    }
+
+    public void removeFromDepthIncludingHeader(long size)
+    {
+        _queueSizeIncludingHeader.addAndGet(-size);
     }
 
     void addToAvailable(long size)

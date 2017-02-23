@@ -88,7 +88,7 @@ public class QueuePolicyTest extends QpidBrokerTestCase
     }
     
     /**
-     * Test Goal : To create a ring queue programitcally using the address string and observe
+     * Test Goal : To create a ring queue programmatically using the address string and observe
      *             that it works as expected.
      */
     public void testRingPolicy() throws Exception

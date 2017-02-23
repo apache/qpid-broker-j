@@ -31,6 +31,8 @@ public interface QueueEntry extends MessageInstance, Comparable<QueueEntry>
 
     long getSize();
 
+    long getSizeWithHeader();
+
     boolean acquireOrSteal(final Runnable delayedAcquisitionTask);
 
     boolean isQueueDeleted();
