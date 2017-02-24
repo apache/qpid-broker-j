@@ -276,12 +276,13 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedAttribute(defaultValue = "${queue.defaultOverflowPolicy}",
             description = "Queue overflow policy."
                           + " Current options are ProducerFlowControl, Ring and None."
-                          + " ProducerFlowControl overflow policy - when queue message count or size of messages"
-                          + " in queue exceeds maximum, the producer is blocked until queue depth falls below "
-                          + " the resume threshold."
-                          + " Ring overflow policy - when queue message count or size of messages in queue exceeds"
+                          + " ProducerFlowControl overflow policy - when queue message number or size of messages"
+                          + " in queue exceeds maximum, the producing sessions are blocked until queue depth falls"
+                          + " below the resume threshold."
+                          + " Ring overflow policy - when queue message number or size of messages in queue exceeds"
                           + " maximum, oldest messages are discarded."
-                          + " None overflow policy - maximum size and maximum count properties are not applied.",
+                          + " None overflow policy - queue capacity is unbounded, the attributes defining the limits for"
+                          + " maximum message number and maximum number of bytes are not applied.",
             mandatory = true)
     OverflowPolicy getOverflowPolicy();
 
