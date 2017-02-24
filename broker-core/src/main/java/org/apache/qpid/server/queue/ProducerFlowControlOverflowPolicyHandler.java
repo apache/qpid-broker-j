@@ -61,7 +61,7 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
     {
         private final Queue<?> _queue;
         private final EventLogger _eventLogger;
-        private final AtomicBoolean _overfull = new AtomicBoolean(false);
+        private final AtomicBoolean _overfullReported = new AtomicBoolean(false);
         private final Set<AMQPSession<?, ?>> _blockedSessions =
                 Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?, ?>, Boolean>());
         private volatile double _queueFlowResumeLimit;
@@ -132,7 +132,7 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
                 _queue.removeChangeListener(this);
                 checkUnderfull(-1, -1);
 
-                if (_overfull.compareAndSet(true, false))
+                if (_overfullReported.compareAndSet(true, false))
                 {
                     _eventLogger.message(_queue.getLogSubject(),
                                          QueueMessages.UNDERFULL(_queue.getQueueDepthBytes(),
@@ -151,33 +151,30 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
 
         boolean isQueueFlowStopped()
         {
-            return _overfull.get();
+            return _overfullReported.get();
         }
 
         private void checkUnderfull(long maximumQueueDepthBytes, long maximumQueueDepthMessages)
         {
-            if (_overfull.get())
+            long queueDepthBytes = _queue.getQueueDepthBytes();
+            long queueDepthMessages = _queue.getQueueDepthMessages();
+
+            if (isUnderfull(queueDepthBytes, maximumQueueDepthBytes)
+                && isUnderfull(queueDepthMessages, maximumQueueDepthMessages))
             {
-                long queueDepthBytes = _queue.getQueueDepthBytes();
-                long queueDepthMessages = _queue.getQueueDepthMessages();
-
-                if (isUnderfull(queueDepthBytes, maximumQueueDepthBytes)
-                    && isUnderfull(queueDepthMessages, maximumQueueDepthMessages))
+                if (_overfullReported.compareAndSet(true, false))
                 {
-                    if (_overfull.compareAndSet(true, false))
-                    {
-                        _eventLogger.message(_queue.getLogSubject(),
-                                             QueueMessages.UNDERFULL(queueDepthBytes,
-                                                                     getFlowResumeLimit(maximumQueueDepthBytes),
-                                                                     queueDepthMessages,
-                                                                     getFlowResumeLimit(maximumQueueDepthMessages)));
-                    }
+                    _eventLogger.message(_queue.getLogSubject(),
+                                         QueueMessages.UNDERFULL(queueDepthBytes,
+                                                                 getFlowResumeLimit(maximumQueueDepthBytes),
+                                                                 queueDepthMessages,
+                                                                 getFlowResumeLimit(maximumQueueDepthMessages)));
+                }
 
-                    for (final AMQPSession<?, ?> blockedSession : _blockedSessions)
-                    {
-                        blockedSession.unblock(_queue);
-                        _blockedSessions.remove(blockedSession);
-                    }
+                for (final AMQPSession<?, ?> blockedSession : _blockedSessions)
+                {
+                    blockedSession.unblock(_queue);
+                    _blockedSessions.remove(blockedSession);
                 }
             }
         }
@@ -198,7 +195,7 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
                     if (sessionPrincipal != null)
                     {
 
-                        if (_overfull.compareAndSet(false, true))
+                        if (_overfullReported.compareAndSet(false, true))
                         {
                             _eventLogger.message(_queue.getLogSubject(),
                                                  QueueMessages.OVERFULL(queueDepthBytes,
@@ -210,14 +207,6 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
                         final AMQPSession<?, ?> session = sessionPrincipal.getSession();
                         _blockedSessions.add(session);
                         session.block(_queue);
-
-                        if (isUnderfull(queueDepthBytes, maximumQueueDepthBytes)
-                            && isUnderfull(queueDepthMessages, maximumQueueDepthMessages))
-                        {
-
-                            session.unblock(_queue);
-                            _blockedSessions.remove(session);
-                        }
                     }
                 }
             }

@@ -19,10 +19,13 @@
 
 package org.apache.qpid.server.queue;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import org.apache.qpid.server.logging.EventLogger;
@@ -61,7 +64,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
         _ringOverflowPolicyHandler = new RingOverflowPolicyHandler(_queue, _eventLogger);
     }
 
-    public void testHandleOverflowBytes() throws Exception
+    public void testCheckOverflowWhenOverfullBytes() throws Exception
     {
         QueueEntry lastEntry = createLastEntry();
         when(_queue.getLesserOldestEntry()).thenReturn(lastEntry, (QueueEntry) null);
@@ -72,12 +75,12 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
         _ringOverflowPolicyHandler.checkOverflow();
 
         verify(_queue).deleteEntry(lastEntry);
-
         LogMessage dropped = QueueMessages.DROPPED(1L, 4, 1, 5,-1);
         verify(_eventLogger).message(same(_subject), argThat(new LogMessageMatcher(dropped)));
+        verifyNoMoreInteractions(_eventLogger);
     }
 
-    public void testHandleOverflowMessages() throws Exception
+    public void testCheckOverflowWhenOverfullMessages() throws Exception
     {
         QueueEntry lastEntry = createLastEntry();
         when(_queue.getLesserOldestEntry()).thenReturn(lastEntry, (QueueEntry) null);
@@ -88,9 +91,33 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
         _ringOverflowPolicyHandler.checkOverflow();
 
         verify((AbstractQueue<?>) _queue).deleteEntry(lastEntry);
-
         LogMessage dropped = QueueMessages.DROPPED(1, 4, 5, -1,5);
         verify(_eventLogger).message(same(_subject), argThat(new LogMessageMatcher(dropped)));
+        verifyNoMoreInteractions(_eventLogger);
+    }
+
+    public void testCheckOverflowWhenUnderfullBytes() throws Exception
+    {
+        when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(5L);
+        when(_queue.getMaximumQueueDepthBytes()).thenReturn(5L);
+        when(_queue.getQueueDepthMessages()).thenReturn(3);
+
+        _ringOverflowPolicyHandler.checkOverflow();
+
+        verify(_queue, never()).deleteEntry(any(QueueEntry.class));
+        verifyNoMoreInteractions(_eventLogger);
+    }
+
+    public void testCheckOverflowWhenUnderfullMessages() throws Exception
+    {
+        when(_queue.getQueueDepthMessages()).thenReturn(5);
+        when(_queue.getMaximumQueueDepthMessages()).thenReturn(5L);
+        when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(10L);
+
+        _ringOverflowPolicyHandler.checkOverflow();
+
+        verify(_queue, never()).deleteEntry(any(QueueEntry.class));
+        verifyNoMoreInteractions(_eventLogger);
     }
 
     private QueueEntry createLastEntry()

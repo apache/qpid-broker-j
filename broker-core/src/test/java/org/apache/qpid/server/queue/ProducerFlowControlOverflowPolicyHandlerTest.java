@@ -24,6 +24,7 @@ import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.security.PrivilegedAction;
@@ -70,7 +71,7 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends QpidTestCase
         _producerFlowControlOverflowPolicyHandler = new ProducerFlowControlOverflowPolicyHandler(_queue, _eventLogger);
     }
 
-    public void testHandleOverflowBlocksOverfullBytes() throws Exception
+    public void testCheckOverflowBlocksSessionWhenOverfullBytes() throws Exception
     {
         AMQPSession<?, ?> session = mock(AMQPSession.class);
         when(_queue.getQueueDepthBytes()).thenReturn(11L);
@@ -81,19 +82,23 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends QpidTestCase
         verify(session, times(1)).block(_queue);
         LogMessage logMessage = QueueMessages.OVERFULL(11, 10, 0, -1);
         verify(_eventLogger).message(same(_subject), argThat(new LogMessageMatcher(logMessage)));
+        verifyNoMoreInteractions(_eventLogger);
+        verifyNoMoreInteractions(session);
     }
 
-    public void testHandleOverflowBlocksOverfullMessages() throws Exception
+    public void testCheckOverflowBlocksSessionWhenOverfullMessages() throws Exception
     {
         AMQPSession<?, ?> session = mock(AMQPSession.class);
-
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(10L);
         when(_queue.getQueueDepthMessages()).thenReturn(11);
-        checkOverflow(session);
-        verify(session, times(1)).block(_queue);
 
+        checkOverflow(session);
+
+        verify(session, times(1)).block(_queue);
         LogMessage logMessage = QueueMessages.OVERFULL(0, -1, 11, 10);
         verify(_eventLogger).message(same(_subject), argThat(new LogMessageMatcher(logMessage)));
+        verifyNoMoreInteractions(_eventLogger);
+        verifyNoMoreInteractions(session);
     }
 
     public void testIsQueueFlowStopped() throws Exception
@@ -108,7 +113,7 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends QpidTestCase
         assertTrue("Flow should be stopped", _producerFlowControlOverflowPolicyHandler.isQueueFlowStopped());
     }
 
-    public void testCheckCapacityResumesFlowForBytes() throws Exception
+    public void testCheckOverflowResumesFlowWhenUnderfullBytes() throws Exception
     {
         AMQPSession<?, ?> session = mock(AMQPSession.class);
         when(_queue.getQueueDepthBytes()).thenReturn(11L);
@@ -116,18 +121,24 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends QpidTestCase
 
         checkOverflow(session);
 
+        verify(session, times(1)).block(_queue);
+        LogMessage overfullMessage = QueueMessages.OVERFULL(11, 10, 0, -1);
+        verify(_eventLogger).message(same(_subject), argThat(new LogMessageMatcher(overfullMessage)));
         assertTrue("Flow should be stopped", _producerFlowControlOverflowPolicyHandler.isQueueFlowStopped());
+
         when(_queue.getQueueDepthBytes()).thenReturn(8L);
 
         _producerFlowControlOverflowPolicyHandler.checkOverflow();
 
         verify(session, times(1)).unblock(_queue);
         assertFalse("Flow should not be stopped", _producerFlowControlOverflowPolicyHandler.isQueueFlowStopped());
-        LogMessage logMessage = QueueMessages.UNDERFULL(8, 8, 0, -1);
-        verify(_eventLogger).message(same(_subject), argThat(new LogMessageMatcher(logMessage)));
+        LogMessage underfullMessage = QueueMessages.UNDERFULL(8, 8, 0, -1);
+        verify(_eventLogger).message(same(_subject), argThat(new LogMessageMatcher(underfullMessage)));
+        verifyNoMoreInteractions(_eventLogger);
+        verifyNoMoreInteractions(session);
     }
 
-    public void testCheckCapacityResumesFlowForMessages() throws Exception
+    public void testCheckOverflowResumesFlowWhenUnderfullMessages() throws Exception
     {
         AMQPSession<?, ?> session = mock(AMQPSession.class);
         when(_queue.getQueueDepthMessages()).thenReturn(11);
@@ -135,15 +146,21 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends QpidTestCase
 
         checkOverflow(session);
 
+        verify(session, times(1)).block(_queue);
+        LogMessage overfullMessage = QueueMessages.OVERFULL(0, -1, 11, 10);
+        verify(_eventLogger).message(same(_subject), argThat(new LogMessageMatcher(overfullMessage)));
         assertTrue("Flow should be stopped", _producerFlowControlOverflowPolicyHandler.isQueueFlowStopped());
+
         when(_queue.getQueueDepthMessages()).thenReturn(8);
 
         _producerFlowControlOverflowPolicyHandler.checkOverflow();
 
         verify(session, times(1)).unblock(_queue);
         assertFalse("Flow should not be stopped", _producerFlowControlOverflowPolicyHandler.isQueueFlowStopped());
-        LogMessage logMessage = QueueMessages.UNDERFULL(0, -1, 8, 8);
-        verify(_eventLogger).message(same(_subject), argThat(new LogMessageMatcher(logMessage)));
+        LogMessage underfullMessage = QueueMessages.UNDERFULL(0, -1, 8, 8);
+        verify(_eventLogger).message(same(_subject), argThat(new LogMessageMatcher(underfullMessage)));
+        verifyNoMoreInteractions(_eventLogger);
+        verifyNoMoreInteractions(session);
     }
 
     private void checkOverflow(AMQPSession<?, ?> session)
