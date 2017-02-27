@@ -37,7 +37,6 @@ import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.protocol.v0_10.transport.Xid;
 
 public class DtxBranch
 {
@@ -342,6 +341,7 @@ public class DtxBranch
             _enqueueRecord = enqueueRecord;
         }
 
+        @Override
         public MessageEnqueueRecord getEnqueueRecord()
         {
             return _enqueueRecord;
@@ -370,11 +370,14 @@ public class DtxBranch
         {
             return _enqueueAction;
         }
+
+        @Override
         public TransactionLogResource getResource()
         {
             return _resource;
         }
 
+        @Override
         public EnqueueableMessage getMessage()
         {
             return _message;

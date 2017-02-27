@@ -21,12 +21,10 @@
 
 package org.apache.qpid.server.txn;
 
-import org.apache.qpid.server.protocol.v0_10.transport.Xid;
-
 public class SuspendAndFailDtxException extends DtxException
 {
-public SuspendAndFailDtxException(Xid id)
-{
-    super("Cannot end a branch with both suspend and fail set " + id);
-}
+    public SuspendAndFailDtxException(Xid id)
+    {
+        super("Cannot end a branch with both suspend and fail set " + id);
+    }
 }

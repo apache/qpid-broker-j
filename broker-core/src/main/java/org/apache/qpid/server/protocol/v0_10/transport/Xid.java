@@ -215,6 +215,4 @@ public final class Xid extends Struct {
 
         return result;
     }
-
-
 }

@@ -31,11 +31,10 @@ import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-import org.apache.qpid.server.protocol.v0_10.transport.Xid;
 
 public class DtxRegistry
 {
-    private final Map<ComparableXid, DtxBranch> _branches = new HashMap<ComparableXid, DtxBranch>();
+    private final Map<ComparableXid, DtxBranch> _branches = new HashMap<>();
     private final QueueManagingVirtualHost<?> _virtualHost;
 
     public DtxRegistry(final QueueManagingVirtualHost<?> virtualHost)
@@ -317,7 +316,7 @@ public class DtxRegistry
 
     public synchronized List<Xid> recover()
     {
-        List<Xid> inDoubt = new ArrayList<Xid>();
+        List<Xid> inDoubt = new ArrayList<>();
         for(DtxBranch branch : _branches.values())
         {
             if(branch.getState() == DtxBranch.State.PREPARED)

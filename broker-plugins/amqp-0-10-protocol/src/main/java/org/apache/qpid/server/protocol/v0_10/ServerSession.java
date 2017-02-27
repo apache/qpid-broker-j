@@ -83,24 +83,13 @@ import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v0_10.transport.*;
+import org.apache.qpid.server.protocol.v0_10.transport.Xid;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.protocol.v0_10.transport.Frame;
-import org.apache.qpid.server.txn.AlreadyKnownDtxException;
-import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
-import org.apache.qpid.server.txn.DistributedTransaction;
-import org.apache.qpid.server.txn.DtxNotSelectedException;
-import org.apache.qpid.server.txn.IncorrectDtxStateException;
-import org.apache.qpid.server.txn.JoinAndResumeDtxException;
-import org.apache.qpid.server.txn.LocalTransaction;
-import org.apache.qpid.server.txn.NotAssociatedDtxException;
-import org.apache.qpid.server.txn.RollbackOnlyDtxException;
-import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.txn.SuspendAndFailDtxException;
-import org.apache.qpid.server.txn.TimeoutDtxException;
-import org.apache.qpid.server.txn.UnknownDtxBranchException;
+import org.apache.qpid.server.txn.*;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
@@ -1326,7 +1315,7 @@ public class ServerSession extends SessionInvoker
                    DtxNotSelectedException
     {
         DistributedTransaction distributedTransaction = assertDtxTransaction();
-        distributedTransaction.start(xid, join, resume);
+        distributedTransaction.start(toDtxXid(xid), join, resume);
     }
 
 
@@ -1337,21 +1326,21 @@ public class ServerSession extends SessionInvoker
             SuspendAndFailDtxException, TimeoutDtxException
     {
         DistributedTransaction distributedTransaction = assertDtxTransaction();
-        distributedTransaction.end(xid, fail, suspend);
+        distributedTransaction.end(toDtxXid(xid), fail, suspend);
     }
 
 
     public long getTimeoutDtx(Xid xid)
             throws UnknownDtxBranchException
     {
-        return getAddressSpace().getDtxRegistry().getTimeout(xid);
+        return getAddressSpace().getDtxRegistry().getTimeout(toDtxXid(xid));
     }
 
 
     public void setTimeoutDtx(Xid xid, long timeout)
             throws UnknownDtxBranchException
     {
-        getAddressSpace().getDtxRegistry().setTimeout(xid, timeout);
+        getAddressSpace().getDtxRegistry().setTimeout(toDtxXid(xid), timeout);
     }
 
 
@@ -1359,14 +1348,14 @@ public class ServerSession extends SessionInvoker
             throws UnknownDtxBranchException,
             IncorrectDtxStateException, StoreException, RollbackOnlyDtxException, TimeoutDtxException
     {
-        getAddressSpace().getDtxRegistry().prepare(xid);
+        getAddressSpace().getDtxRegistry().prepare(toDtxXid(xid));
     }
 
     public void commitDtx(Xid xid, boolean onePhase)
             throws UnknownDtxBranchException,
             IncorrectDtxStateException, StoreException, RollbackOnlyDtxException, TimeoutDtxException
     {
-        getAddressSpace().getDtxRegistry().commit(xid, onePhase);
+        getAddressSpace().getDtxRegistry().commit(toDtxXid(xid), onePhase);
     }
 
 
@@ -1374,18 +1363,25 @@ public class ServerSession extends SessionInvoker
             throws UnknownDtxBranchException,
             IncorrectDtxStateException, StoreException, TimeoutDtxException
     {
-        getAddressSpace().getDtxRegistry().rollback(xid);
+        getAddressSpace().getDtxRegistry().rollback(toDtxXid(xid));
     }
 
 
     public void forgetDtx(Xid xid) throws UnknownDtxBranchException, IncorrectDtxStateException
     {
-        getAddressSpace().getDtxRegistry().forget(xid);
+        getAddressSpace().getDtxRegistry().forget(toDtxXid(xid));
     }
 
     public List<Xid> recoverDtx()
     {
-        return getAddressSpace().getDtxRegistry().recover();
+        List<Xid> xids = new ArrayList<>();
+        Iterator<org.apache.qpid.server.txn.Xid> dtxXids = getAddressSpace().getDtxRegistry().recover().iterator();
+        while(dtxXids.hasNext())
+        {
+            org.apache.qpid.server.txn.Xid dtxXid = dtxXids.next();
+            xids.add(new Xid(dtxXid.getFormat(), dtxXid.getGlobalId(), dtxXid.getBranchId()));
+        }
+        return xids;
     }
 
     private DistributedTransaction assertDtxTransaction() throws DtxNotSelectedException
@@ -1956,4 +1952,13 @@ public class ServerSession extends SessionInvoker
         }
 
     }
+
+    public static org.apache.qpid.server.txn.Xid toDtxXid(final Xid xid)
+    {
+        return new org.apache.qpid.server.txn.Xid(xid.getFormat(),
+                                                  xid.getGlobalId(),
+                                                  xid.getBranchId());
+    }
+
+
 }

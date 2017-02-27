@@ -52,6 +52,7 @@ import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
+import org.apache.qpid.server.txn.Xid;
 
 public abstract class AbstractJDBCMessageStore implements MessageStore
 {

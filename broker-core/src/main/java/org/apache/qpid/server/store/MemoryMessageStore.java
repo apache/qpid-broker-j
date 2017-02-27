@@ -39,6 +39,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
+import org.apache.qpid.server.txn.Xid;
 
 /** A simple message store that stores the messages in a thread-safe structure in memory. */
 public class MemoryMessageStore implements MessageStore

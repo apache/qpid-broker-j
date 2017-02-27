@@ -58,9 +58,9 @@ import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.server.txn.DtxBranch;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.txn.Xid;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.protocol.v0_10.transport.Xid;
 import org.apache.qpid.server.transport.util.Functions;
 
 public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
