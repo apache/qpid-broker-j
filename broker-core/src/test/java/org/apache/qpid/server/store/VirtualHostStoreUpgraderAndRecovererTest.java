@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -76,6 +77,10 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         assertEquals("Unexpected queue.queueFlowResumeLimit",
                      "70.00",
                      ((Map<String, String>) upgradedAttributes.get("context")).get("queue.queueFlowResumeLimit"));
+
+        assertEquals("Unexpected overflowPolicy",
+                     OverflowPolicy.PRODUCER_FLOW_CONTROL.name(),
+                     String.valueOf(upgradedAttributes.get("overflowPolicy")));
     }
 
     private ConfiguredObjectRecord findRecordById(UUID id, List<ConfiguredObjectRecord> records)

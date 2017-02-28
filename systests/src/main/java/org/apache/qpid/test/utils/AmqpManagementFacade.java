@@ -22,6 +22,7 @@ package org.apache.qpid.test.utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -167,6 +168,71 @@ public class AmqpManagementFacade
         {
             consumer.close();
             responseQ.delete();
+        }
+    }
+
+    public Map<String, Object> readEntityUsingAmqpManagement(final Session session,
+                                                             final String type,
+                                                             final String name,
+                                                             final boolean actuals) throws JMSException
+    {
+        MessageProducer producer = session.createProducer(session.createQueue(_qpidBrokerTestCase.isBroker10()
+                                                                                      ? "$management"
+                                                                                      : "ADDR:$management"));
+
+        final TemporaryQueue responseQueue = session.createTemporaryQueue();
+        MessageConsumer consumer = session.createConsumer(responseQueue);
+
+        MapMessage request = session.createMapMessage();
+        request.setStringProperty("type", type);
+        request.setStringProperty("operation", "READ");
+        request.setString("name", name);
+        request.setString("object-path", name);
+        request.setStringProperty("index", "object-path");
+        request.setStringProperty("key", name);
+        request.setBooleanProperty("actuals", actuals);
+        request.setJMSReplyTo(responseQueue);
+
+        producer.send(request);
+        if (session.getTransacted())
+        {
+            session.commit();
+        }
+
+        Message response = consumer.receive(5000);
+        if (session.getTransacted())
+        {
+            session.commit();
+        }
+        try
+        {
+            if (response instanceof MapMessage)
+            {
+                MapMessage bodyMap = (MapMessage) response;
+                Map<String, Object> data = new HashMap<>();
+                Enumeration<String> keys = bodyMap.getMapNames();
+                while (keys.hasMoreElements())
+                {
+                    String key = keys.nextElement();
+                    data.put(key, bodyMap.getObject(key));
+                }
+                return data;
+            }
+            else if (response instanceof ObjectMessage)
+            {
+                Object body = ((ObjectMessage) response).getObject();
+                if (body instanceof Map)
+                {
+                    Map<String, ?> bodyMap = (Map<String, ?>) body;
+                    return new HashMap<>(bodyMap);
+                }
+            }
+            throw new IllegalArgumentException("Cannot parse the results from a management read");
+        }
+        finally
+        {
+            consumer.close();
+            responseQueue.delete();
         }
     }
 

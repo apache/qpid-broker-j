@@ -282,13 +282,13 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         StandardQueueEntryList queueEntryList = new StandardQueueEntryList(_testQueue, _testQueue.getQueueStatistics());
 
         QueueEntry entry1 =  queueEntryList.add(createServerMessage(1), null);
-        assertEquals("Unexpected last message", entry1, queueEntryList.getLesserOldestEntry());
+        assertEquals("Unexpected last message", entry1, queueEntryList.getLeastSignificantOldestEntry());
 
         queueEntryList.add(createServerMessage(2), null);
-        assertEquals("Unexpected last message", entry1,  queueEntryList.getLesserOldestEntry());
+        assertEquals("Unexpected last message", entry1,  queueEntryList.getLeastSignificantOldestEntry());
 
         queueEntryList.add(createServerMessage(3), null);
-        assertEquals("Unexpected last message", entry1,  queueEntryList.getLesserOldestEntry());
+        assertEquals("Unexpected last message", entry1,  queueEntryList.getLeastSignificantOldestEntry());
     }
 
     private ServerMessage createServerMessage(final long id)

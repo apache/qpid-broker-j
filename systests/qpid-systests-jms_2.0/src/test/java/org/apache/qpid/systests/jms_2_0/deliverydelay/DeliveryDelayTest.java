@@ -33,6 +33,7 @@ import javax.jms.InvalidDestinationRuntimeException;
 import javax.jms.JMSConsumer;
 import javax.jms.JMSContext;
 import javax.jms.JMSProducer;
+import javax.jms.JMSRuntimeException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 import javax.jms.Session;
@@ -102,9 +103,10 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
                 producer.send(queue, "message");
                 fail("Exception not thrown");
             }
-            catch (InvalidDestinationRuntimeException e)
+            catch (JMSRuntimeException e)
             {
-                // PASS
+                assertTrue("Unexpected exception message: " + e.getMessage(),
+                           e.getMessage().contains("amqp:precondition-failed"));
             }
         }
     }
@@ -142,9 +144,10 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
                 producer.send(publishDest, "message with delivery delay");
                 fail("Exception not thrown");
             }
-            catch (InvalidDestinationRuntimeException e)
+            catch (JMSRuntimeException e)
             {
-                // PASS
+                assertTrue("Unexpected exception message: " + e.getMessage(),
+                           e.getMessage().contains("amqp:precondition-failed"));
             }
         }
     }

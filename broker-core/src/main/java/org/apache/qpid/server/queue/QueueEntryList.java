@@ -46,6 +46,6 @@ interface QueueEntryList
 
     void updateStatsOnStateChange(QueueEntry entry, QueueEntry.EntryState fromState, QueueEntry.EntryState toState);
 
-    QueueEntry getLesserOldestEntry();
+    QueueEntry getLeastSignificantOldestEntry();
 
 }

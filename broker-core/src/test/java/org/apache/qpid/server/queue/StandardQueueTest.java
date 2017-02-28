@@ -241,7 +241,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
 
 
         @Override
-        public QueueEntry getLesserOldestEntry()
+        public QueueEntry getLeastSignificantOldestEntry()
         {
             return getOldestEntry();
         }

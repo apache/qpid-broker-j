@@ -489,6 +489,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     void deleteEntry(QueueEntry entry);
 
-    QueueEntry getLesserOldestEntry();
+    QueueEntry getLeastSignificantOldestEntry();
 
 }

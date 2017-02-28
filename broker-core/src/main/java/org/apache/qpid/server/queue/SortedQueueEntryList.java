@@ -465,25 +465,9 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
     }
 
     @Override
-    public QueueEntry getLesserOldestEntry()
+    public QueueEntry getLeastSignificantOldestEntry()
     {
-        SortedQueueEntry lastNode = null;
-        QueueEntryIterator iterator = iterator();
-        while (iterator.advance())
-        {
-            QueueEntry node = iterator.getNode();
-            if (node != null && !node.isDeleted())
-            {
-                SortedQueueEntry sortedQueueEntry = (SortedQueueEntry)node;
-                if (lastNode == null
-                    || (lastNode.getKey() != null && !lastNode.getKey().equals(sortedQueueEntry.getKey()))
-                    || (lastNode.getKey() == null && sortedQueueEntry.getKey() != null) )
-                {
-                    lastNode = sortedQueueEntry;
-                }
-            }
-        }
-        return lastNode;
+        return getOldestEntry();
     }
 
     /**

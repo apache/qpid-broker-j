@@ -49,7 +49,7 @@ public class StandardQueueEntryList extends OrderedQueueEntryList
 
 
     @Override
-    public QueueEntry getLesserOldestEntry()
+    public QueueEntry getLeastSignificantOldestEntry()
     {
         return getOldestEntry();
     }

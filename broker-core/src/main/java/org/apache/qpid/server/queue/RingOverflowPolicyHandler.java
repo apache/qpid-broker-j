@@ -28,7 +28,8 @@ public class RingOverflowPolicyHandler implements OverflowPolicyHandler
     private final Queue<?> _queue;
     private final EventLogger _eventLogger;
 
-    RingOverflowPolicyHandler(Queue<?> queue, final EventLogger eventLogger)
+    RingOverflowPolicyHandler(final Queue<?> queue,
+                              final EventLogger eventLogger)
     {
         _queue = queue;
         _eventLogger = eventLogger;
@@ -59,7 +60,7 @@ public class RingOverflowPolicyHandler implements OverflowPolicyHandler
                     overflow = true;
                 }
 
-                QueueEntry entry = _queue.getLesserOldestEntry();
+                QueueEntry entry = _queue.getLeastSignificantOldestEntry();
 
                 if (entry != null)
                 {

@@ -131,21 +131,6 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
             {
                 _queue.removeChangeListener(this);
                 checkUnderfull(-1, -1);
-
-                if (_overfullReported.compareAndSet(true, false))
-                {
-                    _eventLogger.message(_queue.getLogSubject(),
-                                         QueueMessages.UNDERFULL(_queue.getQueueDepthBytes(),
-                                                                 getFlowResumeLimit((long) -1),
-                                                                 (long) _queue.getQueueDepthMessages(),
-                                                                 getFlowResumeLimit((long) -1)));
-                }
-
-                for (final AMQPSession<?, ?> blockedSession : _blockedSessions)
-                {
-                    blockedSession.unblock(_queue);
-                    _blockedSessions.remove(blockedSession);
-                }
             }
         }
 
@@ -156,7 +141,7 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
 
         private void checkUnderfull(long maximumQueueDepthBytes, long maximumQueueDepthMessages)
         {
-            long queueDepthBytes = _queue.getQueueDepthBytes();
+            long queueDepthBytes = _queue.getQueueDepthBytesIncludingHeader();
             long queueDepthMessages = _queue.getQueueDepthMessages();
 
             if (isUnderfull(queueDepthBytes, maximumQueueDepthBytes)
@@ -181,7 +166,7 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
 
         private void checkOverfull(final long maximumQueueDepthBytes, final long maximumQueueDepthMessages)
         {
-            final long queueDepthBytes = _queue.getQueueDepthBytes();
+            final long queueDepthBytes = _queue.getQueueDepthBytesIncludingHeader();
             final long queueDepthMessages = _queue.getQueueDepthMessages();
 
             if ((maximumQueueDepthBytes >= 0L && queueDepthBytes > maximumQueueDepthBytes) ||
@@ -222,7 +207,7 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
         {
             if (maximumQueueDepth >= 0)
             {
-                return (long) (_queueFlowResumeLimit / 100.0 * maximumQueueDepth);
+                return (long) Math.ceil(_queueFlowResumeLimit / 100.0 * maximumQueueDepth);
             }
             return -1;
         }

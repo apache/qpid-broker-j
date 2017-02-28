@@ -152,7 +152,9 @@ define(["dojox/html/entities",
                     "Queue",
                     data.actual.type,
                     data.actual,
-                    this.management.metadata);
+                    this.management.metadata,
+                    data.effective
+                );
 
                 this.context.setData(data.actual.context, data.effective.context, data.inheritedActual.context);
 

@@ -373,6 +373,11 @@ public class QpidBrokerTestCase extends QpidTestCase
         return _managementFacade.managementQueryObjects(session, type);
     }
 
+    protected Map<String, Object> managementReadObject(Session session, String type, String name, boolean actuals) throws JMSException
+    {
+        return _managementFacade.readEntityUsingAmqpManagement(session, type, name, actuals);
+    }
+
     public long getQueueDepth(final Connection con, final Queue destination) throws Exception
     {
         return _jmsProvider.getQueueDepth(con, destination);

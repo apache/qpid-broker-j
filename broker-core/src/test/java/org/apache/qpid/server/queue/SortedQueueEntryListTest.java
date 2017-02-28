@@ -421,21 +421,21 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         validateEntry(entry, "D", 2);
     }
 
-    public void testGetLesserOldestEntry()
+    public void testGetLeastSignificantOldestEntry()
     {
         SortedQueueEntryList list = new SortedQueueEntryList(_testQueue, _testQueue.getQueueStatistics());
 
         SortedQueueEntry entry1 = list.add(generateTestMessage(1, "B"), null);
-        assertEquals("Unexpected last entry", entry1, list.getLesserOldestEntry());
+        assertEquals("Unexpected last entry", entry1, list.getLeastSignificantOldestEntry());
 
-        SortedQueueEntry entry2 = list.add(generateTestMessage(2, "C"), null);
-        assertEquals("Unexpected last entry", entry2, list.getLesserOldestEntry());
+        list.add(generateTestMessage(2, "C"), null);
+        assertEquals("Unexpected last entry", entry1, list.getLeastSignificantOldestEntry());
 
         list.add(generateTestMessage(3, null), null);
-        assertEquals("Unexpected last entry", entry2, list.getLesserOldestEntry());
+        assertEquals("Unexpected last entry", entry1, list.getLeastSignificantOldestEntry());
 
         list.add(generateTestMessage(4, "A"), null);
-        assertEquals("Unexpected last entry", entry2, list.getLesserOldestEntry());
+        assertEquals("Unexpected last entry", entry1, list.getLeastSignificantOldestEntry());
     }
 
     private void validateEntry(final SortedQueueEntry entry, final String expectedSortKey, final long expectedMessageId)

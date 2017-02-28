@@ -212,16 +212,16 @@ public class LastValueQueueListTest extends QpidTestCase
         LastValueQueueList queueEntryList = new LastValueQueueList(_queue, _queue.getQueueStatistics());
 
         QueueEntry entry1 =  queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE1), null);
-        assertEquals("Unexpected last message", entry1, queueEntryList.getLesserOldestEntry());
+        assertEquals("Unexpected last message", entry1, queueEntryList.getLeastSignificantOldestEntry());
 
         QueueEntry entry2 =  queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE2), null);
-        assertEquals("Unexpected last message", entry1,  queueEntryList.getLesserOldestEntry());
+        assertEquals("Unexpected last message", entry1,  queueEntryList.getLeastSignificantOldestEntry());
 
         QueueEntry entry3 =  queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE1), null);
-        assertEquals("Unexpected last message", entry2,  queueEntryList.getLesserOldestEntry());
+        assertEquals("Unexpected last message", entry2,  queueEntryList.getLeastSignificantOldestEntry());
 
         queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE2), null);
-        assertEquals("Unexpected last message", entry3,  queueEntryList.getLesserOldestEntry());
+        assertEquals("Unexpected last message", entry3,  queueEntryList.getLeastSignificantOldestEntry());
     }
 
     private int countEntries(LastValueQueueList list)

@@ -3166,9 +3166,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public QueueEntry getLesserOldestEntry()
+    public QueueEntry getLeastSignificantOldestEntry()
     {
-        return getEntries().getLesserOldestEntry();
+        return getEntries().getLeastSignificantOldestEntry();
     }
 
     private class MessageFinder implements QueueEntryVisitor

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jms.BytesMessage;
@@ -64,6 +65,8 @@ public class ProducerFlowControlTest extends AbstractTestLogging
     private RestTestHelper _restTestHelper;
 
     private final AtomicInteger _sentMessages = new AtomicInteger(0);
+    private int _messageSizeIncludingHeader;
+    private Session _utilitySession;
 
     public void setUp() throws Exception
     {
@@ -73,6 +76,11 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
         _monitor.markDiscardPoint();
 
+        if (!isBroker10())
+        {
+            setSystemProperty("sync_publish", "all");
+        }
+
         _producerConnection = getConnection();
         _producerSession = _producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
@@ -81,6 +89,16 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         _consumerConnection = getConnection();
         _consumerSession = _consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
+        final Connection utilityConnection = getConnection();
+        utilityConnection.start();
+        _utilitySession = utilityConnection.createSession(true, Session.SESSION_TRANSACTED);
+        String tmpQueueName = getTestQueueName() + "_Tmp";
+        Queue tmpQueue = createTestQueue(_utilitySession, tmpQueueName);
+        MessageProducer  tmpQueueProducer= _utilitySession.createProducer(tmpQueue);
+        tmpQueueProducer.send(nextMessage(0, _utilitySession));
+        _utilitySession.commit();
+
+        _messageSizeIncludingHeader = getQueueDepthBytes(tmpQueueName);
     }
 
     public void tearDown() throws Exception
@@ -107,45 +125,46 @@ public class ProducerFlowControlTest extends AbstractTestLogging
     {
         String queueName = getTestQueueName();
 
-        createAndBindQueueWithFlowControlEnabled(_producerSession, queueName, 1000, 800);
+        int capacity = _messageSizeIncludingHeader * 3 + _messageSizeIncludingHeader / 2;
+        int resumeCapacity = _messageSizeIncludingHeader * 2;
+        createAndBindQueueWithFlowControlEnabled(_producerSession, queueName, capacity, resumeCapacity);
         _producer = _producerSession.createProducer(_queue);
 
         // try to send 5 messages (should block after 4)
-        sendMessagesAsync(_producer, _producerSession, 5, 50L);
+        CountDownLatch sendLatch = sendMessagesAsync(_producer, _producerSession, 5, 5L).getSendLatch();
 
-        Thread.sleep(5000);
-
+        assertTrue("Flow is not stopped", awaitAttributeValue(queueName, "queueFlowStopped", true, 5000));
         assertEquals("Incorrect number of message sent before blocking", 4, _sentMessages.get());
 
         _consumer = _consumerSession.createConsumer(_queue);
         _consumerConnection.start();
 
+        Message message = _consumer.receive(RECEIVE_TIMEOUT);
+        assertNotNull("Message is not received", message);
 
-        _consumer.receive();
-
-        Thread.sleep(1000);
+        assertFalse("Flow is not stopped", awaitAttributeValue(queueName, "queueFlowStopped", false, 1000));
 
         assertEquals("Message incorrectly sent after one message received", 4, _sentMessages.get());
 
-
-        _consumer.receive();
-
-        Thread.sleep(1000);
-
+        Message message2 = _consumer.receive(RECEIVE_TIMEOUT);
+        assertNotNull("Message is not received", message2);
+        assertTrue("Message sending is not finished", sendLatch.await(1000, TimeUnit.MILLISECONDS));
         assertEquals("Message not sent after two messages received", 5, _sentMessages.get());
-
     }
 
 
     public void testBrokerLogMessages() throws Exception
     {
         String queueName = getTestQueueName();
-        
-        createAndBindQueueWithFlowControlEnabled(_producerSession, queueName, 1000, 800);
+
+        int capacity = _messageSizeIncludingHeader * 3 + _messageSizeIncludingHeader / 2;
+        int resumeCapacity = _messageSizeIncludingHeader * 2;
+
+        createAndBindQueueWithFlowControlEnabled(_producerSession, queueName, capacity, resumeCapacity);
         _producer = _producerSession.createProducer(_queue);
 
         // try to send 5 messages (should block after 4)
-        sendMessagesAsync(_producer, _producerSession, 5, 50L);
+        sendMessagesAsync(_producer, _producerSession, 5, 5L);
 
         List<String> results = waitAndFindMatches("QUE-1003", 7000);
 
@@ -165,24 +184,28 @@ public class ProducerFlowControlTest extends AbstractTestLogging
     public void testFlowControlOnCapacityResumeEqual() throws Exception
     {
         String queueName = getTestQueueName();
-        
-        createAndBindQueueWithFlowControlEnabled(_producerSession, queueName, 1000, 1000);
+
+        int capacity = _messageSizeIncludingHeader * 3 + _messageSizeIncludingHeader / 2;
+        createAndBindQueueWithFlowControlEnabled(_producerSession, queueName,
+                                                 capacity,
+                                                 capacity);
         _producer = _producerSession.createProducer(_queue);
 
 
         // try to send 5 messages (should block after 4)
-        sendMessagesAsync(_producer, _producerSession, 5, 50L);
+        CountDownLatch sendLatch = sendMessagesAsync(_producer, _producerSession, 5, 5L).getSendLatch();
 
-        Thread.sleep(5000);
+        assertTrue("Flow is not stopped", awaitAttributeValue(queueName, "queueFlowStopped", true,5000));
 
         assertEquals("Incorrect number of message sent before blocking", 4, _sentMessages.get());
 
         _consumer = _consumerSession.createConsumer(_queue);
         _consumerConnection.start();
 
-        _consumer.receive();
+        Message message = _consumer.receive(RECEIVE_TIMEOUT);
+        assertNotNull("Message is not received", message);
 
-        Thread.sleep(1000);
+        assertTrue("Message sending is not finished", sendLatch.await(1000, TimeUnit.MILLISECONDS));
 
         assertEquals("Message incorrectly sent after one message received", 5, _sentMessages.get());
         
@@ -198,7 +221,9 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         final int numProducers = 10;
         final int numMessages = 100;
 
-        createAndBindQueueWithFlowControlEnabled(_producerSession, queueName, 6000, 3000);
+        final int capacity = _messageSizeIncludingHeader * 20;
+
+        createAndBindQueueWithFlowControlEnabled(_producerSession, queueName, capacity, capacity/2);
 
         _consumerConnection.start();
 
@@ -211,7 +236,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
             Session session = producers[i].createSession(false, Session.AUTO_ACKNOWLEDGE);
 
             MessageProducer myproducer = session.createProducer(_queue);
-            MessageSender sender = sendMessagesAsync(myproducer, session, numMessages, 50L);
+            MessageSender sender = sendMessagesAsync(myproducer, session, numMessages, 5L);
         }
 
         _consumer = _consumerSession.createConsumer(_queue);
@@ -221,7 +246,6 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         {
         
             Message msg = _consumer.receive(5000);
-            Thread.sleep(50L);
             assertNotNull("Message not received("+j+"), sent: "+_sentMessages.get(), msg);
 
         }
@@ -301,9 +325,9 @@ public class ProducerFlowControlTest extends AbstractTestLogging
     private int getQueueDepthBytes(final String queueName) throws IOException
     {
         // On AMQP 1.0 the size of the message on the broker is not necessarily the size of the message we sent. Therefore, get the actual size from the broker
-        final String requestUrl = String.format("queue/%1$s/%1$s/%2$s/getStatistics?statistics=[\"queueDepthBytes\"]", TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, queueName);
+        final String requestUrl = String.format("queue/%1$s/%1$s/%2$s/getStatistics?statistics=[\"queueDepthBytesIncludingHeader\"]", TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, queueName);
         final Map<String, Object> queueAttributes = _restTestHelper.getJsonAsMap(requestUrl);
-        return ((Number) queueAttributes.get("queueDepthBytes")).intValue();
+        return ((Number) queueAttributes.get("queueDepthBytesIncludingHeader")).intValue();
     }
 
     private void waitForFlowControlAndMessageCount(final String queueUrl, final int messageCount, final int timeout) throws InterruptedException, IOException
@@ -341,29 +365,28 @@ public class ProducerFlowControlTest extends AbstractTestLogging
     public void testQueueDeleteWithBlockedFlow() throws Exception
     {
         String queueName = getTestQueueName();
-        createAndBindQueueWithFlowControlEnabled(_producerSession, queueName, 1000, 800, true, false);
+        int capacity = _messageSizeIncludingHeader * 3 + _messageSizeIncludingHeader / 2;
+        int resumeCapacity = _messageSizeIncludingHeader * 2;
+        createAndBindQueueWithFlowControlEnabled(_producerSession, queueName, capacity, resumeCapacity, true, false);
 
         _producer = _producerSession.createProducer(_queue);
 
         // try to send 5 messages (should block after 4)
-        sendMessagesAsync(_producer, _producerSession, 5, 50L);
+        sendMessagesAsync(_producer, _producerSession, 5, 5L);
 
-        Thread.sleep(5000);
+        assertTrue("Flow is not stopped", awaitAttributeValue(queueName, "queueFlowStopped", true,5000));
 
         assertEquals("Incorrect number of message sent before blocking", 4, _sentMessages.get());
-
-        // close blocked producer session and connection
-        _producerConnection.close();
 
         if(!isBroker10())
         {
             // delete queue with a consumer session
-            ((AMQSession<?, ?>) _consumerSession).sendQueueDelete(queueName);
+            ((AMQSession<?, ?>) _utilitySession).sendQueueDelete(queueName);
         }
         else
         {
-            deleteEntityUsingAmqpManagement(getTestQueueName(), _consumerSession, "org.apache.qpid.Queue");
-            createTestQueue(_consumerSession);
+            deleteEntityUsingAmqpManagement(getTestQueueName(), _utilitySession, "org.apache.qpid.Queue");
+            createTestQueue(_utilitySession);
         }
         _consumer = _consumerSession.createConsumer(_queue);
         _consumerConnection.start();
@@ -432,7 +455,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         private final Session _senderSession;
         private final int _numMessages;
         private volatile JMSException _exception;
-        private CountDownLatch _exceptionThrownLatch = new CountDownLatch(1);
+        private CountDownLatch _sendLatch = new CountDownLatch(1);
         private long _sleepPeriod;
 
         public MessageSender(MessageProducer producer, Session producerSession, int numMessages, long sleepPeriod)
@@ -452,8 +475,16 @@ public class ProducerFlowControlTest extends AbstractTestLogging
             catch (JMSException e)
             {
                 _exception = e;
-                _exceptionThrownLatch.countDown();
             }
+            finally
+            {
+                _sendLatch.countDown();
+            }
+        }
+
+        public CountDownLatch getSendLatch()
+        {
+            return _sendLatch;
         }
 
         private void sendMessages(MessageProducer producer, Session producerSession, int numMessages, long sleepPeriod)
@@ -500,15 +531,50 @@ public class ProducerFlowControlTest extends AbstractTestLogging
             }
         }
 
-        private final byte[] BYTE_300 = new byte[300];
+    }
 
-        private Message nextMessage(int msg, Session producerSession) throws JMSException
+    private final byte[] BYTE_300 = new byte[300];
+
+    private Message nextMessage(int msg, Session producerSession) throws JMSException
+    {
+        BytesMessage send = producerSession.createBytesMessage();
+        send.writeBytes(BYTE_300);
+        send.setIntProperty("msg", msg);
+        return send;
+    }
+
+    private boolean awaitAttributeValue(String queueName, String attributeName, Object expectedValue, long timeout)
+            throws JMSException, InterruptedException
+    {
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime + timeout;
+        boolean found = false;
+        do
         {
-            BytesMessage send = producerSession.createBytesMessage();
-            send.writeBytes(BYTE_300);
-            send.setIntProperty("msg", msg);
+            Map<String, Object> attributes =
+                    managementReadObject(_utilitySession, "org.apache.qpid.SortedQueue", queueName, false);
+            Object actualValue = attributes.get(attributeName);
+            if (expectedValue == null)
+            {
+                found = actualValue == null;
+            }
+            else if (actualValue != null)
+            {
+                if (actualValue.getClass() == expectedValue.getClass())
+                {
+                    found = expectedValue.equals(actualValue);
+                }
+                else
+                {
+                    found = String.valueOf(expectedValue).equals(String.valueOf(actualValue));
+                }
+            }
 
-            return send;
-        }
+            if (!found)
+            {
+                Thread.sleep(50);
+            }
+        } while (!found && System.currentTimeMillis() <= endTime);
+        return found;
     }
 }

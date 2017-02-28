@@ -458,6 +458,19 @@ define(["dojo/_base/declare",
 
         }
 
+        function renderMaximumQueueDepth(value)
+        {
+            if (util.isInteger(value))
+            {
+                if (value < 0)
+                {
+                    return "&lt;unlimited&gt;";
+                }
+                return  new String(value);
+            }
+            return "";
+        }
+
         QueueUpdater.prototype.updateHeader = function ()
         {
 
@@ -502,9 +515,8 @@ define(["dojo/_base/declare",
             }
 
             this["overflowPolicy"].innerHTML = entities.encode(this.queueData["overflowPolicy"]);
-            this["maximumQueueDepthBytes"].innerHTML = this.queueData["maximumQueueDepthBytes"] ? entities.encode(new String(this.queueData["maximumQueueDepthBytes"])) : "";
-            this["maximumQueueDepthMessages"].innerHTML = this.queueData["maximumQueueDepthMessages"]  ? entities.encode(new String(this.queueData["maximumQueueDepthMessages"])) : "";
-
+            this["maximumQueueDepthBytes"].innerHTML = renderMaximumQueueDepth(this.queueData.maximumQueueDepthBytes);
+            this["maximumQueueDepthMessages"].innerHTML = renderMaximumQueueDepth(this.queueData.maximumQueueDepthMessages);
             if (this.queueData["messageGroupKey"])
             {
                 this.messageGroupKey.innerHTML = entities.encode(String(this.queueData["messageGroupKey"]));

@@ -400,9 +400,7 @@ amqp://guest:guest@client1/development?maxprefetch='1'&amp;brokerlist='tcp://loc
                         <emphasis>Ring</emphasis>
                         - The oldest messages are removed. For a
                         <link linkend="Java-Broker-Concepts-Queues-Types-Priority">Priority Queue</link>
-                        oldest messages with lowest priorities are removed. For a
-                        <link linkend="Java-Broker-Concepts-Queues-Types-Sorted">Sorted Queue</link>
-                        oldest messages with lowest keys are removed.
+                        oldest messages with lowest priorities are removed.
                     </para>
                 </listitem>
                 <listitem>

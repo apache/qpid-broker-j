@@ -163,9 +163,9 @@ public class PriorityQueueListTest extends QpidTestCase
                 1, _priority4message2.compareTo(_priority5message2));
     }
 
-    public void testGetLesserOldestEntry()
+    public void testGetLeastSignificantOldestEntry()
     {
-        assertEquals("Unexpected last entry", _priority4message1, _list.getLesserOldestEntry());
+        assertEquals("Unexpected last entry", _priority4message1, _list.getLeastSignificantOldestEntry());
 
         ServerMessage<?> message = mock(ServerMessage.class);
         AMQMessageHeader header = mock(AMQMessageHeader.class);
@@ -180,6 +180,6 @@ public class PriorityQueueListTest extends QpidTestCase
 
         QueueEntry newEntry = _list.add(message, null);
 
-        assertEquals("Unexpected last entry", newEntry, _list.getLesserOldestEntry());
+        assertEquals("Unexpected last entry", newEntry, _list.getLeastSignificantOldestEntry());
     }
 }

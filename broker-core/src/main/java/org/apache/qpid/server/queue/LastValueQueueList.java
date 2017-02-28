@@ -147,7 +147,7 @@ public class LastValueQueueList extends OrderedQueueEntryList
     }
 
     @Override
-    public QueueEntry getLesserOldestEntry()
+    public QueueEntry getLeastSignificantOldestEntry()
     {
         return getOldestEntry();
     }

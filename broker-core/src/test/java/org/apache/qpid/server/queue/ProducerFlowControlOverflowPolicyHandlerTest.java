@@ -64,7 +64,7 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends QpidTestCase
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(-1L);
         when(_queue.getOverflowPolicy()).thenReturn(OverflowPolicy.PRODUCER_FLOW_CONTROL);
         when(_queue.getContextValue(Double.class, Queue.QUEUE_FLOW_RESUME_LIMIT)).thenReturn(80.0);
-        when(_queue.getQueueDepthBytes()).thenReturn(0L);
+        when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(0L);
         when(_queue.getQueueDepthMessages()).thenReturn(0);
         when(_queue.getLogSubject()).thenReturn(_subject);
 
@@ -74,7 +74,7 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends QpidTestCase
     public void testCheckOverflowBlocksSessionWhenOverfullBytes() throws Exception
     {
         AMQPSession<?, ?> session = mock(AMQPSession.class);
-        when(_queue.getQueueDepthBytes()).thenReturn(11L);
+        when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(11L);
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(10L);
 
         checkOverflow(session);
@@ -105,7 +105,7 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends QpidTestCase
     {
         assertFalse("Flow should not be stopped", _producerFlowControlOverflowPolicyHandler.isQueueFlowStopped());
 
-        when(_queue.getQueueDepthBytes()).thenReturn(11L);
+        when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(11L);
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(10L);
 
         checkOverflow(mock(AMQPSession.class));
@@ -116,7 +116,7 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends QpidTestCase
     public void testCheckOverflowResumesFlowWhenUnderfullBytes() throws Exception
     {
         AMQPSession<?, ?> session = mock(AMQPSession.class);
-        when(_queue.getQueueDepthBytes()).thenReturn(11L);
+        when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(11L);
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(10L);
 
         checkOverflow(session);
@@ -126,7 +126,7 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends QpidTestCase
         verify(_eventLogger).message(same(_subject), argThat(new LogMessageMatcher(overfullMessage)));
         assertTrue("Flow should be stopped", _producerFlowControlOverflowPolicyHandler.isQueueFlowStopped());
 
-        when(_queue.getQueueDepthBytes()).thenReturn(8L);
+        when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(8L);
 
         _producerFlowControlOverflowPolicyHandler.checkOverflow();
 

@@ -637,7 +637,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                             }
                             contextMap.put("queue.queueFlowResumeLimit", flowResumeLimit);
                         }
-                        attributes.put("overflowPolicy", "ProducerFlowControl");
+                        attributes.put("overflowPolicy", "PRODUCER_FLOW_CONTROL");
                         attributes.put("maximumQueueDepthBytes", queueFlowControlSizeBytes);
                     }
                 }

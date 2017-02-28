@@ -67,7 +67,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
     public void testCheckOverflowWhenOverfullBytes() throws Exception
     {
         QueueEntry lastEntry = createLastEntry();
-        when(_queue.getLesserOldestEntry()).thenReturn(lastEntry, (QueueEntry) null);
+        when(_queue.getLeastSignificantOldestEntry()).thenReturn(lastEntry, (QueueEntry) null);
         when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(10L, 4L);
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(5L);
         when(_queue.getQueueDepthMessages()).thenReturn(3, 1);
@@ -83,7 +83,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
     public void testCheckOverflowWhenOverfullMessages() throws Exception
     {
         QueueEntry lastEntry = createLastEntry();
-        when(_queue.getLesserOldestEntry()).thenReturn(lastEntry, (QueueEntry) null);
+        when(_queue.getLeastSignificantOldestEntry()).thenReturn(lastEntry, (QueueEntry) null);
         when(_queue.getQueueDepthMessages()).thenReturn(10, 5);
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(5L);
         when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(10L, 4L);

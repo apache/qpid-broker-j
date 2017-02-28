@@ -98,7 +98,7 @@ define(["dojo/_base/xhr",
                 }
             }
         },
-        _processWidgetValue: function (widget, category, type, data, meta)
+        _processWidgetValue: function (widget, category, type, data, meta, effectiveData)
         {
             var widgetName = widget.name;
             if (widgetName)
@@ -121,7 +121,22 @@ define(["dojo/_base/xhr",
 
                 if (widget instanceof dijit.form.FilteringSelect || widget instanceof dojox.form.CheckedMultiSelect)
                 {
-                    var widgetValue = dataValue == null ? defaultValue : dataValue;
+                    var widgetValue = dataValue;
+                    if ((dataValue === null || dataValue === undefined)
+                        && defaultValue !== null && defaultValue !== undefined)
+                    {
+                        if (new String(defaultValue).indexOf("${") == -1)
+                        {
+                            widgetValue = defaultValue;
+                        }
+                        else if (effectiveData &&  effectiveData.hasOwnProperty(widgetName)
+                                 && effectiveData[widgetName] !== null && effectiveData[widgetName] !== undefined)
+                        {
+                            widgetValue =  effectiveData[widgetName];
+                            widget.effectiveDefaultValue = widgetValue;
+                        }
+                    }
+
                     if (widgetValue)
                     {
                         widget.set("value", widgetValue);
@@ -141,12 +156,12 @@ define(["dojo/_base/xhr",
                 }
             }
         },
-        config: function (widget, category, type, data, meta)
+        config: function (widget, category, type, data, meta, effectiveData)
         {
             this._processWidgetPrompt(widget, category, type, meta);
             if (data != null)
             {
-                this._processWidgetValue(widget, category, type, data, meta);
+                this._processWidgetValue(widget, category, type, data, meta, effectiveData);
             }
         },
         disableIfImmutable: function (widget, category, type, meta)

@@ -216,11 +216,11 @@ abstract public class PriorityQueueList extends OrderedQueueEntryList
         }
 
         @Override
-        public QueueEntry getLesserOldestEntry()
+        public QueueEntry getLeastSignificantOldestEntry()
         {
             for(PriorityQueueEntrySubList subList : _priorityLists)
             {
-                QueueEntry subListLast = subList.getLesserOldestEntry();
+                QueueEntry subListLast = subList.getLeastSignificantOldestEntry();
                 if(subListLast != null)
                 {
                     return subListLast;
@@ -261,7 +261,7 @@ abstract public class PriorityQueueList extends OrderedQueueEntryList
         }
 
         @Override
-        public QueueEntry getLesserOldestEntry()
+        public QueueEntry getLeastSignificantOldestEntry()
         {
             return getOldestEntry();
         }

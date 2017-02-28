@@ -603,16 +603,16 @@ define(["dojo/_base/xhr",
         util.applyMetadataToWidgets = function (domRoot, category, type, meta)
         {
             this.applyToWidgets(domRoot, category, type, null, meta);
-        }
+        };
 
-        util.applyToWidgets = function (domRoot, category, type, data, meta)
+        util.applyToWidgets = function (domRoot, category, type, data, meta, effectiveData)
         {
             var widgets = util.findAllWidgets(domRoot);
             array.forEach(widgets, function (widget)
             {
-                widgetconfigurer.config(widget, category, type, data, meta);
+                widgetconfigurer.config(widget, category, type, data, meta, effectiveData);
             });
-        }
+        };
 
         util.disableWidgetsForImmutableFields = function (domRoot, category, type, meta)
         {
@@ -675,6 +675,13 @@ define(["dojo/_base/xhr",
                         }
                         else
                         {
+                             if (widget.hasOwnProperty("effectiveDefaultValue") &&
+                                 value === widget.effectiveDefaultValue && initialData &&
+                                 (initialData[propName] === null || initialData[propName] === undefined))
+                             {
+                                 // widget value is effective default value, thus, skipping it...
+                                 continue;
+                             }
                             values[propName] = value ? value : null;
                         }
                     }
