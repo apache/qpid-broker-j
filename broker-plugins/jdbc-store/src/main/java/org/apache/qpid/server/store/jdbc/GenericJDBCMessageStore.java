@@ -112,6 +112,13 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
     }
 
     @Override
+    protected String getTablePrefix(final ConfiguredObject<?> parent)
+    {
+        JDBCSettings settings = (JDBCSettings)parent;
+        return settings.getTableNamePrefix();
+    }
+
+    @Override
     protected Connection getConnection() throws SQLException
     {
         return _connectionProvider.getConnection();

@@ -28,6 +28,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -38,6 +39,7 @@ import org.apache.qpid.server.virtualhost.jdbc.JDBCVirtualHost;
 
 public class JDBCMessageStoreTest extends MessageStoreTestCase
 {
+    public static final String TEST_TABLE_PREFIX = "TEST_TABLE_PREFIX_";
     private String _connectionURL;
 
     @Override
@@ -56,9 +58,19 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         }
     }
 
+    public void testTablePrefix() throws Exception
+    {
+        Collection<String> expectedTables = ((GenericJDBCMessageStore)getStore()).getTableNames();
+        for (String expectedTable : expectedTables)
+        {
+            assertTrue(String.format("Table '%s' does not start with expected prefix '%s'", expectedTable, TEST_TABLE_PREFIX), expectedTable.startsWith(TEST_TABLE_PREFIX));
+        }
+        assertTablesExist(expectedTables, true);
+    }
+
     public void testOnDelete() throws Exception
     {
-        Set<String> expectedTables = GenericJDBCMessageStore.MESSAGE_STORE_TABLE_NAMES;
+        Collection<String> expectedTables = ((GenericJDBCMessageStore)getStore()).getTableNames();
         assertTablesExist(expectedTables, true);
         getStore().closeMessageStore();
         assertTablesExist(expectedTables, true);
@@ -75,6 +87,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         when(jdbcVirtualHost.getConnectionUrl()).thenReturn(_connectionURL);
         when(jdbcVirtualHost.getUsername()).thenReturn("test");
         when(jdbcVirtualHost.getPassword()).thenReturn("pass");
+        when(jdbcVirtualHost.getTableNamePrefix()).thenReturn(TEST_TABLE_PREFIX);
         return jdbcVirtualHost;
     }
 
@@ -85,7 +98,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         return new GenericJDBCMessageStore();
     }
 
-    private void assertTablesExist(Set<String> expectedTables, boolean exists) throws SQLException
+    private void assertTablesExist(Collection<String> expectedTables, boolean exists) throws SQLException
     {
         Set<String> existingTables = getTableNames();
         for (String tableName : expectedTables)

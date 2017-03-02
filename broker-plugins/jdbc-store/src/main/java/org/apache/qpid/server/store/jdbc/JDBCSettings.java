@@ -30,4 +30,6 @@ public interface JDBCSettings extends Settings
     String getUsername();
 
     String getPassword();
+
+    String getTableNamePrefix();
 }

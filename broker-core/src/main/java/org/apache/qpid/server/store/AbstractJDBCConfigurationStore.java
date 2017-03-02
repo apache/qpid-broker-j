@@ -36,10 +36,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,41 +50,24 @@ import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 
 public abstract class AbstractJDBCConfigurationStore implements MessageStoreProvider, DurableConfigurationStore
 {
-    private static final String CONFIGURATION_VERSION_TABLE_NAME = "QPID_CONFIG_VERSION";
-
-    private static final String CONFIGURED_OBJECTS_TABLE_NAME = "QPID_CONFIGURED_OBJECTS";
-    private static final String CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME = "QPID_CONFIGURED_OBJECT_HIERARCHY";
+    private final static String CONFIGURATION_VERSION_TABLE_NAME_SUFFIX = "QPID_CONFIG_VERSION";
+    private final static String CONFIGURED_OBJECTS_TABLE_NAME_SUFFIX = "QPID_CONFIGURED_OBJECTS";
+    private final static String CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME_SUFFIX = "QPID_CONFIGURED_OBJECT_HIERARCHY";
 
     private static final int DEFAULT_CONFIG_VERSION = 0;
 
-    public static final Set<String> CONFIGURATION_STORE_TABLE_NAMES = new HashSet<String>(Arrays.asList(CONFIGURED_OBJECTS_TABLE_NAME, CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME));
-
-    private static final String SELECT_FROM_CONFIG_VERSION = "SELECT version FROM " + CONFIGURATION_VERSION_TABLE_NAME;
-    private static final String DROP_CONFIG_VERSION_TABLE = "DROP TABLE "+ CONFIGURATION_VERSION_TABLE_NAME;
-
-    private static final String INSERT_INTO_CONFIGURED_OBJECTS = "INSERT INTO " + CONFIGURED_OBJECTS_TABLE_NAME
-            + " ( id, object_type, attributes) VALUES (?,?,?)";
-    private static final String UPDATE_CONFIGURED_OBJECTS = "UPDATE " + CONFIGURED_OBJECTS_TABLE_NAME
-            + " set object_type =?, attributes = ? where id = ?";
-    private static final String DELETE_FROM_CONFIGURED_OBJECTS = "DELETE FROM " + CONFIGURED_OBJECTS_TABLE_NAME
-            + " where id = ?";
-    private static final String FIND_CONFIGURED_OBJECT = "SELECT object_type, attributes FROM " + CONFIGURED_OBJECTS_TABLE_NAME
-            + " where id = ?";
-    private static final String SELECT_FROM_CONFIGURED_OBJECTS = "SELECT id, object_type, attributes FROM " + CONFIGURED_OBJECTS_TABLE_NAME;
-
-
-    private static final String INSERT_INTO_CONFIGURED_OBJECT_HIERARCHY = "INSERT INTO " + CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME
-                                                                          + " ( child_id, parent_type, parent_id) VALUES (?,?,?)";
-
-    private static final String DELETE_FROM_CONFIGURED_OBJECT_HIERARCHY = "DELETE FROM " + CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME
-                                                                          + " where child_id = ?";
-    private static final String SELECT_FROM_CONFIGURED_OBJECT_HIERARCHY = "SELECT child_id, parent_type, parent_id FROM " + CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME;
 
     public enum State { CLOSED, CONFIGURED, OPEN };
     private State _state = State.CLOSED;
     private final Object _lock = new Object();
 
+    private String _tableNamePrefix = "";
 
+
+    protected void setTableNamePrefix(final String tableNamePrefix)
+    {
+        _tableNamePrefix = tableNamePrefix;
+    }
 
     @Override
     public boolean openConfigurationStore(ConfiguredObjectRecordHandler handler,
@@ -149,13 +130,28 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
         }
     }
 
+    private String getConfigurationVersionTableName()
+    {
+        return _tableNamePrefix + CONFIGURATION_VERSION_TABLE_NAME_SUFFIX;
+    }
+
+    private String getConfiguredObjectsTableName()
+    {
+        return _tableNamePrefix + CONFIGURED_OBJECTS_TABLE_NAME_SUFFIX;
+    }
+
+    private String getConfiguredObjectHierarchyTableName()
+    {
+        return _tableNamePrefix + CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME_SUFFIX;
+    }
+
     private Collection<ConfiguredObjectRecordImpl> doVisitAllConfiguredObjectRecords(ConfiguredObjectRecordHandler handler) throws SQLException
     {
         Map<UUID, ConfiguredObjectRecordImpl> configuredObjects = new HashMap<UUID, ConfiguredObjectRecordImpl>();
         final ObjectMapper objectMapper = new ObjectMapper();
         try (Connection conn = newAutoCommitConnection())
         {
-            PreparedStatement stmt = conn.prepareStatement(SELECT_FROM_CONFIGURED_OBJECTS);
+            PreparedStatement stmt = conn.prepareStatement("SELECT id, object_type, attributes FROM " + getConfiguredObjectsTableName());
             try
             {
                 ResultSet rs = stmt.executeQuery();
@@ -186,7 +182,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             {
                 stmt.close();
             }
-            stmt = conn.prepareStatement(SELECT_FROM_CONFIGURED_OBJECT_HIERARCHY);
+            stmt = conn.prepareStatement("SELECT child_id, parent_type, parent_id FROM " + getConfiguredObjectHierarchyTableName());
             try
             {
                 try (ResultSet rs = stmt.executeQuery())
@@ -224,7 +220,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
         {
             connection = newAutoCommitConnection();
 
-            boolean tableExists = tableExists(CONFIGURATION_VERSION_TABLE_NAME, connection);
+            boolean tableExists = tableExists(getConfigurationVersionTableName(), connection);
             if(tableExists)
             {
                 int configVersion = getConfigVersion(connection);
@@ -273,7 +269,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
             String stringifiedConfigVersion = "0." + DEFAULT_CONFIG_VERSION;
 
-            boolean tableExists = tableExists(CONFIGURATION_VERSION_TABLE_NAME, connection);
+            boolean tableExists = tableExists(getConfigurationVersionTableName(), connection);
             if(tableExists)
             {
                 int configVersion = getConfigVersion(connection);
@@ -296,7 +292,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             List<UUID> others = new ArrayList<UUID>();
             final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
 
-            PreparedStatement stmt = connection.prepareStatement(SELECT_FROM_CONFIGURED_OBJECTS);
+            PreparedStatement stmt = connection.prepareStatement("SELECT id, object_type, attributes FROM " + getConfiguredObjectsTableName());
             try
             {
                 try (ResultSet rs = stmt.executeQuery())
@@ -335,7 +331,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                 stmt.close();
             }
 
-            stmt = connection.prepareStatement(INSERT_INTO_CONFIGURED_OBJECT_HIERARCHY);
+            stmt = connection.prepareStatement("INSERT INTO " + getConfiguredObjectHierarchyTableName()
+                                                       + " ( child_id, parent_type, parent_id) VALUES (?,?,?)");
             try
             {
                 for (UUID id : others)
@@ -375,7 +372,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                 insertConfiguredObject(exchangeRecord, connection);
             }
 
-            stmt = connection.prepareStatement(UPDATE_CONFIGURED_OBJECTS);
+            stmt = connection.prepareStatement("UPDATE " + getConfiguredObjectsTableName()
+                                                       + " set object_type =?, attributes = ? where id = ?");
             try
             {
                 for(Map.Entry<UUID, Map<String,Object>> bindingEntry : bindingsToUpdate.entrySet())
@@ -453,12 +451,12 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
     private void dropConfigVersionTable(final Connection conn) throws SQLException
     {
-        if(!tableExists(CONFIGURATION_VERSION_TABLE_NAME, conn))
+        if(!tableExists(getConfigurationVersionTableName(), conn))
         {
             Statement stmt = conn.createStatement();
             try
             {
-                stmt.execute(DROP_CONFIG_VERSION_TABLE);
+                stmt.execute("DROP TABLE " + getConfigurationVersionTableName());
             }
             finally
             {
@@ -469,12 +467,12 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
     private void createConfiguredObjectsTable(final Connection conn) throws SQLException
     {
-        if(!tableExists(CONFIGURED_OBJECTS_TABLE_NAME, conn))
+        if(!tableExists(getConfiguredObjectsTableName(), conn))
         {
             try (Statement stmt = conn.createStatement())
             {
                 stmt.execute("CREATE TABLE "
-                             + CONFIGURED_OBJECTS_TABLE_NAME
+                             + getConfiguredObjectsTableName()
                              + " ( id VARCHAR(36) not null, object_type varchar(255), attributes "
                              + getSqlBlobType()
                              + ",  PRIMARY KEY (id))");
@@ -484,11 +482,11 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
     private void createConfiguredObjectHierarchyTable(final Connection conn) throws SQLException
     {
-        if(!tableExists(CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME, conn))
+        if(!tableExists(getConfiguredObjectHierarchyTableName(), conn))
         {
             try (Statement stmt = conn.createStatement())
             {
-                stmt.execute("CREATE TABLE " + CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME
+                stmt.execute("CREATE TABLE " + getConfiguredObjectHierarchyTableName()
                              + " ( child_id VARCHAR(36) not null, parent_type varchar(255), parent_id VARCHAR(36),  PRIMARY KEY (child_id, parent_type))");
             }
         }
@@ -504,7 +502,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
         Statement stmt = conn.createStatement();
         try
         {
-            ResultSet rs = stmt.executeQuery(SELECT_FROM_CONFIG_VERSION);
+            ResultSet rs = stmt.executeQuery("SELECT version FROM " + getConfigurationVersionTableName());
             try
             {
 
@@ -609,7 +607,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
     {
         try
         {
-            try (PreparedStatement stmt = conn.prepareStatement(FIND_CONFIGURED_OBJECT))
+            try (PreparedStatement stmt = conn.prepareStatement("SELECT object_type, attributes FROM " + getConfiguredObjectsTableName()
+                                                                        + " where id = ?"))
             {
                 stmt.setString(1, configuredObject.getId().toString());
                 boolean exists;
@@ -621,7 +620,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                 // If we don't have any data in the result set then we can add this configured object
                 if (!exists)
                 {
-                    try (PreparedStatement insertStmt = conn.prepareStatement(INSERT_INTO_CONFIGURED_OBJECTS))
+                    try (PreparedStatement insertStmt = conn.prepareStatement("INSERT INTO " + getConfiguredObjectsTableName()
+                                                                                              + " ( id, object_type, attributes) VALUES (?,?,?)"))
                     {
                         insertStmt.setString(1, configuredObject.getId().toString());
                         insertStmt.setString(2, configuredObject.getType());
@@ -683,7 +683,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
     private int removeConfiguredObject(final UUID id, final Connection conn) throws SQLException
     {
         final int results;
-        PreparedStatement stmt = conn.prepareStatement(DELETE_FROM_CONFIGURED_OBJECTS);
+        PreparedStatement stmt = conn.prepareStatement("DELETE FROM " + getConfiguredObjectsTableName()
+                                                           + " where id = ?");
         try
         {
             stmt.setString(1, id.toString());
@@ -693,7 +694,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
         {
             stmt.close();
         }
-        stmt = conn.prepareStatement(DELETE_FROM_CONFIGURED_OBJECT_HIERARCHY);
+        stmt = conn.prepareStatement("DELETE FROM " + getConfiguredObjectHierarchyTableName()
+                                         + " where child_id = ?");
         try
         {
             stmt.setString(1, id.toString());
@@ -733,7 +735,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                                         Connection conn)
             throws SQLException, StoreException
     {
-        try (PreparedStatement stmt = conn.prepareStatement(FIND_CONFIGURED_OBJECT))
+        try (PreparedStatement stmt = conn.prepareStatement("SELECT object_type, attributes FROM " + getConfiguredObjectsTableName()
+                                                                + " where id = ?"))
         {
             stmt.setString(1, configuredObject.getId().toString());
             try (ResultSet rs = stmt.executeQuery())
@@ -742,7 +745,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                 final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
                 if (rs.next())
                 {
-                    try (PreparedStatement stmt2 = conn.prepareStatement(UPDATE_CONFIGURED_OBJECTS))
+                    try (PreparedStatement stmt2 = conn.prepareStatement("UPDATE " + getConfiguredObjectsTableName()
+                                                                                         + " set object_type =?, attributes = ? where id = ?"))
                     {
                         stmt2.setString(1, configuredObject.getType());
                         if (configuredObject.getAttributes() != null)
@@ -762,7 +766,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                 }
                 else if (createIfNecessary)
                 {
-                    try (PreparedStatement insertStmt = conn.prepareStatement(INSERT_INTO_CONFIGURED_OBJECTS))
+                    try (PreparedStatement insertStmt = conn.prepareStatement("INSERT INTO " + getConfiguredObjectsTableName()
+                                                                                              + " ( id, object_type, attributes) VALUES (?,?,?)"))
                     {
                         insertStmt.setString(1, configuredObject.getId().toString());
                         insertStmt.setString(2, configuredObject.getType());
@@ -794,7 +799,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
     private void writeHierarchy(final ConfiguredObjectRecord configuredObject, final Connection conn) throws SQLException, StoreException
     {
-        try (PreparedStatement insertStmt = conn.prepareStatement(INSERT_INTO_CONFIGURED_OBJECT_HIERARCHY))
+        try (PreparedStatement insertStmt = conn.prepareStatement("INSERT INTO " + getConfiguredObjectHierarchyTableName()
+                                                                      + " ( child_id, parent_type, parent_id) VALUES (?,?,?)"))
         {
             for (Map.Entry<String, UUID> parentEntry : configuredObject.getParents().entrySet())
             {
@@ -818,10 +824,10 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             Connection conn = newAutoCommitConnection();
             try
             {
-                List<String> tables = new ArrayList<String>();
-                tables.addAll(CONFIGURATION_STORE_TABLE_NAMES);
 
-                for (String tableName : tables)
+                for (String tableName : Arrays.asList(
+                        getConfiguredObjectsTableName(),
+                        getConfiguredObjectHierarchyTableName()))
                 {
                     Statement stmt = conn.createStatement();
                     try

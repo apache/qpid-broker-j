@@ -21,6 +21,7 @@
 package org.apache.qpid.server.virtualhostnode.jdbc;
 
 import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory;
 import org.apache.qpid.server.store.jdbc.JDBCSettings;
@@ -46,4 +47,13 @@ public interface JDBCVirtualHostNode<X extends JDBCVirtualHostNode<X>> extends V
     @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
             defaultValue = "{\"type\": \"Provided\"}")
     PreferenceStoreAttributes getPreferenceStoreAttributes();
+
+    @ManagedContextDefault(name = "jdbcvirtualhostnode.tableNamePrefix")
+    String DEFAULT_JDBC_VIRTUALHOSTNODE_TABLE_NAME_PREFIX = "";
+
+    @ManagedAttribute(secure = true,
+            description = "Optional database table prefix so multiple VirtualHostNodes can share the same database",
+            defaultValue = "${jdbcvirtualhostnode.tableNamePrefix}",
+            validValuePattern = "[a-zA-Z_0-9]*")
+    String getTableNamePrefix();
 }

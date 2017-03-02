@@ -22,6 +22,7 @@ package org.apache.qpid.server.virtualhost.jdbc;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory;
 import org.apache.qpid.server.store.jdbc.JDBCSettings;
 
@@ -43,4 +44,14 @@ public interface JDBCVirtualHost<X extends JDBCVirtualHost<X>> extends VirtualHo
 
     @ManagedOperation(description = "Resets statistics on this object and all child objects", changesConfiguredObjectState = false, nonModifying = true)
     void resetStatistics();
+
+    @ManagedContextDefault(name = "jdbcvirtualhost.tableNamePrefix")
+    String DEFAULT_JDBC_VIRTUALHOST_TABLE_NAME_PREFIX = "";
+
+    @ManagedAttribute(secure = true,
+            description = "Optional database table prefix so multiple VirtualHosts can share the same database",
+            defaultValue = "${jdbcvirtualhost.tableNamePrefix}",
+            validValuePattern = "[a-zA-Z_0-9]*")
+    String getTableNamePrefix();
+
 }

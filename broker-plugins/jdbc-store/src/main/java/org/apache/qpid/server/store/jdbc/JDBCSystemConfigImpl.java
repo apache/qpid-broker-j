@@ -45,6 +45,8 @@ public class JDBCSystemConfigImpl extends AbstractSystemConfig<JDBCSystemConfigI
     private String _username;
     @ManagedAttributeField
     private String _password;
+    @ManagedAttributeField
+    private String _tableNamePrefix;
 
     @SystemConfigFactoryConstructor
     public JDBCSystemConfigImpl(final TaskExecutor taskExecutor,
@@ -83,5 +85,11 @@ public class JDBCSystemConfigImpl extends AbstractSystemConfig<JDBCSystemConfigI
     public String getPassword()
     {
         return _password;
+    }
+
+    @Override
+    public String getTableNamePrefix()
+    {
+        return _tableNamePrefix;
     }
 }

@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.virtualhost.jdbc;
 
+import java.util.Map;
+
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
@@ -27,8 +29,6 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.jdbc.GenericJDBCMessageStore;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
-
-import java.util.Map;
 
 @ManagedObject(category = false, type = JDBCVirtualHostImpl.VIRTUAL_HOST_TYPE)
 public class JDBCVirtualHostImpl extends AbstractVirtualHost<JDBCVirtualHostImpl> implements JDBCVirtualHost<JDBCVirtualHostImpl>
@@ -46,6 +46,9 @@ public class JDBCVirtualHostImpl extends AbstractVirtualHost<JDBCVirtualHostImpl
 
     @ManagedAttributeField
     private String _password;
+
+    @ManagedAttributeField
+    private String _tableNamePrefix;
 
     @ManagedObjectFactoryConstructor
     public JDBCVirtualHostImpl(final Map<String, Object> attributes,
@@ -82,6 +85,12 @@ public class JDBCVirtualHostImpl extends AbstractVirtualHost<JDBCVirtualHostImpl
     public String getPassword()
     {
         return _password;
+    }
+
+    @Override
+    public String getTableNamePrefix()
+    {
+        return _tableNamePrefix;
     }
 
     @Override
