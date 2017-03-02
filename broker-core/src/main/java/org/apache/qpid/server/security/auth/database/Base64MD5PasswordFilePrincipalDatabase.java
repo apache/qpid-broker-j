@@ -145,20 +145,13 @@ public class Base64MD5PasswordFilePrincipalDatabase extends AbstractPasswordFile
     @Override
     public SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException
     {
-        CallbackHandler callbackHandler = _callbackHandlerMap.get(mechanism);
-        if(callbackHandler == null)
-        {
-            throw new SaslException("Unsupported mechanism: " + mechanism);
-        }
-
-        //The SaslServers simply delegate to the built in CRAM-MD5 SaslServer
         if(CRAMMD5HashedSaslServer.MECHANISM.equals(mechanism))
         {
-            return new CRAMMD5HashedSaslServer(mechanism, "AMQP", localFQDN, null, callbackHandler);
+            return new CRAMMD5HashedSaslServer(mechanism, "AMQP", localFQDN, null, getCallbackHandler(mechanism));
         }
         else if(CRAMMD5HexSaslServer.MECHANISM.equals(mechanism))
         {
-            return new CRAMMD5HexSaslServer(mechanism, "AMQP", localFQDN, null, callbackHandler);
+            return new CRAMMD5HexSaslServer(mechanism, "AMQP", localFQDN, null, getCallbackHandler(mechanism));
         }
         else if(PlainSaslServer.MECHANISM.equals(mechanism))
         {
@@ -180,5 +173,15 @@ public class Base64MD5PasswordFilePrincipalDatabase extends AbstractPasswordFile
         }
 
         throw new SaslException("Unsupported mechanism: " + mechanism);
+    }
+
+    private CallbackHandler getCallbackHandler(final String mechanism) throws SaslException
+    {
+        CallbackHandler callbackHandler = _callbackHandlerMap.get(mechanism);
+        if(callbackHandler == null)
+        {
+            throw new SaslException("Unsupported mechanism: " + mechanism);
+        }
+        return callbackHandler;
     }
 }

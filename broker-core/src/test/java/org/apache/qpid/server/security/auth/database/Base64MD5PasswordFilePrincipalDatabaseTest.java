@@ -21,9 +21,14 @@
 package org.apache.qpid.server.security.auth.database;
 
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HashedSaslServer;
+import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HexSaslServer;
+import org.apache.qpid.server.security.auth.sasl.plain.PlainSaslServer;
 
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.login.AccountNotFoundException;
+import javax.security.sasl.SaslException;
+import javax.security.sasl.SaslServer;
 import javax.xml.bind.DatatypeConverter;
 
 import java.io.BufferedReader;
@@ -36,7 +41,9 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public class Base64MD5PasswordFilePrincipalDatabaseTest extends AbstractPasswordFilePrincipalDatabaseTest
@@ -400,4 +407,30 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends AbstractPassword
         assertTrue(_database.verifyPassword(PRINCIPAL_USERNAME, newPwd));
     }
 
+
+    public void testCreateSaslServer() throws Exception
+    {
+        Set<String> expectedMechanisms = new HashSet(Arrays.asList(CRAMMD5HashedSaslServer.MECHANISM,
+                                                                   CRAMMD5HexSaslServer.MECHANISM,
+                                                                   PlainSaslServer.MECHANISM));
+        Set<String> actualMechanisms = new HashSet(_database.getMechanisms());
+
+        assertEquals("Unexpected supported mechanisms", expectedMechanisms, actualMechanisms);
+
+        for(String mechanism: expectedMechanisms)
+        {
+            SaslServer saslServer =  _database.createSaslServer(mechanism, "localhost", PRINCIPAL);
+            assertNotNull(String.format("Sasl server not created for mechanism %s", mechanism), saslServer);
+        }
+
+        try
+        {
+            _database.createSaslServer("BLAH", "localhost", PRINCIPAL);
+            fail("Cannot create sasl server for unsupported mechanism");
+        }
+        catch(SaslException e)
+        {
+            // pass
+        }
+    }
 }
