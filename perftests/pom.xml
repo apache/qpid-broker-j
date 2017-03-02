@@ -361,10 +361,8 @@
       </properties>
       <dependencies>
         <dependency>
-          <groupId>${qpid.legacy.jms.client.groupid}</groupId>
-          <artifactId>${qpid.legacy.jms.client.artifactid}</artifactId>
-          <version>${qpid.legacy.jms.client.version}</version>
-          <type>${qpid.legacy.jms.client.type}</type>
+          <groupId>org.apache.qpid</groupId>
+          <artifactId>qpid-client</artifactId>
           <scope>compile</scope>
         </dependency>
       </dependencies>
@@ -385,10 +383,8 @@
       </properties>
       <dependencies>
         <dependency>
-          <groupId>${qpid.legacy.jms.client.groupid}</groupId>
-          <artifactId>${qpid.legacy.jms.client.artifactid}</artifactId>
-          <version>${qpid.legacy.jms.client.version}</version>
-          <type>${qpid.legacy.jms.client.type}</type>
+          <groupId>org.apache.qpid</groupId>
+          <artifactId>qpid-client</artifactId>
           <scope>compile</scope>
         </dependency>
       </dependencies>
