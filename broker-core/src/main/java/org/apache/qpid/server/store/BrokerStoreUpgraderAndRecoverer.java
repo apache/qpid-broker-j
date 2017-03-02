@@ -314,17 +314,22 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if (record.getType().equals("Broker"))
+            if (record.getType().equalsIgnoreCase("Broker"))
             {
                 record = upgradeRootRecord(record);
 
                 Map<String, Object> brokerAttributes = new HashMap<>(record.getAttributes());
                 _defaultVirtualHost = (String)brokerAttributes.remove("defaultVirtualHost");
+                boolean lowerCaseType = "broker".equals(brokerAttributes.get("type"));
+                if (lowerCaseType)
+                {
+                    brokerAttributes.put("type", "Broker");
+                }
 
-                if (_defaultVirtualHost != null)
+                if (_defaultVirtualHost != null || lowerCaseType)
                 {
                     record = new ConfiguredObjectRecordImpl(record.getId(),
-                                                            record.getType(),
+                                                            "Broker",
                                                             brokerAttributes,
                                                             record.getParents());
                     getUpdateMap().put(record.getId(), record);

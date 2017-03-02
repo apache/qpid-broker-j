@@ -466,6 +466,21 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
 
     }
 
+    public void testUpgradeBrokerType()
+    {
+        _brokerRecord.getAttributes().put("modelVersion", "3.0");
+        _brokerRecord.getAttributes().put("type", "broker");
+
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
+
+        List<ConfiguredObjectRecord> brokerRecords = findRecordByType("Broker", records);
+        assertEquals("Unexpected number of broker records", 1, brokerRecords.size());
+        assertEquals("Unexpected type", "Broker", brokerRecords.get(0).getAttributes().get("type"));
+    }
+
     public void testUpgradeAMQPPortWithNetworkBuffers()
     {
         Map<String, Object> portAttributes = new HashMap<>();
