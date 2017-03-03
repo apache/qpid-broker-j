@@ -478,7 +478,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
 
         List<ConfiguredObjectRecord> brokerRecords = findRecordByType("Broker", records);
         assertEquals("Unexpected number of broker records", 1, brokerRecords.size());
-        assertEquals("Unexpected type", "Broker", brokerRecords.get(0).getAttributes().get("type"));
+        assertFalse("Unexpected type", brokerRecords.get(0).getAttributes().containsKey("type"));
     }
 
     public void testUpgradeAMQPPortWithNetworkBuffers()
