@@ -215,13 +215,11 @@ define(["dojo/_base/connect",
         if (!members || members.length < 3)
         {
             this.designatedPrimaryContainer.style.display = "block";
-            this.priorityContainer.style.display = "none";
             this.quorumOverrideContainer.style.display = "none";
         }
         else
         {
             this.designatedPrimaryContainer.style.display = "none";
-            this.priorityContainer.style.display = "block";
             this.quorumOverrideContainer.style.display = "block";
         }
     };
