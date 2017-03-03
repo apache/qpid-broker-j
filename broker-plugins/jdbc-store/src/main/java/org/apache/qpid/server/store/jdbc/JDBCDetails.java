@@ -65,6 +65,9 @@ public abstract class JDBCDetails
         private static final JDBCDetails MYSQL = new KnownJDBCDetails("mysql", "blob", "varbinary(%d)", "bigint", false,
                 true);
 
+        private static final JDBCDetails MARIA_DB = new KnownJDBCDetails("mariadb", "blob", "varbinary(%d)",
+                                                                         "bigint", false, true);
+
         static
         {
             Map<String, JDBCDetails> map = new HashMap<>();
@@ -76,6 +79,7 @@ public abstract class JDBCDetails
                 map.put(POSTGRES.getVendor(), POSTGRES);
                 map.put(DERBY.getVendor(), DERBY);
                 map.put(MYSQL.getVendor(), MYSQL);
+                map.put(MARIA_DB.getVendor(), MARIA_DB);
                 map.put(FALLBACK.getVendor(), FALLBACK);
             }
             finally
