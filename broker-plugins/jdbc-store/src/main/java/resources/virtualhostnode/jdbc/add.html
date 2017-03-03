@@ -71,7 +71,20 @@
                               placeHolder: 'Select pool type'" />
       </div>
     </div>
-
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Table name prefix:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addVirtualHostNode.tableNamePrefix"
+                   data-dojo-type="dijit/form/ValidationTextBox"
+                   data-dojo-props="
+                              name: 'tableNamePrefix',
+                              placeHolder: 'table name prefix',
+                              required: false,
+                              regExp: '[a-zA-Z_0-9]*',
+                              promptMessage: 'Optional database table prefix so multiple VirtualHostNodes can share the same database',
+                              title: 'Optional database table prefix so multiple VirtualHostNodes can share the same database'" />
+        </div>
+    </div>
     <div class="clear"></div>
     <div id="addVirtualHostNode.poolSpecificDiv"></div>
 </div>

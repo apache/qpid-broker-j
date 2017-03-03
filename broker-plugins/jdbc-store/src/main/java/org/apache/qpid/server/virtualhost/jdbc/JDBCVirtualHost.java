@@ -41,13 +41,15 @@ public interface JDBCVirtualHost<X extends JDBCVirtualHost<X>> extends QueueMana
     @ManagedAttribute(secure=true)
     String getPassword();
 
-    @ManagedContextDefault(name = "jdbcvirtualhost.tableNamePrefix")
+    @ManagedContextDefault(name = "jdbcvirtualhost.tableNamePrefix",
+            description = "Default value for optional database table prefix")
     String DEFAULT_JDBC_VIRTUALHOST_TABLE_NAME_PREFIX = "";
 
-    @ManagedAttribute(secure = true,
+    @ManagedAttribute(
             description = "Optional database table prefix so multiple VirtualHosts can share the same database",
             defaultValue = "${jdbcvirtualhost.tableNamePrefix}",
-            validValuePattern = "[a-zA-Z_0-9]*")
+            validValuePattern = "[a-zA-Z_0-9]*",
+            immutable = true)
     String getTableNamePrefix();
 
 }

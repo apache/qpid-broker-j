@@ -48,12 +48,14 @@ public interface JDBCVirtualHostNode<X extends JDBCVirtualHostNode<X>> extends V
             defaultValue = "{\"type\": \"Provided\"}")
     PreferenceStoreAttributes getPreferenceStoreAttributes();
 
-    @ManagedContextDefault(name = "jdbcvirtualhostnode.tableNamePrefix")
+    @ManagedContextDefault(name = "jdbcvirtualhostnode.tableNamePrefix",
+            description = "Default value for optional database table prefix")
     String DEFAULT_JDBC_VIRTUALHOSTNODE_TABLE_NAME_PREFIX = "";
 
-    @ManagedAttribute(secure = true,
+    @ManagedAttribute(
             description = "Optional database table prefix so multiple VirtualHostNodes can share the same database",
             defaultValue = "${jdbcvirtualhostnode.tableNamePrefix}",
-            validValuePattern = "[a-zA-Z_0-9]*")
+            validValuePattern = "[a-zA-Z_0-9]*",
+            immutable = true)
     String getTableNamePrefix();
 }
