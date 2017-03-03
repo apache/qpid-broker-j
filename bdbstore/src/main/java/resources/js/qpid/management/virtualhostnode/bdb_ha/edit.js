@@ -48,7 +48,6 @@ define(["qpid/common/util",
               if (node.remotereplicationnodes && node.remotereplicationnodes.length>1)
               {
                   registry.byId("editVirtualHostNode.designatedPrimary").set("disabled", true);
-                  registry.byId("editVirtualHostNode.priority").set("disabled", false);
                   registry.byId("editVirtualHostNode.quorumOverride").set("disabled", false);
                   var overrideLimit = Math.floor((node.remotereplicationnodes.length + 1)/2);
                   for(var i = 1; i <= overrideLimit; i++)
@@ -59,7 +58,6 @@ define(["qpid/common/util",
               else
               {
                   registry.byId("editVirtualHostNode.designatedPrimary").set("disabled", false);
-                  registry.byId("editVirtualHostNode.priority").set("disabled", true);
                   registry.byId("editVirtualHostNode.quorumOverride").set("disabled", true);
               }
               var store = new Memory({data :overrideData, idProperty: "id" });
