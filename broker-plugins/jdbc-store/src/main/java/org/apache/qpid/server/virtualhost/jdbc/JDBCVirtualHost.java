@@ -45,13 +45,15 @@ public interface JDBCVirtualHost<X extends JDBCVirtualHost<X>> extends VirtualHo
     @ManagedOperation(description = "Resets statistics on this object and all child objects", changesConfiguredObjectState = false, nonModifying = true)
     void resetStatistics();
 
-    @ManagedContextDefault(name = "jdbcvirtualhost.tableNamePrefix")
+    @ManagedContextDefault(name = "jdbcvirtualhost.tableNamePrefix",
+            description = "Default value for optional database table prefix")
     String DEFAULT_JDBC_VIRTUALHOST_TABLE_NAME_PREFIX = "";
 
-    @ManagedAttribute(secure = true,
+    @ManagedAttribute(
             description = "Optional database table prefix so multiple VirtualHosts can share the same database",
             defaultValue = "${jdbcvirtualhost.tableNamePrefix}",
-            validValuePattern = "[a-zA-Z_0-9]*")
+            validValuePattern = "[a-zA-Z_0-9]*",
+            immutable = true)
     String getTableNamePrefix();
 
 }
