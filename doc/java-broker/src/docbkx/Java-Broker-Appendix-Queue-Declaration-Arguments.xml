@@ -1,0 +1,126 @@
+<?xml version="1.0"?>
+<!--
+  ~  Licensed to the Apache Software Foundation (ASF) under one
+  ~  or more contributor license agreements.  See the NOTICE file
+  ~  distributed with this work for additional information
+  ~  regarding copyright ownership.  The ASF licenses this file
+  ~  to you under the Apache License, Version 2.0 (the
+  ~  "License"); you may not use this file except in compliance
+  ~  with the License.  You may obtain a copy of the License at
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing,
+  ~  software distributed under the License is distributed on an
+  ~  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~  KIND, either express or implied.  See the License for the
+  ~  specific language governing permissions and limitations
+  ~  under the License.
+  -->
+
+<appendix xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Appendix-Queue-Declare-Arguments">
+    <title>Queue Declaration Arguments supported by the Broker</title>
+    <para>
+        <emphasis>Qpid Broker for Java</emphasis>
+        supports a number of custom arguments which can be specified as part of <emphasis>queue.declare</emphasis>
+        commands for AMQP 0.x protocols. This section provides an overview of the supported arguments.
+    </para>
+    <table pgwide="1"  xml:id="Java-Broker-Appendix-Supported-Queue-Declare-Arguments">
+        <title>Queue declare arguments</title>
+        <tgroup cols="2">
+            <colspec colnum="1" colname="col1"/>
+            <colspec colnum="2" colname="col2"/>
+            <spanspec spanname="both" namest="col1" nameend="col2"/>
+            <thead>
+                <row>
+                    <entry>Argument Name</entry>
+                    <entry>Description</entry>
+                </row>
+            </thead>
+            <tbody>
+                <row xml:id="Java-Broker-Appendix-Queue-Declare-Arguments-Overflow-Policy">
+                    <entry spanname="both">
+                        <para>Declaration of overflow policy.
+                            See
+                            <xref linkend="Java-Broker-Concepts-Queue-OverflowPolicy"/>
+                            for more details.
+                        </para>
+                    </entry>
+                </row>
+                <row xml:id="Java-Broker-Appendix-Queue-Declare-Arguments-Policy-Type">
+                    <entry>
+                        <para>qpid.policy_type</para>
+                    </entry>
+                    <entry>
+                        <para>Defines queue overflow policy.</para>
+                    </entry>
+                </row>
+                <row xml:id="Java-Broker-Appendix-Queue-Declare-Arguments-Max-Count">
+                    <entry>
+                        <para>qpid.max_count</para>
+                    </entry>
+                    <entry>
+                        <para>Defines <emphasis>maximum number of messages</emphasis>.
+                        </para>
+                    </entry>
+                </row>
+                <row xml:id="Java-Broker-Appendix-Queue-Declare-Arguments-Max-Size">
+                    <entry>
+                        <para>qpid.max_size</para>
+                    </entry>
+                    <entry>
+                        <para>Defines <emphasis>maximum number of bytes</emphasis>.
+                        </para>
+                    </entry>
+                </row>
+                <row>
+                    <entry spanname="both">
+                        <para>The <emphasis>Overflow Policy</emphasis> and the limits can be specified using
+                            <emphasis>Address</emphasis>
+                            based syntax as in the example below:
+                            <screen><![CDATA[
+my-queue; {create: always, node: {x-declare: {arguments:{'qpid.max_count': 10000, 'qpid.max_size': 102400, 'qpid.policy_type: 'ring'}}}}
+]]></screen>
+                        </para>
+                    </entry>
+                </row>
+                <row xml:id="Java-Broker-Appendix-Queue-Declare-Arguments-Overflow-Policy-Producer-Flow-Control">
+                    <entry spanname="both">
+                        <para>Alternative declaration of <emphasis>Producer Flow Control</emphasis> overflow policy.
+                            See
+                            <xref linkend="Java-Broker-Concepts-Queue-OverflowPolicy"/>
+                            for more details.
+                        </para>
+                    </entry>
+                </row>
+                <row xml:id="Java-Broker-Appendix-Queue-Declare-Arguments-Capacity">
+                    <entry>
+                        <para>x-qpid-capacity</para>
+                    </entry>
+                    <entry>
+                        <para>Defines <emphasis>maximum number of bytes</emphasis>.
+                        </para>
+                    </entry>
+                </row>
+                <row xml:id="Java-Broker-Appendix-Queue-Declare-Arguments-Flow-Resume-Capacity">
+                    <entry>
+                        <para>x-qpid-flow-resume-capacity</para>
+                    </entry>
+                    <entry>
+                        <para>Defines flow resume threshold in bytes</para>
+                    </entry>
+                </row>
+                <row>
+                    <entry spanname="both">
+                        <para>The <emphasis>Producer Flow Control</emphasis> can be specified using
+                            <emphasis>Address</emphasis> based syntax as in the example below:
+                            <screen><![CDATA[
+my-queue; {create: always, node: {x-declare: {arguments:{'x-qpid-capacity': 102400, 'x-qpid-flow-resume-capacity': 8192000}}}}
+]]></screen>
+                        </para>
+                    </entry>
+                </row>
+            </tbody>
+        </tgroup>
+    </table>
+</appendix>

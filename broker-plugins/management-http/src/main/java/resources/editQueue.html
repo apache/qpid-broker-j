@@ -167,15 +167,15 @@
                             </div>
                         </div>
                         <div class="clear">
-                            <div class="formLabel-labelCell">Maximum Queue Depth including headers (Bytes):</div>
+                            <div class="formLabel-labelCell">Maximum Queue Depth (Bytes):</div>
                             <div class="formLabel-controlCell">
                                 <input type="text" id="formEditQueue.maximumQueueDepthBytes"
                                        data-dojo-type="dijit/form/ValidationTextBox"
                                        data-dojo-props="
                                       name: 'maximumQueueDepthBytes',
                                       placeHolder: 'maximum number of bytes',
-                                      promptMessage: 'Maximum number of bytes (including header) in the queue',
-                                      title: 'Enter the maximum number of bytes (including header) in the queue',
+                                      promptMessage: 'Maximum number of bytes (including headers) in the queue',
+                                      title: 'Enter the maximum number of bytes (including headers) in the queue',
                                       trim: true"/>
                             </div>
                         </div>
@@ -183,6 +183,8 @@
                     <div class="clear"></div>
                 </div>
 
+                <div class="clear formBox">
+                    <fieldset>
                 <div class="clear">
                     <div class="formLabel-labelCell">Maximum Ttl:</div>
                     <div class="formLabel-controlCell">
@@ -211,6 +213,8 @@
                 </div>
 
                 <div class="clear"></div>
+                    </fieldset>
+                </div>
 
                 <div class="clear formBox">
                     <fieldset>

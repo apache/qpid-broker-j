@@ -604,22 +604,49 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1003">
           <entry morerows="1">QUE-1003</entry>
-          <entry>Overfull : Size : <replaceable>size</replaceable> bytes, Capacity :
-              <replaceable>maximumsize</replaceable></entry>
+          <entry>
+            Overfull : Size :  <replaceable>size in bytes</replaceable>, Capacity : <replaceable>resumesize in bytes</replaceable>,
+            Messages : <replaceable>size in messages</replaceable>, Message Capacity : <replaceable>resumesize in messages</replaceable>
+          </entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that a queue has exceeded its permitted capacity. See <xref linkend="Qpid-Producer-Flow-Control"/> for details.</para>
+            <para>Indicates that a queue has exceeded its permitted capacity when
+              <emphasis>Producer Flow Control</emphasis> overflow policy is used.
+              See <xref linkend="Java-Broker-Concepts-Queue-OverflowPolicy"/> for details.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1004">
           <entry morerows="1">QUE-1004</entry>
-          <entry>Underfull : Size : <replaceable>size</replaceable> bytes, Resume Capacity :
-              <replaceable>resumesize</replaceable></entry>
+          <entry>
+            Underfull : Size : <replaceable>size in bytes</replaceable>, Capacity : <replaceable>resumesize in bytes</replaceable>,
+            Messages : <replaceable>size in messages</replaceable>, Message Capacity : <replaceable>resumesize in messages</replaceable>
+          </entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that a queue has fallen to its resume capacity. See <xref linkend="Qpid-Producer-Flow-Control"/> for details.</para>
+            <para>
+              Indicates that a queue has fallen to its resume capacity  when
+              <emphasis>Producer Flow Control</emphasis> overflow policy is used.
+              See <xref linkend="Java-Broker-Concepts-Queue-OverflowPolicy"/> for details.
+            </para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1004">
+          <entry morerows="1">QUE-1005</entry>
+          <entry>
+            Dropped : <replaceable>number</replaceable> messages, Depth : <replaceable>size</replaceable> bytes,
+            <replaceable>size</replaceable> messages, Capacity : <replaceable>limit</replaceable> bytes,
+            <replaceable>limit</replaceable> messages
+          </entry>
+        </row>
+        <row>
+          <entry>
+            <para>
+              Indicates that a given number of messages is deleted when <emphasis>Ring</emphasis> overflow policy is
+              used and any of queue capacity limits is breached .
+              See <xref linkend="Java-Broker-Concepts-Queue-OverflowPolicy"/> for details.
+            </para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1014">
@@ -873,7 +900,8 @@
           <entry>
             <para>Indicates that producer flow control has been imposed on a channel owning to
               excessive queue depth in the indicated queue. Produces using the channel will be
-              requested to pause the sending of messages. See <xref linkend="Qpid-Producer-Flow-Control"/> for more details.</para>
+              requested to pause the sending of messages.
+              See <xref linkend="Java-Broker-Concepts-Queue-OverflowPolicy"/> for more details.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1006">
@@ -882,7 +910,8 @@
         </row>
         <row>
           <entry>
-            <para>Indicates that producer flow control has been removed from a channel. See <xref linkend="Qpid-Producer-Flow-Control"/> for more details.</para>
+            <para>Indicates that producer flow control has been removed from a channel.
+              See <xref linkend="Java-Broker-Concepts-Queue-OverflowPolicy"/> for more details.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1007">
@@ -1100,7 +1129,8 @@
         </row>
         <row>
           <entry>
-            <para>The store has breached is maximum configured size. See <xref linkend="Qpid-Producer-Flow-Control"/> for details.</para>
+            <para>The store has breached is maximum configured size.
+              See <xref linkend="Java-Broker-Runtime-Disk-Space-Management-Producer-Flow-Control"/> for details.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-MST-1009">
@@ -1110,8 +1140,8 @@
         <row>
           <entry>
             <para>The store size has fallen beneath its resume capacity and therefore flow control
-              has been rescinded. See <xref linkend="Qpid-Producer-Flow-Control"/> for
-              details.</para>
+              has been rescinded. See <xref linkend="Java-Broker-Runtime-Disk-Space-Management-Producer-Flow-Control"/>
+              for details. </para>
           </entry>
         </row>
       </tbody>

@@ -144,7 +144,7 @@ define(["dojo/_base/declare",
                         autoHeight: 10,
                         keepSelection: true,
                         structure: [{
-                            name: "Size",
+                            name: "Payload Size",
                             field: "size",
                             width: "40%"
                         }, {
@@ -404,9 +404,6 @@ define(["dojo/_base/declare",
                         "messageGroups",
                         "messageGroupKey",
                         "messageGroupSharedGroups",
-                        "queueDepthMessages",
-                        "queueDepthBytes",
-                        "queueDepthBytesUnits",
                         "queueDepthMessagesIncludingHeader",
                         "queueDepthBytesIncludingHeader",
                         "queueDepthBytesUnitsIncludingHeader",
@@ -458,7 +455,7 @@ define(["dojo/_base/declare",
 
         }
 
-        function renderMaximumQueueDepth(value)
+        function renderMaximumQueueDepth(value, bytes)
         {
             if (util.isInteger(value))
             {
@@ -466,7 +463,14 @@ define(["dojo/_base/declare",
                 {
                     return "&lt;unlimited&gt;";
                 }
-                return  new String(value);
+                if (bytes)
+                {
+                   var formatted =  formatter.formatBytes(value);
+
+                   return formatted.value + " " + formatted.units;
+                }
+
+                return  new String(value) + " msgs";
             }
             return "";
         }
@@ -487,11 +491,6 @@ define(["dojo/_base/declare",
 
             this.alternateExchange.innerHTML =
                 this.queueData["alternateExchange"] ? entities.encode(String(this.queueData["alternateExchange"])) : "";
-
-            this.queueDepthMessages.innerHTML = entities.encode(String(this.queueData["queueDepthMessages"]));
-            bytesDepth = formatter.formatBytes(this.queueData["queueDepthBytes"]);
-            this.queueDepthBytes.innerHTML = "(" + bytesDepth.value;
-            this.queueDepthBytesUnits.innerHTML = bytesDepth.units + ")";
 
             this.queueDepthMessagesIncludingHeader.innerHTML = entities.encode(String(this.queueData["queueDepthMessages"]));
             bytesDepth = formatter.formatBytes(this.queueData["queueDepthBytesIncludingHeader"]);
@@ -515,8 +514,8 @@ define(["dojo/_base/declare",
             }
 
             this["overflowPolicy"].innerHTML = entities.encode(this.queueData["overflowPolicy"]);
-            this["maximumQueueDepthBytes"].innerHTML = renderMaximumQueueDepth(this.queueData.maximumQueueDepthBytes);
-            this["maximumQueueDepthMessages"].innerHTML = renderMaximumQueueDepth(this.queueData.maximumQueueDepthMessages);
+            this["maximumQueueDepthBytes"].innerHTML = renderMaximumQueueDepth(this.queueData.maximumQueueDepthBytes, true);
+            this["maximumQueueDepthMessages"].innerHTML = renderMaximumQueueDepth(this.queueData.maximumQueueDepthMessages, false);
             if (this.queueData["messageGroupKey"])
             {
                 this.messageGroupKey.innerHTML = entities.encode(String(this.queueData["messageGroupKey"]));

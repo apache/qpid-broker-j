@@ -73,9 +73,9 @@
             existing messages on the queue are not affected. </para>
         </listitem>
         <listitem>
-          <para><emphasis>Queue capacity</emphasis>. Queues have the ability to limit the of the
+          <para><emphasis>Overflow policy</emphasis>. Queues have the ability to limit the of the
             cumulative size of all the messages contained within the store. This feature is
-            described in detail <xref linkend="Java-Broker-Runtime-Disk-Space-Management"/>.</para>
+            described in detail <xref linkend="Java-Broker-Concepts-Queue-OverflowPolicy"/>.</para>
         </listitem>
         <listitem>
           <para><emphasis>Alerting Thresholds</emphasis>. Queues have the ability to alert on a
