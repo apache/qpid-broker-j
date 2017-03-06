@@ -2610,8 +2610,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return returnVal;
     }
 
-    protected static <V> void addFutureCallback(ListenableFuture<V> future, final FutureCallback<V> callback,
-                                                Executor taskExecutor)
+    public static <V> void addFutureCallback(ListenableFuture<V> future, final FutureCallback<V> callback,
+                                             Executor taskExecutor)
     {
         final Subject subject = Subject.getSubject(AccessController.getContext());
 

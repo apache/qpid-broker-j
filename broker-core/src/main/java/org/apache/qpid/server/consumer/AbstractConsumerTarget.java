@@ -133,7 +133,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
     @Override
     public boolean processPending()
     {
-        if (!getSession().getAMQPConnection().isIOThread())
+        if (getSession() == null || !getSession().getAMQPConnection().isIOThread())
         {
             return false;
         }

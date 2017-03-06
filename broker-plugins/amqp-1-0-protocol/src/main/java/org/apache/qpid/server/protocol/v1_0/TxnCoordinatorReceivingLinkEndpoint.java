@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
@@ -48,16 +48,13 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class TxnCoordinatorReceivingLinkEndpoint extends ReceivingLinkEndpoint
 {
-    private final SectionDecoderImpl _sectionDecoder;
     private final LinkedHashMap<Integer, ServerTransaction> _createdTransactions = new LinkedHashMap<>();
     private ArrayList<Transfer> _incompleteMessage;
 
-    public TxnCoordinatorReceivingLinkEndpoint(final Session_1_0 session,
-                                               final Attach attach)
+    public TxnCoordinatorReceivingLinkEndpoint(final TxnCoordinatorReceivingLink_1_0 link,
+                                               final SectionDecoder sectionDecoder)
     {
-        super(session, attach);
-        _sectionDecoder = new SectionDecoderImpl(getSession().getConnection().getDescribedTypeRegistry().getSectionDecoderRegistry());
-
+        super(link, sectionDecoder);
     }
 
     @Override
@@ -109,7 +106,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends ReceivingLinkEndpoint
         // Only interested in the amqp-value section that holds the message to the coordinator
         try
         {
-            List<EncodingRetainingSection<?>> sections = _sectionDecoder.parseAll(payload);
+            List<EncodingRetainingSection<?>> sections = getSectionDecoder().parseAll(payload);
             boolean amqpValueSectionFound = false;
             for(EncodingRetainingSection section : sections)
             {
@@ -225,5 +222,10 @@ public class TxnCoordinatorReceivingLinkEndpoint extends ReceivingLinkEndpoint
 
     }
 
-
+    @Override
+    public void attachReceived(final Attach attach) throws AmqpErrorException
+    {
+        super.attachReceived(attach);
+        setDeliveryCount(attach.getInitialDeliveryCount());
+    }
 }

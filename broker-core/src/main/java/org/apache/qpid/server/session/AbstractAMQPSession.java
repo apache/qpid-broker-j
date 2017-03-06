@@ -33,8 +33,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import javax.security.auth.Subject;
 
 import com.google.common.base.Supplier;
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
@@ -59,6 +61,7 @@ import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.TransactionTimeoutTicker;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.FutureHelper;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.transport.network.Ticker;
 
@@ -411,4 +414,18 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     protected abstract void updateBlockedStateIfNecessary();
 
     public abstract boolean isClosing();
+
+    @Override
+    public ListenableFuture<Void> doOnIOThreadAsync(final Runnable task)
+    {
+        final ListenableFuture<Void> future = getAMQPConnection().doOnIOThreadAsync(task);
+        return doAfter(MoreExecutors.directExecutor(), future, new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                getAMQPConnection().notifyWork(AbstractAMQPSession.this);
+            }
+        });
+    }
 }

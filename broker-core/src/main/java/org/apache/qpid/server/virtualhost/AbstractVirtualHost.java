@@ -100,8 +100,7 @@ import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.plugin.ConnectionValidator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
-import org.apache.qpid.server.protocol.LinkRegistry;
-import org.apache.qpid.server.protocol.LinkRegistryImpl;
+import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.CompoundAccessControl;
@@ -179,7 +178,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
 
-    private final Map<String, LinkRegistry> _linkRegistry = new HashMap<String, LinkRegistry>();
+    private volatile LinkRegistry _linkRegistry;
     private AtomicBoolean _blocked = new AtomicBoolean();
 
     private final Map<String, MessageDestination> _systemNodeDestinations =
@@ -595,6 +594,21 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         PreferencesRoot preferencesRoot = (VirtualHostNode) getParent();
         _preferenceStore = preferencesRoot.createPreferenceStore();
+
+        Iterator<LinkRegistryFactory> linkRegistryFactories = (new QpidServiceLoader()).instancesOf(LinkRegistryFactory.class).iterator();
+        if (linkRegistryFactories.hasNext())
+        {
+            final LinkRegistryFactory linkRegistryFactory = linkRegistryFactories.next();
+            if (linkRegistryFactories.hasNext())
+            {
+                throw new RuntimeException("Found multiple implementations of LinkRegistry");
+            }
+            _linkRegistry = linkRegistryFactory.create(this);
+        }
+        else
+        {
+            _linkRegistry = null;
+        }
 
         createHousekeepingExecutor();
     }
@@ -1594,15 +1608,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
-    public synchronized LinkRegistry getLinkRegistry(String remoteContainerId)
+    @Override
+    public <T extends LinkModel> T getLink(String remoteContainerId, String linkName, Class<T> type)
     {
-        LinkRegistry linkRegistry = _linkRegistry.get(remoteContainerId);
-        if(linkRegistry == null)
-        {
-            linkRegistry = new LinkRegistryImpl();
-            _linkRegistry.put(remoteContainerId, linkRegistry);
-        }
-        return linkRegistry;
+        return _linkRegistry.getLink(remoteContainerId, linkName, type);
     }
 
     public DtxRegistry getDtxRegistry()

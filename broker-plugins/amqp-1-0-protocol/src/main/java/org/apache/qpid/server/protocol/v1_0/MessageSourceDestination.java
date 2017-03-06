@@ -25,12 +25,12 @@ import static org.apache.qpid.server.model.LifetimePolicy.PERMANENT;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
-import org.apache.qpid.server.message.MessageSource;
 
 public class MessageSourceDestination implements SendingDestination
 {

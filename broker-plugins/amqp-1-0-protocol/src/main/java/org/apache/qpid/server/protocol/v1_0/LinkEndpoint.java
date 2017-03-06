@@ -27,7 +27,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -45,8 +49,9 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 
 public abstract class LinkEndpoint<T extends Link_1_0>
 {
-
-    private T _link;
+    private static final Logger LOGGER = LoggerFactory.getLogger(LinkEndpoint.class);
+    private final T _link;
+    private Session_1_0 _session;
     private Object _flowTransactionId;
     private SenderSettleMode _sendingSettlementMode;
     private ReceiverSettleMode _receivingSettlementMode;
@@ -56,6 +61,15 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     private volatile boolean _stopped;
     private volatile boolean _stoppedUpdated;
     private Symbol[] _capabilities;
+    private UnsignedInteger _deliveryCount;
+    private UnsignedInteger _linkCredit;
+    private UnsignedInteger _available;
+    private Boolean _drain;
+    private UnsignedInteger _localHandle;
+    private UnsignedLong _maxMessageSize;
+    private Map<Symbol, Object> _properties;
+
+    protected volatile State _state = State.ATTACH_RECVD;
 
     protected enum State
     {
@@ -65,36 +79,36 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         ATTACHED,
         DETACH_SENT,
         DETACH_RECVD
-    };
-
-    private final String _name;
-
-    private Session_1_0 _session;
+    }
 
 
-    protected volatile State _state = State.DETACHED;
-
-    private BaseSource _source;
-    private BaseTarget _target;
-    private UnsignedInteger _deliveryCount;
-    private UnsignedInteger _linkCredit;
-    private UnsignedInteger _available;
-    private Boolean _drain;
-    private UnsignedInteger _localHandle;
-    private UnsignedLong _maxMessageSize;
-    private Map<Symbol, Object> _properties;
-
-    LinkEndpoint(final Session_1_0 sessionEndpoint,final Attach attach)
+    LinkEndpoint(final T link)
     {
-        _session = sessionEndpoint;
+        _link = link;
+    }
 
-        _name = attach.getName();
+    public abstract void start();
+
+    public abstract Role getRole();
+
+    public abstract void flowStateChanged();
+
+    public abstract void receiveFlow(final Flow flow);
+
+    protected abstract void handle(final Binary deliveryTag, final DeliveryState state, final Boolean settled);
+
+    protected abstract void remoteDetachedPerformDetach(final Detach detach);
+
+    protected abstract Map<Symbol,Object> initProperties(final Attach attach);
+
+    public void attachReceived(final Attach attach) throws AmqpErrorException
+    {
+        _sendingSettlementMode = attach.getSndSettleMode();
+        _receivingSettlementMode = attach.getRcvSettleMode();
         _initialUnsettledMap = attach.getUnsettled();
         _properties = initProperties(attach);
         _state = State.ATTACH_RECVD;
     }
-
-    public abstract void start();
 
     public boolean isStopped()
     {
@@ -111,38 +125,24 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         }
     }
 
-    protected abstract Map<Symbol,Object> initProperties(final Attach attach);
-
-    public String getName()
+    public String getLinkName()
     {
-        return _name;
+        return _link.getName();
     }
-
-    public abstract Role getRole();
 
     public BaseSource getSource()
     {
-        return _source;
+        return _link.getSource();
+    }
+
+    public BaseTarget getTarget()
+    {
+        return _link.getTarget();
     }
 
     public NamedAddressSpace getAddressSpace()
     {
         return getSession().getConnection().getAddressSpace();
-    }
-
-    public void setSource(final BaseSource source)
-    {
-        _source = source;
-    }
-
-    public BaseTarget getTarget()
-    {
-        return _target;
-    }
-
-    public void setTarget(final BaseTarget target)
-    {
-        _target = target;
     }
 
     public void setDeliveryCount(final UnsignedInteger deliveryCount)
@@ -199,12 +199,6 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         }
     }
 
-    protected abstract void remoteDetachedPerformDetach(final Detach detach);
-
-    public void receiveFlow(final Flow flow)
-    {
-    }
-
     public void addUnsettled(final Delivery unsettled)
     {
     }
@@ -221,8 +215,6 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         }
     }
 
-    protected abstract void handle(final Binary deliveryTag, final DeliveryState state, final Boolean settled);
-
     public void settle(final Binary deliveryTag)
     {
 
@@ -231,51 +223,6 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     void setLocalHandle(final UnsignedInteger localHandle)
     {
         _localHandle = localHandle;
-    }
-
-    void receiveAttach(final Attach attach)
-    {
-        switch (_state)
-        {
-            case ATTACH_SENT:
-            {
-
-                _state = State.ATTACHED;
-
-                _initialUnsettledMap = attach.getUnsettled();
-                    /*  TODO - don't yet handle:
-
-                        attach.getProperties();
-                        attach.getDurable();
-                        attach.getExpiryPolicy();
-                        attach.getTimeout();
-                     */
-
-                break;
-            }
-
-            case DETACHED:
-            {
-                _state = State.ATTACH_RECVD;
-                break;
-            }
-
-
-        }
-
-        if (attach.getRole() == Role.SENDER)
-        {
-            _source = attach.getSource();
-        }
-        else
-        {
-            _target = attach.getTarget();
-        }
-
-        if (getRole() == Role.SENDER)
-        {
-            _maxMessageSize = attach.getMaxMessageSize();
-        }
     }
 
     boolean isAttached()
@@ -293,9 +240,21 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         return _session;
     }
 
-    public void setSession(final Session_1_0 session)
+    public void associateSession(final Session_1_0 session)
     {
+        if (session == null)
+        {
+            throw new IllegalStateException("To dissociate session from Endpoint call LinkEndpoint#dissociateSession() "
+                                            + "instead of LinkEndpoint#associate(null)");
+        }
         _session = session;
+    }
+
+    public void dissociateSession()
+    {
+        setLocalHandle(null);
+        _session = null;
+        getLink().discardEndpoint();
     }
 
     UnsignedInteger getLocalHandle()
@@ -303,11 +262,10 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         return _localHandle;
     }
 
-
     public void attach()
     {
         Attach attachToSend = new Attach();
-        attachToSend.setName(getName());
+        attachToSend.setName(getLinkName());
         attachToSend.setRole(getRole());
         attachToSend.setHandle(getLocalHandle());
         attachToSend.setSource(getSource());
@@ -332,13 +290,12 @@ public abstract class LinkEndpoint<T extends Link_1_0>
                 _state = State.ATTACHED;
                 break;
             default:
-                // TODO ERROR
+                throw new UnsupportedOperationException(_state.toString());
         }
 
         getSession().sendAttach(attachToSend);
 
     }
-
 
     public void detach()
     {
@@ -350,14 +307,14 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         detach(null, true);
     }
 
-    public void close(Error error)
-    {
-        detach(error, true);
-    }
-
     public void detach(Error error)
     {
         detach(error, false);
+    }
+
+    public void close(Error error)
+    {
+        detach(error, true);
     }
 
     private void detach(Error error, boolean close)
@@ -375,20 +332,26 @@ public abstract class LinkEndpoint<T extends Link_1_0>
                 return;
         }
 
-        if (!(getSession().getSessionState() == SessionState.END_RECVD || getSession().isEnded()))
+        if (getSession().getSessionState() != SessionState.END_RECVD && !getSession().isEnded())
         {
             Detach detach = new Detach();
             detach.setHandle(getLocalHandle());
             if (close)
+            {
                 detach.setClosed(close);
+            }
             detach.setError(error);
 
             getSession().sendDetach(detach);
         }
+
+        if (close)
+        {
+            dissociateSession();
+            _link.linkClosed();
+        }
+        setLocalHandle(null);
     }
-
-
-
 
     public void setTransactionId(final Object txnId)
     {
@@ -477,16 +440,6 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         return _link;
     }
 
-    public void setLink(final T link)
-    {
-        _link = link;
-    }
-
-    public void setSendingSettlementMode(SenderSettleMode sendingSettlementMode)
-    {
-        _sendingSettlementMode = sendingSettlementMode;
-    }
-
     public SenderSettleMode getSendingSettlementMode()
     {
         return _sendingSettlementMode;
@@ -495,11 +448,6 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     public ReceiverSettleMode getReceivingSettlementMode()
     {
         return _receivingSettlementMode;
-    }
-
-    public void setReceivingSettlementMode(ReceiverSettleMode receivingSettlementMode)
-    {
-        _receivingSettlementMode = receivingSettlementMode;
     }
 
     public List<Symbol> getCapabilities()
@@ -517,9 +465,6 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         return _initialUnsettledMap;
     }
 
-
-    public abstract void flowStateChanged();
-
     public void setLocalUnsettled(Map unsettled)
     {
         _localUnsettled = unsettled;
@@ -528,12 +473,12 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     @Override public String toString()
     {
         return "LinkEndpoint{" +
-               "_name='" + _name + '\'' +
+               "_name='" + getLinkName() + '\'' +
                ", _session=" + _session +
                ", _state=" + _state +
                ", _role=" + getRole() +
-               ", _source=" + _source +
-               ", _target=" + _target +
+               ", _source=" + getSource() +
+               ", _target=" + getTarget() +
                ", _transferCount=" + _deliveryCount +
                ", _linkCredit=" + _linkCredit +
                ", _available=" + _available +

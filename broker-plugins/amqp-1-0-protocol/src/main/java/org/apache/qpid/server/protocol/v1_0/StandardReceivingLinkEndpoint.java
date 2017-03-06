@@ -36,7 +36,7 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.protocol.MessageFormatRegistry;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
@@ -73,17 +73,14 @@ public class StandardReceivingLinkEndpoint extends ReceivingLinkEndpoint
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardReceivingLinkEndpoint.class);
 
-    private final SectionDecoderImpl _sectionDecoder;
     private ArrayList<Transfer> _incompleteMessage;
     private boolean _resumedMessage;
     private Binary _messageDeliveryTag;
     private Map<Binary, Outcome> _unsettledMap = Collections.synchronizedMap(new HashMap<Binary, Outcome>());
 
-    public StandardReceivingLinkEndpoint(final Session_1_0 session,
-                                         final Attach attach)
+    public StandardReceivingLinkEndpoint(final StandardReceivingLink_1_0 link, final SectionDecoder sectionDecoder)
     {
-        super(session, attach);
-        _sectionDecoder = new SectionDecoderImpl(getSession().getConnection().getSectionDecoderRegistry());
+        super(link, sectionDecoder);
     }
 
     @Override
@@ -333,9 +330,8 @@ public class StandardReceivingLinkEndpoint extends ReceivingLinkEndpoint
         }
         else if(detach == null || detach.getError() != null)
         {
-            getLink().setLinkAttachmentToNull();
-            // TODO do we have to set an error?
             detach();
+            dissociateSession();
         }
         else
         {
@@ -360,7 +356,7 @@ public class StandardReceivingLinkEndpoint extends ReceivingLinkEndpoint
         List<EncodingRetainingSection<?>> sections;
         try
         {
-            sections = _sectionDecoder.parseAll(fragments);
+            sections = getSectionDecoder().parseAll(fragments);
         }
         catch (AmqpErrorException e)
         {
@@ -455,10 +451,13 @@ public class StandardReceivingLinkEndpoint extends ReceivingLinkEndpoint
                                        contentSize);
     }
 
-    public void doLinkAttachment()
+    @Override
+    public void attachReceived(final Attach attach) throws AmqpErrorException
     {
-        Map initialUnsettledMap = getInitialUnsettledMap();
+        super.attachReceived(attach);
+        setDeliveryCount(attach.getInitialDeliveryCount());
 
+        Map initialUnsettledMap = getInitialUnsettledMap();
         Map<Binary, Outcome> unsettledCopy = new HashMap<Binary, Outcome>(_unsettledMap);
         for(Map.Entry<Binary, Outcome> entry : unsettledCopy.entrySet())
         {

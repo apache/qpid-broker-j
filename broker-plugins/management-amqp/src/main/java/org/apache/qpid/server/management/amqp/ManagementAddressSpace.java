@@ -26,6 +26,7 @@ import java.security.AccessController;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,9 +53,10 @@ import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
 import org.apache.qpid.server.protocol.LinkModel;
-import org.apache.qpid.server.protocol.LinkRegistry;
+import org.apache.qpid.server.virtualhost.LinkRegistry;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.session.AMQPSession;
@@ -66,6 +68,7 @@ import org.apache.qpid.server.txn.DtxNotSupportedException;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.virtualhost.LinkRegistryFactory;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNode;
 
 public class ManagementAddressSpace implements NamedAddressSpace
@@ -83,11 +86,11 @@ public class ManagementAddressSpace implements NamedAddressSpace
     private final MessageStore _messageStore;
     private final MessageDestination _defaultDestination = new DefaultDestination();
     private final List<AMQPConnection<?>> _connections = new CopyOnWriteArrayList<>();
-    private final LinkRegistry _linkRegistry = new NonDurableLinkRegistry();
     private final Broker<?> _broker;
     private final Principal _principal;
     private final UUID _id;
     private final ConcurrentMap<Object, ConcurrentMap<String, ProxyMessageSource>> _connectionSpecificDestinations = new ConcurrentHashMap<>();
+    private final LinkRegistry _linkRegistry;
 
     public ManagementAddressSpace(final SystemAddressSpaceCreator.AddressSpaceRegistry addressSpaceRegistry)
     {
@@ -105,6 +108,22 @@ public class ManagementAddressSpace implements NamedAddressSpace
         _messageStore = new MemoryMessageStore();
         _principal = new ManagementAddressSpacePrincipal(this);
         _id = UUID.nameUUIDFromBytes((_broker.getId().toString()+"/"+name).getBytes(StandardCharsets.UTF_8));
+
+        Iterator<LinkRegistryFactory>
+                linkRegistryFactories = (new QpidServiceLoader()).instancesOf(LinkRegistryFactory.class).iterator();
+        if (linkRegistryFactories.hasNext())
+        {
+            final LinkRegistryFactory linkRegistryFactory = linkRegistryFactories.next();
+            if (linkRegistryFactories.hasNext())
+            {
+                throw new RuntimeException("Found multiple implementations of LinkRegistry");
+            }
+            _linkRegistry = linkRegistryFactory.create(this);
+        }
+        else
+        {
+            _linkRegistry = null;
+        }
     }
 
 
@@ -209,9 +228,9 @@ public class ManagementAddressSpace implements NamedAddressSpace
     }
 
     @Override
-    public LinkRegistry getLinkRegistry(final String remoteContainerId)
+    public <T extends LinkModel> T getLink(final String remoteContainerId, final String linkName, final Class<T> type)
     {
-        return _linkRegistry;
+        return _linkRegistry.getLink(remoteContainerId, linkName, type);
     }
 
     @Override
@@ -384,39 +403,6 @@ public class ManagementAddressSpace implements NamedAddressSpace
         public void linkRemoved(final MessageSender sender, final PublishingLink link)
         {
 
-        }
-    }
-
-    private class NonDurableLinkRegistry implements LinkRegistry
-    {
-        @Override
-        public LinkModel getDurableSendingLink(final String name)
-        {
-            return null;
-        }
-
-        @Override
-        public boolean registerSendingLink(final String name, final LinkModel link)
-        {
-            throw new ConnectionScopedRuntimeException("Durable links are not supported");
-        }
-
-        @Override
-        public boolean unregisterSendingLink(final String name)
-        {
-            return false;
-        }
-
-        @Override
-        public LinkModel getDurableReceivingLink(final String name)
-        {
-            return null;
-        }
-
-        @Override
-        public boolean registerReceivingLink(final String name, final LinkModel link)
-        {
-            throw new ConnectionScopedRuntimeException("Durable links are not supported");
         }
     }
 }

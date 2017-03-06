@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import static org.apache.qpid.server.protocol.v1_0.Session_1_0.DELAYED_DELIVERY;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -85,6 +87,7 @@ public class ExchangeDestination extends QueueDestination
             destinationCapabilities.add(REJECT_UNROUTABLE);
         }
         destinationCapabilities.add(TOPIC_CAPABILITY);
+        destinationCapabilities.add(DELAYED_DELIVERY);
 
         _capabilities = destinationCapabilities.toArray(new Symbol[destinationCapabilities.size()]);
     }

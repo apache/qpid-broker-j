@@ -29,7 +29,7 @@ import java.util.UUID;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.LinkRegistry;
+import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
@@ -55,7 +55,7 @@ public interface NamedAddressSpace extends Named
 
     MessageDestination getDefaultDestination();
 
-    LinkRegistry getLinkRegistry(String remoteContainerId);
+    <T extends LinkModel> T getLink(String remoteContainerId, String linkName, Class<T> type);
 
     boolean authoriseCreateConnection(AMQPConnection<?> connection);
 

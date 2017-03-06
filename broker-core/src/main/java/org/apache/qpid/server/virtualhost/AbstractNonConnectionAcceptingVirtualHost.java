@@ -39,7 +39,7 @@ import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.LinkRegistry;
+import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
@@ -139,8 +139,11 @@ public abstract class AbstractNonConnectionAcceptingVirtualHost<X extends Abstra
     }
 
     @Override
-    public LinkRegistry getLinkRegistry(final String remoteContainerId)
+    public <T extends LinkModel> T getLink(final String remoteContainerId,
+                                           final String linkName,
+                                           final Class<T> type)
     {
+        throwUnsupported();
         return null;
     }
 

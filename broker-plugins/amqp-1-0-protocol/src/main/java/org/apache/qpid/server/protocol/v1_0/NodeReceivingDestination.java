@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import static org.apache.qpid.server.protocol.v1_0.Session_1_0.DELAYED_DELIVERY;
+
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -222,8 +224,9 @@ public class NodeReceivingDestination implements ReceivingDestination
     @Override
     public Symbol[] getCapabilities()
     {
-        Symbol[] capabilities = new Symbol[1];
+        Symbol[] capabilities = new Symbol[2];
         capabilities[0] = _discardUnroutable ? DISCARD_UNROUTABLE : REJECT_UNROUTABLE;
+        capabilities[1] = DELAYED_DELIVERY;
         return capabilities;
     }
 }

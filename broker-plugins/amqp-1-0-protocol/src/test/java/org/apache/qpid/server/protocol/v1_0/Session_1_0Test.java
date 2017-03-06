@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -38,11 +40,13 @@ import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.common.AMQPFilterTypes;
+import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Binding;
@@ -56,6 +60,8 @@ import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
@@ -84,14 +90,24 @@ public class Session_1_0Test extends QpidTestCase
     private VirtualHost<?> _virtualHost;
     private Session_1_0 _session;
     private int _handle;
+    private CurrentThreadTaskExecutor _taskExecutor;
 
     @Override
     public void setUp() throws Exception
     {
         super.setUp();
         _virtualHost = BrokerTestHelper.createVirtualHost("testVH");
+        _taskExecutor = new CurrentThreadTaskExecutor();
+        _taskExecutor.start();
         _connection = createAmqpConnection_1_0("testContainerId");
         this._session = createSession_1_0(_connection, 0);
+    }
+
+    @Override
+    protected void tearDown() throws Exception
+    {
+        _taskExecutor.stop();
+        super.tearDown();
     }
 
     public void testReceiveAttachTopicNonDurableNoContainer() throws Exception
@@ -308,7 +324,7 @@ public class Session_1_0Test extends QpidTestCase
         assertNotNull("Unexpected source", sentAttach.getSource());
         Source source = (Source)sentAttach.getSource();
         assertEquals("Unexpected address", address, source.getAddress());
-        assertEquals("Unexpected capabilities", ((Source)attach.getSource()).getCapabilities(), source.getCapabilities());
+        assertTrue("Unexpected source capabilities", Arrays.asList(source.getCapabilities()).contains(Symbol.valueOf("topic")));
 
         Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
         assertEquals("Unexpected number of queues after unsubscribe", 1, queues.size());
@@ -497,8 +513,22 @@ public class Session_1_0Test extends QpidTestCase
 
         assertEquals("Unexpected name", receivedAttach.getName(), sentAttach.getName());
         assertEquals("Unexpected role", Role.SENDER, sentAttach.getRole());
-        assertEquals("Unexpected source", receivedAttach.getSource(), sentAttach.getSource());
-        assertEquals("Unexpected target", receivedAttach.getTarget(), sentAttach.getTarget());
+
+        Source receivedSource = (Source) receivedAttach.getSource();
+        Source sentSource = (Source) sentAttach.getSource();
+        assertEquals("Unexpected source address", receivedSource.getAddress(), sentSource.getAddress());
+        assertArrayEquals("Unexpected source capabilities", receivedSource.getCapabilities(), sentSource.getCapabilities());
+        assertEquals("Unexpected source durability", receivedSource.getDurable(), sentSource.getDurable());
+        assertEquals("Unexpected source expiry policy", receivedSource.getExpiryPolicy(), sentSource.getExpiryPolicy());
+        assertEquals("Unexpected source dynamic flag", receivedSource.getDynamic(), sentSource.getDynamic());
+
+        Target receivedTarget = (Target) receivedAttach.getTarget();
+        Target sentTarget = (Target) sentAttach.getTarget();
+        assertEquals("Unexpected target address", receivedTarget.getAddress(), sentTarget.getAddress());
+        assertArrayEquals("Unexpected target capabilities", receivedTarget.getCapabilities(), sentTarget.getCapabilities());
+        assertEquals("Unexpected target durability", receivedTarget.getDurable(), sentTarget.getDurable());
+        assertEquals("Unexpected target expiry policy", receivedTarget.getExpiryPolicy(), sentTarget.getExpiryPolicy());
+        assertEquals("Unexpected target dynamic flag", receivedTarget.getDynamic(), sentTarget.getDynamic());
 
         final Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
         assertEquals("Unexpected number of queues after attach", 1, queues.size());
@@ -651,7 +681,8 @@ public class Session_1_0Test extends QpidTestCase
         when(connection.getAddressSpace()).thenReturn(_virtualHost);
         when(connection.getEventLogger()).thenReturn(mock(EventLogger.class));
         when(connection.getContextValue(Long.class, Consumer.SUSPEND_NOTIFICATION_PERIOD)).thenReturn(1L);
-        when(connection.getChildExecutor()).thenReturn(mock(TaskExecutor.class));
+        when(connection.getChildExecutor()).thenReturn(_taskExecutor);
+        when(connection.getTaskExecutor()).thenReturn(_taskExecutor);
         when(connection.getModel()).thenReturn(BrokerModel.getInstance());
         when(connection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
         when(connection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);

@@ -23,6 +23,8 @@ package org.apache.qpid.server.session;
 import java.util.Collection;
 import java.util.UUID;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogSubject;
@@ -95,4 +97,6 @@ public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSessio
     void notifyWork(X target);
 
     void close();
+
+    ListenableFuture<Void> doOnIOThreadAsync(final Runnable task);
 }

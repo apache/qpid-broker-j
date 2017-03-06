@@ -18,26 +18,11 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.protocol.v1_0;
-
-import com.google.common.util.concurrent.ListenableFuture;
+package org.apache.qpid.server.virtualhost;
 
 import org.apache.qpid.server.protocol.LinkModel;
-import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
-import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 
-public interface Link_1_0 extends LinkModel
+public interface LinkRegistry
 {
-    ListenableFuture<? extends LinkEndpoint<?>> attach(Session_1_0 session, final Attach attach);
-
-    void linkClosed();
-
-    void discardEndpoint();
-
-    String getName();
-
-    BaseSource getSource();
-
-    BaseTarget getTarget();
+    <T extends LinkModel> T getLink(String remoteContainerId, String linkName, Class<T> type);
 }

@@ -20,10 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
-
 public interface ReceivingLink_1_0 extends Link_1_0
 {
-    void setLinkAttachmentToNull();
 }

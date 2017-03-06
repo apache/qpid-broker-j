@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.security.AccessControlException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -95,12 +96,12 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
     private ConsumerTarget_1_0 _consumerTarget;
     private MessageInstanceConsumer<ConsumerTarget_1_0> _consumer;
 
-    public SendingLinkEndpoint(final Session_1_0 session, final Attach attach)
+    public SendingLinkEndpoint(final SendingLink_1_0 link)
     {
-        super(session, attach);
-        setSendingSettlementMode(attach.getSndSettleMode());
-        setReceivingSettlementMode(attach.getRcvSettleMode());
-        init();
+        super(link);
+        setDeliveryCount(UnsignedInteger.valueOf(0));
+        setAvailable(UnsignedInteger.valueOf(0));
+        setCapabilities(Arrays.asList(AMQPConnection_1_0.SHARED_SUBSCRIPTIONS));
     }
 
     @Override
@@ -108,8 +109,9 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
     {
     }
 
-    public void doStuff(final SendingDestination destination) throws AmqpErrorException
+    public void prepareConsumerOptionsAndFilters(final SendingDestination destination) throws AmqpErrorException
     {
+        // TODO FIXME: this method might modify the source. this is not good encapsulation. furthermore if it does so then it should inform the link/linkregistry about it!
         _destination = destination;
         final Source source = (Source) getSource();
 
@@ -206,11 +208,11 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
             if(getTarget() instanceof Target)
             {
                 Target target = (Target) getTarget();
-                name = target.getAddress() == null ? getName() : target.getAddress();
+                name = target.getAddress() == null ? getLinkName() : target.getAddress();
             }
             else
             {
-                name = getName();
+                name = getLinkName();
             }
 
             _consumer = _destination.getMessageSource()
@@ -284,12 +286,6 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
         }
     }
 
-    private void init()
-    {
-        setDeliveryCount(UnsignedInteger.valueOf(0));
-        setAvailable(UnsignedInteger.valueOf(0));
-    }
-
     @Override
     public Role getRole()
     {
@@ -301,9 +297,9 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
         return _priority;
     }
 
-    public void setDurability(final TerminusDurability durability)
+    public TerminusDurability getTerminusDurability()
     {
-        _durability = durability;
+        return getLink().getLocalTerminusDurability();
     }
 
     public boolean transfer(final Transfer xfr, final boolean decrementCredit)
@@ -358,7 +354,6 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
     @Override
     public void receiveFlow(final Flow flow)
     {
-        super.receiveFlow(flow);
         UnsignedInteger t = flow.getDeliveryCount();
         UnsignedInteger c = flow.getLinkCredit();
         setDrain(flow.getDrain());
@@ -423,8 +418,8 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
         //TODO
         // if not durable or close
         if (Boolean.TRUE.equals(detach.getClosed())
-            || !(TerminusDurability.UNSETTLED_STATE.equals(_durability) || TerminusDurability.CONFIGURATION.equals(
-                _durability)))
+            || !(TerminusDurability.UNSETTLED_STATE.equals(getTerminusDurability())
+                 || TerminusDurability.CONFIGURATION.equals(getTerminusDurability())))
         {
 
             Modified state = new Modified();
@@ -436,11 +431,9 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
             }
             _unsettledActionMap.clear();
 
-            close();
-
             if (getDestination() instanceof ExchangeDestination
-               && (_durability == TerminusDurability.CONFIGURATION
-                   || _durability == TerminusDurability.UNSETTLED_STATE))
+               && (getTerminusDurability() == TerminusDurability.CONFIGURATION
+                   || getTerminusDurability() == TerminusDurability.UNSETTLED_STATE))
             {
                 try
                 {
@@ -452,30 +445,25 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
                 catch (AccessControlException e)
                 {
                     LOGGER.error("Error unregistering subscription", e);
-                    detach(new Error(AmqpError.NOT_ALLOWED, "Error unregistering subscription"));
+                    close(new Error(AmqpError.NOT_ALLOWED, "Error unregistering subscription"));
                 }
                 catch (IllegalStateException e)
                 {
-                    detach(new Error(AmqpError.RESOURCE_LOCKED, e.getMessage()));
+                    close(new Error(AmqpError.RESOURCE_LOCKED, e.getMessage()));
                 }
                 catch (NotFoundException e)
                 {
-                    detach(new Error(AmqpError.NOT_FOUND, e.getMessage()));
+                    close(new Error(AmqpError.NOT_FOUND, e.getMessage()));
                 }
             }
+
+            close();
         }
         else if (detach.getError() != null && !getSession().isSyntheticError(detach.getError()))
         {
-            try
-            {
-                getLink().setLinkAttachment(null, null);
-            }
-            catch (AmqpErrorException e)
-            {
-                throw new ConnectionScopedRuntimeException(e);
-            }
-            getConsumerTarget().flowStateChanged();
             detach();
+            dissociateSession();
+            getConsumerTarget().updateNotifyWorkDesired();
         }
         else
         {
@@ -553,66 +541,45 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
         return _transactionId;
     }
 
-    public void doLinkAttachment(final Session_1_0 session, final MessageInstanceConsumer consumer) throws AmqpErrorException
+    @Override
+    public void attachReceived(final Attach attach) throws AmqpErrorException
     {
-        if (session != null)
+        super.attachReceived(attach);
+        final MessageInstanceConsumer consumer = getConsumer();
+        createConsumerTarget();
+        _resumeAcceptedTransfers.clear();
+        _resumeFullTransfers.clear();
+        final NamedAddressSpace addressSpace = getSession().getConnection().getAddressSpace();
+        Map<Binary, MessageInstance> unsettledCopy = new HashMap<>(_unsettledMap2);
+        Map initialUnsettledMap = getInitialUnsettledMap();
+
+        for (Map.Entry<Binary, MessageInstance> entry : unsettledCopy.entrySet())
         {
-            createConsumerTarget();
-
-            setSession(session);
-            _resumeAcceptedTransfers.clear();
-            _resumeFullTransfers.clear();
-            final NamedAddressSpace addressSpace = getSession().getConnection().getAddressSpace();
-            Map<Binary, MessageInstance> unsettledCopy = new HashMap<>(_unsettledMap2);
-            Map initialUnsettledMap = getInitialUnsettledMap();
-
-            for (Map.Entry<Binary, MessageInstance> entry : unsettledCopy.entrySet())
+            Binary deliveryTag = entry.getKey();
+            final MessageInstance queueEntry = entry.getValue();
+            if (initialUnsettledMap == null || !initialUnsettledMap.containsKey(deliveryTag))
             {
-                Binary deliveryTag = entry.getKey();
-                final MessageInstance queueEntry = entry.getValue();
-                if (initialUnsettledMap == null || !initialUnsettledMap.containsKey(deliveryTag))
-                {
-                    queueEntry.setRedelivered();
-                    queueEntry.release(consumer);
-                    _unsettledMap2.remove(deliveryTag);
-                }
-                else if (initialUnsettledMap.get(deliveryTag) instanceof Outcome)
-                {
-                    Outcome outcome = (Outcome) initialUnsettledMap.get(deliveryTag);
+                queueEntry.setRedelivered();
+                queueEntry.release(consumer);
+                _unsettledMap2.remove(deliveryTag);
+            }
+            else if (initialUnsettledMap.get(deliveryTag) instanceof Outcome)
+            {
+                Outcome outcome = (Outcome) initialUnsettledMap.get(deliveryTag);
 
-                    if (outcome instanceof Accepted)
+                if (outcome instanceof Accepted)
+                {
+                    AutoCommitTransaction txn = new AutoCommitTransaction(addressSpace.getMessageStore());
+                    if (consumer.acquires())
                     {
-                        AutoCommitTransaction txn = new AutoCommitTransaction(addressSpace.getMessageStore());
-                        if (consumer.acquires())
-                        {
-                            if (queueEntry.acquire() || queueEntry.isAcquired())
-                            {
-                                txn.dequeue(Collections.singleton(queueEntry),
-                                            new ServerTransaction.Action()
-                                            {
-                                                public void postCommit()
-                                                {
-                                                    queueEntry.delete();
-                                                }
-
-                                                public void onRollback()
-                                                {
-                                                }
-                                            });
-                            }
-                        }
-                    }
-                    else if (outcome instanceof Released)
-                    {
-                        AutoCommitTransaction txn = new AutoCommitTransaction(addressSpace.getMessageStore());
-                        if (consumer.acquires())
+                        if (queueEntry.acquire() || queueEntry.isAcquired())
                         {
                             txn.dequeue(Collections.singleton(queueEntry),
                                         new ServerTransaction.Action()
                                         {
                                             public void postCommit()
                                             {
-                                                queueEntry.release(consumer);
+                                                queueEntry.delete();
                                             }
 
                                             public void onRollback()
@@ -621,16 +588,34 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
                                         });
                         }
                     }
-                    //_unsettledMap.remove(deliveryTag);
-                    initialUnsettledMap.remove(deliveryTag);
-                    _resumeAcceptedTransfers.add(deliveryTag);
                 }
-                else
+                else if (outcome instanceof Released)
                 {
-                    _resumeFullTransfers.add(queueEntry);
-                    // exists in receivers map, but not yet got an outcome ... should resend with resume = true
+                    AutoCommitTransaction txn = new AutoCommitTransaction(addressSpace.getMessageStore());
+                    if (consumer.acquires())
+                    {
+                        txn.dequeue(Collections.singleton(queueEntry),
+                                    new ServerTransaction.Action()
+                                    {
+                                        public void postCommit()
+                                        {
+                                            queueEntry.release(consumer);
+                                        }
+
+                                        public void onRollback()
+                                        {
+                                        }
+                                    });
+                    }
                 }
-                // TODO - else
+                //_unsettledMap.remove(deliveryTag);
+                initialUnsettledMap.remove(deliveryTag);
+                _resumeAcceptedTransfers.add(deliveryTag);
+            }
+            else
+            {
+                _resumeFullTransfers.add(queueEntry);
+                // exists in receivers map, but not yet got an outcome ... should resend with resume = true
             }
         }
 

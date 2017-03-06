@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -43,6 +44,7 @@ public abstract class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1
 
     private UnsignedInteger _lastDeliveryId;
     private ReceivingDestination _receivingDestination;
+    private final SectionDecoder _sectionDecoder;
 
     private static class TransientState
     {
@@ -89,12 +91,10 @@ public abstract class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1
     private UnsignedInteger _drainLimit;
 
 
-    public ReceivingLinkEndpoint(final Session_1_0 session, final Attach attach)
+    public ReceivingLinkEndpoint(final ReceivingLink_1_0 link, final SectionDecoder sectionDecoder)
     {
-        super(session, attach);
-        setDeliveryCount(attach.getInitialDeliveryCount());
-        setSendingSettlementMode(attach.getSndSettleMode());
-        setReceivingSettlementMode(attach.getRcvSettleMode());
+        super(link);
+        _sectionDecoder = sectionDecoder;
     }
 
     @Override
@@ -168,7 +168,6 @@ public abstract class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1
 
     @Override public void receiveFlow(final Flow flow)
     {
-        super.receiveFlow(flow);
         _remoteDrain = Boolean.TRUE.equals((Boolean) flow.getDrain());
         setAvailable(flow.getAvailable());
         setDeliveryCount(flow.getDeliveryCount());
@@ -283,9 +282,10 @@ public abstract class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1
         }
     }
 
-
-
-
+    SectionDecoder getSectionDecoder()
+    {
+        return _sectionDecoder;
+    }
 
     @Override
     public void settle(Binary deliveryTag)
