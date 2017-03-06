@@ -21,7 +21,7 @@
 define(["qpid/common/util", "dojo/query", "dojo/_base/array", "dojo/dom-construct", "dijit/registry", "dojo/domReady!"],
     function (util, query, array, domConstruct, registry)
     {
-        var fieldNames = ["connectionUrl", "username", "connectionPoolType"];
+        var fieldNames = ["connectionUrl", "username", "connectionPoolType", "tableNamePrefix"];
 
         function JDBC(data)
         {
