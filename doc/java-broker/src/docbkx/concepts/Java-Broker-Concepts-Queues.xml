@@ -24,7 +24,7 @@
  <title>Queues</title>
  <para><emphasis>Queue</emphasis>s are named entities within a <link linkend="Java-Broker-Concepts-Virtualhosts">Virtualhost</link> that
   hold/buffer messages for later delivery to consumer applications. An <link linkend="Java-Broker-Concepts-Exchanges">Exchange</link> for passing messages to a queue.
-  Consumers subscribe to a queue in order to receive messages for it. </para>
+  Consumers subscribe to a queue in order to receive messages from it. </para>
  <para>The Broker supports different queue types, each with different delivery semantics.  Queues also have the ability to group messages
    together for delivery to a single consumer.</para>
  <section xml:id="Java-Broker-Concepts-Queues-Types">
@@ -376,13 +376,13 @@ amqp://guest:guest@client1/development?maxprefetch='1'&amp;brokerlist='tcp://loc
         </section>
       </section>
 
-    <section xml:id="Java-Broker-Concepts-Queue-OverflowPolicy"  role="h2">
+    <section xml:id="Java-Broker-Concepts-Queue-OverflowPolicy">
         <title>Controlling Queue Size</title>
         <para>
             <emphasis>Overflow Policy</emphasis>
-            can be configured on an individual <emphasis>Queue</emphasis> to limit the queue capacity.
-            The capacity limits can be specified as a <emphasis>maximum number of bytes</emphasis> or
-            <emphasis>maximum number of messages</emphasis> or both.
+            can be configured on an individual <emphasis>Queue</emphasis> to limit the queue size.  The size
+            can be expressed in terms of a <emphasis>maximum number of bytes</emphasis> and/or
+            <emphasis>maximum number of messages</emphasis>.
             The <emphasis>Overflow Policy</emphasis> defines the Queue behaviour when any of the limits is reached.
         </para>
         <para>
@@ -398,9 +398,11 @@ amqp://guest:guest@client1/development?maxprefetch='1'&amp;brokerlist='tcp://loc
                 <listitem>
                     <para>
                         <emphasis>Ring</emphasis>
-                        - The oldest messages are removed. For a
+                        - If a newly arriving message takes the queue over a limit, message(s) are
+                        deleted from the queue until the queue falls within its limit again.  When deleting
+                        messages, the oldest messages are deleted first.  For a
                         <link linkend="Java-Broker-Concepts-Queues-Types-Priority">Priority Queue</link>
-                        oldest messages with lowest priorities are removed.
+                        the oldest messages with lowest priorities are removed.
                     </para>
                 </listitem>
                 <listitem>
@@ -415,47 +417,12 @@ amqp://guest:guest@client1/development?maxprefetch='1'&amp;brokerlist='tcp://loc
             </itemizedlist>
         </para>
         <para>
-            <emphasis>Overflow Policy</emphasis> can be set using queue attribute <varname>overflowPolicy</varname>.
-            You can set it to <varname>RING</varname> to configure <emphasis>Ring</emphasis> overflow policy.
-            <varname>PRODUCER_FLOW_CONTROL</varname> sets the <emphasis>Overflow Policy</emphasis> to
-            <emphasis>Producer Flow Control</emphasis>. <varname>NONE</varname> can be used to set
-            <emphasis>None</emphasis> overflow policy explicitly.
-            <emphasis>Maximum number of messages</emphasis>  can be set using queue attribute
-            <varname>maximumQueueDepthMessages</varname>.
-            <emphasis>Maximum number of bytes</emphasis> can be set using
-            queue attribute <varname>maximumQueueDepthBytes</varname>
+            A negative value for <emphasis>maximum number of messages</emphasis> or
+            <emphasis>maximum number of bytes</emphasis> disables the limit.
         </para>
-        <note>
-            <para>
-                Negative values for <emphasis>maximum number of messages</emphasis> and
-                <emphasis>maximum number of bytes</emphasis>
-                can be used to remove the upper limit (simply making queue unbound by the limit where it was set).
-            </para>
-        </note>
-        <note>
-            <para>
-                The <emphasis>Producer Flow Control</emphasis> can be triggered when a configured disk
-                quota is exceeded. For more details, please read
-                <xref linkend="Java-Broker-Runtime-Disk-Space-Management-Producer-Flow-Control"/>.
-            </para>
-        </note>
-        <note>
-            <para>
-                The impact of the <emphasis>Producer Flow Control</emphasis> on JMS Client is documented
-                <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJmsClient08Book}/JMS-Client-0-8-Appendix-ProducerFlowControl-Impact.html">here</link>
-            </para>
-        </note>
-        <note>
-            <para>
-                Operational logs issued on breaching of queue capacities for different overflow policies are documented
-                at <xref linkend="Java-Broker-Appendix-Operation-Logging-Message-List-Queue"/>.
-            </para>
-        </note>
-        <note>
-            <para>
-                Supported queue arguments for AMQP 0.x <emphasis>queue.declare</emphasis> are documented
-                at <xref linkend="Java-Broker-Appendix-Supported-Queue-Declare-Arguments"/>.
-            </para>
-        </note>
+        <para>
+            The Broker issues Operational log messages when the queue sizes are breached.  These are documented
+            at <xref linkend="Java-Broker-Appendix-Operation-Logging-Message-List-Queue"/>.
+        </para>
     </section>
 </section>

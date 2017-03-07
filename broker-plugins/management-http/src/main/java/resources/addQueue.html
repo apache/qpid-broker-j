@@ -137,6 +137,32 @@
                     </select>
                 </div>
             </div>
+            <div class="clear">
+                <div class="formLabel-labelCell">Maximum Ttl:</div>
+                <div class="formLabel-controlCell">
+                    <input type="text" id="formAddQueue.maximumMessageTtl"
+                           data-dojo-type="dijit/form/ValidationTextBox"
+                           data-dojo-props="
+                                  name: 'maximumMessageTtl',
+                                  placeHolder: 'ttl in ms',
+                                  promptMessage: 'Maximum message time to live (ttl) in ms. Messages arriving with larger ttl values will be overridden by this value',
+                                  title: 'Enter the maximum message time to live in milliseconds',
+                                  trim: true"/>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell">Minimum Ttl:</div>
+                <div class="formLabel-controlCell">
+                    <input type="text" id="formAddQueue.minimumMessageTtl"
+                           data-dojo-type="dijit/form/ValidationTextBox"
+                           data-dojo-props="
+                                  name: 'minimumMessageTtl',
+                                  placeHolder: 'ttl in ms',
+                                  promptMessage: 'Minimum message time to live (ttl) in ms. Messages arriving with smaller ttl values will be overridden by this value',
+                                  title: 'Enter the minimum message time to live in milliseconds',
+                                  trim: true"/>
+                </div>
+            </div>
 
             <div class="clear formBox">
                 <fieldset>
@@ -191,165 +217,133 @@
 
             <div class="clear formBox">
                 <fieldset>
-            <div class="clear">
-                <div class="formLabel-labelCell">Maximum Ttl:</div>
-                <div class="formLabel-controlCell">
-                    <input type="text" id="formAddQueue.maximumMessageTtl"
-                           data-dojo-type="dijit/form/ValidationTextBox"
-                           data-dojo-props="
-                                  name: 'maximumMessageTtl',
-                                  placeHolder: 'ttl in ms',
-                                  promptMessage: 'Maximum message time to live (ttl) in ms. Messages arriving with larger ttl values will be overridden by this value',
-                                  title: 'Enter the maximum message time to live in milliseconds',
-                                  trim: true"/>
-                </div>
+                    <legend>Alerting Settings</legend>
+                    <div class="clear">
+                        <div class="formLabel-labelCell">Queue Depth (Messages):</div>
+                        <div class="formLabel-controlCell">
+                            <input type="text" id="formAddQueue.alertThresholdQueueDepthMessages"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="
+                                      name: 'alertThresholdQueueDepthMessages',
+                                      placeHolder: 'number of messages',
+                                      promptMessage: 'Ceiling value for number of messages on queue before alerts will be generated',
+                                      title: 'Enter the ceiling value for number of messages on queue before alerts will be generated',
+                                      trim: true"/>
+                        </div>
+                    </div>
+                    <div class="clear">
+                        <div class="formLabel-labelCell">Queue Depth (Bytes):</div>
+                        <div class="formLabel-controlCell">
+                            <input type="text" id="formAddQueue.alertThresholdQueueDepthBytes"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="
+                                      name: 'alertThresholdQueueDepthBytes',
+                                      placeHolder: 'total message size in bytes',
+                                      promptMessage: 'Ceiling value (in bytes) for total size of all messages on the queue before alerts will be generated',
+                                      title: 'Enter the ceiling value (in bytes) for total size of all messages on the queue before alerts will be generated',
+                                      trim: true"/>
+                        </div>
+                    </div>
+                    <div class="clear">
+                        <div class="formLabel-labelCell">Message Age:</div>
+                        <div class="formLabel-controlCell">
+                            <input type="text" id="formAddQueue.alertThresholdMessageAge"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="
+                                      name: 'alertThresholdMessageAge',
+                                      placeHolder: 'time in ms',
+                                      promptMessage: 'Message age (in milliseconds) above which alerts will be generated',
+                                      title: 'Enter the message age (in milliseconds) above which alerts will be generated',
+                                      trim: true"/>
+                        </div>
+                    </div>
+                    <div class="clear">
+                        <div class="formLabel-labelCell">Message Size:</div>
+                        <div class="formLabel-controlCell">
+                            <input type="text" id="formAddQueue.alertThresholdMessageSize"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="
+                                      name: 'alertThresholdMessageSize',
+                                      placeHolder: 'message size in bytes',
+                                      promptMessage: 'Message size (in bytes) above which alerts will be generated',
+                                      title: 'Enter the message size (in bytes) above which alerts will be generated',
+                                      trim: true"/>
+                        </div>
+                    </div>
+                    <div class="clear">
+                        <div class="formLabel-labelCell">Gap between alerts:</div>
+                        <div class="formLabel-controlCell">
+                            <input type="text" id="formAddQueue.alertRepeatGap"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="
+                                      name: 'alertRepeatGap',
+                                      placeHolder: 'time in ms',
+                                      promptMessage: 'Minimum time (in milliseconds) between each alert',
+                                      title: 'Enter the minimum time (in milliseconds) between each alert.',
+                                      trim: true"/>
+                        </div>
+                    </div>
+                </fieldset>
+                <div class="clear"></div>
             </div>
-            <div class="clear">
-                <div class="formLabel-labelCell">Minimum Ttl:</div>
-                <div class="formLabel-controlCell">
-                    <input type="text" id="formAddQueue.minimumMessageTtl"
-                           data-dojo-type="dijit/form/ValidationTextBox"
-                           data-dojo-props="
-                                  name: 'minimumMessageTtl',
-                                  placeHolder: 'ttl in ms',
-                                  promptMessage: 'Minimum message time to live (ttl) in ms. Messages arriving with smaller ttl values will be overridden by this value',
-                                  title: 'Enter the minimum message time to live in milliseconds',
-                                  trim: true"/>
-                </div>
-            </div>
+
+            <div class="clear formBox">
+                <fieldset>
+                    <legend>Other Settings</legend>
+                    <div class="clear">
+                        <div class="formLabel-labelCell">Maximum Delivery Retries:</div>
+                        <div class="formLabel-controlCell">
+                            <input type="text" id="formAddQueue.maximumDeliveryAttempts"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="
+                                      name: 'maximumDeliveryAttempts',
+                                      placeHolder: 'number of retries',
+                                      promptMessage: 'Maximum number of delivery attempts before the message will be sent to the alternate exchange',
+                                      title: 'Enter the maximum number of delivery attempts before the message will be sent to the alternate exchange',
+                                      trim: true"/>
+                        </div>
+                    </div>
+                    <div class="clear">
+                        <div class="formLabel-labelCell">Create DLQ?</div>
+                        <div class="formLabel-controlCell">
+                            <input type="checkbox" id="formAddQueue.dlqEnabled"
+                                   dojoType="dijit.form.CheckBox"
+                                   data-dojo-props="
+                                  name: 'x-qpid-dlq-enabled',
+                                  value: 'dlqEnabled',
+                                  title: 'Controls where a dead letter queue is automatically created',
+                                  checked: false"/>
+                        </div>
+                    </div>
+
                     <div class="clear"></div>
-                </fieldset>
-            </div>
+                    <div class="infoMessage">Configuring maximum delivery retries on a queue which has no DLQ or alternate <br/>exchange will result in messages being discarded after the limit is reached.</div>
 
-            <div class="clear formBox">
-                <fieldset>
-                <legend>Alerting Settings</legend>
-                <div class="clear">
-                    <div class="formLabel-labelCell">Queue Depth (Messages):</div>
-                    <div class="formLabel-controlCell">
-                        <input type="text" id="formAddQueue.alertThresholdQueueDepthMessages"
-                               data-dojo-type="dijit/form/ValidationTextBox"
-                               data-dojo-props="
-                                  name: 'alertThresholdQueueDepthMessages',
-                                  placeHolder: 'number of messages',
-                                  promptMessage: 'Ceiling value for number of messages on queue before alerts will be generated',
-                                  title: 'Enter the ceiling value for number of messages on queue before alerts will be generated',
-                                  trim: true"/>
+                    <div class="clear">
+                        <div class="formLabel-labelCell">Message Group Key:</div>
+                        <div class="formLabel-controlCell">
+                            <input type="text" id="formAddQueue.messageGroupKey"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="
+                                      name: 'messageGroupKey',
+                                      placeHolder: 'message group key',
+                                      promptMessage: 'Name of the message property used for message grouping',
+                                      title: 'Enter the name of the message property used for message grouping',
+                                      trim: true"/>
+                        </div>
                     </div>
-                </div>
-                <div class="clear">
-                    <div class="formLabel-labelCell">Queue Depth (Bytes):</div>
-                    <div class="formLabel-controlCell">
-                        <input type="text" id="formAddQueue.alertThresholdQueueDepthBytes"
-                               data-dojo-type="dijit/form/ValidationTextBox"
-                               data-dojo-props="
-                                  name: 'alertThresholdQueueDepthBytes',
-                                  placeHolder: 'total message size in bytes',
-                                  promptMessage: 'Ceiling value (in bytes) for total size of all messages on the queue before alerts will be generated',
-                                  title: 'Enter the ceiling value (in bytes) for total size of all messages on the queue before alerts will be generated',
-                                  trim: true"/>
+                    <div class="clear">
+                        <div class="formLabel-labelCell">Shared Message Groups?</div>
+                        <div class="formLabel-controlCell">
+                            <input type="checkbox" id="formAddQueue.messageGroupSharedGroups"
+                                   dojoType="dijit.form.CheckBox"
+                                   data-dojo-props="
+                                  name: 'messageGroupSharedGroups',
+                                  value: 'messageGroupSharedGroups',
+                                  checked: false,
+                                  title: 'Controls where a shared groups feature is enabled'"/>
+                        </div>
                     </div>
-                </div>
-                <div class="clear">
-                    <div class="formLabel-labelCell">Message Age:</div>
-                    <div class="formLabel-controlCell">
-                        <input type="text" id="formAddQueue.alertThresholdMessageAge"
-                               data-dojo-type="dijit/form/ValidationTextBox"
-                               data-dojo-props="
-                                  name: 'alertThresholdMessageAge',
-                                  placeHolder: 'time in ms',
-                                  promptMessage: 'Message age (in milliseconds) above which alerts will be generated',
-                                  title: 'Enter the message age (in milliseconds) above which alerts will be generated',
-                                  trim: true"/>
-                    </div>
-                </div>
-                <div class="clear">
-                    <div class="formLabel-labelCell">Message Size:</div>
-                    <div class="formLabel-controlCell">
-                        <input type="text" id="formAddQueue.alertThresholdMessageSize"
-                               data-dojo-type="dijit/form/ValidationTextBox"
-                               data-dojo-props="
-                                  name: 'alertThresholdMessageSize',
-                                  placeHolder: 'message size in bytes',
-                                  promptMessage: 'Message size (in bytes) above which alerts will be generated',
-                                  title: 'Enter the message size (in bytes) above which alerts will be generated',
-                                  trim: true"/>
-                    </div>
-                </div>
-                <div class="clear">
-                    <div class="formLabel-labelCell">Gap between alerts:</div>
-                    <div class="formLabel-controlCell">
-                        <input type="text" id="formAddQueue.alertRepeatGap"
-                               data-dojo-type="dijit/form/ValidationTextBox"
-                               data-dojo-props="
-                                  name: 'alertRepeatGap',
-                                  placeHolder: 'time in ms',
-                                  promptMessage: 'Minimum time (in milliseconds) between each alert',
-                                  title: 'Enter the minimum time (in milliseconds) between each alert.',
-                                  trim: true"/>
-                    </div>
-                </div>
-                </fieldset>
-                <div class="clear"></div>
-            </div>
-
-            <div class="clear formBox">
-                <fieldset>
-                <legend>Other Settings</legend>
-                <div class="clear">
-                    <div class="formLabel-labelCell">Maximum Delivery Retries:</div>
-                    <div class="formLabel-controlCell">
-                        <input type="text" id="formAddQueue.maximumDeliveryAttempts"
-                               data-dojo-type="dijit/form/ValidationTextBox"
-                               data-dojo-props="
-                                  name: 'maximumDeliveryAttempts',
-                                  placeHolder: 'number of retries',
-                                  promptMessage: 'Maximum number of delivery attempts before the message will be sent to the alternate exchange',
-                                  title: 'Enter the maximum number of delivery attempts before the message will be sent to the alternate exchange',
-                                  trim: true"/>
-                    </div>
-                </div>
-                <div class="clear">
-                    <div class="formLabel-labelCell">Create DLQ?</div>
-                    <div class="formLabel-controlCell">
-                        <input type="checkbox" id="formAddQueue.dlqEnabled"
-                               dojoType="dijit.form.CheckBox"
-                               data-dojo-props="
-                              name: 'x-qpid-dlq-enabled',
-                              value: 'dlqEnabled',
-                              title: 'Controls where a dead letter queue is automatically created',
-                              checked: false"/>
-                    </div>
-                </div>
-
-                <div class="clear"></div>
-                <div class="infoMessage">Configuring maximum delivery retries on a queue which has no DLQ or alternate <br/>exchange will result in messages being discarded after the limit is reached.</div>
-
-                <div class="clear">
-                    <div class="formLabel-labelCell">Message Group Key:</div>
-                    <div class="formLabel-controlCell">
-                        <input type="text" id="formAddQueue.messageGroupKey"
-                               data-dojo-type="dijit/form/ValidationTextBox"
-                               data-dojo-props="
-                                  name: 'messageGroupKey',
-                                  placeHolder: 'message group key',
-                                  promptMessage: 'Name of the message property used for message grouping',
-                                  title: 'Enter the name of the message property used for message grouping',
-                                  trim: true"/>
-                    </div>
-                </div>
-                <div class="clear">
-                    <div class="formLabel-labelCell">Shared Message Groups?</div>
-                    <div class="formLabel-controlCell">
-                        <input type="checkbox" id="formAddQueue.messageGroupSharedGroups"
-                               dojoType="dijit.form.CheckBox"
-                               data-dojo-props="
-                              name: 'messageGroupSharedGroups',
-                              value: 'messageGroupSharedGroups',
-                              checked: false,
-                              title: 'Controls where a shared groups feature is enabled'"/>
-                    </div>
-                </div>
                     <div class="clear">
                         <div class="formLabel-labelCell">Hold on Publish Enabled?</div>
                         <div class="formLabel-controlCell">

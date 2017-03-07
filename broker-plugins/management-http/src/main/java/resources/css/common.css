@@ -721,3 +721,8 @@ td.advancedSearchField, col.autoWidth {
 {
     background-color: darkgray;
 }
+
+.notApplicable
+{
+    font-style: italic;
+}

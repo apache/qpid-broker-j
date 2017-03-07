@@ -23,9 +23,9 @@
     <para>
         <emphasis>Qpid Broker for Java</emphasis>
         supports a number of custom arguments which can be specified as part of <emphasis>queue.declare</emphasis>
-        commands for AMQP 0.x protocols. This section provides an overview of the supported arguments.
+        commands for AMQP 0-x protocols. This section provides an overview of the supported arguments.
     </para>
-    <table pgwide="1"  xml:id="Java-Broker-Appendix-Supported-Queue-Declare-Arguments">
+    <table xml:id="Java-Broker-Appendix-Supported-Queue-Declare-Arguments">
         <title>Queue declare arguments</title>
         <tgroup cols="2">
             <colspec colnum="1" colname="col1"/>
