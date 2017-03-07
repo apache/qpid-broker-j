@@ -33,6 +33,7 @@ import java.util.UUID;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ContainerType;
 import org.apache.qpid.server.model.DynamicModel;
@@ -77,20 +78,36 @@ public class ConfiguredObjectRecordConverter
         {
             if(rootClass == null && parent instanceof DynamicModel)
             {
-                String containerTypeName = ((DynamicModel) parent).getDefaultContainerType();
+                String defaultContainerType = ((DynamicModel) parent).getDefaultContainerType();
+                String containerTypeName = defaultContainerType;
                 if (data.get(ConfiguredObject.TYPE) instanceof String)
                 {
                     containerTypeName = data.get(ConfiguredObject.TYPE).toString();
                 }
 
                 QpidServiceLoader loader = new QpidServiceLoader();
-                final ContainerType<?> containerType =
-                        loader.getInstancesByType(ContainerType.class).get(containerTypeName);
+                Map<String, ContainerType> instancesByType = loader.getInstancesByType(ContainerType.class);
+                final ContainerType<?> containerType = instancesByType.get(containerTypeName);
 
                 if (containerType != null)
                 {
                     _model = containerType.getModel();
                     rootClass = containerType.getCategoryClass();
+                }
+                else
+                {
+                    // fall back to default container type
+                    final ContainerType<?> defaultContainerTypeInstance = instancesByType.get(defaultContainerType);
+                    if (defaultContainerTypeInstance != null)
+                    {
+                        _model = defaultContainerTypeInstance.getModel();
+                        rootClass = defaultContainerTypeInstance.getCategoryClass();
+                    }
+                    else
+                    {
+                        throw new IllegalConfigurationException(String.format("Cannot identify container type for '%s'",
+                                                                              containerType));
+                    }
                 }
             }
 

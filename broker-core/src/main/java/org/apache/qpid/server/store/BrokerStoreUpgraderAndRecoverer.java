@@ -342,7 +342,9 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
                 Map<String, Object> brokerAttributes = new HashMap<>(record.getAttributes());
                 _defaultVirtualHost = (String)brokerAttributes.remove("defaultVirtualHost");
 
-                if (_defaultVirtualHost != null)
+                boolean typeDetected = brokerAttributes.remove("type") != null;
+
+                if (_defaultVirtualHost != null || typeDetected)
                 {
                     record = new ConfiguredObjectRecordImpl(record.getId(),
                                                             record.getType(),
