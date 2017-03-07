@@ -57,6 +57,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFinder;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.Content;
+import org.apache.qpid.server.util.ExternalServiceException;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.Model;
@@ -393,9 +394,7 @@ public class RestServlet extends AbstractServlet
         {
             super.service(request, response);
         }
-        catch (IllegalArgumentException | IllegalConfigurationException | IllegalStateException | SecurityException
-                | IntegrityViolationException | IllegalStateTransitionException | NoClassDefFoundError
-                | OperationTimeoutException e)
+        catch (Exception | NoClassDefFoundError e)
         {
             setResponseStatus(request, response, e);
         }
@@ -943,6 +942,10 @@ public class RestServlet extends AbstractServlet
             {
                 message = "Not found: " + message;
                 LOGGER.warn("Unexpected exception processing request ", e);
+            }
+            else if (e instanceof ExternalServiceException)
+            {
+                responseCode = HttpServletResponse.SC_BAD_GATEWAY;
             }
             else
             {
