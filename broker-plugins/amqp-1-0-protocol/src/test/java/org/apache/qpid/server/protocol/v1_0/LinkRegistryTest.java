@@ -38,29 +38,25 @@ public class LinkRegistryTest extends QpidTestCase
         _linkRegistry = new LinkRegistryImpl(_virtualHost);
     }
 
-    private void doTestGetLink(final Class<? extends LinkModel> type) throws Exception
+    public void testGetSendingLink() throws Exception
     {
         String remoteContainerId = "testRemoteContainerId";
         String linkName = "testLinkName";
-        LinkModel link = _linkRegistry.getLink(remoteContainerId, linkName, type);
-        assertNotNull("LinkRegistry#getLink should always return an object", link);
-        LinkModel link2 = _linkRegistry.getLink(remoteContainerId, linkName, type);
-        assertNotNull("LinkRegistry#getLink should always return an object", link2);
-        assertSame("Two calls to LinkRegistry#getLink should return the same object", link, link2);
-    }
-
-    public void testGetSendingLink() throws Exception
-    {
-        doTestGetLink(SendingLink_1_0.class);
+        LinkModel link = _linkRegistry.getSendingLink(remoteContainerId, linkName);
+        assertNotNull("LinkRegistry#getSendingLink should always return an object", link);
+        LinkModel link2 = _linkRegistry.getSendingLink(remoteContainerId, linkName);
+        assertNotNull("LinkRegistry#getSendingLink should always return an object", link2);
+        assertSame("Two calls to LinkRegistry#getSendingLink should return the same object", link, link2);
     }
 
     public void testGetReceivingLink() throws Exception
     {
-        doTestGetLink(StandardReceivingLink_1_0.class);
-    }
-
-    public void testGetCoordinatingLink() throws Exception
-    {
-        doTestGetLink(TxnCoordinatorReceivingLink_1_0.class);
+        String remoteContainerId = "testRemoteContainerId";
+        String linkName = "testLinkName";
+        LinkModel link = _linkRegistry.getReceivingLink(remoteContainerId, linkName);
+        assertNotNull("LinkRegistry#getReceivingLink should always return an object", link);
+        LinkModel link2 = _linkRegistry.getReceivingLink(remoteContainerId, linkName);
+        assertNotNull("LinkRegistry#getReceivingLink should always return an object", link2);
+        assertSame("Two calls to LinkRegistry#getReceivingLink should return the same object", link, link2);
     }
 }

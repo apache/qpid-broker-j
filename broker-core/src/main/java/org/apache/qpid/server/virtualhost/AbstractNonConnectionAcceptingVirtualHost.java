@@ -139,9 +139,14 @@ public abstract class AbstractNonConnectionAcceptingVirtualHost<X extends Abstra
     }
 
     @Override
-    public <T extends LinkModel> T getLink(final String remoteContainerId,
-                                           final String linkName,
-                                           final Class<T> type)
+    public <T extends LinkModel> T getSendingLink(final String remoteContainerId, final String linkName)
+    {
+        throwUnsupported();
+        return null;
+    }
+
+    @Override
+    public <T extends LinkModel> T getReceivingLink(final String remoteContainerId, final String linkName)
     {
         throwUnsupported();
         return null;

@@ -24,5 +24,6 @@ import org.apache.qpid.server.protocol.LinkModel;
 
 public interface LinkRegistry
 {
-    <T extends LinkModel> T getLink(String remoteContainerId, String linkName, Class<T> type);
+    <T extends LinkModel> T getSendingLink(String remoteContainerId, String linkName);
+    <T extends LinkModel> T getReceivingLink(String remoteContainerId, String linkName);
 }

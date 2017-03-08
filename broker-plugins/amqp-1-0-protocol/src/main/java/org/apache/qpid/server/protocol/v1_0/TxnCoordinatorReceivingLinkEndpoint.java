@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
@@ -33,6 +32,8 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declare;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declared;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
@@ -51,10 +52,9 @@ public class TxnCoordinatorReceivingLinkEndpoint extends ReceivingLinkEndpoint
     private final LinkedHashMap<Integer, ServerTransaction> _createdTransactions = new LinkedHashMap<>();
     private ArrayList<Transfer> _incompleteMessage;
 
-    public TxnCoordinatorReceivingLinkEndpoint(final TxnCoordinatorReceivingLink_1_0 link,
-                                               final SectionDecoder sectionDecoder)
+    public TxnCoordinatorReceivingLinkEndpoint(final Session_1_0 session, final Link_1_0 link)
     {
-        super(link, sectionDecoder);
+        super(session, link);
     }
 
     @Override
@@ -217,6 +217,39 @@ public class TxnCoordinatorReceivingLinkEndpoint extends ReceivingLinkEndpoint
     }
 
     @Override
+    protected void reattachLink(final Attach attach) throws AmqpErrorException
+    {
+        throw new AmqpErrorException(new Error(AmqpError.NOT_IMPLEMENTED, "Cannot reattach a Coordinator Link."));
+    }
+
+    @Override
+    protected void resumeLink(final Attach attach) throws AmqpErrorException
+    {
+        throw new AmqpErrorException(new Error(AmqpError.NOT_IMPLEMENTED, "Cannot resume a Coordinator Link."));
+    }
+
+    @Override
+    protected void establishLink(final Attach attach) throws AmqpErrorException
+    {
+        if (getSource() != null || getTarget() != null)
+        {
+            throw new IllegalStateException("LinkEndpoint and Termini should be null when establishing a Link.");
+        }
+
+        Coordinator target = new Coordinator();
+        Source source = (Source) attach.getSource();
+        getLink().setTermini(source, target);
+
+        attachReceived(attach);
+    }
+
+    @Override
+    protected void recoverLink(final Attach attach) throws AmqpErrorException
+    {
+        throw new AmqpErrorException(new Error(AmqpError.NOT_IMPLEMENTED, "Cannot recover a Coordinator Link."));
+    }
+
+    @Override
     protected void handle(final Binary deliveryTag, final DeliveryState state, final Boolean settled)
     {
 
@@ -227,5 +260,10 @@ public class TxnCoordinatorReceivingLinkEndpoint extends ReceivingLinkEndpoint
     {
         super.attachReceived(attach);
         setDeliveryCount(attach.getInitialDeliveryCount());
+    }
+
+    @Override
+    public void initialiseUnsettled()
+    {
     }
 }

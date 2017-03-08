@@ -40,8 +40,8 @@ import javax.security.auth.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.connection.SessionPrincipal;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSender;
@@ -56,7 +56,6 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
 import org.apache.qpid.server.protocol.LinkModel;
-import org.apache.qpid.server.virtualhost.LinkRegistry;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.session.AMQPSession;
@@ -67,7 +66,7 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxNotSupportedException;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.virtualhost.LinkRegistry;
 import org.apache.qpid.server.virtualhost.LinkRegistryFactory;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNode;
 
@@ -228,9 +227,15 @@ public class ManagementAddressSpace implements NamedAddressSpace
     }
 
     @Override
-    public <T extends LinkModel> T getLink(final String remoteContainerId, final String linkName, final Class<T> type)
+    public <T extends LinkModel> T getSendingLink(final String remoteContainerId, final String linkName)
     {
-        return _linkRegistry.getLink(remoteContainerId, linkName, type);
+        return _linkRegistry.getSendingLink(remoteContainerId, linkName);
+    }
+
+    @Override
+    public <T extends LinkModel> T getReceivingLink(final String remoteContainerId, final String linkName)
+    {
+        return _linkRegistry.getReceivingLink(remoteContainerId, linkName);
     }
 
     @Override

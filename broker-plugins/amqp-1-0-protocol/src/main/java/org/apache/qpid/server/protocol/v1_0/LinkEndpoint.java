@@ -47,16 +47,15 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 
-public abstract class LinkEndpoint<T extends Link_1_0>
+public abstract class LinkEndpoint
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(LinkEndpoint.class);
-    private final T _link;
-    private Session_1_0 _session;
+    private final Link_1_0 _link;
+    private final Session_1_0 _session;
     private Object _flowTransactionId;
     private SenderSettleMode _sendingSettlementMode;
     private ReceiverSettleMode _receivingSettlementMode;
     private Map _initialUnsettledMap;
-    private Map _localUnsettled;
     private UnsignedInteger _lastSentCreditLimit;
     private volatile boolean _stopped;
     private volatile boolean _stoppedUpdated;
@@ -70,6 +69,7 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     private Map<Symbol, Object> _properties;
 
     protected volatile State _state = State.ATTACH_RECVD;
+    protected Map _localUnsettled;
 
     protected enum State
     {
@@ -82,8 +82,9 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     }
 
 
-    LinkEndpoint(final T link)
+    LinkEndpoint(final Session_1_0 session, final Link_1_0 link)
     {
+        _session = session;
         _link = link;
     }
 
@@ -100,6 +101,38 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     protected abstract void remoteDetachedPerformDetach(final Detach detach);
 
     protected abstract Map<Symbol,Object> initProperties(final Attach attach);
+
+
+    public void receiveAttach(final Attach attach) throws AmqpErrorException
+    {
+        boolean isAttachingLocalTerminusNull = (attach.getRole() == Role.SENDER ? attach.getTarget() == null : attach.getSource() == null);
+        boolean isLocalTerminusNull = (attach.getRole() == Role.SENDER ? getTarget() == null : getSource() == null);
+
+        if (isAttachingLocalTerminusNull)
+        {
+            recoverLink(attach);
+        }
+        else if (isLocalTerminusNull)
+        {
+            establishLink(attach);
+        }
+        else if (attach.getUnsettled() != null)
+        {
+            resumeLink(attach);
+        }
+        else
+        {
+            reattachLink(attach);
+        }
+    }
+
+    protected abstract void reattachLink(final Attach attach) throws AmqpErrorException;
+
+    protected abstract void resumeLink(final Attach attach) throws AmqpErrorException;
+
+    protected abstract void establishLink(final Attach attach) throws AmqpErrorException;
+
+    protected abstract void recoverLink(final Attach attach) throws AmqpErrorException;
 
     public void attachReceived(final Attach attach) throws AmqpErrorException
     {
@@ -240,20 +273,9 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         return _session;
     }
 
-    public void associateSession(final Session_1_0 session)
-    {
-        if (session == null)
-        {
-            throw new IllegalStateException("To dissociate session from Endpoint call LinkEndpoint#dissociateSession() "
-                                            + "instead of LinkEndpoint#associate(null)");
-        }
-        _session = session;
-    }
-
-    public void dissociateSession()
+    public void destroy()
     {
         setLocalHandle(null);
-        _session = null;
         getLink().discardEndpoint();
     }
 
@@ -329,6 +351,11 @@ public abstract class LinkEndpoint<T extends Link_1_0>
                 _state = State.DETACHED;
                 break;
             default:
+                if (close)
+                {
+                    destroy();
+                    _link.linkClosed();
+                }
                 return;
         }
 
@@ -347,7 +374,7 @@ public abstract class LinkEndpoint<T extends Link_1_0>
 
         if (close)
         {
-            dissociateSession();
+            destroy();
             _link.linkClosed();
         }
         setLocalHandle(null);
@@ -435,7 +462,7 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         }
     }
 
-    public T getLink()
+    public Link_1_0 getLink()
     {
         return _link;
     }
@@ -465,10 +492,7 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         return _initialUnsettledMap;
     }
 
-    public void setLocalUnsettled(Map unsettled)
-    {
-        _localUnsettled = unsettled;
-    }
+    public abstract void initialiseUnsettled();
 
     @Override public String toString()
     {

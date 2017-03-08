@@ -55,7 +55,8 @@ public interface NamedAddressSpace extends Named
 
     MessageDestination getDefaultDestination();
 
-    <T extends LinkModel> T getLink(String remoteContainerId, String linkName, Class<T> type);
+    <T extends LinkModel> T getSendingLink(String remoteContainerId, String linkName);
+    <T extends LinkModel> T getReceivingLink(String remoteContainerId, String linkName);
 
     boolean authoriseCreateConnection(AMQPConnection<?> connection);
 

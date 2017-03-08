@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -38,13 +39,11 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
-public abstract class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1_0>
+public abstract class ReceivingLinkEndpoint extends LinkEndpoint
 {
-
-
+    private final SectionDecoder _sectionDecoder;
     private UnsignedInteger _lastDeliveryId;
     private ReceivingDestination _receivingDestination;
-    private final SectionDecoder _sectionDecoder;
 
     private static class TransientState
     {
@@ -91,10 +90,12 @@ public abstract class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1
     private UnsignedInteger _drainLimit;
 
 
-    public ReceivingLinkEndpoint(final ReceivingLink_1_0 link, final SectionDecoder sectionDecoder)
+    public ReceivingLinkEndpoint(final Session_1_0 session, final Link_1_0 link)
     {
-        super(link);
-        _sectionDecoder = sectionDecoder;
+        super(session, link);
+        _sectionDecoder = new SectionDecoderImpl(session.getConnection()
+                                                        .getDescribedTypeRegistry()
+                                                        .getSectionDecoderRegistry());
     }
 
     @Override

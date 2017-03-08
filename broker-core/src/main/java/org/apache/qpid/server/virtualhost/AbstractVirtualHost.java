@@ -73,13 +73,12 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.exchange.ExchangeDefaults;
-import org.apache.qpid.server.pool.SuppressingInheritedAccessControlContextThreadFactory;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.exchange.DefaultDestination;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.MessageStoreMessages;
 import org.apache.qpid.server.logging.messages.VirtualHostMessages;
@@ -100,6 +99,7 @@ import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.plugin.ConnectionValidator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
+import org.apache.qpid.server.pool.SuppressingInheritedAccessControlContextThreadFactory;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.security.AccessControl;
@@ -1609,9 +1609,15 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public <T extends LinkModel> T getLink(String remoteContainerId, String linkName, Class<T> type)
+    public <T extends LinkModel> T getSendingLink(String remoteContainerId, String linkName)
     {
-        return _linkRegistry.getLink(remoteContainerId, linkName, type);
+        return _linkRegistry.getSendingLink(remoteContainerId, linkName);
+    }
+
+    @Override
+    public <T extends LinkModel> T getReceivingLink(String remoteContainerId, String linkName)
+    {
+        return _linkRegistry.getReceivingLink(remoteContainerId, linkName);
     }
 
     public DtxRegistry getDtxRegistry()

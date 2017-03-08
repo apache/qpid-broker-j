@@ -74,7 +74,7 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
-public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
+public class SendingLinkEndpoint extends LinkEndpoint
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SendingLinkEndpoint.class);
 
@@ -96,9 +96,9 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
     private ConsumerTarget_1_0 _consumerTarget;
     private MessageInstanceConsumer<ConsumerTarget_1_0> _consumer;
 
-    public SendingLinkEndpoint(final SendingLink_1_0 link)
+    public SendingLinkEndpoint(final Session_1_0 session, final LinkImpl link)
     {
-        super(link);
+        super(session, link);
         setDeliveryCount(UnsignedInteger.valueOf(0));
         setAvailable(UnsignedInteger.valueOf(0));
         setCapabilities(Arrays.asList(AMQPConnection_1_0.SHARED_SUBSCRIPTIONS));
@@ -287,6 +287,94 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
     }
 
     @Override
+    protected void reattachLink(final Attach attach) throws AmqpErrorException
+    {
+        if (getSource() == null)
+        {
+            throw new IllegalStateException("Terminus should be set when resuming a Link.");
+        }
+        if (attach.getSource() == null)
+        {
+            throw new IllegalStateException("Attach.getSource should not be null when resuming a Link. That would be recovering the Link.");
+        }
+
+        Source newSource = (Source) attach.getSource();
+        Source oldSource = (Source) getSource();
+
+        final SendingDestination destination = getSession().getSendingDestination(getLinkName(), oldSource);
+        prepareConsumerOptionsAndFilters(destination);
+
+        if (getDestination() instanceof ExchangeDestination && !Boolean.TRUE.equals(newSource.getDynamic()))
+        {
+            final SendingDestination newDestination =
+                    getSession().getSendingDestination(getLinkName(), newSource);
+            if (getSession().updateSourceForSubscription(this, newSource, newDestination))
+            {
+                setDestination(newDestination);
+            }
+        }
+
+        attachReceived(attach);
+    }
+
+    @Override
+    protected void resumeLink(final Attach attach) throws AmqpErrorException
+    {
+        if (getSource() == null)
+        {
+            throw new IllegalStateException("Terminus should be set when resuming a Link.");
+        }
+        if (attach.getSource() == null)
+        {
+            throw new IllegalStateException("Attach.getSource should not be null when resuming a Link. That would be recovering the Link.");
+        }
+
+        Source newSource = (Source) attach.getSource();
+        Source oldSource = (Source) getSource();
+
+        final SendingDestination destination = getSession().getSendingDestination(getLinkName(), oldSource);
+        prepareConsumerOptionsAndFilters(destination);
+
+        if (getDestination() instanceof ExchangeDestination && !Boolean.TRUE.equals(newSource.getDynamic()))
+        {
+            final SendingDestination newDestination =
+                    getSession().getSendingDestination(getLinkName(), newSource);
+            if (getSession().updateSourceForSubscription(this, newSource, newDestination))
+            {
+                setDestination(newDestination);
+            }
+        }
+
+        attachReceived(attach);
+        initialiseUnsettled();
+    }
+
+    @Override
+    protected void establishLink(final Attach attach) throws AmqpErrorException
+    {
+        if (getSource() != null || getTarget() != null)
+        {
+            throw new IllegalStateException("LinkEndpoint and Termini should be null when establishing a Link.");
+        }
+
+        attachReceived(attach);
+    }
+
+    @Override
+    protected void recoverLink(final Attach attach) throws AmqpErrorException
+    {
+        if (getSource() == null)
+        {
+            throw new AmqpErrorException(new Error(AmqpError.NOT_FOUND, ""));
+        }
+
+        final SendingDestination destination = getSession().getSendingDestination(getLinkName(), (Source) getSource());
+        prepareConsumerOptionsAndFilters(destination);
+
+        attachReceived(attach);
+    }
+
+    @Override
     public Role getRole()
     {
         return Role.SENDER;
@@ -299,7 +387,7 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
 
     public TerminusDurability getTerminusDurability()
     {
-        return getLink().getLocalTerminusDurability();
+        return ((Source) getSource()).getDurable();
     }
 
     public boolean transfer(final Transfer xfr, final boolean decrementCredit)
@@ -459,10 +547,10 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
 
             close();
         }
-        else if (detach.getError() != null && !getSession().isSyntheticError(detach.getError()))
+        else if (detach.getError() != null)
         {
             detach();
-            dissociateSession();
+            destroy();
             getConsumerTarget().updateNotifyWorkDesired();
         }
         else
@@ -545,6 +633,36 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
     public void attachReceived(final Attach attach) throws AmqpErrorException
     {
         super.attachReceived(attach);
+
+        Target target = (Target) attach.getTarget();
+        Source source = (Source) getSource();
+        if (source == null)
+        {
+            source = new Source();
+            Source attachSource = (Source) attach.getSource();
+
+            final SendingDestination destination = getSession().getSendingDestination(attach.getName(), attachSource);
+            source.setAddress(attachSource.getAddress());
+            source.setDynamic(attachSource.getDynamic());
+            source.setDurable(attachSource.getDurable());
+            source.setExpiryPolicy(attachSource.getExpiryPolicy());
+            source.setDistributionMode(attachSource.getDistributionMode());
+            source.setFilter(attachSource.getFilter());
+            source.setCapabilities(destination.getCapabilities());
+            if (destination instanceof ExchangeDestination)
+            {
+                ExchangeDestination exchangeDestination = (ExchangeDestination) destination;
+                exchangeDestination.getQueue()
+                                   .setAttributes(Collections.<String, Object>singletonMap(Queue.DESIRED_STATE,
+                                                                                           org.apache.qpid.server.model.State.ACTIVE));
+            }
+            getLink().setSource(source);
+            prepareConsumerOptionsAndFilters(destination);
+        }
+
+        getLink().setTarget(target);
+
+
         final MessageInstanceConsumer consumer = getConsumer();
         createConsumerTarget();
         _resumeAcceptedTransfers.clear();
@@ -622,16 +740,15 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
         getConsumerTarget().updateNotifyWorkDesired();
     }
 
-    public Map<Binary, MessageInstance> getUnsettledOutcomeMap()
+    @Override
+    public void initialiseUnsettled()
     {
-        Map<Binary, MessageInstance> unsettled = new HashMap<>(_unsettledMap2);
+        Map<Binary, MessageInstance> _localUnsettled = new HashMap<>(_unsettledMap2);
 
-        for (Map.Entry<Binary, MessageInstance> entry : unsettled.entrySet())
+        for (Map.Entry<Binary, MessageInstance> entry : _localUnsettled.entrySet())
         {
             entry.setValue(null);
         }
-
-        return unsettled;
     }
 
     public MessageInstanceConsumer<ConsumerTarget_1_0> getConsumer()

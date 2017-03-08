@@ -29,7 +29,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 
 public interface Link_1_0 extends LinkModel
 {
-    ListenableFuture<? extends LinkEndpoint<?>> attach(Session_1_0 session, final Attach attach);
+    ListenableFuture<LinkEndpoint> attach(Session_1_0 session, final Attach attach);
 
     void linkClosed();
 
@@ -40,4 +40,10 @@ public interface Link_1_0 extends LinkModel
     BaseSource getSource();
 
     BaseTarget getTarget();
+
+    void setSource(BaseSource source);
+
+    void setTarget(BaseTarget target);
+
+    void setTermini(BaseSource source, BaseTarget target);
 }

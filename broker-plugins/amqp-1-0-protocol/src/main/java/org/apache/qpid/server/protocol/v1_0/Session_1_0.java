@@ -71,7 +71,6 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
-import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.framing.OversizeFrameException;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -95,7 +94,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.StdDistMode;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
-import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
@@ -135,9 +133,9 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     private SessionState _sessionState;
 
-    private final Map<LinkEndpoint<?>, UnsignedInteger> _endpointToOutputHandle = new HashMap<>();
-    private final Map<UnsignedInteger, LinkEndpoint<?>> _inputHandleToEndpoint = new HashMap<>();
-    private final Set<LinkEndpoint<?>> _associatedLinkEndpoints = new HashSet<>();
+    private final Map<LinkEndpoint, UnsignedInteger> _endpointToOutputHandle = new HashMap<>();
+    private final Map<UnsignedInteger, LinkEndpoint> _inputHandleToEndpoint = new HashMap<>();
+    private final Set<LinkEndpoint> _associatedLinkEndpoints = new HashSet<>();
 
     private final short _receivingChannel;
     private final short _sendingChannel;
@@ -215,27 +213,17 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             }
             else
             {
-                final Class<? extends LinkModel> linkType;
+                final Link_1_0 link;
                 if (attach.getRole() == Role.RECEIVER)
                 {
-                    linkType = SendingLink_1_0.class;
+                    link = getAddressSpace().getSendingLink(getConnection().getRemoteContainerId(), attach.getName());
                 }
                 else
                 {
-                    if (attach.getTarget() instanceof Coordinator)
-                    {
-                        linkType = TxnCoordinatorReceivingLink_1_0.class;
-                    }
-                    else
-                    {
-                        linkType = StandardReceivingLink_1_0.class;
-                    }
+                    link = getAddressSpace().getReceivingLink(getConnection().getRemoteContainerId(), attach.getName());
                 }
 
-                final Link_1_0 link = (Link_1_0) getAddressSpace().getLink(getConnection().getRemoteContainerId(),
-                                                                           attach.getName(),
-                                                                           linkType);
-                final ListenableFuture<? extends LinkEndpoint<?>> future = link.attach(this, attach);
+                final ListenableFuture<LinkEndpoint> future = link.attach(this, attach);
 
                 addFutureCallback(future, new EndpointCreationCallback(attach), MoreExecutors.directExecutor());
             }
@@ -419,7 +407,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     public void receiveFlow(final Flow flow)
     {
         UnsignedInteger handle = flow.getHandle();
-        final LinkEndpoint<?> endpoint = handle == null ? null : _inputHandleToEndpoint.get(handle);
+        final LinkEndpoint endpoint = handle == null ? null : _inputHandleToEndpoint.get(handle);
 
         final UnsignedInteger nextOutgoingId =
                 flow.getNextIncomingId() == null ? _initialOutgoingId : flow.getNextIncomingId();
@@ -432,8 +420,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
         else
         {
-            final Collection<LinkEndpoint<?>> allLinkEndpoints = _inputHandleToEndpoint.values();
-            for (LinkEndpoint<?> le : allLinkEndpoints)
+            final Collection<LinkEndpoint> allLinkEndpoints = _inputHandleToEndpoint.values();
+            for (LinkEndpoint le : allLinkEndpoints)
             {
                 le.flowStateChanged();
             }
@@ -577,7 +565,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         _nextIncomingTransferId.incr();
 
         UnsignedInteger inputHandle = transfer.getHandle();
-        LinkEndpoint<?> linkEndpoint = _inputHandleToEndpoint.get(inputHandle);
+        LinkEndpoint linkEndpoint = _inputHandleToEndpoint.get(inputHandle);
 
         if (linkEndpoint == null)
         {
@@ -1119,15 +1107,10 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     void remoteEnd(End end)
     {
-        List<LinkEndpoint<?>> linkEndpoints = new ArrayList<>(_endpointToOutputHandle.keySet());
-        for(LinkEndpoint linkEndpoint : linkEndpoints)
+        for (LinkEndpoint linkEndpoint : _associatedLinkEndpoints)
         {
             linkEndpoint.remoteDetached(new Detach());
-            linkEndpoint.dissociateSession();
-        }
-        for (LinkEndpoint<?> linkEndpoint : _associatedLinkEndpoints)
-        {
-            linkEndpoint.dissociateSession();
+            linkEndpoint.destroy();
         }
         _associatedLinkEndpoints.clear();
 
@@ -1215,7 +1198,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     @Override
     public void transportStateChanged()
     {
-        for (LinkEndpoint<?> linkEndpoint : _endpointToOutputHandle.keySet())
+        for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
         {
             if (linkEndpoint instanceof SendingLinkEndpoint)
             {
@@ -1251,7 +1234,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         {
             messageWithSubject(ChannelMessages.FLOW_ENFORCED(queue.getName()));
 
-            for (LinkEndpoint<?> linkEndpoint : _endpointToOutputHandle.keySet())
+            for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
             {
                 if (linkEndpoint instanceof ReceivingLinkEndpoint
                     && isQueueDestinationForLink(queue, ((ReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
@@ -1291,7 +1274,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             {
                 messageWithSubject(ChannelMessages.FLOW_REMOVED());
             }
-            for (LinkEndpoint<?> linkEndpoint : _endpointToOutputHandle.keySet())
+            for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
             {
                 if (linkEndpoint instanceof ReceivingLinkEndpoint
                         && isQueueDestinationForLink(queue, ((ReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
@@ -1322,7 +1305,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         {
             messageWithSubject(ChannelMessages.FLOW_ENFORCED("** All Queues **"));
 
-            for (LinkEndpoint<?> linkEndpoint : _endpointToOutputHandle.keySet())
+            for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
             {
                 if (linkEndpoint instanceof ReceivingLinkEndpoint)
                 {
@@ -1354,7 +1337,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             {
                 messageWithSubject(ChannelMessages.FLOW_REMOVED());
             }
-            for (LinkEndpoint<?> linkEndpoint : _endpointToOutputHandle.keySet())
+            for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
             {
                 if (linkEndpoint instanceof ReceivingLinkEndpoint
                     && !_blockingEntities.contains(((ReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
@@ -1532,7 +1515,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     {
         if(_inputHandleToEndpoint.containsKey(handle))
         {
-            LinkEndpoint<?> endpoint = _inputHandleToEndpoint.remove(handle);
+            LinkEndpoint endpoint = _inputHandleToEndpoint.remove(handle);
             endpoint.remoteDetached(detach);
             _endpointToOutputHandle.remove(endpoint);
         }
@@ -1552,11 +1535,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             detach.setHandle(handle);
             detach.setError(_sessionEndedLinkError);
             detach(handle, detach);
-        }
-
-        for (LinkEndpoint<?> linkEndpoint : _associatedLinkEndpoints)
-        {
-            linkEndpoint.dissociateSession();
         }
     }
 
@@ -1609,7 +1587,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         return primaryDomain;
     }
 
-    private class EndpointCreationCallback<T extends LinkEndpoint<?>> implements FutureCallback<T>
+    private class EndpointCreationCallback implements FutureCallback<LinkEndpoint>
     {
 
         private final Attach _attach;
@@ -1620,7 +1598,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
 
         @Override
-        public void onSuccess(final T endpoint)
+        public void onSuccess(final LinkEndpoint endpoint)
         {
             doOnIOThreadAsync(new Runnable()
             {
@@ -1671,7 +1649,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             throw new ConnectionScopedRuntimeException(errorMessage, t);
         }
 
-        private boolean attachWasUnsuccessful(final T endpoint)
+        private boolean attachWasUnsuccessful(final LinkEndpoint endpoint)
         {
             if (endpoint.getRole().equals(Role.SENDER))
             {

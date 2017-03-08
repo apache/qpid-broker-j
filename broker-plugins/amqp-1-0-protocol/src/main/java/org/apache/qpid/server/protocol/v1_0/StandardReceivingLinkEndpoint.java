@@ -36,7 +36,6 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.protocol.MessageFormatRegistry;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
@@ -55,6 +54,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
@@ -78,9 +78,10 @@ public class StandardReceivingLinkEndpoint extends ReceivingLinkEndpoint
     private Binary _messageDeliveryTag;
     private Map<Binary, Outcome> _unsettledMap = Collections.synchronizedMap(new HashMap<Binary, Outcome>());
 
-    public StandardReceivingLinkEndpoint(final StandardReceivingLink_1_0 link, final SectionDecoder sectionDecoder)
+    public StandardReceivingLinkEndpoint(final Session_1_0 session,
+                                         final Link_1_0 link)
     {
-        super(link, sectionDecoder);
+        super(session, link);
     }
 
     @Override
@@ -331,13 +332,14 @@ public class StandardReceivingLinkEndpoint extends ReceivingLinkEndpoint
         else if(detach == null || detach.getError() != null)
         {
             detach();
-            dissociateSession();
+            destroy();
         }
         else
         {
             detach();
         }
     }
+
 
     @Override
     protected void handle(Binary deliveryTag, DeliveryState state, Boolean settled)
@@ -455,7 +457,20 @@ public class StandardReceivingLinkEndpoint extends ReceivingLinkEndpoint
     public void attachReceived(final Attach attach) throws AmqpErrorException
     {
         super.attachReceived(attach);
+
+        Source source = (Source) attach.getSource();
+        Target target = new Target();
+        Target attachTarget = (Target) attach.getTarget();
+
         setDeliveryCount(attach.getInitialDeliveryCount());
+
+        final ReceivingDestination destination = getSession().getReceivingDestination(attachTarget);
+        target.setAddress(attachTarget.getAddress());
+        target.setDynamic(attachTarget.getDynamic());
+        target.setCapabilities(destination.getCapabilities());
+
+        setCapabilities(Arrays.asList(destination.getCapabilities()));
+        setDestination(destination);
 
         Map initialUnsettledMap = getInitialUnsettledMap();
         Map<Binary, Outcome> unsettledCopy = new HashMap<Binary, Outcome>(_unsettledMap);
@@ -467,12 +482,77 @@ public class StandardReceivingLinkEndpoint extends ReceivingLinkEndpoint
                 _unsettledMap.remove(deliveryTag);
             }
         }
+
+        getLink().setTermini(source, target);
     }
 
-    public Map<Binary, Outcome> getUnsettledOutcomeMap()
+    @Override
+    public void initialiseUnsettled()
     {
-        return _unsettledMap;
+        _localUnsettled = new HashMap(_unsettledMap);
+    }
+
+    @Override
+    protected void recoverLink(final Attach attach) throws AmqpErrorException
+    {
+        if (getTarget() == null || !(getTarget() instanceof Target))
+        {
+            throw new AmqpErrorException(new Error(AmqpError.NOT_FOUND,
+                                                   String.format("Link '%s' not found", getLinkName())));
+        }
+
+        Source source = (Source) attach.getSource();
+        Target target = (Target) getTarget();
+
+        final ReceivingDestination destination = getSession().getReceivingDestination((Target) getTarget());
+        target.setCapabilities(destination.getCapabilities());
+        setCapabilities(Arrays.asList(destination.getCapabilities()));
+        setDestination(destination);
+        attachReceived(attach);
+
+        getLink().setTermini(source, target);
     }
 
 
+    @Override
+    protected void reattachLink(final Attach attach) throws AmqpErrorException
+    {
+        if (attach.getTarget() instanceof Coordinator)
+        {
+            throw new AmqpErrorException(new Error(AmqpError.PRECONDITION_FAILED, "Cannot reattach standard receiving Link as a transaction coordinator"));
+        }
+
+        attachReceived(attach);
+    }
+
+    @Override
+    protected void resumeLink(final Attach attach) throws AmqpErrorException
+    {
+        if (getTarget() == null)
+        {
+            throw new IllegalStateException("Terminus should be set when resuming a Link.");
+        }
+        if (attach.getTarget() == null)
+        {
+            throw new IllegalStateException("Attach.getTarget should not be null when resuming a Link. That would be recovering the Link.");
+        }
+        if (attach.getTarget() instanceof Coordinator)
+        {
+            throw new AmqpErrorException(new Error(AmqpError.PRECONDITION_FAILED, "Cannot resume standard receiving Link as a transaction coordinator"));
+        }
+
+        attachReceived(attach);
+        initialiseUnsettled();
+    }
+
+    @Override
+    protected void establishLink(final Attach attach) throws AmqpErrorException
+    {
+        if (getSource() != null || getTarget() != null)
+        {
+            throw new IllegalStateException("Termini should be null when establishing a Link.");
+        }
+
+        attachReceived(attach);
+    }
 }
