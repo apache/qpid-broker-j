@@ -65,8 +65,8 @@ public class MimeContentConverterRegistry
         final Map<String, MimeContentToObjectConverter> mimeContentToObjectConverters = new HashMap<>();
         for(MimeContentToObjectConverter converter : (new QpidServiceLoader()).instancesOf(MimeContentToObjectConverter.class))
         {
-            final String mineType = converter.getMimeType();
-            mimeContentToObjectConverters.put(mineType, converter);
+            final String mimeType = converter.getMimeType();
+            mimeContentToObjectConverters.put(mimeType, converter);
         }
         return Collections.unmodifiableMap(mimeContentToObjectConverters);
     }
