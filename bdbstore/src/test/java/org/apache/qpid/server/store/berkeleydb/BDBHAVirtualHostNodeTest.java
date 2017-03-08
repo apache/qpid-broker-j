@@ -54,6 +54,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.berkeleydb.replication.DatabasePinger;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;
+import org.apache.qpid.server.util.ExternalServiceException;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBHAVirtualHost;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBHAVirtualHostImpl;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHARemoteReplicationNode;
@@ -851,7 +852,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
             _helper.createAndStartHaVHN(attributes);
             fail("Node creation should fail because of invalid helper address");
         }
-        catch(IllegalConfigurationException e)
+        catch(ExternalServiceException e)
         {
             assertEquals("Unexpected exception on connection to non-existing helper address",
                     String.format("Cannot connect to existing node '%s' at '%s'", "node2", "localhost:" + node2PortNumber), e.getMessage());
