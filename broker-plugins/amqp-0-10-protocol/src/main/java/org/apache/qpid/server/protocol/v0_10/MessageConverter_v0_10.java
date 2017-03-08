@@ -20,28 +20,18 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.message.internal.InternalMessageHeader;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
-import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.Header;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryPriority;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
-import org.apache.qpid.server.protocol.v0_10.transport.BBEncoder;
+import org.apache.qpid.server.store.StoredMessage;
 
 @PluggableService
 public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, MessageTransferMessage>
@@ -143,94 +133,6 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
 
         Header header = new Header(deliveryProps, messageProps, null);
         return new MessageMetaData_0_10(header, size, serverMsg.getArrivalTime());
-    }
-
-
-    public static byte[] convertToBody(Object object)
-    {
-        if(object instanceof String)
-        {
-            return ((String)object).getBytes(StandardCharsets.UTF_8);
-        }
-        else if(object instanceof byte[])
-        {
-            return (byte[]) object;
-        }
-        else if(object instanceof Map)
-        {
-            BBEncoder encoder = new BBEncoder(1024);
-            encoder.writeMap((Map)object);
-            ByteBuffer buf = encoder.segment();
-            int remaining = buf.remaining();
-            byte[] data = new byte[remaining];
-            buf.get(data);
-            return data;
-
-        }
-        else if(object instanceof List)
-        {
-            BBEncoder encoder = new BBEncoder(1024);
-            encoder.writeList((List) object);
-            ByteBuffer buf = encoder.segment();
-            int remaining = buf.remaining();
-            byte[] data = new byte[remaining];
-            buf.get(data);
-            return data;
-        }
-        else
-        {
-            ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-            try
-            {
-                ObjectOutputStream os = new ObjectOutputStream(bytesOut);
-                os.writeObject(object);
-                return bytesOut.toByteArray();
-            }
-            catch (IOException e)
-            {
-                throw new ConnectionScopedRuntimeException(e);
-            }
-        }
-    }
-
-    public static String getBodyMimeType(Object object, final InternalMessageHeader header)
-    {
-        if(object instanceof String)
-        {
-            String mimeType;
-            if(header == null || (mimeType = header.getMimeType()) == null || !mimeType.trim().startsWith("text/"))
-            {
-                return "text/plain";
-            }
-            else
-            {
-                return mimeType;
-            }
-        }
-        else if(object instanceof byte[])
-        {
-            String mimeType;
-            if(header == null || (mimeType = header.getMimeType()) == null || "".equals(mimeType.trim()))
-            {
-                return "application/octet-stream";
-            }
-            else
-            {
-                return mimeType;
-            }
-        }
-        else if(object instanceof Map)
-        {
-            return "amqp/map";
-        }
-        else if(object instanceof List)
-        {
-            return "amqp/list";
-        }
-        else
-        {
-            return "application/java-object-stream";
-        }
     }
 
 

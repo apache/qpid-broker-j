@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,6 +30,8 @@ import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
+import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
@@ -43,10 +44,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.NonEncodingRetainingSection;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.protocol.v0_10.transport.BBDecoder;
-import org.apache.qpid.server.typedmessage.TypedBytesContentReader;
-import org.apache.qpid.server.typedmessage.TypedBytesFormatException;
 import org.apache.qpid.server.util.GZIPUtils;
 
 public abstract class MessageConverter_to_1_0<M extends ServerMessage> implements MessageConverter<M, Message_1_0>
@@ -95,73 +92,26 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
 
     private static NonEncodingRetainingSection<?> convertMessageBody(String mimeType, byte[] data)
     {
-        if("text/plain".equals(mimeType) || "text/xml".equals(mimeType))
-        {
-            String text = new String(data);
-            return new AmqpValue(text);
-        }
-        else if("jms/map-message".equals(mimeType))
-        {
-            TypedBytesContentReader reader = new TypedBytesContentReader(ByteBuffer.wrap(data));
 
-            LinkedHashMap map = new LinkedHashMap();
-            final int entries = reader.readIntImpl();
-            for (int i = 0; i < entries; i++)
+        MimeContentToObjectConverter converter = MimeContentConverterRegistry.getMimeContentToObjectConverter(mimeType);
+        if (converter != null)
+        {
+            Object bodyObject = converter.toObject(data);
+
+            if (bodyObject instanceof String)
             {
-                try
-                {
-                    String propName = reader.readStringImpl();
-                    Object value = reader.readObject();
-
-                    map.put(propName, value);
-                }
-                catch (EOFException | TypedBytesFormatException e)
-                {
-                    throw new IllegalArgumentException(e);
-                }
+                return new AmqpValue(bodyObject);
             }
-
-            return new AmqpValue(fixMapValues(map));
-
-        }
-        else if("amqp/map".equals(mimeType))
-        {
-            BBDecoder decoder = new BBDecoder();
-            decoder.init(ByteBuffer.wrap(data));
-            final Map<String,Object> map = decoder.readMap();
-
-            return new AmqpValue(fixMapValues(map));
-
-        }
-        else if("amqp/list".equals(mimeType))
-        {
-            BBDecoder decoder = new BBDecoder();
-            decoder.init(ByteBuffer.wrap(data));
-            return new AmqpValue(fixListValues(decoder.readList()));
-        }
-        else if("jms/stream-message".equals(mimeType))
-        {
-            TypedBytesContentReader reader = new TypedBytesContentReader(ByteBuffer.wrap(data));
-
-            List list = new ArrayList();
-            while (reader.remaining() != 0)
+            else if (bodyObject instanceof Map)
             {
-                try
-                {
-                    list.add(fixValue(reader.readObject()));
-                }
-                catch (TypedBytesFormatException | EOFException e)
-                {
-                    throw new ConnectionScopedRuntimeException(e);
-                }
+                return new AmqpValue(fixMapValues((Map<String, Object>) bodyObject));
             }
-            return new AmqpValue(list);
+            else if (bodyObject instanceof List)
+            {
+                return new AmqpValue(fixListValues((List<Object>) bodyObject));
+            }
         }
-        else
-        {
-            return new Data(new Binary(data));
-
-        }
+        return new Data(new Binary(data));
     }
 
     static Map fixMapValues(Map<String, Object> map)

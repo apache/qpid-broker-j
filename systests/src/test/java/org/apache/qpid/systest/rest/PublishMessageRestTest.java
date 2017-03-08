@@ -36,6 +36,7 @@ import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.Session;
+import javax.jms.StreamMessage;
 import javax.jms.TextMessage;
 import javax.servlet.http.HttpServletResponse;
 
@@ -167,6 +168,20 @@ public class PublishMessageRestTest extends QpidRestTestCase
             entryCount++;
         }
         assertEquals("Unexpected number of key/value pairs in map message", content.size(), entryCount);
+    }
+
+    public void testPublishListMessage() throws Exception
+    {
+        final List<Object> content = new ArrayList<>();
+        content.add("astring");
+        content.add(Integer.MIN_VALUE);
+        content.add(Long.MAX_VALUE);
+        content.add(null);
+        StreamMessage message = publishMessageWithContent(content, StreamMessage.class);
+        assertEquals("astring", message.readString());
+        assertEquals(Integer.MIN_VALUE, message.readInt());
+        assertEquals(Long.MAX_VALUE, message.readLong());
+        assertNull(message.readObject());
     }
 
     public void testPublishRouting() throws Exception

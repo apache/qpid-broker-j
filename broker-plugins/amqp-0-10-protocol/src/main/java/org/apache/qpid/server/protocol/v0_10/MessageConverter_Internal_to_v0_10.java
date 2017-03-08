@@ -26,6 +26,8 @@ import java.util.UUID;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
+import org.apache.qpid.server.message.mimecontentconverter.ObjectToMimeContentConverter;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -64,11 +66,15 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
 
     private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final InternalMessage serverMsg)
     {
-        final byte[] messageContent = MessageConverter_v0_10.convertToBody(serverMsg.getMessageBody());
+        Object messageBody = serverMsg.getMessageBody();
+        ObjectToMimeContentConverter converter = MimeContentConverterRegistry.getBestFitObjectToMimeContentConverter(messageBody);
+        final byte[] messageContent = converter == null ? new byte[] {} : converter.toMimeContent(messageBody);
+        String mimeType = converter == null ? null  : converter.getMineType();
+
+        mimeType = improveMimeType(serverMsg, mimeType);
+
         final MessageMetaData_0_10 messageMetaData_0_10 = convertMetaData(serverMsg,
-                                                                          MessageConverter_v0_10.getBodyMimeType(
-                                                                                  serverMsg.getMessageBody(),
-                                                                                  serverMsg.getMessageHeader()),
+                                                                          mimeType,
                                                                           messageContent.length);
 
         return new StoredMessage<MessageMetaData_0_10>()
@@ -115,6 +121,23 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
                         return false;
                     }
         };
+    }
+
+    private String improveMimeType(final InternalMessage serverMsg, String mimeType)
+    {
+        if (serverMsg.getMessageHeader() != null && serverMsg.getMessageHeader().getMimeType() != null)
+        {
+            if ("text/plain".equals(mimeType) &&
+                serverMsg.getMessageHeader().getMimeType().startsWith("text/"))
+            {
+                mimeType = serverMsg.getMessageHeader().getMimeType();
+            }
+            else if ("application/octet-stream".equals(mimeType))
+            {
+                mimeType = serverMsg.getMessageHeader().getMimeType();
+            }
+        }
+        return mimeType;
     }
 
     private MessageMetaData_0_10 convertMetaData(InternalMessage serverMsg, final String bodyMimeType, final int size)

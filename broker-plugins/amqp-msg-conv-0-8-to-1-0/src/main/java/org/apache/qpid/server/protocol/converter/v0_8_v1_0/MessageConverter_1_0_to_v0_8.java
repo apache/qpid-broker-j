@@ -26,6 +26,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.message.mimecontentconverter.ObjectToMimeContentConverter;
+import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
@@ -74,12 +76,12 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
     {
         Object bodyObject = MessageConverter_from_1_0.convertBodyToObject(serverMsg);
 
+        final ObjectToMimeContentConverter converter = MimeContentConverterRegistry.getBestFitObjectToMimeContentConverter(bodyObject);
 
-
-
-        final byte[] messageContent = MessageConverter_from_1_0.convertToBody(bodyObject);
+        final byte[] messageContent = converter == null ? new byte[] {} : converter.toMimeContent(bodyObject);
+        final String mimeType = converter == null ? null  : converter.getMineType();
         final MessageMetaData messageMetaData_0_8 = convertMetaData(serverMsg,
-                                                                    MessageConverter_from_1_0.getBodyMimeType(bodyObject),
+                                                                    mimeType,
                                                                     messageContent.length);
 
         return new StoredMessage<MessageMetaData>()

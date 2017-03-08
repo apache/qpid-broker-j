@@ -34,6 +34,7 @@ org.apache.qpid.test.unit.topic.TopicSessionTest#testSubscriptionNameReuseForDif
 
 // the received message is being treated as an object message (because it lacks the necessary JMS annotation?)
 org.apache.qpid.systest.rest.PublishMessageRestTest#testPublishMapMessage
+org.apache.qpid.systest.rest.PublishMessageRestTest#testPublishListMessage
 
 // this test fails - likely a client bug with the modification racing the send
 org.apache.qpid.test.unit.basic.BytesMessageTest#testModificationAfterSend

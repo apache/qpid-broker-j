@@ -20,26 +20,19 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.io.EOFException;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
+import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
-import org.apache.qpid.server.protocol.v0_10.transport.BBDecoder;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.typedmessage.TypedBytesContentReader;
-import org.apache.qpid.server.typedmessage.TypedBytesFormatException;
 import org.apache.qpid.server.url.AMQBindingURL;
 import org.apache.qpid.server.util.GZIPUtils;
 
@@ -303,81 +296,14 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
 
     private static Object convertMessageBody(String mimeType, byte[] data)
     {
-        if("text/plain".equals(mimeType) || "text/xml".equals(mimeType))
+        MimeContentToObjectConverter converter = MimeContentConverterRegistry.getMimeContentToObjectConverter(mimeType);
+        if (converter != null)
         {
-            String text = new String(data);
-            return text;
-        }
-        else if("jms/map-message".equals(mimeType))
-        {
-            TypedBytesContentReader reader = new TypedBytesContentReader(ByteBuffer.wrap(data));
-
-            LinkedHashMap map = new LinkedHashMap();
-            final int entries = reader.readIntImpl();
-            for (int i = 0; i < entries; i++)
-            {
-                try
-                {
-                    String propName = reader.readStringImpl();
-                    Object value = reader.readObject();
-
-                    map.put(propName, value);
-                }
-                catch (EOFException e)
-                {
-                    throw new IllegalArgumentException(e);
-                }
-                catch (TypedBytesFormatException e)
-                {
-                    throw new IllegalArgumentException(e);
-                }
-
-            }
-
-            return map;
-
-        }
-        else if("amqp/map".equals(mimeType))
-        {
-            BBDecoder decoder = new BBDecoder();
-            decoder.init(ByteBuffer.wrap(data));
-            final Map<String,Object> map = decoder.readMap();
-
-            return map;
-
-        }
-        else if("amqp/list".equals(mimeType))
-        {
-            BBDecoder decoder = new BBDecoder();
-            decoder.init(ByteBuffer.wrap(data));
-            return decoder.readList();
-        }
-        else if("jms/stream-message".equals(mimeType))
-        {
-            TypedBytesContentReader reader = new TypedBytesContentReader(ByteBuffer.wrap(data));
-
-            List list = new ArrayList();
-            while (reader.remaining() != 0)
-            {
-                try
-                {
-                    list.add(reader.readObject());
-                }
-                catch (TypedBytesFormatException e)
-                {
-                    throw new ConnectionScopedRuntimeException(e);
-                }
-                catch (EOFException e)
-                {
-                    throw new ConnectionScopedRuntimeException(e);
-                }
-            }
-            return list;
+            return converter.toObject(data);
         }
         else
         {
             return data;
-
         }
     }
 

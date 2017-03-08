@@ -20,9 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -53,13 +50,21 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.protocol.v0_10.transport.BBEncoder;
-import org.apache.qpid.server.typedmessage.TypedBytesContentWriter;
-import org.apache.qpid.server.typedmessage.TypedBytesFormatException;
 
 public class MessageConverter_from_1_0
 {
-    private static final Charset UTF_8 = StandardCharsets.UTF_8;
+
+    private static final Set<Class> STANDARD_TYPES = new HashSet<>(Arrays.<Class>asList(Boolean.class,
+                                                                                        Byte.class,
+                                                                                        Short.class,
+                                                                                        Integer.class,
+                                                                                        Long.class,
+                                                                                        Float.class,
+                                                                                        Double.class,
+                                                                                        Character.class,
+                                                                                        String.class,
+                                                                                        byte[].class,
+                                                                                        UUID.class));
 
     public static Object convertBodyToObject(final Message_1_0 serverMessage)
     {
@@ -144,18 +149,6 @@ public class MessageConverter_from_1_0
         return bodyObject;
     }
 
-    private static final Set<Class> STANDARD_TYPES = new HashSet<>(Arrays.<Class>asList(Boolean.class,
-                                                                                        Byte.class,
-                                                                                        Short.class,
-                                                                                        Integer.class,
-                                                                                        Long.class,
-                                                                                        Float.class,
-                                                                                        Double.class,
-                                                                                        Character.class,
-                                                                                        String.class,
-                                                                                        byte[].class,
-                                                                                        UUID.class));
-
     private static Map convertMap(final Map map)
     {
         Map resultMap = new LinkedHashMap();
@@ -229,118 +222,5 @@ public class MessageConverter_from_1_0
             result.add(convertValue(entry));
         }
         return result;
-    }
-
-    public static byte[] convertToBody(Object object)
-    {
-        if(object instanceof String)
-        {
-            return ((String)object).getBytes(UTF_8);
-        }
-        else if(object instanceof byte[])
-        {
-            return (byte[]) object;
-        }
-        else if(object instanceof Map)
-        {
-            BBEncoder encoder = new BBEncoder(1024);
-            encoder.writeMap((Map)object);
-            ByteBuffer buf = encoder.segment();
-            int remaining = buf.remaining();
-            byte[] data = new byte[remaining];
-            buf.get(data);
-            return data;
-
-        }
-        else if(object instanceof List)
-        {
-            try
-            {
-                ByteBuffer buf;
-                if(onlyPrimitiveTypes((List)object))
-                {
-                    TypedBytesContentWriter writer = new TypedBytesContentWriter();
-                    for(Object value : (List)object)
-                    {
-                        writer.writeObject(value);
-                    }
-                    buf = writer.getData();
-
-                }
-                else
-                {
-                    BBEncoder encoder = new BBEncoder(1024);
-                    encoder.writeList((List) object);
-                    buf = encoder.segment();
-                }
-                int remaining = buf.remaining();
-                byte[] data = new byte[remaining];
-                buf.get(data);
-                return data;
-            }
-            catch (TypedBytesFormatException e)
-            {
-                throw new ConnectionScopedRuntimeException(e);
-            }
-        }
-        else
-        {
-            ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-            try
-            {
-                ObjectOutputStream os = new ObjectOutputStream(bytesOut);
-                os.writeObject(object);
-                return bytesOut.toByteArray();
-            }
-            catch (IOException e)
-            {
-                throw new ConnectionScopedRuntimeException(e);
-            }
-        }
-    }
-
-    public static boolean onlyPrimitiveTypes(final List list)
-    {
-        for(Object value : list)
-        {
-            if(!(value instanceof String
-                || value instanceof Integer
-                || value instanceof Long
-                || value instanceof Double
-                || value instanceof Float
-                || value instanceof Byte
-                || value instanceof Short
-                || value instanceof Character
-                || value instanceof Boolean
-                || value instanceof byte[]))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public static String getBodyMimeType(Object object)
-    {
-        if(object instanceof String)
-        {
-            return "text/plain";
-        }
-        else if(object instanceof byte[])
-        {
-            return "application/octet-stream";
-        }
-        else if(object instanceof Map)
-        {
-            return "amqp/map";
-        }
-        else if(object instanceof List)
-        {
-            return onlyPrimitiveTypes((List)object) ? "jms/stream-message" : "amqp/list";
-        }
-        else
-        {
-            return "application/java-object-stream";
-        }
     }
 }
