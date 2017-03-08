@@ -36,7 +36,7 @@ public class JmsMapMessageToMap implements MimeContentToObjectConverter<Map>
     @Override
     public String getType()
     {
-        return getMineType();
+        return getMimeType();
     }
 
     @Override
@@ -46,7 +46,7 @@ public class JmsMapMessageToMap implements MimeContentToObjectConverter<Map>
     }
 
     @Override
-    public String getMineType()
+    public String getMimeType()
     {
         return "jms/map-message";
     }

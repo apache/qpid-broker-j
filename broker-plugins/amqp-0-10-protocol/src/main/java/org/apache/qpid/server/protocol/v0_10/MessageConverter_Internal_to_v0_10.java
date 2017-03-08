@@ -69,7 +69,7 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
         Object messageBody = serverMsg.getMessageBody();
         ObjectToMimeContentConverter converter = MimeContentConverterRegistry.getBestFitObjectToMimeContentConverter(messageBody);
         final byte[] messageContent = converter == null ? new byte[] {} : converter.toMimeContent(messageBody);
-        String mimeType = converter == null ? null  : converter.getMineType();
+        String mimeType = converter == null ? null  : converter.getMimeType();
 
         mimeType = improveMimeType(serverMsg, mimeType);
 

@@ -33,7 +33,7 @@ public class ListToAmqpListConverter implements ObjectToMimeContentConverter<Lis
     @Override
     public String getType()
     {
-        return getMineType();
+        return getMimeType();
     }
 
     @Override
@@ -49,7 +49,7 @@ public class ListToAmqpListConverter implements ObjectToMimeContentConverter<Lis
     }
 
     @Override
-    public String getMineType()
+    public String getMimeType()
     {
         return "amqp/list";
     }

@@ -33,11 +33,11 @@ public class SerializableToJavaObjectStream implements ObjectToMimeContentConver
     @Override
     public String getType()
     {
-        return getMineType();
+        return getMimeType();
     }
 
     @Override
-    public String getMineType()
+    public String getMimeType()
     {
         return "application/java-object-stream";
     }

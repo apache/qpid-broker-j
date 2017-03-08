@@ -78,7 +78,7 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
 
         final ObjectToMimeContentConverter converter = MimeContentConverterRegistry.getBestFitObjectToMimeContentConverter(bodyObject);
         final byte[] messageContent = converter == null ? new byte[] {} : converter.toMimeContent(bodyObject);
-        final String mimeType = converter == null ? null  : converter.getMineType();
+        final String mimeType = converter == null ? null  : converter.getMimeType();
 
         final MessageMetaData_0_10 messageMetaData_0_10 = convertMetaData(serverMsg,
                                                                           addressSpace,

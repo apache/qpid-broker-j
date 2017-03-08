@@ -21,7 +21,6 @@
 package org.apache.qpid.server.protocol.v0_10.transport.mimecontentconverter;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.message.mimecontentconverter.ObjectToMimeContentConverter;
@@ -34,11 +33,11 @@ public class MapToAmqpMapConverter implements ObjectToMimeContentConverter<Map>
     @Override
     public String getType()
     {
-        return getMineType();
+        return getMimeType();
     }
 
     @Override
-    public String getMineType()
+    public String getMimeType()
     {
         return "amqp/map";
     }

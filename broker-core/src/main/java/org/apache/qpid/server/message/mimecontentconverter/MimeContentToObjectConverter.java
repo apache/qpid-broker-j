@@ -24,7 +24,7 @@ import org.apache.qpid.server.plugin.Pluggable;
 
 public interface MimeContentToObjectConverter<O extends Object> extends Pluggable
 {
-    String getMineType();
+    String getMimeType();
 
     Class<O> getObjectClass();
 

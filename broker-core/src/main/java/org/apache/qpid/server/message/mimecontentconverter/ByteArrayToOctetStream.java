@@ -28,11 +28,11 @@ public class ByteArrayToOctetStream implements ObjectToMimeContentConverter<byte
     @Override
     public String getType()
     {
-        return getMineType();
+        return getMimeType();
     }
 
     @Override
-    public String getMineType()
+    public String getMimeType()
     {
         return "application/octet-stream";
     }

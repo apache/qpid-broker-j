@@ -30,7 +30,7 @@ public class StringToTextPlain implements ObjectToMimeContentConverter<String>
     @Override
     public String getType()
     {
-        return getMineType();
+        return getMimeType();
     }
 
     @Override
@@ -46,7 +46,7 @@ public class StringToTextPlain implements ObjectToMimeContentConverter<String>
     }
 
     @Override
-    public String getMineType()
+    public String getMimeType()
     {
         return "text/plain";
     }

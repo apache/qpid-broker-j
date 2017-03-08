@@ -33,11 +33,11 @@ public class AmqpListToListConverter implements MimeContentToObjectConverter<Lis
     @Override
     public String getType()
     {
-        return getMineType();
+        return getMimeType();
     }
 
     @Override
-    public String getMineType()
+    public String getMimeType()
     {
         return "amqp/list";
     }

@@ -36,7 +36,7 @@ public class JmsStreamMessageToList implements MimeContentToObjectConverter<List
     @Override
     public String getType()
     {
-        return getMineType();
+        return getMimeType();
     }
 
     @Override
@@ -46,7 +46,7 @@ public class JmsStreamMessageToList implements MimeContentToObjectConverter<List
     }
 
     @Override
-    public String getMineType()
+    public String getMimeType()
     {
         return "jms/stream-message";
     }

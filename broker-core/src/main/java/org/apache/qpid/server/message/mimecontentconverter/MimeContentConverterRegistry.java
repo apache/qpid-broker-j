@@ -65,7 +65,7 @@ public class MimeContentConverterRegistry
         final Map<String, MimeContentToObjectConverter> mimeContentToObjectConverters = new HashMap<>();
         for(MimeContentToObjectConverter converter : (new QpidServiceLoader()).instancesOf(MimeContentToObjectConverter.class))
         {
-            final String mineType = converter.getMineType();
+            final String mineType = converter.getMimeType();
             mimeContentToObjectConverters.put(mineType, converter);
         }
         return Collections.unmodifiableMap(mimeContentToObjectConverters);
@@ -87,9 +87,9 @@ public class MimeContentConverterRegistry
         classes.add(object.getClass());
         for (Class<?> i : classes)
         {
-            SortedMap<Integer, ObjectToMimeContentConverter> ranked = _classToRankedMimeContentConverter.get(i);
-            if (ranked != null)
+            if (_classToRankedMimeContentConverter.get(i) != null)
             {
+                SortedMap<Integer, ObjectToMimeContentConverter> ranked = new TreeMap<>(_classToRankedMimeContentConverter.get(i));
                 Iterator<Map.Entry<Integer, ObjectToMimeContentConverter>> itr = ranked.entrySet().iterator();
                 while (itr.hasNext())
                 {
