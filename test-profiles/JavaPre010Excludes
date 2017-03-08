@@ -35,6 +35,8 @@ org.apache.qpid.test.client.destination.AddressBasedDestinationTest#testZeroCapa
 //QPID-6037: the 0-9-1 client takes the view that if you don't specify the node type but you ask for a JMS Topic
 //           you want a topic behaviour.  The 0-10 client thinks you must want a queue.
 org.apache.qpid.test.client.destination.AddressBasedDestinationTest#testJMSTopicIsTreatedAsQueueIn0_10
+// QPID-7692: Receiving a message sent using a destination which has no subject fails when client is in BURL dest syntax mode.
+org.apache.qpid.test.client.destination.AddressBasedDestinationTest#testJMSDestination_DestinationWithoutSubject
 
 // The new addressing based syntax is not supported for AMQP 0-8/0-9 versions
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#*
