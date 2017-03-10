@@ -74,7 +74,7 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
-public class SendingLinkEndpoint extends LinkEndpoint
+public class SendingLinkEndpoint extends AbstractLinkEndpoint
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SendingLinkEndpoint.class);
 

@@ -26,16 +26,19 @@ import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 
 public interface Link_1_0 extends LinkModel
 {
-    ListenableFuture<LinkEndpoint> attach(Session_1_0 session, final Attach attach);
+    ListenableFuture<? extends LinkEndpoint> attach(Session_1_0 session, final Attach attach);
 
     void linkClosed();
 
     void discardEndpoint();
 
     String getName();
+
+    Role getRole();
 
     BaseSource getSource();
 

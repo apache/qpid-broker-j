@@ -223,7 +223,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                     link = getAddressSpace().getReceivingLink(getConnection().getRemoteContainerId(), attach.getName());
                 }
 
-                final ListenableFuture<LinkEndpoint> future = link.attach(this, attach);
+                final ListenableFuture<? extends LinkEndpoint> future = link.attach(this, attach);
 
                 addFutureCallback(future, new EndpointCreationCallback(attach), MoreExecutors.directExecutor());
             }
@@ -1510,6 +1510,19 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         return "Session_1_0[" + _connection + ": " + _sendingChannel + ']';
     }
 
+    public void dissociateEndpoint(LinkEndpoint linkEndpoint)
+    {
+        for (Map.Entry<UnsignedInteger, LinkEndpoint> entry : _inputHandleToEndpoint.entrySet())
+        {
+            if (entry.getValue() == linkEndpoint)
+            {
+                _inputHandleToEndpoint.remove(entry.getKey());
+                break;
+            }
+        }
+        _endpointToOutputHandle.remove(linkEndpoint);
+        _associatedLinkEndpoints.remove(linkEndpoint);
+    }
 
     private void detach(UnsignedInteger handle, Detach detach)
     {
@@ -1587,7 +1600,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         return primaryDomain;
     }
 
-    private class EndpointCreationCallback implements FutureCallback<LinkEndpoint>
+    private class EndpointCreationCallback<T extends LinkEndpoint> implements FutureCallback<T>
     {
 
         private final Attach _attach;
@@ -1607,9 +1620,14 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 {
                     _associatedLinkEndpoints.add(endpoint);
                     endpoint.setLocalHandle(findNextAvailableOutputHandle());
-                    if (attachWasUnsuccessful(endpoint))
+                    if (endpoint instanceof ErrantLinkEndpoint)
                     {
-                        endpoint.attach();
+                        endpoint.sendAttach();
+                        ((ErrantLinkEndpoint) endpoint).closeWithError();
+                    }
+                    else if (attachWasUnsuccessful(endpoint))
+                    {
+                        endpoint.sendAttach();
 
                         Error error = new Error();
                         error.setCondition(AmqpError.NOT_FOUND);
@@ -1628,7 +1646,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                         if (!_endpointToOutputHandle.containsKey(endpoint))
                         {
                             _endpointToOutputHandle.put(endpoint, endpoint.getLocalHandle());
-                            endpoint.attach();
+                            endpoint.sendAttach();
                             endpoint.start();
                         }
                         else

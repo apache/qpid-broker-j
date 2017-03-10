@@ -17,3 +17,8 @@
 // under the License.
 //
 
+
+
+// Links are currently not persisted so when the broker is restarted this test fails
+// When Link persistance is implemented (QPID-7663) this test should be included again
+org.apache.qpid.systests.jms_2_0.subscription.SharedSubscriptionTest#testUnsubscribe

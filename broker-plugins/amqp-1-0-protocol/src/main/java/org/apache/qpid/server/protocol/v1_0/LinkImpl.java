@@ -27,10 +27,12 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
@@ -42,11 +44,12 @@ public class LinkImpl implements Link_1_0
     private static final Logger LOGGER = LoggerFactory.getLogger(LinkImpl.class);
 
     private final String _linkName;
+
     private final Role _role;
+
     private volatile LinkEndpoint _linkEndpoint;
     private volatile BaseSource _source;
     private volatile BaseTarget _target;
-
     LinkImpl(final String linkName, final Role role)
     {
         _linkName = linkName;
@@ -54,13 +57,13 @@ public class LinkImpl implements Link_1_0
     }
 
     @Override
-    public final ListenableFuture<LinkEndpoint> attach(final Session_1_0 session, final Attach attach)
+    public final ListenableFuture<? extends LinkEndpoint> attach(final Session_1_0 session, final Attach attach)
     {
         try
         {
             if (_role == attach.getRole())
             {
-                return rejectLink(session);
+                throw new AmqpErrorException(new Error(AmqpError.ILLEGAL_STATE, "Cannot switch SendingLink to ReceivingLink and vice versa"));
             }
 
 
@@ -82,12 +85,12 @@ public class LinkImpl implements Link_1_0
                 }
 
                 _linkEndpoint.receiveAttach(attach);
-                return Futures.immediateFuture(_linkEndpoint);
+                return Futures.immediateFuture((LinkEndpoint) _linkEndpoint);
             }
         }
         catch (Throwable t)
         {
-            return rejectLink(session);
+            return rejectLink(session, t);
         }
     }
 
@@ -142,13 +145,19 @@ public class LinkImpl implements Link_1_0
         return linkEndpoint;
     }
 
-
-    private ListenableFuture<LinkEndpoint> rejectLink(final Session_1_0 session)
+    private ListenableFuture<? extends LinkEndpoint> rejectLink(final Session_1_0 session, Throwable t)
     {
-        _linkEndpoint = new SendingLinkEndpoint(session, this);
-        _source = null;
+        if (t instanceof AmqpErrorException)
+        {
+            _linkEndpoint = new ErrantLinkEndpoint(this, session, ((AmqpErrorException) t).getError());
+        }
+        else
+        {
+            _linkEndpoint = new ErrantLinkEndpoint(this, session, new Error(AmqpError.INTERNAL_ERROR, t.getMessage()));
+        }
         return Futures.immediateFuture(_linkEndpoint);
     }
+
 
     @Override
     public void linkClosed()
@@ -166,6 +175,12 @@ public class LinkImpl implements Link_1_0
     public final String getName()
     {
         return _linkName;
+    }
+
+    @Override
+    public Role getRole()
+    {
+        return _role;
     }
 
     @Override

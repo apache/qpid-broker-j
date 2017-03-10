@@ -39,7 +39,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
-public abstract class ReceivingLinkEndpoint extends LinkEndpoint
+public abstract class ReceivingLinkEndpoint extends AbstractLinkEndpoint
 {
     private final SectionDecoder _sectionDecoder;
     private UnsignedInteger _lastDeliveryId;
