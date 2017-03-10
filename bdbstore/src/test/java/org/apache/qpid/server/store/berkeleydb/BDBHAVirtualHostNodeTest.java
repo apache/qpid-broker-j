@@ -445,7 +445,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         }
         catch(IllegalConfigurationException e)
         {
-            assertEquals("Unexpected exception message", String.format("Node from '%s' is not permitted!", "localhost:" + node3PortNumber), e.getMessage());
+            assertEquals("Unexpected exception message", String.format("Node using address '%s' is not permitted to join the group 'group'", "localhost:" + node3PortNumber, groupName), e.getMessage());
         }
     }
 
