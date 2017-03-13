@@ -249,7 +249,7 @@ class LegacyAccessControlAdapter
         else if (isVirtualHostType(configuredObjectType))
         {
             ConfiguredObject<?> virtualHost = getModel().getAncestor(VirtualHost.class, (ConfiguredObject<?>)configuredObject);
-            properties = new ObjectProperties((String)virtualHost.getAttribute(ConfiguredObject.NAME));
+            properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(virtualHost.NAME));
         }
         return properties;
     }
