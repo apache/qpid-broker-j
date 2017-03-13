@@ -207,13 +207,14 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
 
-        VirtualHost mock = mock(VirtualHost.class);
-        when(mock.getName()).thenReturn("test");
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
-        when(mock.getCategoryClass()).thenReturn(VirtualHost.class);
-        when(mock.getParent(VirtualHostNode.class)).thenReturn(vhn);
-        ObjectProperties properties = new ObjectProperties((String)mock.getName());
-        assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.VIRTUALHOST, properties, vhn);
+        VirtualHost virtualHost = mock(VirtualHost.class);
+        when(virtualHost.getName()).thenReturn("test");
+        when(virtualHost.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
+        when(virtualHost.getParent(VirtualHostNode.class)).thenReturn(vhn);
+        ObjectProperties properties = new ObjectProperties(virtualHost.getName());
+        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(virtualHost.NAME));
+        assertDeleteAuthorization(virtualHost, LegacyOperation.DELETE, ObjectType.VIRTUALHOST, properties, vhn);
     }
 
     public void testAuthoriseDeleteBinding()
@@ -554,7 +555,10 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseCreateVirtualHost()
     {
         VirtualHost vh = getMockVirtualHost();
-        assertCreateAuthorization(vh, LegacyOperation.CREATE, ObjectType.VIRTUALHOST, new ObjectProperties(TEST_VIRTUAL_HOST), _virtualHostNode);
+        ObjectProperties expectedProperties = new ObjectProperties(TEST_VIRTUAL_HOST);
+        expectedProperties.put(ObjectProperties.Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
+        assertCreateAuthorization(vh, LegacyOperation.CREATE, ObjectType.VIRTUALHOST,
+                                  expectedProperties, _virtualHostNode);
     }
 
     public void testAuthoriseUpdateVirtualHostNode()
@@ -639,13 +643,14 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
 
-        VirtualHost mock = mock(VirtualHost.class);
-        when(mock.getName()).thenReturn("test");
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
-        when(mock.getCategoryClass()).thenReturn(VirtualHost.class);
-        when(mock.getParent(VirtualHostNode.class)).thenReturn(vhn);
-        ObjectProperties properties = new ObjectProperties((String)mock.getName());
-        assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, properties, vhn);
+        VirtualHost virtualHost = mock(VirtualHost.class);
+        when(virtualHost.getName()).thenReturn("test");
+        when(virtualHost.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
+        when(virtualHost.getParent(VirtualHostNode.class)).thenReturn(vhn);
+        ObjectProperties properties = new ObjectProperties(virtualHost.getName());
+        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualHost.getName());
+        assertUpdateAuthorization(virtualHost, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, properties, vhn);
     }
 
     public void testAuthoriseDeleteVirtualHostNode()
@@ -725,26 +730,21 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
 
     public void testAuthoriseVirtualHostLoggerOperations()
     {
-        ObjectProperties properties = new ObjectProperties(TEST_VIRTUAL_HOST);
-
         VirtualHostLogger<?> mock = mock(VirtualHostLogger.class);
         when(mock.getName()).thenReturn("TEST");
         doReturn(VirtualHostLogger.class).when(mock).getCategoryClass();
         when(mock.getParent(VirtualHost.class)).thenReturn(_virtualHost);
         when(mock.getModel()).thenReturn(BrokerModel.getInstance());
 
+        ObjectProperties properties = new ObjectProperties(mock.getName());
+        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
         assertCreateAuthorization(mock, LegacyOperation.CREATE, ObjectType.VIRTUALHOST, properties, _virtualHost);
-
-        when(mock.getName()).thenReturn("test");
-
         assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, properties, _virtualHost);
         assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.VIRTUALHOST, properties, _virtualHost);
     }
 
     public void testAuthoriseVirtualHostLogInclusionRuleOperations()
     {
-        ObjectProperties properties = new ObjectProperties(TEST_VIRTUAL_HOST);
-
         VirtualHostLogger<?> vhl = mock(VirtualHostLogger.class);
         when(vhl.getName()).thenReturn("LOGGER");
         doReturn(VirtualHostLogger.class).when(vhl).getCategoryClass();
@@ -757,10 +757,10 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(mock.getParent(VirtualHostLogger.class)).thenReturn(vhl);
         when(mock.getModel()).thenReturn(BrokerModel.getInstance());
 
+        ObjectProperties properties = new ObjectProperties(mock.getName());
+        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
+
         assertCreateAuthorization(mock, LegacyOperation.CREATE, ObjectType.VIRTUALHOST, properties, vhl);
-
-        when(mock.getName()).thenReturn("test");
-
         assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, properties, vhl);
         assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.VIRTUALHOST, properties, vhl);
     }
