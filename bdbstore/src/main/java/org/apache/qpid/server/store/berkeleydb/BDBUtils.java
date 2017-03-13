@@ -47,22 +47,6 @@ public class BDBUtils
     private static final Pattern NON_REP_JE_PARAM_PATTERN = Pattern.compile("^je\\.(?!rep\\.).*");
     private static final Pattern REP_JE_PARAM_PATTERN = Pattern.compile("^je\\.rep\\..*");
 
-    public static void closeCursorSafely(Cursor cursor, final EnvironmentFacade environmentFacade) throws StoreException
-    {
-        if (cursor != null)
-        {
-            try
-            {
-                cursor.close();
-            }
-            catch (RuntimeException e)
-            {
-                // We need the possible side effect of the facade restarting the environment but don't care about the exception
-                throw environmentFacade.handleDatabaseException("Cannot close cursor", e);
-            }
-        }
-    }
-
     public static void abortTransactionSafely(Transaction tx, EnvironmentFacade environmentFacade)
     {
         try
