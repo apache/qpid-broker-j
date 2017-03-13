@@ -2005,12 +2005,16 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         // Check access
         authorise(Operation.DELETE);
+        final ArrayList<Binding<?>> bindingCopy = new ArrayList<>(_bindings);
+        for (Binding<?> binding: bindingCopy)
+        {
+            binding.authorise(Operation.DELETE);
+        }
 
         if (_deleted.compareAndSet(false, true))
         {
             final int queueDepthMessages = getQueueDepthMessages();
             final List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>(_bindings.size());
-            final ArrayList<Binding<?>> bindingCopy = new ArrayList<>(_bindings);
 
             // TODO - RG - Need to sort out bindings!
             for (Binding<?> b : bindingCopy)
