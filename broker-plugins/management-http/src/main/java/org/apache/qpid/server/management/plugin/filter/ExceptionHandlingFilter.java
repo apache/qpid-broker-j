@@ -28,11 +28,14 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.ExternalServiceException;
+import org.apache.qpid.server.util.ExternalServiceTimeoutException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class ExceptionHandlingFilter implements Filter
@@ -63,6 +66,16 @@ public class ExceptionHandlingFilter implements Filter
             }
             _uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), e);
         }
+        catch (ExternalServiceTimeoutException e)
+        {
+            LOGGER.warn("External request timeout ", e);
+            sendError(e, servletResponse, HttpServletResponse.SC_GATEWAY_TIMEOUT);
+        }
+        catch (ExternalServiceException e)
+        {
+            LOGGER.warn("External request failed ", e);
+            sendError(e, servletResponse, HttpServletResponse.SC_BAD_GATEWAY);
+        }
         catch (IOException | ServletException e)
         {
             LOGGER.debug("Exception in servlet '{}': ", requestURI, e);
@@ -91,5 +104,19 @@ public class ExceptionHandlingFilter implements Filter
     public void destroy()
     {
         // noop
+    }
+
+    private void sendError(final RuntimeException underlyingException,
+                           final ServletResponse servletResponse,
+                           final int responseCode) throws IOException
+    {
+        if (servletResponse instanceof HttpServletResponse && !servletResponse.isCommitted())
+        {
+            ((HttpServletResponse) servletResponse).sendError(responseCode);
+        }
+        else
+        {
+            throw underlyingException;
+        }
     }
 }

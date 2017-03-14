@@ -29,6 +29,7 @@ import static org.apache.qpid.server.util.ParameterizedTypes.LIST_OF_STRINGS;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -59,7 +60,8 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2UserPrincipal;
 import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.util.ConnectionBuilder;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.ExternalServiceException;
+import org.apache.qpid.server.util.ExternalServiceTimeoutException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 /*
@@ -219,10 +221,15 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
 
             connection.connect();
         }
+        catch (SocketTimeoutException e)
+        {
+            throw new ExternalServiceTimeoutException(String.format("Timed out trying to connect to CloudFoundryDashboardManagementEndpoint '%s'.",
+                                                             cloudFoundryEndpoint), e);
+        }
         catch (IOException e)
         {
-            throw new ConnectionScopedRuntimeException(String.format("Could not connect to CloudFoundryDashboardManagementEndpoint '%s'.",
-                                                                     cloudFoundryEndpoint), e);
+            throw new ExternalServiceException(String.format("Could not connect to CloudFoundryDashboardManagementEndpoint '%s'.",
+                                                             cloudFoundryEndpoint), e);
         }
 
         try (InputStream input = connection.getInputStream())
@@ -234,18 +241,23 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
             Object mayManageObject = responseMap.get("manage");
             if (mayManageObject == null || !(mayManageObject instanceof Boolean))
             {
-                throw new ConnectionScopedRuntimeException("CloudFoundryDashboardManagementEndpoint response did not contain \"manage\" entry.");
+                throw new ExternalServiceException("CloudFoundryDashboardManagementEndpoint response did not contain \"manage\" entry.");
             }
             return (boolean) mayManageObject;
         }
         catch (JsonProcessingException e)
         {
-            throw new ConnectionScopedRuntimeException(String.format("CloudFoundryDashboardManagementEndpoint '%s' did not return json",
+            throw new ExternalServiceException(String.format("CloudFoundryDashboardManagementEndpoint '%s' did not return json.",
                                                                      cloudFoundryEndpoint), e);
+        }
+        catch (SocketTimeoutException e)
+        {
+            throw new ExternalServiceTimeoutException(String.format("Timed out reading from CloudFoundryDashboardManagementEndpoint '%s'.",
+                                    cloudFoundryEndpoint), e);
         }
         catch (IOException e)
         {
-            throw new ConnectionScopedRuntimeException(String.format("Connection to CloudFoundryDashboardManagementEndpoint '%s' failed",
+            throw new ExternalServiceException(String.format("Connection to CloudFoundryDashboardManagementEndpoint '%s' failed.",
                                                                      cloudFoundryEndpoint), e);
         }
     }
