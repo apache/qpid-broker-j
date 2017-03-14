@@ -24,6 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -79,6 +80,7 @@ import org.apache.qpid.server.store.berkeleydb.upgrade.Upgrader;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.DaemonThreadFactory;
 import org.apache.qpid.server.util.ExternalServiceException;
+import org.apache.qpid.server.util.ExternalServiceTimeoutException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChangeListener
@@ -1846,6 +1848,11 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             NodeState state = getRemoteNodeState(groupName, node, dbPingSocketTimeout);
             byte[] applicationState = state.getAppState();
             permittedNodes = convertApplicationStateBytesToPermittedNodeList(applicationState);
+        }
+        catch (SocketTimeoutException ste)
+        {
+            throw new ExternalServiceTimeoutException(String.format("Timed out trying to connect to existing node '%s' at '%s'",
+                                    helperNodeName, helperHostPort), ste);
         }
         catch (IOException | ServiceConnectFailedException e)
         {
