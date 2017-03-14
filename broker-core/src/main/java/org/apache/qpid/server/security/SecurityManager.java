@@ -526,7 +526,7 @@ public class SecurityManager
         else if (isVirtualHostType(configuredObjectType))
         {
             ConfiguredObject<?> virtualHost = getModel().getAncestor(VirtualHost.class, configuredObject);
-            properties = new ObjectProperties((String)virtualHost.getAttribute(ConfiguredObject.NAME));
+            properties.put(Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(virtualHost.NAME));
         }
         return properties;
     }

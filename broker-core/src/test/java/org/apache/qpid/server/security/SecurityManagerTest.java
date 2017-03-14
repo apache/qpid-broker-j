@@ -566,7 +566,10 @@ public class SecurityManagerTest extends QpidTestCase
     public void testAuthoriseCreateVirtualHost()
     {
         VirtualHost vh = getMockVirtualHost();
-        assertCreateAuthorization(vh, Operation.CREATE, ObjectType.VIRTUALHOST, new ObjectProperties(TEST_VIRTUAL_HOST), _virtualHostNode);
+        ObjectProperties expectedProperties = new ObjectProperties(TEST_VIRTUAL_HOST);
+        expectedProperties.put(Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
+        assertCreateAuthorization(vh, Operation.CREATE, ObjectType.VIRTUALHOST,
+                                  expectedProperties, _virtualHostNode);
     }
 
     public void testAuthoriseUpdateVirtualHostNode()
@@ -672,12 +675,13 @@ public class SecurityManagerTest extends QpidTestCase
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
 
-        VirtualHost mock = mock(VirtualHost.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
-        when(mock.getCategoryClass()).thenReturn(VirtualHost.class);
-        when(mock.getParent(VirtualHostNode.class)).thenReturn(vhn);
-        ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
-        assertUpdateAuthorization(mock, Operation.UPDATE, ObjectType.VIRTUALHOST, properties, vhn);
+        VirtualHost virtualHost = mock(VirtualHost.class);
+        when(virtualHost.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
+        when(virtualHost.getParent(VirtualHostNode.class)).thenReturn(vhn);
+        ObjectProperties properties = new ObjectProperties((String)virtualHost.getAttribute(ConfiguredObject.NAME));
+        properties.put(Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(ConfiguredObject.NAME));
+        assertUpdateAuthorization(virtualHost, Operation.UPDATE, ObjectType.VIRTUALHOST, properties, vhn);
     }
 
     public void testAuthoriseDeleteVirtualHostNode()
@@ -783,12 +787,13 @@ public class SecurityManagerTest extends QpidTestCase
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
 
-        VirtualHost mock = mock(VirtualHost.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
-        when(mock.getCategoryClass()).thenReturn(VirtualHost.class);
-        when(mock.getParent(VirtualHostNode.class)).thenReturn(vhn);
-        ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
-        assertDeleteAuthorization(mock, Operation.DELETE, ObjectType.VIRTUALHOST, properties, vhn);
+        VirtualHost virtualHost = mock(VirtualHost.class);
+        when(virtualHost.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
+        when(virtualHost.getParent(VirtualHostNode.class)).thenReturn(vhn);
+        ObjectProperties properties = new ObjectProperties((String)virtualHost.getAttribute(ConfiguredObject.NAME));
+        properties.put(Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(ConfiguredObject.NAME));
+        assertDeleteAuthorization(virtualHost, Operation.DELETE, ObjectType.VIRTUALHOST, properties, vhn);
     }
 
     public void testAuthoriseDeleteBinding()
@@ -857,26 +862,22 @@ public class SecurityManagerTest extends QpidTestCase
 
     public void testAuthoriseVirtualHostLoggerOperations()
     {
-        ObjectProperties properties = new ObjectProperties(TEST_VIRTUAL_HOST);
-
         VirtualHostLogger<?> mock = mock(VirtualHostLogger.class);
         when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
         doReturn(VirtualHostLogger.class).when(mock).getCategoryClass();
         when(mock.getParent(VirtualHost.class)).thenReturn(_virtualHost);
         when(mock.getModel()).thenReturn(BrokerModel.getInstance());
 
+        ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
+        properties.put(Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
+
         assertCreateAuthorization(mock, Operation.CREATE, ObjectType.VIRTUALHOST, properties, _virtualHost);
-
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
-
         assertUpdateAuthorization(mock, Operation.UPDATE, ObjectType.VIRTUALHOST, properties, _virtualHost);
         assertDeleteAuthorization(mock, Operation.DELETE, ObjectType.VIRTUALHOST, properties, _virtualHost);
     }
 
     public void testAuthoriseVirtualHostLogInclusionRuleOperations()
     {
-        ObjectProperties properties = new ObjectProperties(TEST_VIRTUAL_HOST);
-
         VirtualHostLogger<?> vhl = mock(VirtualHostLogger.class);
         when(vhl.getAttribute(ConfiguredObject.NAME)).thenReturn("LOGGER");
         doReturn(VirtualHostLogger.class).when(vhl).getCategoryClass();
@@ -889,10 +890,10 @@ public class SecurityManagerTest extends QpidTestCase
         when(mock.getParent(VirtualHostLogger.class)).thenReturn(vhl);
         when(mock.getModel()).thenReturn(BrokerModel.getInstance());
 
+        ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
+        properties.put(Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
+
         assertCreateAuthorization(mock, Operation.CREATE, ObjectType.VIRTUALHOST, properties, vhl);
-
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
-
         assertUpdateAuthorization(mock, Operation.UPDATE, ObjectType.VIRTUALHOST, properties, vhl);
         assertDeleteAuthorization(mock, Operation.DELETE, ObjectType.VIRTUALHOST, properties, vhl);
     }
