@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
@@ -42,6 +43,11 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
                                                                              ConnectionHandler,
                                                                              EventLoggerProvider
 {
+
+    String CONNECTION_SESSION_CREDIT_WINDOW_SIZE = "connection.sessionCreditWindowSize";
+    @ManagedContextDefault(name = CONNECTION_SESSION_CREDIT_WINDOW_SIZE)
+    int DEFAULT_CONNECTION_SESSION_CREDIT_WINDOW_SIZE = 8192;
+
     Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
     Symbol SHARED_SUBSCRIPTIONS = Symbol.valueOf("SHARED-SUBS");
 

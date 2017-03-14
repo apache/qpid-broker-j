@@ -141,11 +141,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private final short _sendingChannel;
 
 
-    // has to be a power of two
     private static final int DEFAULT_SESSION_BUFFER_SIZE = 1 << 11;
-    private static final int BUFFER_SIZE_MASK = DEFAULT_SESSION_BUFFER_SIZE - 1;
-
-
 
     private int _nextOutgoingDeliveryId;
 
@@ -157,7 +153,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private LinkedHashMap<UnsignedInteger,Delivery> _outgoingUnsettled = new LinkedHashMap<>(DEFAULT_SESSION_BUFFER_SIZE);
     private LinkedHashMap<UnsignedInteger,Delivery> _incomingUnsettled = new LinkedHashMap<>(DEFAULT_SESSION_BUFFER_SIZE);
 
-    private int _availableIncomingCredit = DEFAULT_SESSION_BUFFER_SIZE;
+    private final int _incomingWindowSize;
     private int _availableOutgoingCredit = DEFAULT_SESSION_BUFFER_SIZE;
     private UnsignedInteger _lastSentIncomingLimit;
 
@@ -175,7 +171,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     public Session_1_0(final AMQPConnection_1_0 connection,
                        Begin begin,
                        short sendingChannelId,
-                       short receivingChannelId)
+                       short receivingChannelId,
+                       int incomingWindowSize)
     {
         super(connection, sendingChannelId);
         _sendingChannel = sendingChannelId;
@@ -184,6 +181,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         _nextIncomingTransferId = new SequenceNumber(begin.getNextOutgoingId().intValue());
         _connection = connection;
         _primaryDomain = getPrimaryDomain();
+        _incomingWindowSize = incomingWindowSize;
 
         AccessController.doPrivileged((new PrivilegedAction<Object>()
         {
@@ -390,8 +388,10 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         {
             UnsignedInteger clientsCredit =
                     _lastSentIncomingLimit.subtract(UnsignedInteger.valueOf(_nextIncomingTransferId.intValue()));
-            int i = UnsignedInteger.valueOf(_availableIncomingCredit).subtract(clientsCredit).compareTo(clientsCredit);
-            if (i >= 0)
+
+            // TODO - we should use a better metric here, and/or manage session credit across the whole connection
+            // send a flow if the window is at least half used up
+            if (UnsignedInteger.valueOf(_incomingWindowSize).subtract(clientsCredit).compareTo(clientsCredit) >= 0)
             {
                 sendFlow();
             }
@@ -497,9 +497,9 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         {
             final int nextIncomingId = _nextIncomingTransferId.intValue();
             flow.setNextIncomingId(UnsignedInteger.valueOf(nextIncomingId));
-            _lastSentIncomingLimit = UnsignedInteger.valueOf(nextIncomingId + _availableIncomingCredit);
+            _lastSentIncomingLimit = UnsignedInteger.valueOf(nextIncomingId + _incomingWindowSize);
         }
-        flow.setIncomingWindow(UnsignedInteger.valueOf(_availableIncomingCredit));
+        flow.setIncomingWindow(UnsignedInteger.valueOf(_incomingWindowSize));
 
         flow.setNextOutgoingId(UnsignedInteger.valueOf(_nextOutgoingTransferId.intValue()));
         flow.setOutgoingWindow(UnsignedInteger.valueOf(_availableOutgoingCredit));
@@ -653,7 +653,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     UnsignedInteger getIncomingWindowSize()
     {
-        return UnsignedInteger.valueOf(_availableIncomingCredit);
+        return UnsignedInteger.valueOf(_incomingWindowSize);
     }
 
     AccessControlContext getAccessControllerContext()

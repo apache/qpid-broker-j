@@ -603,7 +603,11 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 }
                 else
                 {
-                    Session_1_0 session = new Session_1_0(this, begin, sendingChannelId, receivingChannelId);
+                    Session_1_0 session = new Session_1_0(this,
+                                                          begin,
+                                                          sendingChannelId,
+                                                          receivingChannelId,
+                                                          getContextValue(Integer.class, AMQPConnection_1_0.CONNECTION_SESSION_CREDIT_WINDOW_SIZE));
                     session.create();
 
                     _receivingSessions[receivingChannelId] = session;
