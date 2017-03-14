@@ -227,14 +227,14 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
 
     private Collection<? extends ConfiguredObjectRecord> doVisitAllConfiguredObjectRecords()
     {
-        Map<UUID, BDBConfiguredObjectRecord> configuredObjects = new HashMap<UUID, BDBConfiguredObjectRecord>();
+        Map<UUID, BDBConfiguredObjectRecord> configuredObjects = new HashMap<>();
         try(Cursor objectsCursor = getConfiguredObjectsDb().openCursor(null, null))
         {
             DatabaseEntry key = new DatabaseEntry();
             DatabaseEntry value = new DatabaseEntry();
 
 
-            while (objectsCursor.getNext(key, value, LockMode.RMW) == OperationStatus.SUCCESS)
+            while (objectsCursor.getNext(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS)
             {
                 UUID id = UUIDTupleBinding.getInstance().entryToObject(key);
 
@@ -246,7 +246,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
             // set parents
             try(Cursor hierarchyCursor = getConfiguredObjectHierarchyDb().openCursor(null, null))
             {
-                while (hierarchyCursor.getNext(key, value, LockMode.RMW) == OperationStatus.SUCCESS)
+                while (hierarchyCursor.getNext(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS)
                 {
                     HierarchyKey hk = HierarchyKeyBinding.getInstance().entryToObject(key);
                     UUID parentId = UUIDTupleBinding.getInstance().entryToObject(value);

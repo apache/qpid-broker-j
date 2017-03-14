@@ -412,36 +412,22 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
     private void visitMessagesInternal(MessageHandler handler, EnvironmentFacade environmentFacade)
     {
+        DatabaseEntry key = new DatabaseEntry();
+        DatabaseEntry value = new DatabaseEntry();
+        MessageMetaDataBinding valueBinding = MessageMetaDataBinding.getInstance();
+
         try(Cursor cursor = getMessageMetaDataDb().openCursor(null, null))
         {
-            DatabaseEntry key = new DatabaseEntry();
-            DatabaseEntry value = new DatabaseEntry();
-            MessageMetaDataBinding valueBinding = MessageMetaDataBinding.getInstance();
-
-            int attempts = 0;
-            boolean completed = false;
-            do
+            while (cursor.getNext(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS)
             {
-                try
+                long messageId = LongBinding.entryToLong(key);
+                StorableMessageMetaData metaData = valueBinding.entryToObject(value);
+                StoredBDBMessage message = new StoredBDBMessage(messageId, metaData, true);
+                if (!handler.handle(message))
                 {
-                    while (cursor.getNext(key, value, LockMode.RMW) == OperationStatus.SUCCESS)
-                    {
-                        long messageId = LongBinding.entryToLong(key);
-                        StorableMessageMetaData metaData = valueBinding.entryToObject(value);
-                        StoredBDBMessage message = new StoredBDBMessage(messageId, metaData, true);
-                        if (!handler.handle(message))
-                        {
-                            break;
-                        }
-                    }
-                    completed = true;
-                }
-                catch (LockConflictException e)
-                {
-                    sleepOrThrowOnLockConflict(attempts++, "Cannot visit messages", e);
+                    break;
                 }
             }
-            while (!completed);
         }
         catch (RuntimeException e)
         {
@@ -1494,56 +1480,42 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             checkMessageStoreOpen();
 
             final List<QueueEntryKey> entries = new ArrayList<>();
-            try
+            try(Cursor cursor = getDeliveryDb().openCursor(null, null))
             {
-                int attempts = 0;
-                boolean completed = false;
-                do
+                boolean searchCompletedSuccessfully = false;
+
+                DatabaseEntry key = new DatabaseEntry();
+                DatabaseEntry value = new DatabaseEntry();
+                value.setPartial(0, 0, true);
+
+                QueueEntryBinding keyBinding = QueueEntryBinding.getInstance();
+                keyBinding.objectToEntry(new QueueEntryKey(queue.getId(), 0l), key);
+
+                if (!searchCompletedSuccessfully && (searchCompletedSuccessfully =
+                        cursor.getSearchKeyRange(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS))
                 {
-                    try(Cursor cursor = getDeliveryDb().openCursor(null, null))
+                    QueueEntryKey entry = keyBinding.entryToObject(key);
+                    if (entry.getQueueId().equals(queue.getId()))
                     {
-                        boolean searchCompletedSuccessfully = false;
-                        entries.clear();
-
-                        DatabaseEntry key = new DatabaseEntry();
-                        DatabaseEntry value = new DatabaseEntry();
-                        value.setPartial(0, 0, true);
-
-                        QueueEntryBinding keyBinding = QueueEntryBinding.getInstance();
-                        keyBinding.objectToEntry(new QueueEntryKey(queue.getId(),0l), key);
-
-                        if (!searchCompletedSuccessfully && (searchCompletedSuccessfully = cursor.getSearchKeyRange(key,value, LockMode.DEFAULT) == OperationStatus.SUCCESS))
-                        {
-                            QueueEntryKey entry = keyBinding.entryToObject(key);
-                            if(entry.getQueueId().equals(queue.getId()))
-                            {
-                                entries.add(entry);
-                            }
-                        }
-
-                        if (searchCompletedSuccessfully)
-                        {
-                            while(cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-                            {
-                                QueueEntryKey entry = keyBinding.entryToObject(key);
-                                if(entry.getQueueId().equals(queue.getId()))
-                                {
-                                    entries.add(entry);
-                                }
-                                else
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                        completed = true;
-                    }
-                    catch (LockConflictException e)
-                    {
-                        sleepOrThrowOnLockConflict(attempts++, "Cannot visit message instances", e);
+                        entries.add(entry);
                     }
                 }
-                while (!completed);
+
+                if (searchCompletedSuccessfully)
+                {
+                    while (cursor.getNext(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS)
+                    {
+                        QueueEntryKey entry = keyBinding.entryToObject(key);
+                        if (entry.getQueueId().equals(queue.getId()))
+                        {
+                            entries.add(entry);
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
             }
             catch (RuntimeException e)
             {
@@ -1577,7 +1549,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
                 DatabaseEntry value = new DatabaseEntry();
                 value.setPartial(0, 0, true);
-                while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+                while (cursor.getNext(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS)
                 {
                     QueueEntryKey entry = keyBinding.entryToObject(key);
                     entries.add(entry);
@@ -1612,7 +1584,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 PreparedTransactionBinding valueBinding = new PreparedTransactionBinding();
                 DatabaseEntry value = new DatabaseEntry();
 
-                while (cursor.getNext(key, value, LockMode.RMW) == OperationStatus.SUCCESS)
+                while (cursor.getNext(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS)
                 {
                     Xid xid = keyBinding.entryToObject(key);
                     PreparedTransaction preparedTransaction = valueBinding.entryToObject(value);
@@ -1622,7 +1594,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                         break;
                     }
                 }
-
             }
             catch (RuntimeException e)
             {
