@@ -53,9 +53,11 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.Content;
+import org.apache.qpid.server.util.ExternalServiceException;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.util.ExternalServiceTimeoutException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 import org.apache.qpid.util.DataUrlUtils;
@@ -530,8 +532,7 @@ public class RestServlet extends AbstractServlet
         {
             super.service(request, response);
         }
-        catch (IllegalArgumentException | IllegalConfigurationException | IllegalStateException | AccessControlException
-                | IntegrityViolationException | IllegalStateTransitionException | NoClassDefFoundError  e)
+        catch (Exception | NoClassDefFoundError e)
         {
             setResponseStatus(request, response, e);
         }
@@ -1018,6 +1019,16 @@ public class RestServlet extends AbstractServlet
             {
                 message = "Not found: " + message;
                 LOGGER.warn("Unexpected exception processing request ", e);
+            }
+            else if (e instanceof ExternalServiceTimeoutException)
+            {
+                responseCode = HttpServletResponse.SC_GATEWAY_TIMEOUT;
+                LOGGER.warn("External request timeout ", e);
+            }
+            else if (e instanceof ExternalServiceException)
+            {
+                responseCode = HttpServletResponse.SC_BAD_GATEWAY;
+                LOGGER.warn("External request failed ", e);
             }
             else
             {

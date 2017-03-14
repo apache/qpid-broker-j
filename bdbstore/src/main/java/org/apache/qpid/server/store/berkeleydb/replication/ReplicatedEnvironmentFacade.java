@@ -24,6 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,26 +58,29 @@ import com.sleepycat.je.rep.*;
 import com.sleepycat.je.rep.impl.node.NameIdPair;
 import com.sleepycat.je.rep.util.DbPing;
 import com.sleepycat.je.rep.util.ReplicationGroupAdmin;
+import com.sleepycat.je.rep.utilint.BinaryProtocol;
 import com.sleepycat.je.rep.utilint.HostPortPair;
 import com.sleepycat.je.rep.utilint.ServiceDispatcher.ServiceConnectFailedException;
 import com.sleepycat.je.rep.vlsn.VLSNRange;
 import com.sleepycat.je.utilint.PropUtil;
 import com.sleepycat.je.utilint.VLSN;
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.store.berkeleydb.EnvironmentUtils;
-import org.apache.qpid.server.store.berkeleydb.upgrade.Upgrader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.BDBUtils;
 import org.apache.qpid.server.store.berkeleydb.CoalescingCommiter;
 import org.apache.qpid.server.store.berkeleydb.EnvHomeRegistry;
 import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
+import org.apache.qpid.server.store.berkeleydb.EnvironmentUtils;
 import org.apache.qpid.server.store.berkeleydb.logging.Slf4jLoggingHandler;
+import org.apache.qpid.server.store.berkeleydb.upgrade.Upgrader;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.DaemonThreadFactory;
+import org.apache.qpid.server.util.ExternalServiceException;
+import org.apache.qpid.server.util.ExternalServiceTimeoutException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChangeListener
@@ -1830,17 +1834,26 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             byte[] applicationState = state.getAppState();
             permittedNodes = convertApplicationStateBytesToPermittedNodeList(applicationState);
         }
-        catch (IOException e)
+        catch (SocketTimeoutException ste)
         {
-            throw new IllegalConfigurationException(String.format("Cannot connect to existing node '%s' at '%s'", helperNodeName, helperHostPort), e);
+            throw new ExternalServiceTimeoutException(String.format("Timed out trying to connect to existing node '%s' at '%s'",
+                                    helperNodeName, helperHostPort), ste);
         }
-        catch (ServiceConnectFailedException e)
+        catch (IOException | ServiceConnectFailedException e)
         {
-            throw new IllegalConfigurationException(String.format("Failure to connect to '%s'", helperHostPort), e);
+            throw new ExternalServiceException(String.format("Cannot connect to existing node '%s' at '%s'",
+                                                             helperNodeName, helperHostPort), e);
         }
-        catch (Exception e)
+        catch (BinaryProtocol.ProtocolException e)
         {
-            throw new RuntimeException(String.format("Cannot retrieve state for node '%s' (%s) from group '%s'",
+            String message = String.format("Unexpected protocol exception '%s' encountered while retrieving state for node '%s' (%s) from group '%s'",
+                                          e.getUnexpectedMessage(), helperNodeName, helperHostPort, groupName);
+            LOGGER.warn(message,  e);
+            throw new ExternalServiceException(message, e) ;
+        }
+        catch (RuntimeException e)
+        {
+            throw new ExternalServiceException(String.format("Cannot retrieve state for node '%s' (%s) from group '%s'",
                     helperNodeName, helperHostPort, groupName), e);
         }
 
