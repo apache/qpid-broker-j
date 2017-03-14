@@ -210,7 +210,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     private final ListeningExecutorService _stateChangeExecutor;
 
     /**
-     * Executor used to learn about changes in the group.  Number of threads in the pool is maintained dynammically
+     * Executor used to learn about changes in the group.  Number of threads in the pool is maintained dynamically
      * to be number of nodes in the group + 1.   This gives us sufficient threads to 'ping' all the remote nodes in the
      * group (in parallel), and a thread for the coordination of the pings.  We also use the executor for the
      * transfer master operation.
@@ -1828,7 +1828,84 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         }
     }
 
-    public static Collection<String> connectToHelperNodeAndCheckPermittedHosts(String nodeName, String hostPort, String groupName, String helperNodeName, String helperHostPort, int dbPingSocketTimeout)
+    public static Collection<String> connectToHelperNodeAndCheckPermittedHosts(final String nodeName, final String hostPort, final String groupName, final String helperNodeName, final String helperHostPort, final int dbPingSocketTimeout)
+    {
+        ExecutorService executor = null;
+        Future<Collection<String>> future = null;
+        try
+        {
+            executor = Executors.newSingleThreadExecutor(new DaemonThreadFactory(String.format(
+                            "PermittedHostsCheck-%s-%s",
+                            groupName,
+                            nodeName)));
+            future = executor.submit(new Callable<Collection<String>>()
+            {
+                @Override
+                public Collection<String> call() throws Exception
+                {
+                    return getPermittedHostsFromHelper(nodeName,
+                                                       groupName,
+                                                       helperNodeName,
+                                                       helperHostPort,
+                                                       dbPingSocketTimeout);
+                }
+            });
+
+            try
+            {
+                final long timeout = (long) (dbPingSocketTimeout * 1.25);
+                final Collection<String> permittedNodes =
+                        dbPingSocketTimeout <= 0 ? future.get() : future.get(timeout, TimeUnit.MILLISECONDS);
+
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER.debug(String.format("Node '%s' permits nodes: '%s'", helperNodeName, String.valueOf(permittedNodes)));
+                }
+
+                if (permittedNodes == null || !permittedNodes.contains(hostPort))
+                {
+                    throw new IllegalConfigurationException(String.format("Node using address '%s' is not permitted to join the group '%s'",
+                                                                          hostPort, groupName));
+                }
+
+                return permittedNodes;
+            }
+            catch (ExecutionException e)
+            {
+                final Throwable cause = e.getCause();
+                if (cause instanceof RuntimeException)
+                {
+                    throw (RuntimeException) cause;
+                }
+                else
+                {
+                    throw new RuntimeException(cause);
+                }
+            }
+            catch (TimeoutException e)
+            {
+                future.cancel(true);
+                throw new ExternalServiceTimeoutException(String.format(
+                        "Task timed out trying to connect to existing node '%s' at '%s'", nodeName, hostPort));
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                throw new ExternalServiceException(String.format(
+                        "Task failed to connect to existing node '%s' at '%s'", nodeName, hostPort));
+            }
+        }
+        finally
+        {
+            executor.shutdown();
+        }
+    }
+
+    private static Collection<String> getPermittedHostsFromHelper(final String nodeName,
+                                                                  final String groupName,
+                                                                  final String helperNodeName,
+                                                                  final String helperHostPort,
+                                                                  final int dbPingSocketTimeout)
     {
         if (LOGGER.isDebugEnabled())
         {
@@ -1838,7 +1915,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         if (helperNodeName == null || "".equals(helperNodeName))
         {
             throw new IllegalConfigurationException(String.format("A helper node is not specified for node '%s'"
-                    + " joining the group '%s'", nodeName, groupName));
+                                                                  + " joining the group '%s'", nodeName, groupName));
         }
 
         Collection<String> permittedNodes = null;
@@ -1847,12 +1924,12 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             ReplicationNodeImpl node = new ReplicationNodeImpl(helperNodeName, helperHostPort);
             NodeState state = getRemoteNodeState(groupName, node, dbPingSocketTimeout);
             byte[] applicationState = state.getAppState();
-            permittedNodes = convertApplicationStateBytesToPermittedNodeList(applicationState);
+            return convertApplicationStateBytesToPermittedNodeList(applicationState);
         }
         catch (SocketTimeoutException ste)
         {
             throw new ExternalServiceTimeoutException(String.format("Timed out trying to connect to existing node '%s' at '%s'",
-                                    helperNodeName, helperHostPort), ste);
+                                                                    helperNodeName, helperHostPort), ste);
         }
         catch (IOException | ServiceConnectFailedException e)
         {
@@ -1863,7 +1940,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         {
             String message = String.format("Unexpected protocol exception '%s' encountered while retrieving state for node '%s' (%s) from group '%s'",
                                           e.getUnexpectedMessage(), helperNodeName, helperHostPort, groupName);
-            LOGGER.warn(message,  e);
+            LOGGER.warn(message, e);
             throw new ExternalServiceException(message, e) ;
         }
         catch (RuntimeException e)
@@ -1871,18 +1948,6 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             throw new ExternalServiceException(String.format("Cannot retrieve state for node '%s' (%s) from group '%s'",
                     helperNodeName, helperHostPort, groupName), e);
         }
-
-        if (LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug(String.format("Attribute 'permittedNodes' on node '%s' is set to '%s'", helperNodeName, String.valueOf(permittedNodes)));
-        }
-
-        if (permittedNodes==null || !permittedNodes.contains(hostPort))
-        {
-            throw new IllegalConfigurationException(String.format("Node from '%s' is not permitted!", hostPort));
-        }
-
-        return permittedNodes;
     }
 
     private void registerAppStateMonitorIfPermittedNodesSpecified(final Set<String> permittedNodes)
