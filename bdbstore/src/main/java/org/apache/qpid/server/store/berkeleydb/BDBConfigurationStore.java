@@ -22,7 +22,6 @@ package org.apache.qpid.server.store.berkeleydb;
 
 import static org.apache.qpid.server.store.berkeleydb.BDBUtils.DEFAULT_DATABASE_CONFIG;
 import static org.apache.qpid.server.store.berkeleydb.BDBUtils.abortTransactionSafely;
-import static org.apache.qpid.server.store.berkeleydb.BDBUtils.closeCursorSafely;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -165,11 +164,8 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
     private void doVisitAllConfiguredObjectRecords(ConfiguredObjectRecordHandler handler)
     {
         Map<UUID, BDBConfiguredObjectRecord> configuredObjects = new HashMap<UUID, BDBConfiguredObjectRecord>();
-        Cursor objectsCursor = null;
-        Cursor hierarchyCursor = null;
-        try
+        try(Cursor objectsCursor = getConfiguredObjectsDb().openCursor(null, null))
         {
-            objectsCursor = getConfiguredObjectsDb().openCursor(null, null);
             DatabaseEntry key = new DatabaseEntry();
             DatabaseEntry value = new DatabaseEntry();
 
@@ -184,26 +180,23 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
             }
 
             // set parents
-            hierarchyCursor = getConfiguredObjectHierarchyDb().openCursor(null, null);
-            while (hierarchyCursor.getNext(key, value, LockMode.RMW) == OperationStatus.SUCCESS)
+            try(Cursor hierarchyCursor = getConfiguredObjectHierarchyDb().openCursor(null, null))
             {
-                HierarchyKey hk = HierarchyKeyBinding.getInstance().entryToObject(key);
-                UUID parentId = UUIDTupleBinding.getInstance().entryToObject(value);
-                BDBConfiguredObjectRecord child = configuredObjects.get(hk.getChildId());
-                if(child != null)
+                while (hierarchyCursor.getNext(key, value, LockMode.RMW) == OperationStatus.SUCCESS)
                 {
-                    ConfiguredObjectRecord parent = configuredObjects.get(parentId);
-                    if(parent != null)
+                    HierarchyKey hk = HierarchyKeyBinding.getInstance().entryToObject(key);
+                    UUID parentId = UUIDTupleBinding.getInstance().entryToObject(value);
+                    BDBConfiguredObjectRecord child = configuredObjects.get(hk.getChildId());
+                    if(child != null)
                     {
-                        child.addParent(hk.getParentType(), parent);
+                        ConfiguredObjectRecord parent = configuredObjects.get(parentId);
+                        if(parent != null)
+                        {
+                            child.addParent(hk.getParentType(), parent);
+                        }
                     }
                 }
             }
-        }
-        finally
-        {
-            closeCursorSafely(objectsCursor, _environmentFacade);
-            closeCursorSafely(hierarchyCursor, _environmentFacade);
         }
 
         for (ConfiguredObjectRecord record : configuredObjects.values())
