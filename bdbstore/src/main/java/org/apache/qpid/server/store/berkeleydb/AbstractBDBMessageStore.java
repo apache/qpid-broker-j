@@ -20,7 +20,6 @@ package org.apache.qpid.server.store.berkeleydb;
 
 import static org.apache.qpid.server.store.berkeleydb.BDBUtils.DEFAULT_DATABASE_CONFIG;
 import static org.apache.qpid.server.store.berkeleydb.BDBUtils.abortTransactionSafely;
-import static org.apache.qpid.server.store.berkeleydb.BDBUtils.closeCursorSafely;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -413,10 +412,8 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
     private void visitMessagesInternal(MessageHandler handler, EnvironmentFacade environmentFacade)
     {
-        Cursor cursor = null;
-        try
+        try(Cursor cursor = getMessageMetaDataDb().openCursor(null, null))
         {
-            cursor = getMessageMetaDataDb().openCursor(null, null);
             DatabaseEntry key = new DatabaseEntry();
             DatabaseEntry value = new DatabaseEntry();
             MessageMetaDataBinding valueBinding = MessageMetaDataBinding.getInstance();
@@ -449,20 +446,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         catch (RuntimeException e)
         {
             throw environmentFacade.handleDatabaseException("Cannot visit messages", e);
-        }
-        finally
-        {
-            if (cursor != null)
-            {
-                try
-                {
-                    cursor.close();
-                }
-                catch(RuntimeException e)
-                {
-                    throw environmentFacade.handleDatabaseException("Cannot close cursor", e);
-                }
-            }
         }
     }
 
@@ -1510,25 +1493,25 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         {
             checkMessageStoreOpen();
 
-            Cursor cursor = null;
-            List<QueueEntryKey> entries = new ArrayList<QueueEntryKey>();
+            final List<QueueEntryKey> entries = new ArrayList<>();
             try
             {
-                cursor = getDeliveryDb().openCursor(null, null);
-                DatabaseEntry key = new DatabaseEntry();
-                DatabaseEntry value = new DatabaseEntry();
-                value.setPartial(0, 0, true);
-
-                QueueEntryBinding keyBinding = QueueEntryBinding.getInstance();
-                keyBinding.objectToEntry(new QueueEntryKey(queue.getId(),0l), key);
-
-                boolean searchCompletedSuccessfully = false;
                 int attempts = 0;
                 boolean completed = false;
                 do
                 {
-                    try
+                    try(Cursor cursor = getDeliveryDb().openCursor(null, null))
                     {
+                        boolean searchCompletedSuccessfully = false;
+                        entries.clear();
+
+                        DatabaseEntry key = new DatabaseEntry();
+                        DatabaseEntry value = new DatabaseEntry();
+                        value.setPartial(0, 0, true);
+
+                        QueueEntryBinding keyBinding = QueueEntryBinding.getInstance();
+                        keyBinding.objectToEntry(new QueueEntryKey(queue.getId(),0l), key);
+
                         if (!searchCompletedSuccessfully && (searchCompletedSuccessfully = cursor.getSearchKeyRange(key,value, LockMode.DEFAULT) == OperationStatus.SUCCESS))
                         {
                             QueueEntryKey entry = keyBinding.entryToObject(key);
@@ -1557,7 +1540,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                     }
                     catch (LockConflictException e)
                     {
-                        sleepOrThrowOnLockConflict(attempts++, "Cannot visit messages", e);
+                        sleepOrThrowOnLockConflict(attempts++, "Cannot visit message instances", e);
                     }
                 }
                 while (!completed);
@@ -1565,10 +1548,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             catch (RuntimeException e)
             {
                 throw getEnvironmentFacade().handleDatabaseException("Cannot visit message instances", e);
-            }
-            finally
-            {
-                closeCursorSafely(cursor, getEnvironmentFacade());
             }
 
             for(QueueEntryKey entry : entries)
@@ -1590,11 +1569,9 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         {
             checkMessageStoreOpen();
 
-            Cursor cursor = null;
-            List<QueueEntryKey> entries = new ArrayList<QueueEntryKey>();
-            try
+            List<QueueEntryKey> entries = new ArrayList<>();
+            try(Cursor cursor = getDeliveryDb().openCursor(null, null))
             {
-                cursor = getDeliveryDb().openCursor(null, null);
                 DatabaseEntry key = new DatabaseEntry();
                 QueueEntryBinding keyBinding = QueueEntryBinding.getInstance();
 
@@ -1609,10 +1586,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             catch (RuntimeException e)
             {
                 throw getEnvironmentFacade().handleDatabaseException("Cannot visit message instances", e);
-            }
-            finally
-            {
-                closeCursorSafely(cursor, getEnvironmentFacade());
             }
 
             for(QueueEntryKey entry : entries)
@@ -1632,10 +1605,8 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         {
             checkMessageStoreOpen();
 
-            Cursor cursor = null;
-            try
+            try(Cursor cursor = getXidDb().openCursor(null, null))
             {
-                cursor = getXidDb().openCursor(null, null);
                 DatabaseEntry key = new DatabaseEntry();
                 XidBinding keyBinding = XidBinding.getInstance();
                 PreparedTransactionBinding valueBinding = new PreparedTransactionBinding();
@@ -1656,10 +1627,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             catch (RuntimeException e)
             {
                 throw getEnvironmentFacade().handleDatabaseException("Cannot recover distributed transactions", e);
-            }
-            finally
-            {
-                closeCursorSafely(cursor, getEnvironmentFacade());
             }
         }
 

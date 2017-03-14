@@ -275,17 +275,14 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
     {
         Collection<PreferenceRecord> records = new LinkedHashSet<>();
 
-        Cursor cursor = null;
-
-        try
+        try(Cursor cursor = getPreferencesDb().openCursor(null, null))
         {
-            cursor = getPreferencesDb().openCursor(null, null);
             DatabaseEntry key = new DatabaseEntry();
             DatabaseEntry value = new DatabaseEntry();
             UUIDTupleBinding keyBinding = UUIDTupleBinding.getInstance();
             MapBinding valueBinding = MapBinding.getInstance();
 
-            while (cursor.getNext(key, value, LockMode.RMW) == OperationStatus.SUCCESS)
+            while (cursor.getNext(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS)
             {
                 UUID preferenceId = keyBinding.entryToObject(key);
                 Map<String, Object> preferenceAttributes = valueBinding.entryToObject(value);
@@ -295,21 +292,7 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
         }
         catch (RuntimeException e)
         {
-            throw environmentFacade.handleDatabaseException("Cannot visit messages", e);
-        }
-        finally
-        {
-            if (cursor != null)
-            {
-                try
-                {
-                    cursor.close();
-                }
-                catch (RuntimeException e)
-                {
-                    throw environmentFacade.handleDatabaseException("Cannot close cursor", e);
-                }
-            }
+            throw environmentFacade.handleDatabaseException("Cannot visit preferences", e);
         }
         return records;
     }
@@ -364,17 +347,13 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
 
     private ModelVersion getStoredVersion() throws RuntimeException
     {
-        Cursor cursor = null;
-
-        try
+        try(Cursor cursor = getPreferencesVersionDb().openCursor(null, null))
         {
-            cursor = getPreferencesVersionDb().openCursor(null, null);
-
             DatabaseEntry key = new DatabaseEntry();
             DatabaseEntry value = new DatabaseEntry();
 
             ModelVersion storedVersion = null;
-            while (cursor.getNext(key, value, null) == OperationStatus.SUCCESS)
+            while (cursor.getNext(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS)
             {
                 String versionString = StringBinding.entryToString(key);
                 ModelVersion version = ModelVersion.fromString(versionString);
@@ -392,21 +371,6 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
         catch (RuntimeException e)
         {
             throw getEnvironmentFacade().handleDatabaseException("Cannot visit preference version", e);
-        }
-        finally
-        {
-            if (cursor != null)
-            {
-                try
-                {
-                    cursor.close();
-                    getEnvironmentFacade().closeDatabase(PREFERENCES_VERSION_DB_NAME);
-                }
-                catch (RuntimeException e)
-                {
-                    throw getEnvironmentFacade().handleDatabaseException("Cannot close cursor", e);
-                }
-            }
         }
     }
 
