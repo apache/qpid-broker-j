@@ -19,6 +19,7 @@
  *
  */
 define(["dojo/_base/xhr",
+        "dojo/_base/lang",
         "dojo/dom",
         "dojo/parser",
         "dojo/query",
@@ -48,6 +49,7 @@ define(["dojo/_base/xhr",
         "dijit/form/DateTextBox",
         "dojo/domReady!"],
     function (xhr,
+              lang,
               dom,
               parser,
               query,
@@ -143,6 +145,7 @@ define(["dojo/_base/xhr",
 
         AclFileUpdater.prototype.reload = function ()
         {
+            this.reloadButton.set("disabled", true);
             var parentModelObj = this.modelObj;
             var modelObj = {
                 type: parentModelObj.type,
@@ -150,7 +153,12 @@ define(["dojo/_base/xhr",
                 parent: parentModelObj
             };
             var url = this.management.buildObjectURL(modelObj);
-            this.management.post({url: url}, {});
+            this.management.post({url: url}, {})
+                .then(null, management.xhrErrorHandler)
+                .always(lang.hitch(this, function ()
+                {
+                    this.reloadButton.set("disabled", false);
+                }));
         };
 
         return AclFile;
