@@ -198,6 +198,7 @@ define(["dojo/query",
 
         if (data.length)
         {
+            this.removeButton.set("disabled", true);
             var parentModelObj = this.modelObj;
             var modelObj = {
                 type: parentModelObj.type,
@@ -214,7 +215,12 @@ define(["dojo/query",
                 });
             }
             var url = this.management.buildObjectURL(modelObj);
-            this.management.post({url: url}, {certificates: items});
+            this.management.post({url: url}, {certificates: items})
+                .then(null, management.xhrErrorHandler)
+                .always(lang.hitch(this, function ()
+                {
+                    this.removeButton.set("disabled", false);
+                }));
         }
     };
 
