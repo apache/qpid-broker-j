@@ -1969,12 +1969,19 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             final int queueDepthMessages = getQueueDepthMessages();
             final List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>(_bindings.size());
             final ArrayList<BindingImpl> bindingCopy = new ArrayList<>(_bindings);
-
-            // TODO - RG - Need to sort out bindings!
-            for (BindingImpl b : bindingCopy)
-            {
-                removeBindingFutures.add(b.deleteAsync());
-            }
+            Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(),
+                         new PrivilegedAction<Void>()
+                         {
+                             @Override
+                             public Void run()
+                             {
+                                 for (BindingImpl binding : bindingCopy)
+                                 {
+                                     removeBindingFutures.add(binding.deleteAsync());
+                                 }
+                                 return null;
+                             }
+                         });
 
             ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(removeBindingFutures);
 

@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.exchange;
 
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +36,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -66,6 +69,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -185,13 +189,22 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
         if(_closed.compareAndSet(false,true))
         {
-            List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>(_bindings.size());
+            final List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>(_bindings.size());
 
-            List<BindingImpl> bindings = new ArrayList<>(_bindings);
-            for(BindingImpl binding : bindings)
-            {
-                removeBindingFutures.add(binding.deleteAsync());
-            }
+            final List<BindingImpl> bindings = new ArrayList<>(_bindings);
+            Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(),
+                         new PrivilegedAction<Void>()
+                         {
+                             @Override
+                             public Void run()
+                             {
+                                 for (BindingImpl binding : bindings)
+                                 {
+                                     removeBindingFutures.add(binding.deleteAsync());
+                                 }
+                                 return null;
+                             }
+                         });
 
             ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(removeBindingFutures);
             return doAfter(combinedFuture, new Runnable()
