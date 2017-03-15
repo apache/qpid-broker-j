@@ -2005,22 +2005,26 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         // Check access
         authorise(Operation.DELETE);
-        final ArrayList<Binding<?>> bindingCopy = new ArrayList<>(_bindings);
-        for (Binding<?> binding: bindingCopy)
-        {
-            binding.authorise(Operation.DELETE);
-        }
 
         if (_deleted.compareAndSet(false, true))
         {
             final int queueDepthMessages = getQueueDepthMessages();
             final List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>(_bindings.size());
 
-            // TODO - RG - Need to sort out bindings!
-            for (Binding<?> b : bindingCopy)
-            {
-                removeBindingFutures.add(b.deleteAsync());
-            }
+            final ArrayList<Binding<?>> bindingCopy = new ArrayList<>(_bindings);
+            Subject.doAs(getSubjectWithAddedSystemRights(),
+                         new PrivilegedAction<Void>()
+                         {
+                             @Override
+                             public Void run()
+                             {
+                                 for (Binding<?> binding : bindingCopy)
+                                 {
+                                     removeBindingFutures.add(binding.deleteAsync());
+                                 }
+                                 return null;
+                             }
+                         });
 
             ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(removeBindingFutures);
 

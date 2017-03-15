@@ -21,6 +21,7 @@
 package org.apache.qpid.server.exchange;
 
 import java.security.AccessControlException;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +36,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -181,13 +184,22 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
         if(_closed.compareAndSet(false,true))
         {
-            List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>(_bindings.size());
+            final List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>(_bindings.size());
 
-            List<Binding<?>> bindings = new ArrayList<>(_bindings);
-            for(Binding<?> binding : bindings)
-            {
-                removeBindingFutures.add(binding.deleteAsync());
-            }
+            final ArrayList<Binding<?>> bindings = new ArrayList<>(_bindings);
+            Subject.doAs(getSubjectWithAddedSystemRights(),
+                         new PrivilegedAction<Void>()
+                         {
+                             @Override
+                             public Void run()
+                             {
+                                 for (Binding<?> binding : bindings)
+                                 {
+                                     removeBindingFutures.add(binding.deleteAsync());
+                                 }
+                                 return null;
+                             }
+                         });
 
             ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(removeBindingFutures);
             return doAfter(combinedFuture, new Runnable()
