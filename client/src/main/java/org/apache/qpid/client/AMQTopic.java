@@ -39,16 +39,28 @@ public class AMQTopic extends AMQDestination implements Topic
     public AMQTopic(String address) throws URISyntaxException
     {
         super(address);
+        if (super.getRoutingKey() == null)
+        {
+            setRoutingKey("");
+        }
     }
 
     public AMQTopic(Address address)
     {
         super(address);
+        if (super.getRoutingKey() == null)
+        {
+            setRoutingKey("");
+        }
     }
 
     public AMQTopic()
     {
         super();
+        if (super.getRoutingKey() == null)
+        {
+            setRoutingKey("");
+        }
     }
 
     /**
@@ -59,16 +71,20 @@ public class AMQTopic extends AMQDestination implements Topic
     public AMQTopic(BindingURL binding)
     {
         super(binding);
+        if (super.getRoutingKey() == null)
+        {
+            setRoutingKey("");
+        }
     }
 
     public AMQTopic(String exchange, String routingKey, String queueName)
     {
-        super(exchange, ExchangeDefaults.TOPIC_EXCHANGE_CLASS, routingKey, true, true, queueName, false);
+        this(exchange, ExchangeDefaults.TOPIC_EXCHANGE_CLASS, routingKey, true, true, queueName, false);
     }
 
     public AMQTopic(String exchange, String routingKey, String queueName, String[] bindingKeys)
     {
-        super(exchange, ExchangeDefaults.TOPIC_EXCHANGE_CLASS, routingKey, true, true, queueName, false, bindingKeys);
+        this(exchange, ExchangeDefaults.TOPIC_EXCHANGE_CLASS, routingKey, true, true, queueName, false, bindingKeys);
     }
 
     public AMQTopic(AMQConnection conn, String routingKey)
@@ -83,25 +99,25 @@ public class AMQTopic extends AMQDestination implements Topic
 
     public AMQTopic(String exchangeName, String name, boolean isAutoDelete, String queueName, boolean isDurable)
     {
-        super(exchangeName, ExchangeDefaults.TOPIC_EXCHANGE_CLASS, name, true, isAutoDelete, queueName, isDurable);
+        this(exchangeName, ExchangeDefaults.TOPIC_EXCHANGE_CLASS, name, true, isAutoDelete, queueName, isDurable);
     }
 
 
     protected AMQTopic(String exchangeName, String exchangeClass, String name, boolean isAutoDelete, String queueName, boolean isDurable)
     {
-        super(exchangeName, exchangeClass, name, true, isAutoDelete, queueName, isDurable);
+        this(exchangeName, exchangeClass, name, true, isAutoDelete, queueName, isDurable);
     }
 
     protected AMQTopic(String exchangeName, String exchangeClass, String routingKey, boolean isExclusive,
                                boolean isAutoDelete, String queueName, boolean isDurable)
     {
-        super(exchangeName, exchangeClass, routingKey, isExclusive, isAutoDelete, queueName, isDurable );
+        this(exchangeName, exchangeClass, routingKey, isExclusive, isAutoDelete, queueName, isDurable, null );
     }
 
     protected AMQTopic(String exchangeName, String exchangeClass, String routingKey, boolean isExclusive,
             boolean isAutoDelete, String queueName, boolean isDurable, String[] bindingKeys)
     {
-        super(exchangeName, exchangeClass, routingKey, isExclusive, isAutoDelete, queueName, isDurable, bindingKeys);
+        super(exchangeName, exchangeClass, routingKey == null ? "" : routingKey, isExclusive, isAutoDelete, queueName, isDurable, bindingKeys);
     }
 
     public static AMQTopic createDurableTopic(Topic topic, String subscriptionName, AMQConnection connection)
@@ -150,6 +166,7 @@ public class AMQTopic extends AMQDestination implements Topic
         return connection.getClientID() + ":" + subscriptionName;
     }
 
+    @Override
     public String getTopicName() throws JMSException
     {
         if (getRoutingKey() != null)
@@ -179,6 +196,7 @@ public class AMQTopic extends AMQDestination implements Topic
         }
     }
 
+    @Override
     public String getRoutingKey()
     {
         if (super.getRoutingKey() != null)
@@ -191,17 +209,19 @@ public class AMQTopic extends AMQDestination implements Topic
         }
         else
         {
-            setRoutingKey("");
+            setRoutingKey("");  // Side effect
             setSubject("");
             return super.getRoutingKey();
         }
     }
 
+    @Override
     public boolean isNameRequired()
     {
         return !isDurable();
     }
 
+    @Override
     public boolean equals(Object o)
     {
         if (getDestSyntax() == DestSyntax.ADDR)
@@ -216,6 +236,7 @@ public class AMQTopic extends AMQDestination implements Topic
         }
     }
 
+    @Override
     public int hashCode()
     {
         if (getDestSyntax() == DestSyntax.ADDR)

@@ -77,6 +77,7 @@ public class AMQAnyDestination extends AMQDestination implements Queue, Topic
         return getAMQQueueName() == null;
     }
 
+    @Override
     public String getTopicName() throws JMSException
     {
         if (getRoutingKey() != null)

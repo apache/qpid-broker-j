@@ -54,6 +54,7 @@ import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.message.QpidMessageProperties;
+import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.jndi.PropertiesFileInitialContextFactory;
 import org.apache.qpid.messaging.Address;
 import org.apache.qpid.protocol.AMQConstant;
@@ -1605,5 +1606,52 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
         MessageProducer prod = ssn.createProducer(dest);
         prod.close();
         ((AMQSession)ssn).isQueueExist(verifyDest, true);
+    }
+
+    /**
+     * QPID-7692: Receiving a message sent using a destination which has no subject fails when client is in BURL dest syntax mode.
+     */
+    public void testJMSDestination_DestinationWithoutSubject() throws Exception
+    {
+        _connection.close();
+
+        doTestJMSDestiation_DestinationWithoutSubject("BURL");
+        doTestJMSDestiation_DestinationWithoutSubject("ADDR");
+    }
+
+    private void doTestJMSDestiation_DestinationWithoutSubject(final String clientDestSyntaxDefault) throws Exception
+    {
+        // The client uses the default destination syntax when processing the destination on received messages
+        setTestClientSystemProperty(ClientProperties.DEST_SYNTAX, clientDestSyntaxDefault);
+
+        String exchange = "myfanout";
+        Connection connection = getConnection();
+        connection.start();
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+        String publisher = String.format("ADDR:%s; {create: always, node: {type: topic, x-declare: { type: fanout }}}",
+                             exchange);
+        String subscriber = String.format("ADDR:sub1; {create: always, node : {type : queue, x-bindings: [{ exchange: '%s', key: sub1 }]}}",
+                             exchange);
+
+        Destination pubDest = session.createQueue(publisher);
+        Destination subDest  = session.createQueue(subscriber);
+
+        MessageProducer producer = session.createProducer(pubDest);
+        MessageConsumer consumer = session.createConsumer(subDest);
+
+        Message m = session.createMessage();
+        producer.send(m);
+        session.commit();
+
+        Message receivedMessage = consumer.receive(getReceiveTimeout());
+        assertNotNull("Message did not arrive",  receivedMessage);
+        AMQDestination jmsDestination = (AMQDestination) receivedMessage.getJMSDestination();
+        assertNotNull("Received message should have JMSDestination", jmsDestination);
+
+        assertEquals("Unexpected exchange within JMSDestination", exchange, jmsDestination.getExchangeName());
+        assertNull("Unexpected subject within JMSDestination", jmsDestination.getSubject());
+        session.commit();
+        connection.close();
     }
 }

@@ -949,12 +949,12 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
                         // Generate the queue name if the destination indicates that a client generated name is to be used.
                         if (amqd.isNameRequired())
                         {
-                            String binddingKey = "";
+                            String bindingKey = "";
                             for(String key : amqd.getBindingKeys())
                             {
-                               binddingKey = binddingKey + "_" + key;
+                               bindingKey = bindingKey + "_" + key;
                             }
-                            amqd.setQueueName(binddingKey + "@"
+                            amqd.setQueueName(bindingKey + "@"
                                     + amqd.getExchangeName() + "_" + UUID.randomUUID());
                         }
                         return send0_10QueueDeclare(amqd, noLocal, nowait, passive);

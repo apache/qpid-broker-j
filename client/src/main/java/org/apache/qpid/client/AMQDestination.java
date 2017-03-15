@@ -372,12 +372,6 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
     protected AMQDestination(String exchangeName, String exchangeClass, String routingKey, boolean isExclusive,
                              boolean isAutoDelete, String queueName, boolean isDurable, String[] bindingKeys, boolean browseOnly)
     {
-        if ( (ExchangeDefaults.DIRECT_EXCHANGE_CLASS.equals(exchangeClass) ||
-              ExchangeDefaults.TOPIC_EXCHANGE_CLASS.equals(exchangeClass))
-              && routingKey == null)
-        {
-            throw new IllegalArgumentException("routing/binding key  must not be null");
-        }
         if (exchangeName == null)
         {
             throw new IllegalArgumentException("Exchange name must not be null");
@@ -515,11 +509,15 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         {
             return _bindingKeys;
         }
-        else
+        else if (_routingKey != null)
         {
             // catering to the common use case where the
             //routingKey is the same as the bindingKey.
             return new String[]{_routingKey};
+        }
+        else
+        {
+            return new String[0];
         }
     }
 
@@ -571,7 +569,12 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
             sb.append("://");
             sb.append(_exchangeName);
 
-            sb.append("/"+_routingKey+"/");
+            sb.append("/");
+            if (_routingKey != null)
+            {
+                sb.append(_routingKey);
+            }
+            sb.append("/");
 
             if (_queueName != null)
             {
@@ -660,6 +663,7 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         return url;
     }
 
+    @Override
     public boolean equals(Object o)
     {
         if (this == o)
@@ -719,6 +723,7 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         return true;
     }
 
+    @Override
     public int hashCode()
     {
         int result;
