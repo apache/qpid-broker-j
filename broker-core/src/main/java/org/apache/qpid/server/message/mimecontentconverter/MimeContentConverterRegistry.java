@@ -25,39 +25,54 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
+
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 
 public class MimeContentConverterRegistry
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MimeContentConverterRegistry.class);
+
     private static final Map<String, MimeContentToObjectConverter> _mimeContentToObjectConverters;
-    private static final Map<Class, SortedMap<Integer, ObjectToMimeContentConverter>> _classToRankedMimeContentConverter;
+    private static final Multimap<Class, ObjectToMimeContentConverter> _classToMimeContentConverters;
 
     static
     {
-        _classToRankedMimeContentConverter = buildClassToRankedMap();
+        _classToMimeContentConverters = buildClassToMimeConverters();
         _mimeContentToObjectConverters = buildMimeContentToObjectMap();
     }
 
-    private static Map<Class, SortedMap<Integer, ObjectToMimeContentConverter>> buildClassToRankedMap()
+    private static Multimap<Class, ObjectToMimeContentConverter> buildClassToMimeConverters()
     {
-        Map<Class, SortedMap<Integer, ObjectToMimeContentConverter>> classToRankedMimeContentConverter = new HashMap<>();
-        for(ObjectToMimeContentConverter converter : (new QpidServiceLoader()).instancesOf(ObjectToMimeContentConverter.class))
+        Multimap<Class, ObjectToMimeContentConverter> classToMineConverters = HashMultimap.create();
+        Iterable<ObjectToMimeContentConverter> objectToMimeContentConverters = new QpidServiceLoader().instancesOf(ObjectToMimeContentConverter.class);
+        for(ObjectToMimeContentConverter converter : objectToMimeContentConverters)
         {
-            SortedMap<Integer, ObjectToMimeContentConverter> rankMap = classToRankedMimeContentConverter.get(converter.getObjectClass());
-            if (rankMap == null)
+            Class objectClass = converter.getObjectClass();
+            for(ObjectToMimeContentConverter existing : classToMineConverters.get(objectClass))
             {
-                rankMap = new TreeMap<>();
-                classToRankedMimeContentConverter.put(converter.getObjectClass(), rankMap);
+                if (existing.getRank() == converter.getRank())
+                {
+                    LOGGER.warn("MIME converter for object class {} has two or more implementations"
+                                + " with the same rank {}. The one that will be used is undefined."
+                                + " Implementations are: {} {} ",
+                                existing.getObjectClass().getName(),
+                                existing.getRank(),
+                                existing.getClass().getName(),
+                                converter.getClass().getName());
+                }
+
             }
-            rankMap.put(converter.getRank(), converter);
+            classToMineConverters.put(objectClass, converter);
         }
-        return Collections.unmodifiableMap(classToRankedMimeContentConverter);
+        return ImmutableMultimap.copyOf(classToMineConverters);
     }
 
     private static Map<String, MimeContentToObjectConverter> buildMimeContentToObjectMap()
@@ -66,7 +81,15 @@ public class MimeContentConverterRegistry
         for(MimeContentToObjectConverter converter : (new QpidServiceLoader()).instancesOf(MimeContentToObjectConverter.class))
         {
             final String mimeType = converter.getMimeType();
-            mimeContentToObjectConverters.put(mimeType, converter);
+            final MimeContentToObjectConverter existing = mimeContentToObjectConverters.put(mimeType, converter);
+            if (existing != null)
+            {
+                LOGGER.warn("MIME converter {} for mime type '{}' replaced by {}.",
+                            existing.getClass().getName(),
+                            existing.getMimeType(),
+                            converter.getClass().getName());
+            }
+
         }
         return Collections.unmodifiableMap(mimeContentToObjectConverters);
     }
@@ -82,27 +105,24 @@ public class MimeContentConverterRegistry
         {
             return null;
         }
-        SortedMap<Integer, ObjectToMimeContentConverter> potentialConverters = new TreeMap<>();
+
         final List<Class<?>> classes = new ArrayList<>(Arrays.asList(object.getClass().getInterfaces()));
         classes.add(object.getClass());
+        ObjectToMimeContentConverter converter = null;
         for (Class<?> i : classes)
         {
-            if (_classToRankedMimeContentConverter.get(i) != null)
+            for (ObjectToMimeContentConverter candidate : _classToMimeContentConverters.get(i))
             {
-                SortedMap<Integer, ObjectToMimeContentConverter> ranked = new TreeMap<>(_classToRankedMimeContentConverter.get(i));
-                Iterator<Map.Entry<Integer, ObjectToMimeContentConverter>> itr = ranked.entrySet().iterator();
-                while (itr.hasNext())
+                if (candidate.isAcceptable(object))
                 {
-                    final Map.Entry<Integer, ObjectToMimeContentConverter> entry = itr.next();
-                    if (!entry.getValue().isAcceptable(object))
+                    if (converter == null || candidate.getRank() > converter.getRank())
                     {
-                        itr.remove();
+                        converter = candidate;
                     }
                 }
-                potentialConverters.putAll(ranked);
             }
         }
 
-        return potentialConverters.isEmpty() ? null : potentialConverters.get(potentialConverters.lastKey());
+        return converter;
     }
 }

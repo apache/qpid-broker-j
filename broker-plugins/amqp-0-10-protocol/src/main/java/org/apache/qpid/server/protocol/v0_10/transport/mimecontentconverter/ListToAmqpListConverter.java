@@ -55,16 +55,16 @@ public class ListToAmqpListConverter implements ObjectToMimeContentConverter<Lis
     }
 
     @Override
-    public boolean isAcceptable(final List map)
+    public boolean isAcceptable(final List list)
     {
         return true;
     }
 
     @Override
-    public byte[] toMimeContent(final List map)
+    public byte[] toMimeContent(final List list)
     {
         BBEncoder encoder = new BBEncoder(1024);
-        encoder.writeList(map);
+        encoder.writeList(list);
         final ByteBuffer buf = encoder.buffer();
         int remaining = buf.remaining();
         byte[] data = new byte[remaining];

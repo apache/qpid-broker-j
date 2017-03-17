@@ -28,6 +28,7 @@ public interface ObjectToMimeContentConverter<O extends Object> extends Pluggabl
 
     Class<O> getObjectClass();
 
+    /** A converter with a higher rank value takes priority over those with lower values. */
     int getRank();
 
     boolean isAcceptable(O object);
