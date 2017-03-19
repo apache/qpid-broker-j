@@ -31,6 +31,7 @@ import java.util.ListIterator;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 
@@ -324,7 +325,8 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         SSLUtil.updateEnabledCipherSuites(sslEngine, port.getTlsCipherSuiteWhiteList(), port.getTlsCipherSuiteBlackList());
         if(port.getTlsCipherSuiteWhiteList() != null && !port.getTlsCipherSuiteWhiteList().isEmpty())
         {
-            SSLUtil.useCipherOrderIfPossible(sslEngine);
+            SSLParameters sslParameters = sslEngine.getSSLParameters();
+            sslParameters.setUseCipherSuitesOrder(true);
         }
 
         if(port.getNeedClientAuth())

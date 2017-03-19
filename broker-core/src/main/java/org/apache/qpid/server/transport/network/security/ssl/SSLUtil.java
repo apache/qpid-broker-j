@@ -27,8 +27,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.net.URL;
 import java.nio.BufferUnderflowException;
@@ -76,24 +74,6 @@ public class SSLUtil
 
     private static final Integer DNS_NAME_TYPE = 2;
     public static final String[] TLS_PROTOCOL_PREFERENCES = new String[]{"TLSv1.2", "TLSv1.1", "TLS", "TLSv1"};
-
-    private static final Method SSL_PARAMETERS_SET_USE_CIPHER_SUITES_ORDER;
-
-    static
-    {
-        Method method;
-        try
-        {
-            method = SSLParameters.class.getMethod("setUseCipherSuitesOrder", Boolean.TYPE);
-        }
-        catch (NoSuchMethodException e)
-        {
-            method = null;
-        }
-
-        SSL_PARAMETERS_SET_USE_CIPHER_SUITES_ORDER = method;
-    }
-
 
     private SSLUtil()
     {
@@ -631,22 +611,5 @@ public class SSLUtil
         }
         throw new NoSuchAlgorithmException(String.format("Could not create SSLContext with one of the requested protocols: %s",
                                                          Arrays.toString(protocols)));
-    }
-
-    public static void useCipherOrderIfPossible(final SSLEngine sslEngine)
-    {
-        if(SSL_PARAMETERS_SET_USE_CIPHER_SUITES_ORDER != null)
-        {
-            SSLParameters sslParameters = sslEngine.getSSLParameters();
-            try
-            {
-                SSL_PARAMETERS_SET_USE_CIPHER_SUITES_ORDER.invoke(sslParameters, Boolean.TRUE);
-                sslEngine.setSSLParameters(sslParameters);
-            }
-            catch (IllegalAccessException | InvocationTargetException e)
-            {
-                LOGGER.debug("Unable to invoke SSLParameters.setCipherSuiteOrder", e);
-            }
-        }
     }
 }

@@ -31,14 +31,14 @@
         following at the command prompt: </para>
       <programlisting>echo %JAVA_HOME%</programlisting>
       <para> If JAVA_HOME is set you will see something similar to the following: </para>
-      <screen>c:"\PROGRA~1"\Java\jdk1.7.0_79\
+      <screen>c:"\PROGRA~1"\Java\jdk1.8.0_121\
       </screen>
-      <para> Then confirm that a Java installation (1.7 or higher) is available: </para>
+      <para> Then confirm that a Java installation (1.8 or higher) is available: </para>
       <programlisting>java -version</programlisting>
       <para> If java is available on the path, output similar to the following will be seen: </para>
-      <screen>java version "1.7.0_79"
-Java(TM) SE Runtime Environment (build 1.7.0_79-b15)
-Java HotSpot(TM) 64-Bit Server VM (build 24.79-b02, mixed mode)</screen>
+      <screen>java version "1.8.0_121-b13"
+Java(TM) SE Runtime Environment (build 1.8.0_121-b13)
+Java HotSpot(TM) 64-Bit Server VM (build 25.121-b13, mixed mode)</screen>
     </section>
 
     <section role="h2" xml:id="Java-Broker-Miscellaneous-JVM-Verification-Unix">
@@ -47,14 +47,14 @@ Java HotSpot(TM) 64-Bit Server VM (build 24.79-b02, mixed mode)</screen>
         following at the command prompt: </para>
       <programlisting>echo $JAVA_HOME</programlisting>
       <para> If JAVA_HOME is set you will see something similar to the following: </para>
-      <screen>/usr/java/jdk1.7.0_80
+      <screen>/usr/java/jdk1.8.0_121
       </screen>
-      <para> Then confirm that a Java installation (1.7 or higher) is available: </para>
+      <para> Then confirm that a Java installation (1.8 or higher) is available: </para>
       <programlisting>java -version</programlisting>
       <para> If java is available on the path, output similar to the following will be seen: </para>
-      <screen>java version "1.7.0_80"
-Java(TM) SE Runtime Environment (build 1.7.0_80-b15)
-Java HotSpot(TM) 64-Bit Server VM (build 24.80-b11, mixed mode)</screen>
+      <screen>java version "1.8.0_121-b13"
+        Java(TM) SE Runtime Environment (build 1.8.0_121-b13)
+        Java HotSpot(TM) 64-Bit Server VM (build 25.121-b13, mixed mode)</screen>
     </section>
   </section>
   <section role="h2" xml:id="Java-Broker-Miscellaneous-Installing-External-JDBC-Driver">

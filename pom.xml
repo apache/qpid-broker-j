@@ -76,9 +76,9 @@
 
   <properties>
     <minimum-maven-version>3.0.0</minimum-maven-version>
-    <minimum-java-version>1.7.0</minimum-java-version>
-    <java.source>1.7</java.source>
-    <java.target>1.7</java.target>
+    <minimum-java-version>1.8.0</minimum-java-version>
+    <java.source>1.8</java.source>
+    <java.target>1.8</java.target>
 
     <!-- enforcer plugin config properties -->
     <supported-test-profiles-regex>(java-mms.0-9|java-mms.0-9-1|java-mms.0-10|java-mms.1-0|java-bdb.0-9|java-bdb.0-9-1|java-bdb.0-10|java-bdb.1-0|java-dby.0-9|java-dby.0-9-1|java-dby.0-10|java-dby.1-0|java-dby-mem.0-9|java-dby-mem.0-9-1|java-dby-mem.0-10|cpp|java-json.0-9-1|java-json.0-10|java-json.1-0)</supported-test-profiles-regex>
@@ -1142,8 +1142,8 @@
                 <configuration>
                   <rules>
                     <requireJavaVersion>
-                      <version>[1.7,1.8)</version>
-                      <message>Please, use JDK 1.7 for release</message>
+                      <version>[1.8,1.9)</version>
+                      <message>Please, use JDK 1.8 for release</message>
                     </requireJavaVersion>
                   </rules>
                 </configuration>
