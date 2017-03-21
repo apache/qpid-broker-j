@@ -61,7 +61,7 @@ public class MimeContentConverterRegistry
                 if (existing.getRank() == converter.getRank())
                 {
                     LOGGER.warn("MIME converter for object class {} has two or more implementations"
-                                + " with the same rank {}. The one that will be used is undefined."
+                                + " with the same rank {}. It is undefined which one will be used."
                                 + " Implementations are: {} {} ",
                                 existing.getObjectClass().getName(),
                                 existing.getRank(),
