@@ -25,16 +25,6 @@ org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#*
 org.apache.qpid.test.client.destination.AddressBasedDestinationTest#*
 org.apache.qpid.test.client.queue.QueuePolicyTest#*
 
-// Exclude Tests requiring XA
-org.apache.qpid.test.unit.xa.FaultTest#*
-org.apache.qpid.test.unit.xa.TopicTest#*
-org.apache.qpid.test.unit.xa.QueueTest#*
-org.apache.qpid.jms.xa.XAResourceTest#*
-org.apache.qpid.ra.QpidRAConnectionTest#*
-org.apache.qpid.ra.QpidRAXAResourceTest#*
-org.apache.qpid.ra.admin.QpidConnectionFactoryProxyTest#*
-
-
 // Exclude tests of AMQP 0-x features
 org.apache.qpid.test.client.ImmediateAndMandatoryPublishingTest#*
 org.apache.qpid.test.client.CloseOnNoRouteForMandatoryMessageTest#*

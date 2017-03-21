@@ -27,10 +27,6 @@ org.apache.qpid.test.client.destination.AddressBasedDestinationTest#testDeleteOp
 org.apache.qpid.test.client.ImmediateAndMandatoryPublishingTest#*
 org.apache.qpid.test.client.CloseOnNoRouteForMandatoryMessageTest#*
 
-// the 0.10 c++ broker does not implement forget
-org.apache.qpid.test.unit.xa.FaultTest#testForget
-
-// the 0-10 c++ broker does not implement priority / this test depends on extension for queue creation from Broker for Java
 org.apache.qpid.server.queue.PriorityTest#*
 org.apache.qpid.server.queue.AMQPriorityQueueTest#*
 

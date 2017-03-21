@@ -17,5 +17,3 @@
 // under the License.
 //
 
-// the C++ broker doesn't guarantee the order of messages on recovery
-org.apache.qpid.test.unit.xa.TopicTest#testMultiMessagesDurSubCrash

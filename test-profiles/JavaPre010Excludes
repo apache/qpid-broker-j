@@ -65,15 +65,8 @@ org.apache.qpid.test.unit.client.connection.ConnectionTest#testClientIDVerificat
 // QPID-3604 This fix is applied only to the 0-10 code, hence this test does not work for pre 0-10.
 org.apache.qpid.client.prefetch.PrefetchBehaviourTest#testConnectionStop
 
-//XA functionality is not implemented in pre 0-10
-org.apache.qpid.jms.xa.XAResourceTest#*
-
 //Tests durable subscription selector verification behaviour that 0-8/0-9/0-9-1 cant provide
 org.apache.qpid.test.unit.ct.DurableSubscriberTest#testResubscribeWithChangedSelectorAndRestart
-
-// JCA system tests require XA support (should look to see if we can reduce scope of excludes here)
-org.apache.qpid.ra.QpidRAConnectionTest#*
-org.apache.qpid.ra.QpidRAXAResourceTest#*
 
 // QPID-3396
 org.apache.qpid.test.unit.client.connection.ConnectionTest#testExceptionWhenUserPassIsRequired

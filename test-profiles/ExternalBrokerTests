@@ -25,5 +25,4 @@
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#*
 org.apache.qpid.client.failover.FailoverBehaviourTest#*
 org.apache.qpid.client.failover.MultipleBrokersFailoverTest#*
-org.apache.qpid.jms.xa.XAResourceTest#*
 org.apache.qpid.test.client.failover.FailoverTest#*

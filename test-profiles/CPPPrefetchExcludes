@@ -20,4 +20,3 @@
 // those tests should be run with prefetch off
 org.apache.qpid.client.SynchReceiveTest#testTwoConsumersInterleaved
 org.apache.qpid.client.SynchReceiveTest#testIdleSecondConsumer
-org.apache.qpid.test.unit.xa.TopicTest#testMigrateDurableSubscriber

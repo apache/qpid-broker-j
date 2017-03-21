@@ -22,11 +22,6 @@ org.apache.qpid.test.unit.topic.DurableSubscriptionTest#testDurSubRestoredAfterN
 
 // those tests require broker recovery
 org.apache.qpid.test.unit.ct.DurableSubscriberTest#*
-org.apache.qpid.test.unit.xa.TopicTest#testDurSubCrash
-org.apache.qpid.test.unit.xa.TopicTest#testMultiMessagesDurSubCrash
-org.apache.qpid.test.unit.xa.TopicTest#testRecover
-org.apache.qpid.test.unit.xa.QueueTest#testRecover
-org.apache.qpid.test.unit.xa.QueueTest#testSendAndRecover
 
 // test requires a persistent store
 org.apache.qpid.test.unit.ack.ClientAcknowledgeTest#testClientAckWithLargeFlusherPeriod
