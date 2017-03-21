@@ -121,6 +121,64 @@ public class Target
     }
 
     @Override
+    public boolean equals(final Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+
+        final Target target = (Target) o;
+
+        if (_address != null ? !_address.equals(target._address) : target._address != null)
+        {
+            return false;
+        }
+        if (_durable != null ? !_durable.equals(target._durable) : target._durable != null)
+        {
+            return false;
+        }
+        if (_expiryPolicy != null ? !_expiryPolicy.equals(target._expiryPolicy) : target._expiryPolicy != null)
+        {
+            return false;
+        }
+        if (_timeout != null ? !_timeout.equals(target._timeout) : target._timeout != null)
+        {
+            return false;
+        }
+        if (_dynamic != null ? !_dynamic.equals(target._dynamic) : target._dynamic != null)
+        {
+            return false;
+        }
+        if (_dynamicNodeProperties != null
+              ? !_dynamicNodeProperties.equals(target._dynamicNodeProperties)
+              : target._dynamicNodeProperties != null)
+        {
+            return false;
+        }
+
+        return Arrays.equals(_capabilities, target._capabilities);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = _address != null ? _address.hashCode() : 0;
+        result = 31 * result + (_durable != null ? _durable.hashCode() : 0);
+        result = 31 * result + (_expiryPolicy != null ? _expiryPolicy.hashCode() : 0);
+        result = 31 * result + (_timeout != null ? _timeout.hashCode() : 0);
+        result = 31 * result + (_dynamic != null ? _dynamic.hashCode() : 0);
+        result = 31 * result + (_dynamicNodeProperties != null ? _dynamicNodeProperties.hashCode() : 0);
+        result = 31 * result + Arrays.hashCode(_capabilities);
+        return result;
+    }
+
+    @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder("Target{");

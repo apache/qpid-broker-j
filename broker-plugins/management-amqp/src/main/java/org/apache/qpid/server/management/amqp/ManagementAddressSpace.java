@@ -66,7 +66,7 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxNotSupportedException;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.virtualhost.LinkRegistry;
+import org.apache.qpid.server.virtualhost.LinkRegistryModel;
 import org.apache.qpid.server.virtualhost.LinkRegistryFactory;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNode;
 
@@ -89,7 +89,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
     private final Principal _principal;
     private final UUID _id;
     private final ConcurrentMap<Object, ConcurrentMap<String, ProxyMessageSource>> _connectionSpecificDestinations = new ConcurrentHashMap<>();
-    private final LinkRegistry _linkRegistry;
+    private final LinkRegistryModel _linkRegistry;
 
     public ManagementAddressSpace(final SystemAddressSpaceCreator.AddressSpaceRegistry addressSpaceRegistry)
     {
@@ -118,6 +118,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
                 throw new RuntimeException("Found multiple implementations of LinkRegistry");
             }
             _linkRegistry = linkRegistryFactory.create(this);
+            _linkRegistry.open();
         }
         else
         {

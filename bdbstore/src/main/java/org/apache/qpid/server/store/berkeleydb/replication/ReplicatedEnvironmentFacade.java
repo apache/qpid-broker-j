@@ -628,13 +628,12 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         return cachedHandle;
     }
 
-
     @Override
-    public Database clearDatabase(String name, DatabaseConfig databaseConfig)
+    public Database clearDatabase(Transaction txn, String databaseName, DatabaseConfig databaseConfig)
     {
-        closeDatabase(name);
-        getEnvironment().removeDatabase(null, name);
-        return openDatabase(name, databaseConfig);
+        closeDatabase(databaseName);
+        getEnvironment().removeDatabase(txn, databaseName);
+        return getEnvironment().openDatabase(txn, databaseName, databaseConfig);
     }
 
     @Override
@@ -881,6 +880,13 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
         return submitEnvironmentTask(timeout, task, "get database statistics for '" + database + "'");
 
+    }
+
+    @Override
+    public void deleteDatabase(final String databaseName)
+    {
+        closeDatabase(databaseName);
+        getEnvironment().removeDatabase(null, databaseName);
     }
 
 

@@ -185,6 +185,17 @@ public class BDBVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<BDBV
     }
 
     @Override
+    public EnvironmentFacade getEnvironmentFacade()
+    {
+        BDBConfigurationStore bdbConfigurationStore = (BDBConfigurationStore) getConfigurationStore();
+        if (bdbConfigurationStore != null)
+        {
+            return bdbConfigurationStore.getEnvironmentFacade();
+        }
+        return null;
+    }
+
+    @Override
     public PreferenceStore getPreferenceStore()
     {
         return ((BDBConfigurationStore) getConfigurationStore()).getPreferenceStore();

@@ -178,7 +178,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
 
-    private volatile LinkRegistry _linkRegistry;
+    private volatile LinkRegistryModel _linkRegistry;
     private AtomicBoolean _blocked = new AtomicBoolean();
 
     private final Map<String, MessageDestination> _systemNodeDestinations =
@@ -595,7 +595,16 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         PreferencesRoot preferencesRoot = (VirtualHostNode) getParent();
         _preferenceStore = preferencesRoot.createPreferenceStore();
 
-        Iterator<LinkRegistryFactory> linkRegistryFactories = (new QpidServiceLoader()).instancesOf(LinkRegistryFactory.class).iterator();
+        _linkRegistry = createLinkRegistry();
+
+        createHousekeepingExecutor();
+    }
+
+    LinkRegistryModel createLinkRegistry()
+    {
+        LinkRegistryModel linkRegistry;
+        Iterator<LinkRegistryFactory>
+                linkRegistryFactories = (new QpidServiceLoader()).instancesOf(LinkRegistryFactory.class).iterator();
         if (linkRegistryFactories.hasNext())
         {
             final LinkRegistryFactory linkRegistryFactory = linkRegistryFactories.next();
@@ -603,14 +612,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 throw new RuntimeException("Found multiple implementations of LinkRegistry");
             }
-            _linkRegistry = linkRegistryFactory.create(this);
+            linkRegistry = linkRegistryFactory.create(this);
         }
         else
         {
-            _linkRegistry = null;
+            linkRegistry = null;
         }
-
-        createHousekeepingExecutor();
+        return linkRegistry;
     }
 
     private void createHousekeepingExecutor()
@@ -2113,6 +2121,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 shutdownHouseKeeping();
                 closeNetworkConnectionScheduler();
+                if (_linkRegistry != null)
+                {
+                    _linkRegistry.close();
+                }
                 closeMessageStore();
                 stopPreferenceTaskExecutor();
                 closePreferenceStore();
@@ -2165,6 +2177,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     @Override
                     public void run()
                     {
+                        if (_linkRegistry != null)
+                        {
+                            _linkRegistry.delete();
+                        }
                         MessageStore ms = getMessageStore();
                         if (ms != null)
                         {
@@ -2512,6 +2528,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
 
         messageStore.upgradeStoreStructure();
+
+        if (_linkRegistry != null)
+        {
+            _linkRegistry.open();
+        }
 
         getBroker().assignTargetSizes();
 

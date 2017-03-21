@@ -276,5 +276,102 @@ public class Source implements BaseSource
         return builder.toString();
     }
 
+    @Override
+    public boolean equals(final Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
 
+        final Source source = (Source) o;
+
+        if (_address != null ? !_address.equals(source._address) : source._address != null)
+        {
+            return false;
+        }
+        if (_durable != null ? !_durable.equals(source._durable) : source._durable != null)
+        {
+            return false;
+        }
+        if (_expiryPolicy != null ? !_expiryPolicy.equals(source._expiryPolicy) : source._expiryPolicy != null)
+        {
+            return false;
+        }
+        if (_timeout != null ? !_timeout.equals(source._timeout) : source._timeout != null)
+        {
+            return false;
+        }
+        if (_dynamic != null ? !_dynamic.equals(source._dynamic) : source._dynamic != null)
+        {
+            return false;
+        }
+        if (_dynamicNodeProperties != null
+                ? !_dynamicNodeProperties.equals(source._dynamicNodeProperties)
+                : source._dynamicNodeProperties != null)
+        {
+            return false;
+        }
+        if (_distributionMode != null
+                ? !_distributionMode.equals(source._distributionMode)
+                : source._distributionMode != null)
+        {
+            return false;
+        }
+        if (_filter != null ? !_filter.equals(source._filter) : source._filter != null)
+        {
+            return false;
+        }
+        if (_defaultOutcome != null)
+        {
+            if  (source._defaultOutcome == null)
+            {
+                return false;
+            }
+
+            if (_defaultOutcome.getSymbol() != null)
+            {
+                if (source._defaultOutcome.getSymbol() == null)
+                {
+                    return false;
+                }
+
+                if (!_defaultOutcome.getSymbol().equals(source._defaultOutcome.getSymbol()))
+                {
+                    return false;
+                }
+            }
+            else if (source._defaultOutcome.getSymbol() != null)
+            {
+                return false;
+            }
+        }
+        else if (source._defaultOutcome != null)
+        {
+            return false;
+        }
+
+        return Arrays.equals(_outcomes, source._outcomes) && Arrays.equals(_capabilities, source._capabilities);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = _address != null ? _address.hashCode() : 0;
+        result = 31 * result + (_durable != null ? _durable.hashCode() : 0);
+        result = 31 * result + (_expiryPolicy != null ? _expiryPolicy.hashCode() : 0);
+        result = 31 * result + (_timeout != null ? _timeout.hashCode() : 0);
+        result = 31 * result + (_dynamic != null ? _dynamic.hashCode() : 0);
+        result = 31 * result + (_dynamicNodeProperties != null ? _dynamicNodeProperties.hashCode() : 0);
+        result = 31 * result + (_distributionMode != null ? _distributionMode.hashCode() : 0);
+        result = 31 * result + (_filter != null ? _filter.hashCode() : 0);
+        result = 31 * result + (_defaultOutcome != null ? _defaultOutcome.hashCode() : 0);
+        result = 31 * result + Arrays.hashCode(_outcomes);
+        result = 31 * result + Arrays.hashCode(_capabilities);
+        return result;
+    }
   }

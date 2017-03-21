@@ -72,6 +72,13 @@
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-jms_2.0_spec</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-broker-plugins-amqp-1-0-protocol-bdb-store</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
   </dependencies>
 
   <profiles>

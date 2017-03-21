@@ -182,4 +182,15 @@ public class BDBVirtualHostImpl extends AbstractVirtualHost<BDBVirtualHostImpl> 
         }
         return Collections.emptyMap();
     }
+
+    @Override
+    public EnvironmentFacade getEnvironmentFacade()
+    {
+        BDBMessageStore bdbMessageStore = (BDBMessageStore) getMessageStore();
+        if (bdbMessageStore != null)
+        {
+            return bdbMessageStore.getEnvironmentFacade();
+        }
+        return null;
+    }
 }

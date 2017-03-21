@@ -361,6 +361,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 _sessionState = SessionState.ENDED;
                 break;
             case ACTIVE:
+                _sessionState = SessionState.END_RECVD;
                 detachLinks();
                 remoteEnd(end);
                 _connection.sendEnd(_sendingChannel, new End(), true);
@@ -833,7 +834,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             if (!Boolean.TRUE.equals(source.getDynamic()))
             {
                 final Map<String, Object> attributes = new HashMap<>();
-                boolean isDurable = source.getDurable() != TerminusDurability.NONE;
+                boolean isDurable = source.getExpiryPolicy() == TerminusExpiryPolicy.NEVER;
                 boolean isShared = hasCapability(source.getCapabilities(), SHARED_CAPABILITY);
                 boolean isGlobal = hasCapability(source.getCapabilities(), ExchangeDestination.GLOBAL_CAPABILITY);
 
@@ -1107,7 +1108,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     void remoteEnd(End end)
     {
-        for (LinkEndpoint linkEndpoint : _associatedLinkEndpoints)
+        Set<LinkEndpoint> associatedLinkEndpoints = new HashSet<>(_associatedLinkEndpoints);
+        for (LinkEndpoint linkEndpoint : associatedLinkEndpoints)
         {
             linkEndpoint.remoteDetached(new Detach());
             linkEndpoint.destroy();

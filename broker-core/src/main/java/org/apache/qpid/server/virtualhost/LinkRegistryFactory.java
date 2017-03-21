@@ -24,5 +24,5 @@ import org.apache.qpid.server.plugin.Pluggable;
 
 public interface LinkRegistryFactory extends Pluggable
 {
-    LinkRegistry create(NamedAddressSpace addressSpace);
+    LinkRegistryModel create(NamedAddressSpace addressSpace);
 }

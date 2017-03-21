@@ -22,13 +22,12 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 
-public interface Link_1_0 extends LinkModel
+public interface Link_1_0 extends LinkDefinition
 {
     ListenableFuture<? extends LinkEndpoint> attach(Session_1_0 session, final Attach attach);
 
@@ -36,17 +35,11 @@ public interface Link_1_0 extends LinkModel
 
     void discardEndpoint();
 
-    String getName();
-
-    Role getRole();
-
-    BaseSource getSource();
-
-    BaseTarget getTarget();
-
     void setSource(BaseSource source);
 
     void setTarget(BaseTarget target);
 
     void setTermini(BaseSource source, BaseTarget target);
+
+    TerminusDurability getHighestSupportedTerminusDurability();
 }

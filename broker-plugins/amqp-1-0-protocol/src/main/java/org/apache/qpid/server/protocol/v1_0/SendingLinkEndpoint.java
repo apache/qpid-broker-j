@@ -62,6 +62,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.StdDistMode;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
@@ -503,11 +504,12 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
     protected void remoteDetachedPerformDetach(final Detach detach)
     {
         getConsumerTarget().close();
-        //TODO
-        // if not durable or close
+
+        TerminusExpiryPolicy expiryPolicy = ((Source) getSource()).getExpiryPolicy();
         if (Boolean.TRUE.equals(detach.getClosed())
-            || !(TerminusDurability.UNSETTLED_STATE.equals(getTerminusDurability())
-                 || TerminusDurability.CONFIGURATION.equals(getTerminusDurability())))
+            || TerminusExpiryPolicy.LINK_DETACH.equals(expiryPolicy)
+            || (TerminusExpiryPolicy.SESSION_END.equals(expiryPolicy) && getSession().isClosing())
+            || (TerminusExpiryPolicy.CONNECTION_CLOSE.equals(expiryPolicy) && getSession().getConnection().isClosing()))
         {
 
             Modified state = new Modified();
@@ -520,15 +522,11 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
             _unsettledActionMap.clear();
 
             if (getDestination() instanceof ExchangeDestination
-               && (getTerminusDurability() == TerminusDurability.CONFIGURATION
-                   || getTerminusDurability() == TerminusDurability.UNSETTLED_STATE))
+                && getSession().getConnection().getAddressSpace() instanceof QueueManagingVirtualHost)
             {
                 try
                 {
-                    if (getSession().getConnection().getAddressSpace() instanceof QueueManagingVirtualHost)
-                    {
-                        ((QueueManagingVirtualHost) getSession().getConnection().getAddressSpace()).removeSubscriptionQueue(((ExchangeDestination) getDestination()).getQueue().getName());
-                    }
+                    ((QueueManagingVirtualHost) getSession().getConnection().getAddressSpace()).removeSubscriptionQueue(((ExchangeDestination) getDestination()).getQueue().getName());
                 }
                 catch (AccessControlException e)
                 {
@@ -641,13 +639,15 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
             source = new Source();
             Source attachSource = (Source) attach.getSource();
 
-            final SendingDestination destination = getSession().getSendingDestination(attach.getName(), attachSource);
             source.setAddress(attachSource.getAddress());
             source.setDynamic(attachSource.getDynamic());
-            source.setDurable(attachSource.getDurable());
+            source.setDurable(TerminusDurability.min(attachSource.getDurable(),
+                                                     getLink().getHighestSupportedTerminusDurability()));
             source.setExpiryPolicy(attachSource.getExpiryPolicy());
             source.setDistributionMode(attachSource.getDistributionMode());
             source.setFilter(attachSource.getFilter());
+            source.setCapabilities(attachSource.getCapabilities());
+            final SendingDestination destination = getSession().getSendingDestination(attach.getName(), source);
             source.setCapabilities(destination.getCapabilities());
             if (destination instanceof ExchangeDestination)
             {

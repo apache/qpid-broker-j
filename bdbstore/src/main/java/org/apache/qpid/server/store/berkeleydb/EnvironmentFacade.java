@@ -62,7 +62,8 @@ public interface EnvironmentFacade
     void upgradeIfNecessary(ConfiguredObject<?> parent);
 
     Database openDatabase(String databaseName, DatabaseConfig databaseConfig);
-    Database clearDatabase(String databaseName, DatabaseConfig databaseConfig);
+
+    Database clearDatabase(Transaction txn, String databaseName, DatabaseConfig databaseConfig);
 
     Sequence openSequence(Database database, DatabaseEntry sequenceKey, SequenceConfig sequenceConfig);
 
@@ -97,4 +98,6 @@ public interface EnvironmentFacade
     Map<String, Object> getTransactionStatistics(boolean reset);
 
     Map<String,Object> getDatabaseStatistics(String database, boolean reset);
+
+    void deleteDatabase(String databaseName);
 }

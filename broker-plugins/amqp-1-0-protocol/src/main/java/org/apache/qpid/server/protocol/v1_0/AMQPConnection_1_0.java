@@ -69,6 +69,8 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
 
     boolean isClosed();
 
+    boolean isClosing();
+
     void close(Error error);
 
     Iterator<IdentifiedTransaction> getOpenTransactions();

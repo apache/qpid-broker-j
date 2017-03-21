@@ -21,7 +21,6 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.PluggableService;
-import org.apache.qpid.server.virtualhost.LinkRegistry;
 import org.apache.qpid.server.virtualhost.LinkRegistryFactory;
 
 @PluggableService

@@ -43,10 +43,10 @@ public class LinkRegistryTest extends QpidTestCase
         String remoteContainerId = "testRemoteContainerId";
         String linkName = "testLinkName";
         LinkModel link = _linkRegistry.getSendingLink(remoteContainerId, linkName);
-        assertNotNull("LinkRegistry#getSendingLink should always return an object", link);
+        assertNotNull("LinkRegistryModel#getSendingLink should always return an object", link);
         LinkModel link2 = _linkRegistry.getSendingLink(remoteContainerId, linkName);
-        assertNotNull("LinkRegistry#getSendingLink should always return an object", link2);
-        assertSame("Two calls to LinkRegistry#getSendingLink should return the same object", link, link2);
+        assertNotNull("LinkRegistryModel#getSendingLink should always return an object", link2);
+        assertSame("Two calls to LinkRegistryModel#getSendingLink should return the same object", link, link2);
     }
 
     public void testGetReceivingLink() throws Exception
@@ -54,9 +54,9 @@ public class LinkRegistryTest extends QpidTestCase
         String remoteContainerId = "testRemoteContainerId";
         String linkName = "testLinkName";
         LinkModel link = _linkRegistry.getReceivingLink(remoteContainerId, linkName);
-        assertNotNull("LinkRegistry#getReceivingLink should always return an object", link);
+        assertNotNull("LinkRegistryModel#getReceivingLink should always return an object", link);
         LinkModel link2 = _linkRegistry.getReceivingLink(remoteContainerId, linkName);
-        assertNotNull("LinkRegistry#getReceivingLink should always return an object", link2);
-        assertSame("Two calls to LinkRegistry#getReceivingLink should return the same object", link, link2);
+        assertNotNull("LinkRegistryModel#getReceivingLink should always return an object", link2);
+        assertSame("Two calls to LinkRegistryModel#getReceivingLink should return the same object", link, link2);
     }
 }

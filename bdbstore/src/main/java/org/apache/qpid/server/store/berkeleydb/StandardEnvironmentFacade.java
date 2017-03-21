@@ -310,6 +310,13 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
     }
 
     @Override
+    public void deleteDatabase(final String databaseName)
+    {
+        closeDatabase(databaseName);
+        getEnvironment().removeDatabase(null, databaseName);
+    }
+
+    @Override
     public Map<String, Object> getTransactionStatistics(boolean reset)
     {
         return EnvironmentUtils.getTransactionStatistics(getEnvironment(), reset);
@@ -466,11 +473,11 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
 
 
     @Override
-    public Database clearDatabase(String name, DatabaseConfig databaseConfig)
+    public Database clearDatabase(Transaction txn, String databaseName, DatabaseConfig databaseConfig)
     {
-        closeDatabase(name);
-        getEnvironment().removeDatabase(null, name);
-        return openDatabase(name, databaseConfig);
+        closeDatabase(databaseName);
+        getEnvironment().removeDatabase(txn, databaseName);
+        return getEnvironment().openDatabase(txn, databaseName, databaseConfig);
     }
 
     @Override

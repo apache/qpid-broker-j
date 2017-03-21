@@ -468,6 +468,8 @@ public class StandardReceivingLinkEndpoint extends ReceivingLinkEndpoint
         target.setAddress(attachTarget.getAddress());
         target.setDynamic(attachTarget.getDynamic());
         target.setCapabilities(destination.getCapabilities());
+        target.setDurable(TerminusDurability.min(attachTarget.getDurable(),
+                                                 getLink().getHighestSupportedTerminusDurability()));
 
         setCapabilities(Arrays.asList(destination.getCapabilities()));
         setDestination(destination);

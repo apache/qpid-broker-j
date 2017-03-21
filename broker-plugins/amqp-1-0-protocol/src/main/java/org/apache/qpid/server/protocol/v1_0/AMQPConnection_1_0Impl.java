@@ -349,16 +349,17 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         assertState(FrameReceivingState.ANY_FRAME);
         _frameReceivingState = FrameReceivingState.CLOSED;
         setClosedForInput(true);
-        closeReceived();
         switch (_connectionState)
         {
             case UNOPENED:
             case AWAITING_OPEN:
+                closeReceived();
                 closeConnection(ConnectionError.CONNECTION_FORCED,
                                 "Connection close sent before connection was opened");
                 break;
             case OPEN:
                 _connectionState = ConnectionState.CLOSE_RECEIVED;
+                closeReceived();
                 if(close.getError() != null)
                 {
                     final Error error = close.getError();
@@ -373,10 +374,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 addCloseTicker();
                 break;
             case CLOSE_SENT:
+                closeReceived();
                 _connectionState = ConnectionState.CLOSED;
                 _orderlyClose.set(true);
 
             default:
+                closeReceived();
         }
         _remoteError = close.getError();
     }
@@ -442,6 +445,14 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         return _connectionState == ConnectionState.CLOSED
                || _connectionState == ConnectionState.CLOSE_RECEIVED;
+    }
+
+    @Override
+    public boolean isClosing()
+    {
+        return _connectionState == ConnectionState.CLOSED
+               || _connectionState == ConnectionState.CLOSE_RECEIVED
+               || _connectionState == ConnectionState.CLOSE_SENT;
     }
 
     public boolean closedForInput()

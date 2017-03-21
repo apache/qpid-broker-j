@@ -1461,6 +1461,13 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
             return Collections.emptyMap();
         }
     }
+
+    @Override
+    public EnvironmentFacade getEnvironmentFacade()
+    {
+        return _environmentFacade.get();
+    }
+
     public static Map<String, Collection<String>> getSupportedChildTypes()
     {
         return Collections.singletonMap(VirtualHost.class.getSimpleName(), (Collection<String>) Collections.singleton(BDBHAVirtualHostImpl.VIRTUAL_HOST_TYPE));

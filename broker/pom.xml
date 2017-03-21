@@ -162,6 +162,14 @@
       <optional>true</optional>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-broker-plugins-amqp-1-0-protocol-bdb-store</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+      <optional>true</optional>
+    </dependency>
+
     <!-- test dependencies -->
     <dependency>
       <groupId>org.apache.qpid</groupId>

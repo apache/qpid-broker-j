@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,12 +17,17 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.virtualhost;
 
-import org.apache.qpid.server.protocol.LinkModel;
+package org.apache.qpid.server.protocol.v1_0;
 
-public interface LinkRegistry
+import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
+import org.apache.qpid.server.virtualhost.LinkRegistryModel;
+
+public interface LinkRegistry extends LinkRegistryModel
 {
-    <T extends LinkModel> T getSendingLink(String remoteContainerId, String linkName);
-    <T extends LinkModel> T getReceivingLink(String remoteContainerId, String linkName);
+    void linkClosed(final Link_1_0 link);
+
+    void linkChanged(final Link_1_0 link);
+
+    TerminusDurability getHighestSupportedTerminusDurability();
 }

@@ -31,6 +31,7 @@ import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
@@ -43,17 +44,27 @@ public class LinkImpl implements Link_1_0
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(LinkImpl.class);
 
+    private final String _remoteContainerId;
     private final String _linkName;
-
     private final Role _role;
+    private final LinkRegistry _linkRegistry;
 
     private volatile LinkEndpoint _linkEndpoint;
     private volatile BaseSource _source;
     private volatile BaseTarget _target;
-    LinkImpl(final String linkName, final Role role)
+
+    public LinkImpl(final String remoteContainerId, final String linkName, final Role role, final LinkRegistry linkRegistry)
     {
+        _remoteContainerId = remoteContainerId;
         _linkName = linkName;
         _role = role;
+        _linkRegistry = linkRegistry;
+    }
+
+    public LinkImpl(final LinkDefinition linkDefinition, final LinkRegistry linkRegistry)
+    {
+        this(linkDefinition.getRemoteContainerId(), linkDefinition.getName(), linkDefinition.getRole(), linkRegistry);
+        setTermini(linkDefinition.getSource(), linkDefinition.getTarget());
     }
 
     @Override
@@ -85,12 +96,14 @@ public class LinkImpl implements Link_1_0
                 }
 
                 _linkEndpoint.receiveAttach(attach);
+                _linkRegistry.linkChanged(this);
                 return Futures.immediateFuture((LinkEndpoint) _linkEndpoint);
             }
         }
-        catch (Throwable t)
+        catch (Exception e)
         {
-            return rejectLink(session, t);
+            LOGGER.debug("Error attaching link", e);
+            return rejectLink(session, e);
         }
     }
 
@@ -163,6 +176,7 @@ public class LinkImpl implements Link_1_0
     public void linkClosed()
     {
         discardEndpoint();
+        _linkRegistry.linkClosed(this);
     }
 
     @Override
@@ -192,7 +206,7 @@ public class LinkImpl implements Link_1_0
     @Override
     public void setSource(BaseSource source)
     {
-        _source = source;
+        setTermini(source, _target);
     }
 
     @Override
@@ -204,7 +218,7 @@ public class LinkImpl implements Link_1_0
     @Override
     public void setTarget(BaseTarget target)
     {
-        _target = target;
+        setTermini(_source, target);
     }
 
     @Override
@@ -212,5 +226,17 @@ public class LinkImpl implements Link_1_0
     {
         _source = source;
         _target = target;
+    }
+
+    @Override
+    public TerminusDurability getHighestSupportedTerminusDurability()
+    {
+        return _linkRegistry.getHighestSupportedTerminusDurability();
+    }
+
+    @Override
+    public String getRemoteContainerId()
+    {
+        return _remoteContainerId;
     }
 }

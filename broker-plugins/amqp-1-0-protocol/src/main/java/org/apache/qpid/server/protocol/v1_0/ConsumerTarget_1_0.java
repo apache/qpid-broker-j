@@ -279,7 +279,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         getEndpoint().setSource(null);
         getEndpoint().close();
 
-        final LinkRegistry linkReg = getSession().getConnection()
+        final LinkRegistryModel linkReg = getSession().getConnection()
                 .getAddressSpace()
                 .getLinkRegistry(getEndpoint().getSession().getConnection().getRemoteContainerId());
         linkReg.unregisterSendingLink(getEndpoint().getName());
