@@ -107,7 +107,6 @@ public class ServerSession extends SessionInvoker
 
     private final AtomicBoolean _blocking = new AtomicBoolean(false);
     private final AtomicInteger _outstandingCredit = new AtomicInteger(UNLIMITED_CREDIT);
-    private final long timeout = 60000;  // TODO server side close does not require this
     // completed incoming commands
     private final Object processedLock = new Object();
     private final int commandLimit = Integer.getInteger("qpid.session.command_limit", 64 * 1024);
@@ -144,6 +143,39 @@ public class ServerSession extends SessionInvoker
     private boolean _isNoReplay = false;
     private Map<Integer,ResultFuture<?>> results = new HashMap<Integer,ResultFuture<?>>();
     private org.apache.qpid.server.protocol.v0_10.transport.ExecutionException exception = null;
+
+    private final SortedMap<Integer, MessageDispositionChangeListener> _messageDispositionListenerMap =
+            new ConcurrentSkipListMap<Integer, MessageDispositionChangeListener>();
+
+    private ServerTransaction _transaction;
+    private final AtomicLong _txnStarts = new AtomicLong(0);
+    private final AtomicLong _txnCommits = new AtomicLong(0);
+    private final AtomicLong _txnRejects = new AtomicLong(0);
+
+    private final AtomicLong _txnCount = new AtomicLong(0);
+    private Map<String, ConsumerTarget_0_10> _subscriptions = new ConcurrentHashMap<String, ConsumerTarget_0_10>();
+
+    private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_0_10>> _consumers = new CopyOnWriteArrayList<>();
+
+    private AtomicReference<LogMessage> _forcedCloseLogMessage = new AtomicReference<LogMessage>();
+    private volatile long _uncommittedMessageSize;
+
+    private final List<StoredMessage<MessageMetaData_0_10>> _uncommittedMessages = new ArrayList<>();
+
+    public ServerSession(ServerConnection connection, ServerSessionDelegate delegate, Binary name, long expiry)
+    {
+        this.connection = connection;
+        this.delegate = delegate;
+        this.name = name;
+        this.closing = false;
+        this._isNoReplay = false;
+        initReceiver();
+        _transaction = new AsyncAutoCommitTransaction(this.getMessageStore(),this);
+
+        ServerConnection serverConnection = (ServerConnection) connection;
+
+        _blockingTimeout = serverConnection.getBroker().getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
+    }
 
     public Binary getName()
     {
@@ -861,39 +893,6 @@ public class ServerSession extends SessionInvoker
     private interface MessageDispositionAction
     {
         void performAction(MessageDispositionChangeListener  listener);
-    }
-
-    private final SortedMap<Integer, MessageDispositionChangeListener> _messageDispositionListenerMap =
-            new ConcurrentSkipListMap<Integer, MessageDispositionChangeListener>();
-
-    private ServerTransaction _transaction;
-    private final AtomicLong _txnStarts = new AtomicLong(0);
-    private final AtomicLong _txnCommits = new AtomicLong(0);
-    private final AtomicLong _txnRejects = new AtomicLong(0);
-
-    private final AtomicLong _txnCount = new AtomicLong(0);
-    private Map<String, ConsumerTarget_0_10> _subscriptions = new ConcurrentHashMap<String, ConsumerTarget_0_10>();
-
-    private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_0_10>> _consumers = new CopyOnWriteArrayList<>();
-
-    private AtomicReference<LogMessage> _forcedCloseLogMessage = new AtomicReference<LogMessage>();
-    private volatile long _uncommittedMessageSize;
-
-    private final List<StoredMessage<MessageMetaData_0_10>> _uncommittedMessages = new ArrayList<>();
-
-    public ServerSession(ServerConnection connection, ServerSessionDelegate delegate, Binary name, long expiry)
-    {
-        this.connection = connection;
-        this.delegate = delegate;
-        this.name = name;
-        this.closing = false;
-        this._isNoReplay = false;
-        initReceiver();
-        _transaction = new AsyncAutoCommitTransaction(this.getMessageStore(),this);
-
-        ServerConnection serverConnection = (ServerConnection) connection;
-
-        _blockingTimeout = serverConnection.getBroker().getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
     }
 
     public Subject getSubject()

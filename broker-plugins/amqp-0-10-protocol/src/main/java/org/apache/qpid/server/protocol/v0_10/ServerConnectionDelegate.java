@@ -67,6 +67,40 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     private boolean _compressionSupported;
     private volatile SaslNegotiator _saslNegotiator;
 
+    enum ConnectionState
+    {
+        INIT,
+        AWAIT_START_OK,
+        AWAIT_SECURE_OK,
+        AWAIT_TUNE_OK,
+        AWAIT_OPEN,
+        OPEN
+    }
+
+    private volatile ConnectionState _state = ConnectionState.INIT;
+    private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
+
+
+    public ServerConnectionDelegate(Broker<?> broker, SubjectCreator subjectCreator)
+    {
+        this(createConnectionProperties(broker), Collections.singletonList((Object)"en_US"), broker, subjectCreator);
+    }
+
+    private ServerConnectionDelegate(Map<String, Object> properties,
+                                     List<Object> locales,
+                                     Broker<?> broker,
+                                     SubjectCreator subjectCreator)
+    {
+        _clientProperties = properties;
+        _mechanisms = (List) subjectCreator.getMechanisms();
+        _locales = locales;
+
+        _broker = broker;
+        _maxNoOfChannels = broker.getConnection_sessionCountLimit();
+        _subjectCreator = subjectCreator;
+        _maximumFrameSize = Math.min(0xffff, broker.getNetworkBufferSize());
+    }
+
     public void control(ServerConnection conn, Method method)
     {
         method.dispatch(conn, this);
@@ -119,46 +153,12 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
         connection.doHeartBeat();
     }
 
-    enum ConnectionState
-    {
-        INIT,
-        AWAIT_START_OK,
-        AWAIT_SECURE_OK,
-        AWAIT_TUNE_OK,
-        AWAIT_OPEN,
-        OPEN
-    }
-
-    private volatile ConnectionState _state = ConnectionState.INIT;
-    private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
-
-
-    public ServerConnectionDelegate(Broker<?> broker, SubjectCreator subjectCreator)
-    {
-        this(createConnectionProperties(broker), Collections.singletonList((Object)"en_US"), broker, subjectCreator);
-    }
-
-    private ServerConnectionDelegate(Map<String, Object> properties,
-                                     List<Object> locales,
-                                     Broker<?> broker,
-                                     SubjectCreator subjectCreator)
-    {
-        _clientProperties = properties;
-        _mechanisms = (List) subjectCreator.getMechanisms();
-        _locales = locales;
-
-        _broker = broker;
-        _maxNoOfChannels = broker.getConnection_sessionCountLimit();
-        _subjectCreator = subjectCreator;
-        _maximumFrameSize = Math.min(0xffff, broker.getNetworkBufferSize());
-    }
 
 
     public final ConnectionState getState()
     {
         return _state;
     }
-
 
     private void assertState(final ServerConnection conn, final ConnectionState requiredState)
     {
