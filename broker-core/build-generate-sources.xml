@@ -29,7 +29,6 @@
 
     <dirname property="QpidBrokerCoreGenerateSources.basedir" file="${ant.file.QpidBrokerCoreGenerateSources}"/>
 
-    <property name="gentools.classes" location="${build.scratch}/common/gentools" />
     <property name="generated-logmessages-dir" location="${module.src}" />
     <property name="velocity.classes" value="${build.scratch}/broker-core/velocity"/>
     <property name="velocity.timestamp" location="${generated-logmessages-dir}/velocity.timestamp" />
