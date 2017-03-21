@@ -115,7 +115,7 @@ public class Header implements NonEncodingRetainingSection<Header>
             {
                 builder.append(',');
             }
-            builder.append("getPriority=").append(_priority);
+            builder.append("priority=").append(_priority);
         }
 
         if (_ttl != null)
