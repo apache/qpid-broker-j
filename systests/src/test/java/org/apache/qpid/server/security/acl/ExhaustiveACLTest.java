@@ -28,6 +28,7 @@ import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.server.protocol.ErrorCodes;
+import org.apache.qpid.util.AMQExceptionTestUtil;
 
 /**
  * ACL version 2/3 file testing to verify that ACL entries control queue creation with specific properties.
@@ -87,7 +88,7 @@ public class ExhaustiveACLTest extends AbstractACLTestCase
 		}
 		catch (AMQException e)
 		{
-			assertAMQException("Should be an ACCESS_REFUSED error", 403, e);
+			AMQExceptionTestUtil.assertAMQException("Should be an ACCESS_REFUSED error", 403, e);
 		}
 	}
 

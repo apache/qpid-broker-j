@@ -29,6 +29,7 @@ import javax.jms.TextMessage;
 
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.util.AMQExceptionTestUtil;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class QueuePolicyTest extends QpidBrokerTestCase
@@ -79,7 +80,7 @@ public class QueuePolicyTest extends QpidBrokerTestCase
         }
         catch (AMQException e)
         {
-           assertAMQException("The correct error code is not set", 506, e);
+            AMQExceptionTestUtil.assertAMQException("The correct error code is not set", 506, e);
         }
     }
     
@@ -115,20 +116,4 @@ public class QueuePolicyTest extends QpidBrokerTestCase
         assertNotNull("The consumer should receive the msg with body='Test3'", msg);
         assertEquals("Unexpected second message","Test3", msg.getText());
     }
-
-    protected void assertAMQException(final String message, final int expected, final AMQException e)
-    {
-        Object object = e.getErrorCode(); // API change after v6.1
-        if (object instanceof Integer)
-        {
-            assertEquals(message, expected, e.getErrorCode());
-        }
-        else
-        {
-            final String fullMessage = String.format("%s. expected actual : %s to start with %d", message, e.getErrorCode(), expected);
-            final String actual = String.valueOf(e.getErrorCode());
-            assertTrue(fullMessage, actual.startsWith(Integer.toString(expected)));
-        }
-    }
-
 }

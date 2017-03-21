@@ -37,6 +37,7 @@ import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.url.URLSyntaxException;
+import org.apache.qpid.util.AMQExceptionTestUtil;
 
 /**
  * Tests the V2 ACLs.  The tests perform basic AMQP operations like creating queues or exchanges and publishing and consuming messages, using
@@ -74,7 +75,7 @@ public class ExternalACLTest extends AbstractACLTestCase
         }
     }
 
-    private void assertAccessDeniedException(JMSException e)
+    private void assertAccessDeniedException(JMSException e) throws Exception
     {
         assertEquals("Unexpected exception message", "Error creating connection: Permission ACTION(connect) is denied for : VirtualHost 'test' on VirtualHostNode 'test'", e.getMessage());
 
@@ -85,7 +86,7 @@ public class ExternalACLTest extends AbstractACLTestCase
         assertNotNull("Cause was null", cause);
         assertTrue("Wrong linked exception type", cause instanceof QpidException);
         int errorCode = isBroker010() ? ErrorCodes.CONNECTION_FORCED : ErrorCodes.ACCESS_REFUSED;
-        assertAMQException("Incorrect error code received", errorCode, (AMQException)cause);
+        AMQExceptionTestUtil.assertAMQException("Incorrect error code received", errorCode, (AMQException)cause);
     }
 
     public void setUpAccessVirtualHostWithName() throws Exception
