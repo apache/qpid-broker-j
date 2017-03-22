@@ -163,37 +163,6 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <!--version specified in parent pluginManagement -->
-        <executions>
-          <execution>
-            <id>amqp-0-8-generated</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <!-- TODO re-enable/re-work code generation -->
-              <skip>true</skip>
-              <target>
-                <ant antfile="build-generate-sources.xml">
-                  <reference torefid="source.generation.classpathref" refid="maven.plugin.classpath" />
-                  <property name="build.compiler" value="extJavac" />
-                </ant>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-        <dependencies>
-          <dependency>
-            <groupId>org.python</groupId>
-            <artifactId>jython-standalone</artifactId>
-            <version>${jython-version}</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <!--version specified in parent pluginManagement -->
         <executions>
