@@ -28,6 +28,7 @@ generated/
 target
 classes
 derby.log
+velocity.timestamp
 
 # Intellij Project files
 .idea/
