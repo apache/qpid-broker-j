@@ -29,7 +29,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.Transaction;
 
-public abstract class GenericAbstractJDBCMessageStore extends org.apache.qpid.server.store.AbstractJDBCMessageStore
+public abstract class GenericAbstractJDBCMessageStore extends AbstractJDBCMessageStore
 {
     private final AtomicBoolean _messageStoreOpen = new AtomicBoolean(false);
     private final List<RecordedJDBCTransaction> _transactions = new CopyOnWriteArrayList<>();

@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.store.jdbc;
 
-import org.apache.qpid.server.plugin.JDBCConnectionProviderFactory;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.PluggableService;
 

@@ -18,10 +18,10 @@
 * under the License.
 *
 */
-package org.apache.qpid.server.store;
+package org.apache.qpid.server.store.jdbc;
 
-import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.CONFIGURED;
-import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.OPEN;
+import static org.apache.qpid.server.store.jdbc.AbstractJDBCConfigurationStore.State.CONFIGURED;
+import static org.apache.qpid.server.store.jdbc.AbstractJDBCConfigurationStore.State.OPEN;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -46,6 +46,10 @@ import org.slf4j.Logger;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.UUIDGenerator;
+import org.apache.qpid.server.store.ConfiguredObjectRecord;
+import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.MessageStoreProvider;
+import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 
 public abstract class AbstractJDBCConfigurationStore implements MessageStoreProvider, DurableConfigurationStore

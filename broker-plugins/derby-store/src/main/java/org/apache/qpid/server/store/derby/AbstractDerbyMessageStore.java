@@ -31,7 +31,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.store.*;
+import org.apache.qpid.server.store.Event;
+import org.apache.qpid.server.store.SizeMonitoringSettings;
+import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.store.jdbc.AbstractJDBCMessageStore;
+import org.apache.qpid.server.store.jdbc.JdbcUtils;
 
 public abstract class AbstractDerbyMessageStore extends AbstractJDBCMessageStore
 {

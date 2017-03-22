@@ -17,9 +17,9 @@
  * under the License.
  */
 
-package org.apache.qpid.server.store.preferences;
+package org.apache.qpid.server.store.jdbc;
 
-import static org.apache.qpid.server.store.JdbcUtils.tableExists;
+import static org.apache.qpid.server.store.jdbc.JdbcUtils.tableExists;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -45,6 +45,10 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.ModelVersion;
 import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.store.preferences.PreferenceRecord;
+import org.apache.qpid.server.store.preferences.PreferenceRecordImpl;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
 import org.apache.qpid.server.util.BaseAction;
 
 public abstract class AbstractJDBCPreferenceStore implements PreferenceStore

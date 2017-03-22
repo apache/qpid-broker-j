@@ -21,8 +21,8 @@
 package org.apache.qpid.server.store.derby;
 
 
-
-import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.*;
+import static org.apache.qpid.server.store.jdbc.AbstractJDBCConfigurationStore.State.CLOSED;
+import static org.apache.qpid.server.store.jdbc.AbstractJDBCConfigurationStore.State.CONFIGURED;
 
 import java.io.File;
 import java.sql.Connection;
@@ -34,13 +34,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.store.AbstractJDBCConfigurationStore;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.store.preferences.AbstractJDBCPreferenceStore;
+import org.apache.qpid.server.store.jdbc.AbstractJDBCConfigurationStore;
+import org.apache.qpid.server.store.jdbc.AbstractJDBCPreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.util.FileUtils;
 

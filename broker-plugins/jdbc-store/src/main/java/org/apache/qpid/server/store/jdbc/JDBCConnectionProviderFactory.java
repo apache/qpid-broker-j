@@ -18,13 +18,14 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.plugin;
+package org.apache.qpid.server.store.jdbc;
 
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.qpid.server.store.jdbc.ConnectionProvider;
+import org.apache.qpid.server.plugin.Pluggable;
+import org.apache.qpid.server.plugin.QpidServiceLoader;
 
 public interface JDBCConnectionProviderFactory extends Pluggable
 {

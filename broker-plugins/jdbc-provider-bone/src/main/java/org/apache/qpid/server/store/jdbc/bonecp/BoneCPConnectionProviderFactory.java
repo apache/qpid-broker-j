@@ -23,14 +23,14 @@ package org.apache.qpid.server.store.jdbc.bonecp;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 
-import org.apache.qpid.server.plugin.JDBCConnectionProviderFactory;
-import org.apache.qpid.server.plugin.PluggableService;
-import org.apache.qpid.server.store.jdbc.ConnectionProvider;
-
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.store.jdbc.ConnectionProvider;
+import org.apache.qpid.server.store.jdbc.JDBCConnectionProviderFactory;
 
 @PluggableService
 public class BoneCPConnectionProviderFactory implements JDBCConnectionProviderFactory

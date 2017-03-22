@@ -32,7 +32,7 @@
   <dependencies>
     <dependency>
       <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-broker-core</artifactId>
+      <artifactId>qpid-broker-plugins-jdbc-store</artifactId>
       <version>${project.version}</version>
     </dependency>
 

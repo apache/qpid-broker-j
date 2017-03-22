@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.qpid.server.store;
+package org.apache.qpid.server.store.jdbc;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;

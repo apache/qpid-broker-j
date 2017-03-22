@@ -19,8 +19,8 @@
 package org.apache.qpid.server.store.jdbc;
 
 
-import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.CLOSED;
-import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.CONFIGURED;
+import static org.apache.qpid.server.store.jdbc.AbstractJDBCConfigurationStore.State.CLOSED;
+import static org.apache.qpid.server.store.jdbc.AbstractJDBCConfigurationStore.State.CONFIGURED;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -37,12 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.plugin.JDBCConnectionProviderFactory;
-import org.apache.qpid.server.store.AbstractJDBCConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.store.preferences.AbstractJDBCPreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 
 /**
