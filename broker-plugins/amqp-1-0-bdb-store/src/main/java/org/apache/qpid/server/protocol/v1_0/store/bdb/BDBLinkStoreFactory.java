@@ -41,26 +41,19 @@ public class BDBLinkStoreFactory implements LinkStoreFactory
     @Override
     public LinkStore create(final NamedAddressSpace addressSpace)
     {
-        VirtualHost<?> virtualHost = (VirtualHost<?>)addressSpace;
-        EnvironmentFacade facade;
+        VirtualHost<?> virtualHost = (VirtualHost<?>) addressSpace;
         if (virtualHost instanceof BDBEnvironmentContainer)
         {
-            facade = ((BDBEnvironmentContainer)virtualHost).getEnvironmentFacade();
+            return new BDBLinkStore((BDBEnvironmentContainer<?>) virtualHost);
         }
         else if (virtualHost.getParent()  instanceof BDBEnvironmentContainer)
         {
-            facade = ((BDBEnvironmentContainer)virtualHost.getParent()).getEnvironmentFacade();
+            return new BDBLinkStore((BDBEnvironmentContainer<?>) virtualHost.getParent());
         }
         else
         {
             throw new StoreException("Cannot create BDB Link Store for " + addressSpace);
         }
-
-        if (facade == null)
-        {
-            throw new StoreException("Cannot find BDB environment for " + addressSpace);
-        }
-        return new BDBLinkStore(facade);
     }
 
     @Override

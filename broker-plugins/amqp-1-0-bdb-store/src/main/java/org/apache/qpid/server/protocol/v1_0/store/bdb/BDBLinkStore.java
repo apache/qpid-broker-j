@@ -48,6 +48,7 @@ import org.apache.qpid.server.protocol.v1_0.store.LinkStore;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreUpdater;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
 import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
 
 public class BDBLinkStore implements LinkStore
@@ -56,13 +57,13 @@ public class BDBLinkStore implements LinkStore
     private static final String LINKS_DB_NAME = "AMQP_1_0_LINKS";
     private static final String LINKS_VERSION_DB_NAME = "AMQP_1_0_LINKS_VERSION";
 
-    private volatile StoreState _storeState = StoreState.CLOSED;
     private final ReentrantReadWriteLock _useOrCloseRWLock = new ReentrantReadWriteLock(true);
-    private final EnvironmentFacade _environmentFacade;
+    private final BDBEnvironmentContainer<?> _environmentContainer;
+    private volatile StoreState _storeState = StoreState.CLOSED;
 
-    BDBLinkStore(final EnvironmentFacade facade)
+    BDBLinkStore(final BDBEnvironmentContainer<?> environmentContainer)
     {
-        _environmentFacade = facade;
+        _environmentContainer = environmentContainer;
     }
 
     @Override
@@ -77,7 +78,7 @@ public class BDBLinkStore implements LinkStore
         }
         catch (RuntimeException e)
         {
-            throw _environmentFacade.handleDatabaseException("Failed recovery of links", e);
+            throw getEnvironmentFacade().handleDatabaseException("Failed recovery of links", e);
         }
         finally
         {
@@ -96,12 +97,12 @@ public class BDBLinkStore implements LinkStore
                 throw new StoreException("Store is not opened");
             }
 
-            Database linksDatabase = _environmentFacade.openDatabase(LINKS_DB_NAME, DEFAULT_DATABASE_CONFIG);
+            Database linksDatabase = getEnvironmentFacade().openDatabase(LINKS_DB_NAME, DEFAULT_DATABASE_CONFIG);
             save(linksDatabase, null, link);
         }
         catch (RuntimeException e)
         {
-            throw _environmentFacade.handleDatabaseException(String.format("Failed saving of link '%s'", new LinkKey(link)), e);
+            throw getEnvironmentFacade().handleDatabaseException(String.format("Failed saving of link '%s'", new LinkKey(link)), e);
         }
         finally
         {
@@ -121,7 +122,7 @@ public class BDBLinkStore implements LinkStore
                 throw new StoreException("Store is not opened");
             }
 
-            Database linksDatabase = _environmentFacade.openDatabase(LINKS_DB_NAME, DEFAULT_DATABASE_CONFIG);
+            Database linksDatabase = getEnvironmentFacade().openDatabase(LINKS_DB_NAME, DEFAULT_DATABASE_CONFIG);
 
             final DatabaseEntry databaseEntry = new DatabaseEntry();
             LinkKeyEntryBinding.getInstance().objectToEntry(linkKey, databaseEntry);
@@ -133,7 +134,7 @@ public class BDBLinkStore implements LinkStore
         }
         catch (RuntimeException e)
         {
-            throw _environmentFacade.handleDatabaseException(String.format("Failed deletion of link '%s'", linkKey), e);
+            throw getEnvironmentFacade().handleDatabaseException(String.format("Failed deletion of link '%s'", linkKey), e);
         }
         finally
         {
@@ -163,12 +164,12 @@ public class BDBLinkStore implements LinkStore
         try
         {
             close();
-            _environmentFacade.deleteDatabase(LINKS_DB_NAME);
-            _environmentFacade.deleteDatabase(LINKS_VERSION_DB_NAME);
+            getEnvironmentFacade().deleteDatabase(LINKS_DB_NAME);
+            getEnvironmentFacade().deleteDatabase(LINKS_VERSION_DB_NAME);
         }
         catch (RuntimeException e)
         {
-            _environmentFacade.handleDatabaseException("Failed deletion of database", e);
+            getEnvironmentFacade().handleDatabaseException("Failed deletion of database", e);
             LOGGER.info("Failed to delete links database", e);
         }
         finally
@@ -183,9 +184,15 @@ public class BDBLinkStore implements LinkStore
         return TerminusDurability.CONFIGURATION;
     }
 
+    private EnvironmentFacade getEnvironmentFacade()
+    {
+        return _environmentContainer.getEnvironmentFacade();
+    }
+
+
     private Collection<LinkDefinition> getLinkDefinitions(final LinkStoreUpdater updater)
     {
-        Database linksDatabase = _environmentFacade.openDatabase(LINKS_DB_NAME, DEFAULT_DATABASE_CONFIG);
+        Database linksDatabase = getEnvironmentFacade().openDatabase(LINKS_DB_NAME, DEFAULT_DATABASE_CONFIG);
         Collection<LinkDefinition> links = new HashSet<>();
 
         ModelVersion currentVersion =
@@ -214,10 +221,10 @@ public class BDBLinkStore implements LinkStore
         if (storedVersion.lessThan(currentVersion))
         {
             links = updater.update(storedVersion.toString(), links);
-            final Transaction txn = _environmentFacade.beginTransaction(null);
+            final Transaction txn = getEnvironmentFacade().beginTransaction(null);
             try
             {
-                linksDatabase = _environmentFacade.clearDatabase(txn, LINKS_DB_NAME, DEFAULT_DATABASE_CONFIG);
+                linksDatabase = getEnvironmentFacade().clearDatabase(txn, LINKS_DB_NAME, DEFAULT_DATABASE_CONFIG);
                 for (LinkDefinition link : links)
                 {
                     save(linksDatabase, txn, link);
@@ -276,7 +283,7 @@ public class BDBLinkStore implements LinkStore
         }
         catch (RuntimeException e)
         {
-            throw _environmentFacade.handleDatabaseException("Cannot visit link version", e);
+            throw getEnvironmentFacade().handleDatabaseException("Cannot visit link version", e);
         }
     }
 
@@ -286,11 +293,11 @@ public class BDBLinkStore implements LinkStore
         try
         {
             DatabaseConfig config = new DatabaseConfig().setTransactional(true).setAllowCreate(false);
-            linksVersionDb = _environmentFacade.openDatabase(LINKS_VERSION_DB_NAME, config);
+            linksVersionDb = getEnvironmentFacade().openDatabase(LINKS_VERSION_DB_NAME, config);
         }
         catch (DatabaseNotFoundException e)
         {
-            linksVersionDb = _environmentFacade.openDatabase(LINKS_VERSION_DB_NAME, DEFAULT_DATABASE_CONFIG);
+            linksVersionDb = getEnvironmentFacade().openDatabase(LINKS_VERSION_DB_NAME, DEFAULT_DATABASE_CONFIG);
             DatabaseEntry key = new DatabaseEntry();
             DatabaseEntry value = new DatabaseEntry();
             StringBinding.stringToEntry(BrokerModel.MODEL_VERSION, key);

@@ -32,6 +32,7 @@ import com.sleepycat.je.CacheMode;
 
 import org.apache.qpid.server.protocol.v1_0.store.LinkStore;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreTestCase;
+import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
 import org.apache.qpid.server.store.berkeleydb.StandardEnvironmentConfiguration;
 import org.apache.qpid.server.store.berkeleydb.StandardEnvironmentFacade;
 import org.apache.qpid.server.util.FileUtils;
@@ -52,7 +53,9 @@ public class BDBLinkStoreTest extends LinkStoreTestCase
         when(configuration.getParameters()).thenReturn(Collections.emptyMap());
        _facade = new StandardEnvironmentFacade(configuration);
 
-        return new BDBLinkStore(_facade);
+        BDBEnvironmentContainer environmentContainer = mock(BDBEnvironmentContainer.class);
+        when(environmentContainer.getEnvironmentFacade()).thenReturn(_facade);
+        return new BDBLinkStore(environmentContainer);
     }
 
     @Override
