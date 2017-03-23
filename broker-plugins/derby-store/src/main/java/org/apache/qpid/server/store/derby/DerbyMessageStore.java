@@ -52,7 +52,7 @@ public class DerbyMessageStore extends AbstractDerbyMessageStore
     }
 
     @Override
-    protected Connection getConnection() throws SQLException
+    public Connection getConnection() throws SQLException
     {
         checkMessageStoreOpen();
         return DriverManager.getConnection(_connectionURL);

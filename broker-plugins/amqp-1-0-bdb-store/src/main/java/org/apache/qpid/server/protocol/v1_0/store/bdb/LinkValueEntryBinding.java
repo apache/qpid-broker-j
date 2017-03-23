@@ -23,11 +23,7 @@ import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
-import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.store.LinkStoreUtils;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.store.StoreException;
@@ -35,9 +31,6 @@ import org.apache.qpid.server.store.StoreException;
 public class LinkValueEntryBinding extends TupleBinding<LinkValue>
 {
     private static final LinkValueEntryBinding INSTANCE = new LinkValueEntryBinding();
-
-    private AMQPDescribedTypeRegistry _describedTypeRegistry =
-            AMQPDescribedTypeRegistry.newInstance().registerTransportLayer().registerMessagingLayer();
 
     private LinkValueEntryBinding()
     {
@@ -84,33 +77,16 @@ public class LinkValueEntryBinding extends TupleBinding<LinkValue>
         byte[] bytes = new byte[size];
         input.read(bytes);
 
-        QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(bytes);
-        ValueHandler valueHandler = new ValueHandler(_describedTypeRegistry);
-        Object object;
-        try
-        {
-            object = valueHandler.parse(qpidByteBuffer);
-        }
-        catch (AmqpErrorException e)
-        {
-            throw new StoreException("Unexpected serialized data", e);
-        }
-        finally
-        {
-            qpidByteBuffer.dispose();
-        }
-        return object;
+        return LinkStoreUtils.amqpBytesToObject(bytes);
     }
+
+
 
     private void write(final Object object, final TupleOutput output)
     {
-        ValueWriter valueWriter = _describedTypeRegistry.getValueWriter(object);
-        int encodedSize = valueWriter.getEncodedSize();
-        QpidByteBuffer qpidByteBuffer = QpidByteBuffer.allocate(encodedSize);
-        valueWriter.writeToBuffer(qpidByteBuffer);
-
-        output.writeInt(encodedSize);
-        output.write(qpidByteBuffer.array());
-        qpidByteBuffer.dispose();
+        byte[] bytes = LinkStoreUtils.objectToAmqpBytes(object);
+        output.writeInt(bytes.length);
+        output.write(bytes);
     }
+
 }

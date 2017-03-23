@@ -70,7 +70,8 @@ public abstract class LinkStoreTestCase extends QpidTestCase
         _source.setTimeout(new UnsignedInteger(1));
 
         _target.setTimeout(new UnsignedInteger(2));
-        _target.setDynamicNodeProperties(Collections.singletonMap("targetDynamicProperty", "targetDynamicPropertyValue"));
+        _target.setDynamicNodeProperties(Collections.singletonMap("targetDynamicProperty",
+                                                                  "targetDynamicPropertyValue"));
         _target.setDynamic(Boolean.TRUE);
         _target.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
         _target.setAddress("bar");
@@ -87,8 +88,18 @@ public abstract class LinkStoreTestCase extends QpidTestCase
 
     public void testOpenAndLoad() throws Exception
     {
-        Collection<LinkDefinition>  links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
+        Collection<LinkDefinition> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         assertTrue("Unexpected links", links.isEmpty());
+
+        try
+        {
+            _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
+            fail("Repeated open of already opened store should fail");
+        }
+        catch (StoreException e)
+        {
+            // pass
+        }
 
         LinkDefinition linkDefinition = createLinkDefinition("1", "test");
         _linkStore.saveLink(linkDefinition);
@@ -97,7 +108,6 @@ public abstract class LinkStoreTestCase extends QpidTestCase
         links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         assertEquals("Unexpected link number", 1, links.size());
     }
-
 
 
     public void testClose() throws Exception
@@ -111,7 +121,7 @@ public abstract class LinkStoreTestCase extends QpidTestCase
             _linkStore.saveLink(linkDefinition);
             fail("Saving link with close store should fail");
         }
-        catch(StoreException e)
+        catch (StoreException e)
         {
             // pass
         }
@@ -119,10 +129,21 @@ public abstract class LinkStoreTestCase extends QpidTestCase
 
     public void testSaveLink() throws Exception
     {
-        _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
+
         LinkDefinition linkDefinition = createLinkDefinition("1", "test");
+        _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         _linkStore.saveLink(linkDefinition);
         _linkStore.close();
+
+        try
+        {
+            _linkStore.saveLink(createLinkDefinition("2", "test2"));
+            fail("Save on unopened database should fail");
+        }
+        catch (StoreException e)
+        {
+            // pass
+        }
 
         Collection<LinkDefinition> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         assertEquals("Unexpected link number", 1, links.size());
@@ -149,6 +170,16 @@ public abstract class LinkStoreTestCase extends QpidTestCase
         _linkStore.deleteLink(linkDefinition2);
         _linkStore.close();
 
+        try
+        {
+            _linkStore.deleteLink(linkDefinition);
+            fail("Delete on unopened database should fail");
+        }
+        catch (StoreException e)
+        {
+            // pass
+        }
+
         Collection<LinkDefinition> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         assertEquals("Unexpected link number", 1, links.size());
 
@@ -171,9 +202,13 @@ public abstract class LinkStoreTestCase extends QpidTestCase
         LinkDefinition linkDefinition2 = createLinkDefinition("2", "test2");
         _linkStore.saveLink(linkDefinition2);
 
+        _linkStore.close();
+        Collection<LinkDefinition> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
+        assertEquals("Unexpected link number", 2, links.size());
+
         _linkStore.delete();
 
-        Collection<LinkDefinition> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
+        links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         assertEquals("Unexpected link number", 0, links.size());
     }
 

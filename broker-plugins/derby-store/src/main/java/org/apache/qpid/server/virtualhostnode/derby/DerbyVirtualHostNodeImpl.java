@@ -21,6 +21,8 @@
 
 package org.apache.qpid.server.virtualhostnode.derby;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -35,14 +37,18 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.derby.DerbyConfigurationStore;
 import org.apache.qpid.server.store.derby.DerbyUtils;
+import org.apache.qpid.server.store.jdbc.JDBCContainer;
+import org.apache.qpid.server.store.jdbc.JDBCDetails;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.FileHelper;
 import org.apache.qpid.server.virtualhostnode.AbstractStandardVirtualHostNode;
 
 @ManagedObject( category = false,
                 type = DerbyVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE,
                 validChildTypes = "org.apache.qpid.server.virtualhostnode.derby.DerbyVirtualHostNodeImpl#getSupportedChildTypes()" )
-public class DerbyVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<DerbyVirtualHostNodeImpl> implements DerbyVirtualHostNode<DerbyVirtualHostNodeImpl>
+public class DerbyVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<DerbyVirtualHostNodeImpl>
+        implements DerbyVirtualHostNode<DerbyVirtualHostNodeImpl>, JDBCContainer
 {
     public static final String VIRTUAL_HOST_NODE_TYPE = "DERBY";
 
@@ -103,5 +109,32 @@ public class DerbyVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<De
     public PreferenceStore getPreferenceStore()
     {
         return ((DerbyConfigurationStore)getConfigurationStore()).getPreferenceStore();
+    }
+
+    @Override
+    public JDBCDetails getJDBCDetails()
+    {
+        return JDBCDetails.getJdbcDetails("derby", this);
+    }
+
+    @Override
+    public Connection getConnection()
+    {
+        try
+        {
+            return ((DerbyConfigurationStore) getConfigurationStore()).getConnection();
+        }
+        catch (SQLException e)
+        {
+            throw new ConnectionScopedRuntimeException(String.format(
+                    "Error opening connection to database for VirtualHostNode '%s'",
+                    getName()));
+        }
+    }
+
+    @Override
+    public String getTableNamePrefix()
+    {
+        return "";
     }
 }

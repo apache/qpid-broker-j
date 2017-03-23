@@ -24,7 +24,6 @@ import static org.apache.qpid.server.store.berkeleydb.BDBUtils.DEFAULT_DATABASE_
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.sleepycat.bind.tuple.LongBinding;
 import com.sleepycat.bind.tuple.StringBinding;
@@ -44,22 +43,20 @@ import org.apache.qpid.server.model.ModelVersion;
 import org.apache.qpid.server.protocol.v1_0.LinkDefinition;
 import org.apache.qpid.server.protocol.v1_0.LinkDefinitionImpl;
 import org.apache.qpid.server.protocol.v1_0.LinkKey;
-import org.apache.qpid.server.protocol.v1_0.store.LinkStore;
+import org.apache.qpid.server.protocol.v1_0.store.AbstractLinkStore;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreUpdater;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
 import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
 
-public class BDBLinkStore implements LinkStore
+public class BDBLinkStore extends AbstractLinkStore
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BDBLinkStore.class);
     private static final String LINKS_DB_NAME = "AMQP_1_0_LINKS";
     private static final String LINKS_VERSION_DB_NAME = "AMQP_1_0_LINKS_VERSION";
 
-    private final ReentrantReadWriteLock _useOrCloseRWLock = new ReentrantReadWriteLock(true);
     private final BDBEnvironmentContainer<?> _environmentContainer;
-    private volatile StoreState _storeState = StoreState.CLOSED;
 
     BDBLinkStore(final BDBEnvironmentContainer<?> environmentContainer)
     {
@@ -67,36 +64,23 @@ public class BDBLinkStore implements LinkStore
     }
 
     @Override
-    public Collection<LinkDefinition> openAndLoad(final LinkStoreUpdater updater) throws StoreException
+    protected Collection<LinkDefinition> doOpenAndLoad(final LinkStoreUpdater updater) throws StoreException
     {
-        _useOrCloseRWLock.readLock().lock();
         try
         {
-            Collection<LinkDefinition> links = getLinkDefinitions(updater);
-            _storeState = StoreState.OPENED;
-            return links;
+            return getLinkDefinitions(updater);
         }
         catch (RuntimeException e)
         {
             throw getEnvironmentFacade().handleDatabaseException("Failed recovery of links", e);
         }
-        finally
-        {
-            _useOrCloseRWLock.readLock().unlock();
-        }
     }
 
     @Override
-    public void saveLink(final LinkDefinition link)
+    protected void doSaveLink(final LinkDefinition link)
     {
-        _useOrCloseRWLock.readLock().lock();
         try
         {
-            if (_storeState != StoreState.OPENED)
-            {
-                throw new StoreException("Store is not opened");
-            }
-
             Database linksDatabase = getEnvironmentFacade().openDatabase(LINKS_DB_NAME, DEFAULT_DATABASE_CONFIG);
             save(linksDatabase, null, link);
         }
@@ -104,24 +88,14 @@ public class BDBLinkStore implements LinkStore
         {
             throw getEnvironmentFacade().handleDatabaseException(String.format("Failed saving of link '%s'", new LinkKey(link)), e);
         }
-        finally
-        {
-            _useOrCloseRWLock.readLock().unlock();
-        }
     }
 
     @Override
-    public void deleteLink(final LinkDefinition linkDefinition)
+    protected void doDeleteLink(final LinkDefinition linkDefinition)
     {
         LinkKey linkKey = new LinkKey(linkDefinition);
-        _useOrCloseRWLock.readLock().lock();
         try
         {
-            if (_storeState != StoreState.OPENED)
-            {
-                throw new StoreException("Store is not opened");
-            }
-
             Database linksDatabase = getEnvironmentFacade().openDatabase(LINKS_DB_NAME, DEFAULT_DATABASE_CONFIG);
 
             final DatabaseEntry databaseEntry = new DatabaseEntry();
@@ -136,34 +110,19 @@ public class BDBLinkStore implements LinkStore
         {
             throw getEnvironmentFacade().handleDatabaseException(String.format("Failed deletion of link '%s'", linkKey), e);
         }
-        finally
-        {
-            _useOrCloseRWLock.readLock().unlock();
-        }
     }
 
 
     @Override
-    public void close()
+    protected void doClose()
     {
-        _useOrCloseRWLock.writeLock().lock();
-        try
-        {
-            _storeState = StoreState.CLOSED;
-        }
-        finally
-        {
-            _useOrCloseRWLock.writeLock().unlock();
-        }
     }
 
     @Override
-    public void delete()
+    protected void doDelete()
     {
-        _useOrCloseRWLock.writeLock().lock();
         try
         {
-            close();
             getEnvironmentFacade().deleteDatabase(LINKS_DB_NAME);
             getEnvironmentFacade().deleteDatabase(LINKS_VERSION_DB_NAME);
         }
@@ -171,10 +130,6 @@ public class BDBLinkStore implements LinkStore
         {
             getEnvironmentFacade().handleDatabaseException("Failed deletion of database", e);
             LOGGER.info("Failed to delete links database", e);
-        }
-        finally
-        {
-            _useOrCloseRWLock.writeLock().unlock();
         }
     }
 
@@ -229,6 +184,7 @@ public class BDBLinkStore implements LinkStore
                 {
                     save(linksDatabase, txn, link);
                 }
+                updateVersion(txn, currentVersion.toString());
                 txn.commit();
                 linksDatabase.close();
             }
@@ -240,6 +196,16 @@ public class BDBLinkStore implements LinkStore
         }
 
         return links;
+    }
+
+    private void updateVersion(final Transaction txn, final String currentVersion)
+    {
+        Database linksVersionDb = getEnvironmentFacade().openDatabase(LINKS_VERSION_DB_NAME, DEFAULT_DATABASE_CONFIG);
+        DatabaseEntry key = new DatabaseEntry();
+        DatabaseEntry value = new DatabaseEntry();
+        StringBinding.stringToEntry(currentVersion, key);
+        LongBinding.longToEntry(System.currentTimeMillis(), value);
+        linksVersionDb.put(txn, key, value);
     }
 
     private void save(Database database, Transaction txn, final LinkDefinition link)
@@ -297,19 +263,10 @@ public class BDBLinkStore implements LinkStore
         }
         catch (DatabaseNotFoundException e)
         {
+            updateVersion(null, BrokerModel.MODEL_VERSION);
             linksVersionDb = getEnvironmentFacade().openDatabase(LINKS_VERSION_DB_NAME, DEFAULT_DATABASE_CONFIG);
-            DatabaseEntry key = new DatabaseEntry();
-            DatabaseEntry value = new DatabaseEntry();
-            StringBinding.stringToEntry(BrokerModel.MODEL_VERSION, key);
-            LongBinding.longToEntry(System.currentTimeMillis(), value);
-            linksVersionDb.put(null, key, value);
         }
 
         return linksVersionDb;
-    }
-
-    enum StoreState
-    {
-        CLOSED, OPENED
     }
 }

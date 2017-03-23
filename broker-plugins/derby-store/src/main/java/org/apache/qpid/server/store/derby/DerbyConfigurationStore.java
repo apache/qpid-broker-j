@@ -90,7 +90,7 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
     }
 
     @Override
-    protected Connection getConnection() throws SQLException
+    public Connection getConnection() throws SQLException
     {
         return DriverManager.getConnection(_connectionURL);
     }
@@ -206,7 +206,7 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
         }
 
         @Override
-        protected Connection getConnection() throws SQLException
+        public Connection getConnection() throws SQLException
         {
             checkMessageStoreOpen();
             return DerbyConfigurationStore.this.getConnection();

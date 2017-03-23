@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.virtualhost.jdbc;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Map;
 
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -27,11 +29,16 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.MessageStore;
+import org.apache.qpid.server.store.jdbc.AbstractJDBCMessageStore;
 import org.apache.qpid.server.store.jdbc.GenericJDBCMessageStore;
+import org.apache.qpid.server.store.jdbc.JDBCContainer;
+import org.apache.qpid.server.store.jdbc.JDBCDetails;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 
 @ManagedObject(category = false, type = JDBCVirtualHostImpl.VIRTUAL_HOST_TYPE)
-public class JDBCVirtualHostImpl extends AbstractVirtualHost<JDBCVirtualHostImpl> implements JDBCVirtualHost<JDBCVirtualHostImpl>
+public class JDBCVirtualHostImpl extends AbstractVirtualHost<JDBCVirtualHostImpl>
+        implements JDBCVirtualHost<JDBCVirtualHostImpl>, JDBCContainer
 {
     public static final String VIRTUAL_HOST_TYPE = "JDBC";
 
@@ -91,6 +98,27 @@ public class JDBCVirtualHostImpl extends AbstractVirtualHost<JDBCVirtualHostImpl
     public String getTableNamePrefix()
     {
         return _tableNamePrefix;
+    }
+
+    @Override
+    public JDBCDetails getJDBCDetails()
+    {
+        return JDBCDetails.getDetailsForJdbcUrl(getConnectionUrl(), this);
+    }
+
+    @Override
+    public Connection getConnection()
+    {
+        try
+        {
+            return ((AbstractJDBCMessageStore) getMessageStore()).getConnection();
+        }
+        catch (SQLException e)
+        {
+            throw new ConnectionScopedRuntimeException(String.format(
+                    "Error opening connection to database for VirtualHost '%s'",
+                    getName()));
+        }
     }
 
     @Override

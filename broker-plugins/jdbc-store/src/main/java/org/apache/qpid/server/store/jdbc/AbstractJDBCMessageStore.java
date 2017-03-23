@@ -533,7 +533,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         return connection;
     }
 
-    protected abstract Connection getConnection() throws SQLException;
+    public abstract Connection getConnection() throws SQLException;
 
     @Override
     public Transaction newTransaction()

@@ -118,7 +118,7 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
     }
 
     @Override
-    protected Connection getConnection() throws SQLException
+    public Connection getConnection() throws SQLException
     {
         return _connectionProvider.getConnection();
     }

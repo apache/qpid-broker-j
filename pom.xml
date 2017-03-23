@@ -178,6 +178,7 @@
     <module>broker-plugins/memory-store</module>
     <module>broker-plugins/websocket</module>
     <module>broker-plugins/amqp-1-0-bdb-store</module>
+    <module>broker-plugins/amqp-1-0-jdbc-store</module>
     <module>tools</module>
 
     <module>qpid-systests-parent</module>

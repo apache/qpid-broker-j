@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.virtualhostnode.jdbc;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -31,12 +33,16 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.jdbc.GenericJDBCConfigurationStore;
+import org.apache.qpid.server.store.jdbc.JDBCContainer;
+import org.apache.qpid.server.store.jdbc.JDBCDetails;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhostnode.AbstractStandardVirtualHostNode;
 
 @ManagedObject(type = JDBCVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE, category = false ,
                validChildTypes = "org.apache.qpid.server.virtualhostnode.jdbc.JDBCVirtualHostNodeImpl#getSupportedChildTypes()")
-public class JDBCVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<JDBCVirtualHostNodeImpl> implements JDBCVirtualHostNode<JDBCVirtualHostNodeImpl>
+public class JDBCVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<JDBCVirtualHostNodeImpl>
+        implements JDBCVirtualHostNode<JDBCVirtualHostNodeImpl>, JDBCContainer
 {
     public static final String VIRTUAL_HOST_NODE_TYPE = "JDBC";
 
@@ -100,6 +106,27 @@ public class JDBCVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<JDB
     public String getTableNamePrefix()
     {
         return _tableNamePrefix;
+    }
+
+    @Override
+    public JDBCDetails getJDBCDetails()
+    {
+        return JDBCDetails.getDetailsForJdbcUrl(getConnectionUrl(), this);
+    }
+
+    @Override
+    public Connection getConnection()
+    {
+        try
+        {
+            return ((GenericJDBCConfigurationStore) getConfigurationStore()).getConnection();
+        }
+        catch (SQLException e)
+        {
+            throw new ConnectionScopedRuntimeException(String.format(
+                    "Error opening connection to database for VirtualHostNode '%s'",
+                    getName()));
+        }
     }
 
     @Override

@@ -29,8 +29,7 @@ public class JDBCDetailsTest extends QpidTestCase
 {
     public void testDerby()
     {
-        JDBCDetails derbyDetails = JDBCDetails.getDetailsForJdbcUrl("jdbc:derby:sample",
-                                                               Collections.<String, String>emptyMap());
+        JDBCDetails derbyDetails = JDBCDetails.getJdbcDetails("derby", Collections.emptyMap());
         assertEquals("derby", derbyDetails.getVendor());
         assertEquals("varchar(%d) for bit data", derbyDetails.getVarBinaryType());
         assertEquals("bigint", derbyDetails.getBigintType());
@@ -43,7 +42,7 @@ public class JDBCDetailsTest extends QpidTestCase
 
     public void testUnknownVendor_UsesFallbackDetails()
     {
-        JDBCDetails details = JDBCDetails.getDetailsForJdbcUrl("jdbc:homedb:", Collections.<String, String>emptyMap());
+        JDBCDetails details = JDBCDetails.getJdbcDetails("homedb", Collections.emptyMap());
         assertEquals("fallback", details.getVendor());
         assertEquals("varchar(%d) for bit data", details.getVarBinaryType());
         assertEquals("bigint", details.getBigintType());
@@ -59,7 +58,7 @@ public class JDBCDetailsTest extends QpidTestCase
         Map<String, String> contextMap = new HashMap<>();
         contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_VARBINARYTYPE, "myvarbin");
 
-        JDBCDetails derbyDetails = JDBCDetails.getDetailsForJdbcUrl("jdbc:derby:sample", contextMap);
+        JDBCDetails derbyDetails = JDBCDetails.getJdbcDetails("derby", contextMap);
         assertEquals("derby", derbyDetails.getVendor());
         assertEquals("myvarbin", derbyDetails.getVarBinaryType());
         assertEquals("bigint", derbyDetails.getBigintType());
@@ -81,7 +80,7 @@ public class JDBCDetailsTest extends QpidTestCase
         contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_BLOBTYPE, "myblob");
         contextMap.put(JDBCDetails.CONTEXT_JDBCSTORE_USEBYTESFORBLOB, "true");
 
-        JDBCDetails details = JDBCDetails.getDetailsForJdbcUrl("jdbc:sybase:", contextMap);
+        JDBCDetails details = JDBCDetails.getJdbcDetails("sybase", contextMap);
         assertEquals("sybase", details.getVendor());
         assertEquals("myvarbin", details.getVarBinaryType());
         assertEquals("mybigint", details.getBigintType());

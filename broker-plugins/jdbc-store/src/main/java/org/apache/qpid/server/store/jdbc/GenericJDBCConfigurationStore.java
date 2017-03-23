@@ -145,7 +145,7 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
     }
 
     @Override
-    protected Connection getConnection() throws SQLException
+    public Connection getConnection() throws SQLException
     {
         return _connectionProvider.getConnection();
     }
@@ -250,7 +250,7 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
         }
 
         @Override
-        protected Connection getConnection() throws SQLException
+        public Connection getConnection() throws SQLException
         {
             return GenericJDBCConfigurationStore.this.getConnection();
         }

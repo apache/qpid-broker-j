@@ -231,6 +231,19 @@ public abstract class JDBCDetails
 
     public static JDBCDetails getDetailsForJdbcUrl(String jdbcUrl, final ConfiguredObject<?> object)
     {
+        String[] components = jdbcUrl.split(":", 3);
+        final JDBCDetails details;
+        String vendor = null;
+        if(components.length >= 2)
+        {
+            vendor = components[1];
+        }
+
+        return getJdbcDetails(vendor, object);
+    }
+
+    public static JDBCDetails getJdbcDetails(final String vendor, final ConfiguredObject<?> object)
+    {
         final Set<String> contextKeys = object.getContextKeys(false);
         Map<String,String> mapConversion = new AbstractMap<String, String>()
         {
@@ -296,15 +309,14 @@ public abstract class JDBCDetails
                 };
             }
         };
-        return getDetailsForJdbcUrl(jdbcUrl, mapConversion);
+        return getJdbcDetails(vendor, mapConversion);
     }
-    public static JDBCDetails getDetailsForJdbcUrl(String jdbcUrl, final Map<String, String> contextMap)
+
+    static JDBCDetails getJdbcDetails(final String vendor, final Map<String, String> contextMap)
     {
-        String[] components = jdbcUrl.split(":", 3);
         final JDBCDetails details;
-        if(components.length >= 2)
+        if (vendor != null)
         {
-            String vendor = components[1];
             if (KnownJDBCDetails.VENDOR_DETAILS.containsKey(vendor))
             {
                 details = KnownJDBCDetails.VENDOR_DETAILS.get(vendor);
@@ -318,7 +330,6 @@ public abstract class JDBCDetails
         {
             details = KnownJDBCDetails.FALLBACK;
         }
-
 
         return new JDBCDetails()
         {
@@ -371,7 +382,5 @@ public abstract class JDBCDetails
                         || contextMap.containsKey(CONTEXT_JDBCSTORE_BLOBTYPE);
             }
         };
-
     }
-
 }
