@@ -522,6 +522,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                                             {
                                                 SSLParameters sslParameters = sslEngine.getSSLParameters();
                                                 sslParameters.setUseCipherSuitesOrder(true);
+                                                sslEngine.setSSLParameters(sslParameters);
                                             }
                                         }
                                     };

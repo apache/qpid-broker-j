@@ -155,6 +155,7 @@ class WebSocketProvider implements AcceptingTransport
                                                 {
                                                     SSLParameters sslParameters = sslEngine.getSSLParameters();
                                                     sslParameters.setUseCipherSuitesOrder(true);
+                                                    sslEngine.setSSLParameters(sslParameters);
                                                 }
                                             }
                                         };

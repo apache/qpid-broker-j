@@ -327,6 +327,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         {
             SSLParameters sslParameters = sslEngine.getSSLParameters();
             sslParameters.setUseCipherSuitesOrder(true);
+            sslEngine.setSSLParameters(sslParameters);
         }
 
         if(port.getNeedClientAuth())
