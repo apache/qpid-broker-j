@@ -22,12 +22,18 @@ package org.apache.qpid.server.protocol.v0_10;
 
 
 import java.nio.ByteBuffer;
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +71,47 @@ public class ServerAssembler
         _segments = new HashMap<>();
     }
 
-    public void received(final ServerFrame event)
+    public void received(final List<ServerFrame> frames)
+    {
+        if (!frames.isEmpty())
+        {
+            PeekingIterator<ServerFrame> itr = Iterators.peekingIterator(frames.iterator());
+
+            while(itr.hasNext())
+            {
+                final ServerFrame frame = itr.next();
+                final int frameChannel = frame.getChannel();
+
+                ServerSession channel = _connection.getSession(frameChannel);
+                if (channel != null)
+                {
+                    final AccessControlContext context = channel.getAccessControllerContext();
+                    AccessController.doPrivileged((PrivilegedAction<Void>) () ->
+                    {
+                        ServerFrame channelFrame = frame;
+                        boolean nextIsSameChannel;
+                        do
+                        {
+                            received(channelFrame);
+                            nextIsSameChannel = itr.hasNext() && frameChannel == itr.peek().getChannel();
+                            if (nextIsSameChannel)
+                            {
+                                channelFrame = itr.next();
+                            }
+                        }
+                        while (nextIsSameChannel);
+                        return null;
+                    }, context);
+                }
+                else
+                {
+                    received(frame);
+                }
+            }
+        }
+    }
+
+    private void received(final ServerFrame event)
     {
         if (!_connection.isIgnoreFutureInput())
         {

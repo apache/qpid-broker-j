@@ -23,6 +23,10 @@ package org.apache.qpid.server.protocol.v0_10;
 import static org.apache.qpid.server.transport.util.Functions.str;
 import static org.apache.qpid.server.protocol.v0_10.ServerInputHandler.State.*;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,9 +79,96 @@ public class ServerInputHandler implements FrameSizeObserver
     public void received(QpidByteBuffer buf)
     {
         int position = buf.position();
+
+        List<ServerFrame> frames = new ArrayList<>();
+
         while(buf.hasRemaining() && _state != ERROR)
         {
-            parse(buf);
+            buf.mark();
+            switch (_state) {
+                case PROTO_HDR:
+                    if(buf.remaining() < 8)
+                    {
+                        break;
+                    }
+                    if (buf.get() != 'A' ||
+                        buf.get() != 'M' ||
+                        buf.get() != 'Q' ||
+                        buf.get() != 'P')
+                    {
+                        buf.reset();
+                        error("bad protocol header: %s", str(buf));
+                        _state = ERROR;
+                    }
+                    else
+                    {
+                        byte protoClass = buf.get();
+                        byte instance = buf.get();
+                        byte major = buf.get();
+                        byte minor = buf.get();
+
+                        _serverAssembler.init(new ProtocolHeader(protoClass, instance, major, minor));
+                        _state = FRAME_HDR;
+                    }
+                    break;
+                case FRAME_HDR:
+                    if(buf.remaining() < ServerFrame.HEADER_SIZE)
+                    {
+                        buf.reset();
+                    }
+                    else
+                    {
+                        flags = buf.get();
+                        type = SegmentType.get(buf.get());
+                        int size = (0xFFFF & buf.getShort());
+
+                        size -= ServerFrame.HEADER_SIZE;
+                        if (size < 0 || size > (_maxFrameSize - ServerFrame.HEADER_SIZE))
+                        {
+                            error("bad frame size: %d", size);
+                            _state = ERROR;
+                        }
+                        else
+                        {
+                            buf.get(); // skip unused byte
+                            byte b = buf.get();
+                            if ((b & 0xF0) != 0)
+                            {
+                                error("non-zero reserved bits in upper nibble of " +
+                                      "frame header byte 5: '%x'", b);
+                                _state = ERROR;
+                            }
+                            else
+                            {
+                                track = (byte) (b & 0xF);
+
+                                channel = (0xFFFF & buf.getShort());
+                                buf.position(buf.position() + 4);
+                                if (size == 0)
+                                {
+                                    ServerFrame frame = new ServerFrame(flags, type, track, channel, EMPTY_BYTE_BUFFER.duplicate());
+                                    frames.add(frame);
+
+                                }
+                                else if (buf.remaining() < size)
+                                {
+                                    buf.reset();
+                                }
+                                else
+                                {
+                                    final QpidByteBuffer body = buf.slice();
+                                    body.limit(size);
+                                    ServerFrame frame = new ServerFrame(flags, type, track, channel, body);
+                                    frames.add(frame);
+                                    buf.position(buf.position() + size);
+                                }
+                            }
+                        }
+                    }
+                    break;
+                default:
+                    throw new IllegalStateException();
+            }
 
             int newPosition = buf.position();
             if(position == newPosition)
@@ -89,97 +180,8 @@ public class ServerInputHandler implements FrameSizeObserver
                 position = newPosition;
             }
         }
-    }
 
-    private void parse(QpidByteBuffer buffer)
-    {
-        buffer.mark();
-        switch (_state) {
-            case PROTO_HDR:
-                if(buffer.remaining() < 8)
-                {
-                    break;
-                }
-                if (buffer.get() != 'A' ||
-                    buffer.get() != 'M' ||
-                    buffer.get() != 'Q' ||
-                    buffer.get() != 'P')
-                {
-                    buffer.reset();
-                    error("bad protocol header: %s", str(buffer));
-                    _state = ERROR;
-                }
-                else
-                {
-                    byte protoClass = buffer.get();
-                    byte instance = buffer.get();
-                    byte major = buffer.get();
-                    byte minor = buffer.get();
-
-                    _serverAssembler.init(new ProtocolHeader(protoClass, instance, major, minor));
-                    _state = FRAME_HDR;
-                }
-                break;
-            case FRAME_HDR:
-                if(buffer.remaining() < ServerFrame.HEADER_SIZE)
-                {
-                    buffer.reset();
-                }
-                else
-                {
-                    flags = buffer.get();
-                    type = SegmentType.get(buffer.get());
-                    int size = (0xFFFF & buffer.getShort());
-
-                    size -= ServerFrame.HEADER_SIZE;
-                    if (size < 0 || size > (_maxFrameSize - ServerFrame.HEADER_SIZE))
-                    {
-                        error("bad frame size: %d", size);
-                        _state = ERROR;
-                    }
-                    else
-                    {
-                        buffer.get(); // skip unused byte
-                        byte b = buffer.get();
-                        if ((b & 0xF0) != 0)
-                        {
-                            error("non-zero reserved bits in upper nibble of " +
-                                  "frame header byte 5: '%x'", b);
-                            _state = ERROR;
-                        }
-                        else
-                        {
-                            track = (byte) (b & 0xF);
-
-                            channel = (0xFFFF & buffer.getShort());
-                            buffer.position(buffer.position()+4);
-                            if (size == 0)
-                            {
-                                ServerFrame frame = new ServerFrame(flags, type, track, channel, EMPTY_BYTE_BUFFER.duplicate());
-                                _serverAssembler.received(frame);
-
-                            }
-                            else if (buffer.remaining() < size)
-                            {
-                                buffer.reset();
-                            }
-                            else
-                            {
-                                final QpidByteBuffer body = buffer.slice();
-                                body.limit(size);
-                                ServerFrame frame = new ServerFrame(flags, type, track, channel, body);
-                                buffer.position(buffer.position() + size);
-
-                                _serverAssembler.received(frame);
-                            }
-                        }
-                    }
-                }
-                break;
-            default:
-                throw new IllegalStateException();
-        }
-
+        _serverAssembler.received(frames);
     }
 
     public void exception(Throwable t)

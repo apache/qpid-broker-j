@@ -26,10 +26,7 @@ import static org.apache.qpid.server.protocol.v0_10.ServerConnection.State.NEW;
 import static org.apache.qpid.server.protocol.v0_10.ServerConnection.State.OPEN;
 
 import java.net.SocketAddress;
-import java.security.AccessControlContext;
-import java.security.AccessController;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -288,45 +285,15 @@ public class ServerConnection extends ConnectionInvoker
     public void received(final ProtocolEvent event)
     {
         _lastIoTime.set(System.currentTimeMillis());
-        AccessControlContext context;
-        if (event.isConnectionControl())
-        {
-            context = _amqpConnection.getAccessControllerContext();
-        }
-        else
-        {
-            ServerSession channel = (ServerSession) getSession(event.getChannel());
-            if (channel != null)
-            {
-                context = channel.getAccessControllerContext();
-            }
-            else
-            {
-                context = _amqpConnection.getAccessControllerContext();
-            }
-        }
 
         if(!_ignoreAllButConnectionCloseOk || (event instanceof ConnectionCloseOk))
         {
-            AccessController.doPrivileged(new PrivilegedAction<Void>()
+            if(LOGGER.isDebugEnabled())
             {
-                @Override
-                public Void run()
-                {
-                    receivedSuper(event);
-                    return null;
-                }
-            }, context);
+                LOGGER.debug("RECV: [{}] {}", this, String.valueOf(event));
+            }
+            event.delegate(this, delegate);
         }
-    }
-
-    private void receivedSuper(ProtocolEvent event)
-    {
-        if(LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug("RECV: [{}] {}", this, String.valueOf(event));
-        }
-        event.delegate(this, delegate);
     }
 
 
