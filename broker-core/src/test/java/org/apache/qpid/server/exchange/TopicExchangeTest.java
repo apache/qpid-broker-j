@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.exchange;
 
-import static org.apache.qpid.server.common.AMQPFilterTypes.JMS_SELECTOR;
+import static org.apache.qpid.server.filter.AMQPFilterTypes.JMS_SELECTOR;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,7 +34,6 @@ import java.util.Map;
 
 import org.junit.Assert;
 
-import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.InstanceProperties;

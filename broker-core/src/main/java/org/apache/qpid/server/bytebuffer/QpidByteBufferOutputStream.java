@@ -27,8 +27,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-
 /**
  * OutputStream implementation that yields a list QpidByteBuffers that contain a copy
  * of the incoming bytes.  Use fetchAccumulatedBuffers to get the buffers.  Caller

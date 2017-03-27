@@ -23,11 +23,6 @@ package org.apache.qpid.server.filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.common.AMQPFilterTypes;
-import org.apache.qpid.server.filter.BooleanExpression;
-import org.apache.qpid.server.filter.FilterableMessage;
-import org.apache.qpid.server.filter.JMSMessagePropertyExpression;
-import org.apache.qpid.server.filter.SelectorParsingException;
 import org.apache.qpid.server.filter.selector.ParseException;
 import org.apache.qpid.server.filter.selector.SelectorParser;
 import org.apache.qpid.server.filter.selector.TokenMgrError;

@@ -39,7 +39,7 @@ import java.util.UUID;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.apache.qpid.server.common.AMQPFilterTypes;
+import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;

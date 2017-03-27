@@ -22,8 +22,6 @@ package org.apache.qpid.server.bytebuffer;
 
 import java.nio.ByteBuffer;
 
-import org.apache.qpid.server.bytebuffer.ByteBufferRef;
-
 class NonPooledByteBufferRef implements ByteBufferRef
 {
     private final ByteBuffer _buffer;

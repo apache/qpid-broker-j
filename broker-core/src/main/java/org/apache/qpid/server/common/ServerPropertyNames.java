@@ -36,11 +36,6 @@ public final class ServerPropertyNames
     public static final String FEDERATION_TAG = "qpid.federation_tag";
 
     /**
-     * Server property: prefix used for federation of temporary queues
-     */
-    public static final String QPID_TEMPORARY_QUEUE_PREFIX = "qpid.temporary_queue_prefix";
-
-    /**
      * Server property: array of features supported by the server.
      */
     public static final String QPID_FEATURES = "qpid.features";

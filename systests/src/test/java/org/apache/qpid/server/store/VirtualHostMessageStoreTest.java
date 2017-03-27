@@ -36,7 +36,7 @@ import javax.security.auth.Subject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.apache.qpid.server.common.AMQPFilterTypes;
+import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;

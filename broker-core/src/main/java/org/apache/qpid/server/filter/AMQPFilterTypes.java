@@ -18,7 +18,7 @@
  *
  *
  */
-package org.apache.qpid.server.common;
+package org.apache.qpid.server.filter;
 
 /**
  * Specifies the different filter types for consumers that filter their messages.

@@ -53,7 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.common.AMQPFilterTypes;
+import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.filter.SelectorParsingException;
 import org.apache.qpid.server.filter.selector.ParseException;
@@ -92,7 +92,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.NoLocalFilter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.StdDistMode;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;

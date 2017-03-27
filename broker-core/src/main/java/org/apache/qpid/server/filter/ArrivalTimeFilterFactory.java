@@ -22,7 +22,6 @@ package org.apache.qpid.server.filter;
 
 import java.util.List;
 
-import org.apache.qpid.server.common.AMQPFilterTypes;
 import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.PluggableService;
 

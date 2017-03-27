@@ -25,8 +25,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.common.AMQPFilterTypes;
-import org.apache.qpid.server.filter.SelectorParsingException;
 import org.apache.qpid.server.filter.selector.ParseException;
 import org.apache.qpid.server.filter.selector.TokenMgrError;
 
@@ -39,8 +37,6 @@ public class FilterManagerFactory
     private FilterManagerFactory()
     {
     }
-
-    //TODO move to a common class so it can be referred to from client code.
 
     public static FilterManager createManager(Map<String,Object> filters) throws AMQInvalidArgumentException
     {

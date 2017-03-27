@@ -22,8 +22,6 @@ package org.apache.qpid.server.filter;
 
 import java.util.List;
 
-import org.apache.qpid.server.common.AMQPFilterTypes;
-import org.apache.qpid.server.filter.SelectorParsingException;
 import org.apache.qpid.server.filter.selector.ParseException;
 import org.apache.qpid.server.filter.selector.TokenMgrError;
 import org.apache.qpid.server.plugin.MessageFilterFactory;
