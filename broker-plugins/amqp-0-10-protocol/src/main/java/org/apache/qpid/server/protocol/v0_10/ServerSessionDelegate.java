@@ -839,12 +839,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     @Override
     public void executionSync(final ServerSession ssn, final ExecutionSync sync)
     {
-        ((ServerSession)ssn).awaitCommandCompletion();
-        executionSyncSuper(ssn, sync);
-    }
-
-    private void executionSyncSuper(ServerSession ssn, ExecutionSync sync)
-    {
+        ssn.awaitCommandCompletion();
         ssn.syncPoint();
     }
 

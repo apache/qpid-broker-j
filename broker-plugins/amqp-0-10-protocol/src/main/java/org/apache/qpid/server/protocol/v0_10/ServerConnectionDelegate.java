@@ -411,18 +411,9 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     @Override
     public void sessionDetach(ServerConnection conn, SessionDetach dtc)
     {
-        // To ensure a clean detach, we stop any remaining subscriptions. Stop ensures
-        // that any in-progress delivery (QueueRunner) is completed before the stop
-        // completes.
         stopAllSubscriptions(conn, dtc);
         ServerSession ssn = conn.getSession(dtc.getChannel());
-        ((ServerSession)ssn).setClose(true);
-        sessionDetachSuper(conn, dtc);
-    }
-
-    private void sessionDetachSuper(ServerConnection conn, SessionDetach dtc)
-    {
-        ServerSession ssn = conn.getSession(dtc.getChannel());
+        ssn.setClose(true);
         ssn.sessionDetached(dtc.getName(), ssn.getDetachCode() == null? SessionDetachCode.NORMAL: ssn.getDetachCode());
         conn.unmap(ssn);
         ssn.closed();

@@ -909,7 +909,11 @@ public class ServerSession extends SessionInvoker
     {
         if(runningAsSubject())
         {
-            setStateSuper(state);
+            synchronized (commandsLock)
+            {
+                this.state = state;
+                commandsLock.notifyAll();
+            }
 
             if (state == State.OPEN)
             {
@@ -928,15 +932,6 @@ public class ServerSession extends SessionInvoker
                 }
             });
 
-        }
-    }
-
-    private void setStateSuper(State state)
-    {
-        synchronized (commandsLock)
-        {
-            this.state = state;
-            commandsLock.notifyAll();
         }
     }
 
@@ -1500,11 +1495,6 @@ public class ServerSession extends SessionInvoker
 
     public ServerConnection getConnection()
     {
-        return (ServerConnection) getConnectionSuper();
-    }
-
-    private ServerConnection getConnectionSuper()
-    {
         return connection;
     }
 
@@ -1634,11 +1624,6 @@ public class ServerSession extends SessionInvoker
         {
             _modelObject.delete();
         }
-        closeSuper();
-    }
-
-    private void closeSuper()
-    {
         if (LOGGER.isDebugEnabled())
         {
             LOGGER.debug("Closing [{}] in state [{}]", this, state);

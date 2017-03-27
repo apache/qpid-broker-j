@@ -131,20 +131,15 @@ public class ServerConnection extends ConnectionInvoker
     @Override
     protected void invoke(Method method)
     {
-        invokeSuper(method);
-        if (method instanceof ConnectionClose)
-        {
-            _ignoreAllButConnectionCloseOk = true;
-        }
-    }
-
-    private void invokeSuper(Method method)
-    {
         method.setChannel(0);
         send(method);
         if (!method.isBatch())
         {
             flush();
+        }
+        if (method instanceof ConnectionClose)
+        {
+            _ignoreAllButConnectionCloseOk = true;
         }
     }
 
@@ -156,7 +151,11 @@ public class ServerConnection extends ConnectionInvoker
 
     protected void setState(State state)
     {
-        setStateSuper(state);
+        synchronized (lock)
+        {
+            this.state = state;
+            lock.notifyAll();
+        }
 
         if(state == State.CLOSING)
         {
@@ -169,22 +168,8 @@ public class ServerConnection extends ConnectionInvoker
         }
     }
 
-    private void setStateSuper(State state)
-    {
-        synchronized (lock)
-        {
-            this.state = state;
-            lock.notifyAll();
-        }
-    }
-
 
     public ServerConnectionDelegate getConnectionDelegate()
-    {
-        return (ServerConnectionDelegate) getConnectionDelegateSuper();
-    }
-
-    private ServerConnectionDelegate getConnectionDelegateSuper()
     {
         return delegate;
     }
@@ -261,7 +246,7 @@ public class ServerConnection extends ConnectionInvoker
     {
         try
         {
-            exceptionSuper(t);
+            exception(new ConnectionException(t));
         }
         finally
         {
@@ -274,11 +259,6 @@ public class ServerConnection extends ConnectionInvoker
                 throw (ServerScopedRuntimeException) t;
             }
         }
-    }
-
-    private void exceptionSuper(Throwable t)
-    {
-        exception(new ConnectionException(t));
     }
 
 
@@ -346,18 +326,13 @@ public class ServerConnection extends ConnectionInvoker
 
     public synchronized void registerSession(final ServerSession ssn)
     {
-        registerSessionSuper(ssn);
-        if(_blocking)
-        {
-            ((ServerSession)ssn).block();
-        }
-    }
-
-    private void registerSessionSuper(ServerSession ssn)
-    {
         synchronized (lock)
         {
-            sessions.put(ssn.getName(),ssn);
+            sessions.put(ssn.getName(), ssn);
+        }
+        if(_blocking)
+        {
+            ssn.block();
         }
     }
 
@@ -367,11 +342,6 @@ public class ServerConnection extends ConnectionInvoker
     }
 
     protected Collection<ServerSession> getChannels()
-    {
-        return  (Collection<ServerSession>) getChannelsSuper();
-    }
-
-    private Collection<ServerSession> getChannelsSuper()
     {
         return new ArrayList<>(channels.values());
     }
@@ -397,7 +367,32 @@ public class ServerConnection extends ConnectionInvoker
         try
         {
             performDeleteTasks();
-            closedSuper();
+            if (state == OPEN)
+            {
+                exception(new ConnectionException("connection aborted"));
+            }
+
+            LOGGER.debug("connection closed: {}", this);
+
+            synchronized (lock)
+            {
+                List<ServerSession> values = new ArrayList<ServerSession>(channels.values());
+                for (ServerSession ssn : values)
+                {
+                    ssn.closed();
+                }
+
+                try
+                {
+                    sender.close();
+                }
+                catch(Exception e)
+                {
+                    // ignore.
+                }
+                sender = null;
+                setState(CLOSED);
+            }
         }
         finally
         {
@@ -408,36 +403,6 @@ public class ServerConnection extends ConnectionInvoker
             }
         }
 
-    }
-
-    private void closedSuper()
-    {
-        if (state == OPEN)
-        {
-            exception(new ConnectionException("connection aborted"));
-        }
-
-        LOGGER.debug("connection closed: {}", this);
-
-        synchronized (lock)
-        {
-            List<ServerSession> values = new ArrayList<ServerSession>(channels.values());
-            for (ServerSession ssn : values)
-            {
-                ssn.closed();
-            }
-
-            try
-            {
-                sender.close();
-            }
-            catch(Exception e)
-            {
-                // ignore.
-            }
-            sender = null;
-            setState(CLOSED);
-        }
     }
 
     private void markAllSessionsClosed()
@@ -461,11 +426,6 @@ public class ServerConnection extends ConnectionInvoker
     public void send(ProtocolEvent event)
     {
         _lastIoTime.set(System.currentTimeMillis());
-        sendSuper(event);
-    }
-
-    private void sendSuper(ProtocolEvent event)
-    {
         if(LOGGER.isDebugEnabled())
         {
             LOGGER.debug("SEND: [{}] {}", this, String.valueOf(event));
