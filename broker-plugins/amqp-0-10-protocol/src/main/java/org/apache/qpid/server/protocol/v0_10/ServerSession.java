@@ -112,7 +112,6 @@ public class ServerSession extends SessionInvoker
     private final int commandLimit = Integer.getInteger("qpid.session.command_limit", 64 * 1024);
     private final Object commandsLock = new Object();
     private final Object stateLock = new Object();
-    private final AtomicBoolean _failoverRequired = new AtomicBoolean(false);
     private Session_0_10 _modelObject;
     private long _blockTime;
     private long _blockingTimeout;
@@ -122,7 +121,6 @@ public class ServerSession extends SessionInvoker
     private boolean closing;
     private int channel;
     private ServerSessionDelegate delegate;
-    private SessionListener listener = new DefaultSessionListener();
     private boolean incomingInit;
     // incoming command count
     private int commandsIn;
@@ -172,9 +170,7 @@ public class ServerSession extends SessionInvoker
         initReceiver();
         _transaction = new AsyncAutoCommitTransaction(this.getMessageStore(),this);
 
-        ServerConnection serverConnection = (ServerConnection) connection;
-
-        _blockingTimeout = serverConnection.getBroker().getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
+        _blockingTimeout = connection.getBroker().getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
     }
 
     public Binary getName()
@@ -195,11 +191,6 @@ public class ServerSession extends SessionInvoker
     void setChannel(int channel)
     {
         this.channel = channel;
-    }
-
-    public SessionListener getSessionListener()
-    {
-        return listener;
     }
 
     protected State getState()
@@ -235,8 +226,6 @@ public class ServerSession extends SessionInvoker
 
     void resume()
     {
-        _failoverRequired.set(false);
-
         synchronized (commandsLock)
         {
             attach();
@@ -293,7 +282,6 @@ public class ServerSession extends SessionInvoker
                 txSelect();
             }
 
-            listener.resumed(this);
             resumer = null;
         }
     }
@@ -701,14 +689,6 @@ public class ServerSession extends SessionInvoker
         }
     }
 
-    private void checkFailoverRequired(String message)
-    {
-        if (_failoverRequired.get())
-        {
-            throw new SessionException(message);
-        }
-    }
-
     protected boolean shouldIssueFlush(int next)
     {
         return (next % 65536) == 0;
@@ -834,7 +814,6 @@ public class ServerSession extends SessionInvoker
         if(state == CLOSED)
         {
             connection.removeSession(this);
-            listener.closed(this);
         }
     }
 
@@ -1636,7 +1615,6 @@ public class ServerSession extends SessionInvoker
                     state = CLOSED;
                     delegate.closed(this);
                     connection.removeSession(this);
-                    listener.closed(this);
                     break;
                 case CLOSED:
                     break;
@@ -1845,31 +1823,6 @@ public class ServerSession extends SessionInvoker
         return _modelObject.getMaxUncommittedInMemorySize();
     }
 
-    static class DefaultSessionListener implements SessionListener
-    {
-
-        @Override
-        public void opened(ServerSession ssn) {}
-
-        @Override
-        public void resumed(ServerSession ssn) {}
-
-        @Override
-        public void message(ServerSession ssn, MessageTransfer xfr)
-        {
-            LOGGER.info("message: {}", xfr);
-        }
-
-        @Override
-        public void exception(ServerSession ssn, SessionException exc)
-        {
-            LOGGER.error("session exception", exc);
-        }
-
-        @Override
-        public void closed(ServerSession ssn) {}
-    }
-
     private class ResultFuture<T> implements Future<T>
     {
 
@@ -1897,7 +1850,6 @@ public class ServerSession extends SessionInvoker
                 Waiter w = new Waiter(this, timeout);
                 while (w.hasTime() && state != CLOSED && !isDone())
                 {
-                    checkFailoverRequired("Operation was interrupted by failover.");
                     LOGGER.debug("{} waiting for result: {}", ServerSession.this, this);
                     w.await();
                 }

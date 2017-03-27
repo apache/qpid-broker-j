@@ -1907,7 +1907,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     @Override public void executionException(ServerSession ssn, ExecutionException exc)
     {
         ssn.setException(exc);
-        ssn.getSessionListener().exception(ssn, new SessionException(exc));
+        LOGGER.error("session exception", exc);
         ssn.closed();
     }
 

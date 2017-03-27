@@ -89,7 +89,6 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
 
         _connection.setConnectionDelegate(connDelegate);
         _connection.setRemoteAddress(network.getRemoteAddress());
-        _connection.setLocalAddress(network.getLocalAddress());
 
         _inputHandler = new ServerInputHandler(new ServerAssembler(_connection));
         _connection.addFrameSizeObserver(_inputHandler);
@@ -327,7 +326,7 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
 
     public String getRemoteContainerName()
     {
-        return _connection.getRemoteContainerName();
+        return getClientId();
     }
 
     public Collection<? extends Session_0_10> getSessionModels()

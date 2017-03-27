@@ -101,21 +101,25 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
         _maximumFrameSize = Math.min(0xffff, broker.getNetworkBufferSize());
     }
 
+    @Override
     public void control(ServerConnection conn, Method method)
     {
         method.dispatch(conn, this);
     }
 
+    @Override
     public void command(ServerConnection conn, Method method)
     {
         method.dispatch(conn, this);
     }
 
+    @Override
     public void error(ServerConnection conn, ProtocolError error)
     {
         conn.exception(new ConnectionException(error.getMessage()));
     }
 
+    @Override
     public void handle(ServerConnection conn, Method method)
     {
         conn.dispatch(method);
@@ -148,13 +152,6 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
         }
     }
 
-    public void writerIdle(final ServerConnection connection)
-    {
-        connection.doHeartBeat();
-    }
-
-
-
     public final ConnectionState getState()
     {
         return _state;
@@ -172,9 +169,8 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     }
 
     @Override
-    public void init(final ServerConnection conn, final ProtocolHeader hdr)
+    public void init(final ServerConnection serverConnection, final ProtocolHeader hdr)
     {
-        ServerConnection serverConnection = (ServerConnection) conn;
         assertState(serverConnection, ConnectionState.INIT);
         serverConnection.send(new ProtocolHeader(1, 0, 10));
         serverConnection.sendConnectionStart(_clientProperties, _mechanisms, _locales);
@@ -216,9 +212,8 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     }
 
     @Override
-    public void connectionSecureOk(final ServerConnection conn, final ConnectionSecureOk ok)
+    public void connectionSecureOk(final ServerConnection serverConnection, final ConnectionSecureOk ok)
     {
-        ServerConnection serverConnection = (ServerConnection) conn;
         assertState(serverConnection, ConnectionState.AWAIT_SECURE_OK);
         secure(serverConnection, ok.getResponse());
     }
@@ -261,18 +256,16 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     }
 
     @Override
-    public void connectionClose(ServerConnection conn, ConnectionClose close)
+    public void connectionClose(ServerConnection sconn, ConnectionClose close)
     {
-        final ServerConnection sconn = (ServerConnection) conn;
         sconn.closeCode(close);
         sconn.setState(CLOSE_RCVD);
-        sendConnectionCloseOkAndCloseSender(conn);
+        sendConnectionCloseOkAndCloseSender(sconn);
     }
 
-
-    public void connectionOpen(ServerConnection conn, ConnectionOpen open)
+    @Override
+    public void connectionOpen(ServerConnection sconn, ConnectionOpen open)
     {
-        final ServerConnection sconn = (ServerConnection) conn;
         assertState(sconn, ConnectionState.AWAIT_OPEN);
         NamedAddressSpace addressSpace;
         String vhostName;
@@ -285,10 +278,8 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
             vhostName = "";
         }
 
-        AmqpPort port = (AmqpPort) sconn.getPort();
+        AmqpPort port = sconn.getPort();
         addressSpace = port.getAddressSpace(vhostName);
-
-
 
         if(addressSpace != null)
         {
@@ -339,9 +330,8 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     }
 
     @Override
-    public void connectionTuneOk(final ServerConnection conn, final ConnectionTuneOk ok)
+    public void connectionTuneOk(final ServerConnection sconn, final ConnectionTuneOk ok)
     {
-        ServerConnection sconn = (ServerConnection) conn;
         assertState(sconn, ConnectionState.AWAIT_TUNE_OK);
         int okChannelMax = ok.getChannelMax();
         int okMaxFrameSize = ok.getMaxFrameSize();
@@ -421,7 +411,7 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
 
     private void stopAllSubscriptions(ServerConnection conn, SessionDetach dtc)
     {
-        final ServerSession ssn = (ServerSession) conn.getSession(dtc.getChannel());
+        final ServerSession ssn = conn.getSession(dtc.getChannel());
         final Collection<ConsumerTarget_0_10> subs = ssn.getSubscriptions();
         for (ConsumerTarget_0_10 subscription_0_10 : subs)
         {
@@ -431,21 +421,20 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
 
 
     @Override
-    public void sessionAttach(final ServerConnection conn, final SessionAttach atc)
+    public void sessionAttach(final ServerConnection serverConnection, final SessionAttach atc)
     {
-        ServerConnection serverConnection = (ServerConnection) conn;
         assertState(serverConnection, ConnectionState.OPEN);
 
         ServerSessionDelegate serverSessionDelegate = new ServerSessionDelegate();
 
         final ServerSession serverSession =
-                new ServerSession(conn, serverSessionDelegate, new Binary(atc.getName()), 0);
-        final Session_0_10 session = new Session_0_10(((ServerConnection) conn).getAmqpConnection(), atc.getChannel(),
+                new ServerSession(serverConnection, serverSessionDelegate, new Binary(atc.getName()), 0);
+        final Session_0_10 session = new Session_0_10(serverConnection.getAmqpConnection(), atc.getChannel(),
                                                       serverSession);
         session.create();
         serverSession.setModelObject(session);
 
-        if(isSessionNameUnique(atc.getName(), conn))
+        if(isSessionNameUnique(atc.getName(), serverConnection))
         {
             serverConnection.map(serverSession, atc.getChannel());
             serverConnection.registerSession(serverSession);
@@ -461,12 +450,11 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
 
     private boolean isSessionNameUnique(final byte[] name, final ServerConnection conn)
     {
-        final ServerConnection sconn = (ServerConnection) conn;
-        final Principal authorizedPrincipal = sconn.getAuthorizedPrincipal();
+        final Principal authorizedPrincipal = conn.getAuthorizedPrincipal();
         final String userId = authorizedPrincipal == null ? "" : authorizedPrincipal.getName();
 
         final Iterator<? extends org.apache.qpid.server.model.Connection<?>> connections =
-                        ((ServerConnection)conn).getAddressSpace().getConnections().iterator();
+                        conn.getAddressSpace().getConnections().iterator();
         while(connections.hasNext())
         {
             final AMQPConnection<?> amqConnectionModel = (AMQPConnection<?>) connections.next();
@@ -483,9 +471,8 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     }
 
     @Override
-    public void connectionStartOk(ServerConnection conn, ConnectionStartOk ok)
+    public void connectionStartOk(ServerConnection serverConnection, ConnectionStartOk ok)
     {
-        ServerConnection serverConnection = (ServerConnection)conn;
         assertState(serverConnection, ConnectionState.AWAIT_START_OK);
         _clientProperties = ok.getClientProperties();
         if(_clientProperties != null)
@@ -533,30 +520,6 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
         return (_clientProperties == null || _clientProperties.get(name) == null) ? null : String.valueOf(_clientProperties.get(name));
     }
 
-    public Map<String,Object> getClientProperties()
-    {
-        return _clientProperties;
-    }
-
-    public String getClientId()
-    {
-        return _clientProperties == null ? null : (String) _clientProperties.get(ConnectionStartProperties.CLIENT_ID_0_10);
-    }
-
-    public String getClientVersion()
-    {
-        return _clientProperties == null ? null : (String) _clientProperties.get(ConnectionStartProperties.VERSION_0_10);
-    }
-
-    public String getClientProduct()
-    {
-        return _clientProperties == null ? null : (String) _clientProperties.get(ConnectionStartProperties.PRODUCT);
-    }
-
-    public String getRemoteProcessPid()
-    {
-        return (_clientProperties == null || _clientProperties.get(ConnectionStartProperties.PID) == null) ? null : String.valueOf(_clientProperties.get(ConnectionStartProperties.PID));
-    }
 
     protected int getHeartbeatMax()
     {
@@ -569,9 +532,8 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
         return _compressionSupported && _broker.isMessageCompressionEnabled();
     }
 
-    private void connectionAuthFailed(final ServerConnection conn, Exception e)
+    private void connectionAuthFailed(final ServerConnection serverConnection, Exception e)
     {
-        ServerConnection serverConnection = (ServerConnection)conn;
         if (e != null)
         {
             serverConnection.exception(e);

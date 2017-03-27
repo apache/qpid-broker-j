@@ -102,7 +102,6 @@ public class ServerConnection extends ConnectionInvoker
     private int channelMax = 1;
     private String locale;
     private SocketAddress _remoteAddress;
-    private SocketAddress _localAddress;
 
     public ServerConnection(final long connectionId,
                             Broker<?> broker,
@@ -409,9 +408,8 @@ public class ServerConnection extends ConnectionInvoker
     {
         for (ServerSession ssn :  getChannels())
         {
-            final ServerSession session = (ServerSession) ssn;
-            ((ServerSession) ssn).setClose(true);
-            session.closed();
+            ssn.setClose(true);
+            ssn.closed();
         }
     }
 
@@ -419,7 +417,7 @@ public class ServerConnection extends ConnectionInvoker
     {
         for (ServerSession ssn : getChannels())
         {
-            ((ServerSession)ssn).receivedComplete();
+            ssn.receivedComplete();
         }
     }
 
@@ -436,12 +434,6 @@ public class ServerConnection extends ConnectionInvoker
             throw new ConnectionException("connection closed");
         }
         s.send(event);
-    }
-
-
-    public String getRemoteContainerName()
-    {
-        return getConnectionDelegate().getClientId();
     }
 
 
@@ -668,19 +660,9 @@ public class ServerConnection extends ConnectionInvoker
         return _remoteAddress;
     }
 
-    public SocketAddress getLocalAddress()
-    {
-        return _localAddress;
-    }
-
     protected void setRemoteAddress(SocketAddress remoteAddress)
     {
         _remoteAddress = remoteAddress;
-    }
-
-    protected void setLocalAddress(SocketAddress localAddress)
-    {
-        _localAddress = localAddress;
     }
 
     private void invokeSessionDetached(int channel, SessionDetachCode sessionDetachCode)
