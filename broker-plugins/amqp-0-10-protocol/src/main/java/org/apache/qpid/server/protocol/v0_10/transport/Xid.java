@@ -215,4 +215,11 @@ public final class Xid extends Struct {
 
         return result;
     }
+
+    @Override
+    public int getEncodedLength()
+    {
+        throw new UnsupportedOperationException();
+    }
+
 }

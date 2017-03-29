@@ -24,9 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.protocol.v0_10.transport.RangeSet;
-import org.apache.qpid.server.protocol.v0_10.transport.Struct;
-
 
 /**
  * Encoder interface.

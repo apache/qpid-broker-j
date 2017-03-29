@@ -111,6 +111,8 @@ public abstract class Struct implements Encodable
 
     public abstract Map<String,Object> getFields();
 
+    public abstract int getEncodedLength();
+
     public String toString()
     {
         StringBuilder str = new StringBuilder();

@@ -131,5 +131,10 @@ public final class SessionCommandFragment extends Struct {
         return result;
     }
 
+    @Override
+    public int getEncodedLength()
+    {
+        throw new UnsupportedOperationException();
+    }
 
 }

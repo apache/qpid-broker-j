@@ -421,5 +421,11 @@ public final class QueueQueryResult extends Struct {
         return result;
     }
 
+    @Override
+    public int getEncodedLength()
+    {
+        throw new UnsupportedOperationException();
+    }
+
 
 }

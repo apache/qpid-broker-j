@@ -24,7 +24,6 @@ import static org.apache.qpid.server.transport.util.Functions.lsb;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,24 +39,6 @@ import java.util.UUID;
 public abstract class AbstractEncoder implements Encoder
 {
 
-    private static Map<Class<?>,Type> ENCODINGS = new HashMap<Class<?>,Type>();
-    static
-    {
-        ENCODINGS.put(Boolean.class, Type.BOOLEAN);
-        ENCODINGS.put(String.class, Type.STR16);
-        ENCODINGS.put(Long.class, Type.INT64);
-        ENCODINGS.put(Integer.class, Type.INT32);
-        ENCODINGS.put(Short.class, Type.INT16);
-        ENCODINGS.put(Byte.class, Type.INT8);
-        ENCODINGS.put(Map.class, Type.MAP);
-        ENCODINGS.put(List.class, Type.LIST);
-        ENCODINGS.put(Float.class, Type.FLOAT);
-        ENCODINGS.put(Double.class, Type.DOUBLE);
-        ENCODINGS.put(Character.class, Type.CHAR);
-        ENCODINGS.put(byte[].class, Type.VBIN32);
-        ENCODINGS.put(UUID.class, Type.UUID);
-        ENCODINGS.put(Xid.class, Type.STRUCT32);
-    }
 
     private final Map<String,byte[]> str8cache = new LinkedHashMap<String,byte[]>()
     {
@@ -281,58 +262,6 @@ public abstract class AbstractEncoder implements Encoder
         }
     }
 
-    private Type encoding(Object value)
-    {
-        if (value == null)
-        {
-            return Type.VOID;
-        }
-
-        Class klass = value.getClass();
-        Type type = resolve(klass);
-
-        if (type == null)
-        {
-            throw new IllegalArgumentException
-                ("unable to resolve type: " + klass + ", " + value);
-        }
-        else
-        {
-            return type;
-        }
-    }
-
-    static final Type resolve(Class klass)
-    {
-        Type type = ENCODINGS.get(klass);
-        if (type != null)
-        {
-            return type;
-        }
-
-        Class sup = klass.getSuperclass();
-        if (sup != null)
-        {
-            type = resolve(klass.getSuperclass());
-
-            if (type != null)
-            {
-                return type;
-            }
-        }
-
-        for (Class iface : klass.getInterfaces())
-        {
-            type = resolve(iface);
-            if (type != null)
-            {
-                return type;
-            }
-        }
-
-        return null;
-    }
-
     public void writeMap(Map<String,Object> map)
     {
         int pos = beginSize32();
@@ -350,7 +279,7 @@ public abstract class AbstractEncoder implements Encoder
         {
             String key = entry.getKey();
             Object value = entry.getValue();
-            Type type = encoding(value);
+            Type type = EncoderUtils.getEncodingType(value);
             writeStr8(key);
             put(type.getCode());
             write(type, value);
@@ -372,7 +301,7 @@ public abstract class AbstractEncoder implements Encoder
     {
         for (Object value : list)
         {
-            Type type = encoding(value);
+            Type type = EncoderUtils.getEncodingType(value);
             put(type.getCode());
             write(type, value);
         }
@@ -398,7 +327,7 @@ public abstract class AbstractEncoder implements Encoder
         }
         else
         {
-            type = encoding(array.get(0));
+            type = EncoderUtils.getEncodingType(array.get(0));
         }
 
         put(type.getCode());
