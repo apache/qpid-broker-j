@@ -779,7 +779,7 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     private File getFileFromSiftingAppender(final ch.qos.logback.classic.Logger logger)
     {
-        String key = MDC.get(QpidTestCase.CLASS_QUALIFIED_TEST_NAME);
+        String key = logger.getLoggerContext().getProperty(QpidTestCase.CLASS_QUALIFIED_TEST_NAME);
 
         for (Iterator<Appender<ILoggingEvent>> index = logger.iteratorForAppenders(); index.hasNext(); /* do nothing */)
         {

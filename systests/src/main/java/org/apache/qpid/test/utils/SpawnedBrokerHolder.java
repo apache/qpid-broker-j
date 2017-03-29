@@ -481,14 +481,17 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
         String remotelogback = "remotelogback";
 
         Map<String, String> mdc = new HashMap<>();
-        mdc.put(QpidBrokerTestCase.CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
         mdc.put("origin", getLogPrefix());
+
+        Map<String, String> contextProperties = new HashMap<>();
+        contextProperties.put(QpidBrokerTestCase.CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
 
         Map<String, Object> loggerAttrs = new HashMap<>();
         loggerAttrs.put(BrokerLogger.TYPE, BrokerLogbackSocketLogger.TYPE);
         loggerAttrs.put(BrokerLogbackSocketLogger.NAME, remotelogback);
         loggerAttrs.put(BrokerLogbackSocketLogger.PORT, QpidBrokerTestCase.LOGBACK_REMOTE_PORT);
         loggerAttrs.put(BrokerLogbackSocketLogger.MAPPED_DIAGNOSTIC_CONTEXT, mdc);
+        loggerAttrs.put(BrokerLogbackSocketLogger.CONTEXT_PROPERTIES, contextProperties);
 
         configuration.addObjectConfiguration(BrokerLogger.class, loggerAttrs);
 

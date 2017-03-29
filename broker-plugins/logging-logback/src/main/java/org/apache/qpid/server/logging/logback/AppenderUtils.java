@@ -32,6 +32,8 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.TriggeringPolicy;
+import ch.qos.logback.core.util.FileSize;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 
 public class AppenderUtils
@@ -113,12 +115,14 @@ public class AppenderUtils
     static class DailyTriggeringPolicy extends SizeAndTimeBasedFNATP<ILoggingEvent>
     {
         private final boolean _rollOnRestart;
+        private final FileSize _maxFileSize;
         private boolean _isFirst = true;
 
         public DailyTriggeringPolicy(boolean isRollOnRestart, String maxFileSize)
         {
             _rollOnRestart = isRollOnRestart;
-            setMaxFileSize(maxFileSize);
+            _maxFileSize = FileSize.valueOf(maxFileSize);
+            setMaxFileSize(_maxFileSize);
         }
 
         @Override
@@ -146,17 +150,23 @@ public class AppenderUtils
             }
         }
 
+        public FileSize getMaxFileSize()
+        {
+            return _maxFileSize;
+        }
     }
 
     static class SizeTriggeringPolicy extends SizeBasedTriggeringPolicy<ILoggingEvent>
     {
         private final boolean _rollOnRestart;
+        private final FileSize _maxFileSize;
         private boolean _isFirst = true;
 
         public SizeTriggeringPolicy(boolean isRollOnRestart, String maxFileSize)
         {
             _rollOnRestart = isRollOnRestart;
-            setMaxFileSize(maxFileSize);
+            _maxFileSize = FileSize.valueOf(maxFileSize);
+            setMaxFileSize(_maxFileSize);
 
         }
 
@@ -174,6 +184,10 @@ public class AppenderUtils
             }
         }
 
+        public FileSize getMaxFileSize()
+        {
+            return _maxFileSize;
+        }
     }
 
     static class SimpleRollingPolicy extends FixedWindowRollingPolicy

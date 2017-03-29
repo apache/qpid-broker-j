@@ -26,14 +26,22 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Properties;
+import java.util.Set;
 
 import ch.qos.logback.classic.ClassicConstants;
+import ch.qos.logback.classic.LoggerContext;
 import junit.framework.TestCase;
 import junit.framework.TestResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 public class QpidTestCase extends TestCase
 {
@@ -136,12 +144,14 @@ public class QpidTestCase extends TestCase
     private static final List<String> _exclusionList;
     private static final Properties OVERRIDDEN_PROPERTIES = loadOverriddenTestSystemProperties();
 
+    @Override
     public void run(TestResult testResult)
     {
+        final LoggerContext loggerContext = ((ch.qos.logback.classic.Logger) _logger).getLoggerContext();
         try
         {
             _currentInstance = this;
-            MDC.put(CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
+            loggerContext.putProperty(CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
 
             if (_exclusionList.contains(getClass().getPackage().getName() + ".*") ||
                 _exclusionList.contains(getClass().getName() + "#*") ||
@@ -160,7 +170,7 @@ public class QpidTestCase extends TestCase
         {
             _logger.info(ClassicConstants.FINALIZE_SESSION_MARKER, "Shutting down sub-appender");
             _currentInstance = null;
-            MDC.remove(CLASS_QUALIFIED_TEST_NAME);
+            loggerContext.putProperty(CLASS_QUALIFIED_TEST_NAME, null);
             revertTestSystemProperties();
         }
     }
@@ -278,12 +288,14 @@ public class QpidTestCase extends TestCase
         }
     }
 
+    @Override
     protected void setUp() throws Exception
     {
         _logger.info("========== start " + getTestName() + " ==========");
         super.setUp();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _logger.info("========== tearDown " + getTestName() + " ==========");

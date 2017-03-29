@@ -22,23 +22,33 @@
 package org.apache.qpid.server.logging.logback;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import ch.qos.logback.classic.net.SocketAppender;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.util.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.util.Action;
 
 public class BrokerLogbackSocketLoggerImpl
         extends AbstractBrokerLogger<BrokerLogbackSocketLoggerImpl> implements BrokerLogbackSocketLogger<BrokerLogbackSocketLoggerImpl>
 {
+    private static final Logger _logger = LoggerFactory.getLogger(BrokerLogbackSocketLoggerImpl.class);
+
+    private final List<Action<Void>> _stopLoggingActions = new CopyOnWriteArrayList<>();
+
     @ManagedAttributeField
     private String _remoteHost;
 
@@ -53,6 +63,9 @@ public class BrokerLogbackSocketLoggerImpl
 
     @ManagedAttributeField
     private Map<String,String> _mappedDiagnosticContext;
+
+    @ManagedAttributeField
+    private Map<String, String> _contextProperties;
 
     @ManagedObjectFactoryConstructor
     protected BrokerLogbackSocketLoggerImpl(final Map<String, Object> attributes, Broker<?> broker)
@@ -91,8 +104,34 @@ public class BrokerLogbackSocketLoggerImpl
     }
 
     @Override
+    public Map<String, String> getContextProperties()
+    {
+        return _contextProperties;
+    }
+
+    @Override
     protected Appender<ILoggingEvent> createAppenderInstance(Context loggerContext)
     {
+        if (_contextProperties != null && !_contextProperties.isEmpty())
+        {
+            for (Map.Entry<String, String> property : _contextProperties.entrySet())
+            {
+                final String key = property.getKey();
+                final String value = property.getValue();
+                final String existingValue = loggerContext.getProperty(key);
+                if (existingValue != null && !Objects.equals(existingValue, value))
+                {
+                    _logger.warn("Logback context property key '{}' value '{}' overwritten with value '{}", key, existingValue, value);
+                }
+                loggerContext.putProperty(key, value);
+
+                _stopLoggingActions.add(object ->
+                                  {
+                                      loggerContext.putProperty(key, existingValue);
+                                  });
+            }
+        }
+
         SocketAppender socketAppender = new SocketAppender()
                                         {
                                             @Override
@@ -125,6 +164,22 @@ public class BrokerLogbackSocketLoggerImpl
         socketAppender.setIncludeCallerData(_includeCallerData);
         socketAppender.setReconnectionDelay(Duration.buildByMilliseconds(_reconnectionDelay));
         return socketAppender;
+    }
 
+    @Override
+    public void stopLogging()
+    {
+        try
+        {
+            for (Action action : _stopLoggingActions)
+            {
+                action.performAction(null);
+            }
+            _stopLoggingActions.clear();
+        }
+        finally
+        {
+            super.stopLogging();
+        }
     }
 }
