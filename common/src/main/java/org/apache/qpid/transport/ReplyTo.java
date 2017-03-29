@@ -148,6 +148,25 @@ public final class ReplyTo extends Struct {
 
     }
 
+    @Override
+    public int getEncodedLength()
+    {
+        int len = 0;
+
+        len += 2; // packing_flags
+
+        if ((packing_flags & 256) != 0)
+        {
+            len += EncoderUtils.getStr8Length(this.exchange);
+        }
+        if ((packing_flags & 512) != 0)
+        {
+            len += EncoderUtils.getStr8Length(this.routingKey);
+        }
+        return len;
+    }
+
+
     public void read(Decoder dec)
     {
         packing_flags = (short) dec.readUint16();

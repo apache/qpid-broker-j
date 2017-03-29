@@ -520,6 +520,51 @@ public final class DeliveryProperties extends Struct {
 
     }
 
+    public int getEncodedLength()
+    {
+        int len = 0;
+
+        len += 2; // packing_flags
+
+        if ((packing_flags & 2048) != 0)
+        {
+            len += 1; // priority
+        }
+        if ((packing_flags & 4096) != 0)
+        {
+            len += 1; // deliveryMode
+        }
+        if ((packing_flags & 8192) != 0)
+        {
+            len += 8; // ttl
+        }
+        if ((packing_flags & 16384) != 0)
+        {
+            len += 8; // timestamp
+        }
+        if ((packing_flags & 32768) != 0)
+        {
+            len += 8; // expiration
+        }
+        if ((packing_flags & 1) != 0)
+        {
+            len += EncoderUtils.getStr8Length(this.exchange);
+        }
+        if ((packing_flags & 2) != 0)
+        {
+            len += EncoderUtils.getStr8Length(this.routingKey);
+        }
+        if ((packing_flags & 4) != 0)
+        {
+            len += EncoderUtils.getStr16Length(this.resumeId);
+        }
+        if ((packing_flags & 8) != 0)
+        {
+            len += 8; // resumeTtl
+        }
+        return len;
+    }
+
     public void read(Decoder dec)
     {
         packing_flags = (short) dec.readUint16();
@@ -561,6 +606,7 @@ public final class DeliveryProperties extends Struct {
         }
 
     }
+
 
     public Map<String,Object> getFields()
     {
@@ -618,6 +664,4 @@ public final class DeliveryProperties extends Struct {
 
         return result;
     }
-
-
 }

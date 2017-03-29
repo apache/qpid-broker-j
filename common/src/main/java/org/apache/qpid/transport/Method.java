@@ -178,6 +178,12 @@ public abstract class Method extends Struct implements ProtocolEvent
         return completionListener != null;
     }
 
+    @Override
+    public final int getEncodedLength()
+    {
+        throw new UnsupportedOperationException();
+    }
+
     public String toString()
     {
         StringBuilder str = new StringBuilder();

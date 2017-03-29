@@ -392,6 +392,52 @@ public final class MessageProperties extends Struct {
 
     }
 
+    @Override
+    public int getEncodedLength()
+    {
+        int len = 0;
+
+        len += 2; // packing_flags
+
+        if ((packing_flags & 256) != 0)
+        {
+            len += 8; // contentLength
+        }
+        if ((packing_flags & 512) != 0)
+        {
+            len += 16; // messageId
+        }
+        if ((packing_flags & 1024) != 0)
+        {
+            len += EncoderUtils.getVbin16Length(this.correlationId);
+        }
+        if ((packing_flags & 2048) != 0)
+        {
+            len += EncoderUtils.getStructLength(ReplyTo.TYPE, this.replyTo);
+        }
+        if ((packing_flags & 4096) != 0)
+        {
+            len += EncoderUtils.getStr8Length(this.contentType);
+        }
+        if ((packing_flags & 8192) != 0)
+        {
+            len += EncoderUtils.getStr8Length(this.contentEncoding);
+        }
+        if ((packing_flags & 16384) != 0)
+        {
+            len += EncoderUtils.getVbin16Length(this.userId);
+        }
+        if ((packing_flags & 32768) != 0)
+        {
+            len += EncoderUtils.getVbin16Length(this.appId);
+        }
+        if ((packing_flags & 1) != 0)
+        {
+            len += EncoderUtils.getMapLength(this.applicationHeaders);
+        }
+        return len;
+    }
+
     public void read(Decoder dec)
     {
         packing_flags = (short) dec.readUint16();
@@ -478,6 +524,7 @@ public final class MessageProperties extends Struct {
 
         return result;
     }
+
 
 
 }

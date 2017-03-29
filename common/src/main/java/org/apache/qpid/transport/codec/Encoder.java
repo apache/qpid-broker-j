@@ -27,7 +27,6 @@ import java.util.UUID;
 import org.apache.qpid.transport.RangeSet;
 import org.apache.qpid.transport.Struct;
 
-
 /**
  * Encoder interface.
  * Each concrete implementor must specify how to encode given values.

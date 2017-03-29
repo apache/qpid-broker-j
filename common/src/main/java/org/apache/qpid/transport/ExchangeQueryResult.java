@@ -264,5 +264,10 @@ public final class ExchangeQueryResult extends Struct {
         return result;
     }
 
+    @Override
+    public int getEncodedLength()
+    {
+        throw new UnsupportedOperationException();
+    }
 
 }
