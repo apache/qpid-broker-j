@@ -44,7 +44,7 @@
             var firstSlashPos = documentURL.indexOf("/", documentURL.indexOf("//") + 2);
             if (managementPageStart > firstSlashPos)
             {
-                contextPath = documentURL.substring(firstSlashPos, managementPageStart);
+                contextPath = documentURL.substring(firstSlashPos, managementPageStart + 1);
             }
             return contextPath;
         }
