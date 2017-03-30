@@ -30,9 +30,17 @@ public class ClientRegistryTest extends QpidTestCase
     private static final String CLIENT2_REGISTERED_NAME = "CLIENT2_REGISTERED_NAME";
     private static final String CLIENT3_REGISTERED_NAME = "CLIENT3_REGISTERED_NAME";
 
-    private static final int AWAIT_DELAY = 100;
+    private long _awaitDelay = 100;
 
     private ClientRegistry _clientRegistry = new ClientRegistry();
+
+    @Override
+    public void setUp() throws Exception
+    {
+        super.setUp();
+        _awaitDelay = Long.getLong("ClientRegistryTest.awaitDelay", 100L);
+
+    }
 
     public void testRegisterClient()
     {
@@ -59,7 +67,7 @@ public class ClientRegistryTest extends QpidTestCase
 
     public void testAwaitOneClientWhenClientNotRegistered()
     {
-        int numberOfClientsAbsent = _clientRegistry.awaitClients(1, AWAIT_DELAY);
+        int numberOfClientsAbsent = _clientRegistry.awaitClients(1, _awaitDelay);
         assertEquals(1, numberOfClientsAbsent);
     }
 
@@ -67,7 +75,7 @@ public class ClientRegistryTest extends QpidTestCase
     {
         _clientRegistry.registerClient(CLIENT1_REGISTERED_NAME);
 
-        int numberOfClientsAbsent = _clientRegistry.awaitClients(1, AWAIT_DELAY);
+        int numberOfClientsAbsent = _clientRegistry.awaitClients(1, _awaitDelay);
         assertEquals(0, numberOfClientsAbsent);
     }
 
@@ -76,7 +84,7 @@ public class ClientRegistryTest extends QpidTestCase
         _clientRegistry.registerClient(CLIENT1_REGISTERED_NAME);
         registerClientLater(CLIENT2_REGISTERED_NAME, 50);
 
-        int numberOfClientsAbsent = _clientRegistry.awaitClients(2, AWAIT_DELAY);
+        int numberOfClientsAbsent = _clientRegistry.awaitClients(2, _awaitDelay);
         assertEquals(0, numberOfClientsAbsent);
     }
 
