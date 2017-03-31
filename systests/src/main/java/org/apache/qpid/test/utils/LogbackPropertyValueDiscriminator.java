@@ -51,12 +51,13 @@ public class LogbackPropertyValueDiscriminator extends AbstractDiscriminator<ILo
         _key = key;
     }
 
-    public String getDefaultValue() {
+    public String getDefaultValue()
+    {
         return _defaultValue;
     }
 
-    public void setDefaultValue(String defaultValue) {
+    public void setDefaultValue(String defaultValue)
+    {
         _defaultValue = defaultValue;
     }
-
 }

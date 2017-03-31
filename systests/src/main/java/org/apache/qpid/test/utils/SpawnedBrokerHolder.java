@@ -78,10 +78,6 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
     @Override
     public void start(final boolean managementMode, final int amqpPort) throws Exception
     {
-        Map<String, String> mdc = new HashMap<>();
-        mdc.put(QpidBrokerTestCase.CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
-        mdc.put("origin", getLogPrefix());
-
         LOGGER.debug("Spawning broker with jvmOptions: {} environmentSettings: {} permitted start-up time: {}",
                      _jvmOptions, _environmentSettings, BROKER_STARTUP_TIME);
 
