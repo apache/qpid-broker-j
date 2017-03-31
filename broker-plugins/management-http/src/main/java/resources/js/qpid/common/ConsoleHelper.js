@@ -79,7 +79,7 @@ define(["dojo/query",
         },
         showAPI: function ()
         {
-            openWindow(getContextPath() + "/apidocs", 'Qpid REST API');
+            openWindow(getContextPath() + "apidocs", 'Qpid REST API');
         },
         showQueryCreateDialog: function (e)
         {
