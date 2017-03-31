@@ -77,7 +77,7 @@ define(["dojo/domReady!"], function () {
         },
         showAPI: function()
         {
-            openWindow("/apidocs", 'Qpid REST API');
+            openWindow(getContextPath() + "apidocs", 'Qpid REST API');
         }
 
     };
