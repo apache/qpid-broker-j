@@ -87,12 +87,6 @@ public class LinkImpl implements Link_1_0
                 if (_linkEndpoint == null)
                 {
                     _linkEndpoint = createLinkEndpoint(session, attach);
-                    if (_linkEndpoint == null)
-                    {
-                        throw new ConnectionScopedRuntimeException(String.format(
-                                "LinkEndpoint creation failed for attach: %s",
-                                attach));
-                    }
                 }
 
                 _linkEndpoint.receiveAttach(attach);
@@ -143,17 +137,13 @@ public class LinkImpl implements Link_1_0
         {
             linkEndpoint = new SendingLinkEndpoint(session, this);
         }
-        else if (_role == Role.RECEIVER && attach.getTarget() != null)
+        else if (attach.getTarget() instanceof Coordinator)
         {
-
-            if (attach.getTarget() instanceof Target)
-            {
-                linkEndpoint = new StandardReceivingLinkEndpoint(session, this);
-            }
-            else if (attach.getTarget() instanceof Coordinator)
-            {
-                linkEndpoint = new TxnCoordinatorReceivingLinkEndpoint(session, this);
-            }
+            linkEndpoint = new TxnCoordinatorReceivingLinkEndpoint(session, this);
+        }
+        else
+        {
+            linkEndpoint = new StandardReceivingLinkEndpoint(session, this);
         }
         return linkEndpoint;
     }

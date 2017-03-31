@@ -69,7 +69,7 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
-public class StandardReceivingLinkEndpoint extends ReceivingLinkEndpoint
+public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardReceivingLinkEndpoint.class);
 

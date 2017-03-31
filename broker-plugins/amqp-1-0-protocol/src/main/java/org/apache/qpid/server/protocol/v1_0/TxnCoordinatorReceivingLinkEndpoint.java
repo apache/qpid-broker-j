@@ -47,7 +47,7 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
-public class TxnCoordinatorReceivingLinkEndpoint extends ReceivingLinkEndpoint
+public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 {
     private final LinkedHashMap<Integer, ServerTransaction> _createdTransactions = new LinkedHashMap<>();
     private ArrayList<Transfer> _incompleteMessage;

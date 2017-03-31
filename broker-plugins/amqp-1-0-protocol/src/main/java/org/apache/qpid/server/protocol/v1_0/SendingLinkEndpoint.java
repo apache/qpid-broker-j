@@ -90,7 +90,6 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
     private final List<MessageInstance> _resumeFullTransfers = new ArrayList<>();
     private volatile boolean _draining = false;
     private final ConcurrentMap<Binary, UnsettledAction> _unsettledActionMap = new ConcurrentHashMap<>();
-    private TerminusDurability _durability;
     private SendingDestination _destination;
     private EnumSet<ConsumerOption> _consumerOptions;
     private FilterManager _consumerFilters;
@@ -515,35 +514,36 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
             Modified state = new Modified();
             state.setDeliveryFailed(true);
 
-            for(UnsettledAction action : _unsettledActionMap.values())
+            for (UnsettledAction action : _unsettledActionMap.values())
             {
-                action.process(state,Boolean.TRUE);
+                action.process(state, Boolean.TRUE);
             }
             _unsettledActionMap.clear();
 
+            Error closingError = null;
             if (getDestination() instanceof ExchangeDestination
                 && getSession().getConnection().getAddressSpace() instanceof QueueManagingVirtualHost)
             {
                 try
                 {
-                    ((QueueManagingVirtualHost) getSession().getConnection().getAddressSpace()).removeSubscriptionQueue(((ExchangeDestination) getDestination()).getQueue().getName());
+                    ((QueueManagingVirtualHost) getSession().getConnection().getAddressSpace()).removeSubscriptionQueue(
+                            ((ExchangeDestination) getDestination()).getQueue().getName());
                 }
                 catch (AccessControlException e)
                 {
                     LOGGER.error("Error unregistering subscription", e);
-                    close(new Error(AmqpError.NOT_ALLOWED, "Error unregistering subscription"));
+                    closingError = new Error(AmqpError.NOT_ALLOWED, "Error unregistering subscription");
                 }
                 catch (IllegalStateException e)
                 {
-                    close(new Error(AmqpError.RESOURCE_LOCKED, e.getMessage()));
+                    closingError = new Error(AmqpError.RESOURCE_LOCKED, e.getMessage());
                 }
                 catch (NotFoundException e)
                 {
-                    close(new Error(AmqpError.NOT_FOUND, e.getMessage()));
+                    closingError = new Error(AmqpError.NOT_FOUND, e.getMessage());
                 }
             }
-
-            close();
+            close(closingError);
         }
         else if (detach.getError() != null)
         {

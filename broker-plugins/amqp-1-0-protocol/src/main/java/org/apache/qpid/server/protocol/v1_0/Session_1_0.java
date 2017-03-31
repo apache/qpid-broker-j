@@ -205,8 +205,9 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             UnsignedInteger inputHandle = attach.getHandle();
             if (_inputHandleToEndpoint.containsKey(inputHandle))
             {
-                getConnection().close(new Error(SessionError.HANDLE_IN_USE, "inputHandle of Attach already in use: " + attach.toString()));
-                throw new ConnectionScopedRuntimeException(String.format("Input Handle '%d' already in use", inputHandle.intValue()));
+                String errorMessage = String.format("Input Handle '%d' already in use", inputHandle.intValue());
+                getConnection().close(new Error(SessionError.HANDLE_IN_USE, errorMessage));
+                throw new ConnectionScopedRuntimeException(errorMessage);
             }
             else
             {
@@ -575,7 +576,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             _connection.close(error);
 
         }
-        else if(!(linkEndpoint instanceof ReceivingLinkEndpoint))
+        else if(!(linkEndpoint instanceof AbstractReceivingLinkEndpoint))
         {
 
             Error error = new Error();
@@ -586,7 +587,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
         else
         {
-            ReceivingLinkEndpoint endpoint = ((ReceivingLinkEndpoint) linkEndpoint);
+            AbstractReceivingLinkEndpoint endpoint = ((AbstractReceivingLinkEndpoint) linkEndpoint);
 
             UnsignedInteger deliveryId = transfer.getDeliveryId();
             if (deliveryId == null)
@@ -1237,8 +1238,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
             for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
             {
-                if (linkEndpoint instanceof ReceivingLinkEndpoint
-                    && isQueueDestinationForLink(queue, ((ReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
+                if (linkEndpoint instanceof AbstractReceivingLinkEndpoint
+                    && isQueueDestinationForLink(queue, ((AbstractReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
                 {
                     linkEndpoint.setStopped(true);
                 }
@@ -1277,8 +1278,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             }
             for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
             {
-                if (linkEndpoint instanceof ReceivingLinkEndpoint
-                        && isQueueDestinationForLink(queue, ((ReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
+                if (linkEndpoint instanceof AbstractReceivingLinkEndpoint
+                        && isQueueDestinationForLink(queue, ((AbstractReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
                 {
                     linkEndpoint.setStopped(false);
                 }
@@ -1308,7 +1309,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
             for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
             {
-                if (linkEndpoint instanceof ReceivingLinkEndpoint)
+                if (linkEndpoint instanceof AbstractReceivingLinkEndpoint)
                 {
                     linkEndpoint.setStopped(true);
                 }
@@ -1340,8 +1341,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             }
             for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
             {
-                if (linkEndpoint instanceof ReceivingLinkEndpoint
-                    && !_blockingEntities.contains(((ReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
+                if (linkEndpoint instanceof AbstractReceivingLinkEndpoint
+                    && !_blockingEntities.contains(((AbstractReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
                 {
                     linkEndpoint.setStopped(false);
                 }
@@ -1626,20 +1627,12 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                         endpoint.sendAttach();
                         ((ErrantLinkEndpoint) endpoint).closeWithError();
                     }
-                    else if (attachWasUnsuccessful(endpoint))
-                    {
-                        endpoint.sendAttach();
-
-                        Error error = new Error();
-                        error.setCondition(AmqpError.NOT_FOUND);
-                        endpoint.close(error);
-                    }
                     else
                     {
                         if (endpoint.getRole() == Role.RECEIVER
                             && (_blockingEntities.contains(Session_1_0.this)
                                 || (endpoint instanceof StandardReceivingLinkEndpoint
-                                    && _blockingEntities.contains(((ReceivingLinkEndpoint) endpoint).getReceivingDestination()))))
+                                    && _blockingEntities.contains(((AbstractReceivingLinkEndpoint) endpoint).getReceivingDestination()))))
                         {
                             endpoint.setStopped(true);
                         }
@@ -1666,22 +1659,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             String errorMessage = String.format("Failed to create LinkEndpoint in response to Attach: %s", _attach);
             _logger.error(errorMessage, t);
             throw new ConnectionScopedRuntimeException(errorMessage, t);
-        }
-
-        private boolean attachWasUnsuccessful(final LinkEndpoint endpoint)
-        {
-            if (endpoint.getRole().equals(Role.SENDER))
-            {
-                return endpoint.getSource() == null;
-            }
-            else if (endpoint.getRole().equals(Role.RECEIVER))
-            {
-                return endpoint.getTarget() == null;
-            }
-            else
-            {
-                throw new IllegalStateException(String.format("Unknown LinkEndpoint role '%s'", endpoint.getRole()));
-            }
         }
     }
 

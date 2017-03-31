@@ -39,11 +39,15 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
-public abstract class ReceivingLinkEndpoint extends AbstractLinkEndpoint
+public abstract class AbstractReceivingLinkEndpoint extends AbstractLinkEndpoint
 {
     private final SectionDecoder _sectionDecoder;
     private UnsignedInteger _lastDeliveryId;
     private ReceivingDestination _receivingDestination;
+    private Map<Binary, Object> _unsettledMap = new LinkedHashMap<>();
+    private Map<Binary, TransientState> _unsettledIds = new LinkedHashMap<>();
+    private boolean _creditWindow;
+
 
     private static class TransientState
     {
@@ -83,14 +87,8 @@ public abstract class ReceivingLinkEndpoint extends AbstractLinkEndpoint
         }
     }
 
-    private Map<Binary, Object> _unsettledMap = new LinkedHashMap<Binary, Object>();
-    private Map<Binary, TransientState> _unsettledIds = new LinkedHashMap<Binary, TransientState>();
-    private boolean _creditWindow;
-    private boolean _remoteDrain;
-    private UnsignedInteger _drainLimit;
 
-
-    public ReceivingLinkEndpoint(final Session_1_0 session, final Link_1_0 link)
+    public AbstractReceivingLinkEndpoint(final Session_1_0 session, final Link_1_0 link)
     {
         super(session, link);
         _sectionDecoder = new SectionDecoderImpl(session.getConnection()
@@ -169,19 +167,8 @@ public abstract class ReceivingLinkEndpoint extends AbstractLinkEndpoint
 
     @Override public void receiveFlow(final Flow flow)
     {
-        _remoteDrain = Boolean.TRUE.equals((Boolean) flow.getDrain());
         setAvailable(flow.getAvailable());
         setDeliveryCount(flow.getDeliveryCount());
-        if(isDrained())
-        {
-
-        }
-    }
-
-
-    public boolean isDrained()
-    {
-        return getDrain() && getDeliveryCount().equals(getDrainLimit());
     }
 
     public boolean settled(final Binary deliveryTag)
@@ -303,11 +290,6 @@ public abstract class ReceivingLinkEndpoint extends AbstractLinkEndpoint
 
     public void flowStateChanged()
     {
-    }
-
-    public UnsignedInteger getDrainLimit()
-    {
-        return _drainLimit;
     }
 
     UnsignedInteger getLastDeliveryId()
