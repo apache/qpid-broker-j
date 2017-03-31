@@ -17,7 +17,7 @@
   -->
 <html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8"/>
     <title>Qpid Management</title>
     <link rel="icon" type="image/png" href="images/qpid-favicon.png"/>
     <link rel="stylesheet" href="dojo/dojo/resources/dojo.css"/>
@@ -33,7 +33,7 @@
     <link rel="stylesheet" href="dojo/dojo/resources/dnd.css"/>
     <link rel="stylesheet" href="dojo/dojox/layout/resources/GridContainer.css"/>
     <link rel="stylesheet" href="dojo/dojox/layout/resources/DndGridContainer.css"/>
-    <link rel="stylesheet" href="dojo/dojox/widget/Portlet/Portlet.css">
+    <link rel="stylesheet" href="dojo/dojox/widget/Portlet/Portlet.css"/>
     <link rel="stylesheet" href="css/common.css" media="screen"/>
     <script>
         function getContextPath()
@@ -44,7 +44,7 @@
             var firstSlashPos = documentURL.indexOf("/", documentURL.indexOf("//") + 2);
             if (managementPageStart > firstSlashPos)
             {
-                contextPath = documentURL.substring(firstSlashPos, managementPageStart);
+                contextPath = documentURL.substring(firstSlashPos, managementPageStart + 1);
             }
             return contextPath;
         }
@@ -82,9 +82,7 @@
         };
 
     </script>
-    <script src="dojo/dojo/dojo.js">
-    </script>
-
+    <script src="dojo/dojo/dojo.js"></script>
     <script>
         var qpidManagementHelper = null;
         var management = null;
@@ -113,7 +111,6 @@
                     management = qpidManagementHelper.management;
                 });
     </script>
-
 </head>
 <body class="claro qpid">
 
@@ -209,10 +206,12 @@
                 </div>
             </div>
             <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
-                <input type="button" id="errorDialog.button.cancel" value="Cancel" label="Cancel"
-                       dojoType="dijit.form.Button" onClick="dijit.byId('errorDialog').hide();"/>
-                <input type="button" id="errorDialog.button.relogin" value="Login" label="Login"
-                       dojoType="dijit.form.Button" onClick="dijit.byId('errorDialog').hide(); window.location='/';"/>
+                <input type="button" id="errorDialog.button.cancel" value="Cancel"
+                       data-dojo-type="dijit.form.Button"
+                       data-dojo-props="label: 'Cancel',onClick:function(){dijit.byId('errorDialog').hide();}"/>
+                <input type="button" id="errorDialog.button.relogin" value="Login"
+                       data-dojo-type="dijit.form.Button"
+                       data-dojo-props="label:'Login',onClick:function(){dijit.byId('errorDialog').hide();location.reload();}"/>
             </div>
         </div>
     </div>
