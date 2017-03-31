@@ -20,34 +20,34 @@
 package org.apache.qpid.server.protocol.v1_0.store.bdb;
 
 import org.apache.qpid.server.protocol.v1_0.LinkDefinition;
-import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
-import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 
 public class LinkValue
 {
     static final byte CURRENT_VERSION = 0;
-    private final BaseSource _source;
-    private final BaseTarget _target;
+    private final Source _source;
+    private final Target _target;
     private final byte _version;
 
-    public LinkValue(final BaseSource source, final BaseTarget target, final byte version)
+    public LinkValue(final Source source, final Target target, final byte version)
     {
         _source = source;
         _target = target;
         _version = version;
     }
 
-    public LinkValue(final LinkDefinition link)
+    public LinkValue(final LinkDefinition<Source, Target> link)
     {
         this(link.getSource(), link.getTarget(), CURRENT_VERSION);
     }
 
-    public BaseSource getSource()
+    public Source getSource()
     {
         return _source;
     }
 
-    public BaseTarget getTarget()
+    public Target getTarget()
     {
         return _target;
     }

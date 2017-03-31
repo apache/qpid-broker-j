@@ -28,9 +28,12 @@ import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStore;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreFactory;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreUpdater;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.store.StoreException;
 
+@SuppressWarnings("unused")
 @PluggableService
 public class NullLinkStoreFactory implements LinkStoreFactory
 {
@@ -46,8 +49,7 @@ public class NullLinkStoreFactory implements LinkStoreFactory
         return new LinkStore()
         {
             @Override
-            public Collection<LinkDefinition> openAndLoad(final LinkStoreUpdater updater)
-                    throws StoreException, StoreException
+            public Collection<LinkDefinition<Source, Target>> openAndLoad(final LinkStoreUpdater updater) throws StoreException
             {
                 return Collections.emptyList();
             }
@@ -58,12 +60,12 @@ public class NullLinkStoreFactory implements LinkStoreFactory
             }
 
             @Override
-            public void saveLink(final LinkDefinition link)
+            public void saveLink(final LinkDefinition<Source, Target> link)
             {
             }
 
             @Override
-            public void deleteLink(final LinkDefinition link)
+            public void deleteLink(final LinkDefinition<Source, Target> link)
             {
             }
 

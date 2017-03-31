@@ -30,13 +30,13 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 
-public interface LinkEndpoint
+public interface LinkEndpoint<S extends BaseSource, T extends BaseTarget>
 {
     Role getRole();
 
-    BaseSource getSource();
+    S getSource();
 
-    BaseTarget getTarget();
+    T getTarget();
 
     Session_1_0 getSession();
 

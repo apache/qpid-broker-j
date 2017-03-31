@@ -32,6 +32,8 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStore;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreFactory;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreUpdaterImpl;
+import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
@@ -41,8 +43,8 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 public class LinkRegistryImpl implements LinkRegistry
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(LinkRegistryImpl.class);
-    private final ConcurrentMap<LinkKey, Link_1_0> _sendingLinkRegistry = new ConcurrentHashMap<>();
-    private final ConcurrentMap<LinkKey, Link_1_0> _receivingLinkRegistry = new ConcurrentHashMap<>();
+    private final ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> _sendingLinkRegistry = new ConcurrentHashMap<>();
+    private final ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> _receivingLinkRegistry = new ConcurrentHashMap<>();
 
     private final NamedAddressSpace _addressSpace;
 
@@ -71,35 +73,36 @@ public class LinkRegistryImpl implements LinkRegistry
     }
 
     @Override
-    public Link_1_0 getSendingLink(final String remoteContainerId, final String linkName)
+    public Link_1_0<? extends BaseSource, ? extends BaseTarget> getSendingLink(final String remoteContainerId, final String linkName)
     {
         return getLinkFromRegistry(remoteContainerId, linkName, _sendingLinkRegistry, Role.SENDER);
     }
 
     @Override
-    public Link_1_0 getReceivingLink(final String remoteContainerId, final String linkName)
+    public Link_1_0<? extends BaseSource, ? extends BaseTarget> getReceivingLink(final String remoteContainerId, final String linkName)
     {
         return getLinkFromRegistry(remoteContainerId, linkName, _receivingLinkRegistry, Role.RECEIVER);
     }
 
     @Override
-    public void linkClosed(final Link_1_0 link)
+    public void linkClosed(final Link_1_0<? extends BaseSource, ? extends BaseTarget>  link)
     {
-        ConcurrentMap<LinkKey, Link_1_0> linkRegistry = getLinkRegistry(link.getRole());
+        ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> linkRegistry =
+                getLinkRegistry(link.getRole());
         linkRegistry.remove(new LinkKey(link));
-        _linkStore.deleteLink(link);
+        if (isDurableLink(link))
+        {
+            _linkStore.deleteLink((Link_1_0<Source, Target>) link);
+        }
     }
 
     @Override
-    public void linkChanged(final Link_1_0 link)
+    public void linkChanged(final Link_1_0<? extends BaseSource, ? extends BaseTarget> link)
     {
         getLinkRegistry(link.getRole()).putIfAbsent(new LinkKey(link), link);
-        if ((link.getRole() == Role.SENDER && link.getSource() instanceof Source
-             && ((Source) link.getSource()).getDurable() != TerminusDurability.NONE)
-            || (link.getRole() == Role.RECEIVER && link.getTarget() instanceof Target
-                && ((Target) link.getTarget()).getDurable() != TerminusDurability.NONE))
+        if (isDurableLink(link))
         {
-            _linkStore.saveLink(link);
+            _linkStore.saveLink((Link_1_0<Source, Target>) link);
         }
     }
 
@@ -113,11 +116,11 @@ public class LinkRegistryImpl implements LinkRegistry
     @Override
     public void open()
     {
-        Collection<LinkDefinition> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
-        for(LinkDefinition link: links)
+        Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
+        for(LinkDefinition<? extends BaseSource, ? extends BaseTarget> link: links)
         {
-            ConcurrentMap<LinkKey, Link_1_0> linkRegistry = getLinkRegistry(link.getRole());
-            linkRegistry.put(new LinkKey(link), new LinkImpl(link, this));
+            ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> linkRegistry = getLinkRegistry(link.getRole());
+            linkRegistry.put(new LinkKey(link), new LinkImpl<>(link, this));
         }
     }
 
@@ -133,14 +136,22 @@ public class LinkRegistryImpl implements LinkRegistry
         _linkStore.delete();
     }
 
-    private Link_1_0 getLinkFromRegistry(final String remoteContainerId,
-                                         final String linkName,
-                                         final ConcurrentMap<LinkKey, Link_1_0> linkRegistry,
-                                         final Role role)
+    private boolean isDurableLink(final Link_1_0<? extends BaseSource, ? extends BaseTarget> link)
+    {
+        return (link.getRole() == Role.SENDER && link.getSource() instanceof Source
+                && ((Source) link.getSource()).getDurable() != TerminusDurability.NONE)
+               || (link.getRole() == Role.RECEIVER && link.getTarget() instanceof Target
+                   && ((Target) link.getTarget()).getDurable() != TerminusDurability.NONE);
+    }
+
+    private Link_1_0<? extends BaseSource, ? extends BaseTarget> getLinkFromRegistry(final String remoteContainerId,
+                                                                                     final String linkName,
+                                                                                     final ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> linkRegistry,
+                                                                                     final Role role)
     {
         LinkKey linkKey = new LinkKey(remoteContainerId, linkName, role);
-        Link_1_0 newLink = new LinkImpl(remoteContainerId, linkName, role, this);
-        Link_1_0 link = linkRegistry.putIfAbsent(linkKey, newLink);
+        Link_1_0<? extends BaseSource, ? extends BaseTarget> newLink = new LinkImpl(remoteContainerId, linkName, role, this);
+        Link_1_0<? extends BaseSource, ? extends BaseTarget> link = linkRegistry.putIfAbsent(linkKey, newLink);
         if (link == null)
         {
             link = newLink;
@@ -148,9 +159,9 @@ public class LinkRegistryImpl implements LinkRegistry
         return link;
     }
 
-    private ConcurrentMap<LinkKey, Link_1_0> getLinkRegistry(final Role role)
+    private ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> getLinkRegistry(final Role role)
     {
-        ConcurrentMap<LinkKey, Link_1_0> linkRegistry;
+        ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> linkRegistry;
         if (Role.SENDER == role)
         {
             linkRegistry = _sendingLinkRegistry;

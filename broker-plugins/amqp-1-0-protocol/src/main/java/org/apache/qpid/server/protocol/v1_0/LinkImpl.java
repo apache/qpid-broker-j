@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
@@ -38,9 +39,8 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
-public class LinkImpl implements Link_1_0
+public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Link_1_0<S, T>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(LinkImpl.class);
 
@@ -49,9 +49,9 @@ public class LinkImpl implements Link_1_0
     private final Role _role;
     private final LinkRegistry _linkRegistry;
 
-    private volatile LinkEndpoint _linkEndpoint;
-    private volatile BaseSource _source;
-    private volatile BaseTarget _target;
+    private volatile LinkEndpoint<S, T> _linkEndpoint;
+    private volatile S _source;
+    private volatile T _target;
 
     public LinkImpl(final String remoteContainerId, final String linkName, final Role role, final LinkRegistry linkRegistry)
     {
@@ -61,14 +61,14 @@ public class LinkImpl implements Link_1_0
         _linkRegistry = linkRegistry;
     }
 
-    public LinkImpl(final LinkDefinition linkDefinition, final LinkRegistry linkRegistry)
+    public LinkImpl(final LinkDefinition<S, T> linkDefinition, final LinkRegistry linkRegistry)
     {
         this(linkDefinition.getRemoteContainerId(), linkDefinition.getName(), linkDefinition.getRole(), linkRegistry);
         setTermini(linkDefinition.getSource(), linkDefinition.getTarget());
     }
 
     @Override
-    public final ListenableFuture<? extends LinkEndpoint> attach(final Session_1_0 session, final Attach attach)
+    public final ListenableFuture<? extends LinkEndpoint<S, T>> attach(final Session_1_0 session, final Attach attach)
     {
         try
         {
@@ -91,7 +91,7 @@ public class LinkImpl implements Link_1_0
 
                 _linkEndpoint.receiveAttach(attach);
                 _linkRegistry.linkChanged(this);
-                return Futures.immediateFuture((LinkEndpoint) _linkEndpoint);
+                return Futures.immediateFuture(_linkEndpoint);
             }
         }
         catch (Exception e)
@@ -101,62 +101,59 @@ public class LinkImpl implements Link_1_0
         }
     }
 
-    private synchronized ListenableFuture<LinkEndpoint> stealLink(final Session_1_0 session, final Attach attach)
+    private synchronized ListenableFuture<LinkEndpoint<S, T>> stealLink(final Session_1_0 session, final Attach attach)
     {
-        final SettableFuture<LinkEndpoint> returnFuture = SettableFuture.create();
-        _linkEndpoint.getSession().doOnIOThreadAsync(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                _linkEndpoint.close(new Error(LinkError.STOLEN,
-                                              String.format("Link is being stolen by connection '%s'",
-                                                            session.getConnection())));
-                try
+        final SettableFuture<LinkEndpoint<S, T>> returnFuture = SettableFuture.create();
+        _linkEndpoint.getSession().doOnIOThreadAsync(
+                () ->
                 {
-                    returnFuture.set(attach(session, attach).get());
-                }
-                catch (InterruptedException e)
-                {
-                    returnFuture.setException(e);
-                    Thread.currentThread().interrupt();
-                }
-                catch (ExecutionException e)
-                {
-                    returnFuture.setException(e.getCause());
-                }
-            }
-        });
+                    _linkEndpoint.close(new Error(LinkError.STOLEN,
+                                                  String.format("Link is being stolen by connection '%s'",
+                                                                session.getConnection())));
+                    try
+                    {
+                        returnFuture.set(attach(session, attach).get());
+                    }
+                    catch (InterruptedException e)
+                    {
+                        returnFuture.setException(e);
+                        Thread.currentThread().interrupt();
+                    }
+                    catch (ExecutionException e)
+                    {
+                        returnFuture.setException(e.getCause());
+                    }
+                });
         return returnFuture;
     }
 
-    private LinkEndpoint createLinkEndpoint(final Session_1_0 session, final Attach attach)
+    private LinkEndpoint<S, T> createLinkEndpoint(final Session_1_0 session, final Attach attach)
     {
-        LinkEndpoint linkEndpoint = null;
+        final LinkEndpoint<S, T> linkEndpoint;
         if (_role == Role.SENDER)
         {
-            linkEndpoint = new SendingLinkEndpoint(session, this);
+            linkEndpoint = (LinkEndpoint<S, T>) new SendingLinkEndpoint(session, (LinkImpl<Source, Target>) this);
         }
         else if (attach.getTarget() instanceof Coordinator)
         {
-            linkEndpoint = new TxnCoordinatorReceivingLinkEndpoint(session, this);
+            linkEndpoint = (LinkEndpoint<S, T>) new TxnCoordinatorReceivingLinkEndpoint(session, (LinkImpl<Source, Coordinator>) this);
         }
         else
         {
-            linkEndpoint = new StandardReceivingLinkEndpoint(session, this);
+            linkEndpoint = (LinkEndpoint<S, T>) new StandardReceivingLinkEndpoint(session, (LinkImpl<Source, Target>) this);
         }
         return linkEndpoint;
     }
 
-    private ListenableFuture<? extends LinkEndpoint> rejectLink(final Session_1_0 session, Throwable t)
+    private ListenableFuture<? extends LinkEndpoint<S, T>> rejectLink(final Session_1_0 session, Throwable t)
     {
         if (t instanceof AmqpErrorException)
         {
-            _linkEndpoint = new ErrantLinkEndpoint(this, session, ((AmqpErrorException) t).getError());
+            _linkEndpoint = new ErrantLinkEndpoint<>(this, session, ((AmqpErrorException) t).getError());
         }
         else
         {
-            _linkEndpoint = new ErrantLinkEndpoint(this, session, new Error(AmqpError.INTERNAL_ERROR, t.getMessage()));
+            _linkEndpoint = new ErrantLinkEndpoint<>(this, session, new Error(AmqpError.INTERNAL_ERROR, t.getMessage()));
         }
         return Futures.immediateFuture(_linkEndpoint);
     }
@@ -188,31 +185,31 @@ public class LinkImpl implements Link_1_0
     }
 
     @Override
-    public BaseSource getSource()
+    public S getSource()
     {
         return _source;
     }
 
     @Override
-    public void setSource(BaseSource source)
+    public void setSource(S source)
     {
         setTermini(source, _target);
     }
 
     @Override
-    public BaseTarget getTarget()
+    public T getTarget()
     {
         return _target;
     }
 
     @Override
-    public void setTarget(BaseTarget target)
+    public void setTarget(T target)
     {
         setTermini(_source, target);
     }
 
     @Override
-    public void setTermini(BaseSource source, BaseTarget target)
+    public void setTermini(S source, T target)
     {
         _source = source;
         _target = target;

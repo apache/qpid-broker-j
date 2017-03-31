@@ -88,7 +88,7 @@ public abstract class LinkStoreTestCase extends QpidTestCase
 
     public void testOpenAndLoad() throws Exception
     {
-        Collection<LinkDefinition> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
+        Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         assertTrue("Unexpected links", links.isEmpty());
 
         try
@@ -101,7 +101,7 @@ public abstract class LinkStoreTestCase extends QpidTestCase
             // pass
         }
 
-        LinkDefinition linkDefinition = createLinkDefinition("1", "test");
+        LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
         _linkStore.saveLink(linkDefinition);
         _linkStore.close();
 
@@ -117,7 +117,7 @@ public abstract class LinkStoreTestCase extends QpidTestCase
         _linkStore.close();
         try
         {
-            LinkDefinition linkDefinition = createLinkDefinition("1", "test");
+            LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
             _linkStore.saveLink(linkDefinition);
             fail("Saving link with close store should fail");
         }
@@ -130,7 +130,7 @@ public abstract class LinkStoreTestCase extends QpidTestCase
     public void testSaveLink() throws Exception
     {
 
-        LinkDefinition linkDefinition = createLinkDefinition("1", "test");
+        LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
         _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         _linkStore.saveLink(linkDefinition);
         _linkStore.close();
@@ -145,10 +145,10 @@ public abstract class LinkStoreTestCase extends QpidTestCase
             // pass
         }
 
-        Collection<LinkDefinition> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
+        Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         assertEquals("Unexpected link number", 1, links.size());
 
-        LinkDefinition recoveredLink = links.iterator().next();
+        LinkDefinition<Source, Target> recoveredLink = links.iterator().next();
 
         assertEquals("Unexpected link name", linkDefinition.getName(), recoveredLink.getName());
         assertEquals("Unexpected container id", linkDefinition.getRemoteContainerId(), recoveredLink.getRemoteContainerId());
@@ -161,10 +161,10 @@ public abstract class LinkStoreTestCase extends QpidTestCase
     {
         _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
 
-        LinkDefinition linkDefinition = createLinkDefinition("1", "test");
+        LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
         _linkStore.saveLink(linkDefinition);
 
-        LinkDefinition linkDefinition2 = createLinkDefinition("2", "test2");
+        LinkDefinition<Source, Target> linkDefinition2 = createLinkDefinition("2", "test2");
         _linkStore.saveLink(linkDefinition2);
 
         _linkStore.deleteLink(linkDefinition2);
@@ -180,10 +180,10 @@ public abstract class LinkStoreTestCase extends QpidTestCase
             // pass
         }
 
-        Collection<LinkDefinition> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
+        Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         assertEquals("Unexpected link number", 1, links.size());
 
-        LinkDefinition recoveredLink = links.iterator().next();
+        LinkDefinition<Source, Target> recoveredLink = links.iterator().next();
 
         assertEquals("Unexpected link name", linkDefinition.getName(), recoveredLink.getName());
         assertEquals("Unexpected container id", linkDefinition.getRemoteContainerId(), recoveredLink.getRemoteContainerId());
@@ -196,14 +196,14 @@ public abstract class LinkStoreTestCase extends QpidTestCase
     {
         _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
 
-        LinkDefinition linkDefinition = createLinkDefinition("1", "test");
+        LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
         _linkStore.saveLink(linkDefinition);
 
-        LinkDefinition linkDefinition2 = createLinkDefinition("2", "test2");
+        LinkDefinition<Source, Target> linkDefinition2 = createLinkDefinition("2", "test2");
         _linkStore.saveLink(linkDefinition2);
 
         _linkStore.close();
-        Collection<LinkDefinition> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
+        Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         assertEquals("Unexpected link number", 2, links.size());
 
         _linkStore.delete();
@@ -216,7 +216,7 @@ public abstract class LinkStoreTestCase extends QpidTestCase
 
     protected abstract void deleteLinkStore();
 
-    private LinkDefinitionImpl createLinkDefinition(final String remoteContainerId, final String linkName)
+    private LinkDefinitionImpl<Source, Target> createLinkDefinition(final String remoteContainerId, final String linkName)
     {
         return new LinkDefinitionImpl(remoteContainerId, linkName, Role.RECEIVER, _source, _target);
     }

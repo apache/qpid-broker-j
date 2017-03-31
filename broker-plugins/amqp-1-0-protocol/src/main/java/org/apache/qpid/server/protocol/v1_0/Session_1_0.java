@@ -74,6 +74,8 @@ import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.framing.OversizeFrameException;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
@@ -132,9 +134,9 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     private SessionState _sessionState;
 
-    private final Map<LinkEndpoint, UnsignedInteger> _endpointToOutputHandle = new HashMap<>();
-    private final Map<UnsignedInteger, LinkEndpoint> _inputHandleToEndpoint = new HashMap<>();
-    private final Set<LinkEndpoint> _associatedLinkEndpoints = new HashSet<>();
+    private final Map<LinkEndpoint<? extends BaseSource, ? extends BaseTarget>, UnsignedInteger> _endpointToOutputHandle = new HashMap<>();
+    private final Map<UnsignedInteger, LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> _inputHandleToEndpoint = new HashMap<>();
+    private final Set<LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> _associatedLinkEndpoints = new HashSet<>();
 
     private final short _receivingChannel;
     private final short _sendingChannel;
@@ -211,7 +213,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             }
             else
             {
-                final Link_1_0 link;
+                final Link_1_0<? extends BaseSource, ? extends BaseTarget> link;
                 if (attach.getRole() == Role.RECEIVER)
                 {
                     link = getAddressSpace().getSendingLink(getConnection().getRemoteContainerId(), attach.getName());
@@ -221,7 +223,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                     link = getAddressSpace().getReceivingLink(getConnection().getRemoteContainerId(), attach.getName());
                 }
 
-                final ListenableFuture<? extends LinkEndpoint> future = link.attach(this, attach);
+                final ListenableFuture<? extends LinkEndpoint<?,?>> future = link.attach(this, attach);
 
                 addFutureCallback(future, new EndpointCreationCallback(attach), MoreExecutors.directExecutor());
             }
@@ -408,7 +410,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     public void receiveFlow(final Flow flow)
     {
         UnsignedInteger handle = flow.getHandle();
-        final LinkEndpoint endpoint = handle == null ? null : _inputHandleToEndpoint.get(handle);
+        final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> endpoint = handle == null ? null : _inputHandleToEndpoint.get(handle);
 
         final UnsignedInteger nextOutgoingId =
                 flow.getNextIncomingId() == null ? _initialOutgoingId : flow.getNextIncomingId();
@@ -421,8 +423,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
         else
         {
-            final Collection<LinkEndpoint> allLinkEndpoints = _inputHandleToEndpoint.values();
-            for (LinkEndpoint le : allLinkEndpoints)
+            final Collection<LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> allLinkEndpoints = _inputHandleToEndpoint.values();
+            for (LinkEndpoint<? extends BaseSource, ? extends BaseTarget> le : allLinkEndpoints)
             {
                 le.flowStateChanged();
             }
@@ -566,7 +568,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         _nextIncomingTransferId.incr();
 
         UnsignedInteger inputHandle = transfer.getHandle();
-        LinkEndpoint linkEndpoint = _inputHandleToEndpoint.get(inputHandle);
+        LinkEndpoint<? extends BaseSource, ? extends BaseTarget> linkEndpoint = _inputHandleToEndpoint.get(inputHandle);
 
         if (linkEndpoint == null)
         {
@@ -762,7 +764,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 ExchangeDestination newExchangeDestination = (ExchangeDestination) newDestination;
                 if (oldExchangeDestination.getQueue() != newExchangeDestination.getQueue())
                 {
-                    Source oldSource = (Source) linkEndpoint.getSource();
+                    Source oldSource = linkEndpoint.getSource();
                     oldSource.setAddress(newAddress);
                     oldSource.setFilter(newSource.getFilter());
                     return true;
@@ -1108,8 +1110,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     void remoteEnd(End end)
     {
-        Set<LinkEndpoint> associatedLinkEndpoints = new HashSet<>(_associatedLinkEndpoints);
-        for (LinkEndpoint linkEndpoint : associatedLinkEndpoints)
+        Set<LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> associatedLinkEndpoints = new HashSet<>(_associatedLinkEndpoints);
+        for (LinkEndpoint<? extends BaseSource, ? extends BaseTarget> linkEndpoint : associatedLinkEndpoints)
         {
             linkEndpoint.remoteDetached(new Detach());
             linkEndpoint.destroy();
@@ -1200,7 +1202,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     @Override
     public void transportStateChanged()
     {
-        for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
+        for (LinkEndpoint<? extends BaseSource, ? extends BaseTarget> linkEndpoint : _endpointToOutputHandle.keySet())
         {
             if (linkEndpoint instanceof SendingLinkEndpoint)
             {
@@ -1236,7 +1238,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         {
             messageWithSubject(ChannelMessages.FLOW_ENFORCED(queue.getName()));
 
-            for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
+            for (LinkEndpoint<? extends BaseSource, ? extends BaseTarget> linkEndpoint : _endpointToOutputHandle.keySet())
             {
                 if (linkEndpoint instanceof AbstractReceivingLinkEndpoint
                     && isQueueDestinationForLink(queue, ((AbstractReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
@@ -1276,7 +1278,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             {
                 messageWithSubject(ChannelMessages.FLOW_REMOVED());
             }
-            for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
+            for (LinkEndpoint<? extends BaseSource, ? extends BaseTarget> linkEndpoint : _endpointToOutputHandle.keySet())
             {
                 if (linkEndpoint instanceof AbstractReceivingLinkEndpoint
                         && isQueueDestinationForLink(queue, ((AbstractReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
@@ -1307,7 +1309,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         {
             messageWithSubject(ChannelMessages.FLOW_ENFORCED("** All Queues **"));
 
-            for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
+            for (LinkEndpoint<? extends BaseSource, ? extends BaseTarget> linkEndpoint : _endpointToOutputHandle.keySet())
             {
                 if (linkEndpoint instanceof AbstractReceivingLinkEndpoint)
                 {
@@ -1339,7 +1341,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             {
                 messageWithSubject(ChannelMessages.FLOW_REMOVED());
             }
-            for (LinkEndpoint linkEndpoint : _endpointToOutputHandle.keySet())
+            for (LinkEndpoint<? extends BaseSource, ? extends BaseTarget> linkEndpoint : _endpointToOutputHandle.keySet())
             {
                 if (linkEndpoint instanceof AbstractReceivingLinkEndpoint
                     && !_blockingEntities.contains(((AbstractReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
@@ -1512,9 +1514,9 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         return "Session_1_0[" + _connection + ": " + _sendingChannel + ']';
     }
 
-    public void dissociateEndpoint(LinkEndpoint linkEndpoint)
+    public void dissociateEndpoint(LinkEndpoint<? extends BaseSource, ? extends BaseTarget> linkEndpoint)
     {
-        for (Map.Entry<UnsignedInteger, LinkEndpoint> entry : _inputHandleToEndpoint.entrySet())
+        for (Map.Entry<UnsignedInteger, LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> entry : _inputHandleToEndpoint.entrySet())
         {
             if (entry.getValue() == linkEndpoint)
             {
@@ -1530,7 +1532,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     {
         if(_inputHandleToEndpoint.containsKey(handle))
         {
-            LinkEndpoint endpoint = _inputHandleToEndpoint.remove(handle);
+            LinkEndpoint<? extends BaseSource, ? extends BaseTarget> endpoint = _inputHandleToEndpoint.remove(handle);
             endpoint.remoteDetached(detach);
             _endpointToOutputHandle.remove(endpoint);
         }
@@ -1602,7 +1604,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         return primaryDomain;
     }
 
-    private class EndpointCreationCallback<T extends LinkEndpoint> implements FutureCallback<T>
+    private class EndpointCreationCallback<T extends LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> implements FutureCallback<T>
     {
 
         private final Attach _attach;
@@ -1613,7 +1615,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
 
         @Override
-        public void onSuccess(final LinkEndpoint endpoint)
+        public void onSuccess(final T endpoint)
         {
             doOnIOThreadAsync(new Runnable()
             {

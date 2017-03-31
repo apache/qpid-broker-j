@@ -47,10 +47,10 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 
-public abstract class AbstractLinkEndpoint implements LinkEndpoint
+public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseTarget> implements LinkEndpoint<S, T>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLinkEndpoint.class);
-    private final Link_1_0 _link;
+    private final Link_1_0<S, T> _link;
     private final Session_1_0 _session;
     private Object _flowTransactionId;
     private SenderSettleMode _sendingSettlementMode;
@@ -82,7 +82,7 @@ public abstract class AbstractLinkEndpoint implements LinkEndpoint
     }
 
 
-    AbstractLinkEndpoint(final Session_1_0 session, final Link_1_0 link)
+    AbstractLinkEndpoint(final Session_1_0 session, final Link_1_0<S, T> link)
     {
         _session = session;
         _link = link;
@@ -158,13 +158,13 @@ public abstract class AbstractLinkEndpoint implements LinkEndpoint
     }
 
     @Override
-    public BaseSource getSource()
+    public S getSource()
     {
         return _link.getSource();
     }
 
     @Override
-    public BaseTarget getTarget()
+    public T getTarget()
     {
         return _link.getTarget();
     }
@@ -468,7 +468,7 @@ public abstract class AbstractLinkEndpoint implements LinkEndpoint
         }
     }
 
-    public Link_1_0 getLink()
+    protected Link_1_0<S, T> getLink()
     {
         return _link;
     }

@@ -52,6 +52,8 @@ import org.apache.qpid.server.protocol.v1_0.LinkKey;
 import org.apache.qpid.server.protocol.v1_0.store.AbstractLinkStore;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreUpdater;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreUtils;
+import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
@@ -81,9 +83,9 @@ public class JDBCLinkStore extends AbstractLinkStore
     }
 
     @Override
-    protected Collection<LinkDefinition> doOpenAndLoad(final LinkStoreUpdater updater) throws StoreException
+    protected Collection<LinkDefinition<Source, Target>> doOpenAndLoad(final LinkStoreUpdater updater) throws StoreException
     {
-        Collection<LinkDefinition> linkDefinitions;
+        Collection<LinkDefinition<Source, Target>> linkDefinitions;
         try
         {
             checkTransactionIsolationLevel();
@@ -117,7 +119,7 @@ public class JDBCLinkStore extends AbstractLinkStore
     }
 
     @Override
-    protected void doSaveLink(final LinkDefinition link) throws StoreException
+    protected void doSaveLink(final LinkDefinition<Source, Target> link) throws StoreException
     {
         String linkKey = generateLinkKey(link);
         Connection connection = getConnection();
@@ -164,7 +166,7 @@ public class JDBCLinkStore extends AbstractLinkStore
     }
 
     @Override
-    protected void doDeleteLink(final LinkDefinition link) throws StoreException
+    protected void doDeleteLink(final LinkDefinition<Source, Target> link) throws StoreException
     {
 
         try (Connection connection = getConnection();
@@ -276,10 +278,11 @@ public class JDBCLinkStore extends AbstractLinkStore
         return _tableNamePrefix + VERSION_TABLE_NAME_SUFFIX;
     }
 
-    private Collection<LinkDefinition> performUpdate(final LinkStoreUpdater updater,
-                                                     Collection<LinkDefinition> linkDefinitions,
-                                                     final ModelVersion storedVersion,
-                                                     final ModelVersion currentVersion) throws SQLException
+    private Collection<LinkDefinition<Source, Target>> performUpdate(final LinkStoreUpdater updater,
+                                                                     Collection<LinkDefinition<Source, Target>> linkDefinitions,
+                                                                     final ModelVersion storedVersion,
+                                                                     final ModelVersion currentVersion)
+            throws SQLException
     {
         linkDefinitions = updater.update(storedVersion.toString(), linkDefinitions);
         Connection connection = getConnection();
@@ -292,7 +295,7 @@ public class JDBCLinkStore extends AbstractLinkStore
                 statement.execute("DELETE FROM " + getLinksTableName());
             }
 
-            for (LinkDefinition linkDefinition : linkDefinitions)
+            for (LinkDefinition<? extends BaseSource, ? extends BaseTarget> linkDefinition : linkDefinitions)
             {
                 insert(connection, generateLinkKey(linkDefinition), linkDefinition);
             }
@@ -318,9 +321,9 @@ public class JDBCLinkStore extends AbstractLinkStore
         return linkDefinitions;
     }
 
-    private Collection<LinkDefinition> getLinks() throws SQLException
+    private Collection<LinkDefinition<Source, Target>> getLinks() throws SQLException
     {
-        Collection<LinkDefinition> links = new ArrayList<>();
+        Collection<LinkDefinition<Source, Target>> links = new ArrayList<>();
         try (Connection connection = getConnection();
              Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(String.format(
@@ -335,7 +338,7 @@ public class JDBCLinkStore extends AbstractLinkStore
                 Source source = (Source) getBlobAsAmqpObject(resultSet, 4);
                 Target target = (Target) getBlobAsAmqpObject(resultSet, 5);
 
-                links.add(new LinkDefinitionImpl(remoteContainerId, linkName, role, source, target));
+                links.add(new LinkDefinitionImpl<>(remoteContainerId, linkName, role, source, target));
             }
         }
         return links;
@@ -431,7 +434,9 @@ public class JDBCLinkStore extends AbstractLinkStore
     }
 
 
-    private void insert(final Connection connection, final String linkKey, final LinkDefinition linkDefinition)
+    private void insert(final Connection connection,
+                        final String linkKey,
+                        final LinkDefinition<? extends BaseSource, ? extends BaseTarget> linkDefinition)
             throws SQLException
     {
         try (PreparedStatement statement = connection.prepareStatement(String.format(
@@ -451,7 +456,9 @@ public class JDBCLinkStore extends AbstractLinkStore
         }
     }
 
-    private void update(final Connection connection, final String linkKey, final LinkDefinition linkDefinition)
+    private void update(final Connection connection,
+                        final String linkKey,
+                        final LinkDefinition<? extends BaseSource, ? extends BaseTarget> linkDefinition)
             throws SQLException
     {
         try (PreparedStatement statement = connection.prepareStatement(String.format(
@@ -500,7 +507,7 @@ public class JDBCLinkStore extends AbstractLinkStore
         saveBytesAsBlob(statement, index, value.getBytes(UTF_8));
     }
 
-    private String generateLinkKey(final LinkDefinition linkDefinition)
+    private String generateLinkKey(final LinkDefinition<?, ?> linkDefinition)
     {
         MessageDigest md;
         try

@@ -33,7 +33,7 @@ public class LinkKey
         _role = role;
     }
 
-    public LinkKey(final LinkDefinition link)
+    public LinkKey(final LinkDefinition<?, ?> link)
     {
         this(link.getRemoteContainerId(), link.getName(), link.getRole());
     }

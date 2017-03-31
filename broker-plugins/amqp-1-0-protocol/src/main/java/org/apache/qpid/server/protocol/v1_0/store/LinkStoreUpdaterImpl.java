@@ -23,12 +23,14 @@ package org.apache.qpid.server.protocol.v1_0.store;
 import java.util.Collection;
 
 import org.apache.qpid.server.protocol.v1_0.LinkDefinition;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 
 public class LinkStoreUpdaterImpl implements LinkStoreUpdater
 {
     @Override
-    public Collection<LinkDefinition> update(final String currentVersion,
-                                             final Collection<LinkDefinition> linkDefinitions)
+    public Collection<LinkDefinition<Source, Target>> update(final String currentVersion,
+                                                             final Collection<LinkDefinition<Source, Target>> linkDefinitions)
     {
         return linkDefinitions;
     }

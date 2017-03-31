@@ -30,14 +30,14 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 
-public class ErrantLinkEndpoint implements LinkEndpoint
+public class ErrantLinkEndpoint<S extends BaseSource, T extends BaseTarget> implements LinkEndpoint<S, T>
 {
-    private final Link_1_0 _link;
+    private final Link_1_0<S, T> _link;
     private final Session_1_0 _session;
     private Error _error;
     private UnsignedInteger _localHandle;
 
-    ErrantLinkEndpoint(Link_1_0 link, Session_1_0 session, Error error)
+    ErrantLinkEndpoint(Link_1_0<S, T> link, Session_1_0 session, Error error)
     {
         _link = link;
         _session = session;
@@ -51,13 +51,13 @@ public class ErrantLinkEndpoint implements LinkEndpoint
     }
 
     @Override
-    public BaseSource getSource()
+    public S getSource()
     {
         return null;
     }
 
     @Override
-    public BaseTarget getTarget()
+    public T getTarget()
     {
         return null;
     }

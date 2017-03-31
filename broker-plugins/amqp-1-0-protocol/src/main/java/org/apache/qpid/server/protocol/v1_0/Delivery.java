@@ -19,6 +19,8 @@
 
 package org.apache.qpid.server.protocol.v1_0;
 
+import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
@@ -27,12 +29,12 @@ public class Delivery
 {
     private final UnsignedInteger _deliveryId;
     private final Binary _deliveryTag;
-    private final LinkEndpoint _linkEndpoint;
+    private final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> _linkEndpoint;
     private boolean _complete;
     private boolean _settled;
     private int _numberOfTransfers = 0;
 
-    public Delivery(Transfer transfer, final LinkEndpoint endpoint)
+    public Delivery(Transfer transfer, final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> endpoint)
     {
         _settled = Boolean.TRUE.equals(transfer.getSettled());
         _deliveryId = transfer.getDeliveryId();
@@ -79,7 +81,7 @@ public class Delivery
         return _deliveryId;
     }
 
-    public LinkEndpoint getLinkEndpoint()
+    public LinkEndpoint<? extends BaseSource, ? extends BaseTarget> getLinkEndpoint()
     {
         return _linkEndpoint;
     }

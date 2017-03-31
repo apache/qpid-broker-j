@@ -45,6 +45,8 @@ import org.apache.qpid.server.protocol.v1_0.LinkDefinitionImpl;
 import org.apache.qpid.server.protocol.v1_0.LinkKey;
 import org.apache.qpid.server.protocol.v1_0.store.AbstractLinkStore;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreUpdater;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
@@ -64,7 +66,7 @@ public class BDBLinkStore extends AbstractLinkStore
     }
 
     @Override
-    protected Collection<LinkDefinition> doOpenAndLoad(final LinkStoreUpdater updater) throws StoreException
+    protected Collection<LinkDefinition<Source, Target>> doOpenAndLoad(final LinkStoreUpdater updater) throws StoreException
     {
         try
         {
@@ -77,7 +79,7 @@ public class BDBLinkStore extends AbstractLinkStore
     }
 
     @Override
-    protected void doSaveLink(final LinkDefinition link)
+    protected void doSaveLink(final LinkDefinition<Source, Target> link)
     {
         try
         {
@@ -91,7 +93,7 @@ public class BDBLinkStore extends AbstractLinkStore
     }
 
     @Override
-    protected void doDeleteLink(final LinkDefinition linkDefinition)
+    protected void doDeleteLink(final LinkDefinition<Source, Target> linkDefinition)
     {
         LinkKey linkKey = new LinkKey(linkDefinition);
         try
@@ -145,10 +147,10 @@ public class BDBLinkStore extends AbstractLinkStore
     }
 
 
-    private Collection<LinkDefinition> getLinkDefinitions(final LinkStoreUpdater updater)
+    private Collection<LinkDefinition<Source, Target>> getLinkDefinitions(final LinkStoreUpdater updater)
     {
         Database linksDatabase = getEnvironmentFacade().openDatabase(LINKS_DB_NAME, DEFAULT_DATABASE_CONFIG);
-        Collection<LinkDefinition> links = new HashSet<>();
+        Collection<LinkDefinition<Source, Target>> links = new HashSet<>();
 
         ModelVersion currentVersion =
                 new ModelVersion(BrokerModel.MODEL_MAJOR_VERSION, BrokerModel.MODEL_MINOR_VERSION);
@@ -168,7 +170,7 @@ public class BDBLinkStore extends AbstractLinkStore
             {
                 LinkKey linkKey = keyEntryBinding.entryToObject(key);
                 LinkValue linkValue = linkValueEntryBinding.entryToObject(value);
-                LinkDefinition link = new LinkDefinitionImpl(linkKey.getRemoteContainerId(), linkKey.getLinkName(), linkKey.getRole(), linkValue.getSource(), linkValue.getTarget());
+                LinkDefinition<Source, Target> link = new LinkDefinitionImpl<>(linkKey.getRemoteContainerId(), linkKey.getLinkName(), linkKey.getRole(), linkValue.getSource(), linkValue.getTarget());
                 links.add(link);
             }
         }
@@ -180,7 +182,7 @@ public class BDBLinkStore extends AbstractLinkStore
             try
             {
                 linksDatabase = getEnvironmentFacade().clearDatabase(txn, LINKS_DB_NAME, DEFAULT_DATABASE_CONFIG);
-                for (LinkDefinition link : links)
+                for (LinkDefinition<Source, Target> link : links)
                 {
                     save(linksDatabase, txn, link);
                 }
@@ -208,7 +210,7 @@ public class BDBLinkStore extends AbstractLinkStore
         linksVersionDb.put(txn, key, value);
     }
 
-    private void save(Database database, Transaction txn, final LinkDefinition link)
+    private void save(Database database, Transaction txn, final LinkDefinition<Source, Target> link)
     {
         DatabaseEntry key = new DatabaseEntry();
         DatabaseEntry value = new DatabaseEntry();

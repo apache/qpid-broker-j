@@ -23,7 +23,8 @@ import java.util.Collection;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.qpid.server.protocol.v1_0.LinkDefinition;
-import org.apache.qpid.server.protocol.v1_0.LinkKey;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.store.StoreException;
 
 public abstract class AbstractLinkStore implements LinkStore
@@ -31,14 +32,14 @@ public abstract class AbstractLinkStore implements LinkStore
     private final ReentrantReadWriteLock _useOrCloseRWLock = new ReentrantReadWriteLock(true);
     private volatile StoreState _storeState = StoreState.CLOSED;
 
-    protected abstract Collection<LinkDefinition> doOpenAndLoad(final LinkStoreUpdater updater);
+    protected abstract Collection<LinkDefinition<Source, Target>> doOpenAndLoad(final LinkStoreUpdater updater);
     protected abstract void doClose();
     protected abstract void doDelete();
-    protected abstract void doSaveLink(final LinkDefinition link);
-    protected abstract void doDeleteLink(final LinkDefinition link);
+    protected abstract void doSaveLink(final LinkDefinition<Source, Target> link);
+    protected abstract void doDeleteLink(final LinkDefinition<Source, Target> link);
 
     @Override
-    public final Collection<LinkDefinition> openAndLoad(final LinkStoreUpdater updater) throws StoreException
+    public final Collection<LinkDefinition<Source, Target>> openAndLoad(final LinkStoreUpdater updater) throws StoreException
     {
         _useOrCloseRWLock.readLock().lock();
         try
@@ -48,7 +49,7 @@ public abstract class AbstractLinkStore implements LinkStore
                 throw new StoreException("Store is already opened");
             }
 
-            Collection<LinkDefinition> linkDefinitions = doOpenAndLoad(updater);
+            Collection<LinkDefinition<Source, Target>> linkDefinitions = doOpenAndLoad(updater);
             _storeState = StoreState.OPENED;
             return linkDefinitions;
         }
@@ -74,7 +75,7 @@ public abstract class AbstractLinkStore implements LinkStore
     }
 
     @Override
-    public final void saveLink(final LinkDefinition link) throws StoreException
+    public final void saveLink(final LinkDefinition<Source, Target> link) throws StoreException
     {
         _useOrCloseRWLock.readLock().lock();
         try
@@ -93,7 +94,7 @@ public abstract class AbstractLinkStore implements LinkStore
     }
 
     @Override
-    public final void deleteLink(final LinkDefinition link) throws StoreException
+    public final void deleteLink(final LinkDefinition<Source, Target> link) throws StoreException
     {
         _useOrCloseRWLock.readLock().lock();
         try

@@ -27,11 +27,13 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
@@ -39,7 +41,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
-public abstract class AbstractReceivingLinkEndpoint extends AbstractLinkEndpoint
+public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extends AbstractLinkEndpoint<Source, T>
 {
     private final SectionDecoder _sectionDecoder;
     private UnsignedInteger _lastDeliveryId;
@@ -88,7 +90,7 @@ public abstract class AbstractReceivingLinkEndpoint extends AbstractLinkEndpoint
     }
 
 
-    public AbstractReceivingLinkEndpoint(final Session_1_0 session, final Link_1_0 link)
+    public AbstractReceivingLinkEndpoint(final Session_1_0 session, final Link_1_0<Source, T> link)
     {
         super(session, link);
         _sectionDecoder = new SectionDecoderImpl(session.getConnection()

@@ -69,7 +69,7 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
-public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
+public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint<Target>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardReceivingLinkEndpoint.class);
 
@@ -79,7 +79,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
     private Map<Binary, Outcome> _unsettledMap = Collections.synchronizedMap(new HashMap<Binary, Outcome>());
 
     public StandardReceivingLinkEndpoint(final Session_1_0 session,
-                                         final Link_1_0 link)
+                                         final Link_1_0<Source, Target> link)
     {
         super(session, link);
     }
@@ -93,7 +93,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
     private TerminusDurability getDurability()
     {
-        return ((Target) getTarget()).getDurable();
+        return getTarget().getDurable();
     }
 
     @Override
@@ -241,7 +241,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     getReceivingDestination().authorizePublish(session.getSecurityToken(), routingAddress);
 
                     Outcome outcome = getReceivingDestination().send(serverMessage, routingAddress, transaction, null);
-                    Source source = (Source) getSource();
+                    Source source = getSource();
 
                     DeliveryState resultantState;
 
@@ -497,16 +497,16 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
     @Override
     protected void recoverLink(final Attach attach) throws AmqpErrorException
     {
-        if (getTarget() == null || !(getTarget() instanceof Target))
+        if (getTarget() == null)
         {
             throw new AmqpErrorException(new Error(AmqpError.NOT_FOUND,
                                                    String.format("Link '%s' not found", getLinkName())));
         }
 
         Source source = (Source) attach.getSource();
-        Target target = (Target) getTarget();
+        Target target = getTarget();
 
-        final ReceivingDestination destination = getSession().getReceivingDestination((Target) getTarget());
+        final ReceivingDestination destination = getSession().getReceivingDestination(getTarget());
         target.setCapabilities(destination.getCapabilities());
         setCapabilities(Arrays.asList(destination.getCapabilities()));
         setDestination(destination);

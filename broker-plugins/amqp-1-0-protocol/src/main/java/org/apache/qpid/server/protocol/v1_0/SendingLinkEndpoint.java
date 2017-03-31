@@ -48,6 +48,7 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -75,7 +76,7 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
-public class SendingLinkEndpoint extends AbstractLinkEndpoint
+public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SendingLinkEndpoint.class);
 
@@ -96,7 +97,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
     private ConsumerTarget_1_0 _consumerTarget;
     private MessageInstanceConsumer<ConsumerTarget_1_0> _consumer;
 
-    public SendingLinkEndpoint(final Session_1_0 session, final LinkImpl link)
+    public SendingLinkEndpoint(final Session_1_0 session, final LinkImpl<Source, Target> link)
     {
         super(session, link);
         setDeliveryCount(UnsignedInteger.valueOf(0));
@@ -113,7 +114,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
     {
         // TODO FIXME: this method might modify the source. this is not good encapsulation. furthermore if it does so then it should inform the link/linkregistry about it!
         _destination = destination;
-        final Source source = (Source) getSource();
+        final Source source = getSource();
 
         EnumSet<ConsumerOption> options = EnumSet.noneOf(ConsumerOption.class);
 
@@ -199,22 +200,12 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
 
     void createConsumerTarget() throws AmqpErrorException
     {
-        final Source source = (Source) getSource();
+        final Source source = getSource();
         _consumerTarget = new ConsumerTarget_1_0(this,
                                          _destination instanceof ExchangeDestination ? true : source.getDistributionMode() != StdDistMode.COPY);
         try
         {
-            final String name;
-            if(getTarget() instanceof Target)
-            {
-                Target target = (Target) getTarget();
-                name = target.getAddress() == null ? getLinkName() : target.getAddress();
-            }
-            else
-            {
-                name = getLinkName();
-            }
-
+            final String name = getTarget().getAddress() == null ? getLinkName() : getTarget().getAddress();
             _consumer = _destination.getMessageSource()
                                     .addConsumer(_consumerTarget,
                                                  _consumerFilters,
@@ -299,7 +290,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
         }
 
         Source newSource = (Source) attach.getSource();
-        Source oldSource = (Source) getSource();
+        Source oldSource = getSource();
 
         final SendingDestination destination = getSession().getSendingDestination(getLinkName(), oldSource);
         prepareConsumerOptionsAndFilters(destination);
@@ -330,7 +321,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
         }
 
         Source newSource = (Source) attach.getSource();
-        Source oldSource = (Source) getSource();
+        Source oldSource = getSource();
 
         final SendingDestination destination = getSession().getSendingDestination(getLinkName(), oldSource);
         prepareConsumerOptionsAndFilters(destination);
@@ -368,7 +359,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
             throw new AmqpErrorException(new Error(AmqpError.NOT_FOUND, ""));
         }
 
-        final SendingDestination destination = getSession().getSendingDestination(getLinkName(), (Source) getSource());
+        final SendingDestination destination = getSession().getSendingDestination(getLinkName(), getSource());
         prepareConsumerOptionsAndFilters(destination);
 
         attachReceived(attach);
@@ -387,7 +378,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
 
     public TerminusDurability getTerminusDurability()
     {
-        return ((Source) getSource()).getDurable();
+        return getSource().getDurable();
     }
 
     public boolean transfer(final Transfer xfr, final boolean decrementCredit)
@@ -504,7 +495,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
     {
         getConsumerTarget().close();
 
-        TerminusExpiryPolicy expiryPolicy = ((Source) getSource()).getExpiryPolicy();
+        TerminusExpiryPolicy expiryPolicy = (getSource()).getExpiryPolicy();
         if (Boolean.TRUE.equals(detach.getClosed())
             || TerminusExpiryPolicy.LINK_DETACH.equals(expiryPolicy)
             || (TerminusExpiryPolicy.SESSION_END.equals(expiryPolicy) && getSession().isClosing())
@@ -633,7 +624,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint
         super.attachReceived(attach);
 
         Target target = (Target) attach.getTarget();
-        Source source = (Source) getSource();
+        Source source = getSource();
         if (source == null)
         {
             source = new Source();

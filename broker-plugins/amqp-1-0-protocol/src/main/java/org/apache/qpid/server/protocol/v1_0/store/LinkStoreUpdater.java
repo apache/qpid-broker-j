@@ -23,8 +23,10 @@ package org.apache.qpid.server.protocol.v1_0.store;
 import java.util.Collection;
 
 import org.apache.qpid.server.protocol.v1_0.LinkDefinition;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 
 public interface LinkStoreUpdater
 {
-    Collection<LinkDefinition> update(String currentVersion, Collection<LinkDefinition> linkDefinitions);
+    Collection<LinkDefinition<Source, Target>> update(String currentVersion, Collection<LinkDefinition<Source, Target>> linkDefinitions);
 }

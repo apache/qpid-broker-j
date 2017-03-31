@@ -22,19 +22,21 @@ package org.apache.qpid.server.protocol.v1_0.store;
 import java.util.Collection;
 
 import org.apache.qpid.server.protocol.v1_0.LinkDefinition;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.store.StoreException;
 
 
 public interface LinkStore
 {
-    Collection<LinkDefinition> openAndLoad(LinkStoreUpdater updater) throws StoreException;
+    Collection<LinkDefinition<Source, Target>> openAndLoad(LinkStoreUpdater updater) throws StoreException;
 
     void close() throws StoreException;
 
-    void saveLink(LinkDefinition link) throws StoreException;
+    void saveLink(LinkDefinition<Source, Target> link) throws StoreException;
 
-    void deleteLink(LinkDefinition link) throws StoreException;
+    void deleteLink(LinkDefinition<Source, Target> link) throws StoreException;
 
     void delete();
 

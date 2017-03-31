@@ -24,19 +24,19 @@ import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 
-public class LinkDefinitionImpl implements LinkDefinition
+public class LinkDefinitionImpl<S extends BaseSource, T extends BaseTarget> implements LinkDefinition<S, T>
 {
     private final String _remoteContainerId;
     private final String _name;
     private final Role _role;
-    private final BaseSource _source;
-    private final BaseTarget _target;
+    private final S _source;
+    private final T _target;
 
     public LinkDefinitionImpl(final String remoteContainerId,
                               final String name,
                               final Role role,
-                              final BaseSource source,
-                              final BaseTarget target)
+                              final S source,
+                              final T target)
     {
         _remoteContainerId = remoteContainerId;
         _name = name;
@@ -64,13 +64,13 @@ public class LinkDefinitionImpl implements LinkDefinition
     }
 
     @Override
-    public BaseSource getSource()
+    public S getSource()
     {
         return _source;
     }
 
     @Override
-    public BaseTarget getTarget()
+    public T getTarget()
     {
         return _target;
     }

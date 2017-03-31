@@ -25,7 +25,7 @@ import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 
-public interface LinkDefinition extends LinkModel
+public interface LinkDefinition<S extends BaseSource, T extends BaseTarget> extends LinkModel
 {
     String getRemoteContainerId();
 
@@ -33,7 +33,7 @@ public interface LinkDefinition extends LinkModel
 
     Role getRole();
 
-    BaseSource getSource();
+    S getSource();
 
-    BaseTarget getTarget();
+    T getTarget();
 }

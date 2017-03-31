@@ -27,19 +27,19 @@ import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 
-public interface Link_1_0 extends LinkDefinition
+public interface Link_1_0<S extends BaseSource, T extends BaseTarget> extends LinkDefinition<S, T>
 {
-    ListenableFuture<? extends LinkEndpoint> attach(Session_1_0 session, final Attach attach);
+    ListenableFuture<? extends LinkEndpoint<S, T>> attach(Session_1_0 session, final Attach attach);
 
     void linkClosed();
 
     void discardEndpoint();
 
-    void setSource(BaseSource source);
+    void setSource(S source);
 
-    void setTarget(BaseTarget target);
+    void setTarget(T target);
 
-    void setTermini(BaseSource source, BaseTarget target);
+    void setTermini(S source, T target);
 
     TerminusDurability getHighestSupportedTerminusDurability();
 }
