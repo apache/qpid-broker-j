@@ -1265,7 +1265,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         MessageSource messageSource = _systemNodeSources.get(name);
         if(messageSource == null)
         {
-            messageSource = awaitChildClassToAttainState(Queue.class, name);
+            messageSource = getAttainedChildFromAddress(Queue.class, name);
         }
         if(messageSource == null)
         {
@@ -1410,7 +1410,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 if(address.startsWith(domain + "/"))
                 {
-                    child = awaitChildClassToAttainState(childClass, address.substring(domain.length()));
+                    child = awaitChildClassToAttainState(childClass, address.substring(domain.length()+1));
                     if(child != null)
                     {
                         break;
