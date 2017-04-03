@@ -44,8 +44,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
+import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerModel;
@@ -58,6 +58,7 @@ import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
@@ -70,6 +71,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.transport.AggregateTicker;
@@ -462,6 +464,27 @@ public class Session_1_0Test extends QpidTestCase
         assertEquals("Unexpected filter on binding", selectorExpression, arguments.get(AMQPFilterTypes.JMS_SELECTOR.toString()));
     }
 
+    public void testLinkStealing()
+    {
+        _virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, QUEUE_NAME));
+        Attach attach = createQueueAttach(true, getTestName(), QUEUE_NAME);
+
+        AMQPConnection_1_0 connection1 = _connection;
+        Session_1_0 session1 = _session;
+        session1.receiveAttach(attach);
+
+        Link_1_0<?,?> link = _virtualHost.getSendingLink(connection1.getRemoteContainerId(), attach.getName());
+        assertNotNull("Link is not created", link);
+        assertAttachSent(connection1, session1, attach);
+
+        AMQPConnection_1_0 connection2 = createAmqpConnection_1_0(connection1.getRemoteContainerId());
+        Session_1_0 session2 = createSession_1_0(connection2, 0);
+        session2.receiveAttach(attach);
+
+        assertDetachSent(connection1, session1, LinkError.STOLEN, 1);
+        assertAttachSent(connection2, session2, attach);
+    }
+
     private void assertFilter(final Attach sentAttach, final String selectorExpression)
     {
         Source source = (Source)sentAttach.getSource();
@@ -528,6 +551,21 @@ public class Session_1_0Test extends QpidTestCase
 
         final Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
         assertEquals("Unexpected number of queues after attach", 1, queues.size());
+    }
+
+    private void assertDetachSent(final AMQPConnection_1_0 connection,
+                                  final Session_1_0 session,
+                                  final ErrorCondition expectedError,
+                                  final int invocationOffset)
+    {
+        ArgumentCaptor<FrameBody> frameCapture = ArgumentCaptor.forClass(FrameBody.class);
+        verify(connection, times(invocationOffset + 1)).sendFrame(eq((short) session.getChannelId()), frameCapture.capture());
+        List<FrameBody> sentFrames = frameCapture.getAllValues();
+
+        assertTrue("unexpected Frame sent", sentFrames.get(invocationOffset) instanceof Detach);
+        Detach sentDetach = (Detach) sentFrames.get(invocationOffset);
+        assertTrue("Unexpected closed state", sentDetach.getClosed());
+        assertEquals("Closed with unexpected error condition", expectedError, sentDetach.getError().getCondition());
     }
 
     private void assertAttachSent(final AMQPConnection_1_0 connection,
