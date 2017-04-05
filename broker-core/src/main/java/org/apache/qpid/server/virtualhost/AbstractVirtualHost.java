@@ -756,7 +756,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 if(name.startsWith(domain + "/"))
                 {
-                    child = awaitChildClassToAttainState(Queue.class, name.substring(domain.length()));
+                    child = awaitChildClassToAttainState(Queue.class, name.substring(domain.length()+1));
                     if(child != null)
                     {
                         break;
@@ -771,7 +771,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public MessageSource getAttainedMessageSource(final String name)
     {
         MessageSource systemSource = _systemNodeSources.get(name);
-        return systemSource == null ? (MessageSource) awaitChildClassToAttainState(Queue.class, name) : systemSource;
+        return systemSource == null ? getAttainedQueue(name) : systemSource;
     }
 
     @Override
@@ -856,7 +856,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 if(name.startsWith(domain + "/"))
                 {
-                    child = awaitChildClassToAttainState(Exchange.class, name.substring(domain.length()));
+                    child = awaitChildClassToAttainState(Exchange.class, name.substring(domain.length()+1));
                     if(child != null)
                     {
                         break;
