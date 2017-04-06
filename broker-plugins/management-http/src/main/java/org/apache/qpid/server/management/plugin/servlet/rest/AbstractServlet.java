@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
+import static org.apache.qpid.server.management.plugin.HttpManagementUtil.CONTENT_ENCODING_HEADER;
+import static org.apache.qpid.server.management.plugin.HttpManagementUtil.GZIP_CONTENT_ENCODING;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -31,6 +34,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.GZIPOutputStream;
 
 import javax.security.auth.Subject;
 import javax.servlet.ServletConfig;
@@ -40,25 +44,25 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.model.Content;
-import org.apache.qpid.server.model.CustomRestHeaders;
-import org.apache.qpid.server.model.RestContentHeader;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.management.plugin.GunzipOutputStream;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
+import org.apache.qpid.server.model.Content;
+import org.apache.qpid.server.model.CustomRestHeaders;
+import org.apache.qpid.server.model.RestContentHeader;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public abstract class AbstractServlet extends HttpServlet
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractServlet.class);
-    public static final String CONTENT_DISPOSITION = "Content-disposition";
+    public static final String CONTENT_DISPOSITION = "Content-Disposition";
 
     private Broker<?> _broker;
     private HttpManagementConfiguration _managementConfiguration;
@@ -343,43 +347,93 @@ public abstract class AbstractServlet extends HttpServlet
         return null;
     }
 
-    protected void writeTypedContent(Content content, HttpServletRequest request, HttpServletResponse response) throws IOException
+    protected void writeTypedContent(Content content, HttpServletRequest request, HttpServletResponse response)
+            throws IOException
     {
-        try(OutputStream os = getOutputStream(request, response))
-        {
-            if(content instanceof CustomRestHeaders)
-            {
-                setResponseHeaders(response, (CustomRestHeaders) content);
-            }
-            response.setStatus(HttpServletResponse.SC_OK);
-            content.write(os);
+        Map<String, Object> headers = getResponseHeaders(content);
 
+        try (OutputStream os = getOutputStream(request, response, headers))
+        {
+            response.setStatus(HttpServletResponse.SC_OK);
+            for (Map.Entry<String, Object> entry : headers.entrySet())
+            {
+                response.setHeader(entry.getKey(), String.valueOf(entry.getValue()));
+            }
+            content.write(os);
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             LOGGER.warn("Unexpected exception processing request", e);
             sendJsonErrorResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
-    private void setResponseHeaders(final HttpServletResponse response, final CustomRestHeaders customRestHeaders)
+    private OutputStream getOutputStream(final HttpServletRequest request,
+                                         final HttpServletResponse response,
+                                         Map<String, Object> headers) throws IOException
     {
-        Map<RestContentHeader, Method> contentHeaderGetters = getContentHeaderMethods(customRestHeaders);
-        if (contentHeaderGetters != null)
+        final boolean isGzipCompressed = GZIP_CONTENT_ENCODING.equals(headers.get(CONTENT_ENCODING_HEADER.toUpperCase()));
+        final boolean isCompressingAccepted = HttpManagementUtil.isCompressingAccepted(request, _managementConfiguration);
+
+        OutputStream stream = response.getOutputStream();
+
+        if (isGzipCompressed)
         {
-            for (Map.Entry<RestContentHeader, Method> entry : contentHeaderGetters.entrySet())
+            if (!isCompressingAccepted)
             {
-                final String headerName = entry.getKey().value();
-                try
+                stream = new GunzipOutputStream(stream);
+                headers.remove(CONTENT_ENCODING_HEADER.toUpperCase());
+            }
+        }
+        else
+        {
+            if (isCompressingAccepted)
+            {
+                stream = new GZIPOutputStream(stream);
+                headers.put(CONTENT_ENCODING_HEADER.toUpperCase(), GZIP_CONTENT_ENCODING);
+            }
+        }
+
+        return stream;
+    }
+
+    private Map<String, Object> getResponseHeaders(final Object content)
+    {
+        Map<String, Object> headers = Collections.emptyMap();
+        if (content instanceof CustomRestHeaders)
+        {
+            CustomRestHeaders customRestHeaders = (CustomRestHeaders) content;
+            Map<RestContentHeader, Method> contentHeaderGetters = getContentHeaderMethods(customRestHeaders);
+            if (contentHeaderGetters != null)
+            {
+                headers = new HashMap<>();
+                for (Map.Entry<RestContentHeader, Method> entry : contentHeaderGetters.entrySet())
                 {
-                    response.setHeader(headerName, String.valueOf(entry.getValue().invoke(customRestHeaders)));
-                }
-                catch (Exception e)
-                {
-                    LOGGER.warn("Unexpected exception whilst setting response header " + headerName, e);
+                    final String headerName = entry.getKey().value();
+                    try
+                    {
+                        final Object headerValue = entry.getValue().invoke(customRestHeaders);
+                        if (headerValue != null)
+                        {
+                            headers.put(headerName.toUpperCase(), headerValue);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        LOGGER.warn("Unexpected exception whilst setting response header " + headerName, e);
+                    }
                 }
             }
+        }
+        return headers;
+    }
 
+    private void setResponseHeaders(final HttpServletResponse response, final CustomRestHeaders customRestHeaders)
+    {
+        Map<String, Object> headers = getResponseHeaders(customRestHeaders);
+        for(Map.Entry<String,Object> entry : headers.entrySet())
+        {
+            response.setHeader(entry.getKey(), String.valueOf(entry.getValue()));
         }
     }
 

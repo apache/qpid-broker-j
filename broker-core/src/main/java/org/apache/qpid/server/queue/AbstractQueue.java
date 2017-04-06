@@ -2646,12 +2646,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     class MessageContent implements Content, CustomRestHeaders
     {
-        private static final int UNLIMITED = -1;
         private final byte[] _data;
         private final String _mimeType;
         private String _encoding;
         private long _messageNumber;
         private final long _limit;
+        private final boolean _truncated;
 
         MessageContent(byte[] data, String mimeType, final String encoding, final long messageNumber, long limit)
         {
@@ -2659,7 +2659,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             _mimeType = mimeType;
             _encoding = encoding;
             _messageNumber = messageNumber;
-            _limit = (limit == UNLIMITED ? data.length : Math.min(limit, data.length));
+            _truncated = limit >=0 && data.length > limit;
+            _limit = _truncated ? limit : data.length;
         }
 
         @Override
@@ -2680,6 +2681,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         public String getContentEncoding()
         {
             return _encoding;
+        }
+
+        @SuppressWarnings("unused")
+        @RestContentHeader("X-Content-Truncated")
+        public String getContentTruncated()
+        {
+            return String.valueOf(_truncated);
         }
 
         @SuppressWarnings("unused")

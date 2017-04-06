@@ -22,10 +22,7 @@ package org.apache.qpid.server.management.plugin;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,29 +30,16 @@ import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 import javax.security.auth.Subject;
-import javax.security.auth.x500.X500Principal;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.server.management.plugin.servlet.ServletConnectionPrincipal;
 import org.apache.qpid.server.management.plugin.session.LoginLogoutReporter;
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.SecurityManager;
-import org.apache.qpid.server.security.SubjectCreator;
-import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
-import org.apache.qpid.server.security.auth.AuthenticationResult;
-import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
-import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
-import org.apache.qpid.server.security.auth.UsernamePrincipal;
-import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
-import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManager;
-import org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticationProvider;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 public class HttpManagementUtil
 {
@@ -72,11 +56,10 @@ public class HttpManagementUtil
 
     private static final String ATTR_LOGIN_LOGOUT_REPORTER = "Qpid.loginLogoutReporter";
     private static final String ATTR_SUBJECT = "Qpid.subject";
-    private static final String ATTR_LOG_ACTOR = "Qpid.logActor";
 
-    private static final String ACCEPT_ENCODING_HEADER = "Accept-Encoding";
-    private static final String CONTENT_ENCODING_HEADER = "Content-Encoding";
-    private static final String GZIP_CONTENT_ENCODING = "gzip";
+    public static final String ACCEPT_ENCODING_HEADER = "Accept-Encoding";
+    public static final String CONTENT_ENCODING_HEADER = "Content-Encoding";
+    public static final String GZIP_CONTENT_ENCODING = "gzip";
 
     private static final Collection<HttpRequestPreemptiveAuthenticator> AUTHENTICATORS;
     static
@@ -179,9 +162,7 @@ public class HttpManagementUtil
             throws IOException
     {
         OutputStream outputStream;
-        if(managementConfiguration.isCompressResponses()
-           && Collections.list(request.getHeaderNames()).contains(ACCEPT_ENCODING_HEADER)
-           && request.getHeader(ACCEPT_ENCODING_HEADER).contains(GZIP_CONTENT_ENCODING))
+        if(isCompressingAccepted(request, managementConfiguration))
         {
             outputStream = new GZIPOutputStream(response.getOutputStream());
             response.setHeader(CONTENT_ENCODING_HEADER, GZIP_CONTENT_ENCODING);
@@ -191,6 +172,14 @@ public class HttpManagementUtil
             outputStream = response.getOutputStream();
         }
         return outputStream;
+    }
+
+    public static boolean isCompressingAccepted(final HttpServletRequest request,
+                                                final HttpManagementConfiguration managementConfiguration)
+    {
+        return managementConfiguration.isCompressResponses()
+               && Collections.list(request.getHeaderNames()).contains(ACCEPT_ENCODING_HEADER)
+               && request.getHeader(ACCEPT_ENCODING_HEADER).contains(GZIP_CONTENT_ENCODING);
     }
 
     public static String ensureFilenameIsRfc2183(final String requestedFilename)

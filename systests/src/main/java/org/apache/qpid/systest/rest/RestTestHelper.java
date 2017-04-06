@@ -95,6 +95,8 @@ public class RestTestHelper
     static final String[] EXPECTED_QUEUES = { "queue", "ping" };
     private final int _connectTimeout = Integer.getInteger("qpid.resttest_connection_timeout", 30000);
 
+    private String _acceptEncoding;
+
     public RestTestHelper(int httpPort)
     {
         _httpPort = httpPort;
@@ -208,6 +210,11 @@ public class RestTestHelper
         {
             String encoded = DatatypeConverter.printBase64Binary((_username + ":" + _password).getBytes());
             httpCon.setRequestProperty("Authorization", "Basic " + encoded);
+        }
+
+        if (_acceptEncoding != null && !"".equals(_acceptEncoding))
+        {
+            httpCon.setRequestProperty("Accept-Encoding", _acceptEncoding);
         }
 
         httpCon.setDoOutput(true);
@@ -677,5 +684,15 @@ public class RestTestHelper
             nodeAttributes = Collections.emptyList();
         }
         return nodeAttributes;
+    }
+
+    public String getAcceptEncoding()
+    {
+        return _acceptEncoding;
+    }
+
+    public void setAcceptEncoding(String acceptEncoding)
+    {
+        _acceptEncoding = acceptEncoding;
     }
 }
