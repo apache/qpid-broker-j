@@ -142,6 +142,7 @@ define(["dojo/dom",
                         "stateValue",
                         "typeValue",
                         "portValue",
+                        "boundPortValue",
                         "authenticationProviderValue",
                         "protocolsValue",
                         "transportsValue",
@@ -189,6 +190,8 @@ define(["dojo/dom",
             this.nameValue.innerHTML = entities.encode(String(this.portData["name"]));
             this.stateValue.innerHTML = entities.encode(String(this.portData["state"]));
             this.typeValue.innerHTML = entities.encode(String(this.portData["type"]));
+            this.portValue.innerHTML = entities.encode(String(this.portData["port"]));
+            this.boundPortValue.innerHTML = this.portData["boundPort"] > -1 ? entities.encode(String(this.portData["boundPort"])) : "(not bound)";
             this.portValue.innerHTML = entities.encode(String(this.portData["port"]));
             this.authenticationProviderValue.innerHTML = this.portData["authenticationProvider"]
                 ? entities.encode(String(this.portData["authenticationProvider"]))

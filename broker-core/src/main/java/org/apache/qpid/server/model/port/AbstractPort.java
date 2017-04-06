@@ -117,16 +117,19 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
             throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
         }
 
-        for (Port p : _container.getChildren(Port.class))
+        if (getPort() != 0)
         {
-            if (p.getPort() == getPort() && p.getPort() != 0 && p != this)
+            for (Port p : _container.getChildren(Port.class))
             {
-                throw new IllegalConfigurationException("Can't add port "
-                                                        + getName()
-                                                        + " because port number "
-                                                        + getPort()
-                                                        + " is already configured for port "
-                                                        + p.getName());
+                if (p != this && (p.getPort() == getPort() || p.getBoundPort() == getPort()))
+                {
+                    throw new IllegalConfigurationException("Can't add port "
+                                                            + getName()
+                                                            + " because port number "
+                                                            + getPort()
+                                                            + " is already configured for port "
+                                                            + p.getName());
+                }
             }
         }
     }

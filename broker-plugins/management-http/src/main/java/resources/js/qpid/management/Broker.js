@@ -560,7 +560,7 @@ define(["dojo/parser",
             }, {
                 name: "State",
                 field: "state",
-                width: "15%"
+                width: "10%"
             }, {
                 name: "Auth Provider",
                 field: "authenticationProvider",
@@ -572,7 +572,7 @@ define(["dojo/parser",
             }, {
                 name: "Port",
                 field: "port",
-                width: "10%"
+                width: "5%"
             }, {
                 name: "Transports",
                 field: "transports",
@@ -580,7 +580,15 @@ define(["dojo/parser",
             }, {
                 name: "Protocols",
                 field: "protocols",
-                width: "15%"
+                width: "20%"
+            }, {
+                name: "Bound Port",
+                field: "boundPort",
+                width: "5%",
+                formatter: function (val)
+                {
+                    return val > -1 ? val : "-";
+                }
             }], function (obj)
             {
                 connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
