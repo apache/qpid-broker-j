@@ -183,11 +183,11 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
         if(changedAttributes.contains(PORT))
         {
             int newPort = updated.getPort();
-            if (getPort() != newPort)
+            if (getPort() != newPort && newPort != 0)
             {
                 for (Port p : _container.getChildren(Port.class))
                 {
-                    if (p.getPort() == newPort)
+                    if (p.getBoundPort() == newPort || p.getPort() == newPort)
                     {
                         throw new IllegalConfigurationException("Port number "
                                                                 + newPort
