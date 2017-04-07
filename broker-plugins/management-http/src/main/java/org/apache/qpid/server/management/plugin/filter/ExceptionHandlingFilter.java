@@ -62,9 +62,18 @@ public class ExceptionHandlingFilter implements Filter
         {
             if (_uncaughtExceptionHandler == null)
             {
-                throw e;
+                LOGGER.error("Fatal system error", e);
             }
-            _uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), e);
+            else
+            {
+                _uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), e);
+            }
+
+            if (e instanceof  ServerScopedRuntimeException)
+            {
+                sendError((ServerScopedRuntimeException)e, servletResponse, HttpServletResponse.SC_GATEWAY_TIMEOUT);
+            }
+            throw e;
         }
         catch (ExternalServiceTimeoutException e)
         {
