@@ -1,0 +1,85 @@
+{
+  "name" : "${broker.name}",
+  "modelVersion" : "7.0",
+  "authenticationproviders" : [ {
+    "name" : "anon",
+    "type" : "Anonymous"
+  }, {
+    "name" : "plain",
+    "type" : "Plain",
+    "users" : [ {
+      "name" : "admin",
+      "type" : "managed",
+      "password" : "admin"
+    }, {
+      "name" : "guest",
+      "type" : "managed",
+      "password" : "guest"
+    } ]
+  } ],
+  "brokerloggers" : [ {
+    "name" : "logfile",
+    "type" : "File",
+    "fileName" : "${qpid.work_dir}${file.separator}log${file.separator}qpid.log",
+    "brokerloginclusionrules" : [ {
+      "name" : "Operational",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "qpid.message.*"
+    }, {
+      "name" : "Qpid",
+      "type" : "NameAndLevel",
+      "durable" : true,
+      "level" : "DEBUG",
+      "loggerName" : "org.apache.qpid.*"
+    }, {
+      "name" : "Root",
+      "type" : "NameAndLevel",
+      "level" : "WARN",
+      "loggerName" : "ROOT"
+    } ]
+  } ],
+  "ports" : [ {
+    "name" : "AMQP",
+    "type" : "AMQP",
+    "authenticationProvider" : "plain",
+    "port" : "0",
+    "protocols" : [ "AMQP_1_0" ],
+    "virtualhostaliases" : [ {
+      "name" : "defaultAlias",
+      "type" : "defaultAlias"
+    }, {
+      "name" : "hostnameAlias",
+      "type" : "hostnameAlias"
+    }, {
+      "name" : "nameAlias",
+      "type" : "nameAlias"
+    } ]
+  }, {
+    "name" : "ANONYMOUS_AMQP",
+    "type" : "AMQP",
+    "authenticationProvider" : "anon",
+    "port" : "0",
+    "protocols" : [ "AMQP_1_0" ],
+    "virtualhostaliases" : [ {
+      "name" : "defaultAlias",
+      "type" : "defaultAlias",
+      "durable" : true
+    }, {
+      "name" : "hostnameAlias",
+      "type" : "hostnameAlias",
+      "durable" : true
+    }, {
+      "name" : "nameAlias",
+      "type" : "nameAlias",
+      "durable" : true
+    } ]
+  }, {
+    "name" : "HTTP",
+    "type" : "HTTP",
+    "authenticationProvider" : "anon",
+    "port" : "0",
+    "protocols" : [ "HTTP" ]
+  } ],
+  "virtualhostnodes" : []
+}

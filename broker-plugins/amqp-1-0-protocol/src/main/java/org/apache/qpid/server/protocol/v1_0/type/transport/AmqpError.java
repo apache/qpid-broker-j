@@ -70,11 +70,36 @@ public class AmqpError
         _val = val;
     }
 
+    @Override
     public Symbol getValue()
     {
         return _val;
     }
 
+    @Override
+    public boolean equals(final Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+
+        final AmqpError amqpError = (AmqpError) o;
+
+        return _val.equals(amqpError._val);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return _val.hashCode();
+    }
+
+    @Override
     public String toString()
     {
         

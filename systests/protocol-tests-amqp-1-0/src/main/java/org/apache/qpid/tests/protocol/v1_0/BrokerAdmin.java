@@ -16,37 +16,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.qpid.server.protocol.v1_0.framing;
 
-import java.util.List;
+package org.apache.qpid.tests.protocol.v1_0;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
 
-public final class TransportFrame extends AMQFrame<FrameBody>
+import org.apache.qpid.server.plugin.Pluggable;
+
+public interface BrokerAdmin extends Pluggable
 {
+    void beforeTestClass(final Class testClass);
+    void beforeTestMethod(final Class testClass, final Method method);
+    void afterTestMethod(final Class testClass, final Method method);
+    void afterTestClass(final Class testClass);
 
-    private final short _channel;
+    InetSocketAddress getBrokerAddress(PortType portType);
 
-    public TransportFrame(short channel, FrameBody frameBody)
+    void createQueue(String queueName);
+
+    enum PortType
     {
-        super(frameBody);
-        _channel = channel;
-    }
-
-    public TransportFrame(short channel, FrameBody frameBody, List<QpidByteBuffer> payload)
-    {
-        super(frameBody, payload);
-        _channel = channel;
-    }
-
-    @Override public short getChannel()
-    {
-        return _channel;
-    }
-
-    @Override public byte getFrameType()
-    {
-        return (byte)0;
+        ANONYMOUS_AMQP,
+        AMQP
     }
 }

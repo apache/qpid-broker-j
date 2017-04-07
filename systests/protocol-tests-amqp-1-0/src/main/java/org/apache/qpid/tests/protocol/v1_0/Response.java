@@ -16,37 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.qpid.server.protocol.v1_0.framing;
 
-import java.util.List;
+package org.apache.qpid.tests.protocol.v1_0;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
-
-public final class TransportFrame extends AMQFrame<FrameBody>
+public interface Response
 {
-
-    private final short _channel;
-
-    public TransportFrame(short channel, FrameBody frameBody)
-    {
-        super(frameBody);
-        _channel = channel;
-    }
-
-    public TransportFrame(short channel, FrameBody frameBody, List<QpidByteBuffer> payload)
-    {
-        super(frameBody, payload);
-        _channel = channel;
-    }
-
-    @Override public short getChannel()
-    {
-        return _channel;
-    }
-
-    @Override public byte getFrameType()
-    {
-        return (byte)0;
-    }
 }

@@ -16,37 +16,30 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.qpid.server.protocol.v1_0.framing;
 
-import java.util.List;
+package org.apache.qpid.tests.protocol.v1_0;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import java.util.Arrays;
 
-public final class TransportFrame extends AMQFrame<FrameBody>
+public class HeaderResponse implements Response
 {
+    private final byte[] _header;
 
-    private final short _channel;
-
-    public TransportFrame(short channel, FrameBody frameBody)
+    public HeaderResponse(final byte[] header)
     {
-        super(frameBody);
-        _channel = channel;
+        _header = header;
     }
 
-    public TransportFrame(short channel, FrameBody frameBody, List<QpidByteBuffer> payload)
+    public byte[] getHeader()
     {
-        super(frameBody, payload);
-        _channel = channel;
+        return _header;
     }
 
-    @Override public short getChannel()
+    @Override
+    public String toString()
     {
-        return _channel;
-    }
-
-    @Override public byte getFrameType()
-    {
-        return (byte)0;
+        return "HeaderResponse{" +
+               "_header=" + Arrays.toString(_header) +
+               '}';
     }
 }

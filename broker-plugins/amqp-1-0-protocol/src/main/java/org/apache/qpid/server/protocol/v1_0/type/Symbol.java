@@ -61,6 +61,23 @@ public final class Symbol implements Comparable<Symbol>, CharSequence
     }
 
     @Override
+    public boolean equals(final Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+
+        final Symbol symbol = (Symbol) o;
+
+        return _underlying.equals(symbol._underlying);
+    }
+
+    @Override
     public int hashCode()
     {
         return _underlying.hashCode();

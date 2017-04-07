@@ -141,6 +141,8 @@
     <!-- test dependency version numbers -->
     <junit-version>4.11</junit-version>
     <mockito-version>1.9.5</mockito-version>
+    <netty-version>4.1.9.Final</netty-version>
+    <hamcrest-version>1.3</hamcrest-version>
     <httpclient-version>4.4</httpclient-version>
     <qpid-jms-client-version>0.21.0</qpid-jms-client-version>
     <qpid-jms-client-amqp-0-x-version>6.1.2</qpid-jms-client-amqp-0-x-version>
@@ -185,6 +187,7 @@
     <module>qpid-test-utils</module>
     <module>systests</module>
     <module>systests/qpid-systests-jms_2.0</module>
+    <module>systests/protocol-tests-amqp-1-0</module>
     <module>perftests</module>
     <module>qpid-perftests-systests</module>
 
@@ -352,6 +355,41 @@
         <artifactId>mockito-all</artifactId>
         <version>${mockito-version}</version>
         <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-buffer</artifactId>
+        <version>${netty-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-common</artifactId>
+        <version>${netty-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-handler</artifactId>
+        <version>${netty-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport</artifactId>
+        <version>${netty-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-core</artifactId>
+        <version>${hamcrest-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-library</artifactId>
+        <version>${hamcrest-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-integration</artifactId>
+        <version>${hamcrest-version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

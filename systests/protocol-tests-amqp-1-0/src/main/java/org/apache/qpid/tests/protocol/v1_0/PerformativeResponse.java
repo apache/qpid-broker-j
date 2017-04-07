@@ -16,37 +16,39 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.qpid.server.protocol.v1_0.framing;
 
-import java.util.List;
+package org.apache.qpid.tests.protocol.v1_0;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 
-public final class TransportFrame extends AMQFrame<FrameBody>
+public class PerformativeResponse implements Response
 {
+    private final short _channelId;
+    private final FrameBody _frameBody;
 
-    private final short _channel;
-
-    public TransportFrame(short channel, FrameBody frameBody)
+    public PerformativeResponse(final short channelId,
+                                final FrameBody frameBody)
     {
-        super(frameBody);
-        _channel = channel;
+        _channelId = channelId;
+        _frameBody = frameBody;
     }
 
-    public TransportFrame(short channel, FrameBody frameBody, List<QpidByteBuffer> payload)
+    public FrameBody getFrameBody()
     {
-        super(frameBody, payload);
-        _channel = channel;
+        return _frameBody;
     }
 
-    @Override public short getChannel()
+    public short getChannelId()
     {
-        return _channel;
+        return _channelId;
     }
 
-    @Override public byte getFrameType()
+    @Override
+    public String toString()
     {
-        return (byte)0;
+        return "PerformativeResponse{" +
+               "_channelId=" + _channelId +
+               ", _frameBody=" + _frameBody +
+               '}';
     }
 }

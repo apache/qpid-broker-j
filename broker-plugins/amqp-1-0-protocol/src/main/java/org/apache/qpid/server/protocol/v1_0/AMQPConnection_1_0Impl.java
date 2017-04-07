@@ -63,6 +63,7 @@ import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ProtocolHandler;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
+import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
 import org.apache.qpid.server.protocol.v1_0.framing.FrameHandler;
@@ -1252,7 +1253,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 send(new SASLFrame(mechanisms), null);
 
                 _frameReceivingState = FrameReceivingState.SASL_INIT_ONLY;
-                _frameHandler = new FrameHandler(this, true);
+                _frameHandler = getFrameHandler(true);
             }
             else if(Arrays.equals(header, AMQP_HEADER))
             {
@@ -1278,7 +1279,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 }
                 getSender().send(QpidByteBuffer.wrap(AMQP_HEADER));
                 _frameReceivingState = FrameReceivingState.OPEN_ONLY;
-                _frameHandler = new FrameHandler(this, false);
+                _frameHandler = getFrameHandler(false);
 
             }
             else
@@ -1290,6 +1291,11 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
         }
 
+    }
+
+    private FrameHandler getFrameHandler(final boolean sasl)
+    {
+        return new FrameHandler(new ValueHandler(this.getDescribedTypeRegistry()), this, sasl);
     }
 
 

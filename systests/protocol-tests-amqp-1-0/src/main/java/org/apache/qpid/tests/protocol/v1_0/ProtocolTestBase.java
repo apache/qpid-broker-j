@@ -16,37 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.qpid.server.protocol.v1_0.framing;
 
-import java.util.List;
+package org.apache.qpid.tests.protocol.v1_0;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public final class TransportFrame extends AMQFrame<FrameBody>
+@RunWith(QpidTestRunner.class)
+public abstract class ProtocolTestBase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolTestBase.class);
 
-    private final short _channel;
+    private BrokerAdmin _brokerAdmin;
 
-    public TransportFrame(short channel, FrameBody frameBody)
+    public void init(final BrokerAdmin brokerAdmin)
     {
-        super(frameBody);
-        _channel = channel;
+        _brokerAdmin = brokerAdmin;
     }
 
-    public TransportFrame(short channel, FrameBody frameBody, List<QpidByteBuffer> payload)
+    public BrokerAdmin getBrokerAdmin()
     {
-        super(frameBody, payload);
-        _channel = channel;
-    }
-
-    @Override public short getChannel()
-    {
-        return _channel;
-    }
-
-    @Override public byte getFrameType()
-    {
-        return (byte)0;
+        return _brokerAdmin;
     }
 }

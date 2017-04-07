@@ -26,7 +26,7 @@ import java.util.Formatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.protocol.v1_0.AMQPConnection_1_0;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.codec.ProtocolHandler;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
@@ -35,32 +35,22 @@ import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public class FrameHandler implements ProtocolHandler
 {
     public static Logger LOGGER = LoggerFactory.getLogger(FrameHandler.class);
     private final boolean _isSasl;
 
-    private ConnectionHandler _connection;
-    private ValueHandler _typeHandler;
+    private final ConnectionHandler _connectionHandler;
+    private final ValueHandler _valueHandler;
     private boolean _errored = false;
 
-    public FrameHandler(final ValueHandler typeHandler, final ConnectionHandler connection, final boolean isSasl)
+    public FrameHandler(final ValueHandler valueHandler, final ConnectionHandler connectionHandler, final boolean isSasl)
     {
-        _typeHandler = typeHandler;
-        _connection = connection;
+        _valueHandler = valueHandler;
+        _connectionHandler = connectionHandler;
         _isSasl = isSasl;
     }
-
-    public FrameHandler(final AMQPConnection_1_0 connection, final boolean sasl)
-    {
-        this(new ValueHandler(connection.getDescribedTypeRegistry()), connection, sasl);
-
-    }
-
-
-
 
     public ProtocolHandler parse(QpidByteBuffer in)
     {
@@ -90,12 +80,12 @@ public class FrameHandler implements ProtocolHandler
                     break;
                 }
 
-                if(size > _connection.getMaxFrameSize())
+                if(size > _connectionHandler.getMaxFrameSize())
                 {
                     frameParsingError = createFramingError(
                             "specified frame size %d larger than maximum frame header size %d",
                             size,
-                            _connection.getMaxFrameSize());
+                            _connectionHandler.getMaxFrameSize());
                     break;
                 }
 
@@ -156,7 +146,7 @@ public class FrameHandler implements ProtocolHandler
 
                 try
                 {
-                    Object val = dup.hasRemaining() ? _typeHandler.parse(dup) : null;
+                    Object val = dup.hasRemaining() ? _valueHandler.parse(dup) : null;
 
                     if (dup.hasRemaining())
                     {
@@ -174,7 +164,7 @@ public class FrameHandler implements ProtocolHandler
                                     val);
                         }
                     }
-                    _connection.receive((short) channel, val);
+                    _connectionHandler.receive((short) channel, val);
                 }
                 catch (AmqpErrorException ex)
                 {
@@ -188,7 +178,7 @@ public class FrameHandler implements ProtocolHandler
 
             if (frameParsingError != null)
             {
-                _connection.handleError(frameParsingError);
+                _connectionHandler.handleError(frameParsingError);
                 _errored = true;
 
             }
@@ -197,7 +187,7 @@ public class FrameHandler implements ProtocolHandler
         {
             LOGGER.warn("Unexpected exception handling frame", e);
             // This exception is unexpected. The up layer should handle error condition gracefully
-            _connection.handleError(this.createError(ConnectionError.CONNECTION_FORCED, e.toString()));
+            _connectionHandler.handleError(this.createError(ConnectionError.CONNECTION_FORCED, e.toString()));
         }
         return this;
     }
@@ -220,6 +210,6 @@ public class FrameHandler implements ProtocolHandler
 
     public boolean isDone()
     {
-        return _errored|| _connection.closedForInput();
+        return _errored || _connectionHandler.closedForInput();
     }
 }
