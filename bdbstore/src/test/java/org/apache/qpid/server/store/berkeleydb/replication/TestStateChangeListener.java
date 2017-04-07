@@ -20,51 +20,62 @@
  */
 package org.apache.qpid.server.store.berkeleydb.replication;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.common.util.concurrent.SettableFuture;
 import com.sleepycat.je.rep.ReplicatedEnvironment.State;
 import com.sleepycat.je.rep.StateChangeEvent;
 import com.sleepycat.je.rep.StateChangeListener;
 
 class TestStateChangeListener implements StateChangeListener
 {
-    private final Set<State> _expectedStates;
-    private final CountDownLatch _latch;
-    private final AtomicReference<State> _currentActualState = new AtomicReference<State>();
-
-    public TestStateChangeListener(State expectedState)
-    {
-        this(Collections.singleton(expectedState));
-    }
-
-    public TestStateChangeListener(Set<State> expectedStates)
-    {
-        _expectedStates = new HashSet<State>(expectedStates);
-        _latch = new CountDownLatch(1);
-    }
+    private final AtomicReference<State> _expectedState = new AtomicReference<>();
+    private final AtomicReference<SettableFuture<Void>> _currentFuture = new AtomicReference<>(SettableFuture.create());
+    private final AtomicReference<State> _currentState = new AtomicReference<>();
 
     @Override
     public void stateChange(StateChangeEvent stateChangeEvent) throws RuntimeException
     {
-        _currentActualState.set(stateChangeEvent.getState());
-        if (_expectedStates.contains(stateChangeEvent.getState()))
+        final State newState = stateChangeEvent.getState();
+        _currentState.set(newState);
+        if (_expectedState.get() == newState)
         {
-            _latch.countDown();
+            _currentFuture.get().set(null);
         }
     }
 
-    public boolean awaitForStateChange(long timeout, TimeUnit timeUnit) throws InterruptedException
+    public boolean awaitForStateChange(State desiredState, long timeout, TimeUnit timeUnit) throws Exception
     {
-        return _latch.await(timeout, timeUnit);
+        _expectedState.set(desiredState);
+        if (desiredState == _currentState.get())
+        {
+            return true;
+        }
+        else
+        {
+            final SettableFuture<Void> future = SettableFuture.create();
+            _currentFuture.set(future);
+            if (desiredState == _currentState.get())
+            {
+                future.set(null);
+            }
+
+            try
+            {
+                future.get(timeout, timeUnit);
+                return true;
+            }
+            catch (TimeoutException e)
+            {
+                return false;
+            }
+        }
     }
 
     public State getCurrentActualState()
     {
-        return _currentActualState.get();
+        return _currentState.get();
     }
 }

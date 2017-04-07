@@ -852,7 +852,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null)
         {
-            resolveFuture(environmentFacade.setPriority(_priority),
+            resolveFuture(environmentFacade.reapplyPriority(),
                     "Change node priority did not complete within " + MUTATE_JE_TIMEOUT_MS + "ms. New value " + _priority + " will become effective once the JE task thread is free.",
                     "Failed to set priority node to value " + _priority + " on " + this);
             getEventLogger().message(getVirtualHostNodeLogSubject(),
@@ -867,7 +867,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null)
         {
-            resolveFuture(environmentFacade.setDesignatedPrimary(_designatedPrimary),
+            resolveFuture(environmentFacade.reapplyDesignatedPrimary(),
                     "Change designated primary did not complete within " + MUTATE_JE_TIMEOUT_MS + "ms. New value " + _designatedPrimary + " will become effective once the JE task thread is free.",
                     "Failed to set designated primary to value " + _designatedPrimary + " on " + this);
             getEventLogger().message(getVirtualHostNodeLogSubject(),
@@ -882,7 +882,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null)
         {
-            resolveFuture(environmentFacade.setElectableGroupSizeOverride(_quorumOverride),
+            resolveFuture(environmentFacade.reapplyElectableGroupSizeOverride(),
                     "Change quorum override did not complete within " + MUTATE_JE_TIMEOUT_MS + "ms. New value " + _quorumOverride + " will become effective once the JE task thread is free.",
                     "Failed to set quorum override to value " + _quorumOverride + " on " + this);
             getEventLogger().message(getVirtualHostNodeLogSubject(),
