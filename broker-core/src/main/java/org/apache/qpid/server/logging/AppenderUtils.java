@@ -21,6 +21,8 @@
 package org.apache.qpid.server.logging;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -32,6 +34,8 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.TriggeringPolicy;
+import ch.qos.logback.core.util.FileSize;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
 
@@ -95,6 +99,50 @@ public class AppenderUtils
         appender.setEncoder(encoder);
     }
 
+    private static void setMaxFileSize(TriggeringPolicy policy, FileSize fileSize)
+    {
+        final String setMaxFileSizeMethodName = "setMaxFileSize";
+
+        Method maxFileSizeMethod;
+        Object maxFileSizeArg;
+        try
+        {
+            maxFileSizeMethod =
+                    policy.getClass().getMethod(setMaxFileSizeMethodName, FileSize.class);
+            maxFileSizeArg = fileSize;
+        }
+        catch (NoSuchMethodException e)
+        {
+            try
+            {
+                maxFileSizeMethod =
+                        policy.getClass().getMethod(setMaxFileSizeMethodName, String.class);
+                maxFileSizeArg = String.valueOf(fileSize.getSize());
+            }
+            catch (NoSuchMethodException e1)
+            {
+                throw new IllegalStateException(String.format("Failed to find method %s on %s",
+                                                              setMaxFileSizeMethodName,
+                                                              policy.getClass()));
+            }
+        }
+
+        try
+        {
+            maxFileSizeMethod.invoke(policy, maxFileSizeArg);
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new RuntimeException(String.format("Failed to reflectively invoke %s", maxFileSizeMethod.getName()),
+                                       e);
+        }
+        catch (InvocationTargetException e)
+        {
+            throw new RuntimeException(String.format("Failed to reflectively invoke %s", maxFileSizeMethod.getName()),
+                                       e.getCause());
+        }
+    }
+
     static void validateLogFilePermissions(final File file)
     {
         if ((file.exists() && (!file.isFile() || !file.canWrite())) || !file.getAbsoluteFile().getParentFile().canWrite())
@@ -114,12 +162,14 @@ public class AppenderUtils
     static class DailyTriggeringPolicy extends SizeAndTimeBasedFNATP<ILoggingEvent>
     {
         private final boolean _rollOnRestart;
+        private final String _maxFileSize;
         private boolean _isFirst = true;
 
         public DailyTriggeringPolicy(boolean isRollOnRestart, String maxFileSize)
         {
             _rollOnRestart = isRollOnRestart;
-            setMaxFileSize(maxFileSize);
+            _maxFileSize = maxFileSize;
+            AppenderUtils.setMaxFileSize(this, FileSize.valueOf(maxFileSize));
         }
 
         @Override
@@ -147,18 +197,23 @@ public class AppenderUtils
             }
         }
 
+        public String getMaxFileSizeAsString()
+        {
+            return _maxFileSize;
+        }
     }
 
     static class SizeTriggeringPolicy extends SizeBasedTriggeringPolicy<ILoggingEvent>
     {
         private final boolean _rollOnRestart;
+        private final String _maxFileSize;
         private boolean _isFirst = true;
 
         public SizeTriggeringPolicy(boolean isRollOnRestart, String maxFileSize)
         {
             _rollOnRestart = isRollOnRestart;
-            setMaxFileSize(maxFileSize);
-
+            _maxFileSize = maxFileSize;
+            AppenderUtils.setMaxFileSize(this, FileSize.valueOf(maxFileSize));
         }
 
         @Override
@@ -175,6 +230,10 @@ public class AppenderUtils
             }
         }
 
+        public String getMaxFileSizeAsString()
+        {
+            return _maxFileSize;
+        }
     }
 
     static class SimpleRollingPolicy extends FixedWindowRollingPolicy

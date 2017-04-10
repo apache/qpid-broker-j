@@ -187,7 +187,7 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     private File getFileFromSiftingAppender(final ch.qos.logback.classic.Logger logger)
     {
-        String key = MDC.get(QpidTestCase.CLASS_QUALIFIED_TEST_NAME);
+        String key = logger.getLoggerContext().getProperty(QpidTestCase.CLASS_QUALIFIED_TEST_NAME);
 
         for (Iterator<Appender<ILoggingEvent>> index = logger.iteratorForAppenders(); index.hasNext(); /* do nothing */ )
         {
@@ -278,16 +278,17 @@ public class QpidBrokerTestCase extends QpidTestCase
             String remotelogback = "remotelogback";
 
             Map<String, String> mdc = new HashMap<>();
-            mdc.put(CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
             mdc.put("origin", "B-" + actualPort);
+
+            Map<String, String> contextProperties = new HashMap<>();
+            contextProperties.put(QpidBrokerTestCase.CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
 
             Map<String, Object> loggerAttrs = new HashMap<>();
             loggerAttrs.put(BrokerLogger.TYPE, BrokerLogbackSocketLogger.TYPE);
             loggerAttrs.put(BrokerLogbackSocketLogger.NAME, remotelogback);
             loggerAttrs.put(BrokerLogbackSocketLogger.PORT, LOGBACK_REMOTE_PORT);
-
-            loggerAttrs.put(BrokerLogbackSocketLogger.MAPPED_DIAGNOSTIC_CONTEXT,
-                            mdc);
+            loggerAttrs.put(BrokerLogbackSocketLogger.MAPPED_DIAGNOSTIC_CONTEXT, mdc);
+            loggerAttrs.put(BrokerLogbackSocketLogger.CONTEXT_PROPERTIES, contextProperties);
 
             configuration.addObjectConfiguration(BrokerLogger.class, loggerAttrs);
 

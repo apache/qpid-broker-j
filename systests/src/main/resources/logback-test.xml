@@ -29,7 +29,7 @@
     <define name="receiverPort" class="org.apache.qpid.test.utils.LogbackSocketPortNumberDefiner"/>
 
     <appender name="RootSiftAppender" class="ch.qos.logback.classic.sift.SiftingAppender">
-        <discriminator>
+        <discriminator class="org.apache.qpid.test.utils.LogbackPropertyValueDiscriminator">
             <Key>classQualifiedTestName</Key>
             <DefaultValue>testrun</DefaultValue>
         </discriminator>
@@ -39,7 +39,7 @@
                 <Append>False</Append>
                 <encoder>
                     <!-- origin identifies the broker, valuable when the test involves multiple brokers -->
-                    <pattern>%date %-7X{origin} %-5level [%thread] %logger{10} %msg%n</pattern>
+                    <pattern>%date %-8X{origin} %-5level [%thread] %logger{10} %msg%n</pattern>
                 </encoder>
             </appender>
         </sift>

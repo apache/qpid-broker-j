@@ -37,6 +37,7 @@ public interface BrokerLogbackSocketLogger<X extends BrokerLogbackSocketLogger<X
     String RECONNECTION_DELAY = "reconnectionDelay";
     String INCLUDE_CALLER_DATA = "includeCallerData";
     String MAPPED_DIAGNOSTIC_CONTEXT = "mappedDiagnosticContext";
+    String CONTEXT_PROPERTIES = "contextProperties";
 
     @ManagedAttribute(mandatory = true)
     int getPort();
@@ -50,6 +51,11 @@ public interface BrokerLogbackSocketLogger<X extends BrokerLogbackSocketLogger<X
     @ManagedAttribute(defaultValue = "true")
     boolean getIncludeCallerData();
 
-    @ManagedAttribute( defaultValue = "{}")
+    @ManagedAttribute(defaultValue = "{}",
+            description = "The mapped diagnostic context that will accompany each logging event before being sent to the remote host.")
     Map<String, String> getMappedDiagnosticContext();
+
+    @ManagedAttribute(defaultValue = "{}",
+            description = "Context properties that will be added to the global logback logging context.")
+    Map<String, String> getContextProperties();
 }

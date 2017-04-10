@@ -25,7 +25,7 @@ Apache Qpid JMS Client for AMQP 0-9-1/0-10
 
 
 From: 'QOS.ch' (http://www.qos.ch)
-  - SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:1.7.12
+  - SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:1.7.25
     License: MIT License  (http://www.opensource.org/licenses/mit-license.php)
 
 From: 'The Apache Software Foundation' (http://www.apache.org/)
