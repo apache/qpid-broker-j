@@ -71,7 +71,7 @@ public class ExceptionHandlingFilter implements Filter
 
             if (e instanceof  ServerScopedRuntimeException)
             {
-                sendError((ServerScopedRuntimeException)e, servletResponse, HttpServletResponse.SC_GATEWAY_TIMEOUT);
+                sendError((ServerScopedRuntimeException)e, servletResponse, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
             throw e;
         }
