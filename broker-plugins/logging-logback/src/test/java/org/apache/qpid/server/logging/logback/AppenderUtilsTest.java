@@ -28,19 +28,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ScheduledExecutorService;
 
+import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Context;
 import ch.qos.logback.core.encoder.Encoder;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.RollingPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.TriggeringPolicy;
 import ch.qos.logback.core.rolling.helper.CompressionMode;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.logback.AppenderUtils;
-import org.apache.qpid.server.logging.logback.FileLoggerSettings;
-import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AppenderUtilsTest extends QpidTestCase
@@ -80,7 +78,7 @@ public class AppenderUtilsTest extends QpidTestCase
     public void testCreateRollingFileAppenderDailyRolling()
     {
         final RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
-        AppenderUtils.configureRollingFileAppender(_settings, mock(Context.class), appender);
+        AppenderUtils.configureRollingFileAppender(_settings, new LoggerContext(), appender);
 
         assertEquals("Unexpected appender file name", _testLogFileName, appender.getFile());
 
@@ -98,7 +96,7 @@ public class AppenderUtilsTest extends QpidTestCase
         assertTrue("Unexpected triggering policy", triggeringPolicy instanceof AppenderUtils.DailyTriggeringPolicy);
         assertEquals("Unexpected triggering policy",
                 String.valueOf(MAX_FILE_SIZE) + "MB",
-                ((AppenderUtils.DailyTriggeringPolicy) triggeringPolicy).getMaxFileSize());
+                ((AppenderUtils.DailyTriggeringPolicy) triggeringPolicy).getMaxFileSizeAsString().toString());
         assertEquals("Unexpected layout", LAYOUT, ((PatternLayoutEncoder) appender.getEncoder()).getPattern());
     }
 
@@ -108,7 +106,7 @@ public class AppenderUtilsTest extends QpidTestCase
         when(_settings.isCompressOldFiles()).thenReturn(Boolean.FALSE);
 
         RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
-        AppenderUtils.configureRollingFileAppender(_settings, mock(Context.class), appender);
+        AppenderUtils.configureRollingFileAppender(_settings, new LoggerContext(), appender);
 
         assertEquals("Unexpected appender file name", _testLogFileName, appender.getFile());
 
@@ -123,7 +121,7 @@ public class AppenderUtilsTest extends QpidTestCase
         TriggeringPolicy triggeringPolicy = appender.getTriggeringPolicy();
         assertEquals("Unexpected triggering policy",
                 String.valueOf(MAX_FILE_SIZE) + "MB",
-                ((AppenderUtils.SizeTriggeringPolicy) triggeringPolicy).getMaxFileSize());
+                ((AppenderUtils.SizeTriggeringPolicy) triggeringPolicy).getMaxFileSizeAsString().toString());
 
         Encoder encoder = appender.getEncoder();
         assertTrue("Unexpected encoder", encoder instanceof PatternLayoutEncoder);
