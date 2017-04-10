@@ -1,4 +1,5 @@
-/*
+package org.apache.qpid.tests.protocol.v1_0;/*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,30 +16,19 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
 
-package org.apache.qpid.tests.protocol.v1_0;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import java.lang.reflect.Method;
-import java.net.InetSocketAddress;
 
-import org.apache.qpid.server.plugin.Pluggable;
-
-public interface BrokerAdmin extends Pluggable
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface SpecificationTest
 {
-    void beforeTestClass(final Class testClass);
-    void beforeTestMethod(final Class testClass, final Method method);
-    void afterTestMethod(final Class testClass, final Method method);
-    void afterTestClass(final Class testClass);
-
-    InetSocketAddress getBrokerAddress(PortType portType);
-
-    void createQueue(String queueName);
-    void deleteQueue(String queueName);
-
-    enum PortType
-    {
-        ANONYMOUS_AMQP,
-        AMQP
-    }
+    String section();
+    String description();
 }

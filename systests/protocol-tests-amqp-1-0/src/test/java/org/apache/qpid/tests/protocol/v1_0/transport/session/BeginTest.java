@@ -38,10 +38,13 @@ import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
+import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 
 public class BeginTest extends ProtocolTestBase
 {
     @Test
+    @SpecificationTest(section = "1.3.4",
+            description = "Begin without mandatory fields should result in a decoding error.")
     public void emptyBegin() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
@@ -63,6 +66,9 @@ public class BeginTest extends ProtocolTestBase
     }
 
     @Test
+    @SpecificationTest(section = "2.5.1",
+            description = "Sessions are established by creating a session endpoint, assigning it to an unused channel number, "
+                          + "and sending a begin announcing the association of the session endpoint with the outgoing channel.")
     public void successfulBegin() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);

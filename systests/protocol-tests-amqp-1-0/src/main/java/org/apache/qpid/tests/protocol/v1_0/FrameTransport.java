@@ -19,15 +19,21 @@
 
 package org.apache.qpid.tests.protocol.v1_0;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertNull;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.util.concurrent.JdkFutureAdapters;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -46,14 +52,17 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 
 public class FrameTransport implements AutoCloseable
 {
     private static final long RESPONSE_TIMEOUT = 6000;
-    private static final AtomicInteger _amqpConnectionIdGenerator = new AtomicInteger(1);
-    private static final AtomicInteger _amqpChannelIdGenerator = new AtomicInteger(1);
+    private static final Set<Integer> _amqpConnectionIds = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private final Channel _channel;
     private final BlockingQueue<Response> _queue = new ArrayBlockingQueue<>(100);
@@ -99,6 +108,7 @@ public class FrameTransport implements AutoCloseable
         }
         finally
         {
+            _amqpConnectionIds.remove(_amqpConnectionId);
             _workerGroup.shutdownGracefully();
         }
     }
@@ -146,8 +156,8 @@ public class FrameTransport implements AutoCloseable
     {
         doProtocolNegotiation();
         Open open = new Open();
-        _amqpConnectionId = _amqpConnectionIdGenerator.getAndIncrement();
-        open.setContainerId(String.format("testContainer-%d", _amqpConnectionId));
+
+        open.setContainerId(String.format("testContainer-%d", getConnectionId()));
         TransportFrame transportFrame = new TransportFrame((short) 0, open);
         sendPerformative(transportFrame);
         PerformativeResponse response = (PerformativeResponse) getNextResponse();
@@ -164,7 +174,7 @@ public class FrameTransport implements AutoCloseable
         begin.setNextOutgoingId(UnsignedInteger.ZERO);
         begin.setIncomingWindow(UnsignedInteger.ZERO);
         begin.setOutgoingWindow(UnsignedInteger.ZERO);
-        _amqpChannelId = (short) _amqpChannelIdGenerator.getAndIncrement();
+        _amqpChannelId = (short) 1;
         sendPerformative(new TransportFrame(_amqpChannelId, begin));
         PerformativeResponse response = (PerformativeResponse) getNextResponse();
         if (!(response.getFrameBody() instanceof Begin))
@@ -173,9 +183,45 @@ public class FrameTransport implements AutoCloseable
         }
     }
 
+    public void doAttachReceivingLink(String queueName) throws Exception
+    {
+        doBeginSession();
+        Role localRole = Role.RECEIVER;
+        Attach attach = new Attach();
+        attach.setName("testReceivingLink");
+        attach.setHandle(new UnsignedInteger(0));
+        attach.setRole(localRole);
+        Source source = new Source();
+        source.setAddress(queueName);
+        attach.setSource(source);
+        Target target = new Target();
+        attach.setTarget(target);
+
+        sendPerformative(attach);
+        PerformativeResponse response = (PerformativeResponse) getNextResponse();
+
+        assertThat(response, is(notNullValue()));
+        assertThat(response.getFrameBody(), is(instanceOf(Attach.class)));
+        Attach responseAttach = (Attach) response.getFrameBody();
+        assertThat(responseAttach.getSource(), is(notNullValue()));
+    }
+
     public void assertNoMoreResponses() throws Exception
     {
         Response response = getNextResponse();
         assertNull("Unexpected response.", response);
+    }
+
+    private int getConnectionId()
+    {
+        if (_amqpConnectionId == 0)
+        {
+            _amqpConnectionId = 1;
+            while (!_amqpConnectionIds.add(_amqpConnectionId))
+            {
+                ++_amqpConnectionId;
+            }
+        }
+        return _amqpConnectionId;
     }
 }

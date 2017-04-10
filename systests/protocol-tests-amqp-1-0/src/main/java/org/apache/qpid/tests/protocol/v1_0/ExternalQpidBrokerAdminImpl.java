@@ -86,6 +86,12 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public void deleteQueue(final String queueName)
+    {
+        LOGGER.debug(String.format("deletion of queue '%s' requested", queueName));
+    }
+
+    @Override
     public String getType()
     {
         return "EXTERNAL_BROKER";

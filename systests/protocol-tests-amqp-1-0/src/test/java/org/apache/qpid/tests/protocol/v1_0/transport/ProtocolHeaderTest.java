@@ -31,6 +31,7 @@ import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.HeaderResponse;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
+import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 
 
 /*
@@ -50,6 +51,11 @@ queue creation?
 public class ProtocolHeaderTest extends ProtocolTestBase
 {
     @Test
+    @SpecificationTest(section = "2.2",
+            description = "Prior to sending any frames on a connection, each peer MUST start by sending a protocol header that indicates "
+                          + "the protocol version used on the connection. The protocol header consists of the upper case ASCII letters “AMQP” "
+                          + "followed by a protocol id of zero, followed by three unsigned bytes representing the major, minor, and revision of "
+                          + "the protocol version (currently 1 (MAJOR), 0 (MINOR), 0 (REVISION)).")
     public void successfulHeaderExchange() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);

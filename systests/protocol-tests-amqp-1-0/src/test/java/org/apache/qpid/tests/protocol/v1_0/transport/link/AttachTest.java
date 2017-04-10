@@ -42,10 +42,13 @@ import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
+import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 
 public class AttachTest extends ProtocolTestBase
 {
     @Test
+    @SpecificationTest(section = "1.3.4",
+            description = "Attach without mandatory fields should result in a decoding error.")
     public void emptyAttach() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
@@ -66,6 +69,9 @@ public class AttachTest extends ProtocolTestBase
     }
 
     @Test
+    @SpecificationTest(section = "2.6.3",
+            description = "Links are established and/or resumed by creating a link endpoint associated with a local terminus, "
+                          + "assigning it to an unused handle, and sending an attach frame.")
     public void successfulAttachAsSender() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
@@ -98,6 +104,9 @@ public class AttachTest extends ProtocolTestBase
     }
 
     @Test
+    @SpecificationTest(section = "2.6.3",
+            description = "Links are established and/or resumed by creating a link endpoint associated with a local terminus, "
+                          + "assigning it to an unused handle, and sending an attach frame.")
     public void successfulAttachAsReceiver() throws Exception
     {
         String queueName = "testQueue";

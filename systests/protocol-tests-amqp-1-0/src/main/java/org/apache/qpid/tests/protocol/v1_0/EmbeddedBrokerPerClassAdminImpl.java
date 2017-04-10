@@ -24,10 +24,11 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,12 +43,14 @@ import org.apache.qpid.server.logging.logback.LogbackLoggingSystemLauncherListen
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
+import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.store.MemoryConfigurationStore;
+import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
 
 @PluggableService
@@ -58,6 +61,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     private SystemLauncher _systemLauncher;
     private Container<?> _broker;
     private VirtualHostNode<?> _currentVirtualHostNode;
+    private String _currentWorkDirectory;
 
     @Override
     public void beforeTestClass(final Class testClass)
@@ -65,10 +69,11 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         LOGGER.info("beforeTestClass " + testClass.getSimpleName());
         try
         {
-            Path qpidWorkDir = Files.createTempDirectory("qpid-work-");
+            String timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date(System.currentTimeMillis()));
+            _currentWorkDirectory = Files.createTempDirectory(String.format("qpid-work-%s-%s-", timestamp, testClass.getSimpleName())).toString();
 
             Map<String,String> context = new HashMap<>();
-            context.put("qpid.work_dir", qpidWorkDir.toString());
+            context.put("qpid.work_dir", _currentWorkDirectory);
             context.put("qpid.port.protocol_handshake_timeout", "1000000");
 
             Map<String,Object> systemConfigAttributes = new HashMap<>();
@@ -135,7 +140,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     public void afterTestMethod(final Class testClass, final Method method)
     {
         LOGGER.info("afterTestMethod " + testClass.getSimpleName() + "#" + method.getName());
-        if (!Boolean.getBoolean("qpid.tests.protocols.keepVirtualHosts"))
+        if (Boolean.getBoolean("broker.clean.between.tests"))
         {
             _currentVirtualHostNode.delete();
         }
@@ -147,6 +152,10 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         LOGGER.info("afterTestClass " + testClass.getSimpleName());
         _systemLauncher.shutdown();
         _ports.clear();
+        if (Boolean.getBoolean("broker.clean.between.tests"))
+        {
+            FileUtils.delete(new File(_currentWorkDirectory), true);
+        }
     }
 
     @Override
@@ -170,9 +179,28 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public void deleteQueue(final String queueName)
+    {
+        getQueue(queueName).delete();
+    }
+
+    @Override
     public String getType()
     {
         return "EMBEDDED_BROKER_PER_CLASS";
+    }
+
+    private Queue getQueue(final String queueName)
+    {
+        Collection<Queue> queues = _currentVirtualHostNode.getVirtualHost().getChildren(Queue.class);
+        for (Queue queue : queues)
+        {
+            if (queue.getName().equals(queueName))
+            {
+                return queue;
+            }
+        }
+        throw new NotFoundException(String.format("Queue '%s' not found", queueName));
     }
 
     private class PortExtractingLauncherListener implements SystemLauncherListener
