@@ -77,12 +77,11 @@ public class AttachTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr))
         {
-            Role localRole = Role.SENDER;
             transport.doBeginSession();
             Attach attach = new Attach();
             attach.setName("testLink");
             attach.setHandle(new UnsignedInteger(0));
-            attach.setRole(localRole);
+            attach.setRole(Role.SENDER);
             attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
             Source source = new Source();
             attach.setSource(source);

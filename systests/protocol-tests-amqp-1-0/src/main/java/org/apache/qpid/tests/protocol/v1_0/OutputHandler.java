@@ -64,6 +64,7 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
                 {
                     ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
                     buffer.writeBytes(msg.asByteBuffer());
+                    msg.dispose();
                     try
                     {
                         OutputHandler.super.write(ctx, buffer, promise);

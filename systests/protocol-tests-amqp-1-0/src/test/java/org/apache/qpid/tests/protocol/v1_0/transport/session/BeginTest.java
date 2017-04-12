@@ -52,9 +52,7 @@ public class BeginTest extends ProtocolTestBase
         {
             transport.doOpenConnection();
             Begin begin = new Begin();
-            short channel = (short) 37;
-            TransportFrame transportFrame = new TransportFrame(channel, begin);
-            transport.sendPerformative(transportFrame);
+            transport.sendPerformative(begin, UnsignedShort.valueOf((short) 37));
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
@@ -81,8 +79,7 @@ public class BeginTest extends ProtocolTestBase
             begin.setOutgoingWindow(UnsignedInteger.ZERO);
 
             UnsignedShort channel = UnsignedShort.valueOf((short) 37);
-            TransportFrame transportFrame = new TransportFrame(channel.shortValue(), begin);
-            transport.sendPerformative(transportFrame);
+            transport.sendPerformative(begin, channel);
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));

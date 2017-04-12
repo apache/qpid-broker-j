@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -44,25 +45,32 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.core.Is;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public class FrameTransport implements AutoCloseable
 {
-    private static final long RESPONSE_TIMEOUT = 6000;
-    private static final Set<Integer> _amqpConnectionIds = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private static final Set<Integer> AMQP_CONNECTION_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    public static final long RESPONSE_TIMEOUT = 6000;
 
     private final Channel _channel;
     private final BlockingQueue<Response> _queue = new ArrayBlockingQueue<>(100);
@@ -108,7 +116,7 @@ public class FrameTransport implements AutoCloseable
         }
         finally
         {
-            _amqpConnectionIds.remove(_amqpConnectionId);
+            AMQP_CONNECTION_IDS.remove(_amqpConnectionId);
             _workerGroup.shutdownGracefully();
         }
     }
@@ -122,8 +130,10 @@ public class FrameTransport implements AutoCloseable
         return JdkFutureAdapters.listenInPoolThread(channelFuture);
     }
 
-    public ListenableFuture<Void> sendPerformative(final TransportFrame transportFrame) throws Exception
+    public ListenableFuture<Void> sendPerformative(final FrameBody frameBody, UnsignedShort channel) throws Exception
     {
+        final List<QpidByteBuffer> payload = frameBody instanceof Transfer ? ((Transfer)frameBody).getPayload() : null;
+        TransportFrame transportFrame = new TransportFrame(channel.shortValue(), frameBody, payload);
         ChannelFuture channelFuture = _channel.writeAndFlush(transportFrame);
         channelFuture.sync();
         return JdkFutureAdapters.listenInPoolThread(channelFuture);
@@ -131,8 +141,30 @@ public class FrameTransport implements AutoCloseable
 
     public ListenableFuture<Void> sendPerformative(final FrameBody frameBody) throws Exception
     {
-        TransportFrame transportFrame = new TransportFrame(_amqpChannelId, frameBody);
-        return sendPerformative(transportFrame);
+        return sendPerformative(frameBody, UnsignedShort.valueOf(_amqpChannelId));
+    }
+
+    public ListenableFuture<Void> sendPipelined(final byte[] protocolHeader, final TransportFrame... frames)
+            throws InterruptedException
+    {
+        ChannelPromise promise = _channel.newPromise();
+        if (protocolHeader != null)
+        {
+            ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
+            buffer.writeBytes(protocolHeader);
+            _channel.write(buffer);
+        }
+        for (TransportFrame frame : frames)
+        {
+            _channel.write(frame, promise);
+        }
+        _channel.flush();
+        return JdkFutureAdapters.listenInPoolThread(promise);
+    }
+
+    public ListenableFuture<Void> sendPipelined(final TransportFrame... frames) throws InterruptedException
+    {
+        return sendPipelined(null, frames);
     }
 
     public Response getNextResponse() throws Exception
@@ -158,8 +190,7 @@ public class FrameTransport implements AutoCloseable
         Open open = new Open();
 
         open.setContainerId(String.format("testContainer-%d", getConnectionId()));
-        TransportFrame transportFrame = new TransportFrame((short) 0, open);
-        sendPerformative(transportFrame);
+        sendPerformative(open, UnsignedShort.valueOf((short) 0));
         PerformativeResponse response = (PerformativeResponse) getNextResponse();
         if (!(response.getFrameBody() instanceof Open))
         {
@@ -175,7 +206,7 @@ public class FrameTransport implements AutoCloseable
         begin.setIncomingWindow(UnsignedInteger.ZERO);
         begin.setOutgoingWindow(UnsignedInteger.ZERO);
         _amqpChannelId = (short) 1;
-        sendPerformative(new TransportFrame(_amqpChannelId, begin));
+        sendPerformative(begin, UnsignedShort.valueOf(_amqpChannelId));
         PerformativeResponse response = (PerformativeResponse) getNextResponse();
         if (!(response.getFrameBody() instanceof Begin))
         {
@@ -206,6 +237,35 @@ public class FrameTransport implements AutoCloseable
         assertThat(responseAttach.getSource(), is(notNullValue()));
     }
 
+    public void doAttachSendingLink(final UnsignedInteger handle,
+                                    final String destination) throws Exception
+    {
+        doBeginSession();
+        Attach attach = new Attach();
+        attach.setName("testSendingLink");
+        attach.setHandle(handle);
+        attach.setRole(Role.SENDER);
+        attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
+        Source source = new Source();
+        attach.setSource(source);
+        Target target = new Target();
+        target.setAddress(destination);
+        attach.setTarget(target);
+
+        sendPerformative(attach);
+        PerformativeResponse response = (PerformativeResponse) getNextResponse();
+
+        assertThat(response, is(notNullValue()));
+        assertThat(response.getFrameBody(), is(instanceOf(Attach.class)));
+        Attach responseAttach = (Attach) response.getFrameBody();
+        assertThat(responseAttach.getTarget(), is(notNullValue()));
+
+
+        PerformativeResponse flowResponse = (PerformativeResponse) getNextResponse();
+        assertThat(flowResponse, Is.is(CoreMatchers.notNullValue()));
+        assertThat(flowResponse.getFrameBody(), Is.is(CoreMatchers.instanceOf(Flow.class)));
+    }
+
     public void assertNoMoreResponses() throws Exception
     {
         Response response = getNextResponse();
@@ -217,7 +277,7 @@ public class FrameTransport implements AutoCloseable
         if (_amqpConnectionId == 0)
         {
             _amqpConnectionId = 1;
-            while (!_amqpConnectionIds.add(_amqpConnectionId))
+            while (!AMQP_CONNECTION_IDS.add(_amqpConnectionId))
             {
                 ++_amqpConnectionId;
             }

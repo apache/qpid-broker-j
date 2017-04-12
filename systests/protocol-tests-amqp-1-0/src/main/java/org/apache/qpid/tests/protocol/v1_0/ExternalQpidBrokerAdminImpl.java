@@ -92,6 +92,12 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public void putMessageOnQueue(final String queueName, final String... messages)
+    {
+        LOGGER.debug(String.format("puting of %d messages on queue '%s' requested", messages.length, queueName));
+    }
+
+    @Override
     public String getType()
     {
         return "EXTERNAL_BROKER";

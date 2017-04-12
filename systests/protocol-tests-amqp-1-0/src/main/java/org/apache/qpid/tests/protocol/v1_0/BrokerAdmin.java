@@ -26,6 +26,8 @@ import org.apache.qpid.server.plugin.Pluggable;
 
 public interface BrokerAdmin extends Pluggable
 {
+    String TEST_QUEUE_NAME = "testQueue";
+
     void beforeTestClass(final Class testClass);
     void beforeTestMethod(final Class testClass, final Method method);
     void afterTestMethod(final Class testClass, final Method method);
@@ -35,6 +37,7 @@ public interface BrokerAdmin extends Pluggable
 
     void createQueue(String queueName);
     void deleteQueue(String queueName);
+    void putMessageOnQueue(String queueName, String... messages);
 
     enum PortType
     {

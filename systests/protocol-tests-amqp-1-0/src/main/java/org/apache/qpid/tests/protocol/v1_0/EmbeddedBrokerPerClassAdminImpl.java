@@ -43,6 +43,7 @@ import org.apache.qpid.server.logging.logback.LogbackLoggingSystemLauncherListen
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
+import org.apache.qpid.server.model.ManageableMessage;
 import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Queue;
@@ -51,6 +52,7 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.store.MemoryConfigurationStore;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
 
 @PluggableService
@@ -144,6 +146,11 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         {
             _currentVirtualHostNode.delete();
         }
+        else
+        {
+            _currentVirtualHostNode.setAttributes(Collections.singletonMap(VirtualHostNode.DEFAULT_VIRTUAL_HOST_NODE,
+                                                                           false));
+        }
     }
 
     @Override
@@ -182,6 +189,101 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     public void deleteQueue(final String queueName)
     {
         getQueue(queueName).delete();
+    }
+
+    @Override
+    public void putMessageOnQueue(final String queueName, final String... messages)
+    {
+        for (String message : messages)
+        {
+            ((QueueManagingVirtualHost<?>) _currentVirtualHostNode.getVirtualHost()).publishMessage(new ManageableMessage()
+            {
+                @Override
+                public String getAddress()
+                {
+                    return queueName;
+                }
+
+                @Override
+                public boolean isPersistent()
+                {
+                    return false;
+                }
+
+                @Override
+                public Date getExpiration()
+                {
+                    return null;
+                }
+
+                @Override
+                public String getCorrelationId()
+                {
+                    return null;
+                }
+
+                @Override
+                public String getAppId()
+                {
+                    return null;
+                }
+
+                @Override
+                public String getMessageId()
+                {
+                    return null;
+                }
+
+                @Override
+                public String getMimeType()
+                {
+                    return "text/plain";
+                }
+
+                @Override
+                public String getEncoding()
+                {
+                    return null;
+                }
+
+                @Override
+                public int getPriority()
+                {
+                    return 0;
+                }
+
+                @Override
+                public Date getNotValidBefore()
+                {
+                    return null;
+                }
+
+                @Override
+                public String getReplyTo()
+                {
+                    return null;
+                }
+
+                @Override
+                public Map<String, Object> getHeaders()
+                {
+                    return null;
+                }
+
+                @Override
+                public Object getContent()
+                {
+                    return message;
+                }
+
+                @Override
+                public String getContentTransferEncoding()
+                {
+                    return null;
+                }
+            });
+        }
+
     }
 
     @Override

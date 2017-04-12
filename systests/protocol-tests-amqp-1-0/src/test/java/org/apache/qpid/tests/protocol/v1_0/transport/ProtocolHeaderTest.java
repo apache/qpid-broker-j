@@ -59,7 +59,7 @@ public class ProtocolHeaderTest extends ProtocolTestBase
     public void successfulHeaderExchange() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try(FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(addr))
         {
             byte[] bytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
             transport.sendProtocolHeader(bytes);
