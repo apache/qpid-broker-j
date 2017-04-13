@@ -26,6 +26,8 @@ import ch.qos.logback.core.sift.AbstractDiscriminator;
 
 public class LogbackPropertyValueDiscriminator extends AbstractDiscriminator<ILoggingEvent>
 {
+    public static final String CLASS_QUALIFIED_TEST_NAME = "classQualifiedTestName";
+
     private String _key;
     private String _defaultValue;
 

@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,7 @@ import org.apache.qpid.server.store.MemoryConfigurationStore;
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
+import org.apache.qpid.test.utils.LogbackPropertyValueDiscriminator;
 
 @PluggableService
 public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
@@ -68,7 +70,8 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     @Override
     public void beforeTestClass(final Class testClass)
     {
-        LOGGER.info("beforeTestClass " + testClass.getSimpleName());
+        setClassQualifiedTestName(testClass.getName());
+        LOGGER.info("========================= starting broker for test class : " + testClass.getSimpleName());
         try
         {
             String timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date(System.currentTimeMillis()));
@@ -107,7 +110,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     @Override
     public void beforeTestMethod(final Class testClass, final Method method)
     {
-        LOGGER.info("beforeTestMethod " + testClass.getSimpleName() + "#" + method.getName());
+        LOGGER.info("========================= prepare test environment for test : " + testClass.getSimpleName() + "#" + method.getName());
 
         final String virtualHostNodeName = testClass.getSimpleName() + "_" + method.getName();
         final String storeType = System.getProperty("virtualhostnode.type");
@@ -136,12 +139,18 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         }
 
         _currentVirtualHostNode = _broker.createChild(VirtualHostNode.class, attributes);
+
+        LOGGER.info("========================= executing test : " + testClass.getSimpleName() + "#" + method.getName());
+        setClassQualifiedTestName(testClass.getName() + "." + method.getName());
+        LOGGER.info("========================= start executing test : " + testClass.getSimpleName() + "#" + method.getName());
     }
 
     @Override
     public void afterTestMethod(final Class testClass, final Method method)
     {
-        LOGGER.info("afterTestMethod " + testClass.getSimpleName() + "#" + method.getName());
+        LOGGER.info("========================= stop executing test : " + testClass.getSimpleName() + "#" + method.getName());
+        setClassQualifiedTestName(testClass.getName());
+        LOGGER.info("========================= cleaning up test environment for test : " + testClass.getSimpleName() + "#" + method.getName());
         if (Boolean.getBoolean("broker.clean.between.tests"))
         {
             _currentVirtualHostNode.delete();
@@ -151,18 +160,22 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             _currentVirtualHostNode.setAttributes(Collections.singletonMap(VirtualHostNode.DEFAULT_VIRTUAL_HOST_NODE,
                                                                            false));
         }
+        setClassQualifiedTestName(testClass.getName());
+        LOGGER.info("========================= cleaning done for test : " + testClass.getSimpleName() + "#" + method.getName());
     }
 
     @Override
     public void afterTestClass(final Class testClass)
     {
-        LOGGER.info("afterTestClass " + testClass.getSimpleName());
+        LOGGER.info("========================= stopping broker for test class: " + testClass.getSimpleName());
         _systemLauncher.shutdown();
         _ports.clear();
         if (Boolean.getBoolean("broker.clean.between.tests"))
         {
             FileUtils.delete(new File(_currentWorkDirectory), true);
         }
+        LOGGER.info("========================= stopping broker done for test class : " + testClass.getSimpleName());
+        setClassQualifiedTestName(null);
     }
 
     @Override
@@ -303,6 +316,12 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             }
         }
         throw new NotFoundException(String.format("Queue '%s' not found", queueName));
+    }
+
+    private void setClassQualifiedTestName(final String name)
+    {
+        final LoggerContext loggerContext = ((ch.qos.logback.classic.Logger) LOGGER).getLoggerContext();
+        loggerContext.putProperty(LogbackPropertyValueDiscriminator.CLASS_QUALIFIED_TEST_NAME, name);
     }
 
     private class PortExtractingLauncherListener implements SystemLauncherListener

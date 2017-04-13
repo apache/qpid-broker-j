@@ -56,7 +56,6 @@ public class QpidTestCase extends TestCase
     public static final String TEST_PROFILES_DIR = QPID_HOME + File.separator + ".." + File.separator + "test-profiles" + File.separator;
     public static final String TEST_RESOURCES_DIR = TEST_PROFILES_DIR + "test_resources/";
     public static final String TMP_FOLDER = System.getProperty("java.io.tmpdir");
-    public static final String CLASS_QUALIFIED_TEST_NAME = "classQualifiedTestName";
 
     private static final Logger _logger = LoggerFactory.getLogger(QpidTestCase.class);
     private static QpidTestCase _currentInstance;
@@ -151,7 +150,7 @@ public class QpidTestCase extends TestCase
         try
         {
             _currentInstance = this;
-            loggerContext.putProperty(CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
+            loggerContext.putProperty(LogbackPropertyValueDiscriminator.CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
 
             if (_exclusionList.contains(getClass().getPackage().getName() + ".*") ||
                 _exclusionList.contains(getClass().getName() + "#*") ||
@@ -170,7 +169,7 @@ public class QpidTestCase extends TestCase
         {
             _logger.info(ClassicConstants.FINALIZE_SESSION_MARKER, "Shutting down sub-appender");
             _currentInstance = null;
-            loggerContext.putProperty(CLASS_QUALIFIED_TEST_NAME, null);
+            loggerContext.putProperty(LogbackPropertyValueDiscriminator.CLASS_QUALIFIED_TEST_NAME, null);
             revertTestSystemProperties();
         }
     }

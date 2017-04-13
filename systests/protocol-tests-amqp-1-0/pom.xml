@@ -46,17 +46,49 @@
             <artifactId>qpid-broker-codegen</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.qpid</groupId>
+            <artifactId>qpid-test-utils</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.qpid</groupId>
+            <artifactId>qpid-broker-plugins-logging-logback</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.qpid</groupId>
+            <artifactId>qpid-broker-plugins-derby-store</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.qpid</groupId>
+            <artifactId>qpid-broker-plugins-memory-store</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.qpid</groupId>
+            <artifactId>qpid-broker-plugins-amqp-1-0-protocol-jdbc-link-store</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-plugins-amqp-1-0-protocol-bdb-link-store</artifactId>
             <version>${project.version}</version>
             <optional>true</optional>
+            <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.apache.qpid</groupId>
-            <artifactId>qpid-systests</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-bdbstore</artifactId>
@@ -68,7 +100,7 @@
         <dependency>
             <groupId>com.sleepycat</groupId>
             <artifactId>je</artifactId>
-            <scope>provided</scope>
+            <scope>test</scope>
             <optional>true</optional>
         </dependency>
 

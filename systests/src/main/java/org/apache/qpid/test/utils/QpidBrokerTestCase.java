@@ -29,8 +29,6 @@ import java.util.Map;
 import java.util.Properties;
 
 import javax.jms.*;
-import javax.naming.Context;
-import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 import ch.qos.logback.classic.sift.SiftingAppender;
@@ -39,7 +37,6 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.FileAppender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.store.MemoryConfigurationStore;
@@ -779,7 +776,7 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     private File getFileFromSiftingAppender(final ch.qos.logback.classic.Logger logger)
     {
-        String key = logger.getLoggerContext().getProperty(QpidTestCase.CLASS_QUALIFIED_TEST_NAME);
+        String key = logger.getLoggerContext().getProperty(LogbackPropertyValueDiscriminator.CLASS_QUALIFIED_TEST_NAME);
 
         for (Iterator<Appender<ILoggingEvent>> index = logger.iteratorForAppenders(); index.hasNext(); /* do nothing */)
         {

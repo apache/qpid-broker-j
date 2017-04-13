@@ -480,7 +480,7 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
         mdc.put("origin", getLogPrefix());
 
         Map<String, String> contextProperties = new HashMap<>();
-        contextProperties.put(QpidBrokerTestCase.CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
+        contextProperties.put(LogbackPropertyValueDiscriminator.CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
 
         Map<String, Object> loggerAttrs = new HashMap<>();
         loggerAttrs.put(BrokerLogger.TYPE, BrokerLogbackSocketLogger.TYPE);
