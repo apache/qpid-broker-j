@@ -502,6 +502,12 @@ class WebSocketProvider implements AcceptingTransport
             return 0;
         }
 
+        @Override
+        public String getSelectedHost()
+        {
+            return null;
+        }
+
         void setPeerCertificate(final Certificate certificate)
         {
             _certificate = certificate;
