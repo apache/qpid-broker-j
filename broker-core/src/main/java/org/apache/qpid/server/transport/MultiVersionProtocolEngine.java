@@ -71,6 +71,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
     private final Protocol _defaultSupportedReply;
 
     private volatile ProtocolEngine _delegate = new SelfDelegateProtocolEngine();
+    private volatile Thread _ioThread;
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
     private final AggregateTicker _aggregateTicker = new AggregateTicker();
 
@@ -147,6 +148,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
     @Override
     public void setIOThread(final Thread ioThread)
     {
+        _ioThread = ioThread;
         _delegate.setIOThread(ioThread);
     }
 
@@ -517,6 +519,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                         newDelegate.notifyWork();
                     }
                     _delegate = newDelegate;
+                    _delegate.setIOThread(_ioThread);
                     _delegate.setWorkListener(_workListener.get());
                     _header.flip();
                     _delegate.received(_header);
