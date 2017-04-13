@@ -23,7 +23,7 @@
     <contextName>qpid-test-utils</contextName>
 
     <appender name="RootSiftAppender" class="ch.qos.logback.classic.sift.SiftingAppender">
-        <discriminator>
+        <discriminator class="org.apache.qpid.test.utils.LogbackPropertyValueDiscriminator">
             <Key>classQualifiedTestName</Key>
             <DefaultValue>testrun</DefaultValue>
         </discriminator>
