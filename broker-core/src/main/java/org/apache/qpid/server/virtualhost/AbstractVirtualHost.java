@@ -1703,7 +1703,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         public MessageHeaderImpl(final ManageableMessage message)
         {
             _message = message;
-            _userName = AuthenticatedPrincipal.getCurrentUser().getName();
+            final AuthenticatedPrincipal currentUser = AuthenticatedPrincipal.getCurrentUser();
+            _userName = (currentUser == null ? null : currentUser.getName());
             _timestamp = System.currentTimeMillis();
         }
 
