@@ -732,7 +732,16 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 ? getBroker().getNetworkBufferSize()
                 : Math.min(open.getMaxFrameSize().intValue(), getBroker().getNetworkBufferSize());
         _remoteContainerId = open.getContainerId();
-        _localHostname = open.getHostname();
+
+        if(open.getHostname() != null && !"".equals(open.getHostname().trim()))
+        {
+            _localHostname = open.getHostname();
+        }
+
+        if(_localHostname == null || "".equals(_localHostname.trim()) && getNetwork().getSelectedHost() != null)
+        {
+            _localHostname = getNetwork().getSelectedHost();
+        }
         if (open.getIdleTimeOut() != null)
         {
             _idleTimeout = open.getIdleTimeOut().longValue();
@@ -932,12 +941,26 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     public void receiveSaslInit(final SaslInit saslInit)
     {
         assertState(FrameReceivingState.SASL_INIT_ONLY);
+        if(saslInit.getHostname() != null && !"".equals(saslInit.getHostname().trim()))
+        {
+            _localHostname = saslInit.getHostname();
+        }
+        else if(getNetwork().getSelectedHost() != null)
+        {
+            _localHostname = getNetwork().getSelectedHost();
+        }
         String mechanism = saslInit.getMechanism() == null ? null : saslInit.getMechanism().toString();
         final Binary initialResponse = saslInit.getInitialResponse();
         byte[] response = initialResponse == null ? new byte[0] : initialResponse.getArray();
 
         _saslNegotiator = _subjectCreator.createSaslNegotiator(mechanism, this);
         processSaslResponse(response);
+    }
+
+    @Override
+    public String getLocalFQDN()
+    {
+        return _localHostname != null ? _localHostname : super.getLocalFQDN();
     }
 
     private void processSaslResponse(final byte[] response)

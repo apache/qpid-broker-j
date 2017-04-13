@@ -30,4 +30,6 @@ public interface ServerNetworkConnection extends NetworkConnection
     void addSchedulingDelayNotificationListeners(SchedulingDelayNotificationListener listener);
 
     void removeSchedulingDelayNotificationListeners(SchedulingDelayNotificationListener listener);
+
+    String getSelectedHost();
 }

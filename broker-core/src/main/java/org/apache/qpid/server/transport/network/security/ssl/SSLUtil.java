@@ -56,15 +56,17 @@ import java.util.TreeSet;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
+import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.StandardConstants;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.transport.TransportException;
 import org.apache.qpid.server.util.Strings;
 
@@ -611,5 +613,143 @@ public class SSLUtil
         }
         throw new NoSuchAlgorithmException(String.format("Could not create SSLContext with one of the requested protocols: %s",
                                                          Arrays.toString(protocols)));
+    }
+
+    public static boolean isSufficientToDetermineClientSNIHost(QpidByteBuffer buffer)
+    {
+        if(buffer.remaining() < 6)
+        {
+            return false;
+        }
+        else if(looksLikeSSLv3ClientHello(buffer))
+        {
+            final int position = buffer.position();
+            final int recordSize = 5 + (((buffer.get(position + 3) & 0xFF) << 8) | (buffer.get(position + 4) & 0xFF));
+            return buffer.remaining() >= recordSize;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    private static boolean looksLikeSSLv3ClientHello(QpidByteBuffer buffer)
+    {
+        int first = buffer.get(buffer.position()+0);
+        int second = buffer.get(buffer.position()+1);
+        int third = buffer.get(buffer.position()+2);
+        int sixth = buffer.get(buffer.position()+5);
+
+        return first == 22 && // SSL Handshake
+                   (second == 3 && // SSL 3.0 / TLS 1.x
+                    (third == 0 || // SSL 3.0
+                     third == 1 || // TLS 1.0
+                     third == 2 || // TLS 1.1
+                     third == 3)) && // TLS1.2
+                   (sixth == 1); // client_hello
+    }
+
+    public final static String getServerNameFromTLSClientHello(QpidByteBuffer source)
+    {
+
+        QpidByteBuffer input = source.duplicate();
+        try
+        {
+
+            // Do we have a complete header?
+            if (input.remaining() < 5)
+            {
+                return null;
+            }
+
+            byte first = input.get();
+            byte second = input.get();
+            byte third = input.get();
+            if (first == 22 && third != 0x01)
+            {
+
+                int recordLength = input.getUnsignedShort();
+                if (recordLength > input.remaining())
+                {
+                    return null;
+                }
+
+                if (input.get() == 0x01)
+                {
+                    // 24-bit length field
+                    int length = ((input.get() & 0xFF) << 16) | ((input.get() & 0xFF) << 8) | (input.get() & 0xFF);
+
+                    input.limit(length + input.position());
+
+                    input.position(input.position() + 34);  // hello minor/major version + random
+                    int skip = (int) input.get(); // session-id
+                    input.position(input.position() + skip);
+                    skip = input.getUnsignedShort(); // cipher suites
+                    input.position(input.position() + skip);
+                    skip = (int) input.get(); // compression methods
+                    input.position(input.position() + skip);
+
+                    if (input.hasRemaining())
+                    {
+
+                        int remaining = input.getUnsignedShort();
+                        input.limit(input.position()+remaining);
+                        while (input.hasRemaining())
+                        {
+                            int extensionType = input.getUnsignedShort();
+
+                            int extensionLength = input.getUnsignedShort();
+
+                            if (extensionType == 0x00)
+                            {
+
+                                int extensionDataRemaining = extensionLength;
+                                if (extensionDataRemaining >= 2)
+                                {
+                                    int listLength = input.getUnsignedShort();     // length of server_name_list
+                                    if (listLength + 2 != extensionDataRemaining)
+                                    {
+                                        // invalid format
+                                        return null;
+                                    }
+
+                                    extensionDataRemaining -= 2;
+                                    while (extensionDataRemaining > 0)
+                                    {
+                                        int code = input.get();
+                                        int serverNameLength = input.getUnsignedShort();
+                                        if (serverNameLength > extensionDataRemaining)
+                                        {
+                                            // invalid format;
+                                            return null;
+                                        }
+                                        byte[] encoded = new byte[serverNameLength];
+                                        input.get(encoded);
+
+                                        if (code == StandardConstants.SNI_HOST_NAME)
+                                        {
+
+                                            return new SNIHostName(encoded).getAsciiName();
+                                        }
+                                        extensionDataRemaining -= serverNameLength + 3;
+                                    }
+                                }
+                                return null;
+                            }
+                            else
+                            {
+                                input.position(input.position() + extensionLength);
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+
+        }
+        finally
+        {
+            input.dispose();
+        }
     }
 }

@@ -55,6 +55,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     private Principal _principal;
     private Certificate _peerCertificate;
     private boolean _principalChecked;
+    private volatile boolean _hostChecked;
     private QpidByteBuffer _netInputBuffer;
     private QpidByteBuffer _netOutputBuffer;
     private QpidByteBuffer _applicationBuffer;
@@ -87,6 +88,31 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     @Override
     public boolean processData() throws IOException
     {
+        if(!_hostChecked)
+        {
+            QpidByteBuffer buffer = _netInputBuffer.duplicate();
+            try
+            {
+                buffer.flip();
+                if (SSLUtil.isSufficientToDetermineClientSNIHost(buffer))
+                {
+                    String hostName = SSLUtil.getServerNameFromTLSClientHello(buffer);
+                    if (hostName != null)
+                    {
+                        _parent.setSelectedHost(hostName);
+                    }
+                    _hostChecked = true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            finally
+            {
+                buffer.dispose();;
+            }
+        }
         _netInputBuffer.flip();
         boolean readData = false;
         boolean tasksRun;

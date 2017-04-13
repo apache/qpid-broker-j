@@ -76,6 +76,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private final List<SchedulingDelayNotificationListener> _schedulingDelayNotificationListeners = new CopyOnWriteArrayList<>();
     private final AtomicBoolean _hasShutdown = new AtomicBoolean();
     private volatile long _bufferedSize;
+    private String _selectedHost;
 
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ProtocolEngine protocolEngine,
@@ -657,5 +658,16 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     public void setSelectionTask(final SelectorThread.SelectionTask selectionTask)
     {
         _selectionTask = selectionTask;
+    }
+
+    public void setSelectedHost(final String selectedHost)
+    {
+        _selectedHost = selectedHost;
+    }
+
+    @Override
+    public String getSelectedHost()
+    {
+        return _selectedHost;
     }
 }
