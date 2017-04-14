@@ -20,17 +20,30 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public abstract class AbstractDescribedTypeConstructor<T extends Object> implements DescribedTypeConstructor<T>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDescribedTypeConstructor.class);
+
     @Override
     public TypeConstructor<T> construct(final Object descriptor,
                                         final List<QpidByteBuffer> in,
-                                        final int[] originalPositions, final ValueHandler valueHandler) throws AmqpErrorException
+                                        final int[] originalPositions, final ValueHandler valueHandler)
+            throws AmqpErrorException
     {
 
         return new TypeConstructorFromUnderlying<>(this, valueHandler.readConstructor(in));
@@ -43,6 +56,7 @@ public abstract class AbstractDescribedTypeConstructor<T extends Object> impleme
 
         private final TypeConstructor _describedConstructor;
         private AbstractDescribedTypeConstructor<S> _describedTypeConstructor;
+        private static final Map<Class<?>, CompositeTypeValidator> _validators = new ConcurrentHashMap<>();
 
         public TypeConstructorFromUnderlying(final AbstractDescribedTypeConstructor<S> describedTypeConstructor,
                                              final TypeConstructor describedConstructor)
@@ -54,7 +68,57 @@ public abstract class AbstractDescribedTypeConstructor<T extends Object> impleme
         @Override
         public S construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
         {
-            return _describedTypeConstructor.construct(_describedConstructor.construct(in, handler));
+            final S constructedObject =
+                    _describedTypeConstructor.construct(_describedConstructor.construct(in, handler));
+            CompositeTypeValidator<S> validator =
+                    _validators.computeIfAbsent(constructedObject.getClass(), k -> createValidator(constructedObject));
+            validator.validate(constructedObject);
+            return constructedObject;
+        }
+
+        private CompositeTypeValidator<S> createValidator(final S constructedObject)
+        {
+            final List<Field> mandatoryFields = new ArrayList<>();
+            for (Field field : constructedObject.getClass().getDeclaredFields())
+            {
+                Annotation[] annotations = field.getDeclaredAnnotationsByType(CompositeTypeField.class);
+                for (Annotation annotation : annotations)
+                {
+                    if (annotation instanceof CompositeTypeField && ((CompositeTypeField) annotation).mandatory())
+                    {
+                        field.setAccessible(true);
+                        mandatoryFields.add(field);
+                    }
+                }
+            }
+            return objectToValidate ->
+            {
+                try
+                {
+                    if (!mandatoryFields.isEmpty())
+                    {
+                        for (Field field : mandatoryFields)
+                        {
+                            if (field.get(objectToValidate) == null)
+                            {
+                                throw new AmqpErrorException(AmqpError.DECODE_ERROR,
+                                                             String.format("Missing mandatory field '%s'.",
+                                                                           field.getName()));
+                            }
+                        }
+                    }
+                }
+                catch (IllegalAccessException e)
+                {
+                    LOGGER.error(String.format("Error validating AMQP 1.0 object '%s'", constructedObject.toString()), e);
+                    throw new AmqpErrorException(AmqpError.INTERNAL_ERROR, "Failure during object validation");
+                }
+            };
+        }
+
+        private interface CompositeTypeValidator<S>
+        {
+            void validate(final S constructedObject) throws AmqpErrorException;
         }
     }
 }
