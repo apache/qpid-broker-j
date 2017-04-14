@@ -27,16 +27,20 @@ import java.nio.ByteBuffer;
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
 public class Detach implements FrameBody
 {
     private ByteBuffer _payload;
 
+    @CompositeTypeField(mandatory = true)
     private UnsignedInteger _handle;
 
+    @CompositeTypeField
     private Boolean _closed;
 
+    @CompositeTypeField
     private Error _error;
 
     public UnsignedInteger getHandle()

@@ -34,6 +34,7 @@ public class SaslResponse
   {
 
 
+    @CompositeTypeField(mandatory = true)
     private Binary _response;
 
     public Binary getResponse()

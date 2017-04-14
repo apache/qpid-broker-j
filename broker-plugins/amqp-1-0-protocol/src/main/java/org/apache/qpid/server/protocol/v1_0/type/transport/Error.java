@@ -25,14 +25,18 @@ package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
 
 public class Error
 {
+    @CompositeTypeField(mandatory = true)
     private ErrorCondition _condition;
 
+    @CompositeTypeField
     private String _description;
 
+    @CompositeTypeField
     private Map _info;
 
     public Error()

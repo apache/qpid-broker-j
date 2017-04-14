@@ -26,6 +26,7 @@ package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -36,6 +37,8 @@ public class Declared
 
 
       public static final Symbol DECLARED_SYMBOL = Symbol.valueOf("amqp:declared:list");
+
+      @CompositeTypeField(mandatory = true)
       private Binary _txnId;
 
     public Binary getTxnId()

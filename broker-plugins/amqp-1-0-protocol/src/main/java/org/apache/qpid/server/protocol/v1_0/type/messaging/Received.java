@@ -31,9 +31,10 @@ public class Received
   implements org.apache.qpid.server.protocol.v1_0.type.DeliveryState
   {
 
-
+    @CompositeTypeField(mandatory = true)
     private UnsignedInteger _sectionNumber;
 
+    @CompositeTypeField(mandatory = true)
     private UnsignedLong _sectionOffset;
 
     public UnsignedInteger getSectionNumber()

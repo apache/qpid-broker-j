@@ -36,10 +36,14 @@ public class Modified
 
 
       public static final Symbol MODIFIED_SYMBOL = Symbol.valueOf("amqp:modified:list");
+
+      @CompositeTypeField
       private Boolean _deliveryFailed;
 
+    @CompositeTypeField
     private Boolean _undeliverableHere;
 
+    @CompositeTypeField
     private Map _messageAnnotations;
 
     public Boolean getDeliveryFailed()

@@ -35,26 +35,37 @@ public class Source implements BaseSource
   {
 
 
+    @CompositeTypeField
     private String _address;
 
+    @CompositeTypeField
     private TerminusDurability _durable;
 
+    @CompositeTypeField
     private TerminusExpiryPolicy _expiryPolicy;
 
+    @CompositeTypeField
     private UnsignedInteger _timeout;
 
+    @CompositeTypeField
     private Boolean _dynamic;
 
+    @CompositeTypeField
     private Map _dynamicNodeProperties;
 
+    @CompositeTypeField
     private DistributionMode _distributionMode;
 
+    @CompositeTypeField
     private Map _filter;
 
+    @CompositeTypeField
     private Outcome _defaultOutcome;
 
+    @CompositeTypeField
     private Symbol[] _outcomes;
 
+    @CompositeTypeField
     private Symbol[] _capabilities;
 
     public String getAddress()

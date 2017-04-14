@@ -31,8 +31,10 @@ public class Discharge
   {
 
 
+    @CompositeTypeField(mandatory = true)
     private Binary _txnId;
 
+    @CompositeTypeField
     private Boolean _fail;
 
     public Binary getTxnId()

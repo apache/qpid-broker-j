@@ -34,10 +34,13 @@ public class SaslInit
   {
 
 
+    @CompositeTypeField(mandatory = true)
     private Symbol _mechanism;
 
+    @CompositeTypeField
     private Binary _initialResponse;
 
+    @CompositeTypeField
     private String _hostname;
 
     public Symbol getMechanism()

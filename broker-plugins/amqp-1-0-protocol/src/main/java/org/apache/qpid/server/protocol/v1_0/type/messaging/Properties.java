@@ -27,35 +27,49 @@ import java.util.Date;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
 public class Properties implements NonEncodingRetainingSection<Properties>
 {
+    @CompositeTypeField
     private Object _messageId;
 
+    @CompositeTypeField
     private Binary _userId;
 
+    @CompositeTypeField
     private String _to;
 
+    @CompositeTypeField
     private String _subject;
 
+    @CompositeTypeField
     private String _replyTo;
 
+    @CompositeTypeField
     private Object _correlationId;
 
+    @CompositeTypeField
     private Symbol _contentType;
 
+    @CompositeTypeField
     private Symbol _contentEncoding;
 
+    @CompositeTypeField
     private Date _absoluteExpiryTime;
 
+    @CompositeTypeField
     private Date _creationTime;
 
+    @CompositeTypeField
     private String _groupId;
 
+    @CompositeTypeField
     private UnsignedInteger _groupSequence;
 
+    @CompositeTypeField
     private String _replyToGroupId;
 
     public Object getMessageId()

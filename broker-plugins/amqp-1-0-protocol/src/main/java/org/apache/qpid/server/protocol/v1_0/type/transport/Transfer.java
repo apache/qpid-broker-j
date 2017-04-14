@@ -31,32 +31,44 @@ import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
 public class Transfer implements FrameBody
 {
     private volatile List<QpidByteBuffer> _payload;
 
+    @CompositeTypeField(mandatory = true)
     private UnsignedInteger _handle;
 
+    @CompositeTypeField
     private UnsignedInteger _deliveryId;
 
+    @CompositeTypeField
     private Binary _deliveryTag;
 
+    @CompositeTypeField
     private UnsignedInteger _messageFormat;
 
+    @CompositeTypeField
     private Boolean _settled;
 
+    @CompositeTypeField
     private Boolean _more;
 
+    @CompositeTypeField
     private ReceiverSettleMode _rcvSettleMode;
 
+    @CompositeTypeField
     private DeliveryState _state;
 
+    @CompositeTypeField
     private Boolean _resume;
 
+    @CompositeTypeField
     private Boolean _aborted;
 
+    @CompositeTypeField
     private Boolean _batchable;
 
     public UnsignedInteger getHandle()

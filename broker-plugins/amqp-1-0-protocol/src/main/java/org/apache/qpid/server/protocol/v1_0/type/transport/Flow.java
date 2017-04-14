@@ -28,32 +28,44 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
 public class Flow implements FrameBody
 {
     private ByteBuffer _payload;
 
+    @CompositeTypeField
     private UnsignedInteger _nextIncomingId;
 
+    @CompositeTypeField(mandatory = true)
     private UnsignedInteger _incomingWindow;
 
+    @CompositeTypeField(mandatory = true)
     private UnsignedInteger _nextOutgoingId;
 
+    @CompositeTypeField(mandatory = true)
     private UnsignedInteger _outgoingWindow;
 
+    @CompositeTypeField
     private UnsignedInteger _handle;
 
+    @CompositeTypeField
     private UnsignedInteger _deliveryCount;
 
+    @CompositeTypeField
     private UnsignedInteger _linkCredit;
 
+    @CompositeTypeField
     private UnsignedInteger _available;
 
+    @CompositeTypeField
     private Boolean _drain;
 
+    @CompositeTypeField
     private Boolean _echo;
 
+    @CompositeTypeField
     private Map _properties;
 
     public UnsignedInteger getNextIncomingId()

@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
@@ -37,20 +38,28 @@ public class Begin implements FrameBody
 {
     private ByteBuffer _payload;
 
+    @CompositeTypeField
     private UnsignedShort _remoteChannel;
 
+    @CompositeTypeField(mandatory = true)
     private UnsignedInteger _nextOutgoingId;
 
+    @CompositeTypeField(mandatory = true)
     private UnsignedInteger _incomingWindow;
 
+    @CompositeTypeField(mandatory = true)
     private UnsignedInteger _outgoingWindow;
 
+    @CompositeTypeField
     private UnsignedInteger _handleMax;
 
+    @CompositeTypeField
     private Symbol[] _offeredCapabilities;
 
+    @CompositeTypeField
     private Symbol[] _desiredCapabilities;
 
+    @CompositeTypeField
     private Map _properties;
 
     public UnsignedShort getRemoteChannel()

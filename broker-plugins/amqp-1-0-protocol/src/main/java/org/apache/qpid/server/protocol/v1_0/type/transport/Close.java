@@ -27,11 +27,13 @@ import java.nio.ByteBuffer;
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 
 public class Close implements FrameBody
 {
     private ByteBuffer _payload;
 
+    @CompositeTypeField
     private Error _error;
 
     public Error getError()

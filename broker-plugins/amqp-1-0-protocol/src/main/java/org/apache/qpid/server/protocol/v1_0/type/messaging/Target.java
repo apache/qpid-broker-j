@@ -36,18 +36,25 @@ public class Target
   {
 
 
+    @CompositeTypeField
     private String _address;
 
+    @CompositeTypeField
     private TerminusDurability _durable;
 
+    @CompositeTypeField
     private TerminusExpiryPolicy _expiryPolicy;
 
+    @CompositeTypeField
     private UnsignedInteger _timeout;
 
+    @CompositeTypeField
     private Boolean _dynamic;
 
+    @CompositeTypeField
     private Map _dynamicNodeProperties;
 
+    @CompositeTypeField
     private Symbol[] _capabilities;
 
     public String getAddress()

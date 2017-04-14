@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
@@ -37,24 +38,34 @@ public class Open implements FrameBody
 {
     private ByteBuffer _payload;
 
+    @CompositeTypeField(mandatory = true)
     private String _containerId;
 
+    @CompositeTypeField
     private String _hostname;
 
+    @CompositeTypeField
     private UnsignedInteger _maxFrameSize;
 
+    @CompositeTypeField
     private UnsignedShort _channelMax;
 
+    @CompositeTypeField
     private UnsignedInteger _idleTimeOut;
 
+    @CompositeTypeField
     private Symbol[] _outgoingLocales;
 
+    @CompositeTypeField
     private Symbol[] _incomingLocales;
 
+    @CompositeTypeField
     private Symbol[] _offeredCapabilities;
 
+    @CompositeTypeField
     private Symbol[] _desiredCapabilities;
 
+    @CompositeTypeField
     private Map _properties;
 
     public String getContainerId()

@@ -28,20 +28,26 @@ import java.util.Collections;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
 public class Header implements NonEncodingRetainingSection<Header>
 {
 
+    @CompositeTypeField
     private Boolean _durable;
 
+    @CompositeTypeField
     private UnsignedByte _priority;
 
+    @CompositeTypeField
     private UnsignedInteger _ttl;
 
+    @CompositeTypeField
     private Boolean _firstAcquirer;
 
+    @CompositeTypeField
     private UnsignedInteger _deliveryCount;
 
     public Boolean getDurable()

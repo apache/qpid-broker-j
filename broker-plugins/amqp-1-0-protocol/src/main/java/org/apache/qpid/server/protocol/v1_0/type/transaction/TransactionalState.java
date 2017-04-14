@@ -32,8 +32,10 @@ public class TransactionalState
   {
 
 
+    @CompositeTypeField(mandatory = true)
     private Binary _txnId;
 
+    @CompositeTypeField
     private Outcome _outcome;
 
     public Binary getTxnId()

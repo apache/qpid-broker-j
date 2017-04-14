@@ -36,6 +36,8 @@ public class Rejected
 
 
       public static final Symbol REJECTED_SYMBOL = Symbol.valueOf("amqp:rejected:list");
+
+      @CompositeTypeField
       private Error _error;
 
     public Error getError()

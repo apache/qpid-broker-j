@@ -26,6 +26,7 @@ package org.apache.qpid.server.protocol.v1_0.type.security;
 
 import java.util.Arrays;
 import org.apache.qpid.server.protocol.v1_0.SASLEndpoint;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
@@ -34,6 +35,7 @@ public class SaslMechanisms
   {
 
 
+    @CompositeTypeField(mandatory = true)
     private Symbol[] _saslServerMechanisms;
 
     public Symbol[] getSaslServerMechanisms()

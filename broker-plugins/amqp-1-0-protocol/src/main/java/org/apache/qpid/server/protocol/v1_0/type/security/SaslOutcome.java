@@ -34,8 +34,10 @@ public class SaslOutcome
   {
 
 
+    @CompositeTypeField(mandatory = true)
     private SaslCode _code;
 
+    @CompositeTypeField
     private Binary _additionalData;
 
     public SaslCode getCode()

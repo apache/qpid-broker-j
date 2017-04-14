@@ -31,6 +31,7 @@ import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -39,32 +40,46 @@ public class Attach implements FrameBody
 {
     private ByteBuffer _payload;
 
+    @CompositeTypeField(mandatory = true)
     private String _name;
 
+    @CompositeTypeField(mandatory = true)
     private UnsignedInteger _handle;
 
+    @CompositeTypeField(mandatory = true)
     private Role _role;
 
+    @CompositeTypeField
     private SenderSettleMode _sndSettleMode;
 
+    @CompositeTypeField
     private ReceiverSettleMode _rcvSettleMode;
 
+    @CompositeTypeField
     private BaseSource _source;
 
+    @CompositeTypeField
     private BaseTarget _target;
 
+    @CompositeTypeField
     private Map _unsettled;
 
+    @CompositeTypeField
     private Boolean _incompleteUnsettled;
 
+    @CompositeTypeField
     private UnsignedInteger _initialDeliveryCount;
 
+    @CompositeTypeField
     private UnsignedLong _maxMessageSize;
 
+    @CompositeTypeField
     private Symbol[] _offeredCapabilities;
 
+    @CompositeTypeField
     private Symbol[] _desiredCapabilities;
 
+    @CompositeTypeField
     private Map _properties;
 
     public String getName()

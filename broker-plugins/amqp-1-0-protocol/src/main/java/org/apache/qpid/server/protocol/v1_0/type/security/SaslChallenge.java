@@ -34,6 +34,7 @@ public class SaslChallenge
   {
 
 
+    @CompositeTypeField(mandatory = true)
     private Binary _challenge;
 
     public Binary getChallenge()
