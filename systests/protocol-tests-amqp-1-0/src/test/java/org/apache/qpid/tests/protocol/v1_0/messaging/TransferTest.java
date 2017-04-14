@@ -21,19 +21,18 @@
 package org.apache.qpid.tests.protocol.v1_0.messaging;
 
 import static org.apache.qpid.tests.protocol.v1_0.Matchers.protocolHeader;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.fail;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
@@ -42,20 +41,17 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
-import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.protocol.v1_0.HeaderResponse;
-import org.apache.qpid.tests.protocol.v1_0.Matchers;
 import org.apache.qpid.tests.protocol.v1_0.MessageEncoder;
 import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
@@ -64,14 +60,43 @@ import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 
 public class TransferTest extends ProtocolTestBase
 {
+    private InetSocketAddress _brokerAddress;
+
+    @Before
+    public void setUp()
+    {
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
+        _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
+    }
+
+    @Test
+    @SpecificationTest(section = "1.3.4",
+            description = "Transfer without mandatory fields should result in a decoding error.")
+    public void emptyTransfer() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        {
+            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
+            transport.doAttachSendingLink(linkHandle, BrokerAdmin.TEST_QUEUE_NAME);
+
+            Transfer transfer = new Transfer();
+            transport.sendPerformative(transfer, UnsignedShort.valueOf((short) 0));
+            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
+
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getFrameBody(), is(instanceOf(Close.class)));
+            Close responseClose = (Close) response.getFrameBody();
+            assertThat(responseClose.getError(), is(notNullValue()));
+            assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
+        }
+    }
+
     @Test
     @SpecificationTest(section = "2.6.12",
             description = "Transfering A Message.")
     public void transfer() throws Exception
     {
-        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress))
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
             transport.doAttachSendingLink(linkHandle, BrokerAdmin.TEST_QUEUE_NAME);
@@ -101,9 +126,7 @@ public class TransferTest extends ProtocolTestBase
     @SpecificationTest(section = "", description = "Pipelined message send")
     public void presettledPipelined() throws Exception
     {
-        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
-        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress))
         {
             byte[] protocolHeader = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
             Open open = new Open();
