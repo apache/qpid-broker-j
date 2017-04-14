@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -24,15 +23,12 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
-
 import java.util.Map;
 
-
-import org.apache.qpid.server.protocol.v1_0.type.*;
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
 
 public class Error
 {
-
     private ErrorCondition _condition;
 
     private String _description;
@@ -85,27 +81,27 @@ public class Error
         StringBuilder builder = new StringBuilder("Error{");
         final int origLength = builder.length();
 
-        if(_condition != null)
+        if (_condition != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("condition=").append(_condition);
         }
 
-        if(_description != null)
+        if (_description != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("description=").append(_description);
         }
 
-        if(_info != null)
+        if (_info != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -115,6 +111,4 @@ public class Error
         builder.append('}');
         return builder.toString();
     }
-
-
-  }
+}

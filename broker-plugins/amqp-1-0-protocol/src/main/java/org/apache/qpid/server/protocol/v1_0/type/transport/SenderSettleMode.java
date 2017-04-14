@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -24,30 +23,44 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class SenderSettleMode
-  implements RestrictedType<UnsignedByte>
-  
-  {
-
-
+public class SenderSettleMode implements RestrictedType<UnsignedByte>
+{
+    public static final SenderSettleMode UNSETTLED = new SenderSettleMode(UnsignedByte.valueOf((byte) 0));
+    public static final SenderSettleMode SETTLED = new SenderSettleMode(UnsignedByte.valueOf((byte) 1));
+    public static final SenderSettleMode MIXED = new SenderSettleMode(UnsignedByte.valueOf((byte) 2));
 
     private final UnsignedByte _val;
-
-    
-    public static final SenderSettleMode UNSETTLED = new SenderSettleMode(UnsignedByte.valueOf((byte) 0));
-    
-    public static final SenderSettleMode SETTLED = new SenderSettleMode(UnsignedByte.valueOf((byte) 1));
-    
-    public static final SenderSettleMode MIXED = new SenderSettleMode(UnsignedByte.valueOf((byte) 2));
-    
 
 
     private SenderSettleMode(UnsignedByte val)
     {
         _val = val;
+    }
+
+    public static SenderSettleMode valueOf(Object obj)
+    {
+        UnsignedByte val = (UnsignedByte) obj;
+
+        if (UNSETTLED._val.equals(val))
+        {
+            return UNSETTLED;
+        }
+
+        if (SETTLED._val.equals(val))
+        {
+            return SETTLED;
+        }
+
+        if (MIXED._val.equals(val))
+        {
+            return MIXED;
+        }
+
+        // TODO ERROR
+        return null;
     }
 
     public UnsignedByte getValue()
@@ -57,51 +70,25 @@ public class SenderSettleMode
 
     public String toString()
     {
-        
-        if(this == UNSETTLED)
+
+        if (this == UNSETTLED)
         {
             return "unsettled";
         }
-        
-        if(this == SETTLED)
+
+        if (this == SETTLED)
         {
             return "settled";
         }
-        
-        if(this == MIXED)
+
+        if (this == MIXED)
         {
             return "mixed";
         }
-        
+
         else
         {
             return String.valueOf(_val);
         }
     }
-
-    public static SenderSettleMode valueOf(Object obj)
-    {
-        UnsignedByte val = (UnsignedByte) obj;
-
-        if(UNSETTLED._val.equals(val))
-        {
-            return UNSETTLED;
-        }
-    
-        if(SETTLED._val.equals(val))
-        {
-            return SETTLED;
-        }
-    
-        if(MIXED._val.equals(val))
-        {
-            return MIXED;
-        }
-    
-        // TODO ERROR
-        return null;
-    }
-
-
-
-  }
+}

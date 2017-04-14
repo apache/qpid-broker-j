@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -24,28 +23,37 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class Role
-  implements RestrictedType<Boolean>
-  
-  {
-
-
+public class Role implements RestrictedType<Boolean>
+{
+    public static final Role SENDER = new Role(false);
+    public static final Role RECEIVER = new Role(true);
 
     private final boolean _val;
-
-    
-    public static final Role SENDER = new Role(false);
-    
-    public static final Role RECEIVER = new Role(true);
-    
 
 
     private Role(boolean val)
     {
         _val = val;
+    }
+
+    public static Role valueOf(Object obj)
+    {
+        boolean val = (Boolean) obj;
+
+        if (SENDER._val == (val))
+        {
+            return SENDER;
+        }
+
+        if (RECEIVER._val == (val))
+        {
+            return RECEIVER;
+        }
+
+        // TODO ERROR
+        return null;
     }
 
     public Boolean getValue()
@@ -55,41 +63,20 @@ public class Role
 
     public String toString()
     {
-        
-        if(this == SENDER)
+
+        if (this == SENDER)
         {
             return "sender";
         }
-        
-        if(this == RECEIVER)
+
+        if (this == RECEIVER)
         {
             return "receiver";
         }
-        
+
         else
         {
             return String.valueOf(_val);
         }
     }
-
-    public static Role valueOf(Object obj)
-    {
-        boolean val = (Boolean) obj;
-
-        if(SENDER._val == (val))
-        {
-            return SENDER;
-        }
-    
-        if(RECEIVER._val == (val))
-        {
-            return RECEIVER;
-        }
-    
-        // TODO ERROR
-        return null;
-    }
-
-
-
-  }
+}

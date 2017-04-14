@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -24,28 +23,38 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class ReceiverSettleMode
-  implements RestrictedType<UnsignedByte>
-  
-  {
-
-
+public class ReceiverSettleMode implements RestrictedType<UnsignedByte>
+{
+    public static final ReceiverSettleMode FIRST = new ReceiverSettleMode(UnsignedByte.valueOf((byte) 0));
+    public static final ReceiverSettleMode SECOND = new ReceiverSettleMode(UnsignedByte.valueOf((byte) 1));
 
     private final UnsignedByte _val;
-
-    
-    public static final ReceiverSettleMode FIRST = new ReceiverSettleMode(UnsignedByte.valueOf((byte) 0));
-    
-    public static final ReceiverSettleMode SECOND = new ReceiverSettleMode(UnsignedByte.valueOf((byte) 1));
-    
 
 
     private ReceiverSettleMode(UnsignedByte val)
     {
         _val = val;
+    }
+
+    public static ReceiverSettleMode valueOf(Object obj)
+    {
+        UnsignedByte val = (UnsignedByte) obj;
+
+        if (FIRST._val.equals(val))
+        {
+            return FIRST;
+        }
+
+        if (SECOND._val.equals(val))
+        {
+            return SECOND;
+        }
+
+        // TODO ERROR
+        return null;
     }
 
     public UnsignedByte getValue()
@@ -55,41 +64,20 @@ public class ReceiverSettleMode
 
     public String toString()
     {
-        
-        if(this == FIRST)
+
+        if (this == FIRST)
         {
             return "first";
         }
-        
-        if(this == SECOND)
+
+        if (this == SECOND)
         {
             return "second";
         }
-        
+
         else
         {
             return String.valueOf(_val);
         }
     }
-
-    public static ReceiverSettleMode valueOf(Object obj)
-    {
-        UnsignedByte val = (UnsignedByte) obj;
-
-        if(FIRST._val.equals(val))
-        {
-            return FIRST;
-        }
-    
-        if(SECOND._val.equals(val))
-        {
-            return SECOND;
-        }
-    
-        // TODO ERROR
-        return null;
-    }
-
-
-
-  }
+}

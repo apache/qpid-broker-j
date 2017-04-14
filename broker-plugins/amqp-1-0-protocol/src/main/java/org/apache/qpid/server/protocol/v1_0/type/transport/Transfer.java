@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -34,11 +33,8 @@ import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-public class Transfer
-  implements FrameBody
-  {
-
-
+public class Transfer implements FrameBody
+{
     private volatile List<QpidByteBuffer> _payload;
 
     private UnsignedInteger _handle;
@@ -179,99 +175,99 @@ public class Transfer
         StringBuilder builder = new StringBuilder("Transfer{");
         final int origLength = builder.length();
 
-        if(_handle != null)
+        if (_handle != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("handle=").append(_handle);
         }
 
-        if(_deliveryId != null)
+        if (_deliveryId != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("deliveryId=").append(_deliveryId);
         }
 
-        if(_deliveryTag != null)
+        if (_deliveryTag != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("deliveryTag=").append(_deliveryTag);
         }
 
-        if(_messageFormat != null)
+        if (_messageFormat != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("messageFormat=").append(_messageFormat);
         }
 
-        if(_settled != null)
+        if (_settled != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("settled=").append(_settled);
         }
 
-        if(_more != null)
+        if (_more != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("more=").append(_more);
         }
 
-        if(_rcvSettleMode != null)
+        if (_rcvSettleMode != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("rcvSettleMode=").append(_rcvSettleMode);
         }
 
-        if(_state != null)
+        if (_state != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("state=").append(_state);
         }
 
-        if(_resume != null)
+        if (_resume != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("resume=").append(_resume);
         }
 
-        if(_aborted != null)
+        if (_aborted != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("aborted=").append(_aborted);
         }
 
-        if(_batchable != null)
+        if (_batchable != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -287,32 +283,16 @@ public class Transfer
         conn.receiveTransfer(channel, this);
     }
 
-    public void setPayload(List<QpidByteBuffer> payload)
-    {
-        if(payload == null)
-        {
-            _payload = null;
-        }
-        else
-        {
-            _payload = new ArrayList<>(payload.size());
-            for(QpidByteBuffer buf : payload)
-            {
-                _payload.add(buf.duplicate());
-            }
-        }
-    }
-
     public List<QpidByteBuffer> getPayload()
     {
-        if(_payload == null)
+        if (_payload == null)
         {
             return null;
         }
         else
         {
             List<QpidByteBuffer> payloadDup = new ArrayList<>(_payload.size());
-            for(QpidByteBuffer buf : _payload)
+            for (QpidByteBuffer buf : _payload)
             {
                 payloadDup.add(buf.duplicate());
             }
@@ -320,15 +300,31 @@ public class Transfer
         }
     }
 
+    public void setPayload(List<QpidByteBuffer> payload)
+    {
+        if (payload == null)
+        {
+            _payload = null;
+        }
+        else
+        {
+            _payload = new ArrayList<>(payload.size());
+            for (QpidByteBuffer buf : payload)
+            {
+                _payload.add(buf.duplicate());
+            }
+        }
+    }
+
     public void dispose()
     {
         if (_payload != null)
         {
-            for(QpidByteBuffer buf : _payload)
+            for (QpidByteBuffer buf : _payload)
             {
                 buf.dispose();
             }
             _payload = null;
         }
     }
-  }
+}

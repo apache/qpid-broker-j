@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -26,15 +25,11 @@ package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 import java.nio.ByteBuffer;
 
-
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.*;
+import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 
-public class Close
-  implements FrameBody
-  {
-
-
+public class Close implements FrameBody
+{
     private ByteBuffer _payload;
 
     private Error _error;
@@ -55,9 +50,9 @@ public class Close
         StringBuilder builder = new StringBuilder("Close{");
         final int origLength = builder.length();
 
-        if(_error != null)
+        if (_error != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -73,15 +68,13 @@ public class Close
         conn.receiveClose(channel, this);
     }
 
-    public void setPayload(ByteBuffer payload)
-    {
-        _payload = payload;
-    }
-
     public ByteBuffer getPayload()
     {
         return _payload;
     }
 
-
-  }
+    public void setPayload(ByteBuffer payload)
+    {
+        _payload = payload;
+    }
+}

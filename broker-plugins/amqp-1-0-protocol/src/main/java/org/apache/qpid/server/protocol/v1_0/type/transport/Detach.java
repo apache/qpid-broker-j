@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -26,15 +25,12 @@ package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 import java.nio.ByteBuffer;
 
-
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.*;
+import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-public class Detach
-  implements FrameBody
-  {
-
-
+public class Detach implements FrameBody
+{
     private ByteBuffer _payload;
 
     private UnsignedInteger _handle;
@@ -79,27 +75,27 @@ public class Detach
         StringBuilder builder = new StringBuilder("Detach{");
         final int origLength = builder.length();
 
-        if(_handle != null)
+        if (_handle != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("handle=").append(_handle);
         }
 
-        if(_closed != null)
+        if (_closed != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("closed=").append(_closed);
         }
 
-        if(_error != null)
+        if (_error != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -115,15 +111,13 @@ public class Detach
         conn.receiveDetach(channel, this);
     }
 
-    public void setPayload(ByteBuffer payload)
-    {
-        _payload = payload;
-    }
-
     public ByteBuffer getPayload()
     {
         return _payload;
     }
 
-
-  }
+    public void setPayload(ByteBuffer payload)
+    {
+        _payload = payload;
+    }
+}

@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -24,32 +23,54 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
+import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class ConnectionError
-  implements ErrorCondition, RestrictedType<Symbol>
-  
-  {
-
-
+public class ConnectionError implements ErrorCondition, RestrictedType<Symbol>
+{
+    public static final ConnectionError CONNECTION_FORCED =
+            new ConnectionError(Symbol.valueOf("amqp:connection:forced"));
+    public static final ConnectionError FRAMING_ERROR =
+            new ConnectionError(Symbol.valueOf("amqp:connection:framing-error"));
+    public static final ConnectionError REDIRECT = new ConnectionError(Symbol.valueOf("amqp:connection:redirect"));
+    public static final ConnectionError SOCKET_ERROR =
+            new ConnectionError(Symbol.valueOf("amqp:connection:socket-error"));
 
     private final Symbol _val;
-
-    
-    public static final ConnectionError CONNECTION_FORCED = new ConnectionError(Symbol.valueOf("amqp:connection:forced"));
-    
-    public static final ConnectionError FRAMING_ERROR = new ConnectionError(Symbol.valueOf("amqp:connection:framing-error"));
-    
-    public static final ConnectionError REDIRECT = new ConnectionError(Symbol.valueOf("amqp:connection:redirect"));
-    
-    public static final ConnectionError SOCKET_ERROR = new ConnectionError(Symbol.valueOf("amqp:connection:socket-error"));
-    
 
 
     private ConnectionError(Symbol val)
     {
         _val = val;
+    }
+
+    public static ConnectionError valueOf(Object obj)
+    {
+        Symbol val = (Symbol) obj;
+
+        if (CONNECTION_FORCED._val.equals(val))
+        {
+            return CONNECTION_FORCED;
+        }
+
+        if (FRAMING_ERROR._val.equals(val))
+        {
+            return FRAMING_ERROR;
+        }
+
+        if (REDIRECT._val.equals(val))
+        {
+            return REDIRECT;
+        }
+
+        if (SOCKET_ERROR._val.equals(val))
+        {
+            return SOCKET_ERROR;
+        }
+
+        // TODO ERROR
+        return null;
     }
 
     public Symbol getValue()
@@ -59,61 +80,30 @@ public class ConnectionError
 
     public String toString()
     {
-        
-        if(this == CONNECTION_FORCED)
+
+        if (this == CONNECTION_FORCED)
         {
             return "connection-forced";
         }
-        
-        if(this == FRAMING_ERROR)
+
+        if (this == FRAMING_ERROR)
         {
             return "framing-error";
         }
-        
-        if(this == REDIRECT)
+
+        if (this == REDIRECT)
         {
             return "redirect";
         }
-        
-        if(this == SOCKET_ERROR)
+
+        if (this == SOCKET_ERROR)
         {
             return "socket-error";
         }
-        
+
         else
         {
             return String.valueOf(_val);
         }
     }
-
-    public static ConnectionError valueOf(Object obj)
-    {
-        Symbol val = (Symbol) obj;
-
-        if(CONNECTION_FORCED._val.equals(val))
-        {
-            return CONNECTION_FORCED;
-        }
-    
-        if(FRAMING_ERROR._val.equals(val))
-        {
-            return FRAMING_ERROR;
-        }
-    
-        if(REDIRECT._val.equals(val))
-        {
-            return REDIRECT;
-        }
-        
-        if(SOCKET_ERROR._val.equals(val))
-        {
-            return SOCKET_ERROR;
-        }
-    
-        // TODO ERROR
-        return null;
-    }
-
-
-
-  }
+}

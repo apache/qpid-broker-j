@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -26,15 +25,13 @@ package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 import java.nio.ByteBuffer;
 
-
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.*;
+import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
+import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-public class Disposition
-  implements FrameBody
-  {
-
-
+public class Disposition implements FrameBody
+{
     private ByteBuffer _payload;
 
     private Role _role;
@@ -115,54 +112,54 @@ public class Disposition
         StringBuilder builder = new StringBuilder("Disposition{");
         final int origLength = builder.length();
 
-        if(_role != null)
+        if (_role != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("role=").append(_role);
         }
 
-        if(_first != null)
+        if (_first != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("first=").append(_first);
         }
 
-        if(_last != null)
+        if (_last != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("last=").append(_last);
         }
 
-        if(_settled != null)
+        if (_settled != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("settled=").append(_settled);
         }
 
-        if(_state != null)
+        if (_state != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("state=").append(_state);
         }
 
-        if(_batchable != null)
+        if (_batchable != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -178,15 +175,13 @@ public class Disposition
         conn.receiveDisposition(channel, this);
     }
 
-    public void setPayload(ByteBuffer payload)
-    {
-        _payload = payload;
-    }
-
     public ByteBuffer getPayload()
     {
         return _payload;
     }
 
-
-  }
+    public void setPayload(ByteBuffer payload)
+    {
+        _payload = payload;
+    }
+}

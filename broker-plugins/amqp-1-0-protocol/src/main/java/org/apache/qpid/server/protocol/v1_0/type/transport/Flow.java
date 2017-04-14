@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -24,20 +23,15 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
+import java.nio.ByteBuffer;
 import java.util.Map;
 
-
-import java.nio.ByteBuffer;
-
-
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.*;
+import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-public class Flow
-  implements FrameBody
-  {
-
-
+public class Flow implements FrameBody
+{
     private ByteBuffer _payload;
 
     private UnsignedInteger _nextIncomingId;
@@ -178,99 +172,99 @@ public class Flow
         StringBuilder builder = new StringBuilder("Flow{");
         final int origLength = builder.length();
 
-        if(_nextIncomingId != null)
+        if (_nextIncomingId != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("nextIncomingId=").append(_nextIncomingId);
         }
 
-        if(_incomingWindow != null)
+        if (_incomingWindow != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("incomingWindow=").append(_incomingWindow);
         }
 
-        if(_nextOutgoingId != null)
+        if (_nextOutgoingId != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("nextOutgoingId=").append(_nextOutgoingId);
         }
 
-        if(_outgoingWindow != null)
+        if (_outgoingWindow != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("outgoingWindow=").append(_outgoingWindow);
         }
 
-        if(_handle != null)
+        if (_handle != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("handle=").append(_handle);
         }
 
-        if(_deliveryCount != null)
+        if (_deliveryCount != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("deliveryCount=").append(_deliveryCount);
         }
 
-        if(_linkCredit != null)
+        if (_linkCredit != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("linkCredit=").append(_linkCredit);
         }
 
-        if(_available != null)
+        if (_available != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("available=").append(_available);
         }
 
-        if(_drain != null)
+        if (_drain != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("drain=").append(_drain);
         }
 
-        if(_echo != null)
+        if (_echo != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("echo=").append(_echo);
         }
 
-        if(_properties != null)
+        if (_properties != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -286,15 +280,13 @@ public class Flow
         conn.receiveFlow(channel, this);
     }
 
-    public void setPayload(ByteBuffer payload)
-    {
-        _payload = payload;
-    }
-
     public ByteBuffer getPayload()
     {
         return _payload;
     }
 
-
-  }
+    public void setPayload(ByteBuffer payload)
+    {
+        _payload = payload;
+    }
+}

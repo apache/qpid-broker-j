@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -24,21 +23,18 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 
-
-import java.nio.ByteBuffer;
-
-
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.*;
+import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 
-public class Begin
-  implements FrameBody
-  {
-
-
+public class Begin implements FrameBody
+{
     private ByteBuffer _payload;
 
     private UnsignedShort _remoteChannel;
@@ -143,72 +139,72 @@ public class Begin
         StringBuilder builder = new StringBuilder("Begin{");
         final int origLength = builder.length();
 
-        if(_remoteChannel != null)
+        if (_remoteChannel != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("remoteChannel=").append(_remoteChannel);
         }
 
-        if(_nextOutgoingId != null)
+        if (_nextOutgoingId != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("nextOutgoingId=").append(_nextOutgoingId);
         }
 
-        if(_incomingWindow != null)
+        if (_incomingWindow != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("incomingWindow=").append(_incomingWindow);
         }
 
-        if(_outgoingWindow != null)
+        if (_outgoingWindow != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("outgoingWindow=").append(_outgoingWindow);
         }
 
-        if(_handleMax != null)
+        if (_handleMax != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("handleMax=").append(_handleMax);
         }
 
-        if(_offeredCapabilities != null)
+        if (_offeredCapabilities != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("offeredCapabilities=").append(Arrays.toString(_offeredCapabilities));
         }
 
-        if(_desiredCapabilities != null)
+        if (_desiredCapabilities != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("desiredCapabilities=").append(Arrays.toString(_desiredCapabilities));
         }
 
-        if(_properties != null)
+        if (_properties != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -224,15 +220,13 @@ public class Begin
         conn.receiveBegin(channel, this);
     }
 
-    public void setPayload(ByteBuffer payload)
-    {
-        _payload = payload;
-    }
-
     public ByteBuffer getPayload()
     {
         return _payload;
     }
 
-
-  }
+    public void setPayload(ByteBuffer payload)
+    {
+        _payload = payload;
+    }
+}

@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -24,34 +23,59 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
+import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class LinkError
-  implements ErrorCondition, RestrictedType<Symbol>
-  
-  {
-
-
+public class LinkError implements ErrorCondition, RestrictedType<Symbol>
+{
+    public static final LinkError DETACH_FORCED = new LinkError(Symbol.valueOf("amqp:link:detach-forced"));
+    public static final LinkError TRANSFER_LIMIT_EXCEEDED =
+            new LinkError(Symbol.valueOf("amqp:link:transfer-limit-exceeded"));
+    public static final LinkError MESSAGE_SIZE_EXCEEDED =
+            new LinkError(Symbol.valueOf("amqp:link:message-size-exceeded"));
+    public static final LinkError REDIRECT = new LinkError(Symbol.valueOf("amqp:link:redirect"));
+    public static final LinkError STOLEN = new LinkError(Symbol.valueOf("amqp:link:stolen"));
 
     private final Symbol _val;
-
-    
-    public static final LinkError DETACH_FORCED = new LinkError(Symbol.valueOf("amqp:link:detach-forced"));
-    
-    public static final LinkError TRANSFER_LIMIT_EXCEEDED = new LinkError(Symbol.valueOf("amqp:link:transfer-limit-exceeded"));
-    
-    public static final LinkError MESSAGE_SIZE_EXCEEDED = new LinkError(Symbol.valueOf("amqp:link:message-size-exceeded"));
-    
-    public static final LinkError REDIRECT = new LinkError(Symbol.valueOf("amqp:link:redirect"));
-    
-    public static final LinkError STOLEN = new LinkError(Symbol.valueOf("amqp:link:stolen"));
-    
 
 
     private LinkError(Symbol val)
     {
         _val = val;
+    }
+
+    public static LinkError valueOf(Object obj)
+    {
+        Symbol val = (Symbol) obj;
+
+        if (DETACH_FORCED._val.equals(val))
+        {
+            return DETACH_FORCED;
+        }
+
+        if (TRANSFER_LIMIT_EXCEEDED._val.equals(val))
+        {
+            return TRANSFER_LIMIT_EXCEEDED;
+        }
+
+        if (MESSAGE_SIZE_EXCEEDED._val.equals(val))
+        {
+            return MESSAGE_SIZE_EXCEEDED;
+        }
+
+        if (REDIRECT._val.equals(val))
+        {
+            return REDIRECT;
+        }
+
+        if (STOLEN._val.equals(val))
+        {
+            return STOLEN;
+        }
+
+        // TODO ERROR
+        return null;
     }
 
     public Symbol getValue()
@@ -61,71 +85,35 @@ public class LinkError
 
     public String toString()
     {
-        
-        if(this == DETACH_FORCED)
+
+        if (this == DETACH_FORCED)
         {
             return "detach-forced";
         }
-        
-        if(this == TRANSFER_LIMIT_EXCEEDED)
+
+        if (this == TRANSFER_LIMIT_EXCEEDED)
         {
             return "transfer-limit-exceeded";
         }
-        
-        if(this == MESSAGE_SIZE_EXCEEDED)
+
+        if (this == MESSAGE_SIZE_EXCEEDED)
         {
             return "message-size-exceeded";
         }
-        
-        if(this == REDIRECT)
+
+        if (this == REDIRECT)
         {
             return "redirect";
         }
-        
-        if(this == STOLEN)
+
+        if (this == STOLEN)
         {
             return "stolen";
         }
-        
+
         else
         {
             return String.valueOf(_val);
         }
     }
-
-    public static LinkError valueOf(Object obj)
-    {
-        Symbol val = (Symbol) obj;
-
-        if(DETACH_FORCED._val.equals(val))
-        {
-            return DETACH_FORCED;
-        }
-    
-        if(TRANSFER_LIMIT_EXCEEDED._val.equals(val))
-        {
-            return TRANSFER_LIMIT_EXCEEDED;
-        }
-    
-        if(MESSAGE_SIZE_EXCEEDED._val.equals(val))
-        {
-            return MESSAGE_SIZE_EXCEEDED;
-        }
-    
-        if(REDIRECT._val.equals(val))
-        {
-            return REDIRECT;
-        }
-    
-        if(STOLEN._val.equals(val))
-        {
-            return STOLEN;
-        }
-    
-        // TODO ERROR
-        return null;
-    }
-
-
-
-  }
+}
