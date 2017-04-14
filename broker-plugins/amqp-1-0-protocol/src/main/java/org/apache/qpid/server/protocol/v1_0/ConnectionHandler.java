@@ -53,6 +53,8 @@ public interface ConnectionHandler extends SASLEndpoint
 
     int getMaxFrameSize();
 
+    int getChannelMax();
+
     void handleError(Error parsingError);
 
     boolean closedForInput();

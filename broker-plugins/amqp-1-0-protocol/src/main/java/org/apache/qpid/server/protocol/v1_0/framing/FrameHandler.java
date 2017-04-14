@@ -135,6 +135,15 @@ public class FrameHandler implements ProtocolHandler
 
                 int channel = ((int)in.getShort()) & 0xffff;
 
+                if (channel > _connectionHandler.getChannelMax())
+                {
+                    frameParsingError = createFramingError(
+                            "specified channel %d larger than maximum channel %d",
+                            channel,
+                            _connectionHandler.getChannelMax());
+                    break;
+                }
+
                 if (dataOffset != 8)
                 {
                     in.position(in.position() + dataOffset - 8);

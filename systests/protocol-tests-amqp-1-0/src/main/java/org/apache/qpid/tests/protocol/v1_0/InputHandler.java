@@ -34,6 +34,7 @@ import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.framing.FrameHandler;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslChallenge;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
@@ -203,6 +204,12 @@ public class InputHandler extends ChannelInboundHandlerAdapter
         public int getMaxFrameSize()
         {
             return 512;
+        }
+
+        @Override
+        public int getChannelMax()
+        {
+            return UnsignedShort.MAX_VALUE.intValue();
         }
 
         @Override

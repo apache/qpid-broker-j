@@ -186,7 +186,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     private AmqpPort<?> _port;
     private SubjectCreator _subjectCreator;
 
-    private int _channelMax = DEFAULT_CHANNEL_MAX;
+    private int _channelMax = 0;
     private int _maxFrameSize = 4096;
     private String _remoteContainerId;
 
@@ -288,6 +288,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         return _desiredIdleTimeout;
     }
 
+    @Override
     public void receiveAttach(final short channel, final Attach attach)
     {
         assertState(FrameReceivingState.ANY_FRAME);
@@ -310,6 +311,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
     }
 
+    @Override
     public void receive(final short channel, final Object frame)
     {
         FRAME_LOGGER.debug("RECV[{}|{}] : {}", _remoteAddress, channel, frame);
@@ -338,6 +340,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         _saslNegotiator = null;
     }
 
+    @Override
     public void receiveSaslChallenge(final SaslChallenge saslChallenge)
     {
         LOGGER.info("{} : Unexpected frame sasl-challenge", getLogSubject());
@@ -719,10 +722,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         assertState(FrameReceivingState.OPEN_ONLY);
         _frameReceivingState = FrameReceivingState.ANY_FRAME;
-        _channelMax = open.getChannelMax() == null ? _channelMax
-                : open.getChannelMax().intValue() < _channelMax
+        _channelMax = open.getChannelMax() == null ? DEFAULT_CHANNEL_MAX
+                : open.getChannelMax().intValue() < DEFAULT_CHANNEL_MAX
                         ? open.getChannelMax().intValue()
-                        : _channelMax;
+                        : DEFAULT_CHANNEL_MAX;
         if (_receivingSessions == null)
         {
             _receivingSessions = new Session_1_0[_channelMax + 1];
@@ -1019,9 +1022,16 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         closeSaslWithFailure();
     }
 
+    @Override
     public int getMaxFrameSize()
     {
         return _maxFrameSize;
+    }
+
+    @Override
+    public int getChannelMax()
+    {
+        return _channelMax;
     }
 
     @Override
