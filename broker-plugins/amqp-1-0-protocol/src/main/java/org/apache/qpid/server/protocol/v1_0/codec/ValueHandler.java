@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -63,12 +62,12 @@ public class ValueHandler implements DescribedTypeConstructorRegistry.Source
                       null,                                null,
                       UUIDTypeConstructor.getInstance()                                            },
                     { BinaryTypeConstructor.getInstance(1),
-                      StringTypeConstructor.getInstance(1, Charset.forName("UTF8")),
-                      StringTypeConstructor.getInstance(1, Charset.forName("UTF16")),
+                      StringTypeConstructor.getInstance(1),
+                      null,
                       SymbolTypeConstructor.getInstance(1)                                         },
                     { BinaryTypeConstructor.getInstance(4),
-                      StringTypeConstructor.getInstance(4, Charset.forName("UTF8")),
-                      StringTypeConstructor.getInstance(4, Charset.forName("UTF16")),
+                      StringTypeConstructor.getInstance(4),
+                      null,
                       SymbolTypeConstructor.getInstance(4)                                         },
                     { CompoundTypeConstructor.getInstance(1, CompoundTypeConstructor.LIST_ASSEMBLER_FACTORY),
                       CompoundTypeConstructor.getInstance(1, CompoundTypeConstructor.MAP_ASSEMBLER_FACTORY)  },

@@ -20,8 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.nio.CharBuffer;
-import java.nio.charset.Charset;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -30,19 +31,17 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 
 public class StringTypeConstructor extends VariableWidthTypeConstructor<String>
 {
-    private Charset _charSet;
 
 
-    public static StringTypeConstructor getInstance(int i, Charset c)
+    public static StringTypeConstructor getInstance(int i)
     {
-        return new StringTypeConstructor(i, c);
+        return new StringTypeConstructor(i);
     }
 
 
-    private StringTypeConstructor(int size, Charset c)
+    private StringTypeConstructor(int size)
     {
         super(size);
-        _charSet = c;
     }
 
     private String constructFromSingleBuffer(final QpidByteBuffer in, final int size)
@@ -53,7 +52,7 @@ public class StringTypeConstructor extends VariableWidthTypeConstructor<String>
         try
         {
             dup.limit(dup.position()+size);
-            CharBuffer charBuf = dup.decode(_charSet);
+            CharBuffer charBuf = dup.decode(UTF_8);
 
             String str = charBuf.toString();
 
@@ -109,6 +108,6 @@ public class StringTypeConstructor extends VariableWidthTypeConstructor<String>
         byte[] data = new byte[size];
         QpidByteBufferUtils.get(in, data);
 
-        return new String(data, _charSet);
+        return new String(data, UTF_8);
     }
 }

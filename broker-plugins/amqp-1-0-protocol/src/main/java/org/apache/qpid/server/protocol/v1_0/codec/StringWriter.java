@@ -21,46 +21,26 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 public class StringWriter extends SimpleVariableWidthWriter<String>
 {
-    private static final Charset ENCODING_CHARSET;
-    private static final byte ONE_BYTE_CODE;
-    private static final byte FOUR_BYTE_CODE;
-    static
-    {
-        Charset defaultCharset = Charset.defaultCharset();
-        if(defaultCharset.name().equals("UTF-16") || defaultCharset.name().equals("UTF-16BE"))
-        {
-            ENCODING_CHARSET = defaultCharset;
-            ONE_BYTE_CODE = (byte) 0xa2;
-            FOUR_BYTE_CODE = (byte) 0xb2;
-        }
-        else
-        {
-            ENCODING_CHARSET = StandardCharsets.UTF_8;
-            ONE_BYTE_CODE = (byte) 0xa1;
-            FOUR_BYTE_CODE = (byte) 0xb1;
-        }
-    }
 
     public StringWriter(final String value)
     {
-        super(value.getBytes(ENCODING_CHARSET));
+        super(value.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override
     protected byte getFourOctetEncodingCode()
     {
-        return FOUR_BYTE_CODE;
+        return (byte) 0xb1;
     }
 
     @Override
     protected byte getSingleOctetEncodingCode()
     {
-        return ONE_BYTE_CODE;
+        return (byte) 0xa1;
     }
 
 
