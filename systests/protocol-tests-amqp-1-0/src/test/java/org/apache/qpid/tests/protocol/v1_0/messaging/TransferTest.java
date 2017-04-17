@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
@@ -92,6 +93,7 @@ public class TransferTest extends ProtocolTestBase
     }
 
     @Test
+    @Ignore("QPID-7749")
     @SpecificationTest(section = "2.6.12",
             description = "Transfering A Message.")
     public void transfer() throws Exception

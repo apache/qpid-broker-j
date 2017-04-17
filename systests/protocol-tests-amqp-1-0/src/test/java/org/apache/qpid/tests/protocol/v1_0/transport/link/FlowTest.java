@@ -30,6 +30,7 @@ import static org.junit.Assert.fail;
 
 import java.net.InetSocketAddress;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
@@ -70,6 +71,7 @@ public class FlowTest extends ProtocolTestBase
     }
 
     @Test
+    @Ignore("QPID-7748")
     @SpecificationTest(section = "2.7.4",
             description = "If set to true then the receiver SHOULD send its state at the earliest convenient opportunity.")
     public void echoFlow() throws Exception
