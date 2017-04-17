@@ -51,6 +51,7 @@ import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceRecordImpl;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
+import org.apache.qpid.server.util.Action;
 
 abstract class AbstractBDBPreferenceStore implements PreferenceStore
 {
@@ -93,7 +94,8 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
                 }
 
                 records = updater.updatePreferences(storedVersion.toString(), records);
-                replace(ids, records);
+
+                removeAndAdd(ids, records, transaction -> updateVersion(transaction, currentVersion.toString()));
             }
 
             return records;
@@ -155,6 +157,13 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
     public void replace(final Collection<UUID> preferenceRecordsToRemove,
                         final Collection<PreferenceRecord> preferenceRecordsToAdd)
     {
+        removeAndAdd(preferenceRecordsToRemove, preferenceRecordsToAdd, null);
+    }
+
+    private void removeAndAdd(final Collection<UUID> preferenceRecordsToRemove,
+                              final Collection<PreferenceRecord> preferenceRecordsToAdd,
+                              final Action<Transaction> preCommitAction)
+    {
         _useOrCloseRWLock.readLock().lock();
         try
         {
@@ -188,6 +197,12 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
                     }
                 }
                 updateOrCreateInternal(txn, preferenceRecordsToAdd);
+
+                if (preCommitAction != null)
+                {
+                    preCommitAction.performAction(txn);
+                }
+
                 txn.commit();
                 txn = null;
             }
@@ -335,18 +350,25 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
         }
         catch (DatabaseNotFoundException e)
         {
-            preferencesVersionDb = getEnvironmentFacade().openDatabase(PREFERENCES_VERSION_DB_NAME, DEFAULT_DATABASE_CONFIG);
-            DatabaseEntry key = new DatabaseEntry();
-            DatabaseEntry value = new DatabaseEntry();
-            StringBinding.stringToEntry(BrokerModel.MODEL_VERSION, key);
-            LongBinding.longToEntry(System.currentTimeMillis(), value);
-            preferencesVersionDb.put(null, key, value);
+            preferencesVersionDb = updateVersion(null, BrokerModel.MODEL_VERSION);
         }
 
         return preferencesVersionDb;
     }
 
-    private ModelVersion getStoredVersion() throws RuntimeException
+    private Database updateVersion(Transaction txn, final String currentVersion)
+    {
+        final Database preferencesVersionDb =
+                getEnvironmentFacade().openDatabase(PREFERENCES_VERSION_DB_NAME, DEFAULT_DATABASE_CONFIG);
+        DatabaseEntry key = new DatabaseEntry();
+        DatabaseEntry value = new DatabaseEntry();
+        StringBinding.stringToEntry(currentVersion, key);
+        LongBinding.longToEntry(System.currentTimeMillis(), value);
+        preferencesVersionDb.put(txn, key, value);
+        return preferencesVersionDb;
+    }
+
+    ModelVersion getStoredVersion()
     {
         try(Cursor cursor = getPreferencesVersionDb().openCursor(null, null))
         {

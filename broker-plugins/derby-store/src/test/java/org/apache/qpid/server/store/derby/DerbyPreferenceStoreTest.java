@@ -29,6 +29,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ModelVersion;
 import org.apache.qpid.server.store.jdbc.AbstractJDBCPreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceRecordImpl;
@@ -93,6 +95,30 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
         {
             super.tearDown();
         }
+    }
+
+    public void testVersionAfterUpgrade() throws Exception
+    {
+        ModelVersion storeVersion =
+                new ModelVersion(BrokerModel.MODEL_MAJOR_VERSION - 1, BrokerModel.MODEL_MINOR_VERSION);
+
+        _testConnection = DriverManager.getConnection(_connectionUrl);
+        try (Statement stmt = _testConnection.createStatement())
+        {
+            stmt.execute("CREATE TABLE PREFERENCES_VERSION ( version VARCHAR(20) NOT NULL )");
+        }
+
+        try (PreparedStatement pstmt = _testConnection.prepareStatement("INSERT INTO PREFERENCES_VERSION ( version ) VALUES ( ? )"))
+        {
+            pstmt.setString(1, storeVersion.toString());
+            pstmt.execute();
+        }
+
+        _preferenceStore.openAndLoad(_updater);
+
+        ModelVersion storedVersion = _preferenceStore.getPreferencesVersion();
+
+        assertEquals("Unexpected version", BrokerModel.MODEL_VERSION, storedVersion.toString());
     }
 
     public void testOpenAndLoadEmptyStore() throws Exception
@@ -312,6 +338,14 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
         protected void doClose()
         {
             // noop
+        }
+
+        ModelVersion getPreferencesVersion() throws SQLException
+        {
+            try(Connection connection = getConnection())
+            {
+                return super.getPreferencesVersion(connection);
+            }
         }
     }
 }

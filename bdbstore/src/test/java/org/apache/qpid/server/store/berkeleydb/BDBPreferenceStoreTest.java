@@ -43,6 +43,7 @@ import com.sleepycat.je.EnvironmentConfig;
 
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ModelVersion;
 import org.apache.qpid.server.model.preferences.PreferenceTestHelper;
 import org.apache.qpid.server.store.berkeleydb.tuple.MapBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.UUIDTupleBinding;
@@ -79,7 +80,7 @@ public class BDBPreferenceStoreTest extends QpidTestCase
         _testInitialRecords = Arrays.<PreferenceRecord>asList(
                 new PreferenceRecordImpl(UUID.randomUUID(), Collections.<String, Object>singletonMap("name", "test")),
                 new PreferenceRecordImpl(UUID.randomUUID(), Collections.<String, Object>singletonMap("name", "test1")));
-        populateTestData(_testInitialRecords);
+        populateTestData(_testInitialRecords, BrokerModel.MODEL_VERSION);
     }
 
     @Override
@@ -94,6 +95,21 @@ public class BDBPreferenceStoreTest extends QpidTestCase
         {
             super.tearDown();
         }
+    }
+
+    public void testVersionAfterUpgrade() throws Exception
+    {
+        FileUtils.delete(_storeFile, true);
+        _storeFile.mkdirs();
+        ModelVersion storeVersion =
+                new ModelVersion(BrokerModel.MODEL_MAJOR_VERSION - 1, BrokerModel.MODEL_MINOR_VERSION);
+        populateTestData(_testInitialRecords, storeVersion.toString());
+
+        _preferenceStore.openAndLoad(_updater);
+
+        ModelVersion storedVersion = _preferenceStore.getStoredVersion();
+
+        assertEquals("Unexpected version", BrokerModel.MODEL_VERSION, storedVersion.toString());
     }
 
     public void testOpenAndLoad() throws Exception
@@ -179,7 +195,7 @@ public class BDBPreferenceStoreTest extends QpidTestCase
     }
 
 
-    private void populateTestData(final List<PreferenceRecord> records)
+    private void populateTestData(final List<PreferenceRecord> records, final String modelVersion)
     {
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setAllowCreate(true);
@@ -203,7 +219,7 @@ public class BDBPreferenceStoreTest extends QpidTestCase
                 }
 
                 ByteBinding.byteToEntry((byte) 0, value);
-                StringBinding.stringToEntry(BrokerModel.MODEL_VERSION, key);
+                StringBinding.stringToEntry(modelVersion, key);
                 versionDb.put(null, key, value);
             }
         }

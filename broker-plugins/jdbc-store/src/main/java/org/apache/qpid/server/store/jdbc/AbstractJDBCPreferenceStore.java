@@ -109,7 +109,11 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
                     }
 
                     records = updater.updatePreferences(preferencesVersion.toString(), records);
-                    replace(ids, records);
+
+                    removeAndAdd(ids,
+                                 records,
+                                 transactedConnection -> updateVersion(transactedConnection,
+                                                                       brokerModelVersion.toString()));
                 }
             }
 
@@ -153,6 +157,13 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
     public void replace(final Collection<UUID> preferenceRecordsToRemove,
                         final Collection<PreferenceRecord> preferenceRecordsToAdd)
     {
+        removeAndAdd(preferenceRecordsToRemove, preferenceRecordsToAdd, null);
+    }
+
+    private void removeAndAdd(final Collection<UUID> preferenceRecordsToRemove,
+                              final Collection<PreferenceRecord> preferenceRecordsToAdd,
+                              final BaseAction<Connection, SQLException> preCommitAction)
+    {
         _useOrCloseRWLock.readLock().lock();
         try
         {
@@ -181,6 +192,10 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
                         }
                     }
                     updateOrCreateInternal(connection, preferenceRecordsToAdd);
+                    if (preCommitAction != null)
+                    {
+                        preCommitAction.performAction(connection);
+                    }
                 }
             });
         }
@@ -376,11 +391,16 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
                 stmt.execute(CREATE_PREFERENCES_VERSION_TABLE);
             }
 
-            try (PreparedStatement pstmt = conn.prepareStatement(INSERT_INTO_PREFERENCES_VERSION))
-            {
-                pstmt.setString(1, BrokerModel.MODEL_VERSION);
-                pstmt.execute();
-            }
+            updateVersion(conn, BrokerModel.MODEL_VERSION);
+        }
+    }
+
+    private void updateVersion(final Connection conn, final String currentVersion) throws SQLException
+    {
+        try (PreparedStatement pstmt = conn.prepareStatement(INSERT_INTO_PREFERENCES_VERSION))
+        {
+            pstmt.setString(1, currentVersion);
+            pstmt.execute();
         }
     }
 
@@ -399,27 +419,36 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
         }
     }
 
-    private ModelVersion getPreferencesVersion(Connection conn) throws SQLException
+    protected ModelVersion getPreferencesVersion(Connection conn) throws SQLException
     {
+        ModelVersion storedVersion = null;
         try (Statement stmt = conn.createStatement())
         {
             try (ResultSet rs = stmt.executeQuery(SELECT_FROM_PREFERENCES_VERSION))
             {
-                if (rs.next())
+                while (rs.next())
                 {
                     String versionString = rs.getString(1);
                     try
                     {
-                        return ModelVersion.fromString(versionString);
+                        ModelVersion version = ModelVersion.fromString(versionString);
+                        if (storedVersion == null || storedVersion.lessThan(version))
+                        {
+                            storedVersion = version;
+                        }
                     }
                     catch (IllegalArgumentException e)
                     {
                         throw new StoreException("preference store version is malformed", e);
                     }
                 }
-                throw new StoreException("No preferences version found");
             }
         }
+        if (storedVersion == null)
+        {
+            throw new StoreException("No preferences version found");
+        }
+        return storedVersion;
     }
 
     private Collection<PreferenceRecord> getPreferenceRecords(final Connection connection) throws SQLException
