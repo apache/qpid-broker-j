@@ -195,7 +195,6 @@ public class TransferTest extends ProtocolTestBase
             final PerformativeResponse closeResponse = (PerformativeResponse) transport.getNextResponse();
             assertThat(closeResponse, is(notNullValue()));
             assertThat(closeResponse.getFrameBody(), is(instanceOf(Close.class)));
-            transport.assertNoMoreResponses();
         }
     }
 }

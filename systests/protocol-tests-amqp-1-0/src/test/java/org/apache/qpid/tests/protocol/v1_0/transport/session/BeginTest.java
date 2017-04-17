@@ -89,7 +89,8 @@ public class BeginTest extends ProtocolTestBase
             assertThat(responseBegin.getIncomingWindow(), is(instanceOf(UnsignedInteger.class)));
             assertThat(responseBegin.getOutgoingWindow(), is(instanceOf(UnsignedInteger.class)));
             assertThat(responseBegin.getNextOutgoingId(), is(instanceOf(UnsignedInteger.class)));
-            transport.assertNoMoreResponses();
+
+            transport.doCloseConnection();
         }
     }
 }

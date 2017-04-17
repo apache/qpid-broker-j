@@ -62,6 +62,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
@@ -112,6 +113,7 @@ public class FrameTransport implements AutoCloseable
     {
         try
         {
+            _channel.disconnect().sync();
             _channel.close().sync();
         }
         finally
@@ -195,6 +197,18 @@ public class FrameTransport implements AutoCloseable
         if (!(response.getFrameBody() instanceof Open))
         {
             throw new IllegalStateException("Unexpected response to connection Open");
+        }
+    }
+
+    public void doCloseConnection() throws Exception
+    {
+        Close close = new Close();
+
+        sendPerformative(close, UnsignedShort.valueOf((short) 0));
+        PerformativeResponse response = (PerformativeResponse) getNextResponse();
+        if (!(response.getFrameBody() instanceof Close))
+        {
+            throw new IllegalStateException("Unexpected response to connection Close");
         }
     }
 

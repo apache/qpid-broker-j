@@ -85,6 +85,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             systemConfigAttributes.put(SystemConfig.INITIAL_CONFIGURATION_LOCATION, "classpath:config-protocol-tests.json");
             systemConfigAttributes.put(ConfiguredObject.CONTEXT, context);
             systemConfigAttributes.put(ConfiguredObject.TYPE, System.getProperty("broker.config-store-type", "JSON"));
+            systemConfigAttributes.put(SystemConfig.STARTUP_LOGGED_TO_SYSTEM_OUT, Boolean.FALSE);
 
             if (Thread.getDefaultUncaughtExceptionHandler() == null)
             {
