@@ -209,6 +209,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
                                                                    .getHeaderIdentifier()));
 
         Open open = new Open();
+        open.setContainerId("testContainerId");
         _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
@@ -227,6 +228,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
 
         Open open = new Open();
+        open.setContainerId("testContainerId");
         _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
 
         verify(_virtualHost, never()).registerConnection(any(AMQPConnection.class));
@@ -252,6 +254,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
 
         Open open = new Open();
+        open.setContainerId("testContainerId");
         _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
@@ -281,6 +284,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
                                                                    .getHeaderIdentifier()));
 
         Open open = new Open();
+        open.setContainerId("testContainerId");
         _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
