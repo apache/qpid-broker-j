@@ -57,6 +57,7 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
 import org.apache.qpid.test.utils.LogbackPropertyValueDiscriminator;
 
+@SuppressWarnings("unused")
 @PluggableService
 public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
 {

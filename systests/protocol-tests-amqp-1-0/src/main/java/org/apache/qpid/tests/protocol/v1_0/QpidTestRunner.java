@@ -28,8 +28,6 @@ import org.slf4j.LoggerFactory;
 
 public class QpidTestRunner extends BlockJUnit4ClassRunner
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(QpidTestRunner.class);
-
     private final BrokerAdmin _brokerAdmin;
     private final Class _testClass;
 
@@ -38,8 +36,6 @@ public class QpidTestRunner extends BlockJUnit4ClassRunner
         super(klass);
         _testClass = klass;
         _brokerAdmin = (new BrokerAdminFactory()).createInstance("EMBEDDED_BROKER_PER_CLASS");
-
-        LOGGER.debug("Runner ctor " + klass.getSimpleName());
     }
 
     @Override

@@ -27,15 +27,11 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.plugin.PluggableService;
 
+@SuppressWarnings("unused")
 @PluggableService
 public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExternalQpidBrokerAdminImpl.class);
-
-    public ExternalQpidBrokerAdminImpl()
-    {
-        LOGGER.debug("QpidBrokerAdminImpl ctor");
-    }
 
     @Override
     public void beforeTestClass(final Class testClass)

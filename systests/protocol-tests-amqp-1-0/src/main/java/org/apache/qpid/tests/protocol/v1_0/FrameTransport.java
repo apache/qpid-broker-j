@@ -119,7 +119,7 @@ public class FrameTransport implements AutoCloseable
         finally
         {
             AMQP_CONNECTION_IDS.remove(_amqpConnectionId);
-            _workerGroup.shutdownGracefully();
+            _workerGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).sync();
         }
     }
 
