@@ -28,11 +28,12 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.AbstractSystemConfig;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.MemorySystemConfig;
 import org.apache.qpid.server.model.SystemConfigFactoryConstructor;
 
 
 @ManagedObject( category = false, type = MemorySystemConfigImpl.SYSTEM_CONFIG_TYPE )
-public class MemorySystemConfigImpl extends AbstractSystemConfig<MemorySystemConfigImpl>
+public class MemorySystemConfigImpl extends AbstractSystemConfig<MemorySystemConfigImpl> implements MemorySystemConfig<MemorySystemConfigImpl>
 {
     public static final String SYSTEM_CONFIG_TYPE = "Memory";
 
