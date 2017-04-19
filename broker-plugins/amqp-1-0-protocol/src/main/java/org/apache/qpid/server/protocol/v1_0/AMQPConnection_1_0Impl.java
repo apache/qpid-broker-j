@@ -635,7 +635,14 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     beginToSend.setIncomingWindow(session.getIncomingWindowSize());
                     sendFrame(sendingChannelId, beginToSend);
 
-                    _sessions.add(session);
+                    synchronized (_blockingLock)
+                    {
+                        _sessions.add(session);
+                        if (_blocking)
+                        {
+                            session.block();
+                        }
+                    }
                 }
             }
             else
