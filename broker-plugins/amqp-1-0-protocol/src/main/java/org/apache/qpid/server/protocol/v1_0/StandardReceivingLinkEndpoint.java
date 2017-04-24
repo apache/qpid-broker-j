@@ -77,6 +77,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
     private boolean _resumedMessage;
     private Binary _messageDeliveryTag;
     private Map<Binary, Outcome> _unsettledMap = Collections.synchronizedMap(new HashMap<Binary, Outcome>());
+    private ReceivingDestination _receivingDestination;
 
     public StandardReceivingLinkEndpoint(final Session_1_0 session,
                                          final Link_1_0<Source, Target> link)
@@ -492,6 +493,16 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
     public void initialiseUnsettled()
     {
         _localUnsettled = new HashMap(_unsettledMap);
+    }
+
+    public ReceivingDestination getReceivingDestination()
+    {
+        return _receivingDestination;
+    }
+
+    public void setDestination(final ReceivingDestination receivingDestination)
+    {
+        _receivingDestination = receivingDestination;
     }
 
     @Override

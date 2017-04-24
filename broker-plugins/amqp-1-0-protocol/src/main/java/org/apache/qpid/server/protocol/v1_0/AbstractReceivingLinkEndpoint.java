@@ -45,7 +45,6 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
 {
     private final SectionDecoder _sectionDecoder;
     private UnsignedInteger _lastDeliveryId;
-    private ReceivingDestination _receivingDestination;
     private Map<Binary, Object> _unsettledMap = new LinkedHashMap<>();
     private Map<Binary, TransientState> _unsettledIds = new LinkedHashMap<>();
     private boolean _creditWindow;
@@ -156,16 +155,6 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
     }
 
     protected abstract Error messageTransfer(final Transfer transfer);
-
-    public ReceivingDestination getReceivingDestination()
-    {
-        return _receivingDestination;
-    }
-
-    public void setDestination(final ReceivingDestination receivingDestination)
-    {
-        _receivingDestination = receivingDestination;
-    }
 
     @Override public void receiveFlow(final Flow flow)
     {

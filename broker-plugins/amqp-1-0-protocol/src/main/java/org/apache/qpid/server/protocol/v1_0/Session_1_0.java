@@ -1240,8 +1240,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
             for (LinkEndpoint<? extends BaseSource, ? extends BaseTarget> linkEndpoint : _endpointToOutputHandle.keySet())
             {
-                if (linkEndpoint instanceof AbstractReceivingLinkEndpoint
-                    && isQueueDestinationForLink(queue, ((AbstractReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
+                if (linkEndpoint instanceof StandardReceivingLinkEndpoint
+                    && isQueueDestinationForLink(queue, ((StandardReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
                 {
                     linkEndpoint.setStopped(true);
                 }
@@ -1280,8 +1280,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             }
             for (LinkEndpoint<? extends BaseSource, ? extends BaseTarget> linkEndpoint : _endpointToOutputHandle.keySet())
             {
-                if (linkEndpoint instanceof AbstractReceivingLinkEndpoint
-                        && isQueueDestinationForLink(queue, ((AbstractReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
+                if (linkEndpoint instanceof StandardReceivingLinkEndpoint
+                        && isQueueDestinationForLink(queue, ((StandardReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
                 {
                     linkEndpoint.setStopped(false);
                 }
@@ -1311,7 +1311,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
             for (LinkEndpoint<? extends BaseSource, ? extends BaseTarget> linkEndpoint : _endpointToOutputHandle.keySet())
             {
-                if (linkEndpoint instanceof AbstractReceivingLinkEndpoint)
+                if (linkEndpoint instanceof StandardReceivingLinkEndpoint)
                 {
                     linkEndpoint.setStopped(true);
                 }
@@ -1343,8 +1343,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             }
             for (LinkEndpoint<? extends BaseSource, ? extends BaseTarget> linkEndpoint : _endpointToOutputHandle.keySet())
             {
-                if (linkEndpoint instanceof AbstractReceivingLinkEndpoint
-                    && !_blockingEntities.contains(((AbstractReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
+                if (linkEndpoint instanceof StandardReceivingLinkEndpoint
+                    && !_blockingEntities.contains(((StandardReceivingLinkEndpoint) linkEndpoint).getReceivingDestination()))
                 {
                     linkEndpoint.setStopped(false);
                 }
@@ -1631,10 +1631,9 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                     }
                     else
                     {
-                        if (endpoint.getRole() == Role.RECEIVER
+                        if (endpoint instanceof StandardReceivingLinkEndpoint
                             && (_blockingEntities.contains(Session_1_0.this)
-                                || (endpoint instanceof StandardReceivingLinkEndpoint
-                                    && _blockingEntities.contains(((AbstractReceivingLinkEndpoint) endpoint).getReceivingDestination()))))
+                                || _blockingEntities.contains(((StandardReceivingLinkEndpoint) endpoint).getReceivingDestination())))
                         {
                             endpoint.setStopped(true);
                         }
