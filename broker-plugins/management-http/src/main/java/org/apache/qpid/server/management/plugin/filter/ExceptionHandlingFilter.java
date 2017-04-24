@@ -60,19 +60,27 @@ public class ExceptionHandlingFilter implements Filter
         }
         catch (ServerScopedRuntimeException | Error e)
         {
-            if (_uncaughtExceptionHandler == null)
+            try
             {
-                LOGGER.error("Fatal system error", e);
+                if (e instanceof ServerScopedRuntimeException
+                    && servletResponse instanceof HttpServletResponse
+                    && !servletResponse.isCommitted())
+                {
+                    ((HttpServletResponse) servletResponse).sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                }
             }
-            else
+            finally
             {
-                _uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), e);
+                if (_uncaughtExceptionHandler == null)
+                {
+                    LOGGER.error("Fatal system error", e);
+                }
+                else
+                {
+                    _uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), e);
+                }
             }
 
-            if (e instanceof  ServerScopedRuntimeException)
-            {
-                sendError((ServerScopedRuntimeException)e, servletResponse, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            }
             throw e;
         }
         catch (ExternalServiceTimeoutException e)
