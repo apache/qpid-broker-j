@@ -112,7 +112,7 @@
     <dollar.sign>$</dollar.sign>
     <at.sign>@</at.sign>
     <bdb-version>5.0.104</bdb-version>
-    <derby-version>10.11.1.1</derby-version>
+    <derby-version>10.13.1.1</derby-version>
     <logback-version>1.2.2</logback-version>
     <guava-version>18.0</guava-version>
     <fasterxml-jackson-version>2.5.3</fasterxml-jackson-version>
