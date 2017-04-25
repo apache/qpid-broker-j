@@ -86,7 +86,6 @@ import org.apache.qpid.server.protocol.v0_10.transport.*;
 import org.apache.qpid.server.protocol.v0_10.transport.Xid;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.protocol.v0_10.transport.Frame;
 import org.apache.qpid.server.txn.*;
@@ -156,9 +155,6 @@ public class ServerSession extends SessionInvoker
     private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_0_10>> _consumers = new CopyOnWriteArrayList<>();
 
     private AtomicReference<LogMessage> _forcedCloseLogMessage = new AtomicReference<LogMessage>();
-    private volatile long _uncommittedMessageSize;
-
-    private final List<StoredMessage<MessageMetaData_0_10>> _uncommittedMessages = new ArrayList<>();
 
     public ServerSession(ServerConnection connection, ServerSessionDelegate delegate, Binary name, long expiry)
     {
@@ -969,45 +965,7 @@ public class ServerSession extends SessionInvoker
         int enqueues = result.send(_transaction, null);
         getAMQPConnection().registerMessageReceived(message.getSize(), message.getArrivalTime());
         incrementOutstandingTxnsIfNecessary();
-        incrementUncommittedMessageSize(message.getStoredMessage());
         return enqueues;
-    }
-
-    private void resetUncommittedMessages()
-    {
-        _uncommittedMessageSize = 0l;
-        _uncommittedMessages.clear();
-    }
-
-
-    private void incrementUncommittedMessageSize(final StoredMessage<MessageMetaData_0_10> handle)
-    {
-        if (isTransactional() && !(_transaction instanceof DistributedTransaction))
-        {
-            _uncommittedMessageSize += handle.getContentSize();
-            if (_uncommittedMessageSize > getMaxUncommittedInMemorySize())
-            {
-                handle.flowToDisk();
-                if(!_uncommittedMessages.isEmpty() || _uncommittedMessageSize == handle.getContentSize())
-                {
-                    getAMQPConnection().getEventLogger()
-                                       .message(getLogSubject(), ChannelMessages.LARGE_TRANSACTION_WARN(_uncommittedMessageSize));
-                }
-
-                if(!_uncommittedMessages.isEmpty())
-                {
-                    for (StoredMessage<MessageMetaData_0_10> uncommittedHandle : _uncommittedMessages)
-                    {
-                        uncommittedHandle.flowToDisk();
-                    }
-                    _uncommittedMessages.clear();
-                }
-            }
-            else
-            {
-                _uncommittedMessages.add(handle);
-            }
-        }
     }
 
     public void sendMessage(MessageTransfer xfr,
@@ -1270,7 +1228,10 @@ public class ServerSession extends SessionInvoker
 
     public void selectTx()
     {
-        _transaction = new LocalTransaction(this.getMessageStore());
+        _transaction = new LocalTransaction(this.getMessageStore(),
+                                            new LocalTransaction.FlowToDiskMessageObserver(_modelObject.getMaxUncommittedInMemorySize(),
+                                                                                           getLogSubject(),
+                                                                                           getAMQPConnection().getEventLogger()));
         _txnStarts.incrementAndGet();
     }
 
@@ -1377,7 +1338,6 @@ public class ServerSession extends SessionInvoker
         _txnCommits.incrementAndGet();
         _txnStarts.incrementAndGet();
         decrementOutstandingTxnsIfNecessary();
-        resetUncommittedMessages();
     }
 
     public void rollback()
@@ -1387,7 +1347,6 @@ public class ServerSession extends SessionInvoker
         _txnRejects.incrementAndGet();
         _txnStarts.incrementAndGet();
         decrementOutstandingTxnsIfNecessary();
-        resetUncommittedMessages();
     }
 
 
@@ -1816,11 +1775,6 @@ public class ServerSession extends SessionInvoker
     {
         getAMQPConnection().closeSessionAsync(_modelObject,
                                               AMQPConnection.CloseReason.TRANSACTION_TIMEOUT, reason);
-    }
-
-    public final long getMaxUncommittedInMemorySize()
-    {
-        return _modelObject.getMaxUncommittedInMemorySize();
     }
 
     private class ResultFuture<T> implements Future<T>

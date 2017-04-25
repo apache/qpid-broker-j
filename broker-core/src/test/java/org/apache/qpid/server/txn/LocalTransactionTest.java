@@ -21,6 +21,8 @@
 package org.apache.qpid.server.txn;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -600,6 +602,24 @@ public class LocalTransactionTest extends QpidTestCase
 
         assertEquals("Transaction start time should be reset after rollback", 0, _transaction.getTransactionStartTime());
         assertEquals("Transaction update time should be reset after rollback", 0, _transaction.getTransactionUpdateTime());
+    }
+
+    public void testEnqueueInvokesMessageObserver() throws Exception
+    {
+
+        final LocalTransaction.MessageObserver messageObserver = mock(LocalTransaction.MessageObserver.class);
+        _transaction = new LocalTransaction(_transactionLog, messageObserver);
+
+        _message = createTestMessage(true);
+        _queues = createTestBaseQueues(new boolean[] {false, true, false, true});
+
+        _transaction.enqueue(_queues, _message, _action1);
+
+        verify(messageObserver).onMessageEnqueue(_message);
+
+        _transaction.enqueue(createQueue(true), _message, _action1);
+
+        verify(messageObserver, times(2)).onMessageEnqueue(_message);
     }
 
     private Collection<MessageInstance> createTestQueueEntries(boolean[] queueDurableFlags, boolean[] messagePersistentFlags)

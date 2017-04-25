@@ -196,9 +196,4 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     {
         return _serverSession;
     }
-
-    long getMaxUncommittedInMemorySize()
-    {
-        return _maxUncommittedInMemorySize;
-    }
 }

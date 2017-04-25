@@ -183,8 +183,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     private long _blockingTimeout;
     private boolean _confirmOnPublish;
     private long _confirmedMessageCounter;
-    private volatile long _uncommittedMessageSize;
-    private final List<StoredMessage<MessageMetaData>> _uncommittedMessages = new ArrayList<>();
 
     private boolean _wireBlockingState;
 
@@ -287,14 +285,12 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     /** Sets this channel to be part of a local transaction */
     private void setLocalTransactional()
     {
-        _transaction = new LocalTransaction(_messageStore, new ActivityTimeAccessor()
-        {
-            @Override
-            public long getActivityTime()
-            {
-                return _connection.getLastReadTime();
-            }
-        });
+        _transaction = new LocalTransaction(_messageStore,
+                                            () -> _connection.getLastReadTime(),
+                                            new LocalTransaction.FlowToDiskMessageObserver(
+                                                    getMaxUncommittedInMemorySize(),
+                                                    _logSubject,
+                                                    getEventLogger()));
         _txnStarts.incrementAndGet();
     }
 
@@ -473,7 +469,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                                                        .createBasicAckBody(_confirmedMessageCounter, false);
                                 _connection.writeFrame(responseBody.generateFrame(_channelId));
                             }
-                            incrementUncommittedMessageSize(storedMessage);
                             incrementOutstandingTxnsIfNecessary();
                         }
 
@@ -501,35 +496,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
         }
 
-    }
-
-    private void incrementUncommittedMessageSize(final StoredMessage<MessageMetaData> handle)
-    {
-        if (isTransactional())
-        {
-            _uncommittedMessageSize += handle.getContentSize();
-            if (_uncommittedMessageSize > getMaxUncommittedInMemorySize())
-            {
-                handle.flowToDisk();
-                if(!_uncommittedMessages.isEmpty() || _uncommittedMessageSize == handle.getContentSize())
-                {
-                    messageWithSubject(ChannelMessages.LARGE_TRANSACTION_WARN(_uncommittedMessageSize));
-                }
-
-                if(!_uncommittedMessages.isEmpty())
-                {
-                    for (StoredMessage<MessageMetaData> uncommittedHandle : _uncommittedMessages)
-                    {
-                        uncommittedHandle.flowToDisk();
-                    }
-                    _uncommittedMessages.clear();
-                }
-            }
-            else
-            {
-                _uncommittedMessages.add(handle);
-            }
-        }
     }
 
     /**
@@ -1193,13 +1159,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             _txnStarts.incrementAndGet();
             decrementOutstandingTxnsIfNecessary();
         }
-        resetUncommittedMessages();
-    }
-
-    private void resetUncommittedMessages()
-    {
-        _uncommittedMessageSize = 0l;
-        _uncommittedMessages.clear();
     }
 
     private void rollback(Runnable postRollbackTask)
@@ -1221,7 +1180,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             _txnRejects.incrementAndGet();
             _txnStarts.incrementAndGet();
             decrementOutstandingTxnsIfNecessary();
-            resetUncommittedMessages();
         }
 
         postRollbackTask.run();
@@ -1322,11 +1280,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     private boolean hasCurrentMessage()
     {
         return _currentMessage != null;
-    }
-
-    private long getMaxUncommittedInMemorySize()
-    {
-        return _maxUncommittedInMemorySize;
     }
 
     public boolean isChannelFlow()

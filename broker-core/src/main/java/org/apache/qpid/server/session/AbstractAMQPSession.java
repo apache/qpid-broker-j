@@ -81,7 +81,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     protected final SecurityToken _token;
     protected final PublishAuthorisationCache _publishAuthCache;
 
-    protected final long _maxUncommittedInMemorySize;
+    private final long _maxUncommittedInMemorySize;
 
     protected final LogSubject _logSubject;
 
@@ -409,6 +409,11 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         {
             getAMQPConnection().notifyWork(this);
         }
+    }
+
+    public long getMaxUncommittedInMemorySize()
+    {
+        return _maxUncommittedInMemorySize;
     }
 
     protected abstract void updateBlockedStateIfNecessary();

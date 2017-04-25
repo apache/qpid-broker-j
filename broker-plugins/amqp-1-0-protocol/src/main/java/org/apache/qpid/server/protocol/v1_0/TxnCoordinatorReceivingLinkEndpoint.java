@@ -119,16 +119,17 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
                     amqpValueSectionFound = true;
                     Object command = section.getValue();
 
+                    Session_1_0 session = getSession();
                     if(command instanceof Declare)
                     {
-                        final IdentifiedTransaction txn = getSession().getConnection().createLocalTransaction();
+                        final IdentifiedTransaction txn = session.getConnection().createLocalTransaction(session);
                         _createdTransactions.put(txn.getId(), txn.getServerTransaction());
 
                         Declared state = new Declared();
 
-                        getSession().incrementStartedTransactions();
+                        session.incrementStartedTransactions();
 
-                        state.setTxnId(getSession().integerToBinary(txn.getId()));
+                        state.setTxnId(session.integerToBinary(txn.getId()));
                         updateDisposition(deliveryTag, state, true);
 
                     }
@@ -136,7 +137,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
                     {
                         Discharge discharge = (Discharge) command;
 
-                        final Error error = discharge(getSession().binaryToInteger(discharge.getTxnId()),
+                        final Error error = discharge(session.binaryToInteger(discharge.getTxnId()),
                                                       Boolean.TRUE.equals(discharge.getFail()));
                         updateDisposition(deliveryTag, error == null ? new Accepted() : null, true);
                         return error;
