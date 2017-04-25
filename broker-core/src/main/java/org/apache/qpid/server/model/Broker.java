@@ -83,7 +83,27 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String DEFAULT_HTTP_PORT_NUMBER = "8080";
 
     @ManagedContextDefault(name = BROKER_FLOW_TO_DISK_THRESHOLD)
-    long DEFAULT_FLOW_TO_DISK_THRESHOLD = (long)(0.4 * (double) BrokerImpl.getMaxDirectMemorySize());
+    long DEFAULT_FLOW_TO_DISK_THRESHOLD = (long)(0.75 * (double) BrokerImpl.getMaxDirectMemorySize());
+
+    String COMPACT_MEMORY_THRESHOLD = "qpid.compact_memory_threshold";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = COMPACT_MEMORY_THRESHOLD)
+    long DEFAULT_COMPACT_MEMORY_THRESHOLD = (long)(0.5 * (double) BrokerImpl.getMaxDirectMemorySize());
+
+    String COMPACT_MEMORY_INTERVAL = "qpid.compact_memory_interval";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = COMPACT_MEMORY_INTERVAL)
+    long DEFAULT_COMPACT_MEMORY_INTERVAL = 1000L;
+
+    String MEMORY_OCCUPANCY_THRESHOLD = "qpid.memory_occupancy_threshold";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = MEMORY_OCCUPANCY_THRESHOLD)
+    double DEFAULT_MEMORY_OCCUPANCY_THRESHOLD = 0.5;
+
+    String MEMORY_COMPACTION_INCREMENT = "qpid.memory_compaction_increment";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = MEMORY_COMPACTION_INCREMENT)
+    long DEFAULT_MEMORY_COMPACTION_INCREMENT = 100;
 
     @ManagedContextDefault(name = CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT)
     long DEFAULT_CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT = 5000l;
@@ -250,6 +270,18 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
                       description = "Number of objects pending finalization")
     int getNumberOfObjectsPendingFinalization();
 
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
+            units = StatisticUnit.COUNT,
+            label = "Number of Active Pooled Buffers",
+            description = "Number of pooled buffers in use.")
+    long getNumberOfActivePooledBuffers();
+
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
+            units = StatisticUnit.COUNT,
+            label = "Number of Pooled Buffers",
+            description = "Number of pooled buffers.")
+    long getNumberOfPooledBuffers();
+
     @ManagedOperation(nonModifying = true,
             description = "Restart the broker within the same JVM",
             changesConfiguredObjectState = false,
@@ -339,4 +371,19 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     ScheduledFuture<?> scheduleTask(long delay, final TimeUnit unit, Runnable task);
 
+    @DerivedAttribute(description = "Threshold direct memory size (in bytes) at which the Broker will start considering to compact sparse buffers. Set to -1 to disable. See also " + MEMORY_OCCUPANCY_THRESHOLD)
+    long getCompactMemoryThreshold();
+
+    @DerivedAttribute(description = "Time interval (in milliseconds) between runs of the memory compactor check. See also " + COMPACT_MEMORY_THRESHOLD)
+    long getCompactMemoryInterval();
+
+    @DerivedAttribute(description = "Occupancy threshold (fraction) at which point buffers will be compacted. See also " + COMPACT_MEMORY_THRESHOLD)
+    double getMemoryOccupancyThreshold();
+
+    @DerivedAttribute(description = "Approximate number of buffers that will be compacted on each compaction run. See also " + COMPACT_MEMORY_THRESHOLD)
+    long getMemoryCompactionIncrement();
+
+    @ManagedOperation(changesConfiguredObjectState = false, nonModifying = true,
+            description = "Force direct memory buffer compaction.")
+    void compactMemory();
 }

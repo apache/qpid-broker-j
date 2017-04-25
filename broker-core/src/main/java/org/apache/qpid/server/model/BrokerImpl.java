@@ -45,14 +45,15 @@ import java.util.regex.Pattern;
 import javax.security.auth.Subject;
 import javax.security.auth.login.AccountNotFoundException;
 
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.BrokerPrincipal;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.CommonProperties;
-import org.apache.qpid.server.BrokerPrincipal;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
@@ -85,9 +86,9 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreUpdaterImpl;
 import org.apache.qpid.server.store.preferences.PreferencesRecoverer;
 import org.apache.qpid.server.store.preferences.PreferencesRoot;
 import org.apache.qpid.server.util.HousekeepingExecutor;
+import org.apache.qpid.server.util.SystemUtils;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
-import org.apache.qpid.server.util.SystemUtils;
 
 @ManagedObject( category = false, type = "Broker" )
 public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<BrokerImpl>
@@ -146,6 +147,11 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private final AccessControl _accessControl;
     private TaskExecutor _preferenceTaskExecutor;
     private String _documentationUrl;
+    private volatile long _smallestAllowedBufferId = QpidByteBuffer.getLargestPooledBufferId();
+    private long _compactMemoryThreshold;
+    private long _compactMemoryInterval;
+    private double _memoryOccupancyThreshold;
+    private long _memoryCompactionIncrement;
 
     @ManagedObjectFactoryConstructor
     public BrokerImpl(Map<String, Object> attributes,
@@ -412,6 +418,11 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                                                              getHousekeepingThreadCount(),
                                                              getSystemTaskSubject("Housekeeping", _principal));
 
+        _houseKeepingTaskExecutor.scheduleWithFixedDelay(this::checkDirectMemoryUsage,
+                                                         _compactMemoryInterval,
+                                                         _compactMemoryInterval,
+                                                         TimeUnit.MILLISECONDS);
+
         final PreferenceStoreUpdaterImpl updater = new PreferenceStoreUpdaterImpl();
         final Collection<PreferenceRecord> preferenceRecords = _preferenceStore.openAndLoad(updater);
         _preferenceTaskExecutor = new TaskExecutorImpl("broker-" + getName() + "-preferences", null);
@@ -425,6 +436,14 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                                                                 _parent.getManagementModePassword()));
         }
         setState(State.ACTIVE);
+    }
+
+    private void checkDirectMemoryUsage()
+    {
+        if (_compactMemoryThreshold >= 0 && getUsedDirectMemorySize() > _compactMemoryThreshold)
+        {
+            compactMemory();
+        }
     }
 
     private void initialiseStatisticsReporting()
@@ -574,6 +593,11 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         long directMemory = getMaxDirectMemorySize();
         long heapMemory = Runtime.getRuntime().maxMemory();
         getEventLogger().message(BrokerMessages.MAX_MEMORY(heapMemory, directMemory));
+
+        _compactMemoryThreshold = getContextValue(Long.class, Broker.COMPACT_MEMORY_THRESHOLD);
+        _compactMemoryInterval = getContextValue(Long.class, Broker.COMPACT_MEMORY_INTERVAL);
+        _memoryOccupancyThreshold = getContextValue(Double.class, Broker.MEMORY_OCCUPANCY_THRESHOLD);
+        _memoryCompactionIncrement = getContextValue(Long.class, Broker.MEMORY_COMPACTION_INCREMENT);
 
         if (SystemUtils.getProcessPid() != null)
         {
@@ -827,6 +851,18 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     {
         _messagesReceived.registerEvent(1L, timestamp);
         _dataReceived.registerEvent(messageSize, timestamp);
+    }
+
+    @Override
+    public long getNumberOfActivePooledBuffers()
+    {
+        return QpidByteBuffer.getNumberOfActivePooledBuffers();
+    }
+
+    @Override
+    public long getNumberOfPooledBuffers()
+    {
+        return QpidByteBuffer.getNumberOfPooledBuffers();
     }
 
     public StatisticsCounter getMessageReceiptStatistics()
@@ -1133,6 +1169,101 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    @Override
+    public long getCompactMemoryThreshold()
+    {
+        return _compactMemoryThreshold;
+    }
+
+    @Override
+    public long getCompactMemoryInterval()
+    {
+        return _compactMemoryInterval;
+    }
+
+    @Override
+    public double getMemoryOccupancyThreshold()
+    {
+        return _memoryOccupancyThreshold;
+    }
+
+    @Override
+    public long getMemoryCompactionIncrement()
+    {
+        return _memoryCompactionIncrement;
+    }
+
+    @Override
+    public void compactMemory()
+    {
+        long memOccupiedByMessages = getMemOccupiedByMessages();
+        double ratio = memOccupiedByMessages / (double) QpidByteBuffer.getAllocatedDirectMemorySize();
+
+        if (ratio < _memoryOccupancyThreshold)
+        {
+            int numberOfActivePooledBuffers = QpidByteBuffer.getNumberOfActivePooledBuffers();
+            LOGGER.debug("Compacting direct memory buffers: "
+                         + "memOccupiedByMessages: {}, numberOfActivePooledBuffers: {}, ratio: {}",
+                         memOccupiedByMessages, numberOfActivePooledBuffers, ratio);
+
+            long largestBufferId = QpidByteBuffer.getLargestPooledBufferId();
+            _smallestAllowedBufferId = Math.min(largestBufferId,
+                                                _smallestAllowedBufferId + _memoryCompactionIncrement);
+
+            final Collection<VirtualHostNode<?>> vhns = getVirtualHostNodes();
+            List<ListenableFuture<Void>> futures = new ArrayList<>(vhns.size());
+            for (VirtualHostNode<?> vhn : vhns)
+            {
+                VirtualHost<?> vh = vhn.getVirtualHost();
+                if (vh instanceof QueueManagingVirtualHost)
+                {
+                    ListenableFuture<Void> future = ((QueueManagingVirtualHost) vh).reallocateMessages(
+                            _smallestAllowedBufferId);
+                    futures.add(future);
+                }
+            }
+            final ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(futures);
+            addFutureCallback(combinedFuture, new FutureCallback<List<Void>>()
+            {
+                @Override
+                public void onSuccess(final List<Void> result)
+                {
+                    if (LOGGER.isDebugEnabled())
+                    {
+                        long memOccupiedByMessages = getMemOccupiedByMessages();
+                        double ratio = memOccupiedByMessages / (double) QpidByteBuffer.getAllocatedDirectMemorySize();
+                        LOGGER.debug("After compact direct memory buffers: numberOfActivePooledBuffers: {}, ratio: {}",
+                                     QpidByteBuffer.getNumberOfActivePooledBuffers(),
+                                     ratio);
+                    }
+                }
+
+                @Override
+                public void onFailure(final Throwable t)
+                {
+                    LOGGER.warn("Unexpected error during direct memory compaction.", t);
+                }
+            }, _houseKeepingTaskExecutor);
+        }
+    }
+
+    private long getMemOccupiedByMessages()
+    {
+        final Collection<VirtualHostNode<?>> vhns = getVirtualHostNodes();
+
+        long memOccupiedByMessages = 0;
+        for (VirtualHostNode<?> vhn : vhns)
+        {
+            VirtualHost<?> vh = vhn.getVirtualHost();
+            if (vh instanceof QueueManagingVirtualHost)
+            {
+                QueueManagingVirtualHost<?> host = (QueueManagingVirtualHost<?>) vh;
+                memOccupiedByMessages += host.getTotalDepthOfQueuesBytesIncludingHeader();
+            }
+        }
+        return memOccupiedByMessages;
     }
 
     private class AddressSpaceRegistry implements SystemAddressSpaceCreator.AddressSpaceRegistry

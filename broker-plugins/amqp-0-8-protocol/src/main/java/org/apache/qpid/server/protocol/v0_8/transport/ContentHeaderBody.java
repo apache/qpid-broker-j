@@ -194,4 +194,9 @@ public class ContentHeaderBody implements AMQBody
     {
         _properties.clearEncodedForm();
     }
+
+    public void reallocate(final long smallestAllowedBufferId)
+    {
+        _properties.reallocate(smallestAllowedBufferId);
+    }
 }

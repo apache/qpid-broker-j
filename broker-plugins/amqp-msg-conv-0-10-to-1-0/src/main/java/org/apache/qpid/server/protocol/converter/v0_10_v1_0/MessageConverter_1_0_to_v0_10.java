@@ -128,6 +128,12 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
             {
                 return false;
             }
+
+            @Override
+            public void reallocate(final long smallestAllowedBufferId)
+            {
+
+            }
         };
     }
 

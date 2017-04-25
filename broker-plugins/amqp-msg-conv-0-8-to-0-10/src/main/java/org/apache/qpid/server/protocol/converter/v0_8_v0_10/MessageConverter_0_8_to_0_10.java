@@ -116,6 +116,12 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
             {
                 return false;
             }
+
+            @Override
+            public void reallocate(final long smallestAllowedBufferId)
+            {
+
+            }
         };
     }
 

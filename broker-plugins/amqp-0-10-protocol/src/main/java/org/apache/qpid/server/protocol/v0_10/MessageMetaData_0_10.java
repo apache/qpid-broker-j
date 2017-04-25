@@ -175,7 +175,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
 
     public boolean isPersistent()
     {
-        return _deliveryProps == null ? false : _deliveryProps.getDeliveryMode() == MessageDeliveryMode.PERSISTENT;
+        return _deliveryProps != null && _deliveryProps.getDeliveryMode() == MessageDeliveryMode.PERSISTENT;
     }
 
     @Override
@@ -192,6 +192,12 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
             _encoded.dispose();
             _encoded = null;
         }
+    }
+
+    @Override
+    public synchronized void reallocate(final long smallestAllowedBufferId)
+    {
+        _encoded = QpidByteBuffer.reallocateIfNecessary(smallestAllowedBufferId, _encoded);
     }
 
     public String getRoutingKey()

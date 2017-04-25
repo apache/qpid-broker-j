@@ -271,6 +271,12 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
             return false;
         }
 
+        @Override
+        public void reallocate(final long smallestAllowedBufferId)
+        {
+
+        }
+
         private void dispose()
         {
             _section.dispose();

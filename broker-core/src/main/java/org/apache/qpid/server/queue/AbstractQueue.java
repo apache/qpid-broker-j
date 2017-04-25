@@ -18,8 +18,8 @@
  */
 package org.apache.qpid.server.queue;
 
-import static org.apache.qpid.server.util.ParameterizedTypes.MAP_OF_STRING_STRING;
 import static org.apache.qpid.server.util.GZIPUtils.GZIP_CONTENT_ENCODING;
+import static org.apache.qpid.server.util.ParameterizedTypes.MAP_OF_STRING_STRING;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,9 +66,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBufferInputStream;
-import org.apache.qpid.server.filter.SelectorParsingException;
-import org.apache.qpid.server.filter.selector.ParseException;
-import org.apache.qpid.server.filter.selector.TokenMgrError;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.connection.SessionPrincipal;
@@ -77,6 +74,9 @@ import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.server.filter.MessageFilter;
+import org.apache.qpid.server.filter.SelectorParsingException;
+import org.apache.qpid.server.filter.selector.ParseException;
+import org.apache.qpid.server.filter.selector.TokenMgrError;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
@@ -2100,6 +2100,37 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             checkForNotification(null, listener, currentTime, thresholdTime, check);
         }
 
+    }
+
+    @Override
+    public void reallocateMessages(final long smallestAllowedBufferId)
+    {
+        QueueEntryIterator queueListIterator = getEntries().iterator();
+
+        while (!_stopped.get() && queueListIterator.advance())
+        {
+            final QueueEntry node = queueListIterator.getNode();
+            if (!node.isDeleted() && !node.expired())
+            {
+                try
+                {
+                    final ServerMessage message = node.getMessage();
+                    final MessageReference messageReference = message.newReference();
+                    try
+                    {
+                        message.getStoredMessage().reallocate(smallestAllowedBufferId);
+                    }
+                    finally
+                    {
+                        messageReference.release();
+                    }
+                }
+                catch (MessageDeletedException mde)
+                {
+                    // Ignore
+                }
+            }
+        }
     }
 
     private boolean consumerHasAvailableMessages(final QueueConsumer consumer)

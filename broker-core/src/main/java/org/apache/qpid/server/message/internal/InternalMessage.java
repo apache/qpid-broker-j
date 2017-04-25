@@ -257,6 +257,12 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
                     {
                         return false;
                     }
+
+                    @Override
+                    public void reallocate(final long smallestAllowedBufferId)
+                    {
+
+                    }
                 };
             }
         }

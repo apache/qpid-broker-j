@@ -120,7 +120,13 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
                     {
                         return false;
                     }
-        };
+
+                    @Override
+                    public void reallocate(final long smallestAllowedBufferId)
+                    {
+
+                    }
+                };
     }
 
     private String improveMimeType(final InternalMessage serverMsg, String mimeType)

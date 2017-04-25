@@ -22,11 +22,13 @@ package org.apache.qpid.server.bytebuffer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class BufferPool
 {
     private final int _maxSize;
     private final ConcurrentLinkedQueue<ByteBuffer> _pooledBuffers = new ConcurrentLinkedQueue<>();
+    private final AtomicInteger _size = new AtomicInteger();
 
     BufferPool(final int maxSize)
     {
@@ -35,20 +37,31 @@ class BufferPool
 
     ByteBuffer getBuffer()
     {
-        return _pooledBuffers.poll();
+        final ByteBuffer buffer = _pooledBuffers.poll();
+        if (buffer != null)
+        {
+            _size.decrementAndGet();
+        }
+        return buffer;
     }
 
     void returnBuffer(ByteBuffer buf)
     {
         buf.clear();
-        if (_pooledBuffers.size() < _maxSize)
+        if (size() < _maxSize)
         {
             _pooledBuffers.add(buf);
+            _size.incrementAndGet();
         }
     }
 
     public int getMaxSize()
     {
         return _maxSize;
+    }
+
+    public int size()
+    {
+        return _size.get();
     }
 }

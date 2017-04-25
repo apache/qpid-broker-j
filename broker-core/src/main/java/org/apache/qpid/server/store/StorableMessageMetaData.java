@@ -39,5 +39,6 @@ public interface StorableMessageMetaData
 
     void clearEncodedForm();
 
+    void reallocate(final long smallestAllowedBufferId);
 }
 

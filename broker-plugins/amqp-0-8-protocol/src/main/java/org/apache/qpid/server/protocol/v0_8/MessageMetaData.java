@@ -140,6 +140,12 @@ public class MessageMetaData implements StorableMessageMetaData
         _contentHeaderBody.clearEncodedForm();
     }
 
+    @Override
+    public synchronized void reallocate(final long smallestAllowedBufferId)
+    {
+        _contentHeaderBody.reallocate(smallestAllowedBufferId);
+    }
+
     private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData>
     {
 

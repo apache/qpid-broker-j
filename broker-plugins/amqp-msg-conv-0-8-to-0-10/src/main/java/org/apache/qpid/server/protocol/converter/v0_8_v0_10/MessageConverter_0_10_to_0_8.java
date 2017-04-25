@@ -230,6 +230,12 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
             {
                 return false;
             }
+
+            @Override
+            public void reallocate(final long smallestAllowedBufferId)
+            {
+
+            }
         };
     }
 

@@ -21,24 +21,30 @@
 package org.apache.qpid.server.bytebuffer;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 
 class PooledByteBufferRef implements ByteBufferRef
 {
     private static final AtomicIntegerFieldUpdater<PooledByteBufferRef> REF_COUNT = AtomicIntegerFieldUpdater.newUpdater(PooledByteBufferRef.class, "_refCount");
-
+    private static final AtomicLong BUFFER_ID = new AtomicLong(Long.MIN_VALUE);
+    private static final AtomicInteger ACTIVE_BUFFERS = new AtomicInteger();
     private final ByteBuffer _buffer;
+    private final long _id;
+    @SuppressWarnings("unused")
     private volatile int _refCount;
 
     PooledByteBufferRef(final ByteBuffer buffer)
     {
         _buffer = buffer;
+        _id = BUFFER_ID.getAndIncrement();
+        ACTIVE_BUFFERS.incrementAndGet();
     }
 
     @Override
     public void incrementRef()
     {
-
         if(REF_COUNT.get(this) >= 0)
         {
             REF_COUNT.incrementAndGet(this);
@@ -51,6 +57,7 @@ class PooledByteBufferRef implements ByteBufferRef
         if(REF_COUNT.get(this) > 0 && REF_COUNT.decrementAndGet(this) == 0)
         {
             QpidByteBuffer.returnToPool(_buffer);
+            ACTIVE_BUFFERS.decrementAndGet();
         }
     }
 
@@ -66,5 +73,19 @@ class PooledByteBufferRef implements ByteBufferRef
         REF_COUNT.set(this, Integer.MIN_VALUE/2);
     }
 
+    @Override
+    public long getPooledBufferId()
+    {
+        return _id;
+    }
 
+    public static int getActiveBufferCount()
+    {
+        return ACTIVE_BUFFERS.get();
+    }
+
+    public static long getLargestBufferId()
+    {
+        return BUFFER_ID.get();
+    }
 }

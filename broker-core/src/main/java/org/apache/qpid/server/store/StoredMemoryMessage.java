@@ -30,8 +30,8 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
 {
     private final long _messageNumber;
     private final int _contentSize;
-    private QpidByteBuffer _content;
-    private T _metaData;
+    private volatile QpidByteBuffer _content;
+    private volatile T _metaData;
 
     public StoredMemoryMessage(long messageNumber, T metaData)
     {
@@ -45,7 +45,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         return _messageNumber;
     }
 
-    public void addContent(QpidByteBuffer src)
+    public synchronized void addContent(QpidByteBuffer src)
     {
         if(_content == null)
         {
@@ -76,7 +76,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
     }
 
     @Override
-    public StoredMessage<T> allContentAdded()
+    public synchronized StoredMessage<T> allContentAdded()
     {
         if(_content != null)
         {
@@ -87,7 +87,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
 
 
     @Override
-    public Collection<QpidByteBuffer> getContent(int offset, int length)
+    public synchronized Collection<QpidByteBuffer> getContent(int offset, int length)
     {
         if(_content == null)
         {
@@ -107,7 +107,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         return _metaData;
     }
 
-    public void remove()
+    public synchronized void remove()
     {
         _metaData.dispose();
         _metaData = null;
@@ -130,4 +130,10 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         return false;
     }
 
+    @Override
+    public synchronized void reallocate(final long smallestAllowedBufferId)
+    {
+        _metaData.reallocate(smallestAllowedBufferId);
+        _content = QpidByteBuffer.reallocateIfNecessary(smallestAllowedBufferId, _content);
+    }
 }

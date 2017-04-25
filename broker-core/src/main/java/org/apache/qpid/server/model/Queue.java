@@ -471,6 +471,8 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
      */
     void checkMessageStatus();
 
+    void reallocateMessages(long smallestAllowedBufferId);
+
     Set<NotificationCheck> getNotificationChecks();
 
     Collection<String> getAvailableAttributes();
@@ -490,5 +492,4 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     void deleteEntry(QueueEntry entry);
 
     QueueEntry getLeastSignificantOldestEntry();
-
 }

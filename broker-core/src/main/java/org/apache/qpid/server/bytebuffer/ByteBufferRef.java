@@ -31,4 +31,6 @@ public interface ByteBufferRef
     ByteBuffer getBuffer();
 
     void removeFromPool();
+
+    long getPooledBufferId();
 }

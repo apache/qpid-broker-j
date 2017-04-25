@@ -54,6 +54,7 @@ import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -68,6 +69,7 @@ import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.JdkFutureAdapters;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
@@ -1397,6 +1399,37 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public MessageDestination getSystemDestination(final String name)
     {
         return _systemNodeDestinations.get(name);
+    }
+
+    @Override
+    public ListenableFuture<Void> reallocateMessages(final long smallestAllowedBufferId)
+    {
+        final Future future = _houseKeepingTaskExecutor.submit(() ->
+                                                                  {
+                                                                      final Collection<Queue> queues =
+                                                                              getChildren(Queue.class);
+                                                                      for (Queue q : queues)
+                                                                      {
+                                                                          if (q.getState() == State.ACTIVE)
+                                                                          {
+                                                                              q.reallocateMessages(
+                                                                                      smallestAllowedBufferId);
+                                                                          }
+                                                                      }
+                                                                  });
+        return JdkFutureAdapters.listenInPoolThread(future);
+    }
+
+    @Override
+    public long getTotalDepthOfQueuesBytesIncludingHeader()
+    {
+        long total = 0;
+        final Collection<Queue> queues = getChildren(Queue.class);
+        for(Queue q : queues)
+        {
+            total += q.getQueueDepthBytesIncludingHeader();
+        }
+        return total;
     }
 
     @Override

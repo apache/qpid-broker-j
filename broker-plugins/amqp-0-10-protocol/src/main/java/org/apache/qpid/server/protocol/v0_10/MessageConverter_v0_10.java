@@ -108,7 +108,13 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
                     {
                         return false;
                     }
-        };
+
+                    @Override
+                    public void reallocate(final long smallestAllowedBufferId)
+                    {
+
+                    }
+                };
     }
 
     private MessageMetaData_0_10 convertMetaData(ServerMessage serverMsg)

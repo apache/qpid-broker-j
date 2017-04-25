@@ -53,6 +53,7 @@ public class QpidByteBuffer
             "_disposed");
     private static final ThreadLocal<QpidByteBuffer> _cachedBuffer = new ThreadLocal<>();
     private static final ByteBuffer[] EMPTY_BYTE_BUFFER_ARRAY = new ByteBuffer[0];
+    private static final double REALLOCATION_CAPACITY_THRESHOLD_FRACTION = 0.9;
     private volatile static boolean _isPoolInitialized;
     private volatile static BufferPool _bufferPool;
     private volatile static int _pooledBufferSize;
@@ -541,6 +542,11 @@ public class QpidByteBuffer
         return this;
     }
 
+    private long getPooledBufferId()
+    {
+        return _ref.getPooledBufferId();
+    }
+
     ByteBuffer getUnderlyingBuffer()
     {
         return _buffer;
@@ -819,6 +825,63 @@ public class QpidByteBuffer
     public static int getPooledBufferSize()
     {
         return _pooledBufferSize;
+    }
+
+    public static int getAllocatedDirectMemorySize()
+    {
+        return _pooledBufferSize * getNumberOfActivePooledBuffers();
+    }
+
+    public static int getNumberOfActivePooledBuffers()
+    {
+        return PooledByteBufferRef.getActiveBufferCount();
+    }
+
+    public static int getNumberOfPooledBuffers()
+    {
+        return _bufferPool.size();
+    }
+
+    public static long getLargestPooledBufferId()
+    {
+        return PooledByteBufferRef.getLargestBufferId();
+    }
+
+    public static List<QpidByteBuffer> reallocateIfNecessary(final long smallestAllowedBufferId, Collection<QpidByteBuffer> data)
+    {
+        if (data != null)
+        {
+            List<QpidByteBuffer> newCopy = new ArrayList<>(data.size());
+            for (QpidByteBuffer buf : data)
+            {
+                newCopy.add(reallocateIfNecessary(smallestAllowedBufferId, buf));
+            }
+            return newCopy;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public static QpidByteBuffer reallocateIfNecessary(final long smallestAllowedBufferId, final QpidByteBuffer data)
+    {
+        double capacityThreshold = QpidByteBuffer.getPooledBufferSize() * REALLOCATION_CAPACITY_THRESHOLD_FRACTION;
+        if (data != null
+            && data.isDirect()
+            && data.getPooledBufferId() < smallestAllowedBufferId
+            && data.remaining() < capacityThreshold)
+        {
+            QpidByteBuffer newBuf = allocateDirect(data.remaining());
+            newBuf.put(data);
+            newBuf.flip();
+            data.dispose();
+            return newBuf;
+        }
+        else
+        {
+            return data;
+        }
     }
 
     private static final class BufferInputStream extends InputStream

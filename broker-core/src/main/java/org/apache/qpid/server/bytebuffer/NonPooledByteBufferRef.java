@@ -54,4 +54,10 @@ class NonPooledByteBufferRef implements ByteBufferRef
     {
 
     }
+
+    @Override
+    public long getPooledBufferId()
+    {
+        return Long.MAX_VALUE;
+    }
 }

@@ -306,6 +306,35 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     }
 
     @Override
+    public void reallocate(final long smallestAllowedBufferId)
+    {
+        if (_headerSection != null)
+        {
+            _headerSection.reallocate(smallestAllowedBufferId);
+        }
+        if (_deliveryAnnotationsSection != null)
+        {
+            _deliveryAnnotationsSection.reallocate(smallestAllowedBufferId);
+        }
+        if (_messageAnnotationsSection != null)
+        {
+            _messageAnnotationsSection.reallocate(smallestAllowedBufferId);
+        }
+        if (_propertiesSection != null)
+        {
+            _propertiesSection.reallocate(smallestAllowedBufferId);
+        }
+        if (_applicationPropertiesSection != null)
+        {
+            _applicationPropertiesSection.reallocate(smallestAllowedBufferId);
+        }
+        if (_footerSection != null)
+        {
+            _footerSection.reallocate(smallestAllowedBufferId);
+        }
+    }
+
+    @Override
     public void clearEncodedForm()
     {
         dispose();

@@ -66,6 +66,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.queue.AbstractQueue.QueueEntryFilter;
+import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
@@ -1156,9 +1157,11 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         when(message.getMessageNumber()).thenReturn(id);
         when(message.getMessageHeader()).thenReturn(header);
 
+        StoredMessage storedMessage = mock(StoredMessage.class);
+        when(message.getStoredMessage()).thenReturn(storedMessage);
+
         MessageReference ref = mock(MessageReference.class);
         when(ref.getMessage()).thenReturn(message);
-
 
         when(message.newReference()).thenReturn(ref);
         when(message.newReference(any(TransactionLogResource.class))).thenReturn(ref);

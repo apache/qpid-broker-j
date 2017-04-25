@@ -39,4 +39,6 @@ public interface StoredMessage<M extends StorableMessageMetaData>
     boolean isInMemory();
 
     boolean flowToDisk();
+
+    void reallocate(final long smallestAllowedBufferId);
 }

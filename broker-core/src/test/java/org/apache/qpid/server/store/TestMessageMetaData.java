@@ -85,6 +85,12 @@ public class TestMessageMetaData implements StorableMessageMetaData
     }
 
     @Override
+    public void reallocate(final long smallestAllowedBufferId)
+    {
+
+    }
+
+    @Override
     public void writeToBuffer(QpidByteBuffer dest)
     {
         dest.putLong(_messageId);

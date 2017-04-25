@@ -121,6 +121,12 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
             {
                 return false;
             }
+
+            @Override
+            public void reallocate(final long smallestAllowedBufferId)
+            {
+
+            }
         };
     }
 

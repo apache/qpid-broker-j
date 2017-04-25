@@ -29,13 +29,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Content;
-import org.apache.qpid.server.model.DoOnConfigThread;
 import org.apache.qpid.server.model.ManageableMessage;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
@@ -202,6 +203,8 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound")
     long getMessagesOut();
 
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Total Depth of Queues Including Header")
+    long getTotalDepthOfQueuesBytesIncludingHeader();
 
     @Override
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
@@ -279,6 +282,8 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     long getTotalQueueDepthBytes();
 
     MessageDestination getSystemDestination(String name);
+
+    ListenableFuture<Void> reallocateMessages(long smallestAllowedBufferId);
 
     interface Transaction
     {

@@ -1329,6 +1329,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         Collection<QpidByteBuffer> getData();
         void setData(Collection<QpidByteBuffer> data);
         boolean isHardRef();
+        void reallocate(final long smallestAllowedBufferId);
     }
 
     private static final class MessageDataHardRef<T extends StorableMessageMetaData> implements MessageDataRef<T>
@@ -1363,6 +1364,16 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         public boolean isHardRef()
         {
             return true;
+        }
+
+        @Override
+        public void reallocate(final long smallestAllowedBufferId)
+        {
+            if(_metaData != null)
+            {
+                _metaData.reallocate(smallestAllowedBufferId);
+            }
+            _data = QpidByteBuffer.reallocateIfNecessary(smallestAllowedBufferId, _data);
         }
     }
 
@@ -1417,6 +1428,17 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         public boolean isHardRef()
         {
             return false;
+        }
+
+        @Override
+        public void reallocate(final long smallestAllowedBufferId)
+        {
+            if(_metaData != null)
+            {
+                _metaData.reallocate(smallestAllowedBufferId);
+            }
+
+            _data = QpidByteBuffer.reallocateIfNecessary(smallestAllowedBufferId, _data);
         }
     }
 
@@ -1683,6 +1705,15 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 ((MessageDataSoftRef)_messageDataRef).clear();
             }
             return true;
+        }
+
+        @Override
+        public synchronized void reallocate(final long smallestAllowedBufferId)
+        {
+            if(_messageDataRef != null)
+            {
+                _messageDataRef.reallocate(smallestAllowedBufferId);
+            }
         }
 
         @Override

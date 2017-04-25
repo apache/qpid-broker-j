@@ -58,6 +58,13 @@ public abstract class AbstractSection<T> implements EncodingRetainingSection<T>
 
     }
 
+
+    @Override
+    public final void reallocate(final long smallestAllowedBufferId)
+    {
+        _encodedForm = QpidByteBuffer.reallocateIfNecessary(smallestAllowedBufferId, _encodedForm);
+    }
+
     @Override
     public final long getEncodedSize()
     {
