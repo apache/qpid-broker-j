@@ -31,15 +31,17 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.message.EnqueueableMessage;
+import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.test.utils.QpidTestCase;
 
-public class FlowToDiskMessageObserverTest extends QpidTestCase
+public class FlowToDiskTransactionObserverTest extends QpidTestCase
 {
     private static final int MAX_UNCOMMITTED_IN_MEMORY_SIZE = 100;
-    private LocalTransaction.FlowToDiskMessageObserver _flowToDiskMessageObserver;
+    private FlowToDiskTransactionObserver _flowToDiskMessageObserver;
     private EventLogger _eventLogger    ;
     private LogSubject _logSubject;
+    private ServerTransaction _transaction;
 
     @Override
     public void setUp() throws Exception
@@ -47,9 +49,10 @@ public class FlowToDiskMessageObserverTest extends QpidTestCase
         super.setUp();
         _eventLogger = mock(EventLogger.class);
         _logSubject = mock(LogSubject.class);
-        _flowToDiskMessageObserver = new LocalTransaction.FlowToDiskMessageObserver(MAX_UNCOMMITTED_IN_MEMORY_SIZE,
-                                                                                    _logSubject,
-                                                                                    _eventLogger);
+        _flowToDiskMessageObserver = new FlowToDiskTransactionObserver(MAX_UNCOMMITTED_IN_MEMORY_SIZE,
+                                                                       _logSubject,
+                                                                       _eventLogger);
+        _transaction = mock(ServerTransaction.class);
     }
 
     public void testOnMessageEnqueue() throws Exception
@@ -58,20 +61,21 @@ public class FlowToDiskMessageObserverTest extends QpidTestCase
         EnqueueableMessage<?> message2 = createMessage(1);
         EnqueueableMessage<?> message3 = createMessage(1);
 
-        _flowToDiskMessageObserver.onMessageEnqueue(message1);
+        _flowToDiskMessageObserver.onMessageEnqueue(_transaction, message1);
 
         StoredMessage handle1 = message1.getStoredMessage();
         verify(handle1, never()).flowToDisk();
         verify(_eventLogger, never()).message(same(_logSubject), any(LogMessage.class));
 
-        _flowToDiskMessageObserver.onMessageEnqueue(message2);
+        _flowToDiskMessageObserver.onMessageEnqueue(_transaction, message2);
 
         StoredMessage handle2 = message2.getStoredMessage();
         verify(handle1).flowToDisk();
         verify(handle2).flowToDisk();
         verify(_eventLogger).message(same(_logSubject), any(LogMessage.class));
 
-        _flowToDiskMessageObserver.onMessageEnqueue(message3);
+        final ServerTransaction transaction2 = mock(ServerTransaction.class);
+        _flowToDiskMessageObserver.onMessageEnqueue(transaction2, message3);
 
         StoredMessage handle3 = message2.getStoredMessage();
         verify(handle1).flowToDisk();
@@ -80,19 +84,24 @@ public class FlowToDiskMessageObserverTest extends QpidTestCase
         verify(_eventLogger).message(same(_logSubject), any(LogMessage.class));
     }
 
-    public void testReset() throws Exception
+    public void testOnDischarge() throws Exception
     {
-        EnqueueableMessage<?> message1 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+        EnqueueableMessage<?> message1 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE - 1);
         EnqueueableMessage<?> message2 = createMessage(1);
+        EnqueueableMessage<?> message3 = createMessage(1);
 
-        _flowToDiskMessageObserver.onMessageEnqueue(message1);
-        _flowToDiskMessageObserver.reset();
-        _flowToDiskMessageObserver.onMessageEnqueue(message2);
+        _flowToDiskMessageObserver.onMessageEnqueue(_transaction, message1);
+        final ServerTransaction transaction2 = mock(ServerTransaction.class);
+        _flowToDiskMessageObserver.onMessageEnqueue(transaction2, message2);
+        _flowToDiskMessageObserver.onDischarge(_transaction);
+        _flowToDiskMessageObserver.onMessageEnqueue(transaction2, message3);
 
         StoredMessage handle1 = message1.getStoredMessage();
         StoredMessage handle2 = message2.getStoredMessage();
+        StoredMessage handle3 = message2.getStoredMessage();
         verify(handle1, never()).flowToDisk();
         verify(handle2, never()).flowToDisk();
+        verify(handle3, never()).flowToDisk();
         verify(_eventLogger, never()).message(same(_logSubject), any(LogMessage.class));
     }
 
@@ -102,6 +111,10 @@ public class FlowToDiskMessageObserverTest extends QpidTestCase
         StoredMessage handle = mock(StoredMessage.class);
         when(message.getStoredMessage()).thenReturn(handle);
         when(handle.getContentSize()).thenReturn(size);
+        final StorableMessageMetaData metadata = mock(StorableMessageMetaData.class);
+        when(metadata.getStorableSize()).thenReturn(0);
+        when(metadata.getContentSize()).thenReturn(size);
+        when(handle.getMetaData()).thenReturn(metadata);
         return message;
     }
 }

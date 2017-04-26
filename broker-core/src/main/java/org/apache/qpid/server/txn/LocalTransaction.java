@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.txn;
 
+import static org.apache.qpid.server.txn.TransactionObserver.NOOP_TRANSACTION_OBSERVER;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -29,16 +31,11 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogSubject;
-import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
-import org.apache.qpid.server.store.StorableMessageMetaData;
-import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -54,7 +51,7 @@ public class LocalTransaction implements ServerTransaction
     protected static final Logger _logger = LoggerFactory.getLogger(LocalTransaction.class);
 
     private final List<Action> _postTransactionActions = new ArrayList<>();
-    private final MessageObserver _messageObserver;
+    private final TransactionObserver _transactionObserver;
 
     private volatile Transaction _transaction;
     private final ActivityTimeAccessor _activityTime;
@@ -66,28 +63,21 @@ public class LocalTransaction implements ServerTransaction
 
     public LocalTransaction(MessageStore transactionLog)
     {
-        this(transactionLog, MessageObserver.NOOP_MESSAGE_OBSERVER);
+        this(transactionLog, NOOP_TRANSACTION_OBSERVER);
     }
 
-    public LocalTransaction(MessageStore transactionLog, MessageObserver messageObserver)
+    public LocalTransaction(MessageStore transactionLog, TransactionObserver transactionObserver)
     {
-        this(transactionLog, new ActivityTimeAccessor()
-        {
-            @Override
-            public long getActivityTime()
-            {
-                return System.currentTimeMillis();
-            }
-        }, messageObserver);
+        this(transactionLog, null, transactionObserver);
     }
 
     public LocalTransaction(MessageStore transactionLog,
                             ActivityTimeAccessor activityTime,
-                            MessageObserver messageObserver)
+                            TransactionObserver transactionObserver)
     {
         _transactionLog = transactionLog;
-        _activityTime = activityTime;
-        _messageObserver = messageObserver;
+        _activityTime = activityTime == null ? () -> System.currentTimeMillis() : activityTime;
+        _transactionObserver = transactionObserver == null ? NOOP_TRANSACTION_OBSERVER : transactionObserver;
     }
 
     @Override
@@ -199,7 +189,7 @@ public class LocalTransaction implements ServerTransaction
     {
         sync();
         initTransactionStartTimeIfNecessaryAndAdvanceUpdateTime();
-
+        _transactionObserver.onMessageEnqueue(this, message);
         if(queue.getMessageDurability().persist(message.isPersistent()))
         {
             try
@@ -276,14 +266,13 @@ public class LocalTransaction implements ServerTransaction
                 });
             }
         }
-        _messageObserver.onMessageEnqueue(message);
     }
 
     public void enqueue(Collection<? extends BaseQueue> queues, EnqueueableMessage message, EnqueueAction postTransactionAction)
     {
         sync();
         initTransactionStartTimeIfNecessaryAndAdvanceUpdateTime();
-
+        _transactionObserver.onMessageEnqueue(this, message);
         try
         {
             final MessageEnqueueRecord[] records = new MessageEnqueueRecord[queues.size()];
@@ -347,7 +336,6 @@ public class LocalTransaction implements ServerTransaction
             }
             tidyUpOnError(e);
         }
-        _messageObserver.onMessageEnqueue(message);
     }
 
     public void commit()
@@ -529,7 +517,7 @@ public class LocalTransaction implements ServerTransaction
 
     private void resetDetails()
     {
-        _messageObserver.reset();
+        _transactionObserver.onDischarge(this);
         _asyncTran = null;
         _transaction = null;
         _postTransactionActions.clear();
@@ -556,83 +544,5 @@ public class LocalTransaction implements ServerTransaction
     public boolean isRollbackOnly()
     {
         return _isRollbackOnly;
-    }
-
-
-    public interface MessageObserver
-    {
-        MessageObserver NOOP_MESSAGE_OBSERVER = new NoopMessageObserver();
-
-        void onMessageEnqueue(EnqueueableMessage<? extends StorableMessageMetaData> message);
-
-        void reset();
-    }
-
-    private static class NoopMessageObserver implements MessageObserver
-    {
-        @Override
-        public void onMessageEnqueue(final EnqueueableMessage<? extends StorableMessageMetaData> message)
-        {
-            // noop
-        }
-
-        @Override
-        public void reset()
-        {
-            // noop
-        }
-    }
-
-    public static class FlowToDiskMessageObserver implements MessageObserver
-    {
-        private volatile long _uncommittedMessageSize;
-        private final List<StoredMessage<? extends StorableMessageMetaData>> _uncommittedMessages = new ArrayList<>();
-        private final LogSubject _logSubject;
-        private final EventLogger _eventLogger;
-        private final long _maxUncommittedInMemorySize;
-
-        public FlowToDiskMessageObserver(final long maxUncommittedInMemorySize,
-                                         final LogSubject logSubject,
-                                         final EventLogger eventLogger)
-        {
-            _logSubject = logSubject;
-            _eventLogger = eventLogger;
-            _maxUncommittedInMemorySize = maxUncommittedInMemorySize;
-        }
-
-        @Override
-        public void onMessageEnqueue(final EnqueueableMessage<? extends StorableMessageMetaData> message)
-        {
-            StoredMessage<? extends StorableMessageMetaData> handle = message.getStoredMessage();
-            _uncommittedMessageSize += handle.getContentSize();
-            if (_uncommittedMessageSize > _maxUncommittedInMemorySize)
-            {
-                handle.flowToDisk();
-                if(!_uncommittedMessages.isEmpty() || _uncommittedMessageSize == handle.getContentSize())
-                {
-                    _eventLogger.message(_logSubject, ChannelMessages.LARGE_TRANSACTION_WARN(_uncommittedMessageSize));
-                }
-
-                if(!_uncommittedMessages.isEmpty())
-                {
-                    for (StoredMessage<? extends StorableMessageMetaData> uncommittedHandle : _uncommittedMessages)
-                    {
-                        uncommittedHandle.flowToDisk();
-                    }
-                    _uncommittedMessages.clear();
-                }
-            }
-            else
-            {
-                _uncommittedMessages.add(handle);
-            }
-        }
-
-        @Override
-        public void reset()
-        {
-            _uncommittedMessageSize = 0L;
-            _uncommittedMessages.clear();
-        }
     }
 }

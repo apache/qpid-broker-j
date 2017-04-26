@@ -81,8 +81,6 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     protected final SecurityToken _token;
     protected final PublishAuthorisationCache _publishAuthCache;
 
-    private final long _maxUncommittedInMemorySize;
-
     protected final LogSubject _logSubject;
 
     protected final List<Action<? super S>> _taskList = new CopyOnWriteArrayList<>();
@@ -125,9 +123,6 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         final long authCacheTimeout = _connection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT);
         final int authCacheSize = _connection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE);
         _publishAuthCache = new PublishAuthorisationCache(_token, authCacheTimeout, authCacheSize);
-
-        _maxUncommittedInMemorySize = _connection.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
-
         _logSubject = new ChannelLogSubject(this);
 
         setState(State.ACTIVE);
@@ -409,11 +404,6 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         {
             getAMQPConnection().notifyWork(this);
         }
-    }
-
-    public long getMaxUncommittedInMemorySize()
-    {
-        return _maxUncommittedInMemorySize;
     }
 
     protected abstract void updateBlockedStateIfNecessary();

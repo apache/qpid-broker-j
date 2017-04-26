@@ -23,6 +23,7 @@ package org.apache.qpid.server.txn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -604,22 +605,24 @@ public class LocalTransactionTest extends QpidTestCase
         assertEquals("Transaction update time should be reset after rollback", 0, _transaction.getTransactionUpdateTime());
     }
 
-    public void testEnqueueInvokesMessageObserver() throws Exception
+    public void testEnqueueInvokesTransactionObserver() throws Exception
     {
-
-        final LocalTransaction.MessageObserver messageObserver = mock(LocalTransaction.MessageObserver.class);
-        _transaction = new LocalTransaction(_transactionLog, messageObserver);
+        final TransactionObserver
+                transactionObserver = mock(TransactionObserver.class);
+        _transaction = new LocalTransaction(_transactionLog, transactionObserver);
 
         _message = createTestMessage(true);
         _queues = createTestBaseQueues(new boolean[] {false, true, false, true});
 
-        _transaction.enqueue(_queues, _message, _action1);
+        _transaction.enqueue(_queues, _message, null);
 
-        verify(messageObserver).onMessageEnqueue(_message);
+        verify(transactionObserver).onMessageEnqueue(_transaction, _message);
 
-        _transaction.enqueue(createQueue(true), _message, _action1);
+        ServerMessage message2 = createTestMessage(true);
+        _transaction.enqueue(createQueue(true), message2, null);
 
-        verify(messageObserver, times(2)).onMessageEnqueue(_message);
+        verify(transactionObserver).onMessageEnqueue(_transaction, message2);
+        verifyNoMoreInteractions(transactionObserver);
     }
 
     private Collection<MessageInstance> createTestQueueEntries(boolean[] queueDurableFlags, boolean[] messagePersistentFlags)

@@ -88,7 +88,6 @@ import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.LocalTransaction;
-import org.apache.qpid.server.txn.LocalTransaction.ActivityTimeAccessor;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -287,10 +286,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     {
         _transaction = new LocalTransaction(_messageStore,
                                             () -> _connection.getLastReadTime(),
-                                            new LocalTransaction.FlowToDiskMessageObserver(
-                                                    getMaxUncommittedInMemorySize(),
-                                                    _logSubject,
-                                                    getEventLogger()));
+                                            _connection);
         _txnStarts.incrementAndGet();
     }
 

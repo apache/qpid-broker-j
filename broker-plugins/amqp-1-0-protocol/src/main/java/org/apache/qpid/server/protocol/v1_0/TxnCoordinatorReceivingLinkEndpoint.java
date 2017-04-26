@@ -122,7 +122,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
                     Session_1_0 session = getSession();
                     if(command instanceof Declare)
                     {
-                        final IdentifiedTransaction txn = session.getConnection().createLocalTransaction(session);
+                        final IdentifiedTransaction txn = session.getConnection().createLocalTransaction();
                         _createdTransactions.put(txn.getId(), txn.getServerTransaction());
 
                         Declared state = new Declared();

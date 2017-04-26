@@ -52,9 +52,11 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.logging.subjects.ConnectionLogSubject;
+import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.ContextProvider;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Port;
@@ -69,6 +71,10 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
+import org.apache.qpid.server.store.StorableMessageMetaData;
+import org.apache.qpid.server.txn.FlowToDiskTransactionObserver;
+import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.txn.TransactionObserver;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
 import org.apache.qpid.server.transport.network.NetworkConnection;
@@ -117,6 +123,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     private final AtomicLong _maxMessageSize = new AtomicLong(Long.MAX_VALUE);
     private volatile int _messageCompressionThreshold;
+    private volatile TransactionObserver _transactionObserver;
 
     public AbstractAMQPConnection(Broker<?> broker,
                                   ServerNetworkConnection network,
@@ -205,6 +212,10 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         SlowConnectionOpenTicker slowConnectionOpenTicker = new SlowConnectionOpenTicker(maxAuthDelay);
         _aggregateTicker.addTicker(slowConnectionOpenTicker);
         _lastReadTime = _lastWriteTime = getCreatedTime().getTime();
+        _transactionObserver = new FlowToDiskTransactionObserver(getContextValue(Long.class,
+                                                                                 Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE),
+                                                                 _logSubject,
+                                                                 _eventLoggerProvider.getEventLogger());
 
         logConnectionOpen();
     }
@@ -614,6 +625,16 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         return closeAsyncIfNotAlreadyClosing();
     }
 
+    @Override
+    protected ListenableFuture<Void> onClose()
+    {
+        if (_transactionObserver != null)
+        {
+            _transactionObserver.reset();
+        }
+        return Futures.immediateFuture(null);
+    }
+
     private ListenableFuture<Void> closeAsyncIfNotAlreadyClosing()
     {
         if (_modelClosing.compareAndSet(false, true))
@@ -925,6 +946,25 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     public Principal getExternalPrincipal()
     {
         return getNetwork().getPeerPrincipal();
+    }
+
+    @Override
+    public void onMessageEnqueue(final ServerTransaction transaction,
+                                 final EnqueueableMessage<? extends StorableMessageMetaData> message)
+    {
+        _transactionObserver.onMessageEnqueue(transaction, message);
+    }
+
+    @Override
+    public void onDischarge(final ServerTransaction transaction)
+    {
+        _transactionObserver.onDischarge(transaction);
+    }
+
+    @Override
+    public void reset()
+    {
+        _transactionObserver.reset();
     }
 
 }
