@@ -635,18 +635,18 @@ public class SSLUtil
 
     private static boolean looksLikeSSLv3ClientHello(QpidByteBuffer buffer)
     {
-        int first = buffer.get(buffer.position()+0);
-        int second = buffer.get(buffer.position()+1);
-        int third = buffer.get(buffer.position()+2);
-        int sixth = buffer.get(buffer.position()+5);
+        int contentType = buffer.get(buffer.position()+0);
+        int majorVersion = buffer.get(buffer.position()+1);
+        int minorVersion = buffer.get(buffer.position()+2);
+        int messageType = buffer.get(buffer.position()+5);
 
-        return first == 22 && // SSL Handshake
-                   (second == 3 && // SSL 3.0 / TLS 1.x
-                    (third == 0 || // SSL 3.0
-                     third == 1 || // TLS 1.0
-                     third == 2 || // TLS 1.1
-                     third == 3)) && // TLS1.2
-                   (sixth == 1); // client_hello
+        return contentType == 22 && // SSL Handshake
+                   (majorVersion == 3 && // SSL 3.0 / TLS 1.x
+                    (minorVersion == 0 || // SSL 3.0
+                     minorVersion == 1 || // TLS 1.0
+                     minorVersion == 2 || // TLS 1.1
+                     minorVersion == 3)) && // TLS1.2
+                   (messageType == 1); // client_hello
     }
 
     public final static String getServerNameFromTLSClientHello(QpidByteBuffer source)
@@ -657,92 +657,103 @@ public class SSLUtil
         {
 
             // Do we have a complete header?
-            if (input.remaining() < 5)
+            if (!isSufficientToDetermineClientSNIHost(source))
+            {
+                throw new IllegalArgumentException("Source buffer does not contain enough data to determine the SNI name");
+            }
+            else if(!looksLikeSSLv3ClientHello(source))
             {
                 return null;
             }
 
-            byte first = input.get();
-            byte second = input.get();
-            byte third = input.get();
-            if (first == 22 && third != 0x01)
+            byte contentType = input.get();
+            byte majorVersion = input.get();
+            byte minorVersion = input.get();
+            if (minorVersion != 0x00) // not supported for SSL 3.0
             {
 
                 int recordLength = input.getUnsignedShort();
-                if (recordLength > input.remaining())
+                int messageType = input.get();
+                // 24-bit length field
+                int length = ((input.get() & 0xFF) << 16) | ((input.get() & 0xFF) << 8) | (input.get() & 0xFF);
+                if(input.remaining() < length)
                 {
                     return null;
                 }
+                input.limit(length + input.position());
 
-                if (input.get() == 0x01)
+                input.position(input.position() + 34);  // hello minor/major version + random
+                int skip = (int) input.get(); // session-id
+                input.position(input.position() + skip);
+                skip = input.getUnsignedShort(); // cipher suites
+                input.position(input.position() + skip);
+                skip = (int) input.get(); // compression methods
+                input.position(input.position() + skip);
+
+                if (input.hasRemaining())
                 {
-                    // 24-bit length field
-                    int length = ((input.get() & 0xFF) << 16) | ((input.get() & 0xFF) << 8) | (input.get() & 0xFF);
 
-                    input.limit(length + input.position());
+                    int remaining = input.getUnsignedShort();
 
-                    input.position(input.position() + 34);  // hello minor/major version + random
-                    int skip = (int) input.get(); // session-id
-                    input.position(input.position() + skip);
-                    skip = input.getUnsignedShort(); // cipher suites
-                    input.position(input.position() + skip);
-                    skip = (int) input.get(); // compression methods
-                    input.position(input.position() + skip);
-
-                    if (input.hasRemaining())
+                    if(input.remaining() < remaining)
                     {
+                        // invalid remaining length
+                        return null;
+                    }
 
-                        int remaining = input.getUnsignedShort();
-                        input.limit(input.position()+remaining);
-                        while (input.hasRemaining())
+                    input.limit(input.position()+remaining);
+                    while (input.hasRemaining())
+                    {
+                        int extensionType = input.getUnsignedShort();
+
+                        int extensionLength = input.getUnsignedShort();
+
+                        if (extensionType == 0x00)
                         {
-                            int extensionType = input.getUnsignedShort();
 
-                            int extensionLength = input.getUnsignedShort();
-
-                            if (extensionType == 0x00)
+                            int extensionDataRemaining = extensionLength;
+                            if (extensionDataRemaining >= 2)
                             {
-
-                                int extensionDataRemaining = extensionLength;
-                                if (extensionDataRemaining >= 2)
+                                int listLength = input.getUnsignedShort();     // length of server_name_list
+                                if (listLength + 2 != extensionDataRemaining)
                                 {
-                                    int listLength = input.getUnsignedShort();     // length of server_name_list
-                                    if (listLength + 2 != extensionDataRemaining)
+                                    // invalid format
+                                    return null;
+                                }
+
+                                extensionDataRemaining -= 2;
+                                while (extensionDataRemaining > 0)
+                                {
+                                    int code = input.get();
+                                    int serverNameLength = input.getUnsignedShort();
+                                    if (serverNameLength > extensionDataRemaining)
                                     {
-                                        // invalid format
+                                        // invalid format;
                                         return null;
                                     }
+                                    byte[] encoded = new byte[serverNameLength];
+                                    input.get(encoded);
 
-                                    extensionDataRemaining -= 2;
-                                    while (extensionDataRemaining > 0)
+                                    if (code == StandardConstants.SNI_HOST_NAME)
                                     {
-                                        int code = input.get();
-                                        int serverNameLength = input.getUnsignedShort();
-                                        if (serverNameLength > extensionDataRemaining)
-                                        {
-                                            // invalid format;
-                                            return null;
-                                        }
-                                        byte[] encoded = new byte[serverNameLength];
-                                        input.get(encoded);
-
-                                        if (code == StandardConstants.SNI_HOST_NAME)
-                                        {
-
-                                            return new SNIHostName(encoded).getAsciiName();
-                                        }
-                                        extensionDataRemaining -= serverNameLength + 3;
+                                        return new SNIHostName(encoded).getAsciiName();
                                     }
+                                    extensionDataRemaining -= serverNameLength + 3;
                                 }
+                            }
+                            return null;
+                        }
+                        else
+                        {
+                            if(input.remaining() < extensionLength)
+                            {
                                 return null;
                             }
-                            else
-                            {
-                                input.position(input.position() + extensionLength);
-                            }
+                            input.position(input.position() + extensionLength);
                         }
                     }
                 }
+
             }
             return null;
 
