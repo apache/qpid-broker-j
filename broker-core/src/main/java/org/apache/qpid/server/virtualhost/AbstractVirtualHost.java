@@ -2399,12 +2399,19 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         Collection<Queue> queues = getChildren(Queue.class);
         long totalSize = calculateTotalEnqueuedSize(queues);
         _logger.debug("Allocating target size to queues, total target: {} ; total enqueued size {}", targetSize, totalSize);
-        if(targetSize > 0l)
+        if (targetSize > 0l)
         {
             for (Queue<?> q : queues)
             {
-                long size = (long) ((((double) q.getPotentialMemoryFootprint() / (double) totalSize))
-                                             * (double) targetSize);
+                long size;
+                if (totalSize == 0)
+                {
+                    size = targetSize / queues.size();
+                }
+                else
+                {
+                    size = (long) ((q.getQueueDepthBytesIncludingHeader() / (double) totalSize) * targetSize);
+                }
 
                 q.setTargetSize(size);
             }
@@ -2525,7 +2532,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         long total = 0;
         for(Queue<?> queue : queues)
         {
-            total += queue.getPotentialMemoryFootprint();
+            total += queue.getQueueDepthBytesIncludingHeader();
         }
         return total;
     }

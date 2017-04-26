@@ -83,16 +83,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     String MAXIMUM_QUEUE_DEPTH_MESSAGES = "maximumQueueDepthMessages";
     String MAXIMUM_QUEUE_DEPTH_BYTES = "maximumQueueDepthBytes";
 
-    String QUEUE_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT = "queue.minimumEstimatedMemoryFootprint";
-    @SuppressWarnings("unused")
-    @ManagedContextDefault( name = QUEUE_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT)
-    long DEFAULT_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT = 102400L;
-
-    String QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD = "queue.estimatedMessageMemoryOverhead";
-    @SuppressWarnings("unused")
-    @ManagedContextDefault( name = QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD)
-    long DEFAULT_ESTIMATED_MESSAGE_MEMORY_OVERHEAD = 1024L;
-
     String QUEUE_SCAVANGE_COUNT = "qpid.queue.scavenge_count";
     @SuppressWarnings("unused")
     @ManagedContextDefault( name = QUEUE_SCAVANGE_COUNT)
@@ -482,8 +472,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     void recover(ServerMessage<?> message, MessageEnqueueRecord enqueueRecord);
 
     void setTargetSize(long targetSize);
-
-    long getPotentialMemoryFootprint();
 
     boolean isHeld(QueueEntry queueEntry, final long evaluationTime);
 

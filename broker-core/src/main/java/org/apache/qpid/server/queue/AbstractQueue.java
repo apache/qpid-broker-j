@@ -195,11 +195,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final Set<NotificationCheck> _notificationChecks =
             Collections.synchronizedSet(EnumSet.noneOf(NotificationCheck.class));
 
-
-    private volatile long _estimatedAverageMessageHeaderSize;
-    private volatile long _estimatedMessageMemoryOverhead;
-    private volatile long _estimatedMinimumMemoryFootprint;
-
     private AtomicBoolean _stopped = new AtomicBoolean(false);
 
     private final AtomicBoolean _deleted = new AtomicBoolean(false);
@@ -350,9 +345,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         _logSubject = new QueueLogSubject(this);
 
-        _estimatedMinimumMemoryFootprint = getContextValue(Long.class, QUEUE_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT);
-        _estimatedMessageMemoryOverhead = getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD);
-
         _overflowPolicyHandler = createOverflowPolicyHandler(getOverflowPolicy());
 
         _queueHouseKeepingTask = new AdvanceConsumersTask();
@@ -476,7 +468,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             _messageGroupManager = null;
         }
 
-        _estimatedAverageMessageHeaderSize = getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD);
         _mimeTypeToFileExtension = getContextValue(Map.class, MAP_OF_STRING_STRING, MIME_TYPE_TO_FILE_EXTENSION);
 
         if(_defaultFilters != null)
@@ -1107,7 +1098,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             doEnqueue(message, action, enqueueRecord);
         }
 
-        long estimatedQueueSize = _queueStatistics.getQueueSize() + _queueStatistics.getQueueCount() * _estimatedAverageMessageHeaderSize;
+        long estimatedQueueSize = _queueStatistics.getQueueSizeIncludingHeader();
         _flowToDiskChecker.flowToDiskAndReportIfNecessary(message.getStoredMessage(), estimatedQueueSize,
                                                           _targetQueueSize.get());
     }
@@ -2038,7 +2029,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         QueueEntryIterator queueListIterator = getEntries().iterator();
 
-        final long estimatedQueueSize = _queueStatistics.getQueueSize() + _queueStatistics.getQueueCount() * _estimatedAverageMessageHeaderSize;
+        final long estimatedQueueSize = _queueStatistics.getQueueSizeIncludingHeader();
         _flowToDiskChecker.reportFlowToDiskStatusIfNecessary(estimatedQueueSize, _targetQueueSize.get());
 
         final Set<NotificationCheck> perMessageChecks = new HashSet<>();
@@ -2079,16 +2070,31 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     // the time the check actually occurs. So verify we
                     // can actually get the message to perform the check.
                     ServerMessage msg = node.getMessage();
-
                     if (msg != null)
                     {
-                        cumulativeQueueSize += msg.getSize() + _estimatedAverageMessageHeaderSize;
-                        _flowToDiskChecker.flowToDiskIfNecessary(msg.getStoredMessage(), cumulativeQueueSize,
-                                                                 _targetQueueSize.get());
-
-                        for(NotificationCheck check : perMessageChecks)
+                        MessageReference messageReference = null;
+                        try
                         {
-                            checkForNotification(msg, listener, currentTime, thresholdTime, check);
+                            messageReference = msg.newReference();
+                            cumulativeQueueSize += msg.getSizeIncludingHeader();
+                            _flowToDiskChecker.flowToDiskIfNecessary(msg.getStoredMessage(), cumulativeQueueSize,
+                                                                     _targetQueueSize.get());
+
+                            for(NotificationCheck check : perMessageChecks)
+                            {
+                                checkForNotification(msg, listener, currentTime, thresholdTime, check);
+                            }
+                        }
+                        catch(MessageDeletedException e)
+                        {
+                            // Ignore
+                        }
+                        finally
+                        {
+                            if (messageReference != null)
+                            {
+                                messageReference.release();
+                            }
                         }
                     }
                 }
@@ -2179,14 +2185,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             return false;
         }
-    }
-
-    @Override
-    public long getPotentialMemoryFootprint()
-    {
-
-        return Math.max(_estimatedMinimumMemoryFootprint,
-                        getQueueDepthBytes() + _estimatedMessageMemoryOverhead * getQueueDepthMessages());
     }
 
     public long getAlertRepeatGap()
