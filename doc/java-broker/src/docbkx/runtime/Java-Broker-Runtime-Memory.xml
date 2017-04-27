@@ -99,11 +99,18 @@
       </para>
       <para>
         When the broker is <link linkend="Java-Broker-Runtime-Memory-Low-Memory-Direct">running low on direct memory</link>
-        it will evict messages from memory and <link linkend="Java-Broker-Runtime-Flow-To-Disk">flow them to disk</link>.
+        it will evict enqueued messages from memory and <link linkend="Java-Broker-Runtime-Flow-To-Disk">flow them to disk</link>.
         For persistent messages this only means freeing the direct memory representation because they always have an on-disk representation to guard against unexpected failure (e.g., a power cut).
         For transient messages this implies additional disk I/O.
         After being flown to disk messages need to be re-read from disk before delivery.
       </para>
+      <para>Please, note that messages from uncommitted transactions are not
+        <link linkend="Java-Broker-Runtime-Flow-To-Disk">flown to disk</link> as part of
+        <link linkend="Java-Broker-Runtime-Memory-Low-Memory-Direct">running into low direct memory conditions</link>,
+        as they are not enqueued yet. The <literal>Connection</literal> has its own threshold for
+        keeping messages from uncommitted transactions in memory. Only when <literal>Connection</literal> threshold
+        is breached, the uncommitted messages on the connection are
+        <link linkend="Java-Broker-Runtime-Flow-To-Disk">flown to disk</link>.</para>
     </section>
     <section xml:id="Java-Broker-Runtime-Memory-Usage-BDB">
       <title>Message Store</title>
@@ -200,6 +207,12 @@
           The system property <literal>broker.flowToDiskThreshold</literal> sets the threshold (in bytes) for flowing transient messages to disk.
           Should the broker use more than direct memory it will flow incoming messages to disk.
           Should utilisation fall beneath the threshold it will stop flowing messages to disk.
+        </listitem>
+        <listitem>
+          The system property <literal>connection.maxUncommittedInMemorySize</literal> sets the threshold (in bytes)
+          for total messages sizes (in bytes) from connection uncommitted transactions when messages are hold in memory.
+          If threshold is exceeded, all messages from connection in-flight transactions are flown to disk including
+          those arriving after breaching the threshold.
         </listitem>
       </itemizedlist>
     </section>

@@ -47,7 +47,11 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
 
     String MAX_UNCOMMITTED_IN_MEMORY_SIZE = "connection.maxUncommittedInMemorySize";
 
-    @ManagedContextDefault(name = MAX_UNCOMMITTED_IN_MEMORY_SIZE)
+    @ManagedContextDefault(name = MAX_UNCOMMITTED_IN_MEMORY_SIZE,
+            description = "Defines the maximum limit of total messages sizes (in bytes) from uncommitted transactions"
+                          + " which connection can hold in memory. If limit is breached, all messages from"
+                          + " connection in-flight transactions are flown to disk including those arriving"
+                          + " after breaching the limit.")
     long DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE = 10l * 1024l * 1024l;
 
 
