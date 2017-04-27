@@ -32,6 +32,7 @@ import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -47,6 +48,7 @@ import javax.tools.JavaFileObject;
 
 import org.apache.qpid.server.License;
 
+@SupportedAnnotationTypes(ConfiguredObjectRegistrationGenerator.MANAGED_OBJECT_CANONICAL_NAME)
 public class ConfiguredObjectRegistrationGenerator extends AbstractProcessor
 {
 
@@ -56,6 +58,7 @@ public class ConfiguredObjectRegistrationGenerator extends AbstractProcessor
 
     private Map<String, String> _typeMap = new HashMap<>();
     private Map<String, String> _categoryMap = new HashMap<>();
+    private boolean _elementProcessingDone;
 
     @Override
     public SourceVersion getSupportedSourceVersion()
@@ -64,72 +67,80 @@ public class ConfiguredObjectRegistrationGenerator extends AbstractProcessor
     }
 
     @Override
-    public Set<String> getSupportedAnnotationTypes()
-    {
-        return Collections.singleton(MANAGED_OBJECT_CANONICAL_NAME);
-    }
-
-    @Override
     public boolean process(final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv)
     {
-
-        Elements elementUtils = processingEnv.getElementUtils();
-        TypeElement annotationElement = elementUtils.getTypeElement(MANAGED_OBJECT_CANONICAL_NAME);
-
-
-        try
+        if (!_elementProcessingDone)
         {
-
-            for (Element e : roundEnv.getElementsAnnotatedWith(annotationElement))
+            final Elements elementUtils = processingEnv.getElementUtils();
+            final TypeElement managedObjectElement = elementUtils.getTypeElement(MANAGED_OBJECT_CANONICAL_NAME);
+            try
             {
-                if (e.getKind().equals(ElementKind.INTERFACE) || e.getKind().equals(ElementKind.CLASS))
+                roundEnv.getElementsAnnotatedWith(managedObjectElement).stream()
+                        .map(element -> elementUtils.getPackageOf(element))
+                        .flatMap(packageElement -> packageElement.getEnclosedElements().stream())
+                        .filter(element -> hasAnnotation(element, managedObjectElement))
+                        .forEach(annotatedElement -> processAnnotatedElement(elementUtils,
+                                                                             managedObjectElement,
+                                                                             annotatedElement));
+
+                for (Map.Entry<String, Set<String>> entry : _managedObjectClasses.entrySet())
                 {
-                    PackageElement packageElement = elementUtils.getPackageOf(e);
-                    String packageName = packageElement.getQualifiedName().toString();
-                    String className = e.getSimpleName().toString();
-                    AnnotationMirror annotation = getAnnotation(e, annotationElement);
-
-                    AnnotationValue registerValue = getAnnotationValue(annotation, "register");
-
-                    if(registerValue == null || (Boolean) registerValue.getValue() )
-                    {
-                        AnnotationValue typeValue = getAnnotationValue(annotation, "type");
-
-                        if (typeValue != null)
-                        {
-                            _typeMap.put(packageName + "." + className, (String) typeValue.getValue());
-                            processingEnv.getMessager()
-                                    .printMessage(Diagnostic.Kind.NOTE,
-                                                  "looking for " + packageName + "." + className);
-                            _categoryMap.put(packageName + "." + className, getCategory((TypeElement) e));
-
-                        }
-
-
-                        Set<String> classNames = _managedObjectClasses.get(packageName);
-                        if (classNames == null)
-                        {
-                            classNames = new HashSet<>();
-                            _managedObjectClasses.put(packageName, classNames);
-                        }
-                        classNames.add(className);
-                    }
+                    processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
+                                                             String.format("Generating CO registration for package '%s'", entry.getKey()));
+                    generateRegistrationFile(entry.getKey(), entry.getValue());
                 }
-            }
-            for (Map.Entry<String, Set<String>> entry : _managedObjectClasses.entrySet())
-            {
-                generateRegistrationFile(entry.getKey(), entry.getValue());
-            }
-            _managedObjectClasses.clear();
-            _typeMap.clear();
-            _categoryMap.clear();
-        }
-        catch (Exception e)
-        {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Error: " + e.getLocalizedMessage());
-        }
+                _managedObjectClasses.clear();
+                _typeMap.clear();
+                _categoryMap.clear();
 
+                _elementProcessingDone = true;
+
+            }
+            catch (Exception e)
+            {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Error: " + e.getLocalizedMessage());
+            }
+        }
         return false;
+    }
+
+    private void processAnnotatedElement(final Elements elementUtils,
+                                         final TypeElement annotationElement,
+                                         final Element e)
+    {
+        if (e.getKind().equals(ElementKind.INTERFACE) || e.getKind().equals(ElementKind.CLASS))
+        {
+            PackageElement packageElement = elementUtils.getPackageOf(e);
+            String packageName = packageElement.getQualifiedName().toString();
+            String className = e.getSimpleName().toString();
+            AnnotationMirror annotation = getAnnotation(e, annotationElement);
+
+            AnnotationValue registerValue = getAnnotationValue(annotation, "register");
+
+            if(registerValue == null || (Boolean) registerValue.getValue() )
+            {
+                AnnotationValue typeValue = getAnnotationValue(annotation, "type");
+
+                if (typeValue != null)
+                {
+                    _typeMap.put(packageName + "." + className, (String) typeValue.getValue());
+                    processingEnv.getMessager()
+                            .printMessage(Diagnostic.Kind.NOTE,
+                                          "looking for " + packageName + "." + className);
+                    _categoryMap.put(packageName + "." + className, getCategory((TypeElement) e));
+
+                }
+
+
+                Set<String> classNames = _managedObjectClasses.get(packageName);
+                if (classNames == null)
+                {
+                    classNames = new HashSet<>();
+                    _managedObjectClasses.put(packageName, classNames);
+                }
+                classNames.add(className);
+            }
+        }
     }
 
     private AnnotationValue getAnnotationValue(final AnnotationMirror annotation, final String attribute)
@@ -142,6 +153,11 @@ public class ConfiguredObjectRegistrationGenerator extends AbstractProcessor
             }
         }
         return null;
+    }
+
+    private boolean hasAnnotation(final Element element, final TypeElement annotationElement)
+    {
+        return getAnnotation(element, annotationElement) != null;
     }
 
     private AnnotationMirror getAnnotation(final Element e, final TypeElement annotationElement)
