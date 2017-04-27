@@ -21,11 +21,13 @@
 package org.apache.qpid.bytebuffer;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 class PooledByteBufferRef implements ByteBufferRef
 {
     private static final AtomicIntegerFieldUpdater<PooledByteBufferRef> REF_COUNT = AtomicIntegerFieldUpdater.newUpdater(PooledByteBufferRef.class, "_refCount");
+    private static final AtomicInteger ACTIVE_BUFFERS = new AtomicInteger();
 
     private final ByteBuffer _buffer;
     private volatile int _refCount;
@@ -33,6 +35,7 @@ class PooledByteBufferRef implements ByteBufferRef
     PooledByteBufferRef(final ByteBuffer buffer)
     {
         _buffer = buffer;
+        ACTIVE_BUFFERS.incrementAndGet();
     }
 
     @Override
@@ -51,6 +54,7 @@ class PooledByteBufferRef implements ByteBufferRef
         if(REF_COUNT.get(this) > 0 && REF_COUNT.decrementAndGet(this) == 0)
         {
             QpidByteBuffer.returnToPool(_buffer);
+            ACTIVE_BUFFERS.decrementAndGet();
         }
     }
 
@@ -66,5 +70,9 @@ class PooledByteBufferRef implements ByteBufferRef
         REF_COUNT.set(this, Integer.MIN_VALUE/2);
     }
 
+    public static int getActiveBufferCount()
+    {
+       return ACTIVE_BUFFERS.get();
+    }
 
 }

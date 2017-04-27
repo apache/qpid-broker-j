@@ -324,4 +324,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     ScheduledFuture<?> scheduleTask(long delay, final TimeUnit unit, Runnable task);
 
+    @DerivedAttribute(description = "Threshold direct memory size (in bytes) at which the Broker will start flowing incoming messages to disk.")
+    long getFlowToDiskThreshold();
+
 }

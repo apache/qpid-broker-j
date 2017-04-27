@@ -809,6 +809,21 @@ public class QpidByteBuffer
         return _pooledBufferSize;
     }
 
+    public static int getAllocatedDirectMemorySize()
+    {
+        return _pooledBufferSize * getNumberOfActivePooledBuffers();
+    }
+
+    public static int getNumberOfActivePooledBuffers()
+    {
+        return PooledByteBufferRef.getActiveBufferCount();
+    }
+
+    public static int getNumberOfPooledBuffers()
+    {
+        return _bufferPool.size();
+    }
+
     private static final class BufferInputStream extends InputStream
     {
         private final QpidByteBuffer _qpidByteBuffer;
