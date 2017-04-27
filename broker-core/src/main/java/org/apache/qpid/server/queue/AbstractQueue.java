@@ -65,6 +65,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.bytebuffer.QpidByteBufferInputStream;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
@@ -265,6 +266,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private AdvanceConsumersTask _queueHouseKeepingTask;
     private volatile int _bindingCount;
     private volatile OverflowPolicyHandler _overflowPolicyHandler;
+    private long _flowToDiskThreshold;
 
     private interface HoldMethod
     {
@@ -469,6 +471,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         _mimeTypeToFileExtension = getContextValue(Map.class, MAP_OF_STRING_STRING, MIME_TYPE_TO_FILE_EXTENSION);
+        _flowToDiskThreshold = getAncestor(Broker.class).getFlowToDiskThreshold();
 
         if(_defaultFilters != null)
         {
@@ -3332,7 +3335,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         void flowToDiskIfNecessary(StoredMessage<?> storedMessage, long estimatedQueueSize, final long targetQueueSize)
         {
-            if ((estimatedQueueSize > targetQueueSize) && storedMessage.isInMemory())
+            if ((estimatedQueueSize > targetQueueSize
+                 || QpidByteBuffer.getAllocatedDirectMemorySize() > _flowToDiskThreshold)
+                && storedMessage.isInMemory())
             {
                 storedMessage.flowToDisk();
             }
@@ -3348,7 +3353,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         void reportFlowToDiskStatusIfNecessary(final long estimatedQueueSize, final long targetQueueSize)
         {
-            if (estimatedQueueSize > targetQueueSize)
+            if (estimatedQueueSize > targetQueueSize
+                || QpidByteBuffer.getAllocatedDirectMemorySize() > _flowToDiskThreshold)
             {
                 reportFlowToDiskActiveIfNecessary(estimatedQueueSize, targetQueueSize);
             }

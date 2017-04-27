@@ -152,6 +152,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private long _compactMemoryInterval;
     private double _memoryOccupancyThreshold;
     private long _memoryCompactionIncrement;
+    private long _flowToDiskThreshold;
 
     @ManagedObjectFactoryConstructor
     public BrokerImpl(Map<String, Object> attributes,
@@ -518,8 +519,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @Override
     public synchronized void assignTargetSizes()
     {
-        long totalTarget = getContextValue(Long.class, BROKER_FLOW_TO_DISK_THRESHOLD);
-        LOGGER.debug("Assigning target sizes based on total target {}", totalTarget);
+        LOGGER.debug("Assigning target sizes based on total target {}", _flowToDiskThreshold);
         long totalSize = 0l;
         Collection<VirtualHostNode<?>> vhns = getVirtualHostNodes();
         Map<QueueManagingVirtualHost<?>, Long> vhs = new HashMap<>();
@@ -535,20 +535,20 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             }
         }
 
-        if (totalSize > totalTarget && !_totalMessageSizeExceedThresholdReported)
+        if (totalSize > _flowToDiskThreshold && !_totalMessageSizeExceedThresholdReported)
         {
-            _eventLogger.message(BrokerMessages.FLOW_TO_DISK_ACTIVE(totalSize / 1024, totalTarget / 1024));
+            _eventLogger.message(BrokerMessages.FLOW_TO_DISK_ACTIVE(totalSize / 1024, _flowToDiskThreshold / 1024));
             _totalMessageSizeExceedThresholdReported = true;
             _totalMessageSizeWithinThresholdReported = false;
         }
-        else if (totalSize <= totalTarget && !_totalMessageSizeWithinThresholdReported)
+        else if (totalSize <= _flowToDiskThreshold && !_totalMessageSizeWithinThresholdReported)
         {
-            _eventLogger.message(BrokerMessages.FLOW_TO_DISK_INACTIVE(totalSize / 1024, totalTarget / 1024));
+            _eventLogger.message(BrokerMessages.FLOW_TO_DISK_INACTIVE(totalSize / 1024, _flowToDiskThreshold / 1024));
             _totalMessageSizeWithinThresholdReported = true;
             _totalMessageSizeExceedThresholdReported = false;
         }
 
-        final long proportionalShare = (long) ((double) totalTarget / (double) vhs.size());
+        final long proportionalShare = (long) ((double) _flowToDiskThreshold / (double) vhs.size());
         for (Map.Entry<QueueManagingVirtualHost<?>, Long> entry : vhs.entrySet())
         {
             long virtualHostTotalQueueSize = entry.getValue();
@@ -559,7 +559,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             }
             else
             {
-                long queueSizeBasedShare = (totalTarget * virtualHostTotalQueueSize) / (2 * totalSize);
+                long queueSizeBasedShare = (_flowToDiskThreshold * virtualHostTotalQueueSize) / (2 * totalSize);
                 size = queueSizeBasedShare + (proportionalShare / 2);
             }
 
@@ -594,6 +594,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         long heapMemory = Runtime.getRuntime().maxMemory();
         getEventLogger().message(BrokerMessages.MAX_MEMORY(heapMemory, directMemory));
 
+        _flowToDiskThreshold = getContextValue(Long.class, BROKER_FLOW_TO_DISK_THRESHOLD);
         _compactMemoryThreshold = getContextValue(Long.class, Broker.COMPACT_MEMORY_THRESHOLD);
         _compactMemoryInterval = getContextValue(Long.class, Broker.COMPACT_MEMORY_INTERVAL);
         _memoryOccupancyThreshold = getContextValue(Double.class, Broker.MEMORY_OCCUPANCY_THRESHOLD);
@@ -851,6 +852,12 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     {
         _messagesReceived.registerEvent(1L, timestamp);
         _dataReceived.registerEvent(messageSize, timestamp);
+    }
+
+    @Override
+    public long getFlowToDiskThreshold()
+    {
+        return _flowToDiskThreshold;
     }
 
     @Override
