@@ -655,6 +655,24 @@ public class QpidByteBuffer
         }
     }
 
+    public static Collection<QpidByteBuffer> asQpidByteBuffers(final byte[] data)
+    {
+        return asQpidByteBuffers(data, 0, data.length);
+    }
+
+    public static Collection<QpidByteBuffer> asQpidByteBuffers(final byte[] data, final int offset, final int length)
+    {
+        try (QpidByteBufferOutputStream outputStream = new QpidByteBufferOutputStream(true, getPooledBufferSize()))
+        {
+            outputStream.write(data, offset, length);
+            return outputStream.fetchAccumulatedBuffers();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("unexpected Error converting array to QpidByteBuffers", e);
+        }
+    }
+
     public static SSLEngineResult encryptSSL(SSLEngine engine,
                                              final Collection<QpidByteBuffer> buffers,
                                              QpidByteBuffer dest) throws SSLException
@@ -700,10 +718,7 @@ public class QpidByteBuffer
             int read;
             while ((read = gzipInputStream.read(buf)) != -1)
             {
-                QpidByteBuffer output = isDirect ? allocateDirect(read) : allocate(read);
-                output.put(buf, 0, read);
-                output.flip();
-                uncompressedBuffers.add(output);
+                uncompressedBuffers.addAll(asQpidByteBuffers(buf, 0, read));
             }
             return uncompressedBuffers;
         }

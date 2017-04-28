@@ -293,11 +293,11 @@ class WebSocketProvider implements AcceptingTransport
                         iter.next().run();
                     }
 
-                    QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(length);
-                    buffer.put(data, offset, length);
-                    buffer.flip();
-                    _protocolEngine.received(buffer);
-                    buffer.dispose();
+                    for (QpidByteBuffer qpidByteBuffer : QpidByteBuffer.asQpidByteBuffers(data, offset, length))
+                    {
+                        _protocolEngine.received(qpidByteBuffer);
+                        qpidByteBuffer.dispose();
+                    }
 
                     _connectionWrapper.doWrite();
                 }
