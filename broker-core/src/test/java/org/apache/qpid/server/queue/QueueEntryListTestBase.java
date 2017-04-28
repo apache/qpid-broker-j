@@ -34,13 +34,13 @@ import org.apache.qpid.test.utils.QpidTestCase;
  */
 public abstract class QueueEntryListTestBase extends QpidTestCase
 {
-    public abstract QueueEntryList getTestList();
-    public abstract QueueEntryList getTestList(boolean newList);
+    public abstract QueueEntryList getTestList() throws Exception;
+    public abstract QueueEntryList getTestList(boolean newList) throws Exception;
     public abstract long getExpectedFirstMsgId();
     public abstract int getExpectedListLength();
     public abstract ServerMessage getTestMessageToAdd();
 
-    public void testGetQueue()
+    public void testGetQueue() throws Exception
     {
         assertEquals("Unexpected head entry returned by getHead()", getTestList().getQueue(), getTestQueue());
     }
@@ -52,7 +52,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
      * @see QueueEntryListTestBase#getTestList()
      * @see QueueEntryListTestBase#getTestMessageToAdd()
      */
-    public void testAddSpecificMessage()
+    public void testAddSpecificMessage() throws Exception
     {
         final QueueEntryList list = getTestList();
         list.add(getTestMessageToAdd(), null);
@@ -72,7 +72,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
      * @see QueueEntryListTestBase#getTestList()
      * @see QueueEntryListTestBase#getExpectedListLength()
      */
-    public void testAddGenericMessage()
+    public void testAddGenericMessage() throws Exception
     {
         final QueueEntryList list = getTestList();
         final ServerMessage message = createServerMessage(666l);
@@ -107,7 +107,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
      * @see QueueEntryListTestBase#getTestList()
      * @see QueueEntryListTestBase#getExpectedListLength()
      */
-    public void testListNext()
+    public void testListNext() throws Exception
     {
         final QueueEntryList entryList = getTestList();
         QueueEntry entry = entryList.getHead();
@@ -125,7 +125,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
      * @see QueueEntryListTestBase#getTestList()
      * @see QueueEntryListTestBase#getExpectedListLength()
      */
-    public void testIterator()
+    public void testIterator() throws Exception
     {
         final QueueEntryIterator iter = getTestList().iterator();
         int count = 0;
@@ -178,7 +178,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
      * @see QueueEntryListTestBase#getTestList()
      * @see QueueEntryListTestBase#getExpectedFirstMsgId()
      */
-    public void testGetHead()
+    public void testGetHead() throws Exception
     {
         final QueueEntry head = getTestList().getHead();
         assertNull("Head entry should not contain an actual message", head.getMessage());
@@ -190,7 +190,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
      * Test to verify the entry deletion handled correctly.
      * @see QueueEntryListTestBase#getTestList()
      */
-    public void testEntryDeleted()
+    public void testEntryDeleted() throws Exception
     {
         final QueueEntry head = getTestList().getHead();
 

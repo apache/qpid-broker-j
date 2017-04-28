@@ -42,6 +42,7 @@ import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 public class SortedQueueEntryTest extends QueueEntryImplTestBase
@@ -61,16 +62,7 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
         attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.PERMANENT);
         attributes.put(SortedQueue.SORT_KEY, "KEY");
 
-        final VirtualHostImpl virtualHost = mock(VirtualHostImpl.class);
-        when(virtualHost.getSecurityManager()).thenReturn(mock(org.apache.qpid.server.security.SecurityManager.class));
-        when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
-        ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
-        when(virtualHost.getObjectFactory()).thenReturn(factory);
-        when(virtualHost.getModel()).thenReturn(factory.getModel());
-        when(virtualHost.getPrincipal()).thenReturn(mock(Principal.class));
-        TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-        when(virtualHost.getTaskExecutor()).thenReturn(taskExecutor);
-        when(virtualHost.getChildExecutor()).thenReturn(taskExecutor);
+        final VirtualHostImpl virtualHost =  BrokerTestHelper.createVirtualHost("testVH");
         SortedQueueImpl queue = new SortedQueueImpl(attributes, virtualHost)
         {
             SelfValidatingSortedQueueEntryList _entries;

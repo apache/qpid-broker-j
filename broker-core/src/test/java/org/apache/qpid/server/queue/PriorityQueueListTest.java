@@ -55,7 +55,7 @@ public class PriorityQueueListTest extends QpidTestCase
     private QueueEntry _priority5message1;
     private QueueEntry _priority5message2;
 
-    protected void setUp()
+    protected void setUp() throws Exception
     {
         BrokerTestHelper.setUp();
         QueueEntry[] entries = new QueueEntry[PRIORITIES.length];
@@ -63,16 +63,7 @@ public class PriorityQueueListTest extends QpidTestCase
         queueAttributes.put(Queue.ID, UUID.randomUUID());
         queueAttributes.put(Queue.NAME, getName());
         queueAttributes.put(PriorityQueue.PRIORITIES, 10);
-        final VirtualHostImpl virtualHost = mock(VirtualHostImpl.class);
-        when(virtualHost.getSecurityManager()).thenReturn(mock(SecurityManager.class));
-        when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
-        ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
-        when(virtualHost.getObjectFactory()).thenReturn(factory);
-        when(virtualHost.getModel()).thenReturn(factory.getModel());
-        when(virtualHost.getPrincipal()).thenReturn(mock(Principal.class));
-        TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-        when(virtualHost.getTaskExecutor()).thenReturn(taskExecutor);
-        when(virtualHost.getChildExecutor()).thenReturn(taskExecutor);
+        final VirtualHostImpl virtualHost =  BrokerTestHelper.createVirtualHost("testVH");
         PriorityQueueImpl queue = new PriorityQueueImpl(queueAttributes, virtualHost);
         queue.open();
         _list = queue.getEntries();
