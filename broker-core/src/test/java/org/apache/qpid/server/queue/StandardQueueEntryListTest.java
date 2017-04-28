@@ -38,6 +38,7 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -58,15 +59,7 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         Map<String,Object> queueAttributes = new HashMap<String, Object>();
         queueAttributes.put(Queue.ID, UUID.randomUUID());
         queueAttributes.put(Queue.NAME, getName());
-        final QueueManagingVirtualHost virtualHost = mock(QueueManagingVirtualHost.class);
-        when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
-        _factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
-        when(virtualHost.getObjectFactory()).thenReturn(_factory);
-        when(virtualHost.getModel()).thenReturn(_factory.getModel());
-        TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-        when(virtualHost.getTaskExecutor()).thenReturn(taskExecutor);
-        when(virtualHost.getChildExecutor()).thenReturn(taskExecutor);
-        when(virtualHost.getPrincipal()).thenReturn(mock(Principal.class));
+        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH");
         _testQueue = new StandardQueueImpl(queueAttributes, virtualHost);
         _testQueue.open();
         _sqel = _testQueue.getEntries();
@@ -79,28 +72,20 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
     }
 
     @Override
-    public StandardQueueEntryList getTestList()
+    public StandardQueueEntryList getTestList() throws Exception
     {
         return getTestList(false);
     }
 
     @Override
-    public StandardQueueEntryList getTestList(boolean newList)
+    public StandardQueueEntryList getTestList(boolean newList) throws Exception
     {
         if(newList)
         {
             Map<String,Object> queueAttributes = new HashMap<String, Object>();
             queueAttributes.put(Queue.ID, UUID.randomUUID());
             queueAttributes.put(Queue.NAME, getName());
-            final QueueManagingVirtualHost virtualHost = mock(QueueManagingVirtualHost.class);
-            when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
-            when(virtualHost.getObjectFactory()).thenReturn(_factory);
-            when(virtualHost.getModel()).thenReturn(_factory.getModel());
-            when(virtualHost.getPrincipal()).thenReturn(mock(Principal.class));
-            TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-            when(virtualHost.getTaskExecutor()).thenReturn(taskExecutor);
-            when(virtualHost.getChildExecutor()).thenReturn(taskExecutor);
-
+            final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH");
             StandardQueueImpl queue = new StandardQueueImpl(queueAttributes, virtualHost);
             queue.open();
             return queue.getEntries();
@@ -234,7 +219,7 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         assertEquals("Count should have been equal",count,remainingMessages.size());
     }
 
-    public void testGettingNextElement()
+    public void testGettingNextElement() throws Exception
     {
         final int numberOfEntries = 5;
         final OrderedQueueEntry[] entries = new OrderedQueueEntry[numberOfEntries];

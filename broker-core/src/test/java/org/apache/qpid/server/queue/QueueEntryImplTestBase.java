@@ -42,6 +42,7 @@ import org.apache.qpid.server.message.MessageInstance.UnstealableConsumerAcquire
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
@@ -280,24 +281,14 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
     /**
      * Tests if entries in DEQUEUED or DELETED state are not returned by getNext method.
      */
-    public void testGetNext()
+    public void testGetNext() throws Exception
     {
         int numberOfEntries = 5;
         QueueEntryImpl[] entries = new QueueEntryImpl[numberOfEntries];
         Map<String,Object> queueAttributes = new HashMap<String, Object>();
         queueAttributes.put(Queue.ID, UUID.randomUUID());
         queueAttributes.put(Queue.NAME, getName());
-        final QueueManagingVirtualHost virtualHost = mock(QueueManagingVirtualHost.class);
-        when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
-
-        ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
-        when(virtualHost.getObjectFactory()).thenReturn(factory);
-        when(virtualHost.getModel()).thenReturn(factory.getModel());
-        when(virtualHost.getPrincipal()).thenReturn(mock(Principal.class));
-        TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-        when(virtualHost.getTaskExecutor()).thenReturn(taskExecutor);
-        when(virtualHost.getChildExecutor()).thenReturn(taskExecutor);
-
+        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH");
         StandardQueueImpl queue = new StandardQueueImpl(queueAttributes, virtualHost);
         queue.open();
         OrderedQueueEntryList queueEntryList = queue.getEntries();
