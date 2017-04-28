@@ -21,21 +21,28 @@
 
 package org.apache.qpid.server.store;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class StoredMemoryMessage<T extends StorableMessageMetaData> implements StoredMessage<T>, MessageHandle<T>
 {
     private final long _messageNumber;
-    private QpidByteBuffer _content;
-    private T _metaData;
+
+    private final int _contentSize;
+    private final Queue<QpidByteBuffer> _content = new LinkedList<>();
+    private volatile T _metaData;
 
     public StoredMemoryMessage(long messageNumber, T metaData)
     {
         _messageNumber = messageNumber;
         _metaData = metaData;
+        _contentSize = _metaData.getContentSize();
     }
 
     public long getMessageNumber()
@@ -43,55 +50,64 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         return _messageNumber;
     }
 
-    public void addContent(QpidByteBuffer src)
+    public synchronized void addContent(QpidByteBuffer src)
     {
-        if(_content == null)
-        {
-            _content = src.slice();
-            _content.position(_content.limit());
-        }
-        else
-        {
-            if(_content.remaining() >= src.remaining())
-            {
-                _content.putCopyOf(src);
-            }
-            else
-            {
-                final int contentSize = _metaData.getContentSize();
-                int size = (contentSize < _content.position() + src.remaining())
-                        ? _content.position() + src.remaining()
-                        : contentSize;
-                QpidByteBuffer oldContent = _content;
-                oldContent.flip();
-                _content = QpidByteBuffer.allocateDirect(size);
-                _content.put(oldContent);
-                _content.putCopyOf(src);
-                oldContent.dispose();
-            }
-
-        }
+        _content.add(src.slice());
     }
 
     @Override
-    public StoredMessage<T> allContentAdded()
+    public synchronized StoredMessage<T> allContentAdded()
     {
-        if(_content != null)
-        {
-            _content.flip();
-        }
         return this;
     }
 
 
     @Override
-    public Collection<QpidByteBuffer> getContent(int offset, int length)
+    public synchronized Collection<QpidByteBuffer> getContent(int offset, int length)
     {
-        if(_content == null)
+        Collection<QpidByteBuffer> content = new ArrayList<>(_content.size());
+        int pos = 0;
+        for (QpidByteBuffer buf : _content)
         {
-            return null;
+            if (length > 0)
+            {
+                int bufRemaining = buf.remaining();
+                if (pos + bufRemaining <= offset)
+                {
+                    pos += bufRemaining;
+                }
+                else if (pos >= offset)
+                {
+                    buf = buf.duplicate();
+                    if (bufRemaining <= length)
+                    {
+                        length -= bufRemaining;
+                    }
+                    else
+                    {
+                        buf.limit(length);
+                        length = 0;
+                    }
+                    content.add(buf);
+                    pos += buf.remaining();
+                }
+                else
+                {
+                    int offsetInBuf = offset - pos;
+                    int limit = length < bufRemaining - offsetInBuf ? length : bufRemaining - offsetInBuf;
+                    final QpidByteBuffer bufView = buf.view(offsetInBuf, limit);
+                    content.add(bufView);
+                    length -= limit;
+                    pos += limit + offsetInBuf;
+                }
+            }
         }
-        return Collections.singleton(_content.view(offset, length));
+        return content;
+    }
+
+    public int getContentSize()
+    {
+        return _contentSize;
     }
 
     public T getMetaData()
@@ -99,14 +115,17 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         return _metaData;
     }
 
-    public void remove()
+    public synchronized void remove()
     {
         _metaData.dispose();
         _metaData = null;
         if (_content != null)
         {
-            _content.dispose();
-            _content = null;
+            for (QpidByteBuffer content : _content)
+            {
+                content.dispose();
+            }
+            _content.clear();
         }
     }
 
