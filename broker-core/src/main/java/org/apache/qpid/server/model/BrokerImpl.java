@@ -121,9 +121,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private Timer _reportingTimer;
     private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
 
-    /** Flags used to control the reporting of flow to disk. Protected by this */
-    private boolean _totalMessageSizeExceedThresholdReported = false,  _totalMessageSizeWithinThresholdReported = true;
-
     @ManagedAttributeField
     private int _connection_sessionCountLimit;
     @ManagedAttributeField
@@ -533,19 +530,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                 vhs.put(host, totalQueueDepthBytes);
                 totalSize += totalQueueDepthBytes;
             }
-        }
-
-        if (totalSize > _flowToDiskThreshold && !_totalMessageSizeExceedThresholdReported)
-        {
-            _eventLogger.message(BrokerMessages.FLOW_TO_DISK_ACTIVE(totalSize / 1024, _flowToDiskThreshold / 1024));
-            _totalMessageSizeExceedThresholdReported = true;
-            _totalMessageSizeWithinThresholdReported = false;
-        }
-        else if (totalSize <= _flowToDiskThreshold && !_totalMessageSizeWithinThresholdReported)
-        {
-            _eventLogger.message(BrokerMessages.FLOW_TO_DISK_INACTIVE(totalSize / 1024, _flowToDiskThreshold / 1024));
-            _totalMessageSizeWithinThresholdReported = true;
-            _totalMessageSizeExceedThresholdReported = false;
         }
 
         final long proportionalShare = (long) ((double) _flowToDiskThreshold / (double) vhs.size());
