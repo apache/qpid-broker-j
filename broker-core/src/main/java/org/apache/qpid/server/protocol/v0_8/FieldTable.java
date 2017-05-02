@@ -87,7 +87,7 @@ public class FieldTable
         _encodedSize = buffer.remaining();
     }
 
-    public boolean isClean()
+    public synchronized boolean isClean()
     {
         return _encodedForm != null;
     }
@@ -137,26 +137,30 @@ public class FieldTable
     private AMQTypedValue setProperty(AMQShortString key, AMQTypedValue val)
     {
         checkPropertyName(key);
-        initMapIfNecessary();
-        if (_properties.containsKey(key))
-        {
-            _encodedForm = null;
 
-            if (val == null)
+        synchronized (this)
+        {
+            initMapIfNecessary();
+            if (_properties.containsKey(key))
             {
-                return removeKey(key);
+                _encodedForm = null;
+
+                if (val == null)
+                {
+                    return removeKey(key);
+                }
             }
-        }
-        else if ((_encodedForm != null) && (val != null))
-        {
-            // We have updated data to store in the buffer
-            // So clear the _encodedForm to allow it to be rebuilt later
-            // this is safer than simply appending to any existing buffer.
-            _encodedForm = null;
-        }
-        else if (val == null)
-        {
-            return null;
+            else if ((_encodedForm != null) && (val != null))
+            {
+                // We have updated data to store in the buffer
+                // So clear the _encodedForm to allow it to be rebuilt later
+                // this is safer than simply appending to any existing buffer.
+                _encodedForm = null;
+            }
+            else if (val == null)
+            {
+                return null;
+            }
         }
 
         AMQTypedValue oldVal = _properties.put(key, val);
@@ -831,7 +835,7 @@ public class FieldTable
     }
 
 
-    public byte[] getDataAsBytes()
+    public synchronized byte[] getDataAsBytes()
     {
         if(_encodedForm == null)
         {
@@ -872,7 +876,7 @@ public class FieldTable
         _encodedSize = encodedSize;
     }
 
-    public void addAll(FieldTable fieldTable)
+    public synchronized void addAll(FieldTable fieldTable)
     {
         initMapIfNecessary();
         fieldTable.initMapIfNecessary();
@@ -956,6 +960,11 @@ public class FieldTable
                 _encodedForm = null;
             }
         }
+    }
+
+    public synchronized void reallocate(final long smallestAllowedBufferId)
+    {
+        _encodedForm = QpidByteBuffer.reallocateIfNecessary(smallestAllowedBufferId, _encodedForm);
     }
 
 
@@ -1060,8 +1069,11 @@ public class FieldTable
 
     public AMQTypedValue removeKey(AMQShortString key)
     {
-        initMapIfNecessary();
-        _encodedForm = null;
+        synchronized (this)
+        {
+            initMapIfNecessary();
+            _encodedForm = null;
+        }
         AMQTypedValue value = _properties.remove(key);
         if (value == null)
         {
@@ -1078,7 +1090,7 @@ public class FieldTable
 
     }
 
-    public void clear()
+    public synchronized void clear()
     {
         initMapIfNecessary();
         if (_encodedForm != null)
@@ -1099,7 +1111,7 @@ public class FieldTable
         return _properties.keySet();
     }
 
-    private void putDataInBuffer(QpidByteBuffer buffer)
+    private synchronized void putDataInBuffer(QpidByteBuffer buffer)
     {
         if (_encodedForm != null)
         {

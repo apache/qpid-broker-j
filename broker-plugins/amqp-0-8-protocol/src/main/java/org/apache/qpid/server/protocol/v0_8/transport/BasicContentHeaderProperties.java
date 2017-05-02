@@ -972,5 +972,9 @@ public class BasicContentHeaderProperties
     synchronized void reallocate(final long smallestAllowedBufferId)
     {
         _encodedForm = QpidByteBuffer.reallocateIfNecessary(smallestAllowedBufferId, _encodedForm);
+        if (_headers != null)
+        {
+            _headers.reallocate(smallestAllowedBufferId);
+        }
     }
 }

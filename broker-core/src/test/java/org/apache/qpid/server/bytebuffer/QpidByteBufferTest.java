@@ -899,8 +899,6 @@ public class QpidByteBufferTest extends QpidTestCase
         int inflatedBytesTotal = 0;
         for(QpidByteBuffer inflatedBuf : inflatedBufs)
         {
-            assertEquals("Inflated buf " + bufNum + " is of wrong type", direct, inflatedBuf.isDirect());
-
             int inflatedBytesCount = inflatedBuf.remaining();
             inflatedBytesTotal += inflatedBytesCount;
 
