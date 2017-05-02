@@ -384,16 +384,16 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
-     * <pre>QUE-1014 : Message flow to disk active :  Message memory use {0,number,#} kB exceeds threshold {1,number,#.##} kB</pre>
+     * <pre>QUE-1014 : Message flow to disk active : Queue direct memory : {0,number,#} kB / {1,number,#.##} kB, Broker direct memory : {2,number,#} kB / {3,number,#.##} kB</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage FLOW_TO_DISK_ACTIVE(Number param1, Number param2)
+    public static LogMessage FLOW_TO_DISK_ACTIVE(Number param1, Number param2, Number param3, Number param4)
     {
         String rawMessage = _messages.getString("FLOW_TO_DISK_ACTIVE");
 
-        final Object[] messageArguments = {param1, param2};
+        final Object[] messageArguments = {param1, param2, param3, param4};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -558,16 +558,16 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
-     * <pre>QUE-1015 : Message flow to disk inactive : Message memory use {0,number,#} kB within threshold {1,number,#.##} kB</pre>
+     * <pre>QUE-1015 : Message flow to disk inactive : Queue direct memory : {0,number,#} kB / {1,number,#.##} kB, Broker direct memory : {2,number,#} kB / {3,number,#.##} kB</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage FLOW_TO_DISK_INACTIVE(Number param1, Number param2)
+    public static LogMessage FLOW_TO_DISK_INACTIVE(Number param1, Number param2, Number param3, Number param4)
     {
         String rawMessage = _messages.getString("FLOW_TO_DISK_INACTIVE");
 
-        final Object[] messageArguments = {param1, param2};
+        final Object[] messageArguments = {param1, param2, param3, param4};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
