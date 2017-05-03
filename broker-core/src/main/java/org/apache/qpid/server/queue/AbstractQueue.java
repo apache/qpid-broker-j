@@ -56,6 +56,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
 import org.apache.qpid.filter.selector.TokenMgrError;
@@ -90,6 +92,7 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
@@ -297,6 +300,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
+    private long _flowToDiskThreshold;
 
     private interface HoldMethod
     {
@@ -491,6 +495,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         _maxAsyncDeliveries = getContextValue(Integer.class, Queue.MAX_ASYNCHRONOUS_DELIVERIES);
         _mimeTypeToFileExtension = getContextValue(Map.class, MAP_OF_STRING_STRING, MIME_TYPE_TO_FILE_EXTENSION);
+        _flowToDiskThreshold = _virtualHost.getBroker().getFlowToDiskThreshold();
 
         if(_defaultFilters != null)
         {
@@ -3697,7 +3702,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         void flowToDiskIfNecessary(StoredMessage<?> storedMessage, long estimatedQueueSize, final long targetQueueSize)
         {
-            if ((estimatedQueueSize > targetQueueSize) && storedMessage.isInMemory())
+            if ((estimatedQueueSize > targetQueueSize
+                 || QpidByteBuffer.getAllocatedDirectMemorySize() > _flowToDiskThreshold)
+                && storedMessage.isInMemory())
             {
                 storedMessage.flowToDisk();
             }
@@ -3713,7 +3720,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         void reportFlowToDiskStatusIfNecessary(final long estimatedQueueSize, final long targetQueueSize)
         {
-            if (estimatedQueueSize > targetQueueSize)
+            if (estimatedQueueSize > targetQueueSize
+                || QpidByteBuffer.getAllocatedDirectMemorySize() > _flowToDiskThreshold)
             {
                 reportFlowToDiskActiveIfNecessary(estimatedQueueSize, targetQueueSize);
             }

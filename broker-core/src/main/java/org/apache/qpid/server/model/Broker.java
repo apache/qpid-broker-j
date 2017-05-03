@@ -280,4 +280,8 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     void assignTargetSizes();
 
     int getNetworkBufferSize();
+
+    @DerivedAttribute(description = "Threshold direct memory size (in bytes) at which the Broker will start flowing incoming messages to disk.")
+    long getFlowToDiskThreshold();
+
 }

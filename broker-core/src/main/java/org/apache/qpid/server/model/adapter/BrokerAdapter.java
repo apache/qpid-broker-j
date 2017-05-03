@@ -131,6 +131,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private final BufferPoolMXBean _bufferPoolMXBean;
     private final List<String> _jvmArguments;
     private String _documentationUrl;
+    private long _flowToDiskThreshold;
 
     @ManagedObjectFactoryConstructor
     public BrokerAdapter(Map<String, Object> attributes,
@@ -507,8 +508,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     public synchronized void assignTargetSizes()
     {
-        long totalTarget = getContextValue(Long.class, BROKER_FLOW_TO_DISK_THRESHOLD);
-        LOGGER.debug("Assigning target sizes based on total target {}", totalTarget);
+        LOGGER.debug("Assigning target sizes based on total target {}", _flowToDiskThreshold);
         long totalSize = 0l;
         Collection<VirtualHostNode<?>> vhns = getVirtualHostNodes();
         Map<VirtualHost<?, ?, ?>, Long> vhs = new HashMap<>();
@@ -523,20 +523,20 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             }
         }
 
-        if (totalSize > totalTarget && !_totalMessageSizeExceedThresholdReported)
+        if (totalSize > _flowToDiskThreshold && !_totalMessageSizeExceedThresholdReported)
         {
-            _eventLogger.message(BrokerMessages.FLOW_TO_DISK_ACTIVE(totalSize / 1024, totalTarget / 1024));
+            _eventLogger.message(BrokerMessages.FLOW_TO_DISK_ACTIVE(totalSize / 1024, _flowToDiskThreshold / 1024));
             _totalMessageSizeExceedThresholdReported = true;
             _totalMessageSizeWithinThresholdReported = false;
         }
-        else if (totalSize <= totalTarget && !_totalMessageSizeWithinThresholdReported)
+        else if (totalSize <= _flowToDiskThreshold && !_totalMessageSizeWithinThresholdReported)
         {
-            _eventLogger.message(BrokerMessages.FLOW_TO_DISK_INACTIVE(totalSize / 1024, totalTarget / 1024));
+            _eventLogger.message(BrokerMessages.FLOW_TO_DISK_INACTIVE(totalSize / 1024, _flowToDiskThreshold / 1024));
             _totalMessageSizeWithinThresholdReported = true;
             _totalMessageSizeExceedThresholdReported = false;
         }
 
-        final long proportionalShare = (long) ((double) totalTarget / (double) vhs.size());
+        final long proportionalShare = (long) ((double) _flowToDiskThreshold / (double) vhs.size());
         for (Map.Entry<VirtualHost<?, ?, ?>, Long> entry : vhs.entrySet())
         {
             long virtualHostTotalQueueSize = entry.getValue();
@@ -547,7 +547,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             }
             else
             {
-                long queueSizeBasedShare = (totalTarget * virtualHostTotalQueueSize) / (2 * totalSize);
+                long queueSizeBasedShare = (_flowToDiskThreshold * virtualHostTotalQueueSize) / (2 * totalSize);
                 size = queueSizeBasedShare + (proportionalShare / 2);
             }
 
@@ -577,6 +577,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         long directMemory = getMaxDirectMemorySize();
         long heapMemory = Runtime.getRuntime().maxMemory();
         getEventLogger().message(BrokerMessages.MAX_MEMORY(heapMemory, directMemory));
+
+        _flowToDiskThreshold = getContextValue(Long.class, BROKER_FLOW_TO_DISK_THRESHOLD);
 
         if (SystemUtils.getProcessPid() != null)
         {
@@ -783,6 +785,12 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     {
         _messagesReceived.registerEvent(1L, timestamp);
         _dataReceived.registerEvent(messageSize, timestamp);
+    }
+
+    @Override
+    public long getFlowToDiskThreshold()
+    {
+        return _flowToDiskThreshold;
     }
 
     public StatisticsCounter getMessageReceiptStatistics()
