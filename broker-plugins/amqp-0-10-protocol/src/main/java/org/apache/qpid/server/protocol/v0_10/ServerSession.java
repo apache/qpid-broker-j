@@ -1228,7 +1228,7 @@ public class ServerSession extends SessionInvoker
 
     public void selectTx()
     {
-        _transaction = new LocalTransaction(this.getMessageStore(), getAMQPConnection());
+        _transaction = getConnection().getAmqpConnection().createLocalTransaction();
         _txnStarts.incrementAndGet();
     }
 

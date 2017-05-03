@@ -33,11 +33,12 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.session.AMQPSession;
+import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.TransactionObserver;
 import org.apache.qpid.server.util.Deletable;
 
 public interface AMQPConnection<C extends AMQPConnection<C>>
-        extends Connection<C>, Deletable<C>, EventLoggerProvider, TransactionObserver
+        extends Connection<C>, Deletable<C>, EventLoggerProvider
 {
     Broker<?> getBroker();
 
@@ -80,6 +81,8 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
     boolean hasSessionWithName(byte[] name);
 
     AggregateTicker getAggregateTicker();
+
+    LocalTransaction createLocalTransaction();
 
     enum CloseReason
     {

@@ -839,6 +839,22 @@
             Operator using manangement.</para>
           </entry>
         </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CON-1009">
+          <entry morerows="1">CON-1009</entry>
+          <entry>Uncommitted transaction(s) contains <replaceable>size</replaceable> bytes of incoming message data
+            exceeding <replaceable>size</replaceable> bytes limit. Messages will be flown to disk.</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Warns that the transactions associated with this connection contain so much uncommitted data that
+              a threshold has been breached.  The connection responds by flowing the messages already associated with the
+              transactions and any new messages to disk.  The connection reverts to normal behaviour once the
+              quantity of uncommitted data falls beneath the threshold.  Normally this happens when the transactions
+              commit or rollback.
+            </para>
+          </entry>
+        </row>
+
       </tbody>
     </tgroup>
   </table>
@@ -980,16 +996,6 @@
           <entry>
             <para>Indicates that a channel violating the imposed flow control has been closed
             </para>
-          </entry>
-        </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1013">
-          <entry morerows="1">CHN-1013</entry>
-          <entry>Uncommitted transaction contains <replaceable>size</replaceable> bytes of incoming message data.</entry>
-        </row>
-        <row>
-          <entry>
-              <para>Warns about uncommitted transaction with large message(s)
-              </para>
           </entry>
         </row>
       </tbody>

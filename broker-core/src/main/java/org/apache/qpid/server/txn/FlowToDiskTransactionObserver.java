@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogSubject;
-import org.apache.qpid.server.logging.messages.ChannelMessages;
+import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
@@ -40,6 +40,7 @@ public class FlowToDiskTransactionObserver implements TransactionObserver
     private final LogSubject _logSubject;
     private final EventLogger _eventLogger;
     private final long _maxUncommittedInMemorySize;
+    private volatile boolean _reported;
 
     public FlowToDiskTransactionObserver(final long maxUncommittedInMemorySize,
                                          final LogSubject logSubject,
@@ -57,34 +58,30 @@ public class FlowToDiskTransactionObserver implements TransactionObserver
                                  final EnqueueableMessage<? extends StorableMessageMetaData> message)
     {
         StoredMessage<? extends StorableMessageMetaData> handle = message.getStoredMessage();
-        long size = handle.getContentSize() + handle.getMetaData().getStorableSize();
-        long uncommittedMessages = _uncommittedMessageSize.accumulateAndGet(size,
-                                                                            (left, right) -> left + right);
-        if (uncommittedMessages > _maxUncommittedInMemorySize)
+        long messageSize = handle.getContentSize() + handle.getMetaData().getStorableSize();
+
+        long newUncommittedSize = _uncommittedMessageSize.get() + messageSize;
+        if (newUncommittedSize > _maxUncommittedInMemorySize)
         {
             handle.flowToDisk();
-            if(!_uncommittedMessages.isEmpty() || uncommittedMessages == size)
+            if (!_reported)
             {
-                _eventLogger.message(_logSubject, ChannelMessages.LARGE_TRANSACTION_WARN(uncommittedMessages));
+                _eventLogger.message(_logSubject, ConnectionMessages.LARGE_TRANSACTION_WARN(newUncommittedSize, _maxUncommittedInMemorySize));
+                _reported = true;
             }
 
-            if(!_uncommittedMessages.isEmpty())
+            if (!_uncommittedMessages.isEmpty())
             {
                 for (TransactionDetails transactionDetails : _uncommittedMessages.values())
                 {
                     transactionDetails.flowToDisk();
                 }
-                _uncommittedMessages.clear();
             }
         }
         else
         {
-            TransactionDetails newDetails = new TransactionDetails();
-            TransactionDetails details = _uncommittedMessages.putIfAbsent(transaction, newDetails);
-            if (details == null)
-            {
-                details = newDetails;
-            }
+            _uncommittedMessageSize.addAndGet(messageSize);
+            TransactionDetails details = _uncommittedMessages.computeIfAbsent(transaction, key -> new TransactionDetails());
             details.messageEnqueued(handle);
         }
     }
@@ -95,9 +92,12 @@ public class FlowToDiskTransactionObserver implements TransactionObserver
         TransactionDetails transactionDetails = _uncommittedMessages.remove(transaction);
         if (transactionDetails != null)
         {
-            _uncommittedMessageSize.accumulateAndGet(transactionDetails.getUncommittedMessageSize(),
-                                                     (left, right) -> left - right);
+            _uncommittedMessageSize.addAndGet(-transactionDetails.getUncommittedMessageSize());
 
+        }
+        if (_maxUncommittedInMemorySize > _uncommittedMessageSize.get())
+        {
+            _reported = false;
         }
     }
 
@@ -122,7 +122,7 @@ public class FlowToDiskTransactionObserver implements TransactionObserver
         private void messageEnqueued(StoredMessage<? extends StorableMessageMetaData> handle)
         {
             long size = handle.getContentSize() + handle.getMetaData().getStorableSize();
-            _uncommittedMessageSize.accumulateAndGet(size, (left, right) -> left + right);
+            _uncommittedMessageSize.addAndGet(size);
             _uncommittedMessages.add(handle);
         }
 
@@ -132,6 +132,7 @@ public class FlowToDiskTransactionObserver implements TransactionObserver
             {
                 uncommittedHandle.flowToDisk();
             }
+            _uncommittedMessages.clear();
         }
 
         private long getUncommittedMessageSize()

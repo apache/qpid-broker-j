@@ -73,6 +73,7 @@ import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.FlowToDiskTransactionObserver;
+import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.txn.TransactionObserver;
 import org.apache.qpid.server.util.Action;
@@ -124,6 +125,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     private final AtomicLong _maxMessageSize = new AtomicLong(Long.MAX_VALUE);
     private volatile int _messageCompressionThreshold;
     private volatile TransactionObserver _transactionObserver;
+    private long _maxUncommittedInMemorySize;
 
     public AbstractAMQPConnection(Broker<?> broker,
                                   ServerNetworkConnection network,
@@ -212,11 +214,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         SlowConnectionOpenTicker slowConnectionOpenTicker = new SlowConnectionOpenTicker(maxAuthDelay);
         _aggregateTicker.addTicker(slowConnectionOpenTicker);
         _lastReadTime = _lastWriteTime = getCreatedTime().getTime();
-        _transactionObserver = new FlowToDiskTransactionObserver(getContextValue(Long.class,
-                                                                                 Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE),
-                                                                 _logSubject,
-                                                                 _eventLoggerProvider.getEventLogger());
-
+        _maxUncommittedInMemorySize = getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+        _transactionObserver = _maxUncommittedInMemorySize < 0 ? FlowToDiskTransactionObserver.NOOP_TRANSACTION_OBSERVER : new FlowToDiskTransactionObserver(_maxUncommittedInMemorySize, _logSubject, _eventLoggerProvider.getEventLogger());
         logConnectionOpen();
     }
 
@@ -847,6 +846,12 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     }
 
     @Override
+    public long getMaxUncommittedInMemorySize()
+    {
+        return _maxUncommittedInMemorySize;
+    }
+
+    @Override
     public String toString()
     {
         return getNetwork().getRemoteAddress() + "(" + ((getAuthorizedPrincipal() == null ? "?" : getAuthorizedPrincipal().getName()) + ")");
@@ -872,6 +877,13 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     }
 
+    @Override
+    public LocalTransaction createLocalTransaction()
+    {
+        return new LocalTransaction(getAddressSpace().getMessageStore(),
+                                    () -> getLastReadTime(),
+                                    _transactionObserver);
+    }
 
     private class SlowConnectionOpenTicker implements Ticker, SchedulingDelayNotificationListener
     {
@@ -946,25 +958,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     public Principal getExternalPrincipal()
     {
         return getNetwork().getPeerPrincipal();
-    }
-
-    @Override
-    public void onMessageEnqueue(final ServerTransaction transaction,
-                                 final EnqueueableMessage<? extends StorableMessageMetaData> message)
-    {
-        _transactionObserver.onMessageEnqueue(transaction, message);
-    }
-
-    @Override
-    public void onDischarge(final ServerTransaction transaction)
-    {
-        _transactionObserver.onDischarge(transaction);
-    }
-
-    @Override
-    public void reset()
-    {
-        _transactionObserver.reset();
     }
 
 }

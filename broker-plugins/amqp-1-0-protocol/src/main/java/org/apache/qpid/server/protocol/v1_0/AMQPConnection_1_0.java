@@ -74,7 +74,7 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
     void close(Error error);
 
     Iterator<IdentifiedTransaction> getOpenTransactions();
-    IdentifiedTransaction createLocalTransaction();
+    IdentifiedTransaction createIdentifiedTransaction();
     ServerTransaction getTransaction(int txnId);
     void removeTransaction(int txnId);
 }

@@ -24,6 +24,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -103,6 +104,35 @@ public class FlowToDiskTransactionObserverTest extends QpidTestCase
         verify(handle2, never()).flowToDisk();
         verify(handle3, never()).flowToDisk();
         verify(_eventLogger, never()).message(same(_logSubject), any(LogMessage.class));
+    }
+
+    public void testBreachLimitTwice() throws Exception
+    {
+        EnqueueableMessage<?> message1 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE + 1);
+
+        _flowToDiskMessageObserver.onMessageEnqueue(_transaction, message1);
+
+        StoredMessage handle1 = message1.getStoredMessage();
+        verify(handle1).flowToDisk();
+        verify(_eventLogger, times(1)).message(same(_logSubject), any(LogMessage.class));
+
+        _flowToDiskMessageObserver.onDischarge(_transaction);
+
+        EnqueueableMessage<?> message2 = createMessage(MAX_UNCOMMITTED_IN_MEMORY_SIZE / 2);
+        EnqueueableMessage<?> message3 = createMessage((MAX_UNCOMMITTED_IN_MEMORY_SIZE / 2) + 1);
+
+        _flowToDiskMessageObserver.onMessageEnqueue(_transaction, message2);
+
+        StoredMessage handle2 = message2.getStoredMessage();
+        verify(handle2, never()).flowToDisk();
+
+        _flowToDiskMessageObserver.onMessageEnqueue(_transaction, message3);
+
+        StoredMessage handle3 = message3.getStoredMessage();
+        verify(handle2).flowToDisk();
+        verify(handle3).flowToDisk();
+
+        verify(_eventLogger, times(2)).message(same(_logSubject), any(LogMessage.class));
     }
 
     private EnqueueableMessage<?> createMessage(int size)

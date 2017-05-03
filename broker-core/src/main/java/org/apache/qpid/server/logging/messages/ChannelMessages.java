@@ -76,7 +76,6 @@ public class ChannelMessages
     public static final String IDLE_TXN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "channel.idle_txn";
     public static final String FLOW_ENFORCED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "channel.flow_enforced";
     public static final String FLOW_REMOVED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "channel.flow_removed";
-    public static final String LARGE_TRANSACTION_WARN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "channel.large_transaction_warn";
     public static final String DISCARDMSG_NOALTEXCH_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "channel.discardmsg_noaltexch";
 
     static
@@ -95,7 +94,6 @@ public class ChannelMessages
         LoggerFactory.getLogger(IDLE_TXN_LOG_HIERARCHY);
         LoggerFactory.getLogger(FLOW_ENFORCED_LOG_HIERARCHY);
         LoggerFactory.getLogger(FLOW_REMOVED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(LARGE_TRANSACTION_WARN_LOG_HIERARCHY);
         LoggerFactory.getLogger(DISCARDMSG_NOALTEXCH_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Channel_logmessages", _currentLocale);
@@ -805,64 +803,6 @@ public class ChannelMessages
             public String getLogHierarchy()
             {
                 return FLOW_REMOVED_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a Channel message of the Format:
-     * <pre>CHN-1013 : Uncommitted transaction contains {0,number} bytes of incoming message data.</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage LARGE_TRANSACTION_WARN(Number param1)
-    {
-        String rawMessage = _messages.getString("LARGE_TRANSACTION_WARN");
-
-        final Object[] messageArguments = {param1};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return LARGE_TRANSACTION_WARN_LOG_HIERARCHY;
             }
 
             @Override

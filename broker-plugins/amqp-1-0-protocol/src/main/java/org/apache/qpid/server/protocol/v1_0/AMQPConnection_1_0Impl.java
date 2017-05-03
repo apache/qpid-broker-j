@@ -1837,7 +1837,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public IdentifiedTransaction createLocalTransaction()
+    public IdentifiedTransaction createIdentifiedTransaction()
     {
         ServerTransaction[] openTransactions = _openTransactions;
         final int maxOpenTransactions = openTransactions.length;
@@ -1861,7 +1861,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
         }
 
-        final LocalTransaction serverTransaction = new LocalTransaction(getAddressSpace().getMessageStore(), this);
+        final LocalTransaction serverTransaction = createLocalTransaction();
 
         _openTransactions[id] = serverTransaction;
         return new IdentifiedTransaction(id, serverTransaction);

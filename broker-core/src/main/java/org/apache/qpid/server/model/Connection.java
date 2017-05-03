@@ -108,6 +108,11 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     @DerivedAttribute
     Port<?> getPort();
 
+    @DerivedAttribute(description = "The maximum size in bytes that uncommitted transactions associated with this connection"
+                                    + " may grow before the messages contained within the transactions will be flown to disk. "
+                                    + " Disabled if negative.")
+    long getMaxUncommittedInMemorySize();
+
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound")
     long getBytesIn();
 

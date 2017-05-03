@@ -284,9 +284,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     /** Sets this channel to be part of a local transaction */
     private void setLocalTransactional()
     {
-        _transaction = new LocalTransaction(_messageStore,
-                                            () -> _connection.getLastReadTime(),
-                                            _connection);
+        _transaction = _connection.createLocalTransaction();
         _txnStarts.incrementAndGet();
     }
 
