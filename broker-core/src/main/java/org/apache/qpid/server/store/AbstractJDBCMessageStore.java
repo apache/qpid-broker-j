@@ -987,7 +987,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                         QpidByteBuffer buf = QpidByteBuffer.wrap(dataAsBytes);
                         buf.position(1);
                         buf = buf.slice();
-                        MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(dataAsBytes[0]);
+                        int typeOrdinal = dataAsBytes[0] & 0xff;;
+                        MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(typeOrdinal);
                         StorableMessageMetaData metaData = type.createMetaData(buf);
                         buf.dispose();
                         return metaData;
