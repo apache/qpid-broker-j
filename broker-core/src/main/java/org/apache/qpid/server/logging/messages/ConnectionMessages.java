@@ -505,7 +505,7 @@ public class ConnectionMessages
 
     /**
      * Log a Connection message of the Format:
-     * <pre>CON-1009 : Uncommitted transaction(s) contains {0,number} bytes of incoming message data exceeding {1,number} bytes limit. Messages will be flown to disk.</pre>
+     * <pre>CON-1009 : Uncommitted transaction(s) contains {0,number} bytes of incoming message data exceeding {1,number} bytes limit. Messages will be flowed to disk.</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *

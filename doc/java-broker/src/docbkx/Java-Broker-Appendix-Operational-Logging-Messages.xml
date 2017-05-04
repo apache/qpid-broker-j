@@ -842,7 +842,7 @@
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CON-1009">
           <entry morerows="1">CON-1009</entry>
           <entry>Uncommitted transaction(s) contains <replaceable>size</replaceable> bytes of incoming message data
-            exceeding <replaceable>size</replaceable> bytes limit. Messages will be flown to disk.</entry>
+            exceeding <replaceable>size</replaceable> bytes limit. Messages will be flowed to disk.</entry>
         </row>
         <row>
           <entry>
