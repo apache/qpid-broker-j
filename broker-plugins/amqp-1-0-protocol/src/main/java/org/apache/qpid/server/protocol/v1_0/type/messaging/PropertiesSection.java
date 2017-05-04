@@ -21,78 +21,28 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-import java.util.List;
-
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
-import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.PropertiesConstructor;
 
-public class PropertiesSection extends AbstractSection<Properties>
+public class PropertiesSection extends AbstractSection<Properties, Properties>
 {
-
-    private final DescribedTypeConstructorRegistry _typeRegistry;
-    private Properties _properties;
-
     public PropertiesSection(final DescribedTypeConstructorRegistry describedTypeRegistry)
     {
-        _typeRegistry = describedTypeRegistry;
+        super(describedTypeRegistry);
     }
 
-    public PropertiesSection(final Properties properties,
-                             final List<QpidByteBuffer> encodedForm,
-                             final DescribedTypeConstructorRegistry registry)
+    PropertiesSection(final Properties properties,
+                             final SectionEncoder sectionEncoder)
     {
-        _properties = properties;
-        _typeRegistry = registry;
-        setEncodedForm(encodedForm);
+       super(properties, sectionEncoder);
     }
 
     @Override
-    public String toString()
+    protected AbstractDescribedTypeConstructor<Properties> createNonEncodingRetainingSectionConstructor()
     {
-        return getValue().toString();
+        return new PropertiesConstructor();
     }
 
-    @Override
-    public synchronized Properties getValue()
-    {
-        if(_properties == null)
-        {
-            decode();
-        }
-        return _properties;
-    }
-
-    private void decode()
-    {
-        try
-        {
-
-            List<QpidByteBuffer> input = getEncodedForm();
-            int[] originalPositions = new int[input.size()];
-            for(int i = 0; i < input.size(); i++)
-            {
-                originalPositions[i] = input.get(i).position();
-            }
-            int describedByte = QpidByteBufferUtils.get(input);
-            ValueHandler handler = new ValueHandler(_typeRegistry);
-            Object descriptor = handler.parse(input);
-            PropertiesConstructor constructor = new PropertiesConstructor();
-            _properties = constructor.construct(descriptor, input, originalPositions, handler).construct(input, handler);
-            for(int i = 0; i < input.size(); i++)
-            {
-                input.get(i).dispose();
-            }
-
-        }
-        catch (AmqpErrorException e)
-        {
-            // TODO
-            e.printStackTrace();
-        }
-        // TODO
-    }
 }

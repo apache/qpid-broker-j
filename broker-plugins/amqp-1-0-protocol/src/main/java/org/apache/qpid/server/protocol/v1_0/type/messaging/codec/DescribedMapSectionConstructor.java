@@ -122,6 +122,10 @@ public abstract class DescribedMapSectionConstructor<S extends AbstractSection> 
             }
             S object = createObject(((SectionDecoderRegistry)handler.getDescribedTypeRegistry()).getUnderlyingRegistry());
             object.setEncodedForm(encoding);
+            for (QpidByteBuffer buffer: encoding)
+            {
+                buffer.dispose();
+            }
             return object;
 
         }

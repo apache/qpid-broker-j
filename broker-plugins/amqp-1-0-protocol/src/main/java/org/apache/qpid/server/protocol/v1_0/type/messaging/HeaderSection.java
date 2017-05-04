@@ -21,78 +21,27 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-import java.util.List;
-
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
-import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.HeaderConstructor;
 
-public class HeaderSection extends AbstractSection<Header>
+public class HeaderSection extends AbstractSection<Header, Header>
 {
-
-    private final DescribedTypeConstructorRegistry _typeRegistry;
-    private Header _header;
-
     public HeaderSection(final DescribedTypeConstructorRegistry describedTypeRegistry)
     {
-        _typeRegistry = describedTypeRegistry;
+        super(describedTypeRegistry);
     }
 
-    public HeaderSection(final Header header,
-                         final List<QpidByteBuffer> encodedForm,
-                         final DescribedTypeConstructorRegistry registry)
+    HeaderSection(final Header header, final SectionEncoder sectionEncoder)
     {
-        _header = header;
-        _typeRegistry = registry;
-        setEncodedForm(encodedForm);
+        super(header, sectionEncoder);
     }
 
     @Override
-    public String toString()
+    protected AbstractDescribedTypeConstructor<Header> createNonEncodingRetainingSectionConstructor()
     {
-        return getValue().toString();
+        return new HeaderConstructor();
     }
 
-    @Override
-    public synchronized Header getValue()
-    {
-        if(_header == null)
-        {
-            decode();
-        }
-        return _header;
-    }
-
-    private void decode()
-    {
-        try
-        {
-
-            List<QpidByteBuffer> input = getEncodedForm();
-            int[] originalPositions = new int[input.size()];
-            for(int i = 0; i < input.size(); i++)
-            {
-                originalPositions[i] = input.get(i).position();
-            }
-            int describedByte = QpidByteBufferUtils.get(input);
-            ValueHandler handler = new ValueHandler(_typeRegistry);
-            Object descriptor = handler.parse(input);
-            HeaderConstructor constructor = new HeaderConstructor();
-            _header = constructor.construct(descriptor, input, originalPositions, handler).construct(input, handler);
-            for(int i = 0; i < input.size(); i++)
-            {
-                input.get(i).dispose();
-            }
-
-        }
-        catch (AmqpErrorException e)
-        {
-            // TODO
-            e.printStackTrace();
-        }
-        // TODO
-    }
 }

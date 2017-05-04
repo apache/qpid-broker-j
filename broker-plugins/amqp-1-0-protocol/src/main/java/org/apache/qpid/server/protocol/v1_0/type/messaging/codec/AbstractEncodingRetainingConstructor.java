@@ -84,6 +84,10 @@ abstract public class AbstractEncodingRetainingConstructor<T extends EncodingRet
                 }
             }
             object.setEncodedForm(encoding);
+            for (QpidByteBuffer buffer: encoding)
+            {
+                buffer.dispose();
+            }
             return object;
         }
     }

@@ -21,74 +21,30 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-import java.util.List;
 import java.util.Map;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
-import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.DeliveryAnnotationsConstructor;
 
-public class DeliveryAnnotationsSection extends AbstractSection<Map<Symbol,Object>>
+public class DeliveryAnnotationsSection extends AbstractSection<Map<Symbol,Object>, DeliveryAnnotations>
 {
-    private Map<Symbol,Object> _value;
-    private final DescribedTypeConstructorRegistry _typeRegistry;
-
-    public DeliveryAnnotationsSection(DescribedTypeConstructorRegistry registry)
+    public DeliveryAnnotationsSection(final DescribedTypeConstructorRegistry describedTypeRegistry)
     {
-        _typeRegistry = registry;
+        super(describedTypeRegistry);
     }
 
-    public DeliveryAnnotationsSection(final DeliveryAnnotations deliveryAnnotations,
-                                      final List<QpidByteBuffer> encodedForm,
-                                      final DescribedTypeConstructorRegistry registry)
+    DeliveryAnnotationsSection(final DeliveryAnnotations deliveryAnnotations, final SectionEncoder sectionEncoder)
     {
-        _value = deliveryAnnotations.getValue();
-        _typeRegistry = registry;
-        setEncodedForm(encodedForm);
+        super(deliveryAnnotations, sectionEncoder);
     }
 
     @Override
-    public synchronized Map<Symbol,Object> getValue()
+    protected AbstractDescribedTypeConstructor<DeliveryAnnotations> createNonEncodingRetainingSectionConstructor()
     {
-        if(_value == null)
-        {
-            decode();
-        }
-        return _value;
+        return new DeliveryAnnotationsConstructor();
     }
 
-
-    private void decode()
-    {
-        try
-        {
-
-            List<QpidByteBuffer> input = getEncodedForm();
-            int[] originalPositions = new int[input.size()];
-            for(int i = 0; i < input.size(); i++)
-            {
-                originalPositions[i] = input.get(i).position();
-            }
-            int describedByte = QpidByteBufferUtils.get(input);
-            ValueHandler handler = new ValueHandler(_typeRegistry);
-            Object descriptor = handler.parse(input);
-            DeliveryAnnotationsConstructor constructor = new DeliveryAnnotationsConstructor();
-            _value = constructor.construct(descriptor, input, originalPositions, handler).construct(input, handler).getValue();
-            for(int i = 0; i < input.size(); i++)
-            {
-                input.get(i).dispose();
-            }
-
-        }
-        catch (AmqpErrorException e)
-        {
-            // TODO
-            e.printStackTrace();
-        }
-        // TODO
-    }
 }

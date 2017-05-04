@@ -21,10 +21,8 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-import java.util.Collections;
 import java.util.Map;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
@@ -53,7 +51,6 @@ public class Footer implements NonEncodingRetainingSection<Map<Symbol,Object>>
     @Override
     public FooterSection createEncodingRetainingSection(final SectionEncoder encoder)
     {
-        final QpidByteBuffer buf = encoder.encodeObject(this);
-        return new FooterSection(this, Collections.singletonList(buf), encoder.getRegistry());
+        return new FooterSection(this, encoder);
     }
 }

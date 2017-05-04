@@ -128,6 +128,10 @@ public abstract class DescribedListSectionConstructor<S extends AbstractSection>
             }
             S object = createObject(((SectionDecoderRegistry)handler.getDescribedTypeRegistry()).getUnderlyingRegistry());
             object.setEncodedForm(encoding);
+            for (QpidByteBuffer buffer: encoding)
+            {
+                buffer.dispose();
+            }
             return object;
 
         }

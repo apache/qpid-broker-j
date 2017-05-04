@@ -23,11 +23,8 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-
-import java.util.Collections;
 import java.util.List;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 
 public class AmqpSequence implements NonEncodingRetainingSection<List>
@@ -55,7 +52,6 @@ public class AmqpSequence implements NonEncodingRetainingSection<List>
     @Override
     public AmqpSequenceSection createEncodingRetainingSection(final SectionEncoder encoder)
     {
-        final QpidByteBuffer buf = encoder.encodeObject(this);;
-        return new AmqpSequenceSection(this, Collections.singletonList(buf), encoder.getRegistry());
+        return new AmqpSequenceSection(this, encoder);
     }
 }

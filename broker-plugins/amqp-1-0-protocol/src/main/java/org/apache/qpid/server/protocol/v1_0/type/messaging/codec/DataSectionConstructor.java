@@ -139,6 +139,10 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
             }
             DataSection object = new DataSection(((SectionDecoderRegistry)handler.getDescribedTypeRegistry()).getUnderlyingRegistry());
             object.setEncodedForm(encoding);
+            for (QpidByteBuffer buffer: encoding)
+            {
+                buffer.dispose();
+            }
             return object;
 
         }

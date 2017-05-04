@@ -109,6 +109,10 @@ public class AmqpValueSectionConstructor implements DescribedTypeConstructor<Amq
             AmqpValueSection object =
                     new AmqpValueSection(((SectionDecoderRegistry) handler.getDescribedTypeRegistry()).getUnderlyingRegistry());
             object.setEncodedForm(encoding);
+            for (QpidByteBuffer buffer: encoding)
+            {
+                buffer.dispose();
+            }
             return object;
         }
     }
