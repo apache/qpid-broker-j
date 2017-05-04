@@ -286,7 +286,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         if (_messageAnnotationsSection != null)
         {
             _messageAnnotationsSection.dispose();
-            _deliveryAnnotationsSection = null;
+            _messageAnnotationsSection = null;
         }
         if (_propertiesSection != null)
         {

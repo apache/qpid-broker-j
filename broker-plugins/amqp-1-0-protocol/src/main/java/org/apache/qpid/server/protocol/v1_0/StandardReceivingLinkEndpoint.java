@@ -181,6 +181,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                         handle.addContent(buf);
                         buf.dispose();
                     }
+                    dataSection.dispose();
                 }
                 final StoredMessage<MessageMetaData_1_0> storedMessage = handle.allContentAdded();
                 Message_1_0 message = new Message_1_0(storedMessage, getSession().getConnection().getReference());
@@ -376,6 +377,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         MessageAnnotationsSection messageAnnotationsSection = null;
         ApplicationPropertiesSection applicationPropertiesSection = null;
         FooterSection footerSection = null;
+
         Iterator<EncodingRetainingSection<?>> iter = sections.iterator();
         EncodingRetainingSection<?> s = iter.hasNext() ? iter.next() : null;
         if (s instanceof HeaderSection)
