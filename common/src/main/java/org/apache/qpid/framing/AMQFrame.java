@@ -68,7 +68,9 @@ public class AMQFrame extends AMQDataBlock implements EncodableAMQDataBlock
         frameHeader.dispose();
         long size = 8 + _bodyFrame.writePayload(sender);
 
-        sender.send(FRAME_END_BYTE_BUFFER.duplicate());
+        QpidByteBuffer endFrame = FRAME_END_BYTE_BUFFER.duplicate();
+        sender.send(endFrame);
+        endFrame.dispose();
         return size;
     }
 
