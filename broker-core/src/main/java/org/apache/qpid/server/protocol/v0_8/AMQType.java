@@ -550,6 +550,53 @@ public enum AMQType
         }
     },
 
+    UNSIGNED_BYTE('B')
+            {
+                @Override
+                public int getEncodingSize(Object value)
+                {
+                    return EncodingUtils.encodedByteLength();
+                }
+
+                @Override
+                public Short toNativeValue(Object value)
+                {
+                    if (value == null)
+                    {
+                        throw new NullPointerException("Cannot convert null into unsigned byte");
+                    }
+                    else if (value instanceof Short)
+                    {
+                        return (Short) value;
+                    }
+                    else if (value instanceof Number)
+                    {
+                        return ((Number) value).shortValue();
+                    }
+                    else if (value instanceof String)
+                    {
+                        return Short.valueOf((String) value);
+                    }
+                    else
+                    {
+                        throw new NumberFormatException("Cannot convert: " + value + "(" + value.getClass().getName()
+                                                        + ") to unsigned byte.");
+                    }
+                }
+
+                @Override
+                public void writeValueImpl(Object value, QpidByteBuffer buffer)
+                {
+                    buffer.putUnsignedByte((Short) value);
+                }
+
+                @Override
+                public Object readValueFromBuffer(QpidByteBuffer buffer)
+                {
+                    return buffer.getUnsignedByte();
+                }
+    },
+
     SHORT('s')
     {
         public int getEncodingSize(Object value)
@@ -586,6 +633,53 @@ public enum AMQType
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.getShort();
+        }
+    },
+
+    UNSIGNED_SHORT('u')
+    {
+        @Override
+        public int getEncodingSize(Object value)
+        {
+            return EncodingUtils.encodedShortLength();
+        }
+
+        @Override
+        public Integer toNativeValue(Object value)
+        {
+            if (value == null)
+            {
+                throw new NullPointerException("Cannot convert null into unsigned short");
+            }
+            else if (value instanceof Integer)
+            {
+                return (Integer) value;
+            }
+            else if (value instanceof Number)
+            {
+                return ((Number) value).intValue();
+            }
+            else if (value instanceof String)
+            {
+                return Integer.valueOf((String) value);
+            }
+            else
+            {
+                throw new NumberFormatException("Cannot convert: " + value + "(" + value.getClass().getName()
+                    + ") to unsigned short.");
+            }
+        }
+
+        @Override
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
+        {
+            buffer.putUnsignedShort((Integer) value);
+        }
+
+        @Override
+        public Object readValueFromBuffer(QpidByteBuffer buffer)
+        {
+            return buffer.getUnsignedShort();
         }
     },
 
