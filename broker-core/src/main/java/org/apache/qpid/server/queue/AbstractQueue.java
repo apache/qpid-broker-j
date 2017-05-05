@@ -3919,32 +3919,43 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         void reportFlowToDiskStatusIfNecessary(final long estimatedQueueSize, final long targetQueueSize)
         {
+            final int allocatedDirectMemorySize = QpidByteBuffer.getAllocatedDirectMemorySize();
             if (estimatedQueueSize > targetQueueSize
-                || QpidByteBuffer.getAllocatedDirectMemorySize() > _flowToDiskThreshold)
+                || allocatedDirectMemorySize > _flowToDiskThreshold)
             {
-                reportFlowToDiskActiveIfNecessary(estimatedQueueSize, targetQueueSize);
+                reportFlowToDiskActiveIfNecessary(estimatedQueueSize, targetQueueSize, allocatedDirectMemorySize, _flowToDiskThreshold);
             }
             else
             {
-                reportFlowToDiskInactiveIfNecessary(estimatedQueueSize, targetQueueSize);
+                reportFlowToDiskInactiveIfNecessary(estimatedQueueSize, targetQueueSize, allocatedDirectMemorySize, _flowToDiskThreshold);
             }
         }
 
-        private void reportFlowToDiskActiveIfNecessary(long estimatedQueueSize, long targetQueueSize)
+        private void reportFlowToDiskActiveIfNecessary(long estimatedQueueSize,
+                                                       long targetQueueSize,
+                                                       long allocatedDirectMemorySize,
+                                                       long flowToDiskThreshold)
         {
             if (!_lastReportedFlowToDiskStatus.getAndSet(true))
             {
-                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_ACTIVE(estimatedQueueSize / 1024,
-                                                                                        targetQueueSize / 1024));
+                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_ACTIVE(estimatedQueueSize / 1024.0,
+                                                                                        targetQueueSize / 1024.0,
+                                                                                        allocatedDirectMemorySize / 1024.0 / 1024.0,
+                                                                                        flowToDiskThreshold / 1024.0 / 1024.0));
             }
         }
 
-        private void reportFlowToDiskInactiveIfNecessary(long estimatedQueueSize, long targetQueueSize)
+        private void reportFlowToDiskInactiveIfNecessary(long estimatedQueueSize,
+                                                         long targetQueueSize,
+                                                         long allocatedDirectMemorySize,
+                                                         long flowToDiskThreshold)
         {
             if (_lastReportedFlowToDiskStatus.getAndSet(false))
             {
-                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_INACTIVE(estimatedQueueSize / 1024,
-                                                                                          targetQueueSize / 1024));
+                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_INACTIVE(estimatedQueueSize / 1024.0,
+                                                                                          targetQueueSize / 1024.0,
+                                                                                          allocatedDirectMemorySize / 1024.0 / 1024.0,
+                                                                                          flowToDiskThreshold / 1024.0 / 1024.0));
             }
         }
     }
