@@ -23,38 +23,43 @@ package org.apache.qpid.server.bytebuffer;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLong;
 
 class PooledByteBufferRef implements ByteBufferRef
 {
-    private static final AtomicIntegerFieldUpdater<PooledByteBufferRef> REF_COUNT = AtomicIntegerFieldUpdater.newUpdater(PooledByteBufferRef.class, "_refCount");
-    private static final AtomicLong BUFFER_ID = new AtomicLong(Long.MIN_VALUE);
+    private static final AtomicIntegerFieldUpdater<PooledByteBufferRef> REF_COUNT_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(PooledByteBufferRef.class, "_refCount");
+    private static final AtomicIntegerFieldUpdater<PooledByteBufferRef> CLAIMED_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(PooledByteBufferRef.class, "_claimed");
     private static final AtomicInteger ACTIVE_BUFFERS = new AtomicInteger();
     private final ByteBuffer _buffer;
-    private final long _id;
+
     @SuppressWarnings("unused")
     private volatile int _refCount;
+
+    @SuppressWarnings("unused")
+    private volatile int _claimed;
 
     PooledByteBufferRef(final ByteBuffer buffer)
     {
         _buffer = buffer;
-        _id = BUFFER_ID.getAndIncrement();
         ACTIVE_BUFFERS.incrementAndGet();
     }
 
     @Override
-    public void incrementRef()
+    public void incrementRef(final int capacity)
     {
-        if(REF_COUNT.get(this) >= 0)
+        if(REF_COUNT_UPDATER.get(this) >= 0)
         {
-            REF_COUNT.incrementAndGet(this);
+            CLAIMED_UPDATER.addAndGet(this, capacity);
+            REF_COUNT_UPDATER.incrementAndGet(this);
         }
     }
 
     @Override
-    public void decrementRef()
+    public void decrementRef(final int capacity)
     {
-        if(REF_COUNT.get(this) > 0 && REF_COUNT.decrementAndGet(this) == 0)
+        CLAIMED_UPDATER.addAndGet(this, -capacity);
+        if(REF_COUNT_UPDATER.get(this) > 0 && REF_COUNT_UPDATER.decrementAndGet(this) == 0)
         {
             QpidByteBuffer.returnToPool(_buffer);
             ACTIVE_BUFFERS.decrementAndGet();
@@ -68,24 +73,14 @@ class PooledByteBufferRef implements ByteBufferRef
     }
 
     @Override
-    public void removeFromPool()
+    public boolean isSparse(final double minimumSparsityFraction)
     {
-        REF_COUNT.set(this, Integer.MIN_VALUE/2);
+        return minimumSparsityFraction > (double) CLAIMED_UPDATER.get(this) / (double) _buffer.capacity();
     }
 
-    @Override
-    public long getPooledBufferId()
-    {
-        return _id;
-    }
-
-    public static int getActiveBufferCount()
+    static int getActiveBufferCount()
     {
         return ACTIVE_BUFFERS.get();
     }
 
-    public static long getLargestBufferId()
-    {
-        return BUFFER_ID.get();
-    }
 }

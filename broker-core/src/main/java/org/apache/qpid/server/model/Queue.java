@@ -461,7 +461,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
      */
     void checkMessageStatus();
 
-    void reallocateMessages(long smallestAllowedBufferId);
+    void reallocateMessages();
 
     Set<NotificationCheck> getNotificationChecks();
 

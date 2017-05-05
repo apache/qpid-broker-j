@@ -95,9 +95,9 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
     }
 
     @Override
-    public synchronized final void reallocate(final long smallestAllowedBufferId)
+    public synchronized final void reallocate()
     {
-        _encodedForm = QpidByteBuffer.reallocateIfNecessary(smallestAllowedBufferId, _encodedForm);
+        _encodedForm = QpidByteBuffer.reallocateIfNecessary(_encodedForm);
     }
 
     @Override

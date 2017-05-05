@@ -105,7 +105,7 @@ public class InternalMessageMetaData implements StorableMessageMetaData
     }
 
     @Override
-    public void reallocate(final long smallestAllowedBufferId)
+    public void reallocate()
     {
 
     }

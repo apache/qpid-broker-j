@@ -32,13 +32,13 @@ class NonPooledByteBufferRef implements ByteBufferRef
     }
 
     @Override
-    public void incrementRef()
+    public void incrementRef(final int capacity)
     {
 
     }
 
     @Override
-    public void decrementRef()
+    public void decrementRef(final int capacity)
     {
 
     }
@@ -50,14 +50,8 @@ class NonPooledByteBufferRef implements ByteBufferRef
     }
 
     @Override
-    public void removeFromPool()
+    public boolean isSparse(final double minimumSparsityFraction)
     {
-
-    }
-
-    @Override
-    public long getPooledBufferId()
-    {
-        return Long.MAX_VALUE;
+        return false;
     }
 }

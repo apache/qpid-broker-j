@@ -283,7 +283,7 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
     MessageDestination getSystemDestination(String name);
 
-    ListenableFuture<Void> reallocateMessages(long smallestAllowedBufferId);
+    ListenableFuture<Void> reallocateMessages();
 
     interface Transaction
     {

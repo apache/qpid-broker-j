@@ -2112,7 +2112,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public void reallocateMessages(final long smallestAllowedBufferId)
+    public void reallocateMessages()
     {
         QueueEntryIterator queueListIterator = getEntries().iterator();
 
@@ -2127,7 +2127,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     final MessageReference messageReference = message.newReference();
                     try
                     {
-                        message.getStoredMessage().reallocate(smallestAllowedBufferId);
+                        message.getStoredMessage().reallocate();
                     }
                     finally
                     {
@@ -3374,8 +3374,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_ACTIVE(estimatedQueueSize / 1024,
                                                                                         targetQueueSize / 1024,
-                                                                                        allocatedDirectMemorySize / 1024,
-                                                                                        flowToDiskThreshold / 1024));
+                                                                                        allocatedDirectMemorySize / 1024 / 1024,
+                                                                                        flowToDiskThreshold / 1024 / 1024));
             }
         }
 
@@ -3388,8 +3388,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_INACTIVE(estimatedQueueSize / 1024,
                                                                                           targetQueueSize / 1024,
-                                                                                          allocatedDirectMemorySize / 1024,
-                                                                                          flowToDiskThreshold / 1024));
+                                                                                          allocatedDirectMemorySize / 1024 / 1024,
+                                                                                          flowToDiskThreshold / 1024 / 1024));
             }
         }
     }

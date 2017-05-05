@@ -28,6 +28,7 @@ public class EncodingUtilsTest extends QpidTestCase
 {
     private static final int BUFFER_SIZE = 10;
     private static final int POOL_SIZE = 20;
+    private static final double SPARSITY_FRACTION = 1.0;
 
     private QpidByteBuffer _buffer;
 
@@ -36,7 +37,7 @@ public class EncodingUtilsTest extends QpidTestCase
     {
         super.setUp();
         QpidByteBuffer.deinitialisePool();
-        QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE);
+        QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
         _buffer = QpidByteBuffer.allocateDirect(BUFFER_SIZE);
     }
 

@@ -141,9 +141,9 @@ public class MessageMetaData implements StorableMessageMetaData
     }
 
     @Override
-    public synchronized void reallocate(final long smallestAllowedBufferId)
+    public synchronized void reallocate()
     {
-        _contentHeaderBody.reallocate(smallestAllowedBufferId);
+        _contentHeaderBody.reallocate();
     }
 
     private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData>

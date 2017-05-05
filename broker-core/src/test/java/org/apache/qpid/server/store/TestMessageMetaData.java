@@ -85,7 +85,7 @@ public class TestMessageMetaData implements StorableMessageMetaData
     }
 
     @Override
-    public void reallocate(final long smallestAllowedBufferId)
+    public void reallocate()
     {
 
     }

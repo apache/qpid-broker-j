@@ -122,7 +122,7 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
                     }
 
                     @Override
-                    public void reallocate(final long smallestAllowedBufferId)
+                    public void reallocate()
                     {
 
                     }

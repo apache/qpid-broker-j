@@ -1402,7 +1402,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public ListenableFuture<Void> reallocateMessages(final long smallestAllowedBufferId)
+    public ListenableFuture<Void> reallocateMessages()
     {
         final Future future = _houseKeepingTaskExecutor.submit(() ->
                                                                   {
@@ -1412,8 +1412,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                                                       {
                                                                           if (q.getState() == State.ACTIVE)
                                                                           {
-                                                                              q.reallocateMessages(
-                                                                                      smallestAllowedBufferId);
+                                                                              q.reallocateMessages();
                                                                           }
                                                                       }
                                                                   });

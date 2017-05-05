@@ -110,7 +110,7 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
                     }
 
                     @Override
-                    public void reallocate(final long smallestAllowedBufferId)
+                    public void reallocate()
                     {
 
                     }

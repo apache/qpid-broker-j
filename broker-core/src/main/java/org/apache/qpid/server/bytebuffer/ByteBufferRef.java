@@ -24,13 +24,11 @@ import java.nio.ByteBuffer;
 
 public interface ByteBufferRef
 {
-    void incrementRef();
+    void incrementRef(final int capacity);
 
-    void decrementRef();
+    void decrementRef(final int capacity);
 
     ByteBuffer getBuffer();
 
-    void removeFromPool();
-
-    long getPooledBufferId();
+    boolean isSparse(double minimumSparsityFraction);
 }

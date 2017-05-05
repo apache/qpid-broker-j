@@ -29,7 +29,7 @@ public interface EncodingRetaining
     void setEncodedForm(List<QpidByteBuffer> encodedForm);
     List<QpidByteBuffer> getEncodedForm();
     void dispose();
-    void reallocate(final long smallestAllowedBufferId);
+    void reallocate();
     long getEncodedSize();
     void writeTo(QpidByteBuffer dest);
 

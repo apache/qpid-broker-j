@@ -1330,7 +1330,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         Collection<QpidByteBuffer> getData();
         void setData(Collection<QpidByteBuffer> data);
         boolean isHardRef();
-        void reallocate(final long smallestAllowedBufferId);
+        void reallocate();
     }
 
     private static final class MessageDataHardRef<T extends StorableMessageMetaData> implements MessageDataRef<T>
@@ -1368,13 +1368,13 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public void reallocate(final long smallestAllowedBufferId)
+        public void reallocate()
         {
             if(_metaData != null)
             {
-                _metaData.reallocate(smallestAllowedBufferId);
+                _metaData.reallocate();
             }
-            _data = QpidByteBuffer.reallocateIfNecessary(smallestAllowedBufferId, _data);
+            _data = QpidByteBuffer.reallocateIfNecessary(_data);
         }
     }
 
@@ -1432,14 +1432,14 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public void reallocate(final long smallestAllowedBufferId)
+        public void reallocate()
         {
             if(_metaData != null)
             {
-                _metaData.reallocate(smallestAllowedBufferId);
+                _metaData.reallocate();
             }
 
-            _data = QpidByteBuffer.reallocateIfNecessary(smallestAllowedBufferId, _data);
+            _data = QpidByteBuffer.reallocateIfNecessary(_data);
         }
     }
 
@@ -1709,11 +1709,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public synchronized void reallocate(final long smallestAllowedBufferId)
+        public synchronized void reallocate()
         {
             if(_messageDataRef != null)
             {
-                _messageDataRef.reallocate(smallestAllowedBufferId);
+                _messageDataRef.reallocate();
             }
         }
 

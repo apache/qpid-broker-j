@@ -95,16 +95,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault(name = COMPACT_MEMORY_INTERVAL)
     long DEFAULT_COMPACT_MEMORY_INTERVAL = 1000L;
 
-    String MEMORY_OCCUPANCY_THRESHOLD = "qpid.memory_occupancy_threshold";
-    @SuppressWarnings("unused")
-    @ManagedContextDefault(name = MEMORY_OCCUPANCY_THRESHOLD)
-    double DEFAULT_MEMORY_OCCUPANCY_THRESHOLD = 0.5;
-
-    String MEMORY_COMPACTION_INCREMENT = "qpid.memory_compaction_increment";
-    @SuppressWarnings("unused")
-    @ManagedContextDefault(name = MEMORY_COMPACTION_INCREMENT)
-    long DEFAULT_MEMORY_COMPACTION_INCREMENT = 100;
-
     @ManagedContextDefault(name = CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT)
     long DEFAULT_CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT = 5000l;
 
@@ -195,6 +185,10 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE = "broker.directByteBufferPoolSize";
     @ManagedContextDefault(name = BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE)
     int DEFAULT_BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE = 1024;
+
+    String BROKER_DIRECT_BYTE_BUFFER_POOL_SPARSITY_REALLOCATION_FRACTION = "broker.directByteBufferPoolSparsityReallocationFraction";
+    @ManagedContextDefault(name = BROKER_DIRECT_BYTE_BUFFER_POOL_SPARSITY_REALLOCATION_FRACTION)
+    double DEFAULT_BROKER_DIRECT_BYTE_BUFFER_POOL_SPARSITY_REALLOCATION_FRACTION = 0.5;
 
     @ManagedAttribute(validValues = {"org.apache.qpid.server.model.BrokerImpl#getAvailableConfigurationEncrypters()"})
     String getConfidentialConfigurationEncryptionProvider();
@@ -374,17 +368,14 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @DerivedAttribute(description = "Threshold direct memory size (in bytes) at which the Broker will start flowing incoming messages to disk.")
     long getFlowToDiskThreshold();
 
-    @DerivedAttribute(description = "Threshold direct memory size (in bytes) at which the Broker will start considering to compact sparse buffers. Set to -1 to disable. See also " + MEMORY_OCCUPANCY_THRESHOLD)
+    @DerivedAttribute(description = "Threshold direct memory size (in bytes) at which the Broker will start considering to compact sparse buffers. Set to -1 to disable.")
     long getCompactMemoryThreshold();
 
     @DerivedAttribute(description = "Time interval (in milliseconds) between runs of the memory compactor check. See also " + COMPACT_MEMORY_THRESHOLD)
     long getCompactMemoryInterval();
 
-    @DerivedAttribute(description = "Occupancy threshold (fraction) at which point buffers will be compacted. See also " + COMPACT_MEMORY_THRESHOLD)
-    double getMemoryOccupancyThreshold();
-
-    @DerivedAttribute(description = "Approximate number of buffers that will be compacted on each compaction run. See also " + COMPACT_MEMORY_THRESHOLD)
-    long getMemoryCompactionIncrement();
+    @DerivedAttribute(description = "Minimum fraction of direct memory buffer that can be occupied before the buffer is considered for compaction")
+    double getSparsityFraction();
 
     @ManagedOperation(changesConfiguredObjectState = false, nonModifying = true,
             description = "Force direct memory buffer compaction.")

@@ -144,12 +144,10 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private final AccessControl _accessControl;
     private TaskExecutor _preferenceTaskExecutor;
     private String _documentationUrl;
-    private volatile long _smallestAllowedBufferId = QpidByteBuffer.getLargestPooledBufferId();
     private long _compactMemoryThreshold;
     private long _compactMemoryInterval;
-    private double _memoryOccupancyThreshold;
-    private long _memoryCompactionIncrement;
     private long _flowToDiskThreshold;
+    private double _sparsityFraction;
 
     @ManagedObjectFactoryConstructor
     public BrokerImpl(Map<String, Object> attributes,
@@ -207,9 +205,10 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         }
         _networkBufferSize = networkBufferSize;
 
+        _sparsityFraction = getContextValue(Double.class, BROKER_DIRECT_BYTE_BUFFER_POOL_SPARSITY_REALLOCATION_FRACTION);
         int poolSize = getContextValue(Integer.class, BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE);
 
-        QpidByteBuffer.initialisePool(_networkBufferSize, poolSize);
+        QpidByteBuffer.initialisePool(_networkBufferSize, poolSize, _sparsityFraction);
     }
 
     @Override
@@ -438,7 +437,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private void checkDirectMemoryUsage()
     {
-        if (_compactMemoryThreshold >= 0 && getUsedDirectMemorySize() > _compactMemoryThreshold)
+        if (_compactMemoryThreshold >= 0 && QpidByteBuffer.getAllocatedDirectMemorySize() > _compactMemoryThreshold)
         {
             compactMemory();
         }
@@ -581,8 +580,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         _flowToDiskThreshold = getContextValue(Long.class, BROKER_FLOW_TO_DISK_THRESHOLD);
         _compactMemoryThreshold = getContextValue(Long.class, Broker.COMPACT_MEMORY_THRESHOLD);
         _compactMemoryInterval = getContextValue(Long.class, Broker.COMPACT_MEMORY_INTERVAL);
-        _memoryOccupancyThreshold = getContextValue(Double.class, Broker.MEMORY_OCCUPANCY_THRESHOLD);
-        _memoryCompactionIncrement = getContextValue(Long.class, Broker.MEMORY_COMPACTION_INCREMENT);
 
         if (SystemUtils.getProcessPid() != null)
         {
@@ -1175,86 +1172,47 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     }
 
     @Override
-    public double getMemoryOccupancyThreshold()
+    public double getSparsityFraction()
     {
-        return _memoryOccupancyThreshold;
-    }
-
-    @Override
-    public long getMemoryCompactionIncrement()
-    {
-        return _memoryCompactionIncrement;
+        return _sparsityFraction;
     }
 
     @Override
     public void compactMemory()
     {
-        long memOccupiedByMessages = getMemOccupiedByMessages();
-        double ratio = memOccupiedByMessages / (double) QpidByteBuffer.getAllocatedDirectMemorySize();
+        LOGGER.debug("Compacting direct memory buffers: numberOfActivePooledBuffers: {}",
+                     QpidByteBuffer.getNumberOfActivePooledBuffers());
 
-        if (ratio < _memoryOccupancyThreshold)
-        {
-            int numberOfActivePooledBuffers = QpidByteBuffer.getNumberOfActivePooledBuffers();
-            LOGGER.debug("Compacting direct memory buffers: "
-                         + "memOccupiedByMessages: {}, numberOfActivePooledBuffers: {}, ratio: {}",
-                         memOccupiedByMessages, numberOfActivePooledBuffers, ratio);
-
-            long largestBufferId = QpidByteBuffer.getLargestPooledBufferId();
-            _smallestAllowedBufferId = Math.min(largestBufferId,
-                                                _smallestAllowedBufferId + _memoryCompactionIncrement);
-
-            final Collection<VirtualHostNode<?>> vhns = getVirtualHostNodes();
-            List<ListenableFuture<Void>> futures = new ArrayList<>(vhns.size());
-            for (VirtualHostNode<?> vhn : vhns)
-            {
-                VirtualHost<?> vh = vhn.getVirtualHost();
-                if (vh instanceof QueueManagingVirtualHost)
-                {
-                    ListenableFuture<Void> future = ((QueueManagingVirtualHost) vh).reallocateMessages(
-                            _smallestAllowedBufferId);
-                    futures.add(future);
-                }
-            }
-            final ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(futures);
-            addFutureCallback(combinedFuture, new FutureCallback<List<Void>>()
-            {
-                @Override
-                public void onSuccess(final List<Void> result)
-                {
-                    if (LOGGER.isDebugEnabled())
-                    {
-                        long memOccupiedByMessages = getMemOccupiedByMessages();
-                        double ratio = memOccupiedByMessages / (double) QpidByteBuffer.getAllocatedDirectMemorySize();
-                        LOGGER.debug("After compact direct memory buffers: numberOfActivePooledBuffers: {}, ratio: {}",
-                                     QpidByteBuffer.getNumberOfActivePooledBuffers(),
-                                     ratio);
-                    }
-                }
-
-                @Override
-                public void onFailure(final Throwable t)
-                {
-                    LOGGER.warn("Unexpected error during direct memory compaction.", t);
-                }
-            }, _houseKeepingTaskExecutor);
-        }
-    }
-
-    private long getMemOccupiedByMessages()
-    {
         final Collection<VirtualHostNode<?>> vhns = getVirtualHostNodes();
-
-        long memOccupiedByMessages = 0;
+        List<ListenableFuture<Void>> futures = new ArrayList<>(vhns.size());
         for (VirtualHostNode<?> vhn : vhns)
         {
             VirtualHost<?> vh = vhn.getVirtualHost();
             if (vh instanceof QueueManagingVirtualHost)
             {
-                QueueManagingVirtualHost<?> host = (QueueManagingVirtualHost<?>) vh;
-                memOccupiedByMessages += host.getTotalDepthOfQueuesBytesIncludingHeader();
+                ListenableFuture<Void> future = ((QueueManagingVirtualHost) vh).reallocateMessages();
+                futures.add(future);
             }
         }
-        return memOccupiedByMessages;
+        final ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(futures);
+        addFutureCallback(combinedFuture, new FutureCallback<List<Void>>()
+        {
+            @Override
+            public void onSuccess(final List<Void> result)
+            {
+                if (LOGGER.isDebugEnabled())
+                {
+                   LOGGER.debug("After compact direct memory buffers: numberOfActivePooledBuffers: {}",
+                                QpidByteBuffer.getNumberOfActivePooledBuffers());
+                }
+            }
+
+            @Override
+            public void onFailure(final Throwable t)
+            {
+                LOGGER.warn("Unexpected error during direct memory compaction.", t);
+            }
+        }, _houseKeepingTaskExecutor);
     }
 
     private class AddressSpaceRegistry implements SystemAddressSpaceCreator.AddressSpaceRegistry

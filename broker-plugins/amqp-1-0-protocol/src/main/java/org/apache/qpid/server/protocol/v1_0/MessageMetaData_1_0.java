@@ -306,31 +306,31 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     }
 
     @Override
-    public void reallocate(final long smallestAllowedBufferId)
+    public void reallocate()
     {
         if (_headerSection != null)
         {
-            _headerSection.reallocate(smallestAllowedBufferId);
+            _headerSection.reallocate();
         }
         if (_deliveryAnnotationsSection != null)
         {
-            _deliveryAnnotationsSection.reallocate(smallestAllowedBufferId);
+            _deliveryAnnotationsSection.reallocate();
         }
         if (_messageAnnotationsSection != null)
         {
-            _messageAnnotationsSection.reallocate(smallestAllowedBufferId);
+            _messageAnnotationsSection.reallocate();
         }
         if (_propertiesSection != null)
         {
-            _propertiesSection.reallocate(smallestAllowedBufferId);
+            _propertiesSection.reallocate();
         }
         if (_applicationPropertiesSection != null)
         {
-            _applicationPropertiesSection.reallocate(smallestAllowedBufferId);
+            _applicationPropertiesSection.reallocate();
         }
         if (_footerSection != null)
         {
-            _footerSection.reallocate(smallestAllowedBufferId);
+            _footerSection.reallocate();
         }
     }
 

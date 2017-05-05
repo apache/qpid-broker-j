@@ -195,9 +195,9 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
     }
 
     @Override
-    public synchronized void reallocate(final long smallestAllowedBufferId)
+    public synchronized void reallocate()
     {
-        _encoded = QpidByteBuffer.reallocateIfNecessary(smallestAllowedBufferId, _encoded);
+        _encoded = QpidByteBuffer.reallocateIfNecessary(_encoded);
     }
 
     public String getRoutingKey()

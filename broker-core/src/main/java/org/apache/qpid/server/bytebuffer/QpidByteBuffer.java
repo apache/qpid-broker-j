@@ -58,6 +58,7 @@ public class QpidByteBuffer
     private volatile static BufferPool _bufferPool;
     private volatile static int _pooledBufferSize;
     private volatile static ByteBuffer _zeroed;
+    private volatile static double _sparsityFraction;
     private final int _offset;
 
     final ByteBufferRef _ref;
@@ -76,7 +77,7 @@ public class QpidByteBuffer
         _ref = ref;
         _buffer = buffer;
         _offset = offset;
-        _ref.incrementRef();
+        _ref.incrementRef(capacity());
     }
 
     public final boolean isDirect()
@@ -127,7 +128,7 @@ public class QpidByteBuffer
     {
         if (DISPOSED_UPDATER.compareAndSet(this, 0, 1))
         {
-            _ref.decrementRef();
+            _ref.decrementRef(capacity());
             _buffer = null;
         }
     }
@@ -542,11 +543,6 @@ public class QpidByteBuffer
         return this;
     }
 
-    private long getPooledBufferId()
-    {
-        return _ref.getPooledBufferId();
-    }
-
     ByteBuffer getUnderlyingBuffer()
     {
         return _buffer;
@@ -593,11 +589,11 @@ public class QpidByteBuffer
                         buf.dispose();
                     }
                     buf = allocateDirect(_pooledBufferSize);
+                    _cachedBuffer.set(buf);
                 }
                 QpidByteBuffer rVal = buf.view(0, size);
                 buf.position(buf.position() + size);
 
-                _cachedBuffer.set(buf);
                 return rVal;
             }
         }
@@ -801,15 +797,16 @@ public class QpidByteBuffer
         _bufferPool.returnBuffer(buffer);
     }
 
-    public synchronized static void initialisePool(int bufferSize, int maxPoolSize)
+    public synchronized static void initialisePool(int bufferSize, int maxPoolSize, final double sparsityFraction)
     {
-        if (_isPoolInitialized && (bufferSize != _pooledBufferSize || maxPoolSize != _bufferPool.getMaxSize()))
+        if (_isPoolInitialized && (bufferSize != _pooledBufferSize || maxPoolSize != _bufferPool.getMaxSize() || sparsityFraction != _sparsityFraction))
         {
             final String errorMessage = String.format(
-                    "QpidByteBuffer pool has already been initialised with bufferSize=%d and maxPoolSize=%d." +
+                    "QpidByteBuffer pool has already been initialised with bufferSize=%d, maxPoolSize=%d, and sparsityFraction=%f." +
                     "Re-initialisation with different bufferSize=%d and maxPoolSize=%d is not allowed.",
                     _pooledBufferSize,
                     _bufferPool.getMaxSize(),
+                    _sparsityFraction,
                     bufferSize,
                     maxPoolSize);
             throw new IllegalStateException(errorMessage);
@@ -822,6 +819,7 @@ public class QpidByteBuffer
         _bufferPool = new BufferPool(maxPoolSize);
         _pooledBufferSize = bufferSize;
         _zeroed = ByteBuffer.allocateDirect(_pooledBufferSize);
+        _sparsityFraction = sparsityFraction;
         _isPoolInitialized = true;
     }
 
@@ -834,6 +832,7 @@ public class QpidByteBuffer
             _pooledBufferSize = -1;
             _zeroed = null;
             _isPoolInitialized = false;
+            _sparsityFraction = 1.0;
         }
     }
 
@@ -857,19 +856,14 @@ public class QpidByteBuffer
         return _bufferPool.size();
     }
 
-    public static long getLargestPooledBufferId()
-    {
-        return PooledByteBufferRef.getLargestBufferId();
-    }
-
-    public static List<QpidByteBuffer> reallocateIfNecessary(final long smallestAllowedBufferId, Collection<QpidByteBuffer> data)
+    public static List<QpidByteBuffer> reallocateIfNecessary(Collection<QpidByteBuffer> data)
     {
         if (data != null)
         {
             List<QpidByteBuffer> newCopy = new ArrayList<>(data.size());
             for (QpidByteBuffer buf : data)
             {
-                newCopy.add(reallocateIfNecessary(smallestAllowedBufferId, buf));
+                newCopy.add(reallocateIfNecessary(buf));
             }
             return newCopy;
         }
@@ -879,13 +873,9 @@ public class QpidByteBuffer
         }
     }
 
-    public static QpidByteBuffer reallocateIfNecessary(final long smallestAllowedBufferId, final QpidByteBuffer data)
+    public static QpidByteBuffer reallocateIfNecessary(final QpidByteBuffer data)
     {
-        double capacityThreshold = QpidByteBuffer.getPooledBufferSize() * REALLOCATION_CAPACITY_THRESHOLD_FRACTION;
-        if (data != null
-            && data.isDirect()
-            && data.getPooledBufferId() < smallestAllowedBufferId
-            && data.remaining() < capacityThreshold)
+        if (data != null && data.isDirect() && data.isSparse())
         {
             QpidByteBuffer newBuf = allocateDirect(data.remaining());
             newBuf.put(data);
@@ -897,6 +887,11 @@ public class QpidByteBuffer
         {
             return data;
         }
+    }
+
+    boolean isSparse()
+    {
+        return _ref.isSparse(_sparsityFraction);
     }
 
     private static final class BufferInputStream extends InputStream

@@ -142,14 +142,14 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
     }
 
     @Override
-    public synchronized void reallocate(final long smallestAllowedBufferId)
+    public synchronized void reallocate()
     {
-        _metaData.reallocate(smallestAllowedBufferId);
+        _metaData.reallocate();
         List<QpidByteBuffer> newContent = new ArrayList<>(_content.size());
         for (Iterator<QpidByteBuffer> iterator = _content.iterator(); iterator.hasNext(); )
         {
             final QpidByteBuffer buffer = iterator.next();
-            newContent.add(QpidByteBuffer.reallocateIfNecessary(smallestAllowedBufferId, buffer));
+            newContent.add(QpidByteBuffer.reallocateIfNecessary(buffer));
             iterator.remove();
         }
         _content.addAll(newContent);

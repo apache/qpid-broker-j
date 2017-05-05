@@ -45,6 +45,7 @@ public class QpidByteBufferTest extends QpidTestCase
 {
     private static final int BUFFER_SIZE = 10;
     private static final int POOL_SIZE = 20;
+    private static final double SPARSITY_FRACTION = 0.5;
 
 
     private QpidByteBuffer _slicedBuffer;
@@ -55,7 +56,7 @@ public class QpidByteBufferTest extends QpidTestCase
     {
         super.setUp();
         QpidByteBuffer.deinitialisePool();
-        QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE);
+        QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
         _parent = QpidByteBuffer.allocateDirect(BUFFER_SIZE);
     }
 
@@ -784,7 +785,7 @@ public class QpidByteBufferTest extends QpidTestCase
     {
         try
         {
-            QpidByteBuffer.initialisePool(BUFFER_SIZE + 1, POOL_SIZE + 1);
+            QpidByteBuffer.initialisePool(BUFFER_SIZE + 1, POOL_SIZE + 1, SPARSITY_FRACTION);
             fail("It is not legal to initialize buffer twice with different settings.");
         }
         catch (IllegalStateException e)
@@ -881,6 +882,21 @@ public class QpidByteBufferTest extends QpidTestCase
         buffer.dispose();
         view.dispose();
         viewWithOffset.dispose();
+    }
+
+    public void testSparsity()
+    {
+        assertFalse("Unexpected sparsity after creation", _parent.isSparse());
+        QpidByteBuffer child = _parent.view(0, 6);
+        QpidByteBuffer grandChild = child.view(0, 2);
+
+        assertFalse("Unexpected sparsity after child creation", _parent.isSparse());
+        _parent.dispose();
+
+        assertFalse("Unexpected sparsity after parent disposal", child.isSparse());
+
+        child.dispose();
+        assertTrue("Buffer should be sparse", grandChild.isSparse());
     }
 
     private void doDeflateInflate(byte[] input,

@@ -962,9 +962,9 @@ public class FieldTable
         }
     }
 
-    public synchronized void reallocate(final long smallestAllowedBufferId)
+    public synchronized void reallocate()
     {
-        _encodedForm = QpidByteBuffer.reallocateIfNecessary(smallestAllowedBufferId, _encodedForm);
+        _encodedForm = QpidByteBuffer.reallocateIfNecessary(_encodedForm);
     }
 
 
