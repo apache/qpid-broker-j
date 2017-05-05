@@ -3372,10 +3372,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             if (!_lastReportedFlowToDiskStatus.getAndSet(true))
             {
-                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_ACTIVE(estimatedQueueSize / 1024,
-                                                                                        targetQueueSize / 1024,
-                                                                                        allocatedDirectMemorySize / 1024 / 1024,
-                                                                                        flowToDiskThreshold / 1024 / 1024));
+                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_ACTIVE(estimatedQueueSize / 1024.0,
+                                                                                        targetQueueSize / 1024.0,
+                                                                                        allocatedDirectMemorySize / 1024.0 / 1024.0,
+                                                                                        flowToDiskThreshold / 1024.0 / 1024.0));
             }
         }
 
@@ -3386,10 +3386,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             if (_lastReportedFlowToDiskStatus.getAndSet(false))
             {
-                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_INACTIVE(estimatedQueueSize / 1024,
-                                                                                          targetQueueSize / 1024,
-                                                                                          allocatedDirectMemorySize / 1024 / 1024,
-                                                                                          flowToDiskThreshold / 1024 / 1024));
+                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_INACTIVE(estimatedQueueSize / 1024.0,
+                                                                                          targetQueueSize / 1024.0,
+                                                                                          allocatedDirectMemorySize / 1024.0 / 1024.0,
+                                                                                          flowToDiskThreshold / 1024.0 / 1024.0));
             }
         }
     }

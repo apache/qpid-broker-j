@@ -384,7 +384,7 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
-     * <pre>QUE-1014 : Message flow to disk active : Queue direct memory : {0,number,#} kB / {1,number,#.##} kB, Broker direct memory : {2,number,#} kB / {3,number,#.##} kB</pre>
+     * <pre>QUE-1014 : Message flow to disk active : Queue : depth {0,number,#.##} kB, threshold {1,number,#.##} kB / Broker : direct memory used {2,number,#.##} MB, threshold {3,number,#.##} MB</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
@@ -558,7 +558,7 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
-     * <pre>QUE-1015 : Message flow to disk inactive : Queue direct memory : {0,number,#} kB / {1,number,#.##} kB, Broker direct memory : {2,number,#} kB / {3,number,#.##} kB</pre>
+     * <pre>QUE-1015 : Message flow to disk inactive : Queue : depth {0,number,#.##} kB, threshold {1,number,#.##} kB / Broker : direct memory used {2,number,#.##} MB, threshold {3,number,#.##} MB</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
