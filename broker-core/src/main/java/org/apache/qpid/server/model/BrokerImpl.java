@@ -39,6 +39,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -48,6 +49,8 @@ import javax.security.auth.login.AccountNotFoundException;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -415,10 +418,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                                                              getHousekeepingThreadCount(),
                                                              getSystemTaskSubject("Housekeeping", _principal));
 
-        _houseKeepingTaskExecutor.scheduleWithFixedDelay(this::checkDirectMemoryUsage,
-                                                         _compactMemoryInterval,
-                                                         _compactMemoryInterval,
-                                                         TimeUnit.MILLISECONDS);
+        scheduleDirectMemoryCheck();
 
         final PreferenceStoreUpdaterImpl updater = new PreferenceStoreUpdaterImpl();
         final Collection<PreferenceRecord> preferenceRecords = _preferenceStore.openAndLoad(updater);
@@ -439,7 +439,41 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     {
         if (_compactMemoryThreshold >= 0 && QpidByteBuffer.getAllocatedDirectMemorySize() > _compactMemoryThreshold)
         {
-            compactMemory();
+            ListenableFuture<Void> result = compactMemoryInternal();
+            addFutureCallback(result, new FutureCallback<Void>()
+            {
+                @Override
+                public void onSuccess(final Void result)
+                {
+                    scheduleDirectMemoryCheck();
+                }
+
+                @Override
+                public void onFailure(final Throwable t)
+                {
+                    scheduleDirectMemoryCheck();
+                }
+            }, MoreExecutors.directExecutor());
+        }
+    }
+
+    private void scheduleDirectMemoryCheck()
+    {
+        if (_compactMemoryInterval > 0)
+        {
+            try
+            {
+                _houseKeepingTaskExecutor.schedule(this::checkDirectMemoryUsage,
+                                                   _compactMemoryInterval,
+                                                   TimeUnit.MILLISECONDS);
+            }
+            catch (RejectedExecutionException e)
+            {
+                if (!_houseKeepingTaskExecutor.isShutdown())
+                {
+                    LOGGER.warn("Failed to schedule direct memory check", e);
+                }
+            }
         }
     }
 
@@ -1180,6 +1214,11 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @Override
     public void compactMemory()
     {
+        compactMemoryInternal();
+    }
+
+    private ListenableFuture<Void> compactMemoryInternal()
+    {
         LOGGER.debug("Compacting direct memory buffers: numberOfActivePooledBuffers: {}",
                      QpidByteBuffer.getNumberOfActivePooledBuffers());
 
@@ -1194,6 +1233,8 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                 futures.add(future);
             }
         }
+
+        SettableFuture<Void> resultFuture = SettableFuture.create();
         final ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(futures);
         addFutureCallback(combinedFuture, new FutureCallback<List<Void>>()
         {
@@ -1205,14 +1246,17 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                    LOGGER.debug("After compact direct memory buffers: numberOfActivePooledBuffers: {}",
                                 QpidByteBuffer.getNumberOfActivePooledBuffers());
                 }
+                resultFuture.set(null);
             }
 
             @Override
             public void onFailure(final Throwable t)
             {
                 LOGGER.warn("Unexpected error during direct memory compaction.", t);
+                resultFuture.setException(t);
             }
         }, _houseKeepingTaskExecutor);
+        return resultFuture;
     }
 
     private class AddressSpaceRegistry implements SystemAddressSpaceCreator.AddressSpaceRegistry
