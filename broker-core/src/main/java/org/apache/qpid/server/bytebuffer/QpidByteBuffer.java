@@ -51,6 +51,7 @@ public class QpidByteBuffer
             DISPOSED_UPDATER = AtomicIntegerFieldUpdater.newUpdater(
             QpidByteBuffer.class,
             "_disposed");
+
     private static final ThreadLocal<QpidByteBuffer> _cachedBuffer = new ThreadLocal<>();
     private static final ByteBuffer[] EMPTY_BYTE_BUFFER_ARRAY = new ByteBuffer[0];
     private static final double REALLOCATION_CAPACITY_THRESHOLD_FRACTION = 0.9;
@@ -854,6 +855,11 @@ public class QpidByteBuffer
     public static int getNumberOfPooledBuffers()
     {
         return _bufferPool.size();
+    }
+
+    public static long getPooledBufferDisposalCounter()
+    {
+        return PooledByteBufferRef.getDisposalCounter();
     }
 
     public static List<QpidByteBuffer> reallocateIfNecessary(Collection<QpidByteBuffer> data)

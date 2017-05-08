@@ -23,6 +23,7 @@ package org.apache.qpid.server.bytebuffer;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 
 class PooledByteBufferRef implements ByteBufferRef
 {
@@ -31,6 +32,7 @@ class PooledByteBufferRef implements ByteBufferRef
     private static final AtomicIntegerFieldUpdater<PooledByteBufferRef> CLAIMED_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(PooledByteBufferRef.class, "_claimed");
     private static final AtomicInteger ACTIVE_BUFFERS = new AtomicInteger();
+    private static final AtomicLong DISPOSAL_COUNTER = new AtomicLong();
     private final ByteBuffer _buffer;
 
     @SuppressWarnings("unused")
@@ -59,6 +61,7 @@ class PooledByteBufferRef implements ByteBufferRef
     public void decrementRef(final int capacity)
     {
         CLAIMED_UPDATER.addAndGet(this, -capacity);
+        DISPOSAL_COUNTER.incrementAndGet();
         if(REF_COUNT_UPDATER.get(this) > 0 && REF_COUNT_UPDATER.decrementAndGet(this) == 0)
         {
             QpidByteBuffer.returnToPool(_buffer);
@@ -83,4 +86,8 @@ class PooledByteBufferRef implements ByteBufferRef
         return ACTIVE_BUFFERS.get();
     }
 
+    static long getDisposalCounter()
+    {
+        return DISPOSAL_COUNTER.get();
+    }
 }

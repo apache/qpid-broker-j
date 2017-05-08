@@ -151,6 +151,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private long _compactMemoryInterval;
     private long _flowToDiskThreshold;
     private double _sparsityFraction;
+    private long _lastDisposalCounter;
 
     @ManagedObjectFactoryConstructor
     public BrokerImpl(Map<String, Object> attributes,
@@ -437,8 +438,13 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private void checkDirectMemoryUsage()
     {
-        if (_compactMemoryThreshold >= 0 && QpidByteBuffer.getAllocatedDirectMemorySize() > _compactMemoryThreshold)
+        if (_compactMemoryThreshold >= 0
+            && QpidByteBuffer.getAllocatedDirectMemorySize() > _compactMemoryThreshold
+            && _lastDisposalCounter != QpidByteBuffer.getPooledBufferDisposalCounter())
         {
+
+            _lastDisposalCounter = QpidByteBuffer.getPooledBufferDisposalCounter();
+
             ListenableFuture<Void> result = compactMemoryInternal();
             addFutureCallback(result, new FutureCallback<Void>()
             {
@@ -454,6 +460,10 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                     scheduleDirectMemoryCheck();
                 }
             }, MoreExecutors.directExecutor());
+        }
+        else
+        {
+            scheduleDirectMemoryCheck();
         }
     }
 
