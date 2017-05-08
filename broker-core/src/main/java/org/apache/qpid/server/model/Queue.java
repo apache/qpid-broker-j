@@ -210,7 +210,11 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                           + "none is explicitly set")
     String DEFAULT_MESSAGE_DURABILTY = "DEFAULT";
 
-
+    String QUEUE_FLOW_TO_DISK_QUEUE_CESSATION_FRACTION = "queue.flowToDiskQueueCessationFraction";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = QUEUE_FLOW_TO_DISK_QUEUE_CESSATION_FRACTION,
+            description = "The fraction of this queue's 'target size' where the queue will cease flowing messages to disk")
+    double DEFAULT_QUEUE_FLOW_TO_DISK_QUEUE_CESSATION_FRACTION = 0.80;
 
     @ManagedAttribute( defaultValue = "${queue.defaultMessageDurability}" )
     MessageDurability getMessageDurability();
@@ -275,6 +279,9 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                           + " maximum message number and maximum number of bytes are not applied.",
             mandatory = true)
     OverflowPolicy getOverflowPolicy();
+
+    @DerivedAttribute(description = "Returns 'true' when the broker is flowing transient messages to disk")
+    boolean isFlowingToDisk();
 
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Collection<PublishingLink> getPublishingLinks();

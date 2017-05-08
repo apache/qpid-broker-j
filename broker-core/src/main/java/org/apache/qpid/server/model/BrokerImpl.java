@@ -150,6 +150,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private long _compactMemoryThreshold;
     private long _compactMemoryInterval;
     private long _flowToDiskThreshold;
+    private long _flowToDiskCessationThreshold;
     private double _sparsityFraction;
     private long _lastDisposalCounter;
 
@@ -622,6 +623,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         getEventLogger().message(BrokerMessages.MAX_MEMORY(heapMemory, directMemory));
 
         _flowToDiskThreshold = getContextValue(Long.class, BROKER_FLOW_TO_DISK_THRESHOLD);
+        _flowToDiskCessationThreshold = (long) (getContextValue(Double.class, BROKER_FLOW_TO_DISK_CESSATION_FRACTION) * _flowToDiskThreshold);
         _compactMemoryThreshold = getContextValue(Long.class, Broker.COMPACT_MEMORY_THRESHOLD);
         _compactMemoryInterval = getContextValue(Long.class, Broker.COMPACT_MEMORY_INTERVAL);
 
@@ -883,6 +885,12 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     public long getFlowToDiskThreshold()
     {
         return _flowToDiskThreshold;
+    }
+
+    @Override
+    public long getFlowToDiskCessationThreshold()
+    {
+        return _flowToDiskCessationThreshold;
     }
 
     @Override
