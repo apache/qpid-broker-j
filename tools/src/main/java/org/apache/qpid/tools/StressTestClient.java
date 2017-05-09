@@ -65,6 +65,9 @@ public class StressTestClient
     public static final String LOW_PREFETCH_ARG = "lowprefetch";
     public static final String TRANSACTED_ARG = "transacted";
     public static final String TX_BATCH_ARG = "txbatch";
+    public static final String ITERATIONS = "iterations";
+    public static final String CONSUMER_MESSAGE_COUNT = "consumerMessageCount";
+    public static final String CONSUMER_SELECTOR = "selector";
 
     public static final String CONNECTIONS_DEFAULT = "1";
     public static final String SESSIONS_DEFAULT = "1";
@@ -84,7 +87,8 @@ public class StressTestClient
     public static final String LOW_PREFETCH_DEFAULT = "false";
     public static final String TRANSACTED_DEFAULT = "false";
     public static final String TX_BATCH_DEFAULT = "1";
-
+    private static final String ITERATIONS_DEFAULT = "1";
+    private static final String CONSUMERS_SELECTOR_DEFAULT = "";
     private static final String CLASS = "StressTestClient";
 
     public static void main(String[] args)
@@ -108,6 +112,9 @@ public class StressTestClient
         options.put(LOW_PREFETCH_ARG, LOW_PREFETCH_DEFAULT);
         options.put(TRANSACTED_ARG, TRANSACTED_DEFAULT);
         options.put(TX_BATCH_ARG, TX_BATCH_DEFAULT);
+        options.put(ITERATIONS, ITERATIONS_DEFAULT);
+        options.put(CONSUMER_SELECTOR, CONSUMERS_SELECTOR_DEFAULT);
+        options.put(CONSUMER_MESSAGE_COUNT, "");
 
         if(args.length == 1 &&
                 (args[0].equals("-h") || args[0].equals("--help") || args[0].equals("help")))
@@ -160,6 +167,10 @@ public class StressTestClient
         boolean lowPrefetch = Boolean.valueOf(options.get(LOW_PREFETCH_ARG));
         boolean transacted = Boolean.valueOf(options.get(TRANSACTED_ARG));
         int txBatch = Integer.parseInt(options.get(TX_BATCH_ARG));
+        int iterations = Integer.parseInt(options.get(ITERATIONS));
+        String consumerSelector =  options.get(CONSUMER_SELECTOR);
+        int consumerMessageCount = !"".equals(options.get(CONSUMER_MESSAGE_COUNT)) ?
+                Integer.parseInt(options.get(CONSUMER_MESSAGE_COUNT)) : numMessage;
 
         System.out.println(CLASS + ": Using options: " + options);
 
@@ -257,59 +268,76 @@ public class StressTestClient
                                 {
                                     System.out.println(CLASS + ": Creating Consumer " + cns);
                                 }
-                                consumer = sess.createConsumer(destination);
+                                consumer = sess.createConsumer(destination, consumerSelector);
                             }
 
+                            MessageProducer[] producers = new MessageProducer[numProducers];
                             for(int pr = 1 ; pr <= numProducers ; pr++)
                             {
                                 if( pr % reportingMod == 0)
                                 {
                                     System.out.println(CLASS + ": Creating Producer " + pr);
                                 }
-                                MessageProducer prod = sess.createProducer(destination);
-                                for(int me = 1; me <= numMessage ; me++)
+                                producers[pr-1] = sess.createProducer(destination);
+                            }
+
+                            for (int iteration = 1; iteration <= iterations; iteration++)
+                            {
+                                if (iterations > 1 && iteration % reportingMod == 0)
                                 {
-                                    if( me % reportingMod == 0)
+                                    System.out.println(CLASS + ": Iteration " + iteration);
+                                }
+
+                                for (int pr = 1; pr <= numProducers; pr++)
+                                {
+                                    MessageProducer prod = producers[pr - 1];
+                                    for (int me = 1; me <= numMessage; me++)
                                     {
-                                        System.out.println(CLASS + ": Sending Message " + me);
+                                        int messageNumber = (iteration - 1) * numProducers * numMessage
+                                                            + (pr - 1) * numMessage + (me - 1);
+                                        if (messageNumber % reportingMod == 0)
+                                        {
+                                            System.out.println(CLASS + ": Sending Message " + messageNumber);
+                                        }
+                                        message.setIntProperty("index", me - 1);
+                                        prod.send(message, deliveryMode,
+                                                  Message.DEFAULT_PRIORITY,
+                                                  Message.DEFAULT_TIME_TO_LIVE);
+                                        if (sess.getTransacted() && me % txBatch == 0)
+                                        {
+                                            sess.commit();
+                                        }
                                     }
-                                    prod.send(message, deliveryMode,
-                                            Message.DEFAULT_PRIORITY,
-                                            Message.DEFAULT_TIME_TO_LIVE);
-                                    if(transacted && me % txBatch == 0)
+                                }
+
+                                if(numConsumers == 1 && consumeImmediately)
+                                {
+                                    for(int cs = 1; cs <= consumerMessageCount; cs++)
                                     {
-                                        sess.commit();
+                                        if(cs % reportingMod == 0)
+                                        {
+                                            System.out.println(CLASS + ": Consuming Message " + cs);
+                                        }
+                                        BytesMessage msg = (BytesMessage) consumer.receive(recieveTimeout);
+
+                                        if(sess.getTransacted() && cs % txBatch == 0)
+                                        {
+                                            sess.commit();
+                                        }
+
+                                        if(msg == null)
+                                        {
+                                            throw new RuntimeException("Expected message not received in allowed time: " + recieveTimeout);
+                                        }
+
+                                        validateReceivedMessageContent(sentBytes, msg, random, messageSize);
                                     }
                                 }
                             }
 
-                            if(numConsumers > 0 && consumeImmediately)
+                            if(closeConsumers)
                             {
-                                for(int cs = 1 ; cs <= numMessage ; cs++)
-                                {
-                                    if( cs % reportingMod == 0)
-                                    {
-                                        System.out.println(CLASS + ": Consuming Message " + cs);
-                                    }
-                                    BytesMessage msg = (BytesMessage) consumer.receive(recieveTimeout);
-
-                                    if(transacted && cs % txBatch == 0)
-                                    {
-                                        sess.commit();
-                                    }
-
-                                    if(msg == null)
-                                    {
-                                        throw new RuntimeException("Expected message not received in allowed time: " + recieveTimeout);
-                                    }
-
-                                    validateReceivedMessageContent(sentBytes, msg, random, messageSize);
-                                }
-
-                                if(closeConsumers)
-                                {
-                                    sess.close();
-                                }
+                                sess.close();
                             }
 
                         }
