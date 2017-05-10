@@ -45,7 +45,7 @@ import javax.net.ssl.SSLException;
 
 import org.apache.qpid.server.streams.CompositeInputStream;
 
-public class QpidByteBuffer
+public class QpidByteBuffer implements AutoCloseable
 {
     private static final AtomicIntegerFieldUpdater<QpidByteBuffer>
             DISPOSED_UPDATER = AtomicIntegerFieldUpdater.newUpdater(
@@ -123,6 +123,12 @@ public class QpidByteBuffer
     {
         putInt((int) value);
         return this;
+    }
+
+    @Override
+    public final void close()
+    {
+        dispose();
     }
 
     public final void dispose()

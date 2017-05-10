@@ -1147,29 +1147,24 @@ public class FieldTable
 
     private void setFromBuffer() throws AMQFrameDecodingException
     {
-
-        final QpidByteBuffer slice = _encodedForm.slice();
-
         if (_encodedSize > 0)
         {
-
-
-            _properties = new LinkedHashMap<>(INITIAL_HASHMAP_CAPACITY);
-
-            do
+            try(QpidByteBuffer slice = _encodedForm.slice())
             {
+                _properties = new LinkedHashMap<>(INITIAL_HASHMAP_CAPACITY);
 
-                final AMQShortString key = AMQShortString.readAMQShortString(slice);
-                AMQTypedValue value = AMQTypedValue.readFromBuffer(slice);
-                _properties.put(key, value);
-
+                do
+                {
+                    final AMQShortString key = AMQShortString.readAMQShortString(slice);
+                    AMQTypedValue value = AMQTypedValue.readFromBuffer(slice);
+                    _properties.put(key, value);
+                }
+                while (slice.hasRemaining());
             }
-            while (slice.hasRemaining());
-
         }
-        slice.dispose();
     }
 
+    @Override
     public int hashCode()
     {
         initMapIfNecessary();
@@ -1177,6 +1172,7 @@ public class FieldTable
         return _properties.hashCode();
     }
 
+    @Override
     public boolean equals(Object o)
     {
         if (o == this)
