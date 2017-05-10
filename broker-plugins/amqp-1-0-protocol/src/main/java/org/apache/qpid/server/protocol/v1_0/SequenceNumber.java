@@ -107,4 +107,9 @@ public class SequenceNumber implements Comparable<SequenceNumber>, Cloneable
     {
         return _seqNo;
     }
+
+    public long longValue()
+    {
+        return  ((long) _seqNo) & 0xFFFFFFFFL;
+    }
 }

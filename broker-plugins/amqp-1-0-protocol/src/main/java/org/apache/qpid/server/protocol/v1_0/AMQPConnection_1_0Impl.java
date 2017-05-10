@@ -631,8 +631,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     Begin beginToSend = new Begin();
                     beginToSend.setRemoteChannel(UnsignedShort.valueOf(receivingChannelId));
                     beginToSend.setNextOutgoingId(session.getNextOutgoingId());
-                    beginToSend.setOutgoingWindow(session.getOutgoingWindowSize());
-                    beginToSend.setIncomingWindow(session.getIncomingWindowSize());
+                    beginToSend.setOutgoingWindow(session.getOutgoingWindow());
+                    beginToSend.setIncomingWindow(session.getIncomingWindow());
                     sendFrame(sendingChannelId, beginToSend);
 
                     synchronized (_blockingLock)

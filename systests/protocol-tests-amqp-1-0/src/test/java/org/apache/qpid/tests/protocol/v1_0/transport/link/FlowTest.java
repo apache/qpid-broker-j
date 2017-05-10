@@ -23,14 +23,13 @@ package org.apache.qpid.tests.protocol.v1_0.transport.link;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.fail;
+import static org.hamcrest.core.IsNot.not;
 
 import java.net.InetSocketAddress;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
@@ -71,16 +70,14 @@ public class FlowTest extends ProtocolTestBase
     }
 
     @Test
-    @Ignore("QPID-7748")
     @SpecificationTest(section = "2.7.4",
             description = "If set to true then the receiver SHOULD send its state at the earliest convenient opportunity.")
-    public void echoFlow() throws Exception
+    public void sessionEchoFlow() throws Exception
     {
-        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr))
         {
-            transport.doAttachReceivingLink(BrokerAdmin.TEST_QUEUE_NAME);
+            transport.doBeginSession();
             Flow flow = new Flow();
             flow.setIncomingWindow(UnsignedInteger.ZERO);
             flow.setNextIncomingId(UnsignedInteger.ZERO);
@@ -94,7 +91,41 @@ public class FlowTest extends ProtocolTestBase
             assertThat(response, is(notNullValue()));
             assertThat(response.getFrameBody(), is(instanceOf(Flow.class)));
             Flow responseFlow = (Flow) response.getFrameBody();
-            assertThat(responseFlow.getEcho(), is(equalTo(Boolean.FALSE)));
+            assertThat(responseFlow.getEcho(), not(equalTo(Boolean.TRUE)));
+            assertThat(responseFlow.getHandle(), is(nullValue()));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "2.7.4",
+            description = "If set to true then the receiver SHOULD send its state at the earliest convenient opportunity.")
+    public void linkEchoFlow() throws Exception
+    {
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
+        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
+        try (FrameTransport transport = new FrameTransport(addr))
+        {
+            final UnsignedInteger handle = UnsignedInteger.ONE;
+            transport.doAttachSendingLink(handle, BrokerAdmin.TEST_QUEUE_NAME);
+            Flow flow = new Flow();
+            flow.setIncomingWindow(UnsignedInteger.ZERO);
+            flow.setNextIncomingId(UnsignedInteger.ZERO);
+            flow.setOutgoingWindow(UnsignedInteger.ZERO);
+            flow.setNextOutgoingId(UnsignedInteger.ZERO);
+            flow.setEcho(Boolean.TRUE);
+            flow.setAvailable(UnsignedInteger.valueOf(10));
+            flow.setDeliveryCount(UnsignedInteger.ZERO);
+            flow.setLinkCredit(UnsignedInteger.ZERO);
+            flow.setHandle(handle);
+
+            transport.sendPerformative(flow);
+            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
+
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getFrameBody(), is(instanceOf(Flow.class)));
+            Flow responseFlow = (Flow) response.getFrameBody();
+            assertThat(responseFlow.getEcho(), not(equalTo(Boolean.TRUE)));
+            assertThat(responseFlow.getHandle(), is(notNullValue()));
         }
     }
 

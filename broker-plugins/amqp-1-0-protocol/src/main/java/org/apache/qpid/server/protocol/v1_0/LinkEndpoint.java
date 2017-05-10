@@ -56,6 +56,8 @@ public interface LinkEndpoint<S extends BaseSource, T extends BaseTarget>
 
     void receiveFlow(Flow flow);
 
+    void sendFlow();
+
     void flowStateChanged();
 
     void start();

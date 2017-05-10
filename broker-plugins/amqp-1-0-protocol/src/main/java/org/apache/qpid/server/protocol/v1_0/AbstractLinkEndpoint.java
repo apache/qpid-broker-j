@@ -423,6 +423,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
     }
 
 
+    @Override
     public void sendFlow()
     {
         sendFlow(_flowTransactionId != null);

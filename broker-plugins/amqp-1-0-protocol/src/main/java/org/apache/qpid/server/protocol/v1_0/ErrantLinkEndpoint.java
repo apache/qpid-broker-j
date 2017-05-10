@@ -136,6 +136,12 @@ public class ErrantLinkEndpoint<S extends BaseSource, T extends BaseTarget> impl
     }
 
     @Override
+    public void sendFlow()
+    {
+        throw new UnsupportedOperationException("This Link is errant");
+    }
+
+    @Override
     public void flowStateChanged()
     {
         throw new UnsupportedOperationException("This Link is errant");
