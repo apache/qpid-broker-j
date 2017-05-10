@@ -133,6 +133,16 @@ public final class UnsignedInteger extends Number implements Comparable<Unsigned
         return UnsignedInteger.valueOf(val);
     }
 
+    public UnsignedInteger increment()
+    {
+        return add(UnsignedInteger.ONE);
+    }
+
+    public UnsignedInteger decrement()
+    {
+        return subtract(UnsignedInteger.ONE);
+    }
+
     public static UnsignedInteger valueOf(final String value)
     {
         long longVal = Long.parseLong(value);

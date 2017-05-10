@@ -146,14 +146,14 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     private int _nextOutgoingDeliveryId;
 
-    private UnsignedInteger _initialOutgoingId = UnsignedInteger.ZERO;
-    private SequenceNumber _nextIncomingId;
+    private final UnsignedInteger _initialOutgoingId = UnsignedInteger.ZERO;
+    private volatile UnsignedInteger _nextIncomingId;
     private final int _incomingWindow;
-    private SequenceNumber _nextOutgoingId = new SequenceNumber(_initialOutgoingId.intValue());
-    private int _outgoingWindow = DEFAULT_SESSION_BUFFER_SIZE;
-    private UnsignedInteger _remoteIncomingWindow;
-    private UnsignedInteger _remoteOutgoingWindow = UnsignedInteger.ZERO;
-    private UnsignedInteger _lastSentIncomingLimit;
+    private volatile UnsignedInteger _nextOutgoingId = _initialOutgoingId;
+    private final int _outgoingWindow = DEFAULT_SESSION_BUFFER_SIZE;
+    private volatile UnsignedInteger _remoteIncomingWindow;
+    private volatile UnsignedInteger _remoteOutgoingWindow = UnsignedInteger.ZERO;
+    private volatile UnsignedInteger _lastSentIncomingLimit;
 
     private LinkedHashMap<UnsignedInteger,Delivery> _outgoingUnsettled = new LinkedHashMap<>(DEFAULT_SESSION_BUFFER_SIZE);
     private LinkedHashMap<UnsignedInteger,Delivery> _incomingUnsettled = new LinkedHashMap<>(DEFAULT_SESSION_BUFFER_SIZE);
@@ -180,7 +180,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         _sendingChannel = sendingChannelId;
         _receivingChannel = receivingChannelId;
         _sessionState = SessionState.ACTIVE;
-        _nextIncomingId = new SequenceNumber(begin.getNextOutgoingId().intValue());
+        _nextIncomingId = begin.getNextOutgoingId();
         _connection = connection;
         _primaryDomain = getPrimaryDomain();
         _incomingWindow = incomingWindow;
@@ -250,12 +250,11 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         {
             final LinkedHashMap<UnsignedInteger, Delivery> unsettled =
                     role == Role.RECEIVER ? _incomingUnsettled : _outgoingUnsettled;
-            SequenceNumber pos = new SequenceNumber(first.intValue());
-            SequenceNumber end = new SequenceNumber(last.intValue());
-            while (pos.compareTo(end) <= 0)
+            UnsignedInteger pos = first;
+            while (pos.compareTo(last) <= 0)
             {
-                unsettled.remove(new UnsignedInteger(pos.intValue()));
-                pos.incr();
+                unsettled.remove(pos);
+                pos = pos.increment();
             }
         }
 
@@ -277,7 +276,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     public void sendTransfer(final Transfer xfr, final SendingLinkEndpoint endpoint, final boolean newDelivery)
     {
-        _nextOutgoingId.incr();
+        _nextOutgoingId = _nextOutgoingId.increment();
         UnsignedInteger deliveryId;
         final boolean settled = Boolean.TRUE.equals(xfr.getSettled());
         if (newDelivery)
@@ -419,7 +418,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         long limit = (nextOutgoingId.longValue() + flow.getIncomingWindow().longValue());
         _remoteIncomingWindow = UnsignedInteger.valueOf(limit - _nextOutgoingId.longValue());
 
-        _nextIncomingId = new SequenceNumber(flow.getNextOutgoingId().intValue());
+        _nextIncomingId = new UnsignedInteger(flow.getNextOutgoingId().intValue());
         _remoteOutgoingWindow = flow.getOutgoingWindow();
 
         if (endpoint != null)
@@ -445,12 +444,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 sendFlow();
             }
         }
-    }
-
-    public void setNextIncomingId(final UnsignedInteger nextIncomingId)
-    {
-        _nextIncomingId = new SequenceNumber(nextIncomingId.intValue());
-
     }
 
     public void receiveDisposition(final Disposition disposition)
@@ -581,8 +574,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     public void receiveTransfer(final Transfer transfer)
     {
-        _nextIncomingId.incr();
-        _remoteOutgoingWindow = _remoteOutgoingWindow.subtract(UnsignedInteger.ONE);
+        _nextIncomingId = _nextIncomingId.increment();
+        _remoteOutgoingWindow = _remoteOutgoingWindow.decrement();
 
         UnsignedInteger inputHandle = transfer.getHandle();
         LinkEndpoint<? extends BaseSource, ? extends BaseTarget> linkEndpoint = _inputHandleToEndpoint.get(inputHandle);
