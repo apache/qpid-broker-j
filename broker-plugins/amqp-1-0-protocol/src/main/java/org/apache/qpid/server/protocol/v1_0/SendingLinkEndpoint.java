@@ -48,7 +48,6 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -89,7 +88,6 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     private Integer _priority;
     private final List<Binary> _resumeAcceptedTransfers = new ArrayList<>();
     private final List<MessageInstance> _resumeFullTransfers = new ArrayList<>();
-    private volatile boolean _draining = false;
     private final ConcurrentMap<Binary, UnsettledAction> _unsettledActionMap = new ConcurrentHashMap<>();
     private SendingDestination _destination;
     private EnumSet<ConsumerOption> _consumerOptions;
@@ -413,23 +411,6 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         return true;
     }
 
-
-    public boolean drained()
-    {
-        if (_draining)
-        {
-            setDeliveryCount(getDeliveryCount().add(getLinkCredit()));
-            setLinkCredit(UnsignedInteger.ZERO);
-            sendFlow();
-            _draining = false;
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
     @Override
     public void receiveFlow(final Flow flow)
     {
@@ -468,8 +449,11 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     {
         if(Boolean.TRUE.equals(getDrain()) && getLinkCredit().compareTo(UnsignedInteger.ZERO) > 0)
         {
-            _draining = true;
             getConsumerTarget().flush();
+            setDeliveryCount(getDeliveryCount().add(getLinkCredit()));
+            setLinkCredit(UnsignedInteger.ZERO);
+            sendFlow();
+            getConsumerTarget().updateNotifyWorkDesired();
         }
 
         while(!_resumeAcceptedTransfers.isEmpty() && hasCreditToSend())

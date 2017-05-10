@@ -168,4 +168,42 @@ public class FlowTest extends ProtocolTestBase
             assertThat(data, is(equalTo("foo")));
         }
     }
+
+
+    @Test
+    @SpecificationTest(section = "2.6.7",
+            description = "If the sender's drain flag is set and there are no available messages,"
+                          + " the sender MUST advance its delivery-count until link-credit is zero,"
+                          + " and send its updated flow state to the receiver.")
+    public void drainEmptyQueue() throws Exception
+    {
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
+        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
+        try (FrameTransport transport = new FrameTransport(addr))
+        {
+            transport.doAttachReceivingLink(BrokerAdmin.TEST_QUEUE_NAME);
+
+            // Flow{nextIncomingId=0,incomingWindow=2047,nextOutgoingId=1,outgoingWindow=2147483647,handle=1,deliveryCount=0,linkCredit=1,drain=true}
+
+            Flow flow = new Flow();
+            flow.setIncomingWindow(UnsignedInteger.valueOf(2047));
+            flow.setNextIncomingId(UnsignedInteger.ZERO);
+            flow.setOutgoingWindow(UnsignedInteger.valueOf(2147483647));
+            flow.setNextOutgoingId(UnsignedInteger.ONE);
+            flow.setDeliveryCount(UnsignedInteger.ZERO);
+            flow.setLinkCredit(UnsignedInteger.ONE);
+            flow.setDrain(Boolean.TRUE);
+            flow.setHandle(UnsignedInteger.ZERO);
+
+            transport.sendPerformative(flow);
+            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
+
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getFrameBody(), is(instanceOf(Flow.class)));
+            Flow responseFlow = (Flow) response.getFrameBody();
+            assertThat(responseFlow.getHandle(), is(notNullValue()));
+            assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
+            assertThat(responseFlow.getDrain(), is(equalTo(Boolean.TRUE)));
+        }
+    }
 }
