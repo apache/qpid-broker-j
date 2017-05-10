@@ -48,7 +48,6 @@ public class ObjectProperties
         OWNER,
         TYPE,
         ALTERNATE,
-        IMMEDIATE,
         DURABLE,
         EXCLUSIVE,
         TEMPORARY,
@@ -88,10 +87,6 @@ public class ObjectProperties
             }
             else
             {
-                if(property == IMMEDIATE)
-                {
-                    LOGGER.warn("ACL rules which depend on the value of the 'immediate' flag are deprecated, and will be removed in the next release");
-                }
                 return property;
             }
         }
@@ -129,14 +124,13 @@ public class ObjectProperties
     }
 
 
-    public ObjectProperties(String virtualHostName, String exchangeName, String routingKey, Boolean immediate)
+    public ObjectProperties(String virtualHostName, String exchangeName, String routingKey)
     {
         super();
 
         setName(exchangeName);
 
         put(Property.ROUTING_KEY, routingKey);
-        put(Property.IMMEDIATE, immediate);
         put(Property.VIRTUALHOST_NAME, virtualHostName);
     }
 

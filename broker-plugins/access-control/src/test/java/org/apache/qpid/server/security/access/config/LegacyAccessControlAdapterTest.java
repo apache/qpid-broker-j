@@ -743,8 +743,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     {
         String routingKey = "routingKey";
         String exchangeName = "exchangeName";
-        boolean immediate = true;
-        ObjectProperties properties = new ObjectProperties(TEST_VIRTUAL_HOST, exchangeName, routingKey, immediate);
+        ObjectProperties properties = new ObjectProperties(TEST_VIRTUAL_HOST, exchangeName, routingKey);
 
         Exchange exchange = mock(Exchange.class);
         when(exchange.getCategoryClass()).thenReturn(Exchange.class);
@@ -752,7 +751,6 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(exchange.getName()).thenReturn(exchangeName);
         Map<String,Object> args = new HashMap<>();
         args.put("routingKey",routingKey);
-        args.put("immediate", true);
         _adapter.authoriseAction(exchange, "publish", args);
 
         verify(_accessControl).authorise(eq(LegacyOperation.PUBLISH), eq(ObjectType.EXCHANGE), eq(properties));

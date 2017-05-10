@@ -329,7 +329,7 @@ class LegacyAccessControlAdapter
             {
 
                 final ObjectProperties _props =
-                        new ObjectProperties(exchange.getAddressSpace().getName(), exchange.getName(), (String)arguments.get("routingKey"), (Boolean)arguments.get("immediate"));
+                        new ObjectProperties(exchange.getAddressSpace().getName(), exchange.getName(), (String)arguments.get("routingKey"));
                 return _accessControl.authorise(PUBLISH, EXCHANGE, _props);
             }
         }
@@ -361,7 +361,7 @@ class LegacyAccessControlAdapter
             {
 
                 final ObjectProperties _props =
-                        new ObjectProperties(queue.getParent().getName(), "", queue.getName(), (Boolean)arguments.get("immediate"));
+                        new ObjectProperties(queue.getParent().getName(), "", queue.getName());
                 return _accessControl.authorise(PUBLISH, EXCHANGE, _props);
             }
         }
@@ -398,7 +398,7 @@ class LegacyAccessControlAdapter
             {
 
                 final ObjectProperties _props =
-                        new ObjectProperties(queue.getParent().getName(), "", queue.getName(), (Boolean)arguments.get("immediate"));
+                        new ObjectProperties(queue.getParent().getName(), "", queue.getName());
                 return _accessControl.authorise(PUBLISH, EXCHANGE, _props);
             }
         }
