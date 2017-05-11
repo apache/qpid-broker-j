@@ -21,6 +21,8 @@ package org.apache.qpid.test.unit.topic;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.Topic;
 import javax.jms.TopicSession;
@@ -67,4 +69,34 @@ public class TopicSubscriberTest extends QpidBrokerTestCase
         _session.unsubscribe("mysubname");
         _session.unsubscribe("mysubname2");
     }
+
+    public void testTopicWithNoSubscriber() throws JMSException
+    {
+        _connection.start();
+
+        Message message1 = createMessage(_session, DEFAULT_MESSAGE_SIZE);
+        Message message2 = createMessage(_session, DEFAULT_MESSAGE_SIZE);
+
+        MessageProducer producer = _session.createProducer(_topic);
+
+        // Send first message when topic has no subscriber
+        producer.send(message1);
+        _session.commit();
+
+        String subscriptionName = "mysub";
+        TopicSubscriber durableSubscriber = _session.createDurableSubscriber(_topic, subscriptionName, null, false);
+
+        // Send second message when topic has subscriber
+        producer.send(message2);
+        _session.commit();
+
+        Message receivedMessage = durableSubscriber.receive(getReceiveTimeout());
+        assertNotNull("Message is unexpected", receivedMessage);
+        assertEquals("Unexpected message", message2.getJMSMessageID(), message2.getJMSMessageID());
+        _session.commit();
+        durableSubscriber.close();
+
+        _session.unsubscribe(subscriptionName);
+    }
+
 }
