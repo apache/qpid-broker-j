@@ -277,14 +277,24 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
                                 // the fail over.
                                 setFailoverLatch(new CountDownLatch(1));
 
-                                // We wake up listeners. If they can handle failover, they will extend the
-                                // FailoverRetrySupport class and will in turn block on the latch until failover
-                                // has completed before retrying the operation.
-                                notifyFailoverStarting();
+                                try
+                                {
+                                    // We wake up listeners. If they can handle failover, they will extend the
+                                    // FailoverRetrySupport class and will in turn block on the latch until failover
+                                    // has completed before retrying the operation.
+                                    notifyFailoverStarting();
 
-                                getConnection().doWithAllLocks(_failoverHandler);
-
-                                getFailoverLatch().countDown();
+                                    getConnection().doWithAllLocks(_failoverHandler);
+                                }
+                                finally
+                                {
+                                    CountDownLatch failoverLatch = getFailoverLatch();
+                                    if (failoverLatch != null)
+                                    {
+                                        failoverLatch.countDown();
+                                        setFailoverLatch(null);
+                                    }
+                                }
                             }
                         });
             }
@@ -731,9 +741,9 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
         {
             if (_failoverLatch != null)
             {
-                if(!_failoverLatch.await(MAXIMUM_STATE_WAIT_TIME, TimeUnit.MILLISECONDS))
+                if (!_failoverLatch.await(MAXIMUM_STATE_WAIT_TIME, TimeUnit.MILLISECONDS))
                 {
-
+                    _logger.debug("Timed out after waiting {}ms for failover to complete.", MAXIMUM_STATE_WAIT_TIME);
                 }
             }
         }

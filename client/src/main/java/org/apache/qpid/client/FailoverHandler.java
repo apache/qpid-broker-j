@@ -52,6 +52,7 @@ public class FailoverHandler implements Runnable
     /**
      * Performs the failover procedure.
      */
+    @Override
     public void run()
     {
         AMQConnection connection = _amqProtocolHandler.getConnection();
@@ -82,10 +83,6 @@ public class FailoverHandler implements Runnable
             AMQDisconnectedException cause = new AMQDisconnectedException("Failover was vetoed by client", null);
 
             connection.closed(cause);
-
-            _amqProtocolHandler.getFailoverLatch().countDown();
-            _amqProtocolHandler.setFailoverLatch(null);
-
             return;
         }
 
