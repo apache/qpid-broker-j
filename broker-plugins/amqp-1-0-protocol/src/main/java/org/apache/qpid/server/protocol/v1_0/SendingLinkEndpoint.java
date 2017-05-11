@@ -466,10 +466,17 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     @Override
     public void flowStateChanged()
     {
-        if(Boolean.TRUE.equals(getDrain()) && getLinkCredit().compareTo(UnsignedInteger.ZERO) > 0)
+        if(Boolean.TRUE.equals(getDrain()))
         {
-            _draining = true;
-            getConsumerTarget().flush();
+            if(getLinkCredit().compareTo(UnsignedInteger.ZERO) > 0)
+            {
+                _draining = true;
+                getSession().notifyWork(getConsumerTarget());
+            }
+        }
+        else
+        {
+            _draining = false;
         }
 
         while(!_resumeAcceptedTransfers.isEmpty() && hasCreditToSend())
