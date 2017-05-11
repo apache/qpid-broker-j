@@ -309,7 +309,10 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
     public void queueEmpty()
     {
-
+        if(_linkEndpoint.drained())
+        {
+            updateNotifyWorkDesired();
+        }
     }
 
     public void flowStateChanged()
