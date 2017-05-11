@@ -55,6 +55,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -1404,19 +1405,30 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public ListenableFuture<Void> reallocateMessages()
     {
-        final Future future = _houseKeepingTaskExecutor.submit(() ->
-                                                                  {
-                                                                      final Collection<Queue> queues =
-                                                                              getChildren(Queue.class);
-                                                                      for (Queue q : queues)
-                                                                      {
-                                                                          if (q.getState() == State.ACTIVE)
-                                                                          {
-                                                                              q.reallocateMessages();
-                                                                          }
-                                                                      }
-                                                                  });
-        return JdkFutureAdapters.listenInPoolThread(future);
+        final Future future;
+        try
+        {
+            future = _houseKeepingTaskExecutor.submit(() ->
+                                                      {
+                                                          final Collection<Queue> queues = getChildren(Queue.class);
+                                                          for (Queue q : queues)
+                                                          {
+                                                              if (q.getState() == State.ACTIVE)
+                                                              {
+                                                                  q.reallocateMessages();
+                                                              }
+                                                          }
+                                                      });
+            return JdkFutureAdapters.listenInPoolThread(future);
+        }
+        catch (RejectedExecutionException e)
+        {
+            if (!_houseKeepingTaskExecutor.isShutdown())
+            {
+                _logger.warn("Failed to schedule reallocation of messages", e);
+            }
+            return Futures.immediateFuture(null);
+        }
     }
 
     @Override
