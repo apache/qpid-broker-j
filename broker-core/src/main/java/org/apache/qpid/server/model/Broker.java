@@ -85,13 +85,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault(name = BROKER_FLOW_TO_DISK_THRESHOLD)
     long DEFAULT_FLOW_TO_DISK_THRESHOLD = (long)(0.75 * (double) BrokerImpl.getMaxDirectMemorySize());
 
-
-    String BROKER_FLOW_TO_DISK_CESSATION_FRACTION = "broker.flowToDiskCessationFraction";
-    @SuppressWarnings("unused")
-    @ManagedContextDefault( name = BROKER_FLOW_TO_DISK_CESSATION_FRACTION,
-            description = "Fraction of the flow to disk threshold where flow to disk will cease.")
-    double DEFAULT_BROKER_FLOW_TO_DISK_CESSATION_FRACTION = 0.8;
-
     String COMPACT_MEMORY_THRESHOLD = "qpid.compact_memory_threshold";
     @SuppressWarnings("unused")
     @ManagedContextDefault(name = COMPACT_MEMORY_THRESHOLD)
@@ -374,9 +367,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @DerivedAttribute(description = "Threshold direct memory size (in bytes) at which the Broker will start flowing incoming messages to disk.")
     long getFlowToDiskThreshold();
-
-    @DerivedAttribute(description = "Threshold direct memory size (in bytes) at which the Broker will cease flowing incoming messages to disk.")
-    long getFlowToDiskCessationThreshold();
 
     @DerivedAttribute(description = "Threshold direct memory size (in bytes) at which the Broker will start considering to compact sparse buffers. Set to -1 to disable.")
     long getCompactMemoryThreshold();

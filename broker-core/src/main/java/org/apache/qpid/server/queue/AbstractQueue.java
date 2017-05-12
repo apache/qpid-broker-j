@@ -262,14 +262,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private boolean _closing;
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
-    private final AtomicBoolean _flowingToDisk = new AtomicBoolean();
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
     private AdvanceConsumersTask _queueHouseKeepingTask;
     private volatile int _bindingCount;
     private volatile OverflowPolicyHandler _overflowPolicyHandler;
-    private volatile long _brokerFlowToDiskThreshold;
-    private volatile long _brokerFlowToDiskLowerThreshold;
-    private volatile double _queueFlowToDiskCessationFraction;
+    private long _flowToDiskThreshold;
 
     private interface HoldMethod
     {
@@ -474,9 +471,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         _mimeTypeToFileExtension = getContextValue(Map.class, MAP_OF_STRING_STRING, MIME_TYPE_TO_FILE_EXTENSION);
-        _queueFlowToDiskCessationFraction = getContextValue(Double.class, QUEUE_FLOW_TO_DISK_QUEUE_CESSATION_FRACTION);
-        _brokerFlowToDiskThreshold = getAncestor(Broker.class).getFlowToDiskThreshold();
-        _brokerFlowToDiskLowerThreshold = getAncestor(Broker.class).getFlowToDiskThreshold();
+        _flowToDiskThreshold = getAncestor(Broker.class).getFlowToDiskThreshold();
 
         if(_defaultFilters != null)
         {
@@ -1106,8 +1101,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             doEnqueue(message, action, enqueueRecord);
         }
 
-        _flowToDiskChecker.flowToDiskIfNecessary(message.getStoredMessage(),
-                                                 _queueStatistics.getQueueSizeIncludingHeader());
+        long estimatedQueueSize = _queueStatistics.getQueueSizeIncludingHeader();
+        _flowToDiskChecker.flowToDiskAndReportIfNecessary(message.getStoredMessage(), estimatedQueueSize,
+                                                          _targetQueueSize.get());
     }
 
     public final void recover(ServerMessage message, final MessageEnqueueRecord enqueueRecord)
@@ -1774,7 +1770,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public void checkCapacity()
     {
         _overflowPolicyHandler.checkOverflow();
-        _flowToDiskChecker.ceaseFlowToDiskIfNecessary();
     }
 
     void notifyConsumers(QueueEntry entry)
@@ -2037,7 +2032,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         QueueEntryIterator queueListIterator = getEntries().iterator();
 
-        _flowToDiskChecker.ceaseFlowToDiskIfNecessary();
+        final long estimatedQueueSize = _queueStatistics.getQueueSizeIncludingHeader();
+        _flowToDiskChecker.reportFlowToDiskStatusIfNecessary(estimatedQueueSize, _targetQueueSize.get());
 
         final Set<NotificationCheck> perMessageChecks = new HashSet<>();
         final Set<NotificationCheck> queueLevelChecks = new HashSet<>();
@@ -2084,9 +2080,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         {
                             messageReference = msg.newReference();
                             cumulativeQueueSize += msg.getSizeIncludingHeader();
-                            _flowToDiskChecker.flowToDiskIfNecessary(msg.getStoredMessage(), cumulativeQueueSize);
+                            _flowToDiskChecker.flowToDiskIfNecessary(msg.getStoredMessage(), cumulativeQueueSize,
+                                                                     _targetQueueSize.get());
 
-                            for (NotificationCheck check : perMessageChecks)
+                            for(NotificationCheck check : perMessageChecks)
                             {
                                 checkForNotification(msg, listener, currentTime, thresholdTime, check);
                             }
@@ -2922,12 +2919,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public boolean isFlowingToDisk()
-    {
-        return _flowingToDisk.get();
-    }
-
-    @Override
     public <C extends ConfiguredObject> Collection<C> getChildren(final Class<C> clazz)
     {
         if(clazz == org.apache.qpid.server.model.Consumer.class)
@@ -3340,43 +3331,65 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private class FlowToDiskChecker
     {
+        final AtomicBoolean _lastReportedFlowToDiskStatus = new AtomicBoolean(false);
 
-        void flowToDiskIfNecessary(StoredMessage<?> storedMessage, long currentQueueSize)
+        void flowToDiskIfNecessary(StoredMessage<?> storedMessage, long estimatedQueueSize, final long targetQueueSize)
         {
-            final long targetQueueSize = _targetQueueSize.get();
-            final int allocatedDirectMemorySize = QpidByteBuffer.getAllocatedDirectMemorySize();
-            if ((currentQueueSize > targetQueueSize || allocatedDirectMemorySize > _brokerFlowToDiskThreshold) && storedMessage.isInMemory())
+            if ((estimatedQueueSize > targetQueueSize
+                 || QpidByteBuffer.getAllocatedDirectMemorySize() > _flowToDiskThreshold)
+                && storedMessage.isInMemory())
             {
-                if (_flowingToDisk.compareAndSet(false, true))
-                {
-
-                    getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_ACTIVE(getQueueDepthBytesIncludingHeader() / 1024.0,
-                                                                                            targetQueueSize / 1024.0,
-                                                                                            allocatedDirectMemorySize / 1024.0 / 1024.0,
-                                                                                            _brokerFlowToDiskThreshold
-                                                                                            / 1024.0 / 1024.0));
-                }
                 storedMessage.flowToDisk();
             }
         }
 
-        void ceaseFlowToDiskIfNecessary()
+        void flowToDiskAndReportIfNecessary(StoredMessage<?> storedMessage,
+                                            final long estimatedQueueSize,
+                                            final long targetQueueSize)
         {
-            final long currentQueueSize = _queueStatistics.getQueueSizeIncludingHeader();
-            final long targetQueueSize = _targetQueueSize.get();
-            final long allocatedDirectMemorySize = (long) QpidByteBuffer.getAllocatedDirectMemorySize();
+            flowToDiskIfNecessary(storedMessage, estimatedQueueSize, targetQueueSize);
+            reportFlowToDiskStatusIfNecessary(estimatedQueueSize, targetQueueSize);
+        }
 
-            if (currentQueueSize <= (targetQueueSize * _queueFlowToDiskCessationFraction)
-                && allocatedDirectMemorySize <= _brokerFlowToDiskLowerThreshold)
+        void reportFlowToDiskStatusIfNecessary(final long estimatedQueueSize, final long targetQueueSize)
+        {
+            final int allocatedDirectMemorySize = QpidByteBuffer.getAllocatedDirectMemorySize();
+            if (estimatedQueueSize > targetQueueSize
+                || allocatedDirectMemorySize > _flowToDiskThreshold)
             {
-                if (_flowingToDisk.compareAndSet(true, false))
-                {
-                    getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_INACTIVE(currentQueueSize / 1024.0,
-                                                                                              targetQueueSize / 1024.0,
-                                                                                              allocatedDirectMemorySize / 1024.0 / 1024.0,
-                                                                                              _brokerFlowToDiskThreshold
-                                                                                              / 1024.0 / 1024.0));
-                }
+                reportFlowToDiskActiveIfNecessary(estimatedQueueSize, targetQueueSize, allocatedDirectMemorySize, _flowToDiskThreshold);
+            }
+            else
+            {
+                reportFlowToDiskInactiveIfNecessary(estimatedQueueSize, targetQueueSize, allocatedDirectMemorySize, _flowToDiskThreshold);
+            }
+        }
+
+        private void reportFlowToDiskActiveIfNecessary(long estimatedQueueSize,
+                                                       long targetQueueSize,
+                                                       long allocatedDirectMemorySize,
+                                                       long flowToDiskThreshold)
+        {
+            if (!_lastReportedFlowToDiskStatus.getAndSet(true))
+            {
+                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_ACTIVE(estimatedQueueSize / 1024.0,
+                                                                                        targetQueueSize / 1024.0,
+                                                                                        allocatedDirectMemorySize / 1024.0 / 1024.0,
+                                                                                        flowToDiskThreshold / 1024.0 / 1024.0));
+            }
+        }
+
+        private void reportFlowToDiskInactiveIfNecessary(long estimatedQueueSize,
+                                                         long targetQueueSize,
+                                                         long allocatedDirectMemorySize,
+                                                         long flowToDiskThreshold)
+        {
+            if (_lastReportedFlowToDiskStatus.getAndSet(false))
+            {
+                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_INACTIVE(estimatedQueueSize / 1024.0,
+                                                                                          targetQueueSize / 1024.0,
+                                                                                          allocatedDirectMemorySize / 1024.0 / 1024.0,
+                                                                                          flowToDiskThreshold / 1024.0 / 1024.0));
             }
         }
     }
