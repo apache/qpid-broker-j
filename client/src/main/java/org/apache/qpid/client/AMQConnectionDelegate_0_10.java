@@ -331,53 +331,53 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         final ConnectionClose close = exc.getClose();
         if (close == null || close.getReplyCode() == ConnectionCloseCode.CONNECTION_FORCED)
         {
-            _conn.getProtocolHandler().setFailoverLatch(new CountDownLatch(1));
-
-            _qpidConnection.notifyFailoverRequired();
-
+            final CountDownLatch failoverLatch = new CountDownLatch(1);
+            _conn.getProtocolHandler().setFailoverLatch(failoverLatch);
             final AtomicBoolean failoverDone = new AtomicBoolean();
-
-            _conn.doWithAllLocks(new Runnable()
+            try
             {
-                @Override
-                public void run()
+                _qpidConnection.notifyFailoverRequired();
+                _conn.doWithAllLocks(new Runnable()
                 {
-                    try
+                    @Override
+                    public void run()
                     {
-                        boolean preFailover = _conn.firePreFailover(false);
-                        if (preFailover)
+                        try
                         {
-                            boolean reconnected;
-                            if(exc instanceof RedirectConnectionException)
+                            boolean preFailover = _conn.firePreFailover(false);
+                            if (preFailover)
                             {
-                                RedirectConnectionException redirect = (RedirectConnectionException)exc;
-                                reconnected = attemptRedirection(redirect.getHost(), redirect.getKnownHosts());
-                            }
-                            else
-                            {
-                                reconnected = _conn.attemptReconnection();
-                            }
-                            if(reconnected)
-                            {
-                                failoverPrep();
-                                _conn.resubscribeSessions();
-                                _conn.fireFailoverComplete();
-                                failoverDone.set(true);
+                                boolean reconnected;
+                                if (exc instanceof RedirectConnectionException)
+                                {
+                                    RedirectConnectionException redirect = (RedirectConnectionException) exc;
+                                    reconnected = attemptRedirection(redirect.getHost(), redirect.getKnownHosts());
+                                }
+                                else
+                                {
+                                    reconnected = _conn.attemptReconnection();
+                                }
+                                if (reconnected)
+                                {
+                                    failoverPrep();
+                                    _conn.resubscribeSessions();
+                                    _conn.fireFailoverComplete();
+                                    failoverDone.set(true);
+                                }
                             }
                         }
+                        catch (Exception e)
+                        {
+                            _logger.error("error during failover", e);
+                        }
                     }
-                    catch (Exception e)
-                    {
-                        _logger.error("error during failover", e);
-                    }
-                    finally
-                    {
-                        _conn.getProtocolHandler().getFailoverLatch().countDown();
-                        _conn.getProtocolHandler().setFailoverLatch(null);
-                    }
-
-                }
-            });
+                });
+            }
+            finally
+            {
+                failoverLatch.countDown();
+                _conn.getProtocolHandler().setFailoverLatch(null);
+            }
 
 
             if (failoverDone.get())

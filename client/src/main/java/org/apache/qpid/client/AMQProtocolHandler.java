@@ -275,7 +275,8 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
 
                                 // Create a latch, upon which tasks that must not run in parallel with a failover can wait for completion of
                                 // the fail over.
-                                setFailoverLatch(new CountDownLatch(1));
+                                final CountDownLatch failoverLatch = new CountDownLatch(1);
+                                setFailoverLatch(failoverLatch);
 
                                 try
                                 {
@@ -288,12 +289,8 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
                                 }
                                 finally
                                 {
-                                    CountDownLatch failoverLatch = getFailoverLatch();
-                                    if (failoverLatch != null)
-                                    {
-                                        failoverLatch.countDown();
-                                        setFailoverLatch(null);
-                                    }
+                                    failoverLatch.countDown();
+                                    setFailoverLatch(null);
                                 }
                             }
                         });
@@ -737,14 +734,12 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
 
     public void blockUntilNotFailingOver() throws InterruptedException
     {
-        synchronized(_failoverLatchChange)
+        CountDownLatch failoverLatch = getFailoverLatch();
+        if (failoverLatch != null)
         {
-            if (_failoverLatch != null)
+            if (!failoverLatch.await(MAXIMUM_STATE_WAIT_TIME, TimeUnit.MILLISECONDS))
             {
-                if (!_failoverLatch.await(MAXIMUM_STATE_WAIT_TIME, TimeUnit.MILLISECONDS))
-                {
-                    _logger.debug("Timed out after waiting {}ms for failover to complete.", MAXIMUM_STATE_WAIT_TIME);
-                }
+                _logger.debug("Timed out after waiting {}ms for failover to complete.", MAXIMUM_STATE_WAIT_TIME);
             }
         }
     }
@@ -762,7 +757,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
         return queueName.replaceAll("_+", "_");
     }
 
-    public CountDownLatch getFailoverLatch()
+    CountDownLatch getFailoverLatch()
     {
         synchronized (_failoverLatchChange)
         {
@@ -770,7 +765,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
         }
     }
 
-    public void setFailoverLatch(CountDownLatch failoverLatch)
+    void setFailoverLatch(CountDownLatch failoverLatch)
     {
         synchronized (_failoverLatchChange)
         {
