@@ -51,6 +51,13 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
         _encodedForm = Collections.singletonList(encoder.encodeObject(section));
     }
 
+    protected AbstractSection(final AbstractSection<T, S> otherAbstractSection)
+    {
+        _value = otherAbstractSection.getValue();
+        _typeRegistry = otherAbstractSection._typeRegistry;
+        _encodedForm = otherAbstractSection.getEncodedForm();
+    }
+
     @Override
     public synchronized T getValue()
     {

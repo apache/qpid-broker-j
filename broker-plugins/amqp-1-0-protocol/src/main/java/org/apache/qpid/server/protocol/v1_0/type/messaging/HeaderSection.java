@@ -38,6 +38,17 @@ public class HeaderSection extends AbstractSection<Header, Header>
         super(header, sectionEncoder);
     }
 
+    HeaderSection(final HeaderSection headerSection)
+    {
+        super(headerSection);
+    }
+
+    @Override
+    public HeaderSection copy()
+    {
+        return new HeaderSection(this);
+    }
+
     @Override
     protected AbstractDescribedTypeConstructor<Header> createNonEncodingRetainingSectionConstructor()
     {

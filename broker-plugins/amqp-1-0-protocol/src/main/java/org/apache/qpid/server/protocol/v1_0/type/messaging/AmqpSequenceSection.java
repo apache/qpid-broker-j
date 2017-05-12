@@ -40,6 +40,17 @@ public class AmqpSequenceSection extends AbstractSection<List, AmqpSequence>
         super(sequence, sectionEncoder);
     }
 
+    AmqpSequenceSection(final AmqpSequenceSection amqpSequenceSection)
+    {
+        super(amqpSequenceSection);
+    }
+
+    @Override
+    public AmqpSequenceSection copy()
+    {
+        return new AmqpSequenceSection(this);
+    }
+
     @Override
     protected AbstractDescribedTypeConstructor<AmqpSequence> createNonEncodingRetainingSectionConstructor()
     {

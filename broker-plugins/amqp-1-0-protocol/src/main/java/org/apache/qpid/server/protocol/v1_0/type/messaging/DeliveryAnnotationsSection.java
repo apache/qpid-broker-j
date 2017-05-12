@@ -41,6 +41,17 @@ public class DeliveryAnnotationsSection extends AbstractSection<Map<Symbol,Objec
         super(deliveryAnnotations, sectionEncoder);
     }
 
+    DeliveryAnnotationsSection(final DeliveryAnnotationsSection deliveryAnnotationsSection)
+    {
+        super(deliveryAnnotationsSection);
+    }
+
+    @Override
+    public DeliveryAnnotationsSection copy()
+    {
+        return new DeliveryAnnotationsSection(this);
+    }
+
     @Override
     protected AbstractDescribedTypeConstructor<DeliveryAnnotations> createNonEncodingRetainingSectionConstructor()
     {

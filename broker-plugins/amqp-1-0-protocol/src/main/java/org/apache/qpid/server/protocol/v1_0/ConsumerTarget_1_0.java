@@ -142,11 +142,11 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                     header.setDurable(oldHeader.getDurable());
                     header.setPriority(oldHeader.getPriority());
                     header.setTtl(oldHeader.getTtl());
+                    headerSection.dispose();
                 }
                 header.setDeliveryCount(UnsignedInteger.valueOf(entry.getDeliveryCount()));
 
                 QpidByteBuffer headerPayload = _sectionEncoder.encodeObject(header);
-
                 headerSection = new HeaderSection(_typeRegistry);
                 headerSection.setEncodedForm(Collections.singletonList(headerPayload));
                 headerPayload.dispose();
@@ -155,26 +155,31 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
             if(headerSection != null)
             {
                 payload.addAll(headerSection.getEncodedForm());
+                headerSection.dispose();
             }
             EncodingRetainingSection<?> section;
             if((section = message.getDeliveryAnnotationsSection()) != null)
             {
                 payload.addAll(section.getEncodedForm());
+                section.dispose();
             }
 
             if((section = message.getMessageAnnotationsSection()) != null)
             {
                 payload.addAll(section.getEncodedForm());
+                section.dispose();
             }
 
             if((section = message.getPropertiesSection()) != null)
             {
                 payload.addAll(section.getEncodedForm());
+                section.dispose();
             }
 
             if((section = message.getApplicationPropertiesSection()) != null)
             {
                 payload.addAll(section.getEncodedForm());
+                section.dispose();
             }
 
             payload.addAll(bodyContent);
@@ -182,6 +187,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
             if((section = message.getFooterSection()) != null)
             {
                 payload.addAll(section.getEncodedForm());
+                section.dispose();
             }
 
 

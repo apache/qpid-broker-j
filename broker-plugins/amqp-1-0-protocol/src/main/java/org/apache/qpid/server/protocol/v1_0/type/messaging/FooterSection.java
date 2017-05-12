@@ -41,6 +41,17 @@ public class FooterSection extends AbstractSection<Map<Symbol,Object>, Footer>
         super(footer, sectionEncoder);
     }
 
+    FooterSection(final FooterSection footerSection)
+    {
+        super(footerSection);
+    }
+
+    @Override
+    public FooterSection copy()
+    {
+        return new FooterSection(this);
+    }
+
     @Override
     protected AbstractDescribedTypeConstructor<Footer> createNonEncodingRetainingSectionConstructor()
     {

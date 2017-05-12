@@ -41,6 +41,17 @@ public class ApplicationPropertiesSection extends AbstractSection<Map<String,Obj
         super(section, encoder);
     }
 
+    ApplicationPropertiesSection(final ApplicationPropertiesSection applicationPropertiesSection)
+    {
+        super(applicationPropertiesSection);
+    }
+
+    @Override
+    public ApplicationPropertiesSection copy()
+    {
+        return new ApplicationPropertiesSection(this);
+    }
+
     @Override
     protected AbstractDescribedTypeConstructor<ApplicationProperties> createNonEncodingRetainingSectionConstructor()
     {

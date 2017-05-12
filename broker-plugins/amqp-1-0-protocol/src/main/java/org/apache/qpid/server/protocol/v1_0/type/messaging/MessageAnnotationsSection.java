@@ -41,6 +41,17 @@ public class MessageAnnotationsSection extends AbstractSection<Map<Symbol,Object
         super(messageAnnotations, sectionEncoder);
     }
 
+    MessageAnnotationsSection(final MessageAnnotationsSection messageAnnotationsSection)
+    {
+        super(messageAnnotationsSection);
+    }
+
+    @Override
+    public MessageAnnotationsSection copy()
+    {
+        return new MessageAnnotationsSection(this);
+    }
+
     @Override
     protected AbstractDescribedTypeConstructor<MessageAnnotations> createNonEncodingRetainingSectionConstructor()
     {

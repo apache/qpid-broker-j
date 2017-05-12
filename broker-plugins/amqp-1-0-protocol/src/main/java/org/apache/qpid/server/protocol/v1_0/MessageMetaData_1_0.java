@@ -182,7 +182,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
     public PropertiesSection getPropertiesSection()
     {
-        return _propertiesSection;
+        return _propertiesSection == null ? null : _propertiesSection.copy();
     }
 
 
@@ -342,27 +342,27 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
     public HeaderSection getHeaderSection()
     {
-        return _headerSection;
+        return _headerSection == null ? null : _headerSection.copy();
     }
 
     public DeliveryAnnotationsSection getDeliveryAnnotationsSection()
     {
-        return _deliveryAnnotationsSection;
+        return _deliveryAnnotationsSection == null ? null : _deliveryAnnotationsSection.copy();
     }
 
     public MessageAnnotationsSection getMessageAnnotationsSection()
     {
-        return _messageAnnotationsSection;
+        return _messageAnnotationsSection == null ? null : _messageAnnotationsSection.copy();
     }
 
     public ApplicationPropertiesSection getApplicationPropertiesSection()
     {
-        return _applicationPropertiesSection;
+        return _applicationPropertiesSection == null ? null : _applicationPropertiesSection.copy();
     }
 
     public FooterSection getFooterSection()
     {
-        return _footerSection;
+        return _footerSection == null ? null : _footerSection.copy();
     }
 
     public int getVersion()

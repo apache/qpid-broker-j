@@ -39,6 +39,17 @@ public class PropertiesSection extends AbstractSection<Properties, Properties>
        super(properties, sectionEncoder);
     }
 
+    PropertiesSection(final PropertiesSection propertiesSection)
+    {
+        super(propertiesSection);
+    }
+
+    @Override
+    public PropertiesSection copy()
+    {
+        return new PropertiesSection(this);
+    }
+
     @Override
     protected AbstractDescribedTypeConstructor<Properties> createNonEncodingRetainingSectionConstructor()
     {

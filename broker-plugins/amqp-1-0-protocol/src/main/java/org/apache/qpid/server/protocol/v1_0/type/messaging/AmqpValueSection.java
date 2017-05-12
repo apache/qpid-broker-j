@@ -38,6 +38,17 @@ public class AmqpValueSection extends AbstractSection<Object, AmqpValue>
         super(amqpValue, sectionEncoder);
     }
 
+    AmqpValueSection(final AmqpValueSection amqpValueSection)
+    {
+        super(amqpValueSection);
+    }
+
+    @Override
+    public AmqpValueSection copy()
+    {
+        return new AmqpValueSection(this);
+    }
+
     @Override
     protected AbstractDescribedTypeConstructor<AmqpValue> createNonEncodingRetainingSectionConstructor()
     {

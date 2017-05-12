@@ -39,6 +39,17 @@ public class DataSection extends AbstractSection<Binary, Data>
         super(data, sectionEncoder);
     }
 
+    DataSection(final DataSection dataSection)
+    {
+        super(dataSection);
+    }
+
+    @Override
+    public DataSection copy()
+    {
+        return new DataSection(this);
+    }
+
     @Override
     protected AbstractDescribedTypeConstructor<Data> createNonEncodingRetainingSectionConstructor()
     {

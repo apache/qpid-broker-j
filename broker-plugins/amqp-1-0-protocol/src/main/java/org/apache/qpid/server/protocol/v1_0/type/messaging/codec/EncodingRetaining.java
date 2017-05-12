@@ -32,6 +32,7 @@ public interface EncodingRetaining
     void reallocate();
     long getEncodedSize();
     void writeTo(QpidByteBuffer dest);
+    EncodingRetaining copy();
 
 
 }
