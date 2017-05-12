@@ -163,6 +163,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault( name = "broker.housekeepingThreadCount")
     public static final int DEFAULT_HOUSEKEEPING_THREAD_COUNT = 2;
 
+    String QPID_BROKER_HOUSEKEEPING_CHECK_PERIOD = "qpid.broker.housekeepingCheckPeriod";
+    @ManagedContextDefault(name = QPID_BROKER_HOUSEKEEPING_CHECK_PERIOD)
+    long DEFAULT_BROKER_HOUSEKEEPING_CHECK_PERIOD = 30000L;
 
     @ManagedAttribute( defaultValue = "${broker.housekeepingThreadCount}")
     int getHousekeepingThreadCount();
@@ -376,6 +379,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @DerivedAttribute(description = "Minimum fraction of direct memory buffer that can be occupied before the buffer is considered for compaction")
     double getSparsityFraction();
+
+    @DerivedAttribute()
+    long getHousekeepingCheckPeriod();
 
     @ManagedOperation(changesConfiguredObjectState = false, nonModifying = true,
             description = "Force direct memory buffer compaction.")

@@ -206,6 +206,12 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Total Depth of Queues Including Header")
     long getTotalDepthOfQueuesBytesIncludingHeader();
 
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Total Memory Occupied by Message Headers and Content")
+    long getInMemoryMessageSize();
+
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Total Number of Bytes Evacuated from Memory Due to Flow to Disk")
+    long getBytesEvacuatedFromMemory();
+
     @Override
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Collection<? extends Connection<?>> getConnections();
@@ -284,6 +290,8 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     MessageDestination getSystemDestination(String name);
 
     ListenableFuture<Void> reallocateMessages();
+
+    boolean isOverTargetSize();
 
     interface Transaction
     {

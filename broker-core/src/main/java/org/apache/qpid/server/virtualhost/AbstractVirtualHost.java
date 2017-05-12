@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.virtualhost;
 
+import static com.google.common.collect.Iterators.cycle;
 import static java.util.Collections.newSetFromMap;
 
 import java.io.BufferedInputStream;
@@ -88,8 +89,10 @@ import org.apache.qpid.server.logging.messages.VirtualHostMessages;
 import org.apache.qpid.server.logging.subjects.MessageStoreLogSubject;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageDeletedException;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageNode;
+import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
@@ -105,6 +108,7 @@ import org.apache.qpid.server.plugin.SystemNodeCreator;
 import org.apache.qpid.server.pool.SuppressingInheritedAccessControlContextThreadFactory;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.queue.QueueEntry;
+import org.apache.qpid.server.queue.QueueEntryIterator;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.CompoundAccessControl;
 import org.apache.qpid.server.security.Result;
@@ -308,8 +312,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _fileSystemSpaceCheckerJobContext = getSystemTaskControllerContext("FileSystemSpaceChecker["+getName()+"]", _principal);
 
         _fileSystemSpaceChecker = new FileSystemSpaceChecker();
-
-        addChangeListener(new TargetSizeAssigningListener());
     }
 
     private void updateAccessControl()
@@ -1165,6 +1167,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         if (period > 0L)
         {
             scheduleHouseKeepingTask(period, new VirtualHostHouseKeepingTask());
+            scheduleHouseKeepingTask(period, new FlowToDiskCheckingTask());
         }
     }
 
@@ -1441,6 +1444,18 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             total += q.getQueueDepthBytesIncludingHeader();
         }
         return total;
+    }
+
+    @Override
+    public long getInMemoryMessageSize()
+    {
+        return _messageStore == null ? -1 : _messageStore.getInMemorySize();
+    }
+
+    @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return _messageStore == null ? -1 : _messageStore.getBytesEvacuatedFromMemory();
     }
 
     @Override
@@ -1738,6 +1753,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return null;
     }
 
+    @Override
+    public boolean isOverTargetSize()
+    {
+        return getInMemoryMessageSize() > _targetSize.get();
+    }
+
     private static class MessageHeaderImpl implements AMQMessageHeader
     {
         private final String _userName;
@@ -1856,28 +1877,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
-    private class TargetSizeAssigningListener extends AbstractConfigurationChangeListener
-    {
-        @Override
-        public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-        {
-            if (child instanceof Queue)
-            {
-                allocateTargetSizeToQueues();
-            }
-        }
-
-        @Override
-        public void childRemoved(final ConfiguredObject<?> object,
-                                 final ConfiguredObject<?> child)
-        {
-            if (child instanceof Queue)
-            {
-                allocateTargetSizeToQueues();
-            }
-        }
-    }
-
     private class VirtualHostHouseKeepingTask extends HouseKeepingTask
     {
         public VirtualHostHouseKeepingTask()
@@ -1887,15 +1886,75 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         public void execute()
         {
-            Broker<?> broker = getAncestor(Broker.class);
-            broker.assignTargetSizes();
-
             for (Queue<?> q : getChildren(Queue.class))
             {
                 if (q.getState() == State.ACTIVE)
                 {
                     _logger.debug("Checking message status for queue: {}", q.getName());
                     q.checkMessageStatus();
+                }
+            }
+        }
+    }
+
+    private class FlowToDiskCheckingTask extends HouseKeepingTask
+    {
+        public FlowToDiskCheckingTask()
+        {
+            super("FlowToDiskChecking["+AbstractVirtualHost.this.getName()+"]", AbstractVirtualHost.this, _housekeepingJobContext);
+        }
+
+        @Override
+        public void execute()
+        {
+            if (isOverTargetSize())
+            {
+                long currentTargetSize = _targetSize.get();
+                List<QueueEntryIterator> queueIterators = new ArrayList<>();
+                for (Queue<?> q : getChildren(Queue.class))
+                {
+                    queueIterators.add(q.queueEntryIterator());
+                }
+                Collections.shuffle(queueIterators);
+
+                long cumulativeSize = 0;
+                final Iterator<QueueEntryIterator> cyclicIterators = cycle(queueIterators);
+                while (cyclicIterators.hasNext())
+                {
+                    final QueueEntryIterator queueIterator = cyclicIterators.next();
+                    if (queueIterator.advance())
+                    {
+                        QueueEntry node = queueIterator.getNode();
+                        if (node != null && !node.isDeleted())
+                        {
+                            try (MessageReference messageReference = node.getMessage().newReference())
+                            {
+                                final StoredMessage storedMessage = messageReference.getMessage().getStoredMessage();
+                                if (storedMessage.isInMemory())
+                                {
+                                    if (cumulativeSize <= currentTargetSize)
+                                    {
+                                        cumulativeSize += storedMessage.getContentSize();
+                                        cumulativeSize += storedMessage.getMetaData() == null
+                                                ? 0
+                                                : storedMessage.getMetaData().getStorableSize();
+                                    }
+                                    else
+                                    {
+                                        storedMessage.flowToDisk();
+                                    }
+                                }
+                            }
+                            catch (MessageDeletedException e)
+                            {
+                                // pass
+                            }
+                        }
+                    }
+                    else
+                    {
+                        cyclicIterators.remove();
+                    }
                 }
             }
         }
@@ -2396,7 +2455,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public void setTargetSize(final long targetSize)
     {
         _targetSize.set(targetSize);
-        allocateTargetSizeToQueues();
     }
 
     public long getTargetSize()
@@ -2404,37 +2462,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _targetSize.get();
     }
 
-    private void allocateTargetSizeToQueues()
-    {
-        long targetSize = _targetSize.get();
-        Collection<Queue> queues = getChildren(Queue.class);
-        long totalSize = calculateTotalEnqueuedSize(queues);
-        _logger.debug("Allocating target size to queues, total target: {} ; total enqueued size {}", targetSize, totalSize);
-        if (targetSize > 0l)
-        {
-            for (Queue<?> q : queues)
-            {
-                long size;
-                if (totalSize == 0)
-                {
-                    size = targetSize / queues.size();
-                }
-                else
-                {
-                    size = (long) ((q.getQueueDepthBytesIncludingHeader() / (double) totalSize) * targetSize);
-                }
-
-                q.setTargetSize(size);
-            }
-        }
-    }
-
     @Override
     public long getTotalQueueDepthBytes()
     {
         return calculateTotalEnqueuedSize(getChildren(Queue.class));
     }
-
 
     @Override
     public Principal getPrincipal()

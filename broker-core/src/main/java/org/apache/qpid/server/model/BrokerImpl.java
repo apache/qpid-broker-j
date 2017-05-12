@@ -40,6 +40,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -152,6 +153,8 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private long _flowToDiskThreshold;
     private double _sparsityFraction;
     private long _lastDisposalCounter;
+    private ScheduledFuture<?> _assignTargetSizeSchedulingFuture;
+    private long _housekeepingCheckPeriod;
 
     @ManagedObjectFactoryConstructor
     public BrokerImpl(Map<String, Object> attributes,
@@ -420,6 +423,9 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                                                              getSystemTaskSubject("Housekeeping", _principal));
 
         scheduleDirectMemoryCheck();
+        _assignTargetSizeSchedulingFuture = scheduleHouseKeepingTask(getHousekeepingCheckPeriod(),
+                                                                     TimeUnit.MILLISECONDS,
+                                                                     this::assignTargetSizes);
 
         final PreferenceStoreUpdaterImpl updater = new PreferenceStoreUpdaterImpl();
         final Collection<PreferenceRecord> preferenceRecords = _preferenceStore.openAndLoad(updater);
@@ -624,6 +630,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         _flowToDiskThreshold = getContextValue(Long.class, BROKER_FLOW_TO_DISK_THRESHOLD);
         _compactMemoryThreshold = getContextValue(Long.class, Broker.COMPACT_MEMORY_THRESHOLD);
         _compactMemoryInterval = getContextValue(Long.class, Broker.COMPACT_MEMORY_INTERVAL);
+        _housekeepingCheckPeriod = getContextValue(Long.class, Broker.QPID_BROKER_HOUSEKEEPING_CHECK_PERIOD);
 
         if (SystemUtils.getProcessPid() != null)
         {
@@ -730,6 +737,11 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         if (_reportingTimer != null)
         {
             _reportingTimer.cancel();
+        }
+
+        if (_assignTargetSizeSchedulingFuture != null)
+        {
+            _assignTargetSizeSchedulingFuture.cancel(true);
         }
 
         shutdownHouseKeeping();
@@ -1219,6 +1231,12 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     public double getSparsityFraction()
     {
         return _sparsityFraction;
+    }
+
+    @Override
+    public long getHousekeepingCheckPeriod()
+    {
+        return _housekeepingCheckPeriod;
     }
 
     @Override

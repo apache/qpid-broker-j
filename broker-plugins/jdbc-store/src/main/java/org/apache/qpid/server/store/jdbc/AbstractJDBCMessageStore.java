@@ -84,6 +84,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     protected final EventManager _eventManager = new EventManager();
     private ConfiguredObject<?> _parent;
     private String _tablePrefix = "";
+    private final AtomicLong _inMemorySize = new AtomicLong();
+    private final AtomicLong _bytesEvacuatedFromMemory = new AtomicLong();
 
     protected abstract boolean isMessageStoreOpen();
 
@@ -245,6 +247,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     @Override
     public void closeMessageStore()
     {
+        _inMemorySize.set(0);
+        _bytesEvacuatedFromMemory.set(0);
         if(_executor != null)
         {
             _executor.shutdown();
@@ -1124,6 +1128,17 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         return true;
     }
 
+    @Override
+    public long getInMemorySize()
+    {
+        return _inMemorySize.get();
+    }
+
+    @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return _bytesEvacuatedFromMemory.get();
+    }
 
     protected class JDBCTransaction implements Transaction
     {
@@ -1408,10 +1423,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             _data = data;
         }
 
-        public void clear()
+        public long clear()
         {
+            long bytesCleared = 0;
             if(_metaData != null)
             {
+                bytesCleared += _metaData.getStorableSize();
                 _metaData.clearEncodedForm();
                 _metaData = null;
             }
@@ -1419,10 +1436,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
                 for(QpidByteBuffer buf : _data)
                 {
+                    bytesCleared += buf.remaining();
                     buf.dispose();
                 }
+                _data = null;
             }
-            _data = null;
+            return bytesCleared;
         }
 
         @Override
@@ -1471,7 +1490,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
                 _messageDataRef = new MessageDataSoftRef<>(metaData, null);
             }
+
             _contentSize = metaData.getContentSize();
+            _inMemorySize.addAndGet(metaData.getStorableSize());
         }
 
 
@@ -1531,6 +1552,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         @Override
         public StoredMessage<T> allContentAdded()
         {
+            _inMemorySize.addAndGet(getContentSize());
             return this;
         }
 
@@ -1668,14 +1690,17 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             }
 
             final T metaData;
+            long bytesCleared = 0;
             if ((metaData = _messageDataRef.getMetaData()) != null)
             {
+                bytesCleared += metaData.getStorableSize();
                 metaData.dispose();
             }
 
             Collection<QpidByteBuffer> data = _messageDataRef.getData();
             if(data != null)
             {
+                bytesCleared += getContentSize();
                 _messageDataRef.setData(null);
                 for(QpidByteBuffer buf : data)
                 {
@@ -1683,6 +1708,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 }
             }
             _messageDataRef = null;
+            _inMemorySize.addAndGet(-bytesCleared);
         }
 
         @Override
@@ -1703,7 +1729,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             flushToStore();
             if(_messageDataRef != null && !_messageDataRef.isHardRef())
             {
-                ((MessageDataSoftRef)_messageDataRef).clear();
+                final long bytesCleared = ((MessageDataSoftRef) _messageDataRef).clear();
+                _inMemorySize.addAndGet(-bytesCleared);
+                _bytesEvacuatedFromMemory.addAndGet(bytesCleared);
             }
             return true;
         }

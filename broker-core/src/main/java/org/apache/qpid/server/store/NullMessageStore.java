@@ -97,6 +97,18 @@ public abstract class NullMessageStore implements MessageStore, DurableConfigura
     }
 
     @Override
+    public long getInMemorySize()
+    {
+        return 0;
+    }
+
+    @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return 0L;
+    }
+
+    @Override
     public Transaction newTransaction()
     {
         return null;

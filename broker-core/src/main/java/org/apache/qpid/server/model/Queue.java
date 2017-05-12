@@ -37,6 +37,7 @@ import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.queue.NotificationCheck;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.queue.QueueEntry;
+import org.apache.qpid.server.queue.QueueEntryIterator;
 import org.apache.qpid.server.queue.QueueEntryVisitor;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -471,8 +472,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     void recover(ServerMessage<?> message, MessageEnqueueRecord enqueueRecord);
 
-    void setTargetSize(long targetSize);
-
     boolean isHeld(QueueEntry queueEntry, final long evaluationTime);
 
     void checkCapacity();
@@ -480,4 +479,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     void deleteEntry(QueueEntry entry);
 
     QueueEntry getLeastSignificantOldestEntry();
+
+    QueueEntryIterator queueEntryIterator();
 }
