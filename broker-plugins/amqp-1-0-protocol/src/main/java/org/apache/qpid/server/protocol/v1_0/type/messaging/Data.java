@@ -21,7 +21,6 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 
 public class Data implements NonEncodingRetainingSection<Binary>
@@ -47,8 +46,8 @@ public class Data implements NonEncodingRetainingSection<Binary>
     }
 
     @Override
-    public DataSection createEncodingRetainingSection(final SectionEncoder encoder)
+    public DataSection createEncodingRetainingSection()
     {
-        return new DataSection(this, encoder);
+        return new DataSection(this);
     }
 }

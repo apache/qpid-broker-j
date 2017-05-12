@@ -48,7 +48,7 @@ public class ApplicationPropertiesSectionConstructor extends DescribedMapSection
     @Override
     protected ApplicationPropertiesSection createObject(final DescribedTypeConstructorRegistry describedTypeRegistry)
     {
-        return new ApplicationPropertiesSection(describedTypeRegistry);
+        return new ApplicationPropertiesSection();
     }
 
 }

@@ -23,7 +23,6 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import java.util.Map;
 
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
 public class MessageAnnotations implements NonEncodingRetainingSection<Map<Symbol,Object>>
@@ -42,8 +41,8 @@ public class MessageAnnotations implements NonEncodingRetainingSection<Map<Symbo
     }
 
     @Override
-    public MessageAnnotationsSection createEncodingRetainingSection(final SectionEncoder encoder)
+    public MessageAnnotationsSection createEncodingRetainingSection()
     {
-        return new MessageAnnotationsSection(this, encoder);
+        return new MessageAnnotationsSection(this);
     }
 }

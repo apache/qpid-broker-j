@@ -21,11 +21,8 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-import java.util.Collections;
 import java.util.Date;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -336,8 +333,8 @@ public class Properties implements NonEncodingRetainingSection<Properties>
     }
 
     @Override
-    public PropertiesSection createEncodingRetainingSection(final SectionEncoder encoder)
+    public PropertiesSection createEncodingRetainingSection()
     {
-        return new PropertiesSection(this, encoder);
+        return new PropertiesSection(this);
     }
 }

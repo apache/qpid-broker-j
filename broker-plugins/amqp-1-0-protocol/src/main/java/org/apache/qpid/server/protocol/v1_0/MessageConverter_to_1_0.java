@@ -185,7 +185,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
             data = uncompressed;
         }
 
-        return convertMessageBody(mimeType, data).createEncodingRetainingSection(encoder);
+        return convertMessageBody(mimeType, data).createEncodingRetainingSection();
     }
 
     private static class ConvertedMessage<M extends ServerMessage> implements StoredMessage<MessageMetaData_1_0>

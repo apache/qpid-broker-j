@@ -22,20 +22,18 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.HeaderConstructor;
 
 public class HeaderSection extends AbstractSection<Header, Header>
 {
-    public HeaderSection(final DescribedTypeConstructorRegistry describedTypeRegistry)
+    public HeaderSection()
     {
-        super(describedTypeRegistry);
+        super();
     }
 
-    HeaderSection(final Header header, final SectionEncoder sectionEncoder)
+    HeaderSection(final Header header)
     {
-        super(header, sectionEncoder);
+        super(header);
     }
 
     HeaderSection(final HeaderSection headerSection)

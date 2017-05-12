@@ -48,7 +48,7 @@ public class MessageAnnotationsSectionConstructor extends DescribedMapSectionCon
     @Override
     protected MessageAnnotationsSection createObject(final DescribedTypeConstructorRegistry describedTypeRegistry)
     {
-        return new MessageAnnotationsSection(describedTypeRegistry);
+        return new MessageAnnotationsSection();
     }
 
 }

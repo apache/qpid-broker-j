@@ -337,7 +337,30 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     @Override
     public void clearEncodedForm()
     {
-        dispose();
+        if (_headerSection != null)
+        {
+            _headerSection.clearEncodedForm();
+        }
+        if (_deliveryAnnotationsSection != null)
+        {
+            _deliveryAnnotationsSection.clearEncodedForm();
+        }
+        if (_messageAnnotationsSection != null)
+        {
+            _messageAnnotationsSection.clearEncodedForm();
+        }
+        if (_propertiesSection != null)
+        {
+            _propertiesSection.clearEncodedForm();
+        }
+        if (_applicationPropertiesSection != null)
+        {
+            _applicationPropertiesSection.clearEncodedForm();
+        }
+        if (_footerSection != null)
+        {
+            _footerSection.clearEncodedForm();
+        }
     }
 
     public HeaderSection getHeaderSection()

@@ -90,11 +90,11 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
             applicationProperties = new ApplicationProperties(serverMessage.getMessageHeader().getHeaderMap() );
         }
 
-        return new MessageMetaData_1_0(header.createEncodingRetainingSection(sectionEncoder),
+        return new MessageMetaData_1_0(header.createEncodingRetainingSection(),
                                        null,
                                        null,
-                                       properties.createEncodingRetainingSection(sectionEncoder),
-                                       applicationProperties == null ? null : applicationProperties.createEncodingRetainingSection(sectionEncoder),
+                                       properties.createEncodingRetainingSection(),
+                                       applicationProperties == null ? null : applicationProperties.createEncodingRetainingSection(),
                                        null,
                                        serverMessage.getArrivalTime(),
                                        bodySection.getEncodedSize());
@@ -104,7 +104,7 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
     protected EncodingRetainingSection<?> getBodySection(final InternalMessage serverMessage,
                                                          final SectionEncoder encoder)
     {
-        return convertToBody(serverMessage.getMessageBody()).createEncodingRetainingSection(encoder);
+        return convertToBody(serverMessage.getMessageBody()).createEncodingRetainingSection();
     }
 
 

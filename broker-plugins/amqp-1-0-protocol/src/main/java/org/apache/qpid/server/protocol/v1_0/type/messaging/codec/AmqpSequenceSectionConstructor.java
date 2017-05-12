@@ -46,9 +46,9 @@ public class AmqpSequenceSectionConstructor extends DescribedListSectionConstruc
     }
 
     @Override
-    protected AmqpSequenceSection createObject(final DescribedTypeConstructorRegistry describedTypeRegistry)
+    protected AmqpSequenceSection createObject()
     {
-        return new AmqpSequenceSection(describedTypeRegistry);
+        return new AmqpSequenceSection();
     }
 
 }

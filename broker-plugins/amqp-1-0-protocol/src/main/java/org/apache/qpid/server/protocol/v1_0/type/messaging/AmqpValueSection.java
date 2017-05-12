@@ -22,20 +22,18 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.AmqpValueConstructor;
 
 public class AmqpValueSection extends AbstractSection<Object, AmqpValue>
 {
-    public AmqpValueSection(final DescribedTypeConstructorRegistry describedTypeRegistry)
+    public AmqpValueSection()
     {
-        super(describedTypeRegistry);
+        super();
     }
 
-    AmqpValueSection(final AmqpValue amqpValue, SectionEncoder sectionEncoder)
+    AmqpValueSection(final AmqpValue amqpValue)
     {
-        super(amqpValue, sectionEncoder);
+        super(amqpValue);
     }
 
     AmqpValueSection(final AmqpValueSection amqpValueSection)

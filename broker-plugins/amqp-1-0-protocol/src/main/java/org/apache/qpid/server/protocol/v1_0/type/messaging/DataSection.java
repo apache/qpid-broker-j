@@ -22,21 +22,19 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.DataConstructor;
 
 public class DataSection extends AbstractSection<Binary, Data>
 {
-    public DataSection(final DescribedTypeConstructorRegistry describedTypeRegistry)
+    public DataSection()
     {
-        super(describedTypeRegistry);
+        super();
     }
 
-    DataSection(final Data data, SectionEncoder sectionEncoder)
+    DataSection(final Data data)
     {
-        super(data, sectionEncoder);
+        super(data);
     }
 
     DataSection(final DataSection dataSection)

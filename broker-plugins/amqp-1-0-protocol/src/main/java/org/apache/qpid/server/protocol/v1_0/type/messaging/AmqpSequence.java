@@ -25,8 +25,6 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import java.util.List;
 
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-
 public class AmqpSequence implements NonEncodingRetainingSection<List>
 {
 
@@ -50,8 +48,8 @@ public class AmqpSequence implements NonEncodingRetainingSection<List>
     }
 
     @Override
-    public AmqpSequenceSection createEncodingRetainingSection(final SectionEncoder encoder)
+    public AmqpSequenceSection createEncodingRetainingSection()
     {
-        return new AmqpSequenceSection(this, encoder);
+        return new AmqpSequenceSection(this);
     }
 }

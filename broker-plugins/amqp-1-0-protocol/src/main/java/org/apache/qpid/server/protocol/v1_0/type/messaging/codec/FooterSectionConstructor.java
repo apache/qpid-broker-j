@@ -48,7 +48,7 @@ public class FooterSectionConstructor extends DescribedMapSectionConstructor<Foo
     @Override
     protected FooterSection createObject(final DescribedTypeConstructorRegistry describedTypeRegistry)
     {
-        return new FooterSection(describedTypeRegistry);
+        return new FooterSection();
     }
 
 }

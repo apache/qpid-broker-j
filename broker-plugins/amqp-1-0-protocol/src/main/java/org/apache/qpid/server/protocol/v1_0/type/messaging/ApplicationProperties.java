@@ -25,8 +25,6 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import java.util.Map;
 
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-
 public class ApplicationProperties implements NonEncodingRetainingSection<Map<String,Object>>
 {
 
@@ -43,8 +41,8 @@ public class ApplicationProperties implements NonEncodingRetainingSection<Map<St
     }
 
     @Override
-    public ApplicationPropertiesSection createEncodingRetainingSection(final SectionEncoder encoder)
+    public ApplicationPropertiesSection createEncodingRetainingSection()
     {
-        return new ApplicationPropertiesSection(this, encoder);
+        return new ApplicationPropertiesSection(this);
     }
 }

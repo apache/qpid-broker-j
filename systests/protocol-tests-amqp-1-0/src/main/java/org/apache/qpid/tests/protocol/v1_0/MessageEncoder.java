@@ -57,7 +57,7 @@ public class MessageEncoder
         if (_data.size() == 1)
         {
             AmqpValue amqpValue = new AmqpValue(_data.get(0));
-            dataSections.add(amqpValue.createEncodingRetainingSection(_encoder));
+            dataSections.add(amqpValue.createEncodingRetainingSection());
         }
         else
         {

@@ -46,9 +46,9 @@ public class PropertiesSectionConstructor extends DescribedListSectionConstructo
     }
 
     @Override
-    protected PropertiesSection createObject(final DescribedTypeConstructorRegistry describedTypeRegistry)
+    protected PropertiesSection createObject()
     {
-        return new PropertiesSection(describedTypeRegistry);
+        return new PropertiesSection();
     }
 
 }

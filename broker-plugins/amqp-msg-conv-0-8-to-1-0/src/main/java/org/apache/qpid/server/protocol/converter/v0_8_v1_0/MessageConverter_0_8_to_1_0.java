@@ -167,11 +167,11 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
         // 0-8..0-91 for instance supported field tables with maps as values.
         final ApplicationProperties applicationProperties = new ApplicationProperties(applicationPropertiesMap);
 
-        return new MessageMetaData_1_0(header.createEncodingRetainingSection(sectionEncoder),
+        return new MessageMetaData_1_0(header.createEncodingRetainingSection(),
                                        null,
                                        null,
-                                       props.createEncodingRetainingSection(sectionEncoder),
-                                       applicationProperties.createEncodingRetainingSection(sectionEncoder),
+                                       props.createEncodingRetainingSection(),
+                                       applicationProperties.createEncodingRetainingSection(),
                                        null,
                                        serverMessage.getArrivalTime(),
                                        bodySection.getEncodedSize());

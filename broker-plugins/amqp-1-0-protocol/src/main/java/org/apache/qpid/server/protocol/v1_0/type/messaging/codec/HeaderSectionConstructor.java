@@ -46,9 +46,9 @@ public class HeaderSectionConstructor extends DescribedListSectionConstructor<He
     }
 
     @Override
-    protected HeaderSection createObject(final DescribedTypeConstructorRegistry describedTypeRegistry)
+    protected HeaderSection createObject()
     {
-        return new HeaderSection(describedTypeRegistry);
+        return new HeaderSection();
     }
 
 

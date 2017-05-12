@@ -28,9 +28,7 @@ import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
-import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.TypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -126,7 +124,7 @@ public abstract class DescribedListSectionConstructor<S extends AbstractSection>
                     encoding.add(dup);
                 }
             }
-            S object = createObject(((SectionDecoderRegistry)handler.getDescribedTypeRegistry()).getUnderlyingRegistry());
+            S object = createObject();
             object.setEncodedForm(encoding);
             for (QpidByteBuffer buffer: encoding)
             {
@@ -137,5 +135,5 @@ public abstract class DescribedListSectionConstructor<S extends AbstractSection>
         }
     }
 
-    protected abstract S createObject(final DescribedTypeConstructorRegistry describedTypeRegistry);
+    protected abstract S createObject();
 }

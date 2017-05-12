@@ -24,21 +24,19 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.FooterConstructor;
 
 public class FooterSection extends AbstractSection<Map<Symbol,Object>, Footer>
 {
-    public FooterSection(final DescribedTypeConstructorRegistry describedTypeRegistry)
+    public FooterSection()
     {
-        super(describedTypeRegistry);
+        super();
     }
 
-    FooterSection(final Footer footer, final SectionEncoder sectionEncoder)
+    FooterSection(final Footer footer)
     {
-        super(footer, sectionEncoder);
+        super(footer);
     }
 
     FooterSection(final FooterSection footerSection)

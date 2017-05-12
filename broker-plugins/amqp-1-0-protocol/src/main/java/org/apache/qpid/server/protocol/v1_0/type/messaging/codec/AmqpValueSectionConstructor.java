@@ -30,7 +30,6 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
-import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.TypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -106,8 +105,7 @@ public class AmqpValueSectionConstructor implements DescribedTypeConstructor<Amq
                     encoding.add(dup);
                 }
             }
-            AmqpValueSection object =
-                    new AmqpValueSection(((SectionDecoderRegistry) handler.getDescribedTypeRegistry()).getUnderlyingRegistry());
+            AmqpValueSection object = new AmqpValueSection();
             object.setEncodedForm(encoding);
             for (QpidByteBuffer buffer: encoding)
             {

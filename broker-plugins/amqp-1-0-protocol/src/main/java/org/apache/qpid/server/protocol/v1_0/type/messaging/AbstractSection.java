@@ -26,35 +26,41 @@ import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T>> implements EncodingRetainingSection<T>
 {
-    private final DescribedTypeConstructorRegistry _typeRegistry;
+    private static final AMQPDescribedTypeRegistry TYPE_REGISTRY = AMQPDescribedTypeRegistry.newInstance()
+                                                                                            .registerTransportLayer()
+                                                                                            .registerMessagingLayer()
+                                                                                            .registerTransactionLayer()
+                                                                                            .registerSecurityLayer();
+
     private T _value;
+    private S _section;
     private List<QpidByteBuffer> _encodedForm;
 
-    protected AbstractSection(final DescribedTypeConstructorRegistry registry)
+    protected AbstractSection()
     {
-        _typeRegistry = registry;
     }
 
-    protected AbstractSection(final S section, final SectionEncoder encoder)
+    protected AbstractSection(final S section)
     {
         _value = section.getValue();
-        _typeRegistry = encoder.getRegistry();
-        _encodedForm = Collections.singletonList(encoder.encodeObject(section));
+        _section = section;
+        _encodedForm = encode();
     }
 
     protected AbstractSection(final AbstractSection<T, S> otherAbstractSection)
     {
         _value = otherAbstractSection.getValue();
-        _typeRegistry = otherAbstractSection._typeRegistry;
+        _section = otherAbstractSection._section;
         _encodedForm = otherAbstractSection.getEncodedForm();
     }
 
@@ -72,6 +78,7 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
     @Override
     public synchronized final void setEncodedForm(final List<QpidByteBuffer> encodedForm)
     {
+        clearEncodedForm();
         _encodedForm = new ArrayList<>();
         for(QpidByteBuffer encodedChunk : encodedForm)
         {
@@ -82,6 +89,10 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
     @Override
     public synchronized final List<QpidByteBuffer> getEncodedForm()
     {
+        if (_encodedForm == null)
+        {
+            _encodedForm = encode();
+        }
         List<QpidByteBuffer> returnVal = new ArrayList<>(_encodedForm.size());
         for(int i = 0; i < _encodedForm.size(); i++)
         {
@@ -91,14 +102,23 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
     }
 
     @Override
+    public synchronized void clearEncodedForm()
+    {
+        if (_encodedForm != null)
+        {
+            _section = decode(createNonEncodingRetainingSectionConstructor());
+            for (int i = 0; i < _encodedForm.size(); i++)
+            {
+                _encodedForm.get(i).dispose();
+            }
+            _encodedForm = null;
+        }
+    }
+
+    @Override
     public synchronized final void dispose()
     {
-        for(int i = 0; i < _encodedForm.size(); i++)
-        {
-            _encodedForm.get(i).dispose();
-        }
-        _encodedForm = null;
-
+        clearEncodedForm();
     }
 
     @Override
@@ -110,12 +130,20 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
     @Override
     public synchronized final long getEncodedSize()
     {
+        if (_encodedForm == null)
+        {
+            _encodedForm = encode();
+        }
         return QpidByteBufferUtils.remaining(_encodedForm);
     }
 
     @Override
     public synchronized void writeTo(final QpidByteBuffer dest)
     {
+        if (_encodedForm == null)
+        {
+            _encodedForm = encode();
+        }
         for(QpidByteBuffer buf : _encodedForm)
         {
             dest.putCopyOf(buf);
@@ -130,6 +158,12 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
 
     protected abstract AbstractDescribedTypeConstructor<S> createNonEncodingRetainingSectionConstructor();
 
+    private List<QpidByteBuffer> encode()
+    {
+        SectionEncoder sectionEncoder = new SectionEncoderImpl(TYPE_REGISTRY);
+        return Collections.singletonList(sectionEncoder.encodeObject(_section));
+    }
+
     private S decode(AbstractDescribedTypeConstructor<S> constructor)
     {
         List<QpidByteBuffer> input = getEncodedForm();
@@ -139,7 +173,7 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
             originalPositions[i] = input.get(i).position();
         }
         int describedByte = QpidByteBufferUtils.get(input);
-        ValueHandler handler = new ValueHandler(_typeRegistry);
+        ValueHandler handler = new ValueHandler(TYPE_REGISTRY);
         try
         {
             Object descriptor = handler.parse(input);

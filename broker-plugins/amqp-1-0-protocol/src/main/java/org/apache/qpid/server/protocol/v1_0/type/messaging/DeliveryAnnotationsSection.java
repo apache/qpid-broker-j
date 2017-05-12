@@ -24,21 +24,19 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.DeliveryAnnotationsConstructor;
 
 public class DeliveryAnnotationsSection extends AbstractSection<Map<Symbol,Object>, DeliveryAnnotations>
 {
-    public DeliveryAnnotationsSection(final DescribedTypeConstructorRegistry describedTypeRegistry)
+    public DeliveryAnnotationsSection()
     {
-        super(describedTypeRegistry);
+        super();
     }
 
-    DeliveryAnnotationsSection(final DeliveryAnnotations deliveryAnnotations, final SectionEncoder sectionEncoder)
+    DeliveryAnnotationsSection(final DeliveryAnnotations deliveryAnnotations)
     {
-        super(deliveryAnnotations, sectionEncoder);
+        super(deliveryAnnotations);
     }
 
     DeliveryAnnotationsSection(final DeliveryAnnotationsSection deliveryAnnotationsSection)

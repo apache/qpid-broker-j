@@ -147,7 +147,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                 header.setDeliveryCount(UnsignedInteger.valueOf(entry.getDeliveryCount()));
 
                 QpidByteBuffer headerPayload = _sectionEncoder.encodeObject(header);
-                headerSection = new HeaderSection(_typeRegistry);
+                headerSection = new HeaderSection();
                 headerSection.setEncodedForm(Collections.singletonList(headerPayload));
                 headerPayload.dispose();
             }

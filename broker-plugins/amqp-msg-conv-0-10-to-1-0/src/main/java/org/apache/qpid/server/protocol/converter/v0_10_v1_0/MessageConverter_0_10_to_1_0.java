@@ -143,11 +143,11 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
 
             }
         }
-        return new MessageMetaData_1_0(header.createEncodingRetainingSection(sectionEncoder),
+        return new MessageMetaData_1_0(header.createEncodingRetainingSection(),
                                        null,
                                        null,
-                                       props.createEncodingRetainingSection(sectionEncoder),
-                                       applicationProperties == null ? null : applicationProperties.createEncodingRetainingSection(sectionEncoder),
+                                       props.createEncodingRetainingSection(),
+                                       applicationProperties == null ? null : applicationProperties.createEncodingRetainingSection(),
                                        null,
                                        serverMessage.getArrivalTime(),
                                        bodySection.getEncodedSize());

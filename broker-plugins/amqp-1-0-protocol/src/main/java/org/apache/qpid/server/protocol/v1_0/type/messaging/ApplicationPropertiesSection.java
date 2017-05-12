@@ -24,21 +24,19 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.ApplicationPropertiesConstructor;
 
 public class ApplicationPropertiesSection extends AbstractSection<Map<String,Object>, ApplicationProperties>
 {
 
-    public ApplicationPropertiesSection(final DescribedTypeConstructorRegistry registry)
+    public ApplicationPropertiesSection()
     {
-        super(registry);
+        super();
     }
 
-    ApplicationPropertiesSection(final ApplicationProperties section, final SectionEncoder encoder)
+    ApplicationPropertiesSection(final ApplicationProperties section)
     {
-        super(section, encoder);
+        super(section);
     }
 
     ApplicationPropertiesSection(final ApplicationPropertiesSection applicationPropertiesSection)

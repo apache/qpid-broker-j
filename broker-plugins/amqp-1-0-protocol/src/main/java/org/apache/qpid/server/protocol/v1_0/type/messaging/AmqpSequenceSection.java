@@ -24,20 +24,18 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 import java.util.List;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.AmqpSequenceConstructor;
 
 public class AmqpSequenceSection extends AbstractSection<List, AmqpSequence>
 {
-    public AmqpSequenceSection(final DescribedTypeConstructorRegistry describedTypeRegistry)
+    public AmqpSequenceSection()
     {
-        super(describedTypeRegistry);
+        super();
     }
 
-    AmqpSequenceSection(final AmqpSequence sequence, final SectionEncoder sectionEncoder)
+    AmqpSequenceSection(final AmqpSequence sequence)
     {
-        super(sequence, sectionEncoder);
+        super(sequence);
     }
 
     AmqpSequenceSection(final AmqpSequenceSection amqpSequenceSection)

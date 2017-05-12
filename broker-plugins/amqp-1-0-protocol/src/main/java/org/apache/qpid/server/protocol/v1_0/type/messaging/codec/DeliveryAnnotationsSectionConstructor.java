@@ -48,7 +48,7 @@ public class DeliveryAnnotationsSectionConstructor extends DescribedMapSectionCo
     @Override
     protected DeliveryAnnotationsSection createObject(final DescribedTypeConstructorRegistry describedTypeRegistry)
     {
-        return new DeliveryAnnotationsSection(describedTypeRegistry);
+        return new DeliveryAnnotationsSection();
     }
 
 }

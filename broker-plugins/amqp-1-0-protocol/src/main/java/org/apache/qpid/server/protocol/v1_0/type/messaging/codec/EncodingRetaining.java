@@ -26,13 +26,12 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public interface EncodingRetaining
 {
+    void writeTo(QpidByteBuffer dest);
+    long getEncodedSize();
     void setEncodedForm(List<QpidByteBuffer> encodedForm);
     List<QpidByteBuffer> getEncodedForm();
-    void dispose();
-    void reallocate();
-    long getEncodedSize();
-    void writeTo(QpidByteBuffer dest);
+    void clearEncodedForm();
     EncodingRetaining copy();
-
-
+    void reallocate();
+    void dispose();
 }
