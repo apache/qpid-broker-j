@@ -328,12 +328,13 @@ public class ConsumerLoggingTest extends AbstractTestLogging
 
         assertTrue("Expected at least two suspension messages, but got " + results.size(), results.size() >= 2);
 
-        // Retrieve the first message, and start the flow of messages
-        Message msg = consumer.receive(1000);
-        assertNotNull("Message not retrieved", msg);
-        _session.commit();
-        msg = consumer.receive(1000);
-        assertNotNull("Message not retrieved", msg);
+        // consume all messages to hopefully resume the consumer
+        Message msg;
+        for (int i = 0; i < SEND_COUNT; ++i)
+        {
+            msg = consumer.receive(1000);
+            assertNotNull("Message not retrieved", msg);
+        }
         _session.commit();
 
         int count = waitAndFindMatches("SUB-1003").size();
