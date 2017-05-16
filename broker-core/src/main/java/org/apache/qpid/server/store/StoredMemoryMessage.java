@@ -154,4 +154,9 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         }
         _content.addAll(newContent);
     }
+
+    public void clear()
+    {
+        remove();
+    }
 }

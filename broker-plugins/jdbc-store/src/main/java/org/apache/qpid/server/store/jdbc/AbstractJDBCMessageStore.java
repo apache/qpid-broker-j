@@ -33,7 +33,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
@@ -86,6 +88,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private String _tablePrefix = "";
     private final AtomicLong _inMemorySize = new AtomicLong();
     private final AtomicLong _bytesEvacuatedFromMemory = new AtomicLong();
+    private final Set<StoredJDBCMessage<?>> _messages = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     protected abstract boolean isMessageStoreOpen();
 
@@ -247,6 +250,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     @Override
     public void closeMessageStore()
     {
+        for (StoredJDBCMessage<?> message : _messages)
+        {
+            message.clear();
+        }
+        _messages.clear();
         _inMemorySize.set(0);
         _bytesEvacuatedFromMemory.set(0);
         if(_executor != null)
@@ -415,8 +423,16 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
         checkMessageStoreOpen();
 
-        return new StoredJDBCMessage<T>(getNextMessageId(), metaData);
+        return createStoredJDBCMessage(getNextMessageId(), metaData, false);
+    }
 
+    public <T extends StorableMessageMetaData> StoredJDBCMessage<T> createStoredJDBCMessage(final long newMessageId,
+                                                                                          final T metaData,
+                                                                                          final boolean recovered)
+    {
+        final StoredJDBCMessage<T> message = new StoredJDBCMessage<>(newMessageId, metaData, recovered);
+        _messages.add(message);
+        return message;
     }
 
     @Override
@@ -1339,50 +1355,49 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
     }
 
-    static interface MessageDataRef<T extends StorableMessageMetaData>
+    private static class MessageDataRef<T extends StorableMessageMetaData>
     {
-        T getMetaData();
-        Collection<QpidByteBuffer> getData();
-        void setData(Collection<QpidByteBuffer> data);
-        boolean isHardRef();
-        void reallocate();
-    }
-
-    private static final class MessageDataHardRef<T extends StorableMessageMetaData> implements MessageDataRef<T>
-    {
-        private final T _metaData;
+        private volatile T _metaData;
         private volatile Collection<QpidByteBuffer> _data;
+        private volatile boolean _isHardRef;
 
-        private MessageDataHardRef(final T metaData)
+        private MessageDataRef(final T metaData, boolean isHardRef)
         {
-            _metaData = metaData;
+            this(metaData, null, isHardRef);
         }
 
-        @Override
+        private MessageDataRef(final T metaData, Collection<QpidByteBuffer> data, boolean isHardRef)
+        {
+            _metaData = metaData;
+            _data = data;
+            _isHardRef = isHardRef;
+        }
+
         public T getMetaData()
         {
             return _metaData;
         }
 
-        @Override
         public Collection<QpidByteBuffer> getData()
         {
             return _data;
         }
 
-        @Override
         public void setData(final Collection<QpidByteBuffer> data)
         {
             _data = data;
         }
 
-        @Override
         public boolean isHardRef()
         {
-            return true;
+            return _isHardRef;
         }
 
-        @Override
+        public void setSoft()
+        {
+            _isHardRef = false;
+        }
+
         public void reallocate()
         {
             if(_metaData != null)
@@ -1390,37 +1405,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 _metaData.reallocate();
             }
             _data = QpidByteBuffer.reallocateIfNecessary(_data);
-        }
-    }
-
-    private static final class MessageDataSoftRef<T extends StorableMessageMetaData> implements MessageDataRef<T>
-    {
-
-        private T _metaData;
-        private volatile Collection<QpidByteBuffer> _data;
-
-        private MessageDataSoftRef(final T metaData, Collection<QpidByteBuffer> data)
-        {
-            _metaData = metaData;
-            _data = data;
-        }
-
-        @Override
-        public T getMetaData()
-        {
-            return _metaData;
-        }
-
-        @Override
-        public Collection<QpidByteBuffer> getData()
-        {
-            return _data;
-        }
-
-        @Override
-        public void setData(final Collection<QpidByteBuffer> data)
-        {
-            _data = data;
         }
 
         public long clear()
@@ -1443,23 +1427,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             }
             return bytesCleared;
         }
-
-        @Override
-        public boolean isHardRef()
-        {
-            return false;
-        }
-
-        @Override
-        public void reallocate()
-        {
-            if(_metaData != null)
-            {
-                _metaData.reallocate();
-            }
-
-            _data = QpidByteBuffer.reallocateIfNecessary(_data);
-        }
     }
 
     private class StoredJDBCMessage<T extends StorableMessageMetaData> implements StoredMessage<T>, MessageHandle<T>
@@ -1470,26 +1437,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
         private MessageDataRef<T> _messageDataRef;
 
-
-        StoredJDBCMessage(long messageId, T metaData)
-        {
-            this(messageId, metaData, false);
-        }
-
-
         StoredJDBCMessage(long messageId,
                           T metaData, boolean isRecovered)
         {
             _messageId = messageId;
 
-            if(!isRecovered)
-            {
-                _messageDataRef = new MessageDataHardRef<>(metaData);
-            }
-            else
-            {
-                _messageDataRef = new MessageDataSoftRef<>(metaData, null);
-            }
+            _messageDataRef = new MessageDataRef<>(metaData, !isRecovered);
 
             _contentSize = metaData.getContentSize();
             _inMemorySize.addAndGet(metaData.getStorableSize());
@@ -1513,7 +1466,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     try
                     {
                         metaData = (T) AbstractJDBCMessageStore.this.getMetaData(_messageId);
-                        _messageDataRef = new MessageDataSoftRef<>(metaData, _messageDataRef.getData());
+                        _messageDataRef = new MessageDataRef<>(metaData, _messageDataRef.getData(), false);
                     }
                     catch (SQLException e)
                     {
@@ -1635,7 +1588,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         {
             if (!stored())
             {
-
                 AbstractJDBCMessageStore.this.storeMetaData(conn, _messageId, _messageDataRef.getMetaData());
                 AbstractJDBCMessageStore.this.addContent(conn, _messageId,
                                                          _messageDataRef.getData() == null
@@ -1644,14 +1596,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
                 getLogger().debug("Storing message {} to store", _messageId);
 
-                MessageDataRef<T> hardRef = _messageDataRef;
-                MessageDataSoftRef<T> messageDataSoftRef;
-
-                messageDataSoftRef = new MessageDataSoftRef<>(hardRef.getMetaData(), hardRef.getData());
-
-                _messageDataRef = messageDataSoftRef;
-
-
+                _messageDataRef.setSoft();
             }
         }
 
@@ -1683,6 +1628,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             getLogger().debug("REMOVE called on message: {}", _messageId);
 
             checkMessageStoreOpen();
+            _messages.remove(this);
             if(stored())
             {
                 AbstractJDBCMessageStore.this.removeMessage(_messageId);
@@ -1729,7 +1675,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             flushToStore();
             if(_messageDataRef != null && !_messageDataRef.isHardRef())
             {
-                final long bytesCleared = ((MessageDataSoftRef) _messageDataRef).clear();
+                final long bytesCleared = _messageDataRef.clear();
                 _inMemorySize.addAndGet(-bytesCleared);
                 _bytesEvacuatedFromMemory.addAndGet(bytesCleared);
             }
@@ -1742,6 +1688,14 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             if(_messageDataRef != null)
             {
                 _messageDataRef.reallocate();
+            }
+        }
+
+        public synchronized void clear()
+        {
+            if (_messageDataRef != null)
+            {
+                _messageDataRef.clear();
             }
         }
 
@@ -1792,7 +1746,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                             MessageMetaDataType<?> type = MessageMetaDataTypeRegistry.fromOrdinal(dataAsBytes[0]);
                             StorableMessageMetaData metaData = type.createMetaData(buf);
                             buf.dispose();
-                            message = new StoredJDBCMessage(messageId, metaData, true);
+                            message = createStoredJDBCMessage(messageId, metaData, true);
 
                         }
                         else
@@ -1845,7 +1799,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                             MessageMetaDataType<?> type = MessageMetaDataTypeRegistry.fromOrdinal(((int)dataAsBytes[0]) &0xff);
                             StorableMessageMetaData metaData = type.createMetaData(buf);
                             buf.dispose();
-                            StoredJDBCMessage message = new StoredJDBCMessage(messageId, metaData, true);
+                            StoredJDBCMessage message = createStoredJDBCMessage(messageId, metaData, true);
                             if (!handler.handle(message))
                             {
                                 break;
