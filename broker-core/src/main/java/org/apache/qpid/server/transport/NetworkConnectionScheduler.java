@@ -22,6 +22,8 @@ package org.apache.qpid.server.transport;
 
 import java.io.IOException;
 import java.nio.channels.ServerSocketChannel;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -31,6 +33,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public class NetworkConnectionScheduler
 {
@@ -99,7 +103,35 @@ public class NetworkConnectionScheduler
             _selectorThread = new SelectorThread(this, _numberOfSelectors);
             _executor = new ThreadPoolExecutor(_poolSize, _poolSize,
                                                _threadKeepAliveTimeout, TimeUnit.MINUTES,
-                                               new LinkedBlockingQueue<Runnable>(), _factory);
+                                               new LinkedBlockingQueue<Runnable>(), _factory)
+            {
+                private final Map<Thread, QpidByteBuffer> _cachedBufferMap = new ConcurrentHashMap<>();
+
+                @Override
+                protected void afterExecute(final Runnable r, final Throwable t)
+                {
+                    super.afterExecute(r, t);
+                    final QpidByteBuffer cachedThreadLocalBuffer = QpidByteBuffer.getCachedThreadLocalBuffer();
+                    if (cachedThreadLocalBuffer != null)
+                    {
+                        _cachedBufferMap.put(Thread.currentThread(), cachedThreadLocalBuffer);
+                    }
+                    else
+                    {
+                        _cachedBufferMap.remove(Thread.currentThread());
+                    }
+                }
+
+                @Override
+                protected void terminated()
+                {
+                    super.terminated();
+                    for (QpidByteBuffer qpidByteBuffer : _cachedBufferMap.values())
+                    {
+                        qpidByteBuffer.dispose();
+                    }
+                }
+            };
             _executor.prestartAllCoreThreads();
             _executor.allowCoreThreadTimeOut(true);
             for(int i = 0 ; i < _poolSize; i++)
