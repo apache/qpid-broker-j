@@ -40,7 +40,6 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.protocol.v0_10.transport.Header;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.server.protocol.v0_10.transport.Binary;
 import org.apache.qpid.server.protocol.v0_10.transport.ExecutionErrorCode;
@@ -131,7 +130,6 @@ public class ServerSessionTest extends QpidTestCase
 
         MessageTransfer xfr = new MessageTransfer();
         xfr.setBody(new byte[2048]);
-        xfr.setHeader(new Header(null, null));
         delegate.messageTransfer(session, xfr);
 
         assertFalse("No methods invoked - expecting at least 1", invokedMethods.isEmpty());
