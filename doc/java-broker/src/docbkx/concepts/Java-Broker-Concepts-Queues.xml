@@ -414,6 +414,15 @@ amqp://guest:guest@client1/development?maxprefetch='1'&amp;brokerlist='tcp://loc
                         (specifying the percentage from the limit values. Default is 80%).
                     </para>
                 </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>Flow to Disk Policy</emphasis>
+                        -If the queue breaches a limit, newly arriving messages are written to disk and the in-memory
+                        representation of the message is minimised. The Broker will transparently retrieve messages
+                        from disk as they are required by a consumer or management.  The flow to disk policy does not
+                        actually restrict the overall size of the queue, merely the space occupied in memory.
+                    </para>
+                </listitem>
             </itemizedlist>
         </para>
         <para>
