@@ -1387,26 +1387,17 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         while(oldestMessageArrivalTime == -1L)
         {
-            QueueEntry entry = getEntries().getOldestEntry();
+            QueueEntryList entries = getEntries();
+            QueueEntry entry = entries == null ? null : entries.getOldestEntry();
             if (entry != null)
             {
                 ServerMessage message = entry.getMessage();
 
                 if(message != null)
                 {
-                    try
+                    try(MessageReference reference = message.newReference())
                     {
-                        MessageReference reference = message.newReference();
-                        try
-                        {
-                            oldestMessageArrivalTime = reference.getMessage().getArrivalTime();
-                        }
-                        finally
-                        {
-                            reference.release();
-                        }
-
-
+                        oldestMessageArrivalTime = reference.getMessage().getArrivalTime();
                     }
                     catch (MessageDeletedException e)
                     {
