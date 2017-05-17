@@ -26,7 +26,9 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
+import javax.jms.BytesMessage;
 import javax.jms.JMSException;
 import javax.jms.MapMessage;
 import javax.jms.Message;
@@ -35,6 +37,9 @@ import javax.jms.MessageProducer;
 import javax.jms.ObjectMessage;
 import javax.jms.Session;
 import javax.jms.TemporaryQueue;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class AmqpManagementFacade
 {
@@ -97,32 +102,98 @@ public class AmqpManagementFacade
         }
     }
 
-    public void performOperationUsingAmqpManagement(final String name,
-                                                    final String operation,
-                                                    final Session session,
-                                                    final String type,
-                                                    Map<String, Object> arguments)
+    public Object performOperationUsingAmqpManagement(final String name,
+                                                                         final String operation,
+                                                                         final Session session,
+                                                                         final String type,
+                                                                         Map<String, Object> arguments)
             throws JMSException
     {
         MessageProducer producer = session.createProducer(session.createQueue(_qpidBrokerTestCase.isBroker10()
                                                                                       ? "$management"
                                                                                       : "ADDR:$management"));
-
+        final TemporaryQueue responseQ = session.createTemporaryQueue();
+        MessageConsumer consumer = session.createConsumer(responseQ);
         MapMessage opMessage = session.createMapMessage();
         opMessage.setStringProperty("type", type);
         opMessage.setStringProperty("operation", operation);
         opMessage.setStringProperty("index", "object-path");
+        opMessage.setJMSReplyTo(responseQ);
 
         opMessage.setStringProperty("key", name);
         for (Map.Entry<String, Object> argument : arguments.entrySet())
         {
-            opMessage.setObjectProperty(argument.getKey(), argument.getValue());
+            Object value = argument.getValue();
+            if (value.getClass().isPrimitive() || value instanceof String)
+            {
+                opMessage.setObjectProperty(argument.getKey(), value);
+            }
+            else
+            {
+                ObjectMapper objectMapper = new ObjectMapper();
+                String jsonifiedValue = null;
+                try
+                {
+                    jsonifiedValue = objectMapper.writeValueAsString(value);
+                }
+                catch (JsonProcessingException e)
+                {
+                    throw new IllegalArgumentException(String.format(
+                            "Cannot convert the argument '%s' to JSON to meet JMS type restrictions", argument.getKey()));
+                }
+                opMessage.setObjectProperty(argument.getKey(), jsonifiedValue);
+            }
         }
 
         producer.send(opMessage);
         if (session.getTransacted())
         {
             session.commit();
+        }
+
+        Message response = consumer.receive(5000);
+        try
+        {
+            if (response instanceof MapMessage)
+            {
+                MapMessage bodyMap = (MapMessage) response;
+                Map<String, Object> result = new TreeMap<>();
+                Enumeration mapNames = bodyMap.getMapNames();
+                while (mapNames.hasMoreElements())
+                {
+                    String key = (String) mapNames.nextElement();
+                    result.put(key, bodyMap.getObject(key));
+                }
+                return result;
+            }
+            else if (response instanceof ObjectMessage)
+            {
+                return ((ObjectMessage) response).getObject();
+            }
+            else if (response instanceof BytesMessage)
+            {
+                BytesMessage bytesMessage = (BytesMessage) response;
+                if (bytesMessage.getBodyLength() == 0)
+                {
+                    return null;
+                }
+                else
+                {
+                    byte[] buf = new byte[(int) bytesMessage.getBodyLength()];
+                    bytesMessage.readBytes(buf);
+                    return buf;
+                }
+            }
+            throw new IllegalArgumentException("Cannot parse the results from a management operation.  JMS response message : " + response);
+        }
+        finally
+        {
+            if (session.getTransacted())
+            {
+                session.commit();
+            }
+            consumer.close();
+            responseQ.delete();
         }
     }
 
@@ -141,7 +212,7 @@ public class AmqpManagementFacade
 
         producer.send(message);
 
-        Message response = consumer.receive();
+        Message response = consumer.receive(5000);
         try
         {
             if (response instanceof MapMessage)
@@ -149,7 +220,7 @@ public class AmqpManagementFacade
                 MapMessage bodyMap = (MapMessage) response;
                 List<String> attributeNames = (List<String>) bodyMap.getObject("attributeNames");
                 List<List<Object>> attributeValues = (List<List<Object>>) bodyMap.getObject("results");
-                return getResultsAsMap(attributeNames, attributeValues);
+                return getResultsAsMaps(attributeNames, attributeValues);
             }
             else if (response instanceof ObjectMessage)
             {
@@ -159,7 +230,7 @@ public class AmqpManagementFacade
                     Map<String, ?> bodyMap = (Map<String, ?>) body;
                     List<String> attributeNames = (List<String>) bodyMap.get("attributeNames");
                     List<List<Object>> attributeValues = (List<List<Object>>) bodyMap.get("results");
-                    return getResultsAsMap(attributeNames, attributeValues);
+                    return getResultsAsMaps(attributeNames, attributeValues);
                 }
             }
             throw new IllegalArgumentException("Cannot parse the results from a management query");
@@ -236,7 +307,7 @@ public class AmqpManagementFacade
         }
     }
 
-    private List<Map<String, Object>> getResultsAsMap(final List<String> attributeNames, final List<List<Object>> attributeValues)
+    private List<Map<String, Object>> getResultsAsMaps(final List<String> attributeNames, final List<List<Object>> attributeValues)
     {
         List<Map<String, Object>> results = new ArrayList<>();
         for (List<Object> resultObject : attributeValues)

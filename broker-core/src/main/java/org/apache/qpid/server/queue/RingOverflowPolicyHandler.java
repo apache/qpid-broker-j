@@ -36,7 +36,7 @@ public class RingOverflowPolicyHandler implements OverflowPolicyHandler
     }
 
     @Override
-    public void checkOverflow()
+    public void checkOverflow(final QueueEntry newlyEnqueued)
     {
         final long maximumQueueDepthMessages = _queue.getMaximumQueueDepthMessages();
         final long maximumQueueDepthBytes = _queue.getMaximumQueueDepthBytes();

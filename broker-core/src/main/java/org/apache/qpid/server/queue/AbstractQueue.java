@@ -51,7 +51,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -1165,7 +1164,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 action.performAction(entry);
             }
-            _overflowPolicyHandler.checkOverflow();
+            _overflowPolicyHandler.checkOverflow(entry);
         }
 
     }
@@ -1766,7 +1765,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public void checkCapacity()
     {
-        _overflowPolicyHandler.checkOverflow();
+        _overflowPolicyHandler.checkOverflow(null);
     }
 
     void notifyConsumers(QueueEntry entry)
@@ -2950,7 +2949,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         if (oldOverflowPolicy != newOverflowPolicy)
         {
             _overflowPolicyHandler = createOverflowPolicyHandler(newOverflowPolicy);
-            _overflowPolicyHandler.checkOverflow();
+            _overflowPolicyHandler.checkOverflow(null);
         }
     }
 

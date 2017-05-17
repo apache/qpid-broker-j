@@ -54,3 +54,4 @@ org.apache.qpid.client.failover.FailoverBehaviourTest#testFlowControlFlagResetOn
 org.apache.qpid.client.failover.FailoverBehaviourTest#testFailoverHandlerTimeoutReconnected
 org.apache.qpid.server.failover.FailoverMethodTest#testNoFailover
 
+org.apache.qpid.server.queue.FlowToDiskTest#*

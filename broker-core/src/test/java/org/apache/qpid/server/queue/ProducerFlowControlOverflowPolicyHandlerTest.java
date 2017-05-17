@@ -128,7 +128,7 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends QpidTestCase
 
         when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(8L);
 
-        _producerFlowControlOverflowPolicyHandler.checkOverflow();
+        _producerFlowControlOverflowPolicyHandler.checkOverflow(null);
 
         verify(session, times(1)).unblock(_queue);
         assertFalse("Flow should not be stopped", _producerFlowControlOverflowPolicyHandler.isQueueFlowStopped());
@@ -153,7 +153,7 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends QpidTestCase
 
         when(_queue.getQueueDepthMessages()).thenReturn(8);
 
-        _producerFlowControlOverflowPolicyHandler.checkOverflow();
+        _producerFlowControlOverflowPolicyHandler.checkOverflow(null);
 
         verify(session, times(1)).unblock(_queue);
         assertFalse("Flow should not be stopped", _producerFlowControlOverflowPolicyHandler.isQueueFlowStopped());
@@ -171,7 +171,7 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _producerFlowControlOverflowPolicyHandler.checkOverflow();
+                _producerFlowControlOverflowPolicyHandler.checkOverflow(null);
                 return null;
             }
         });

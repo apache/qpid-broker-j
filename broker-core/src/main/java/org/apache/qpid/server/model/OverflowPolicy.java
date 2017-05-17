@@ -24,5 +24,6 @@ public enum OverflowPolicy
 {
     NONE,
     RING,
-    PRODUCER_FLOW_CONTROL
+    PRODUCER_FLOW_CONTROL,
+    FLOW_TO_DISK
 }

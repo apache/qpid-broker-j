@@ -23,5 +23,5 @@ package org.apache.qpid.server.queue;
 
 public interface OverflowPolicyHandler
 {
-    void checkOverflow();
+    void checkOverflow(final QueueEntry newlyEnqueued);
 }

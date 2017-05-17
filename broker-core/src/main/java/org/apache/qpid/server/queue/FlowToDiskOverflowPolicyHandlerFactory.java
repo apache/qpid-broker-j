@@ -19,12 +19,24 @@
 
 package org.apache.qpid.server.queue;
 
-public class NoneOverflowPolicyHandler implements OverflowPolicyHandler
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.model.OverflowPolicy;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.plugin.PluggableService;
+
+@SuppressWarnings("unused")
+@PluggableService
+public class FlowToDiskOverflowPolicyHandlerFactory implements OverflowPolicyHandlerFactory
 {
     @Override
-    public void checkOverflow(final QueueEntry newlyEnqueued)
+    public String getType()
     {
-        // noop
+        return OverflowPolicy.FLOW_TO_DISK.name();
     }
 
+    @Override
+    public OverflowPolicyHandler create(final Queue<?> queue, final EventLogger eventLogger)
+    {
+        return new FlowToDiskOverflowPolicyHandler(queue);
+    }
 }

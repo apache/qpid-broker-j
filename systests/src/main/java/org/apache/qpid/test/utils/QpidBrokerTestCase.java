@@ -357,11 +357,10 @@ public class QpidBrokerTestCase extends QpidTestCase
         _managementFacade.deleteEntityUsingAmqpManagement(name, session, type);
     }
 
-    protected void performOperationUsingAmqpManagement(final String name, final String operation, final Session session, final String type, Map<String,Object> arguments)
+    protected Object performOperationUsingAmqpManagement(final String name, final String operation, final Session session, final String type, Map<String,Object> arguments)
             throws JMSException
     {
-
-        _managementFacade.performOperationUsingAmqpManagement(name, operation, session, type, arguments);
+        return _managementFacade.performOperationUsingAmqpManagement(name, operation, session, type, arguments);
     }
 
     protected List<Map<String, Object>> managementQueryObjects(final Session session, final String type) throws JMSException

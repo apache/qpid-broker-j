@@ -72,7 +72,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(5L);
         when(_queue.getQueueDepthMessages()).thenReturn(3, 1);
 
-        _ringOverflowPolicyHandler.checkOverflow();
+        _ringOverflowPolicyHandler.checkOverflow(null);
 
         verify(_queue).deleteEntry(lastEntry);
         LogMessage dropped = QueueMessages.DROPPED(1L, 4, 1, 5,-1);
@@ -88,7 +88,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(5L);
         when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(10L, 4L);
 
-        _ringOverflowPolicyHandler.checkOverflow();
+        _ringOverflowPolicyHandler.checkOverflow(null);
 
         verify((AbstractQueue<?>) _queue).deleteEntry(lastEntry);
         LogMessage dropped = QueueMessages.DROPPED(1, 4, 5, -1,5);
@@ -102,7 +102,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(5L);
         when(_queue.getQueueDepthMessages()).thenReturn(3);
 
-        _ringOverflowPolicyHandler.checkOverflow();
+        _ringOverflowPolicyHandler.checkOverflow(null);
 
         verify(_queue, never()).deleteEntry(any(QueueEntry.class));
         verifyNoMoreInteractions(_eventLogger);
@@ -114,7 +114,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(5L);
         when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(10L);
 
-        _ringOverflowPolicyHandler.checkOverflow();
+        _ringOverflowPolicyHandler.checkOverflow(null);
 
         verify(_queue, never()).deleteEntry(any(QueueEntry.class));
         verifyNoMoreInteractions(_eventLogger);

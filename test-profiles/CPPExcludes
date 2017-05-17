@@ -257,3 +257,5 @@ org.apache.qpid.systests.jms_2_0.*
 
 # Exclude the AMQP 1.0 protocol test suite
 org.apache.qpid.tests.protocol.v1_0.*
+
+org.apache.qpid.server.queue.FlowToDiskTest#*
