@@ -29,9 +29,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
-import javax.jms.InvalidDestinationRuntimeException;
 import javax.jms.JMSConsumer;
 import javax.jms.JMSContext;
+import javax.jms.JMSException;
 import javax.jms.JMSProducer;
 import javax.jms.JMSRuntimeException;
 import javax.jms.Message;
@@ -55,7 +55,7 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
     {
         ConnectionFactory connectionFactory = getConnectionFactory();
         try (JMSContext context = connectionFactory.createContext(GUEST_USERNAME, GUEST_PASSWORD);
-             Connection utilityConnection = connectionFactory.createConnection(GUEST_USERNAME, GUEST_PASSWORD))
+             Connection utilityConnection = getUtilityConnection(connectionFactory))
         {
             Destination queue = createQueue(utilityConnection, getTestQueueName(), true);
 
@@ -93,7 +93,7 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
     {
         ConnectionFactory connectionFactory = getConnectionFactory();
         try (JMSContext context = connectionFactory.createContext(GUEST_USERNAME, GUEST_PASSWORD);
-             Connection utilityConnection = connectionFactory.createConnection(GUEST_USERNAME, GUEST_PASSWORD))
+             Connection utilityConnection = getUtilityConnection(connectionFactory))
         {
             Destination queue = createQueue(utilityConnection, getTestQueueName(), false);
             JMSProducer producer = context.createProducer().setDeliveryDelay(DELIVERY_DELAY);
@@ -119,7 +119,7 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
     {
         ConnectionFactory connectionFactory = getConnectionFactory();
         try (JMSContext context = connectionFactory.createContext(GUEST_USERNAME, GUEST_PASSWORD);
-             Connection utilityConnection = connectionFactory.createConnection(GUEST_USERNAME, GUEST_PASSWORD))
+             Connection utilityConnection = getUtilityConnection(connectionFactory))
         {
             String testQueueName = getTestQueueName();
             String testExchangeName = getTestName() + "_exch";
@@ -195,6 +195,13 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
                                                 "org.apache.qpid.FanoutExchange",
                                                 arguments);
         }
+    }
+
+    private Connection getUtilityConnection(final ConnectionFactory connectionFactory) throws JMSException
+    {
+        Connection connection = connectionFactory.createConnection(GUEST_USERNAME, GUEST_PASSWORD);
+        connection.start();
+        return connection;
     }
 
 }
