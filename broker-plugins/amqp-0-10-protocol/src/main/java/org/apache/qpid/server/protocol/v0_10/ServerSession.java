@@ -280,11 +280,13 @@ public class ServerSession extends Session
             _outstandingCredit.addAndGet(PRODUCER_CREDIT_TOPUP_THRESHOLD);
             invoke(new MessageFlow("",MessageCreditUnit.MESSAGE, PRODUCER_CREDIT_TOPUP_THRESHOLD));
         }
+        // locally cache arrival time to ensure that we don't reload metadata
+        final long arrivalTime = message.getArrivalTime();
         int enqueues = exchange.send(message,
                                      message.getInitialRoutingAddress(),
                                      instanceProperties, _transaction, _checkCapacityAction
                                     );
-        getAMQPConnection().registerMessageReceived(message.getSize(), message.getArrivalTime());
+        getAMQPConnection().registerMessageReceived(message.getSize(), arrivalTime);
         incrementOutstandingTxnsIfNecessary();
         incrementUncommittedMessageSize(message.getStoredMessage());
         return enqueues;
