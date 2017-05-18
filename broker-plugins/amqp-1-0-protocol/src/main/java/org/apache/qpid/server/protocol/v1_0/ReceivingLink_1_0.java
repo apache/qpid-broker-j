@@ -198,6 +198,8 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
                 try
                 {
                     Session_1_0 session = getSession();
+                    // locally cache arrival time to ensure that we don't reload metadata
+                    final long arrivalTime = message.getArrivalTime();
 
                     session.getAMQPConnection()
                             .checkAuthorizedMessagePrincipal(message.getMessageHeader().getUserId());
@@ -232,7 +234,7 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
                     getEndpoint().updateDisposition(deliveryTag, resultantState, settled);
 
                     getSession().getAMQPConnection()
-                            .registerMessageReceived(message.getSize(), message.getArrivalTime());
+                            .registerMessageReceived(message.getSize(), arrivalTime);
 
                     if (!(transaction instanceof AutoCommitTransaction))
                     {
