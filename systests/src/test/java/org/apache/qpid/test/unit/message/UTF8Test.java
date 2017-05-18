@@ -69,12 +69,12 @@ public class UTF8Test extends QpidBrokerTestCase
     private void runTest(String exchangeName, String queueName, String routingKey, String data) throws Exception
     {
         Connection con =  getConnection();
+        con.start();
         Session sess = con.createSession(false, javax.jms.Session.AUTO_ACKNOWLEDGE);
         final Destination receivingDestination = getReceivingDestination(exchangeName, routingKey, queueName, sess);
         final Destination sendingDestination = getSendingDestination(exchangeName, routingKey, queueName, sess);
 
         final MessageConsumer msgCons = sess.createConsumer(receivingDestination);
-        con.start();
 
         // Send data
         MessageProducer msgProd = sess.createProducer(sendingDestination);
