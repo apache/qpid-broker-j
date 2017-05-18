@@ -237,7 +237,8 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                 try
                 {
                     Session_1_0 session = getSession();
-
+                    // locally cache arrival time to ensure that we don't reload metadata
+                    final long arrivalTime = serverMessage.getArrivalTime();
                     session.getAMQPConnection()
                            .checkAuthorizedMessagePrincipal(serverMessage.getMessageHeader().getUserId());
                     getReceivingDestination().authorizePublish(session.getSecurityToken(), routingAddress);
@@ -287,7 +288,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     updateDisposition(deliveryTag, resultantState, settled);
 
                     getSession().getAMQPConnection()
-                                .registerMessageReceived(serverMessage.getSize(), serverMessage.getArrivalTime());
+                                .registerMessageReceived(serverMessage.getSize(), arrivalTime);
 
                     if (!(transaction instanceof AutoCommitTransaction))
                     {

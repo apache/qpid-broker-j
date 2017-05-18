@@ -960,10 +960,12 @@ public class ServerSession extends SessionInvoker
             _outstandingCredit.addAndGet(PRODUCER_CREDIT_TOPUP_THRESHOLD);
             invoke(new MessageFlow("",MessageCreditUnit.MESSAGE, PRODUCER_CREDIT_TOPUP_THRESHOLD));
         }
+        // locally cache arrival time to ensure that we don't reload metadata
+        final long arrivalTime = message.getArrivalTime();
         final RoutingResult<MessageTransferMessage> result =
                 exchange.route(message, message.getInitialRoutingAddress(), instanceProperties);
         int enqueues = result.send(_transaction, null);
-        getAMQPConnection().registerMessageReceived(message.getSize(), message.getArrivalTime());
+        getAMQPConnection().registerMessageReceived(message.getSize(), arrivalTime);
         incrementOutstandingTxnsIfNecessary();
         return enqueues;
     }
