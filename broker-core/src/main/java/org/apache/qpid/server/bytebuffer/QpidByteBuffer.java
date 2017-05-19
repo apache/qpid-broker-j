@@ -857,7 +857,7 @@ public class QpidByteBuffer implements AutoCloseable
         return _pooledBufferSize;
     }
 
-    public static int getAllocatedDirectMemorySize()
+    public static long getAllocatedDirectMemorySize()
     {
         return _pooledBufferSize * getNumberOfActivePooledBuffers();
     }
