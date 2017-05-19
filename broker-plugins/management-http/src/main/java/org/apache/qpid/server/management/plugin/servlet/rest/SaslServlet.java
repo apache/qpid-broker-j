@@ -21,7 +21,6 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
-import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.SecureRandom;
@@ -42,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
+import org.apache.qpid.server.management.plugin.SessionInvalidatedException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.SubjectCreator;
@@ -105,15 +105,15 @@ public class SaslServlet extends AbstractServlet
     private Random getRandom(final HttpServletRequest request)
     {
         HttpSession session = request.getSession();
-        Random rand = (Random) session.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_RANDOM,
-                                                                                                       request));
+        Random rand = (Random) HttpManagementUtil.getSessionAttribute(ATTR_RANDOM, session, request);
+
         if(rand == null)
         {
             synchronized (SECURE_RANDOM)
             {
                 rand = new Random(SECURE_RANDOM.nextLong());
             }
-            session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_RANDOM, request), rand);
+            HttpManagementUtil.setSessionAttribute(ATTR_RANDOM, rand, session, request);
         }
         return rand;
     }
@@ -135,13 +135,14 @@ public class SaslServlet extends AbstractServlet
 
             SubjectCreator subjectCreator = getSubjectCreator(request);
 
+            SaslNegotiator saslNegotiator = null;
             if(mechanism != null)
             {
                 if(id == null && subjectCreator.getMechanisms().contains(mechanism))
                 {
                     LOGGER.debug("Creating SaslServer for mechanism: {}", mechanism);
 
-                    SaslNegotiator saslNegotiator = subjectCreator.createSaslNegotiator(mechanism, new SaslSettings()
+                    saslNegotiator = subjectCreator.createSaslNegotiator(mechanism, new SaslSettings()
                     {
                         @Override
                         public String getLocalFQDN()
@@ -155,46 +156,41 @@ public class SaslServlet extends AbstractServlet
                             return null/*TODO*/;
                         }
                     });
-                    evaluateSaslResponse(request, response, session, saslResponse, saslNegotiator, subjectCreator);
-                }
-                else
-                {
-                    cleanup(request, session);
-                    response.setStatus(HttpServletResponse.SC_EXPECTATION_FAILED);
                 }
             }
             else
             {
                 if(id != null)
                 {
-                    if(id.equals(session.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID,
-                                                                                                         request))) && System.currentTimeMillis() < (Long) session.getAttribute(
-                            HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request)))
+                    if (id.equals(HttpManagementUtil.getSessionAttribute(ATTR_ID, session, request))
+                        && System.currentTimeMillis() < (Long) HttpManagementUtil.getSessionAttribute(ATTR_EXPIRY, session, request))
                     {
-                        SaslNegotiator saslNegotiator =
-                                (SaslNegotiator) session.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(
-                                        ATTR_SASL_NEGOTIATOR,
-                                        request));
-                        evaluateSaslResponse(request, response, session, saslResponse, saslNegotiator, subjectCreator);
+                        saslNegotiator = (SaslNegotiator) HttpManagementUtil.getSessionAttribute(ATTR_SASL_NEGOTIATOR,
+                                                                                                 session,
+                                                                                                 request);
                     }
-                    else
-                    {
-                        cleanup(request, session);
-                        response.setStatus(HttpServletResponse.SC_EXPECTATION_FAILED);
-                    }
-                }
-                else
-                {
-                    cleanup(request, session);
-                    response.setStatus(HttpServletResponse.SC_EXPECTATION_FAILED);
                 }
             }
+
+            if (saslNegotiator != null)
+            {
+                evaluateSaslResponse(request, response, session, saslResponse, saslNegotiator, subjectCreator);
+            }
+            else
+            {
+                cleanup(request, session);
+                response.setStatus(HttpServletResponse.SC_EXPECTATION_FAILED);
+            }
+        }
+        catch (SessionInvalidatedException e)
+        {
+            response.setStatus(HttpServletResponse.SC_PRECONDITION_FAILED);
         }
         finally
         {
             if (response.getStatus() != HttpServletResponse.SC_OK)
             {
-                session.invalidate();
+                HttpManagementUtil.invalidateSession(session);
             }
         }
     }
@@ -202,14 +198,14 @@ public class SaslServlet extends AbstractServlet
     private void cleanup(final HttpServletRequest request, final HttpSession session)
     {
         final SaslNegotiator negotiator =
-                (SaslNegotiator) session.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_NEGOTIATOR, request));
+                (SaslNegotiator) HttpManagementUtil.getSessionAttribute(ATTR_SASL_NEGOTIATOR, session, request);
         if (negotiator != null)
         {
             negotiator.dispose();
         }
-        session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
-        session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_NEGOTIATOR, request));
-        session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request));
+        HttpManagementUtil.removeAttribute(ATTR_ID, session, request);
+        HttpManagementUtil.removeAttribute(ATTR_SASL_NEGOTIATOR, session, request);
+        HttpManagementUtil.removeAttribute(ATTR_EXPIRY, session, request);
     }
 
     private void checkSaslAuthEnabled(HttpServletRequest request)
@@ -274,9 +270,11 @@ public class SaslServlet extends AbstractServlet
         {
             Random rand = getRandom(request);
             String id = String.valueOf(rand.nextLong());
-            session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request), id);
-            session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_NEGOTIATOR, request), saslNegotiator);
-            session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request), System.currentTimeMillis() + SASL_EXCHANGE_EXPIRY);
+            HttpManagementUtil.setSessionAttribute(ATTR_ID, id, session, request);
+            HttpManagementUtil.setSessionAttribute(ATTR_SASL_NEGOTIATOR, saslNegotiator, session, request);
+            HttpManagementUtil.setSessionAttribute(ATTR_EXPIRY,
+                                                   System.currentTimeMillis() + SASL_EXCHANGE_EXPIRY,
+                                                   session, request);
 
             outputObject.put("id", id);
             outputObject.put("challenge", DatatypeConverter.printBase64Binary(challenge));

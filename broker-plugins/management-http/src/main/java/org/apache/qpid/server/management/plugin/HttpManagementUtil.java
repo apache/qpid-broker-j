@@ -100,7 +100,18 @@ public class HttpManagementUtil
     public static Subject getAuthorisedSubject(HttpServletRequest request)
     {
         HttpSession session = request.getSession(false);
-        return (session == null ? null : (Subject) session.getAttribute(getRequestSpecificAttributeName(ATTR_SUBJECT,request)));
+        if (session == null)
+        {
+            return null;
+        }
+        try
+        {
+            return  (Subject)session.getAttribute(getRequestSpecificAttributeName(ATTR_SUBJECT, request));
+        }
+        catch (IllegalStateException e)
+        {
+            return null;
+        }
     }
 
     public static Subject createServletConnectionSubject(final HttpServletRequest request, Subject original)
@@ -130,11 +141,11 @@ public class HttpManagementUtil
     public static void saveAuthorisedSubject(HttpServletRequest request, Subject subject)
     {
         HttpSession session = request.getSession();
-        session.setAttribute(getRequestSpecificAttributeName(ATTR_SUBJECT, request), subject);
-
-        // Cause the user logon to be logged.
-        session.setAttribute(getRequestSpecificAttributeName(ATTR_LOGIN_LOGOUT_REPORTER, request),
-                             new LoginLogoutReporter(subject, getBroker(session.getServletContext())));
+        setSessionAttribute(ATTR_SUBJECT, subject, session, request);
+        setSessionAttribute(ATTR_LOGIN_LOGOUT_REPORTER,
+                            new LoginLogoutReporter(subject, getBroker(session.getServletContext())),
+                            session,
+                            request);
     }
 
     public static Subject tryToAuthenticate(HttpServletRequest request, HttpManagementConfiguration managementConfig)
@@ -245,5 +256,62 @@ public class HttpManagementUtil
             }
         }
         return null;
+    }
+
+    public static void invalidateSession(HttpSession session)
+    {
+        try
+        {
+            session.invalidate();
+        }
+        catch (IllegalStateException e)
+        {
+            // session was already invalidated
+        }
+    }
+
+    public static Object getSessionAttribute(String attributeName,
+                                             HttpSession session,
+                                             HttpServletRequest request)
+    {
+        String requestSpecificAttributeName = getRequestSpecificAttributeName(attributeName, request);
+        try
+        {
+            return session.getAttribute(requestSpecificAttributeName);
+        }
+        catch (IllegalStateException e)
+        {
+            throw new SessionInvalidatedException();
+        }
+    }
+
+    public static void setSessionAttribute(String attributeName,
+                                           Object attributeValue, HttpSession session,
+                                           HttpServletRequest request)
+    {
+        String requestSpecificAttributeName = getRequestSpecificAttributeName(attributeName, request);
+        try
+        {
+            session.setAttribute(requestSpecificAttributeName, attributeValue);
+        }
+        catch (IllegalStateException e)
+        {
+            throw new SessionInvalidatedException();
+        }
+    }
+
+    public static void removeAttribute(final String attributeName,
+                                       final HttpSession session,
+                                       final HttpServletRequest request)
+    {
+        String requestSpecificAttributeName = getRequestSpecificAttributeName(attributeName, request);
+        try
+        {
+            session.removeAttribute(requestSpecificAttributeName);
+        }
+        catch (IllegalStateException e)
+        {
+            // session was invalidated
+        }
     }
 }

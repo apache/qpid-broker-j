@@ -93,14 +93,18 @@
             <div data-dojo-type="dijit.form.Form" method="POST" id="loginForm">
                 <script type="dojo/on" data-dojo-event="submit" data-dojo-args="e">
                     e.preventDefault()
-                    if (this.validate())
+                    var loginButton = dijit.byId('loginButton')
+                    if (loginButton.get("login") === false && this.validate())
                     {
                         var that = this;
+                        loginButton.set("login", true);
+                        loginButton.set("disabled", true);
                         require(["qpid/management/Management", "dojo/json"],
                                 function (Management, json)
                                 {
                                     var redirectIfAuthenticated = function redirectIfAuthenticated(data)
                                     {
+                                        loginButton.set("login", false);
                                         if (data.user)
                                         {
 
@@ -113,6 +117,7 @@
                                     };
                                     var errorHandler = function errorHandler(error)
                                     {
+                                        loginButton.set("login", false);
                                         if (error.response)
                                         {
                                             if (error.response.status == 401)
@@ -144,12 +149,21 @@
                 <div data-dojo-type="dijit.TitlePane" data-dojo-props="title:'Login', toggleable: false" >
                     <div class="dijitDialogPaneContentArea">
                         <div data-dojo-type="dojox.layout.TableContainer" data-dojo-props="cols:1,labelWidth:'100',showLabels:true,orientation:'horiz',customClass:'formLabel'">
-                            <div data-dojo-type="dijit.form.ValidationTextBox" id="username" name="username" data-dojo-props="label:'User name:',required:true, intermediateChanges:true"></div>
-                            <div data-dojo-type="dijit.form.ValidationTextBox" type="password" id="password" name="password" data-dojo-props="label:'Password:',required:true, intermediateChanges:true"></div>
+                            <div data-dojo-type="dijit.form.ValidationTextBox" id="username" name="username"
+                                 data-dojo-props="label:'User name:',required:true, intermediateChanges:true,
+                                                 onChange:function(){dijit.byId('loginButton').set('disabled',
+                                                                    dijit.byId('loginButton').get('login') === true
+                                                                     || !this.get('value')
+                                                                     || !dijit.byId('password').get('value'));}"></div>
+                            <div data-dojo-type="dijit.form.ValidationTextBox" type="password" id="password" name="password"
+                                 data-dojo-props="label:'Password:',required:true, intermediateChanges:true,
+                             onChange:function(){dijit.byId('loginButton').set('disabled',
+                                                dijit.byId('loginButton').get('login') === true
+                                                || !this.get('value') || !dijit.byId('username').get('value'));}"></div>
                         </div>
                     </div>
                     <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
-                         <button data-dojo-type="dijit.form.Button" type="submit" id="loginButton">Login</button>
+                         <button data-dojo-type="dijit.form.Button" type="submit" id="loginButton" data-dojo-props="disabled:true,login:false">Login</button>
                     </div>
                 </div>
             </div>
