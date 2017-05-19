@@ -1041,6 +1041,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                     checkMessageStoreOpen();
                     metaData = (T) getMessageMetaData(_messageId);
                     _messageDataRef = new MessageDataRef<>(metaData, _messageDataRef.getData(), false);
+                    _inMemorySize.addAndGet(metaData.getStorableSize());
                 }
                 return metaData;
             }
@@ -1091,6 +1092,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                     checkMessageStoreOpen();
                     data = AbstractBDBMessageStore.this.getAllContent(_messageId);
                     _messageDataRef.setData(data);
+                    _inMemorySize.addAndGet(getContentSize());
                 }
                 else
                 {

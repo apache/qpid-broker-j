@@ -1467,6 +1467,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     {
                         metaData = (T) AbstractJDBCMessageStore.this.getMetaData(_messageId);
                         _messageDataRef = new MessageDataRef<>(metaData, _messageDataRef.getData(), false);
+                        _inMemorySize.addAndGet(metaData.getStorableSize());
                     }
                     catch (SQLException e)
                     {
@@ -1522,6 +1523,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     checkMessageStoreOpen();
                     data = AbstractJDBCMessageStore.this.getAllContent(_messageId);
                     _messageDataRef.setData(data);
+                    _inMemorySize.addAndGet(getContentSize());
                 }
                 else
                 {
