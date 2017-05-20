@@ -31,8 +31,10 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
+import org.apache.qpid.server.model.ConfiguredObjectAttributeOrStatistic;
 import org.apache.qpid.server.model.ConfiguredObjectFinder;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
+import org.apache.qpid.server.model.ConfiguredObjectStatistic;
 import org.apache.qpid.server.model.ConfiguredSettableAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
@@ -150,6 +152,7 @@ public class ApiDocsServlet extends AbstractServlet
             writeUsage(writer, request, hierarchy, configuredClass);
             writeTypes(writer, model, types);
             writeAttributes(writer, configuredClass, model, types);
+            writeStatistics(writer, configuredClass, model, types);
             writeOperations(writer, configuredClass, model, types);
             writeContext(writer, configuredClass, model, types);
         }
@@ -354,6 +357,56 @@ public class ApiDocsServlet extends AbstractServlet
         writer.println("</table>");
 
     }
+    private void writeStatistics(final PrintWriter writer,
+                                 final Class<? extends ConfiguredObject> configuredClass, final Model model,
+                                 final List<Class<? extends ConfiguredObject>> types)
+    {
+        writer.println("<a name=\"types\"><h2>Statistics</h2></a>");
+        writer.println("<h2>Common Statistics</h2>");
+
+        writeStatisticsTable(writer, model.getTypeRegistry().getStatistics(configuredClass));
+
+        for(Class<? extends ConfiguredObject> type : types)
+        {
+            String typeName = getTypeName(type, model);
+            Collection<ConfiguredObjectStatistic<?, ?>> typeSpecificStatistics =
+                    model.getTypeRegistry().getTypeSpecificStatistics(type);
+            if(!typeSpecificStatistics.isEmpty())
+            {
+                writer.println("<h2><span class=\"type\">"+typeName+"</span> Specific Statistics</h2>");
+                writeStatisticsTable(writer, typeSpecificStatistics);
+            }
+        }
+    }
+
+    private void writeStatisticsTable(final PrintWriter writer,
+                                      final Collection<ConfiguredObjectStatistic<?,?>> statisticTypes)
+    {
+        writer.println("<table class=\"statistics\">");
+        writer.println("<thead>");
+        writer.println("<tr><th class=\"name\">Statistic Name</th><th class=\"type\">Type</th><th class=\"units\">Units</th><th class=\"statisticType\">Stat Type</th><th class=\"description\">Description</th></tr>");
+        writer.println("</thead>");
+        writer.println("<tbody>");
+
+        for(ConfiguredObjectStatistic statistic : statisticTypes)
+        {
+            writer.println("<tr><td class=\"name\">"
+                           + statistic.getName()
+                           + "</td><td class=\"type\">"
+                           + renderType(statistic)
+                           + "</td><td class=\"units\">"
+                           + statistic.getUnits()
+                           + "</td><td class=\"stattype\">"
+                           + statistic.getStatisticType()
+                           + "</td><td class=\"description\">"
+                           + statistic.getDescription()
+                           + "</td></tr>");
+        }
+        writer.println("</tbody>");
+
+        writer.println("</table>");
+
+    }
 
     private void writeOperations(final PrintWriter writer,
                                  final Class<? extends ConfiguredObject> configuredClass, final Model model,
@@ -442,16 +495,16 @@ public class ApiDocsServlet extends AbstractServlet
         return writer.toString();
     }
 
-    private String renderType(final ConfiguredObjectAttribute attribute)
+    private String renderType(final ConfiguredObjectAttributeOrStatistic attributeOrStatistic)
     {
-        final Class type = attribute.getType();
+        final Class type = attributeOrStatistic.getType();
 
         Collection<String> validValues;
         String validValuePattern;
 
-        if(attribute instanceof ConfiguredSettableAttribute)
+        if(attributeOrStatistic instanceof ConfiguredSettableAttribute)
         {
-            ConfiguredSettableAttribute<?,?> settableAttribute = (ConfiguredSettableAttribute<?,?>) attribute;
+            ConfiguredSettableAttribute<?,?> settableAttribute = (ConfiguredSettableAttribute<?,?>) attributeOrStatistic;
             validValues = settableAttribute.hasValidValues() ? settableAttribute.validValues() : null;
             validValuePattern = settableAttribute.validValuePattern();
         }

@@ -195,6 +195,10 @@ public class ConfiguredObjectTypeRegistry
             _typeSpecificAttributes =
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectAttribute<?, ?>>>());
 
+    private final Map<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectStatistic<?, ?>>>
+            _typeSpecificStatistics =
+            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectStatistic<?, ?>>>());
+
     private final Map<Class<? extends ConfiguredObject>, Map<State, Map<State, Method>>> _stateChangeMethods =
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Map<State, Map<State, Method>>>());
 
@@ -287,7 +291,8 @@ public class ConfiguredObjectTypeRegistry
             if (typesForCategory.isEmpty())
             {
                 typesForCategory.add(categoryClass);
-                _typeSpecificAttributes.put(categoryClass, Collections.<ConfiguredObjectAttribute<?, ?>>emptySet());
+                _typeSpecificAttributes.put(categoryClass, Collections.emptySet());
+                _typeSpecificStatistics.put(categoryClass, Collections.emptySet());
             }
             else
             {
@@ -295,6 +300,11 @@ public class ConfiguredObjectTypeRegistry
                 for (ConfiguredObjectAttribute<?, ?> attribute : _allAttributes.get(categoryClass))
                 {
                     commonAttributes.add(attribute.getName());
+                }
+                Set<String> commonStatistics = new HashSet<>();
+                for (ConfiguredObjectStatistic<?, ?> statistic : _allStatistics.get(categoryClass))
+                {
+                    commonStatistics.add(statistic.getName());
                 }
                 for (Class<? extends ConfiguredObject> typeClass : typesForCategory)
                 {
@@ -307,9 +317,18 @@ public class ConfiguredObjectTypeRegistry
                         }
                     }
                     _typeSpecificAttributes.put(typeClass, attributes);
+
+                    Set<ConfiguredObjectStatistic<?, ?>> statistics = new HashSet<>();
+                    for (ConfiguredObjectStatistic<?, ?> statistic : _allStatistics.get(typeClass))
+                    {
+                        if (!commonStatistics.contains(statistic.getName()))
+                        {
+                            statistics.add(statistic);
+                        }
+                    }
+                    _typeSpecificStatistics.put(typeClass, statistics);
                 }
             }
-
         }
 
         for (Class<? extends ConfiguredObject> type : types)
@@ -539,6 +558,19 @@ public class ConfiguredObjectTypeRegistry
         Collection<ConfiguredObjectAttribute<?, ?>> typeAttrs = _typeSpecificAttributes.get(typeClass);
         return Collections.unmodifiableCollection(typeAttrs == null
                                                           ? Collections.<ConfiguredObjectAttribute<?, ?>>emptySet()
+                                                          : typeAttrs);
+    }
+
+    public Collection<ConfiguredObjectStatistic<?, ?>> getTypeSpecificStatistics(final Class<? extends ConfiguredObject> clazz)
+    {
+        Class<? extends ConfiguredObject> typeClass = getTypeClass(clazz);
+        if (typeClass == null)
+        {
+            throw new IllegalArgumentException("Cannot locate ManagedObject information for " + clazz.getName());
+        }
+        Collection<ConfiguredObjectStatistic<?, ?>> typeAttrs = _typeSpecificStatistics.get(typeClass);
+        return Collections.unmodifiableCollection(typeAttrs == null
+                                                          ? Collections.emptySet()
                                                           : typeAttrs);
     }
 
@@ -1214,11 +1246,10 @@ public class ConfiguredObjectTypeRegistry
         }
     }
 
-
-    public Collection<ConfiguredObjectStatistic> getStatistics(final Class<? extends ConfiguredObject> clazz)
+    public Collection<ConfiguredObjectStatistic<?, ?>> getStatistics(final Class<? extends ConfiguredObject> clazz)
     {
         processClassIfNecessary(clazz);
-        final Collection<ConfiguredObjectStatistic> statistics = (Collection) _allStatistics.get(clazz);
+        final Collection<ConfiguredObjectStatistic<?, ?>> statistics = _allStatistics.get(clazz);
         return statistics;
     }
 

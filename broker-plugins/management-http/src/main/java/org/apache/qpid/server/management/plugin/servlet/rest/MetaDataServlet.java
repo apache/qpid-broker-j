@@ -280,8 +280,7 @@ public class MetaDataServlet extends AbstractServlet
 
     private Map<String, Map> processStatistics(final Class<? extends ConfiguredObject> type, final Model model)
     {
-        Collection<ConfiguredObjectStatistic> statistics =
-                model.getTypeRegistry().getStatistics(type);
+        Collection<ConfiguredObjectStatistic<?, ?>> statistics = model.getTypeRegistry().getStatistics(type);
 
         Map<String, Map> allStatisticsDetails = new LinkedHashMap<>();
         for (ConfiguredObjectStatistic<?, ?> statistic : statistics)

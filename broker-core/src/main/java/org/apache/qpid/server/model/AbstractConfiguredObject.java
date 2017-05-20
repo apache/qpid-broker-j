@@ -3149,7 +3149,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public Map<String, Object> getStatistics(List<String> statistics)
     {
-        Collection<ConfiguredObjectStatistic> stats = getTypeRegistry().getStatistics(getClass());
+        Collection<ConfiguredObjectStatistic<?, ?>> stats = getTypeRegistry().getStatistics(getClass());
         Map<String,Object> map = new HashMap<>();
         boolean allStats = statistics == null || statistics.isEmpty();
         for(ConfiguredObjectStatistic stat : stats)
