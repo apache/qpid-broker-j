@@ -1144,8 +1144,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         long estimatedQueueSize = _atomicQueueSize.get() + _atomicQueueCount.get() * _estimatedAverageMessageHeaderSize;
-        _flowToDiskChecker.flowToDiskAndReportIfNecessary(message.getStoredMessage(), estimatedQueueSize,
-                                                          _targetQueueSize.get());
+        _flowToDiskChecker.flowToDiskIfNecessary(message.getStoredMessage(), estimatedQueueSize, _targetQueueSize.get());
     }
 
     public final void recover(ServerMessage message, final MessageEnqueueRecord enqueueRecord)
@@ -2511,7 +2510,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         QueueEntryIterator queueListIterator = getEntries().iterator();
 
         final long estimatedQueueSize = _atomicQueueSize.get() + _atomicQueueCount.get() * _estimatedAverageMessageHeaderSize;
-        _flowToDiskChecker.reportFlowToDiskStatusIfNecessary(estimatedQueueSize, _targetQueueSize.get());
 
         final long currentTime = System.currentTimeMillis();
 
@@ -3698,8 +3696,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private class FlowToDiskChecker
     {
-        final AtomicBoolean _lastReportedFlowToDiskStatus = new AtomicBoolean(false);
-
         void flowToDiskIfNecessary(StoredMessage<?> storedMessage, long estimatedQueueSize, final long targetQueueSize)
         {
             if ((estimatedQueueSize > targetQueueSize
@@ -3707,56 +3703,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 && storedMessage.isInMemory())
             {
                 storedMessage.flowToDisk();
-            }
-        }
-
-        void flowToDiskAndReportIfNecessary(StoredMessage<?> storedMessage,
-                                            final long estimatedQueueSize,
-                                            final long targetQueueSize)
-        {
-            flowToDiskIfNecessary(storedMessage, estimatedQueueSize, targetQueueSize);
-            reportFlowToDiskStatusIfNecessary(estimatedQueueSize, targetQueueSize);
-        }
-
-        void reportFlowToDiskStatusIfNecessary(final long estimatedQueueSize, final long targetQueueSize)
-        {
-            final long allocatedDirectMemorySize = QpidByteBuffer.getAllocatedDirectMemorySize();
-            if (estimatedQueueSize > targetQueueSize
-                || allocatedDirectMemorySize > _flowToDiskThreshold)
-            {
-                reportFlowToDiskActiveIfNecessary(estimatedQueueSize, targetQueueSize, allocatedDirectMemorySize, _flowToDiskThreshold);
-            }
-            else
-            {
-                reportFlowToDiskInactiveIfNecessary(estimatedQueueSize, targetQueueSize, allocatedDirectMemorySize, _flowToDiskThreshold);
-            }
-        }
-
-        private void reportFlowToDiskActiveIfNecessary(long estimatedQueueSize,
-                                                       long targetQueueSize,
-                                                       long allocatedDirectMemorySize,
-                                                       long flowToDiskThreshold)
-        {
-            if (!_lastReportedFlowToDiskStatus.getAndSet(true))
-            {
-                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_ACTIVE(estimatedQueueSize / 1024.0,
-                                                                                        targetQueueSize / 1024.0,
-                                                                                        allocatedDirectMemorySize / 1024.0 / 1024.0,
-                                                                                        flowToDiskThreshold / 1024.0 / 1024.0));
-            }
-        }
-
-        private void reportFlowToDiskInactiveIfNecessary(long estimatedQueueSize,
-                                                         long targetQueueSize,
-                                                         long allocatedDirectMemorySize,
-                                                         long flowToDiskThreshold)
-        {
-            if (_lastReportedFlowToDiskStatus.getAndSet(false))
-            {
-                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_INACTIVE(estimatedQueueSize / 1024.0,
-                                                                                          targetQueueSize / 1024.0,
-                                                                                          allocatedDirectMemorySize / 1024.0 / 1024.0,
-                                                                                          flowToDiskThreshold / 1024.0 / 1024.0));
             }
         }
     }
