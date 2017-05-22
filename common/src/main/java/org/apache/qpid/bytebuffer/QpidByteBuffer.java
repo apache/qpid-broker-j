@@ -706,6 +706,15 @@ public final class QpidByteBuffer
         _isPoolInitialized = true;
     }
 
+    /**
+     * Not for general use!
+     * Used to clear threadlocal buffer when shutting down thread pools.
+     */
+    public static QpidByteBuffer getCachedThreadLocalBuffer()
+    {
+        return _cachedBuffer.get();
+    }
+
     public static int getPooledBufferSize()
     {
         return _pooledBufferSize;

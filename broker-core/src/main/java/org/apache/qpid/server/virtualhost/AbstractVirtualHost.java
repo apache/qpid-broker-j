@@ -56,6 +56,7 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.pool.SuppressingInheritedAccessControlContextThreadFactory;
 import org.apache.qpid.server.configuration.updater.Task;
@@ -1936,10 +1937,23 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 new SuppressingInheritedAccessControlContextThreadFactory("virtualhost-" + getName() + "-pool",
                                                                           SecurityManager.getSystemTaskSubject("Housekeeping", getPrincipal()));
         _houseKeepingTaskExecutor = new ScheduledThreadPoolExecutor(getHousekeepingThreadCount(), housekeepingThreadFactory){
+            private final Map<Thread, QpidByteBuffer> _cachedBufferMap = new ConcurrentHashMap<>();
+
             @Override
             protected void afterExecute(Runnable r, Throwable t)
             {
                 super.afterExecute(r, t);
+
+                final QpidByteBuffer cachedThreadLocalBuffer = QpidByteBuffer.getCachedThreadLocalBuffer();
+                if (cachedThreadLocalBuffer != null)
+                {
+                    _cachedBufferMap.put(Thread.currentThread(), cachedThreadLocalBuffer);
+                }
+                else
+                {
+                    _cachedBufferMap.remove(Thread.currentThread());
+                }
+
                 if (t == null && r instanceof Future<?>)
                 {
                     Future future = (Future<?>) r;
@@ -1982,6 +1996,17 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                         Runtime.getRuntime().halt(1);
                     }
                 }
+            }
+
+            @Override
+            protected void terminated()
+            {
+                super.terminated();
+                for (QpidByteBuffer qpidByteBuffer : _cachedBufferMap.values())
+                {
+                    qpidByteBuffer.dispose();
+                }
+                _cachedBufferMap.clear();
             }
         };
 
