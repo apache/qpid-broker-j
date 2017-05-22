@@ -46,11 +46,9 @@ public class BrokerMessages
     public static final String BROKER_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker";
     public static final String READY_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.ready";
     public static final String FAILED_CHILDREN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.failed_children";
-    public static final String FLOW_TO_DISK_ACTIVE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.flow_to_disk_active";
     public static final String LISTENING_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.listening";
     public static final String STARTUP_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.startup";
     public static final String MANAGEMENT_MODE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.management_mode";
-    public static final String FLOW_TO_DISK_INACTIVE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.flow_to_disk_inactive";
     public static final String STATS_MSGS_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.stats_msgs";
     public static final String PLATFORM_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.platform";
     public static final String CONFIG_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.config";
@@ -67,11 +65,9 @@ public class BrokerMessages
         LoggerFactory.getLogger(BROKER_LOG_HIERARCHY);
         LoggerFactory.getLogger(READY_LOG_HIERARCHY);
         LoggerFactory.getLogger(FAILED_CHILDREN_LOG_HIERARCHY);
-        LoggerFactory.getLogger(FLOW_TO_DISK_ACTIVE_LOG_HIERARCHY);
         LoggerFactory.getLogger(LISTENING_LOG_HIERARCHY);
         LoggerFactory.getLogger(STARTUP_LOG_HIERARCHY);
         LoggerFactory.getLogger(MANAGEMENT_MODE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(FLOW_TO_DISK_INACTIVE_LOG_HIERARCHY);
         LoggerFactory.getLogger(STATS_MSGS_LOG_HIERARCHY);
         LoggerFactory.getLogger(PLATFORM_LOG_HIERARCHY);
         LoggerFactory.getLogger(CONFIG_LOG_HIERARCHY);
@@ -167,64 +163,6 @@ public class BrokerMessages
             public String getLogHierarchy()
             {
                 return FAILED_CHILDREN_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a Broker message of the Format:
-     * <pre>BRK-1014 : Message flow to disk active :  Message memory use {0,number,#}KB exceeds threshold {1,number,#.##}KB</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage FLOW_TO_DISK_ACTIVE(Number param1, Number param2)
-    {
-        String rawMessage = _messages.getString("FLOW_TO_DISK_ACTIVE");
-
-        final Object[] messageArguments = {param1, param2};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return FLOW_TO_DISK_ACTIVE_LOG_HIERARCHY;
             }
 
             @Override
@@ -399,64 +337,6 @@ public class BrokerMessages
             public String getLogHierarchy()
             {
                 return MANAGEMENT_MODE_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a Broker message of the Format:
-     * <pre>BRK-1015 : Message flow to disk inactive : Message memory use {0,number,#}KB within threshold {1,number,#.##}KB</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage FLOW_TO_DISK_INACTIVE(Number param1, Number param2)
-    {
-        String rawMessage = _messages.getString("FLOW_TO_DISK_INACTIVE");
-
-        final Object[] messageArguments = {param1, param2};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return FLOW_TO_DISK_INACTIVE_LOG_HIERARCHY;
             }
 
             @Override

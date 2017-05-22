@@ -1833,6 +1833,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private class VirtualHostHouseKeepingTask extends HouseKeepingTask
     {
+
+        private long _lastReportedBytesEvacuatedFromMemory = 0L;
+
         public VirtualHostHouseKeepingTask()
         {
             super("Housekeeping["+AbstractVirtualHost.this.getName()+"]",AbstractVirtualHost.this,_housekeepingJobContext);
@@ -1851,6 +1854,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     _logger.debug("Checking message status for queue: {}", q.getName());
                     q.checkMessageStatus();
                 }
+            }
+
+            final long currentBytesEvacuatedFromMemory = getBytesEvacuatedFromMemory();
+            if (currentBytesEvacuatedFromMemory != _lastReportedBytesEvacuatedFromMemory)
+            {
+                getEventLogger().message(VirtualHostMessages.FLOW_TO_DISK(currentBytesEvacuatedFromMemory));
+                _lastReportedBytesEvacuatedFromMemory = currentBytesEvacuatedFromMemory;
             }
         }
     }
