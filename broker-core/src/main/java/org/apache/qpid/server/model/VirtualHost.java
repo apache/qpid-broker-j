@@ -199,6 +199,9 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound")
     long getMessagesOut();
 
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Total Number of Bytes Evacuated from Memory Due to Flow to Disk")
+    long getBytesEvacuatedFromMemory();
+
     Broker<?> getBroker();
 
     @Override

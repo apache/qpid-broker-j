@@ -3919,7 +3919,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         void reportFlowToDiskStatusIfNecessary(final long estimatedQueueSize, final long targetQueueSize)
         {
-            final int allocatedDirectMemorySize = QpidByteBuffer.getAllocatedDirectMemorySize();
+            final long allocatedDirectMemorySize = QpidByteBuffer.getAllocatedDirectMemorySize();
             if (estimatedQueueSize > targetQueueSize
                 || allocatedDirectMemorySize > _flowToDiskThreshold)
             {

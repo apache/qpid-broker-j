@@ -61,6 +61,8 @@ public interface MessageStore
 
     <T extends StorableMessageMetaData> MessageHandle<T> addMessage(T metaData);
 
+    long getBytesEvacuatedFromMemory();
+
     /**
      * Is this store capable of persisting the data
      *

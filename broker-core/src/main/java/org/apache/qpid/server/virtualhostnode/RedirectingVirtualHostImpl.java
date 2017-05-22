@@ -176,6 +176,12 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return 0L;
+    }
+
+    @Override
     public <T extends ConfiguredObject<?>> T getAttainedChildFromAddress(final Class<T> childClass,
                                                                          final String address)
     {

@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.sleepycat.bind.tuple.LongBinding;
@@ -100,6 +101,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     private boolean _limitBusted;
     private long _totalStoreSize;
     private final Random _lockConflictRandom = new Random();
+    private final AtomicLong _bytesEvacuatedFromMemory = new AtomicLong();
 
     @Override
     public void upgradeStoreStructure() throws StoreException
@@ -147,6 +149,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     }
 
     @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return _bytesEvacuatedFromMemory.get();
+    }
+
+    @Override
     public boolean isPersistent()
     {
         return true;
@@ -164,6 +172,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     public void addEventListener(final EventListener eventListener, final Event... events)
     {
         _eventManager.addEventListener(eventListener, events);
+    }
+
+    @Override
+    public void closeMessageStore()
+    {
+        _bytesEvacuatedFromMemory.set(0);
     }
 
     @Override
@@ -968,10 +982,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             _data = data;
         }
 
-        public void clear()
+        public long clear()
         {
+            long bytesCleared = 0;
             if(_metaData != null)
             {
+                bytesCleared += _metaData.getStorableSize();
                 _metaData.clearEncodedForm();
                 _metaData = null;
             }
@@ -979,10 +995,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             {
                 for(QpidByteBuffer buf : _data)
                 {
+                    bytesCleared += buf.remaining();
                     buf.dispose();
                 }
+                _data = null;
             }
-            _data = null;
+            return bytesCleared;
         }
 
         @Override
@@ -1229,7 +1247,8 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             flushToStore();
             if(_messageDataRef != null && !_messageDataRef.isHardRef())
             {
-                ((MessageDataSoftRef)_messageDataRef).clear();
+                final long bytesCleared = ((MessageDataSoftRef) _messageDataRef).clear();
+                _bytesEvacuatedFromMemory.addAndGet(bytesCleared);
             }
             return true;
         }

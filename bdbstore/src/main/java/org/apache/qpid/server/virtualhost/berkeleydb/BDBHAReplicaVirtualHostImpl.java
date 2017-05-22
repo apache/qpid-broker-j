@@ -285,6 +285,12 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return 0;
+    }
+
+    @Override
     public Collection<? extends Connection<?>> getConnections()
     {
         return Collections.emptyList();

@@ -70,6 +70,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     protected final EventManager _eventManager = new EventManager();
     private ConfiguredObject<?> _parent;
     private String _tablePrefix = "";
+    private final AtomicLong _bytesEvacuatedFromMemory = new AtomicLong();
 
     protected abstract boolean isMessageStoreOpen();
 
@@ -231,6 +232,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     @Override
     public void closeMessageStore()
     {
+        _bytesEvacuatedFromMemory.set(0);
         if(_executor != null)
         {
             _executor.shutdown();
@@ -1110,6 +1112,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         return true;
     }
 
+    @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return _bytesEvacuatedFromMemory.get();
+    }
 
     protected class JDBCTransaction implements Transaction
     {
@@ -1383,10 +1390,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             _data = data;
         }
 
-        public void clear()
+        public long clear()
         {
+            long bytesCleared = 0;
             if(_metaData != null)
             {
+                bytesCleared += _metaData.getStorableSize();
                 _metaData.clearEncodedForm();
                 _metaData = null;
             }
@@ -1394,10 +1403,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
                 for(QpidByteBuffer buf : _data)
                 {
+                    bytesCleared += buf.remaining();
                     buf.dispose();
                 }
+                _data = null;
             }
-            _data = null;
+            return bytesCleared;
         }
 
         @Override
@@ -1656,7 +1667,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             flushToStore();
             if(_messageDataRef != null && !_messageDataRef.isHardRef())
             {
-                ((MessageDataSoftRef)_messageDataRef).clear();
+                final long bytesCleared = ((MessageDataSoftRef) _messageDataRef).clear();
+                _bytesEvacuatedFromMemory.addAndGet(bytesCleared);
             }
             return true;
         }

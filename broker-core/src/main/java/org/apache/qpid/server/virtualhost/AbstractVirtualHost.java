@@ -1365,6 +1365,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return _messageStore == null ? -1 : _messageStore.getBytesEvacuatedFromMemory();
+    }
+
+    @Override
     public <T extends ConfiguredObject<?>> T getAttainedChildFromAddress(final Class<T> childClass,
                                                                          final String address)
     {
