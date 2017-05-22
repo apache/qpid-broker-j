@@ -95,7 +95,7 @@ public class TransferTest extends ProtocolTestBase
     @Test
     @Ignore("QPID-7749")
     @SpecificationTest(section = "2.6.12",
-            description = "Transfering A Message.")
+            description = "Transferring A Message.")
     public void transfer() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress))

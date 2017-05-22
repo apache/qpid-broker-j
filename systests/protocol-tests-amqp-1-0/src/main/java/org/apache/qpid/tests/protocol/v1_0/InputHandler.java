@@ -19,6 +19,7 @@
 
 package org.apache.qpid.tests.protocol.v1_0;
 
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 import io.netty.buffer.ByteBuf;
@@ -43,6 +44,7 @@ import org.apache.qpid.server.protocol.v1_0.type.security.SaslOutcome;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslResponse;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ChannelFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
@@ -137,13 +139,6 @@ public class InputHandler extends ChannelInboundHandlerAdapter
         }
     }
 
-    @Override
-    public void channelReadComplete(final ChannelHandlerContext ctx) throws Exception
-    {
-        LOGGER.debug("KWDEBUG channelReadComplete");
-        super.channelReadComplete(ctx);
-    }
-
     private class MyConnectionHandler implements ConnectionHandler
     {
         @Override
@@ -225,23 +220,27 @@ public class InputHandler extends ChannelInboundHandlerAdapter
         }
 
         @Override
-        public void receive(final short channel, final Object val)
+        public void receive(final List<ChannelFrameBody> channelFrameBodies)
         {
-            Response response;
-            if (val instanceof FrameBody)
+            for (final ChannelFrameBody channelFrameBody : channelFrameBodies)
             {
-                response = new PerformativeResponse(channel, (FrameBody) val);
+                Response response;
+                Object val = channelFrameBody.getFrameBody();
+                int channel = channelFrameBody.getChannel();
+                if (val instanceof FrameBody)
+                {
+                    response = new PerformativeResponse((short) channel, (FrameBody) val);
+                }
+                else if (val instanceof SaslFrameBody)
+                {
+                    throw new UnsupportedOperationException("TODO: ");
+                }
+                else
+                {
+                    throw new UnsupportedOperationException("Unexoected frame type : " + val.getClass());
+                }
+                _responseQueue.add(response);
             }
-            else if (val instanceof SaslFrameBody)
-            {
-                throw new UnsupportedOperationException("TODO: ");
-            }
-            else
-            {
-                throw new UnsupportedOperationException("Unexoected frame type : " + val.getClass());
-            }
-            _responseQueue.add(response);
-
         }
 
         @Override

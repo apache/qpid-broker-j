@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
@@ -43,6 +44,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,6 +90,7 @@ import org.apache.qpid.server.protocol.v1_0.type.security.SaslResponse;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ChannelFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
@@ -295,15 +299,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         final Session_1_0 session = getSession(channel);
         if (session != null)
         {
-            AccessController.doPrivileged(new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    session.receiveAttach(attach);
-                    return null;
-                }
-            }, session.getAccessControllerContext());
+            session.receiveAttach(attach);
         }
         else
         {
@@ -312,16 +308,61 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void receive(final short channel, final Object frame)
+    public void receive(final List<ChannelFrameBody> channelFrameBodies)
     {
-        FRAME_LOGGER.debug("RECV[{}|{}] : {}", _remoteAddress, channel, frame);
-        if (frame instanceof FrameBody)
+        PeekingIterator<ChannelFrameBody> itr = Iterators.peekingIterator(channelFrameBodies.iterator());
+
+        while(itr.hasNext())
         {
-            ((FrameBody) frame).invoke(channel, this);
+            final ChannelFrameBody channelFrameBody = itr.next();
+            final int frameChannel = channelFrameBody.getChannel();
+
+            Session_1_0 session = _receivingSessions == null || frameChannel >= _receivingSessions.length ? null : _receivingSessions[frameChannel];
+            if (session != null)
+            {
+                final AccessControlContext context = session.getAccessControllerContext();
+                AccessController.doPrivileged((PrivilegedAction<Void>) () ->
+                {
+                    ChannelFrameBody channelFrame = channelFrameBody;
+                    boolean nextIsSameChannel;
+                    do
+                    {
+                        received(frameChannel, channelFrame.getFrameBody());
+                        nextIsSameChannel = itr.hasNext() && frameChannel == itr.peek().getChannel();
+                        if (nextIsSameChannel)
+                        {
+                            channelFrame = itr.next();
+                        }
+                    }
+                    while (nextIsSameChannel);
+                    return null;
+                }, context);
+            }
+            else
+            {
+                received(frameChannel, channelFrameBody.getFrameBody());
+            }
         }
-        else if (frame instanceof SaslFrameBody)
+    }
+
+    private void received(int channel, Object val)
+    {
+        if (channel > getChannelMax())
         {
-            ((SaslFrameBody) frame).invoke(channel, this);
+            Error error = new Error(ConnectionError.FRAMING_ERROR,
+                                    String.format("specified channel %d larger than maximum channel %d", channel, getChannelMax()));
+            handleError(error);
+            return;
+        }
+
+        FRAME_LOGGER.debug("RECV[{}|{}] : {}", _remoteAddress, channel, val);
+        if (val instanceof FrameBody)
+        {
+            ((FrameBody) val).invoke((short) channel, this);
+        }
+        else if (val instanceof SaslFrameBody)
+        {
+            ((SaslFrameBody) val).invoke((short) channel, this);
         }
     }
 
@@ -541,17 +582,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         final Session_1_0 session = getSession(channel);
         if (session != null)
         {
-            AccessController.doPrivileged(new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    _receivingSessions[channel] = null;
-
-                    session.receiveEnd(end);
-                    return null;
-                }
-            }, session.getAccessControllerContext());
+            _receivingSessions[channel] = null;
+            session.receiveEnd(end);
         }
         else
         {
@@ -571,15 +603,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         final Session_1_0 session = getSession(channel);
         if (session != null)
         {
-            AccessController.doPrivileged(new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    session.receiveDisposition(disposition);
-                    return null;
-                }
-            }, session.getAccessControllerContext());
+            session.receiveDisposition(disposition);
         }
         else
         {
@@ -637,6 +661,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
                     synchronized (_blockingLock)
                     {
+
                         _sessions.add(session);
                         if (_blocking)
                         {
@@ -686,15 +711,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         final Session_1_0 session = getSession(channel);
         if (session != null)
         {
-            AccessController.doPrivileged(new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    session.receiveTransfer(transfer);
-                    return null;
-                }
-            }, session.getAccessControllerContext());
+            session.receiveTransfer(transfer);
         }
         else
         {
@@ -708,15 +725,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         final Session_1_0 session = getSession(channel);
         if (session != null)
         {
-            AccessController.doPrivileged(new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    session.receiveFlow(flow);
-                    return null;
-                }
-            }, session.getAccessControllerContext());
+            session.receiveFlow(flow);
         }
         else
         {
@@ -897,15 +906,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         final Session_1_0 session = getSession(channel);
         if (session != null)
         {
-            AccessController.doPrivileged(new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    session.receiveDetach(detach);
-                    return null;
-                }
-            }, session.getAccessControllerContext());
+            session.receiveDetach(detach);
         }
         else
         {

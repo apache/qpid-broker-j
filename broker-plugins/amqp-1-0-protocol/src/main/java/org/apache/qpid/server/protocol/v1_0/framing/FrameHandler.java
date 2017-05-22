@@ -20,8 +20,10 @@
  */
 package org.apache.qpid.server.protocol.v1_0.framing;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Formatter;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +34,7 @@ import org.apache.qpid.server.protocol.v1_0.codec.ProtocolHandler;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ChannelFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
@@ -60,6 +63,7 @@ public class FrameHandler implements ProtocolHandler
             int size;
 
             int remaining;
+            List<ChannelFrameBody> channelFrameBodies = new ArrayList<>();
             while ((remaining = in.remaining()) >=8 && frameParsingError == null)
             {
 
@@ -133,16 +137,7 @@ public class FrameHandler implements ProtocolHandler
                     break;
                 }
 
-                int channel = ((int)in.getShort()) & 0xffff;
-
-                if (channel > _connectionHandler.getChannelMax())
-                {
-                    frameParsingError = createFramingError(
-                            "specified channel %d larger than maximum channel %d",
-                            channel,
-                            _connectionHandler.getChannelMax());
-                    break;
-                }
+                int channel = in.getUnsignedShort();
 
                 if (dataOffset != 8)
                 {
@@ -173,7 +168,20 @@ public class FrameHandler implements ProtocolHandler
                                     val);
                         }
                     }
-                    _connectionHandler.receive((short) channel, val);
+                    channelFrameBodies.add(new ChannelFrameBody()
+                    {
+                        @Override
+                        public int getChannel()
+                        {
+                            return channel;
+                        }
+
+                        @Override
+                        public Object getFrameBody()
+                        {
+                            return val;
+                        }
+                    });
                 }
                 catch (AmqpErrorException ex)
                 {
@@ -184,6 +192,7 @@ public class FrameHandler implements ProtocolHandler
                     dup.dispose();
                 }
             }
+            _connectionHandler.receive(channelFrameBodies);
 
             if (frameParsingError != null)
             {

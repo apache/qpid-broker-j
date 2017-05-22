@@ -20,8 +20,11 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.util.List;
+
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ChannelFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
@@ -59,5 +62,5 @@ public interface ConnectionHandler extends SASLEndpoint
 
     boolean closedForInput();
 
-    void receive(short channel, Object val);
+    void receive(List<ChannelFrameBody> channelFrameBodies);
 }

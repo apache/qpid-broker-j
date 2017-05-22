@@ -29,12 +29,13 @@ import java.net.InetSocketAddress;
 
 import org.junit.Test;
 
-import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
@@ -92,6 +93,44 @@ public class BeginTest extends ProtocolTestBase
             assertThat(responseBegin.getNextOutgoingId(), is(instanceOf(UnsignedInteger.class)));
 
             transport.doCloseConnection();
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "2.7.1",
+                       description = "A peer that receives a channel number outside the supported range MUST close "
+                                     + "the connection with the framing-error error-code..")
+    public void channelMax() throws Exception
+    {
+        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
+        try (FrameTransport transport = new FrameTransport(addr))
+        {
+            UnsignedShort channelMax = UnsignedShort.valueOf((short) 5);
+            transport.doProtocolNegotiation();
+            Open open = new Open();
+            open.setChannelMax(channelMax);
+            open.setContainerId("testContainer");
+
+
+            transport.sendPerformative(open, UnsignedShort.valueOf((short) 0));
+            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getFrameBody(), is(instanceOf(Open.class)));
+
+            Begin begin = new Begin();
+            begin.setNextOutgoingId(UnsignedInteger.ZERO);
+            begin.setIncomingWindow(UnsignedInteger.ZERO);
+            begin.setOutgoingWindow(UnsignedInteger.ZERO);
+
+            UnsignedShort invalidChannel = UnsignedShort.valueOf((short) (channelMax.intValue() + 1));
+            transport.sendPerformative(begin, invalidChannel);
+            response = (PerformativeResponse) transport.getNextResponse();
+
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getFrameBody(), is(instanceOf(Close.class)));
+            Close responseClose = (Close) response.getFrameBody();
+            assertThat(responseClose.getError(), is(notNullValue()));
+            assertThat(responseClose.getError().getCondition(), equalTo(ConnectionError.FRAMING_ERROR));
         }
     }
 }
