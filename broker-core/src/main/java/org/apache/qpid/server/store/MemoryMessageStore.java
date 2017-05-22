@@ -286,14 +286,12 @@ public class MemoryMessageStore implements MessageStore
 
         StoredMemoryMessage<T> storedMemoryMessage = new StoredMemoryMessage<T>(id, metaData)
         {
-
             @Override
             public void remove()
             {
                 _messages.remove(getMessageNumber());
                 super.remove();
             }
-
         };
 
         return storedMemoryMessage;
@@ -310,6 +308,12 @@ public class MemoryMessageStore implements MessageStore
     public boolean isPersistent()
     {
         return false;
+    }
+
+    @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return 0L;
     }
 
     @Override

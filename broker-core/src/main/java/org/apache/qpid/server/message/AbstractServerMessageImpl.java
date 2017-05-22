@@ -223,11 +223,11 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
         private final UUID _resourceId;
         private volatile int _released;
 
-        private Reference(final AbstractServerMessageImpl<X, T> message)
+        private Reference(final AbstractServerMessageImpl<X, T> message) throws MessageDeletedException
         {
             this(message, null);
         }
-        private Reference(final AbstractServerMessageImpl<X, T> message, TransactionLogResource resource)
+        private Reference(final AbstractServerMessageImpl<X, T> message, TransactionLogResource resource) throws MessageDeletedException
         {
             _message = message;
             if(resource != null)
@@ -309,6 +309,11 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
             }
         }
 
+        @Override
+        public void close()
+        {
+            release();
+        }
     }
 
 }

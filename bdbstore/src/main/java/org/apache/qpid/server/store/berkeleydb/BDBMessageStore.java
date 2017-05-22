@@ -84,6 +84,7 @@ public class BDBMessageStore extends AbstractBDBMessageStore
     @Override
     public void closeMessageStore()
     {
+        super.closeMessageStore();
         if (_messageStoreOpen.compareAndSet(true, false))
         {
             if (_environmentFacade != null)

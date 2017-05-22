@@ -288,6 +288,12 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return 0;
+    }
+
+    @Override
     public Collection<VirtualHostAlias> getAliases()
     {
         return Collections.emptyList();

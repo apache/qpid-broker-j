@@ -541,6 +541,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         @Override
         public void closeMessageStore()
         {
+            super.closeMessageStore();
             _messageStoreOpen.set(false);
         }
 

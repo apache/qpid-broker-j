@@ -161,6 +161,12 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return 0L;
+    }
+
+    @Override
     public ExchangeImpl<?> getAttainedExchange(final String name)
     {
         return null;

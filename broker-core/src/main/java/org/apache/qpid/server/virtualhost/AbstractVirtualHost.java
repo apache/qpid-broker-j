@@ -847,6 +847,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return _messageStore == null ? -1 : _messageStore.getBytesEvacuatedFromMemory();
+    }
+
+    @Override
     public ExchangeImpl getAttainedExchange(String name)
     {
         Exchange child = awaitChildClassToAttainState(Exchange.class, name);

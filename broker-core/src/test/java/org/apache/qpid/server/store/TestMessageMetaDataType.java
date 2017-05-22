@@ -78,6 +78,12 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         {
 
             @Override
+            public void close()
+            {
+                release();
+            }
+
+            @Override
             public ServerMessage getMessage()
             {
                 return TestServerMessage.this;
