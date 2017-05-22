@@ -141,4 +141,8 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         return false;
     }
 
+    public void clear()
+    {
+        remove();
+    }
 }

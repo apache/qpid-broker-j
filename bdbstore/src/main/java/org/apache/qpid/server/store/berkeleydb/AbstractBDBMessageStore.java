@@ -29,7 +29,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -102,6 +104,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     private long _totalStoreSize;
     private final Random _lockConflictRandom = new Random();
     private final AtomicLong _bytesEvacuatedFromMemory = new AtomicLong();
+    private final Set<StoredBDBMessage<?>> _messages = Collections.newSetFromMap(new ConcurrentHashMap<StoredBDBMessage<?>, Boolean>());
 
     @Override
     public void upgradeStoreStructure() throws StoreException
@@ -125,7 +128,16 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
         long newMessageId = getNextMessageId();
 
-        return new StoredBDBMessage<T>(newMessageId, metaData);
+        return createStoredBDBMessage(newMessageId, metaData, false);
+    }
+
+    public <T extends StorableMessageMetaData> StoredBDBMessage<T> createStoredBDBMessage(final long newMessageId,
+                                                                                          final T metaData,
+                                                                                          final boolean recovered)
+    {
+        final StoredBDBMessage<T> message = new StoredBDBMessage<>(newMessageId, metaData, recovered);
+        _messages.add(message);
+        return message;
     }
 
     public long getNextMessageId()
@@ -177,6 +189,11 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     @Override
     public void closeMessageStore()
     {
+        for (StoredBDBMessage<?> message : _messages)
+        {
+            message.clear();
+        }
+        _messages.clear();
         _bytesEvacuatedFromMemory.set(0);
     }
 
@@ -436,7 +453,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             {
                 long messageId = LongBinding.entryToLong(key);
                 StorableMessageMetaData metaData = valueBinding.entryToObject(value);
-                StoredBDBMessage message = new StoredBDBMessage(messageId, metaData, true);
+                StoredBDBMessage message = createStoredBDBMessage(messageId, metaData, true);
                 if (!handler.handle(message))
                 {
                     break;
@@ -482,7 +499,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             if(getMessageMetaDataDb().get(null, key, value, LockMode.READ_COMMITTED) == OperationStatus.SUCCESS)
             {
                 StorableMessageMetaData metaData = valueBinding.entryToObject(value);
-                StoredBDBMessage message = new StoredBDBMessage(messageId, metaData, true);
+                StoredBDBMessage message = createStoredBDBMessage(messageId, metaData, true);
                 return message;
             }
             else
@@ -915,6 +932,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         Collection<QpidByteBuffer> getData();
         void setData(Collection<QpidByteBuffer> data);
         boolean isHardRef();
+        long clear();
     }
 
     private static final class MessageDataHardRef<T extends StorableMessageMetaData> implements MessageDataRef<T>
@@ -950,6 +968,28 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         {
             return true;
         }
+
+        @Override
+        public long clear()
+        {
+            long bytesCleared = 0;
+            if(_metaData != null)
+            {
+                bytesCleared += _metaData.getStorableSize();
+                _metaData.clearEncodedForm();
+            }
+            if(_data != null)
+            {
+                for(QpidByteBuffer buf : _data)
+                {
+                    bytesCleared += buf.remaining();
+                    buf.dispose();
+                }
+                _data = null;
+            }
+            return bytesCleared;
+        }
+
     }
 
     private static final class MessageDataSoftRef<T extends StorableMessageMetaData> implements MessageDataRef<T>
@@ -982,6 +1022,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             _data = data;
         }
 
+        @Override
         public long clear()
         {
             long bytesCleared = 0;
@@ -1191,6 +1232,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
             final T metaData = getMetaData();
             int delta = metaData.getContentSize();
+            _messages.remove(this);
             if(stored())
             {
                 removeMessage(_messageId, false);
@@ -1238,6 +1280,13 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             return this.getClass() + "[messageId=" + _messageId + "]";
         }
 
+        public synchronized void clear()
+        {
+            if (_messageDataRef != null)
+            {
+                _messageDataRef.clear();
+            }
+        }
     }
 
 
