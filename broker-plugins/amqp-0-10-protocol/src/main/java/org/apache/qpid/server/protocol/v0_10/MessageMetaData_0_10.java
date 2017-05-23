@@ -38,7 +38,7 @@ import org.apache.qpid.transport.Struct;
 
 public class MessageMetaData_0_10 implements StorableMessageMetaData
 {
-    private final Header _header;
+    private Header _header;
     private DeliveryProperties _deliveryProps;
     private MessageProperties _messageProps;
     private MessageTransferHeader _messageHeader;
@@ -85,7 +85,6 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
     }
 
 
-    @Override
     public int getStorableSize()
     {
         int len = 0;
@@ -94,23 +93,21 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
         len += 4; // body size
         len += 4; // headers length
 
-        if (_header != null)
+        if(_header.getDeliveryProperties() != null)
         {
-            if(_header.getDeliveryProperties() != null)
+            len += EncoderUtils.getStruct32Length(_header.getDeliveryProperties());
+        }
+        if(_header.getMessageProperties() != null)
+        {
+            len += EncoderUtils.getStruct32Length(_header.getMessageProperties());
+        }
+        if(_header.getNonStandardProperties() != null)
+        {
+            for(Struct header : _header.getNonStandardProperties())
             {
-                len += EncoderUtils.getStruct32Length(_header.getDeliveryProperties());
+                len += EncoderUtils.getStruct32Length(header);
             }
-            if(_header.getMessageProperties() != null)
-            {
-                len += EncoderUtils.getStruct32Length(_header.getMessageProperties());
-            }
-            if(_header.getNonStandardProperties() != null)
-            {
-                for(Struct header : _header.getNonStandardProperties())
-                {
-                    len += EncoderUtils.getStruct32Length(header);
-                }
-            }
+
         }
         return len;
     }
