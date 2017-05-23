@@ -27,7 +27,6 @@ import java.util.List;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
-import org.apache.qpid.transport.codec.EncoderUtils;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.Header;
@@ -84,32 +83,17 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
         return TYPE;
     }
 
-
-    public int getStorableSize()
+    public synchronized int getStorableSize()
     {
-        int len = 0;
+        QpidByteBuffer buf = _encoded;
 
-        len += 8; // arrival time
-        len += 4; // body size
-        len += 4; // headers length
+        if(buf == null)
+        {
+            buf = encodeAsBuffer();
+            _encoded = buf;
+        }
 
-        if(_header.getDeliveryProperties() != null)
-        {
-            len += EncoderUtils.getStruct32Length(_header.getDeliveryProperties());
-        }
-        if(_header.getMessageProperties() != null)
-        {
-            len += EncoderUtils.getStruct32Length(_header.getMessageProperties());
-        }
-        if(_header.getNonStandardProperties() != null)
-        {
-            for(Struct header : _header.getNonStandardProperties())
-            {
-                len += EncoderUtils.getStruct32Length(header);
-            }
-
-        }
-        return len;
+        return buf.limit();
     }
 
     private QpidByteBuffer encodeAsBuffer()

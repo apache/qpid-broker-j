@@ -297,10 +297,5 @@ public final class ExchangeBoundResult extends Struct {
         return result;
     }
 
-    @Override
-    public int getEncodedLength()
-    {
-        throw new UnsupportedOperationException();
-    }
 
 }

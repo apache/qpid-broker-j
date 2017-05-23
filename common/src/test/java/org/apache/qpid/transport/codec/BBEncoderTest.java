@@ -20,17 +20,14 @@
  */
 package org.apache.qpid.transport.codec;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertArrayEquals;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
-import org.apache.qpid.test.utils.QpidTestCase;
+/**
+ * BBEncoderTest
+ *
+ */
 
 public class BBEncoderTest extends QpidTestCase
 {
@@ -47,63 +44,4 @@ public class BBEncoderTest extends QpidTestCase
         assertEquals(0xBEEFDEAD, buf.getInt(4));
     }
 
-
-    public void testReadWriteStruct()
-    {
-        BBEncoder encoder = new BBEncoder(4);
-
-        ReplyTo replyTo = new ReplyTo("amq.direct", "test");
-        encoder.writeStruct(ReplyTo.TYPE, replyTo);
-
-        ByteBuffer buffer = encoder.buffer();
-
-        assertEquals("Unexpected size", EncoderUtils.getStructLength(ReplyTo.TYPE, replyTo), buffer.remaining());
-
-        BBDecoder decoder = new BBDecoder();
-        decoder.init(buffer);
-
-        ReplyTo decoded = (ReplyTo)decoder.readStruct(ReplyTo.TYPE);
-
-        assertEquals("Unexpected exchange", replyTo.getExchange(), decoded.getExchange());
-        assertEquals("Unexpected routing key", replyTo.getRoutingKey(), decoded.getRoutingKey());
-    }
-
-    public void testReadWriteStruct32()
-    {
-        BBEncoder encoder = new BBEncoder(4);
-        Map<String, Object> applicationHeaders = new HashMap<>();
-        applicationHeaders.put("testProperty", "testValue");
-        applicationHeaders.put("list", Arrays.asList("a", 1, 2.0));
-        applicationHeaders.put("map", Collections.singletonMap("mapKey", "mapValue"));
-        MessageProperties messageProperties = new MessageProperties(10,
-                                                                    UUID.randomUUID(),
-                                                                    "abc".getBytes(UTF_8),
-                                                                    new ReplyTo("amq.direct", "test"),
-                                                                    "text/plain",
-                                                                    "identity",
-                                                                    "cba".getBytes(UTF_8),
-                                                                    "app".getBytes(UTF_8),
-                                                                    applicationHeaders);
-
-        encoder.writeStruct32(messageProperties);
-
-        ByteBuffer buffer = encoder.buffer();
-
-        assertEquals("Unexpected size", EncoderUtils.getStruct32Length(messageProperties), buffer.remaining());
-
-        BBDecoder decoder = new BBDecoder();
-        decoder.init(buffer);
-
-        MessageProperties decoded = (MessageProperties)decoder.readStruct32();
-
-        assertEquals("Unexpected content length", messageProperties.getContentLength(), decoded.getContentLength());
-        assertEquals("Unexpected message id", messageProperties.getMessageId(), decoded.getMessageId());
-        assertArrayEquals("Unexpected correlation id", messageProperties.getCorrelationId(), decoded.getCorrelationId());
-        assertEquals("Unexpected reply to", messageProperties.getReplyTo(), decoded.getReplyTo());
-        assertEquals("Unexpected content type", messageProperties.getContentType(), decoded.getContentType());
-        assertEquals("Unexpected content encoding", messageProperties.getContentEncoding(), decoded.getContentEncoding());
-        assertArrayEquals("Unexpected user id", messageProperties.getUserId(), decoded.getUserId());
-        assertArrayEquals("Unexpected application id", messageProperties.getAppId(), decoded.getAppId());
-        assertEquals("Unexpected application headers", messageProperties.getApplicationHeaders(), decoded.getApplicationHeaders());
-    }
 }
