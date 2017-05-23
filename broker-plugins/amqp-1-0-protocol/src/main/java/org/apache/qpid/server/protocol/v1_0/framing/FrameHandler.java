@@ -166,6 +166,7 @@ public class FrameHandler implements ProtocolHandler
                                     "Frame length %d larger than contained frame body %s.",
                                     size,
                                     val);
+                            break;
                         }
                     }
                     channelFrameBodies.add(new ChannelFrameBody()
