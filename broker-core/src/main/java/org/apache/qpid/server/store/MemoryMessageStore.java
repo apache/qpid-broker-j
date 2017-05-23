@@ -51,7 +51,6 @@ public class MemoryMessageStore implements MessageStore
     private final Object _transactionLock = new Object();
     private final Map<UUID, Set<Long>> _messageInstances = new HashMap<UUID, Set<Long>>();
     private final Map<Xid, DistributedTransactionRecords> _distributedTransactions = new HashMap<Xid, DistributedTransactionRecords>();
-    private final AtomicLong _inMemorySize = new AtomicLong();
 
 
     private final class MemoryMessageStoreTransaction implements Transaction
@@ -287,25 +286,13 @@ public class MemoryMessageStore implements MessageStore
 
         StoredMemoryMessage<T> storedMemoryMessage = new StoredMemoryMessage<T>(id, metaData)
         {
-
-            @Override
-            public synchronized StoredMessage<T> allContentAdded()
-            {
-                final StoredMessage<T> storedMessage = super.allContentAdded();
-                _inMemorySize.addAndGet(getContentSize());
-                return storedMessage;
-            }
-
             @Override
             public void remove()
             {
                 _messages.remove(getMessageNumber());
-                int bytesCleared = metaData.getStorableSize() + metaData.getContentSize();
                 super.remove();
-                _inMemorySize.addAndGet(-bytesCleared);
             }
         };
-        _inMemorySize.addAndGet(metaData.getStorableSize());
 
         return storedMemoryMessage;
 
@@ -343,7 +330,6 @@ public class MemoryMessageStore implements MessageStore
             storedMemoryMessage.clear();
         }
         _messages.clear();
-        _inMemorySize.set(0);
         synchronized (_transactionLock)
         {
             _messageInstances.clear();
