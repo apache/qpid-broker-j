@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -779,6 +780,43 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertNull("Jmx plugin is not removed", findRecordById(jmxManagement.getId(), records));
 
         assertModelVersionUpgraded(records);
+    }
+
+    public void testUpgradeHttpPortFrom_6_0() throws Exception
+    {
+        _brokerRecord.getAttributes().put("modelVersion", "6.0");
+
+        Map<String, UUID> parents = Collections.singletonMap("Broker", _brokerRecord.getId());
+
+        Map<String, Object> httpPortAttributes = new HashMap<>();
+        httpPortAttributes.put("name", "http");
+        httpPortAttributes.put("protocols", Collections.singletonList("HTTP"));
+        final Map<String, String > context = new HashMap<>();
+        httpPortAttributes.put("context", context);
+
+        context.put("port.http.additionalInternalThreads", "6");
+        context.put("port.http.maximumQueuedRequests", "1000");
+
+        ConfiguredObjectRecord httpPort = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Port",
+                                                                        httpPortAttributes,
+                                                                        parents);
+
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, httpPort);
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
+
+
+        ConfiguredObjectRecord upgradedPort = findRecordById(httpPort.getId(), records);
+        assertNotNull("Http port is not found", upgradedPort);
+        Map<String, Object> upgradedAttributes = upgradedPort.getAttributes();
+
+        Map<String, String> upgradedContext = (Map<String, String>) upgradedAttributes.get("context");
+        assertFalse("Context variable \"port.http.additionalInternalThreads\" is not removed",
+                    upgradedContext.containsKey("port.http.additionalInternalThreads"));
+        assertFalse("Context variable \"port.http.maximumQueuedRequests\" is not removed",
+                    upgradedContext.containsKey("port.http.maximumQueuedRequests"));
+        assertEquals("Context variable \"port.http.maximumQueuedRequests\" is not renamed",
+                     "1000", upgradedContext.get("qpid.port.http.acceptBacklog"));
     }
 
     private void assertModelVersionUpgraded(final List<ConfiguredObjectRecord> records)

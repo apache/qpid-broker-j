@@ -122,7 +122,7 @@
     <guava-version>18.0</guava-version>
     <fasterxml-jackson-version>2.5.3</fasterxml-jackson-version>
     <slf4j-version>1.7.25</slf4j-version>
-    <jetty-version>8.1.17.v20150415</jetty-version>
+    <jetty-version>9.4.3.v20170317</jetty-version>
 
     <!-- dependency version numbers -->
     <bonecp-version>0.7.1.RELEASE</bonecp-version>
@@ -310,8 +310,8 @@
         <version>${jetty-version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-websocket</artifactId>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>websocket-server</artifactId>
         <version>${jetty-version}</version>
       </dependency>
       <dependency>

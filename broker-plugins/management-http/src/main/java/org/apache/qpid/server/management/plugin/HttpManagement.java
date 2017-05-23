@@ -25,8 +25,6 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.net.BindException;
 import java.net.InetSocketAddress;
-import java.security.GeneralSecurityException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,12 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.HttpServletRequest;
@@ -51,14 +46,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.SessionManager;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -72,13 +68,13 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.messages.ManagementConsoleMessages;
 import org.apache.qpid.server.logging.messages.PortMessages;
-import org.apache.qpid.server.management.plugin.connector.TcpAndSslSelectChannelConnector;
 import org.apache.qpid.server.management.plugin.filter.AuthenticationCheckFilter;
 import org.apache.qpid.server.management.plugin.filter.ExceptionHandlingFilter;
 import org.apache.qpid.server.management.plugin.filter.ForbiddingTraceFilter;
 import org.apache.qpid.server.management.plugin.filter.LoggingFilter;
 import org.apache.qpid.server.management.plugin.filter.RedirectingFilter;
 import org.apache.qpid.server.management.plugin.filter.RewriteRequestForUncompressedJavascript;
+import org.apache.qpid.server.management.plugin.portunification.TlsOrPlainConnectionFactory;
 import org.apache.qpid.server.management.plugin.servlet.FileServlet;
 import org.apache.qpid.server.management.plugin.servlet.RootServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.ApiDocsServlet;
@@ -110,9 +106,8 @@ import org.apache.qpid.server.model.adapter.AbstractPluginAdapter;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.model.port.PortManager;
 import org.apache.qpid.server.transport.PortBindFailureException;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.transport.network.security.ssl.QpidMultipleTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 @ManagedObject( category = false, type = HttpManagement.PLUGIN_TYPE )
 public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implements HttpManagementConfiguration<HttpManagement>, PortManager
@@ -172,7 +167,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private boolean _compressResponses;
 
     private boolean _allowPortActivation;
-    private Map<HttpPort<?>, Connector> _portConnectorMap = new HashMap<>();
+    private Map<HttpPort<?>, NetworkConnector> _portConnectorMap = new HashMap<>();
 
     private volatile boolean _serveUncompressedDojo;
 
@@ -275,14 +270,11 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         _logger.debug("Starting up web server on {}", ports);
         _allowPortActivation = true;
 
-        Server server = new Server();
-        // All connectors will have their own thread pool, so we expect the server to need none.
-        server.setThreadPool(new ZeroSizedThreadPool());
-
+        Server server = new Server(new ZeroSizedThreadPool());
         int lastPort = -1;
         for (HttpPort<?> port : ports)
         {
-            SelectChannelConnector connector = createConnector(port);
+            NetworkConnector connector = createConnector(port, server);
             server.addConnector(connector);
             _portConnectorMap.put(port, connector);
             lastPort = port.getPort();
@@ -294,7 +286,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.setContextPath("/");
         root.setCompactPath(true);
         server.setHandler(root);
-        server.setSendServerVersion(false);
+
         final ErrorHandler errorHandler = new ErrorHandler()
         {
             @Override
@@ -386,10 +378,9 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
         root.addServlet(new ServletHolder(new TimeZoneServlet()), "/service/timezones");
 
-        final SessionManager sessionManager = root.getSessionHandler().getSessionManager();
-        sessionManager.getSessionCookieConfig().setName(JSESSIONID_COOKIE_PREFIX + lastPort);
-        sessionManager.getSessionCookieConfig().setHttpOnly(true);
-        sessionManager.setMaxInactiveInterval((Integer)getAttribute(TIME_OUT));
+        root.getSessionHandler().getSessionCookieConfig().setName(JSESSIONID_COOKIE_PREFIX + lastPort);
+        root.getSessionHandler().getSessionCookieConfig().setHttpOnly(true);
+        root.getSessionHandler().getSessionCookieConfig().setMaxAge(getSessionTimeout());
 
         return server;
     }
@@ -397,7 +388,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     @Override
     public int getBoundPort(final HttpPort httpPort)
     {
-        Connector c = _portConnectorMap.get(httpPort);
+        NetworkConnector c = _portConnectorMap.get(httpPort);
         if (c != null)
         {
             return c.getLocalPort();
@@ -408,126 +399,96 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
     }
 
-    private SelectChannelConnector createConnector(final HttpPort<?> port)
+    private NetworkConnector createConnector(final HttpPort<?> port, final Server server)
     {
         port.setPortManager(this);
 
-        if(port.getState() != State.ACTIVE)
+        if (port.getState() != State.ACTIVE)
         {
             // TODO - RG - probably does nothing
             port.startAsync();
         }
-        SelectChannelConnector connector = null;
 
+        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
+        httpConnectionFactory.getHttpConfiguration().setSendServerVersion(false);
+        httpConnectionFactory.getHttpConfiguration().setSendXPoweredBy(false);
+        HttpConfiguration.Customizer requestAttributeCustomizer =
+                (connector, channelConfig, request) -> request.setAttribute(PORT_SERVLET_ATTRIBUTE, port);
+        httpConnectionFactory.getHttpConfiguration().addCustomizer(requestAttributeCustomizer);
+        httpConnectionFactory.getHttpConfiguration().addCustomizer(new SecureRequestCustomizer());
+
+        ConnectionFactory[] connectionFactories;
         Collection<Transport> transports = port.getTransports();
         if (!transports.contains(Transport.SSL))
         {
-            final Port thePort = port;
-            connector = new SelectChannelConnector()
-                        {
-                            @Override
-                            public void customize(final EndPoint endpoint, final Request request) throws IOException
-                            {
-                                super.customize(endpoint, request);
-                                request.setAttribute(PORT_SERVLET_ATTRIBUTE, thePort);
-                            }
-
-                            public void open() throws IOException
-                            {
-                                try
-                                {
-                                    super.open();
-                                }
-                                catch (BindException e)
-                                {
-                                    InetSocketAddress addr = getHost() == null ? new InetSocketAddress(getPort())
-                                                                               : new InetSocketAddress(getHost(), getPort());
-                                    throw new PortBindFailureException(addr);
-                                }
-                            }
-                        };
+            connectionFactories = new ConnectionFactory[]{httpConnectionFactory};
         }
         else if (transports.contains(Transport.SSL))
         {
-            connector = createSslConnector(port);
+            SslContextFactory sslContextFactory = getSslContextFactory(port);
+            ConnectionFactory sslConnectionFactory;
+            if (port.getTransports().contains(Transport.TCP))
+            {
+                sslConnectionFactory =
+                        new TlsOrPlainConnectionFactory(sslContextFactory, httpConnectionFactory.getProtocol());
+            }
+            else
+            {
+                sslConnectionFactory = new SslConnectionFactory(sslContextFactory, httpConnectionFactory.getProtocol());
+            }
+            connectionFactories = new ConnectionFactory[]{sslConnectionFactory, httpConnectionFactory};
         }
         else
         {
-            throw new IllegalArgumentException("Unexpected transport on port "
-                                               + port.getName()
-                                               + ":"
-                                               + transports);
+            throw new IllegalArgumentException("Unexpected transport on port " + port.getName() + ":" + transports);
         }
+
+        int maxThreads = port.getThreadPoolMaximum();
+        int minThreads = port.getThreadPoolMinimum();
+        int acceptBacklog = port.getAcceptsBacklogSize();
+        int acceptors = port.getNumberOfAcceptors();
+        int selectors = port.getNumberOfSelectors();
+
+        QueuedThreadPool threadPool = new QueuedThreadPool(maxThreads, minThreads);
+        ServerConnector connector =
+                new ServerConnector(server, threadPool, null, null, acceptors, selectors, connectionFactories)
+                {
+                    @Override
+                    public void open() throws IOException
+                    {
+                        try
+                        {
+                            super.open();
+                        }
+                        catch (BindException e)
+                        {
+                            InetSocketAddress addr = getHost() == null ? new InetSocketAddress(getPort())
+                                    : new InetSocketAddress(getHost(), getPort());
+                            throw new PortBindFailureException(addr);
+                        }
+                    }
+                };
+        connector.setAcceptQueueSize(acceptBacklog);
         String bindingAddress = port.getBindingAddress();
         if (bindingAddress != null && !bindingAddress.trim().equals("") && !bindingAddress.trim().equals("*"))
         {
             connector.setHost(bindingAddress.trim());
         }
         connector.setPort(port.getPort());
-
-
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setName("HttpManagement-" + port.getName());
-
-        int additionalInternalThreads = port.getContextValue(Integer.class,
-                                                             HttpPort.PORT_HTTP_ADDITIONAL_INTERNAL_THREADS);
-        int maximumQueueRequests = port.getContextValue(Integer.class, HttpPort.PORT_HTTP_MAXIMUM_QUEUED_REQUESTS);
-
-        int threadPoolMaximum = port.getThreadPoolMaximum();
-        int threadPoolMinimum = port.getThreadPoolMinimum();
-
-        threadPool.setMaxQueued(maximumQueueRequests);
-        threadPool.setMaxThreads(threadPoolMaximum + additionalInternalThreads);
-        threadPool.setMinThreads(threadPoolMinimum + additionalInternalThreads);
-
-        int jettyAcceptorLimit = 2 * Runtime.getRuntime().availableProcessors();
-        connector.setAcceptors(Math.min(Math.max(1, threadPoolMaximum / 2), jettyAcceptorLimit));
-        connector.setThreadPool(threadPool);
         return connector;
     }
 
-    private SelectChannelConnector createSslConnector(final HttpPort<?> port)
+    private SslContextFactory getSslContextFactory(final HttpPort<?> port)
     {
-        final SelectChannelConnector connector;
         KeyStore keyStore = port.getKeyStore();
-        Collection<TrustStore> trustStores = port.getTrustStores();
         if (keyStore == null)
         {
-            throw new IllegalConfigurationException("Key store is not configured. Cannot start management on HTTPS port without keystore");
+            throw new IllegalConfigurationException(
+                    "Key store is not configured. Cannot start management on HTTPS port without keystore");
         }
-        SslContextFactory factory = new SslContextFactory()
-                                    {
-                                        @Override
-                                        public String[] selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
-                                        {
-                                            return SSLUtil.filterEnabledProtocols(enabledProtocols, supportedProtocols,
-                                                                                  port.getTlsProtocolWhiteList(),
-                                                                                  port.getTlsProtocolBlackList());
-                                        }
-
-                                        @Override
-                                        public String[] selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
-                                        {
-                                            return SSLUtil.filterEnabledCipherSuites(enabledCipherSuites, supportedCipherSuites,
-                                                                                     port.getTlsCipherSuiteWhiteList(),
-                                                                                     port.getTlsCipherSuiteBlackList());
-                                        }
-
-                                        @Override
-                                        public void customize(final SSLEngine sslEngine)
-                                        {
-                                            super.customize(sslEngine);
-                                            if(port.getTlsCipherSuiteWhiteList() != null
-                                               && !port.getTlsCipherSuiteWhiteList().isEmpty())
-                                            {
-                                                SSLParameters sslParameters = sslEngine.getSSLParameters();
-                                                sslParameters.setUseCipherSuitesOrder(true);
-                                                sslEngine.setSSLParameters(sslParameters);
-                                            }
-                                        }
-                                    };
 
         boolean needClientCert = port.getNeedClientAuth() || port.getWantClientAuth();
+        Collection<TrustStore> trustStores = port.getTrustStores();
 
         if (needClientCert && trustStores.isEmpty())
         {
@@ -535,113 +496,39 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                                                     + this.getName() + "' but no trust store defined");
         }
 
-        try
+        SSLContext sslContext = SSLUtil.createSslContext(keyStore, trustStores, port.getName());
+
+        SslContextFactory factory = new SslContextFactory()
         {
-            SSLContext sslContext = SSLUtil.tryGetSSLContext();
-            KeyManager[] keyManagers = keyStore.getKeyManagers();
-
-            TrustManager[] trustManagers;
-            if(trustStores == null || trustStores.isEmpty())
+            @Override
+            public void customize(final SSLEngine sslEngine)
             {
-                trustManagers = null;
-            }
-            else if(trustStores.size() == 1)
-            {
-                trustManagers = trustStores.iterator().next().getTrustManagers();
-            }
-            else
-            {
-                Collection<TrustManager> trustManagerList = new ArrayList<>();
-                final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
-
-                for(TrustStore ts : trustStores)
+                super.customize(sslEngine);
+                if (port.getTlsCipherSuiteWhiteList() != null
+                    && !port.getTlsCipherSuiteWhiteList().isEmpty())
                 {
-                    TrustManager[] managers = ts.getTrustManagers();
-                    if(managers != null)
-                    {
-                        for(TrustManager manager : managers)
-                        {
-                            if(manager instanceof X509TrustManager)
-                            {
-                                mulTrustManager.addTrustManager((X509TrustManager)manager);
-                            }
-                            else
-                            {
-                                trustManagerList.add(manager);
-                            }
-                        }
-                    }
+                    SSLParameters sslParameters = sslEngine.getSSLParameters();
+                    sslParameters.setUseCipherSuitesOrder(true);
+                    sslEngine.setSSLParameters(sslParameters);
                 }
-                if(!mulTrustManager.isEmpty())
-                {
-                    trustManagerList.add(mulTrustManager);
-                }
-                trustManagers = trustManagerList.toArray(new TrustManager[trustManagerList.size()]);
+                SSLUtil.updateEnabledCipherSuites(sslEngine,
+                                                  port.getTlsCipherSuiteWhiteList(),
+                                                  port.getTlsCipherSuiteBlackList());
+                SSLUtil.updateEnabledTlsProtocols(sslEngine,
+                                                  port.getTlsProtocolWhiteList(),
+                                                  port.getTlsProtocolBlackList());
             }
-            sslContext.init(keyManagers, trustManagers, null);
-
-            factory.setSslContext(sslContext);
-            if(port.getNeedClientAuth())
-            {
-                factory.setNeedClientAuth(true);
-            }
-            else if(port.getWantClientAuth())
-            {
-                factory.setWantClientAuth(true);
-            }
-        }
-        catch (GeneralSecurityException e)
+        };
+        factory.setSslContext(sslContext);
+        if (port.getNeedClientAuth())
         {
-            throw new ServerScopedRuntimeException("Cannot configure port " + port.getName() + " for transport " + Transport.SSL, e);
+            factory.setNeedClientAuth(true);
         }
-        connector = port.getTransports().contains(Transport.TCP)
-                ? new TcpAndSslSelectChannelConnector(factory)
-                    {
-                        @Override
-                        public void customize(final EndPoint endpoint, final Request request) throws IOException
-                        {
-                            super.customize(endpoint, request);
-                            request.setAttribute(PORT_SERVLET_ATTRIBUTE, port);
-                        }
-
-                        public void open() throws IOException
-                        {
-                            try
-                            {
-                                super.open();
-                            }
-                            catch (BindException e)
-                            {
-                                InetSocketAddress addr = getHost() == null ? new InetSocketAddress(getPort())
-                                        : new InetSocketAddress(getHost(), getPort());
-                                throw new PortBindFailureException(addr);
-                            }
-                        }
-                    }
-                : new SslSelectChannelConnector(factory)
-                    {
-                        @Override
-                        public void customize(final EndPoint endpoint, final Request request) throws IOException
-                        {
-                            super.customize(endpoint, request);
-                            request.setAttribute(PORT_SERVLET_ATTRIBUTE, port);
-                        }
-
-                        public void open() throws IOException
-                        {
-                            try
-                            {
-                                super.open();
-                            }
-                            catch (BindException e)
-                            {
-                                InetSocketAddress addr = getHost() == null ? new InetSocketAddress(getPort())
-                                        : new InetSocketAddress(getHost(), getPort());
-                                throw new PortBindFailureException(addr);
-                            }
-                        }
-                    };
-        return connector;
+        else if (port.getWantClientAuth())
+        {
+            factory.setWantClientAuth(true);
+        }
+        return factory;
     }
 
     private void addRestServlet(ServletContextHandler root)
@@ -658,7 +545,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             servletHolder.getRegistration().setMultipartConfig(
                     new MultipartConfigElement("",
                                                getContextValue(Long.class, MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME),
-                                               -1l,
+                                               -1L,
                                                getContextValue(Integer.class,
                                                                MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME)));
 
@@ -686,7 +573,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     private Map<String, Object> getApiProperties()
     {
-        return Collections.<String,Object>singletonMap("supportedVersions", getSupportedRestApiVersions());
+        return Collections.singletonMap("supportedVersions", getSupportedRestApiVersions());
     }
 
     private List<String> getSupportedRestApiVersions()
@@ -702,10 +589,10 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     private void logOperationalListenMessages()
     {
-        for (Map.Entry<HttpPort<?>, Connector> portConnector : _portConnectorMap.entrySet())
+        for (Map.Entry<HttpPort<?>, NetworkConnector> portConnector : _portConnectorMap.entrySet())
         {
             HttpPort<?> port = portConnector.getKey();
-            Connector connector = portConnector.getValue();
+            NetworkConnector connector = portConnector.getValue();
             Set<Transport> transports = port.getTransports();
             for (Transport transport: transports)
             {
@@ -718,7 +605,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     private void logOperationalShutdownMessage()
     {
-        for (Connector connector : _portConnectorMap.values())
+        for (NetworkConnector connector : _portConnectorMap.values())
         {
             getBroker().getEventLogger().message(ManagementConsoleMessages.SHUTTING_DOWN(Protocol.HTTP.name(), connector.getLocalPort()));
         }
@@ -786,12 +673,12 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     public static Set<String> getAllAvailableCorsMethodCombinations()
     {
         List<String> methods = Arrays.asList("OPTION", "HEAD", "GET", "POST", "PUT", "DELETE");
-        Set<Set<String>> combinations = new HashSet();
+        Set<Set<String>> combinations = new HashSet<>();
         int n = methods.size();
         assert n < 31 : "Too many combination to calculate";
         // enumerate all 2**n combinations
         for (int i = 0; i < (1 << n); ++i) {
-            Set<String> currentCombination = new HashSet();
+            Set<String> currentCombination = new HashSet<>();
             // each bit in the variable i represents an item of the sequence
             // if the bit is set the item should appear in this particular combination
             for (int index = 0; index < n; ++index) {
@@ -850,12 +737,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private static class ZeroSizedThreadPool implements ThreadPool
     {
         @Override
-        public boolean dispatch(final Runnable job)
-        {
-            throw new IllegalStateException("Job unexpectedly dispatched to server thread pool. Cannot dispatch");
-        }
-
-        @Override
         public void join() throws InterruptedException
         {
         }
@@ -876,6 +757,12 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         public boolean isLowOnThreads()
         {
             return false;
+        }
+
+        @Override
+        public void execute(final Runnable command)
+        {
+            throw new IllegalStateException("Job unexpectedly dispatched to server thread pool. Cannot dispatch");
         }
     }
 }

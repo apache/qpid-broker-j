@@ -35,6 +35,7 @@ import java.security.AccessController;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -45,10 +46,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.AbstractHttpConnection;
-import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.MultiMap;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -256,19 +255,15 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
 
     private Map<String, String> getRedirectParameters(final String redirectLocation)
     {
-        AbstractHttpConnection mockConnection = mock(AbstractHttpConnection.class);
-        HttpFields requestFields = new HttpFields();
-        when(mockConnection.getRequestFields()).thenReturn(requestFields);
-        Request request = new Request(mockConnection);
-        request.setUri(new HttpURI(redirectLocation));
-        request.setRequestURI(redirectLocation);
-        request.setContentType("text/html");
-        final Map<String,String[]> parameterMap = request.getParameterMap();
-        Map<String,String> parameters = new HashMap<>();
-        for (Map.Entry<String, String[]> paramEntry : parameterMap.entrySet())
+
+        final MultiMap<String> parameterMap = new MultiMap<>();
+        HttpURI httpURI = new HttpURI(redirectLocation);
+        httpURI.decodeQueryTo(parameterMap);
+        Map<String,String> parameters = new HashMap<>(parameterMap.size());
+        for (Map.Entry<String, List<String>> paramEntry : parameterMap.entrySet())
         {
-            assertEquals(String.format("param '%s' specified more than once", paramEntry.getKey()), 1, paramEntry.getValue().length);
-            parameters.put(paramEntry.getKey(), paramEntry.getValue()[0]);
+            assertEquals(String.format("param '%s' specified more than once", paramEntry.getKey()), 1, paramEntry.getValue().size());
+            parameters.put(paramEntry.getKey(), paramEntry.getValue().get(0));
         }
         return parameters;
     }

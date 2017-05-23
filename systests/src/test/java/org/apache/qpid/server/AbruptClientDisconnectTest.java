@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -309,6 +310,18 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         public InetSocketAddress getClientAddress()
         {
             return _clientAddress.get();
+        }
+
+        @Override
+        public void notifyClientToServerBytesDelivered(final InetAddress inetAddress, final int numberOfBytesForwarded)
+        {
+
+        }
+
+        @Override
+        public void notifyServerToClientBytesDelivered(final InetAddress inetAddress, final int numberOfBytesForwarded)
+        {
+
         }
     }
 

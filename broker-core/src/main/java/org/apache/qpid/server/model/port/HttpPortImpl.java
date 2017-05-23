@@ -20,25 +20,15 @@
  */
 package org.apache.qpid.server.model.port;
 
-import java.security.PrivilegedAction;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import javax.security.auth.Subject;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
-import org.apache.qpid.server.model.HostNameAlias;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.PatternMatchingAlias;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.SystemAddressSpaceAlias;
-import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.util.PortUtil;
 
 public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<HttpPortImpl> implements HttpPort<HttpPortImpl>
@@ -59,6 +49,9 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
 
     @ManagedAttributeField
     private boolean _manageBrokerOnNoAliasMatch;
+    private int _numberOfAcceptors;
+    private int _numberOfSelectors;
+    private int _acceptsBacklogSize;
 
     @ManagedObjectFactoryConstructor
     public HttpPortImpl(final Map<String, Object> attributes,
@@ -109,6 +102,44 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     }
 
     @Override
+    public int getNumberOfAcceptors()
+    {
+        return _numberOfAcceptors;
+    }
+
+    @Override
+    public int getNumberOfSelectors()
+    {
+        return _numberOfSelectors;
+    }
+
+    @Override
+    public int getAcceptsBacklogSize()
+    {
+        return _acceptsBacklogSize;
+    }
+
+    @Override
+    protected void onOpen()
+    {
+        super.onOpen();
+
+        int maxThreads = getThreadPoolMaximum();
+        int min = Math.max(1, Math.min(4, maxThreads / 2 - 1));
+        _acceptsBacklogSize = getContextValue(Integer.class, HttpPort.PORT_HTTP_ACCEPT_BACKLOG);
+        _numberOfAcceptors = getContextValue(Integer.class, HttpPort.PORT_HTTP_NUMBER_OF_ACCEPTORS);
+        if (_numberOfAcceptors < 0) // if _numberOfAcceptors == 0, selectors threads are used as acceptors
+        {
+            _numberOfAcceptors = Math.max(1, Math.min(min, Runtime.getRuntime().availableProcessors() / 8));
+        }
+        _numberOfSelectors = getContextValue(Integer.class, HttpPort.PORT_HTTP_NUMBER_OF_SELECTORS);
+        if (_numberOfSelectors <= 0)
+        {
+            _numberOfSelectors =  Math.max(1, Math.min(min, Runtime.getRuntime().availableProcessors() / 2));
+        }
+    }
+
+    @Override
     protected State onActivate()
     {
         if(_portManager != null && _portManager.isActivationAllowed(this))
@@ -127,16 +158,10 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         super.onValidate();
         validateThreadPoolSettings(this);
 
-        final double additionalInternalThreads = getContextValue(Integer.class, HttpPort.PORT_HTTP_ADDITIONAL_INTERNAL_THREADS);
-        if (additionalInternalThreads < 1)
+        final double acceptsBacklogSize = getContextValue(Integer.class, HttpPort.PORT_HTTP_ACCEPT_BACKLOG);
+        if (acceptsBacklogSize < 1)
         {
-            throw new IllegalConfigurationException(String.format("Number of additional internal threads %d is too small. Must be greater than zero.", additionalInternalThreads));
-        }
-
-        final double maximumQueuedRequests = getContextValue(Integer.class, HttpPort.PORT_HTTP_MAXIMUM_QUEUED_REQUESTS);
-        if (maximumQueuedRequests < 1)
-        {
-            throw new IllegalConfigurationException(String.format("Number of additional internal threads %d is too small. Must be greater than zero.", maximumQueuedRequests));
+            throw new IllegalConfigurationException(String.format("The size of accepts backlog %d is too small. Must be greater than zero.", acceptsBacklogSize));
         }
     }
 

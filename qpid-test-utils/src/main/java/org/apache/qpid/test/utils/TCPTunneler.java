@@ -23,6 +23,7 @@ package org.apache.qpid.test.utils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -43,16 +44,28 @@ import org.slf4j.LoggerFactory;
 public class TCPTunneler implements AutoCloseable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(TCPTunneler.class);
-
+    private static final int BUFFER_SIZE = 4096;
     private final TCPWorker _tcpWorker;
+
     private final ExecutorService _executor;
+    private final int _bufferSize;
+
+    public TCPTunneler(final int localPort, final String remoteHost,
+                       final int remotePort,
+                       final int numberOfConcurrentClients,
+                       final int bufferSize)
+
+    {
+        _executor = Executors.newFixedThreadPool(numberOfConcurrentClients * 2 + 1);
+        _tcpWorker = new TCPWorker(localPort, remoteHost, remotePort, bufferSize, _executor);
+        _bufferSize = bufferSize;
+    }
 
     public TCPTunneler(final int localPort, final String remoteHost,
                        final int remotePort,
                        final int numberOfConcurrentClients)
     {
-        _executor = Executors.newFixedThreadPool(numberOfConcurrentClients * 2 + 1);
-        _tcpWorker = new TCPWorker(localPort, remoteHost, remotePort, _executor);
+        this(localPort, remoteHost, remotePort, numberOfConcurrentClients, BUFFER_SIZE);
     }
 
     public void start() throws IOException
@@ -112,6 +125,10 @@ public class TCPTunneler implements AutoCloseable
         void clientConnected(InetSocketAddress clientAddress);
 
         void clientDisconnected(InetSocketAddress clientAddress);
+
+        void notifyClientToServerBytesDelivered(InetAddress inetAddress, int numberOfBytesForwarded);
+
+        void notifyServerToClientBytesDelivered(InetAddress inetAddress, int numberOfBytesForwarded);
     }
 
     private static class TCPWorker implements Runnable
@@ -124,6 +141,7 @@ public class TCPTunneler implements AutoCloseable
         private final Collection<SocketTunnel> _tunnels;
         private final Collection<TunnelListener> _tunnelListeners;
         private final TunnelListener _notifyingListener;
+        private final int _bufferSize;
         private volatile ServerSocket _serverSocket;
         private volatile ExecutorService _executor;
         private int _actualLocalPort;
@@ -131,8 +149,9 @@ public class TCPTunneler implements AutoCloseable
         public TCPWorker(final int localPort,
                          final String remoteHost,
                          final int remotePort,
-                         final ExecutorService executor)
+                         final int bufferSize, final ExecutorService executor)
         {
+            _bufferSize = bufferSize;
             _closed = new AtomicBoolean();
             _remoteHost = remoteHost;
             _remotePort = remotePort;
@@ -160,6 +179,27 @@ public class TCPTunneler implements AutoCloseable
                     {
                         removeTunnel(clientAddress);
                     }
+                }
+
+                @Override
+                public void notifyClientToServerBytesDelivered(final InetAddress inetAddress,
+                                                               final int numberOfBytesForwarded)
+                {
+                    for (TunnelListener listener : _tunnelListeners)
+                    {
+                        listener.notifyClientToServerBytesDelivered(inetAddress, numberOfBytesForwarded);
+                    }
+                }
+
+                @Override
+                public void notifyServerToClientBytesDelivered(final InetAddress inetAddress,
+                                                               final int numberOfBytesForwarded)
+                {
+                    for (TunnelListener listener : _tunnelListeners)
+                    {
+                        listener.notifyClientToServerBytesDelivered(inetAddress, numberOfBytesForwarded);
+                    }
+
                 }
             };
         }
@@ -201,7 +241,7 @@ public class TCPTunneler implements AutoCloseable
             {
                 _serverSocket = new ServerSocket(_localPort);
                 _actualLocalPort = _serverSocket.getLocalPort();
-                LOGGER.info                                  ("Starting TCPTunneler forwarding from port {} to {}",
+                LOGGER.info("Starting TCPTunneler forwarding from port {} to {}",
                             _actualLocalPort, _remoteHostPort);
                 _serverSocket.setReuseAddress(true);
             }
@@ -300,7 +340,7 @@ public class TCPTunneler implements AutoCloseable
                 LOGGER.debug("Opening socket to {} for {}", _remoteHostPort, localSocket);
                 remoteSocket = new Socket(_remoteHost, _remotePort);
                 LOGGER.debug("Opened socket to {} for {}", remoteSocket, localSocket);
-                SocketTunnel tunnel = new SocketTunnel(localSocket, remoteSocket, _notifyingListener);
+                SocketTunnel tunnel = new SocketTunnel(localSocket, remoteSocket, _notifyingListener, _bufferSize);
                 LOGGER.debug("Socket tunnel is created from {} to {}", localSocket, remoteSocket);
                 _tunnels.add(tunnel);
                 tunnel.start(_executor);
@@ -423,9 +463,10 @@ public class TCPTunneler implements AutoCloseable
         private final AutoClosingStreamForwarder _serverToClient;
         private final InetSocketAddress _clientSocketAddress;
 
-        public SocketTunnel(final Socket clientSocket,
-                            final Socket serverSocket,
-                            final TunnelListener tunnelListener) throws IOException
+        SocketTunnel(final Socket clientSocket,
+                     final Socket serverSocket,
+                     final TunnelListener tunnelListener,
+                     final int bufferSize) throws IOException
         {
             _clientSocket = clientSocket;
             _clientSocketAddress =
@@ -435,8 +476,15 @@ public class TCPTunneler implements AutoCloseable
             _tunnelListener = tunnelListener;
             _clientSocket.setKeepAlive(true);
             _serverSocket.setKeepAlive(true);
-            _clientToServer = new AutoClosingStreamForwarder(new StreamForwarder(_clientSocket, _serverSocket));
-            _serverToClient = new AutoClosingStreamForwarder(new StreamForwarder(_serverSocket, _clientSocket));
+            _clientToServer = new AutoClosingStreamForwarder(new StreamForwarder(_clientSocket,
+                                                                                 _serverSocket,
+                                                                                 bufferSize,
+                                                                                 numBytes -> _tunnelListener.notifyClientToServerBytesDelivered(_clientSocket.getInetAddress(),
+                                                                                                                                                numBytes)));
+            _serverToClient = new AutoClosingStreamForwarder(new StreamForwarder(_serverSocket,
+                                                                                 _clientSocket,
+                                                                                 bufferSize,
+                                                                                 numBytes -> _tunnelListener.notifyServerToClientBytesDelivered(_serverSocket.getInetAddress(), numBytes)));
         }
 
         public void close()
@@ -533,24 +581,30 @@ public class TCPTunneler implements AutoCloseable
 
     private static class StreamForwarder implements Runnable
     {
-        private static final int BUFFER_SIZE = 4096;
+        private final int _bufferSize;
 
         private final InputStream _inputStream;
         private final OutputStream _outputStream;
         private final String _name;
-        private AtomicBoolean _stopForwarding = new AtomicBoolean();
+        private final ForwardCallback _forwardCallback;
+        private final AtomicBoolean _stopForwarding = new AtomicBoolean();
 
-        public StreamForwarder(Socket input, Socket output) throws IOException
+        public StreamForwarder(Socket input,
+                               Socket output,
+                               final int bufferSize,
+                               final ForwardCallback forwardCallback) throws IOException
         {
             _inputStream = input.getInputStream();
             _outputStream = output.getOutputStream();
+            _forwardCallback = forwardCallback == null ? numberOfBytesForwarded -> {} : forwardCallback;
             _name = "Forwarder-" + input.getLocalSocketAddress() + "->" + output.getRemoteSocketAddress();
+            _bufferSize = bufferSize;
         }
 
         @Override
         public void run()
         {
-            byte[] buffer = new byte[BUFFER_SIZE];
+            byte[] buffer = new byte[_bufferSize];
             int bytesRead;
             try
             {
@@ -560,6 +614,7 @@ public class TCPTunneler implements AutoCloseable
                     {
                         _outputStream.write(buffer, 0, bytesRead);
                         _outputStream.flush();
+                        _forwardCallback.notify(bytesRead);
                         LOGGER.debug("Forwarded {} byte(s)", bytesRead);
                     }
                     else
@@ -605,5 +660,10 @@ public class TCPTunneler implements AutoCloseable
             _stopForwarding.set(true);
         }
 
+    }
+
+    public interface ForwardCallback
+    {
+        void notify(int numberOfBytesForwarded);
     }
 }

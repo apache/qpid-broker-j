@@ -355,59 +355,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
                     + this.getName() + "' but no trust store defined");
         }
 
-        try
-        {
-            SSLContext sslContext = SSLUtil.tryGetSSLContext();
-
-            KeyManager[] keyManagers = keyStore.getKeyManagers();
-
-            TrustManager[] trustManagers;
-            if(trustStores == null || trustStores.isEmpty())
-            {
-                trustManagers = null;
-            }
-            else if(trustStores.size() == 1)
-            {
-                trustManagers = trustStores.iterator().next().getTrustManagers();
-            }
-            else
-            {
-                Collection<TrustManager> trustManagerList = new ArrayList<>();
-                final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
-
-                for(TrustStore ts : trustStores)
-                {
-                    TrustManager[] managers = ts.getTrustManagers();
-                    if(managers != null)
-                    {
-                        for(TrustManager manager : managers)
-                        {
-                            if(manager instanceof X509TrustManager)
-                            {
-                                mulTrustManager.addTrustManager((X509TrustManager)manager);
-                            }
-                            else
-                            {
-                                trustManagerList.add(manager);
-                            }
-                        }
-                    }
-                }
-                if(!mulTrustManager.isEmpty())
-                {
-                    trustManagerList.add(mulTrustManager);
-                }
-                trustManagers = trustManagerList.toArray(new TrustManager[trustManagerList.size()]);
-            }
-            sslContext.init(keyManagers, trustManagers, null);
-
-            return sslContext;
-
-        }
-        catch (GeneralSecurityException e)
-        {
-            throw new IllegalArgumentException("Unable to create SSLContext for key or trust store", e);
-        }
+        return SSLUtil.createSslContext(keyStore, trustStores, getName());
     }
 
     private Protocol getDefaultAmqpSupportedReply()

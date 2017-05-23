@@ -23,6 +23,7 @@ package org.apache.qpid.server.model.port;
 import java.util.Set;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
@@ -38,6 +39,21 @@ public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X
     String THREAD_POOL_MINIMUM = "threadPoolMinimum";
     String THREAD_POOL_MAXIMUM = "threadPoolMaximum";
     String ALLOW_CONFIDENTIAL_OPERATIONS_ON_INSECURE_CHANNELS = "allowConfidentialOperationsOnInsecureChannels";
+
+    String PORT_HTTP_NUMBER_OF_SELECTORS = "qpid.port.http.threadPool.numberOfSelectors";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = PORT_HTTP_NUMBER_OF_SELECTORS)
+    long DEFAULT_PORT_HTTP_NUMBER_OF_SELECTORS = -1;
+    String PORT_HTTP_NUMBER_OF_ACCEPTORS = "qpid.port.http.threadPool.numberOfAcceptors";
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = PORT_HTTP_NUMBER_OF_ACCEPTORS)
+    long DEFAULT_PORT_HTTP_NUMBER_OF_ACCEPTORS = -1;
+
+    String PORT_HTTP_ACCEPT_BACKLOG = "qpid.port.http.acceptBacklog";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = PORT_HTTP_ACCEPT_BACKLOG)
+    int DEFAULT_PORT_HTTP_ACCEPT_BACKLOG = 1024;
 
     @ManagedAttribute(defaultValue = "*")
     String getBindingAddress();
@@ -80,16 +96,6 @@ public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X
     @ManagedAttribute( defaultValue = "${" + PORT_HTTP_THREAD_POOL_MINIMUM + "}")
     int getThreadPoolMinimum();
 
-    String PORT_HTTP_ADDITIONAL_INTERNAL_THREADS = "port.http.additionalInternalThreads";
-    @SuppressWarnings("unused")
-    @ManagedContextDefault( name = PORT_HTTP_ADDITIONAL_INTERNAL_THREADS )
-    long DEFAULT_PORT_HTTP_ADDITIONAL_INTERNAL_THREADS = 5;
-
-    String PORT_HTTP_MAXIMUM_QUEUED_REQUESTS = "port.http.maximumQueuedRequests";
-    @SuppressWarnings("unused")
-    @ManagedContextDefault( name = PORT_HTTP_MAXIMUM_QUEUED_REQUESTS )
-    long DEFAULT_PORT_HTTP_MAXIMUM_QUEUED_REQUESTS = 1000;
-
     @ManagedAttribute( defaultValue = "false", description = "If true allow operations which may return confidential "
                                                              + "information to be executed on insecure connections")
     boolean isAllowConfidentialOperationsOnInsecureChannels();
@@ -98,4 +104,13 @@ public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X
                                                             + "services for the broker, if no virtualhostalaias "
                                                             + "matches the HTTP Host in the request")
     boolean isManageBrokerOnNoAliasMatch();
+
+    @DerivedAttribute (description = "Number of acceptor threads")
+    int getNumberOfAcceptors();
+
+    @DerivedAttribute (description = "Number of selector threads")
+    int getNumberOfSelectors();
+
+    @DerivedAttribute (description = "Size of accepts backlog")
+    int getAcceptsBacklogSize();
 }

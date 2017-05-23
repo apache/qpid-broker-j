@@ -48,6 +48,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
@@ -56,17 +57,21 @@ import java.util.TreeSet;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.StandardConstants;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.transport.TransportException;
 import org.apache.qpid.server.util.Strings;
 
@@ -762,5 +767,62 @@ public class SSLUtil
         {
             input.dispose();
         }
+    }
+
+    public static SSLContext createSslContext(final org.apache.qpid.server.model.KeyStore keyStore,
+                                              final Collection<TrustStore> trustStores,
+                                              final String portName)
+    {
+        SSLContext sslContext;
+        try
+        {
+            sslContext = tryGetSSLContext();
+            KeyManager[] keyManagers = keyStore.getKeyManagers();
+
+            TrustManager[] trustManagers;
+            if(trustStores == null || trustStores.isEmpty())
+            {
+                trustManagers = null;
+            }
+            else if(trustStores.size() == 1)
+            {
+                trustManagers = trustStores.iterator().next().getTrustManagers();
+            }
+            else
+            {
+                Collection<TrustManager> trustManagerList = new ArrayList<>();
+                final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
+
+                for(TrustStore ts : trustStores)
+                {
+                    TrustManager[] managers = ts.getTrustManagers();
+                    if(managers != null)
+                    {
+                        for(TrustManager manager : managers)
+                        {
+                            if(manager instanceof X509TrustManager)
+                            {
+                                mulTrustManager.addTrustManager((X509TrustManager)manager);
+                            }
+                            else
+                            {
+                                trustManagerList.add(manager);
+                            }
+                        }
+                    }
+                }
+                if(!mulTrustManager.isEmpty())
+                {
+                    trustManagerList.add(mulTrustManager);
+                }
+                trustManagers = trustManagerList.toArray(new TrustManager[trustManagerList.size()]);
+            }
+            sslContext.init(keyManagers, trustManagers, null);
+        }
+        catch (GeneralSecurityException e)
+        {
+            throw new IllegalArgumentException(String.format("Cannot configure TLS on port '%s'", portName), e);
+        }
+        return sslContext;
     }
 }

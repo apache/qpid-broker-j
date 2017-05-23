@@ -21,12 +21,12 @@
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import javax.net.ssl.SSLEngine;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -34,8 +34,9 @@ import javax.servlet.http.HttpServletResponse;
 import junit.framework.TestCase;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.ssl.SslSocketConnector;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import org.apache.qpid.server.configuration.CommonProperties;
@@ -46,7 +47,7 @@ class OAuth2MockEndpointHolder
     private static final String KEYSTORE_PASSWORD = "password";
     private static final String KEYSTORE_RESOURCE = "ssl/test_keystore.jks";
     private final Server _server;
-    private final SslSocketConnector _connector;
+    private final ServerConnector _connector;
     private volatile Map<String, OAuth2MockEndpoint> _endpoints;
 
     OAuth2MockEndpointHolder()
@@ -74,23 +75,16 @@ class OAuth2MockEndpointHolder
         SslContextFactory sslContextFactory = new SslContextFactory()
                                               {
                                                   @Override
-                                                  public String[] selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
+                                                  public void customize(final SSLEngine sslEngine)
                                                   {
-                                                      return SSLUtil.filterEnabledProtocols(enabledProtocols, supportedProtocols,
-                                                                                            protocolWhiteList, protocolBlackList);
-                                                  }
-
-                                                  @Override
-                                                  public String[] selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
-                                                  {
-                                                      return SSLUtil.filterEnabledCipherSuites(enabledCipherSuites, supportedCipherSuites,
-                                                                                               cipherSuiteWhiteList, cipherSuiteBlackList);
+                                                      super.customize(sslEngine);
+                                                      SSLUtil.updateEnabledCipherSuites(sslEngine, cipherSuiteWhiteList, cipherSuiteBlackList);
+                                                      SSLUtil.updateEnabledTlsProtocols(sslEngine, protocolWhiteList, protocolBlackList);
                                                   }
                                               };
         sslContextFactory.setKeyStorePassword(KEYSTORE_PASSWORD);
-        InputStream keyStoreInputStream = getClass().getClassLoader().getResourceAsStream(KEYSTORE_RESOURCE);
-        sslContextFactory.setKeyStoreInputStream(keyStoreInputStream);
-        _connector = new SslSocketConnector(sslContextFactory);
+        sslContextFactory.setKeyStoreResource(Resource.newClassPathResource(KEYSTORE_RESOURCE));
+        _connector = new ServerConnector(_server, sslContextFactory);
         _connector.setPort(0);
         _connector.setReuseAddress(true);
         _server.setHandler(new AbstractHandler()

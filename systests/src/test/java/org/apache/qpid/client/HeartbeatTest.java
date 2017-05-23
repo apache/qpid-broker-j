@@ -20,6 +20,7 @@ package org.apache.qpid.client;
 
 import static org.apache.qpid.configuration.ClientProperties.QPID_HEARTBEAT_INTERVAL;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -215,6 +216,20 @@ public class HeartbeatTest extends QpidBrokerTestCase
                 @Override
                 public void clientDisconnected(final InetSocketAddress clientAddress)
                 {
+                }
+
+                @Override
+                public void notifyClientToServerBytesDelivered(final InetAddress inetAddress,
+                                                               final int numberOfBytesForwarded)
+                {
+
+                }
+
+                @Override
+                public void notifyServerToClientBytesDelivered(final InetAddress inetAddress,
+                                                               final int numberOfBytesForwarded)
+                {
+
                 }
             });
 

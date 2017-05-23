@@ -21,13 +21,13 @@
 package org.apache.qpid.server.transport.websocket;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.lang.reflect.Field;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -42,16 +42,19 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.AbstractConnector;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.websocket.WebSocket;
-import org.eclipse.jetty.websocket.WebSocketHandler;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.server.WebSocketHandler;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,20 +72,21 @@ import org.apache.qpid.server.transport.SchedulingDelayNotificationListener;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.transport.network.Ticker;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+
 
 class WebSocketProvider implements AcceptingTransport
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketProvider.class);
-    public static final String AMQP_WEBSOCKET_SUBPROTOCOL = "AMQPWSB10";
-    public static final String X509_CERTIFICATES = "javax.servlet.request.X509Certificate";
+    private static final String AMQP_WEBSOCKET_SUBPROTOCOL = "amqp";
+
     private final Transport _transport;
     private final SSLContext _sslContext;
     private final AmqpPort<?> _port;
     private final Set<Protocol> _supported;
     private final Protocol _defaultSupportedProtocolReply;
     private final MultiVersionProtocolEngineFactory _factory;
+
     private Server _server;
 
     private final List<ConnectionWrapper> _activeConnections = new CopyOnWriteArrayList<>();
@@ -119,37 +123,26 @@ class WebSocketProvider implements AcceptingTransport
 
         _server = new Server();
 
-        final AbstractConnector connector;
-
+        final ServerConnector connector;
+        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
+        httpConnectionFactory.getHttpConfiguration().setSendServerVersion(false);
+        httpConnectionFactory.getHttpConfiguration().setSendXPoweredBy(false);
 
         if (_transport == Transport.WS)
         {
-            connector = new SelectChannelConnector();
+            connector = new ServerConnector(_server, httpConnectionFactory);
         }
         else if (_transport == Transport.WSS)
         {
-            SslContextFactory factory = new SslContextFactory()
+            SslContextFactory sslContextFactory = new SslContextFactory()
                                         {
-                                            @Override
-                                            public String[] selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
-                                            {
-                                                return SSLUtil.filterEnabledProtocols(enabledProtocols, supportedProtocols,
-                                                                                      _port.getTlsProtocolWhiteList(),
-                                                                                      _port.getTlsProtocolBlackList());
-                                            }
-
-                                            @Override
-                                            public String[] selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
-                                            {
-                                                return SSLUtil.filterEnabledCipherSuites(enabledCipherSuites, supportedCipherSuites,
-                                                                                         _port.getTlsCipherSuiteWhiteList(),
-                                                                                         _port.getTlsCipherSuiteBlackList());
-                                            }
-
                                             @Override
                                             public void customize(final SSLEngine sslEngine)
                                             {
                                                 super.customize(sslEngine);
+                                                SSLUtil.updateEnabledCipherSuites(sslEngine, _port.getTlsCipherSuiteWhiteList(), _port.getTlsCipherSuiteBlackList());
+                                                SSLUtil.updateEnabledTlsProtocols(sslEngine, _port.getTlsProtocolWhiteList(), _port.getTlsProtocolBlackList());
+
                                                 if(_port.getTlsCipherSuiteWhiteList() != null
                                                    && !_port.getTlsCipherSuiteWhiteList().isEmpty())
                                                 {
@@ -159,20 +152,18 @@ class WebSocketProvider implements AcceptingTransport
                                                 }
                                             }
                                         };
-            factory.setSslContext(_sslContext);
+            sslContextFactory.setSslContext(_sslContext);
 
-            factory.setNeedClientAuth(_port.getNeedClientAuth());
-            factory.setWantClientAuth(_port.getWantClientAuth());
-            connector = new SslSelectChannelConnector(factory);
+            sslContextFactory.setNeedClientAuth(_port.getNeedClientAuth());
+            sslContextFactory.setWantClientAuth(_port.getWantClientAuth());
+            connector = new ServerConnector(_server, sslContextFactory, httpConnectionFactory);
         }
         else
         {
             throw new IllegalArgumentException("Unexpected transport on port " + _port.getName() + ":" + _transport);
         }
 
-        String bindingAddress = null;
-
-        bindingAddress = _port.getBindingAddress();
+        String bindingAddress = _port.getBindingAddress();
 
         if (bindingAddress != null && !bindingAddress.trim().equals("") && !bindingAddress.trim().equals("*"))
         {
@@ -185,30 +176,36 @@ class WebSocketProvider implements AcceptingTransport
         WebSocketHandler wshandler = new WebSocketHandler()
         {
             @Override
-            public WebSocket doWebSocketConnect(final HttpServletRequest request, final String protocol)
+            public void configure(final WebSocketServletFactory factory)
             {
+                factory.setCreator((req, resp) ->
+                                   {
+                                       resp.setAcceptedSubProtocol(AMQP_WEBSOCKET_SUBPROTOCOL);
+                                       return new AmqpWebSocket();
+                                   });
+            }
 
-                Certificate certificate = null;
-
-                if(Collections.list(request.getAttributeNames()).contains(X509_CERTIFICATES))
+            @Override
+            public void configurePolicy(final WebSocketPolicy policy)
+            {
+                super.configurePolicy(policy);
+                // It seems Jetty internally makes provision for maxBinaryMessageSize to be unconstrained, but the
+                // policy does not allow it to be configured it that way.
+                // See https://github.com/eclipse/jetty.project/issues/488
+                try
                 {
-                    X509Certificate[] certificates =
-                            (X509Certificate[]) request.getAttribute(X509_CERTIFICATES);
-                    if(certificates != null && certificates.length != 0)
-                    {
-
-                        certificate = certificates[0];
-                    }
+                    Field maxBinaryMessageSize = policy.getClass().getDeclaredField("maxBinaryMessageSize");
+                    maxBinaryMessageSize.setAccessible(true);
+                    maxBinaryMessageSize.set(policy, 0);
                 }
-
-                SocketAddress remoteAddress = new InetSocketAddress(request.getRemoteHost(), request.getRemotePort());
-                SocketAddress localAddress = new InetSocketAddress(request.getLocalName(), request.getLocalPort());
-                return new AmqpWebSocket(_transport, localAddress, remoteAddress, certificate, connector.getThreadPool());
+                catch (IllegalAccessException | NoSuchFieldException e)
+                {
+                    LOGGER.warn("Could not override maxBinaryMessageSize", e);
+                }
             }
         };
 
         _server.setHandler(wshandler);
-        _server.setSendServerVersion(false);
         wshandler.setHandler(new AbstractHandler()
         {
             @Override
@@ -248,37 +245,61 @@ class WebSocketProvider implements AcceptingTransport
     {
         _closed.set(true);
         _idleTimeoutChecker.wakeup();
+        try
+        {
+            _server.stop();
+        }
+        catch (Exception e)
+        {
+            LOGGER.warn("Error closing the web socket for : " +  _port.getPort(), e);
+            _server = null;
+        }
     }
 
     @Override
     public int getAcceptingPort()
     {
-        return _server == null || _server.getConnectors() == null || _server.getConnectors().length == 0 ? _port.getPort() : _server.getConnectors()[0].getLocalPort();
+        Server server = _server;
+        return server == null || server.getConnectors().length == 0 || !(server.getConnectors()[0] instanceof ServerConnector) ?
+                _port.getPort() :
+                ((ServerConnector) server.getConnectors()[0]).getPort();
     }
 
-    private class AmqpWebSocket implements WebSocket,WebSocket.OnBinaryMessage
+    public class AmqpWebSocket extends WebSocketAdapter
     {
-        private final SocketAddress _localAddress;
-        private final SocketAddress _remoteAddress;
-        private final Certificate _userCertificate;
-        private final ThreadPool _threadPool;
         private volatile MultiVersionProtocolEngine _protocolEngine;
         private volatile ConnectionWrapper _connectionWrapper;
 
-        private AmqpWebSocket(final Transport transport,
-                              final SocketAddress localAddress,
-                              final SocketAddress remoteAddress,
-                              final Certificate userCertificate,
-                              final ThreadPool threadPool)
+        @Override
+        public void onWebSocketConnect(final Session session)
         {
-            _localAddress = localAddress;
-            _remoteAddress = remoteAddress;
-            _userCertificate = userCertificate;
-            _threadPool = threadPool;
+            super.onWebSocketConnect(session);
+
+            SocketAddress localAddress = session.getLocalAddress();
+            SocketAddress remoteAddress = session.getRemoteAddress();
+            _protocolEngine = _factory.newProtocolEngine(remoteAddress);
+
+            // Let AMQP do timeout handling
+            session.setIdleTimeout(0);
+
+            _connectionWrapper = new ConnectionWrapper(session, localAddress, remoteAddress, _protocolEngine, _server.getThreadPool());
+            if (session.getUpgradeRequest() instanceof ServletUpgradeRequest)
+            {
+                ServletUpgradeRequest upgradeRequest = (ServletUpgradeRequest) session.getUpgradeRequest();
+                if (upgradeRequest.getCertificates() != null && upgradeRequest.getCertificates().length > 0)
+                {
+                    _connectionWrapper.setPeerCertificate(upgradeRequest.getCertificates()[0]);
+                }
+            }
+            _protocolEngine.setNetworkConnection(_connectionWrapper);
+            _protocolEngine.setWorkListener(object -> _server.getThreadPool().execute(() -> _connectionWrapper.doWork()));
+            _activeConnections.add(_connectionWrapper);
+            _idleTimeoutChecker.wakeup();
+
         }
 
         @Override
-        public void onMessage(final byte[] data, final int offset, final int length)
+        public void onWebSocketBinary(final byte[] data, final int offset, final int length)
         {
             synchronized (_connectionWrapper)
             {
@@ -311,41 +332,14 @@ class WebSocketProvider implements AcceptingTransport
         }
 
         @Override
-        public void onOpen(final Connection connection)
+        public void onWebSocketError(final Throwable cause)
         {
-
-            _protocolEngine = _factory.newProtocolEngine(_remoteAddress);
-
-            connection.setMaxBinaryMessageSize(0);
-
-            // Let AMQP do timeout handling
-            connection.setMaxIdleTime(0);
-
-            _connectionWrapper =
-                    new ConnectionWrapper(connection, _localAddress, _remoteAddress, _protocolEngine, _threadPool);
-            _connectionWrapper.setPeerCertificate(_userCertificate);
-            _protocolEngine.setNetworkConnection(_connectionWrapper);
-            _protocolEngine.setWorkListener(new Action<ProtocolEngine>()
-            {
-                @Override
-                public void performAction(final ProtocolEngine object)
-                {
-                    _threadPool.dispatch(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            _connectionWrapper.doWork();
-                        }
-                    });
-                }
-            });
-            _activeConnections.add(_connectionWrapper);
-            _idleTimeoutChecker.wakeup();
+            super.onWebSocketError(cause);
+            LOGGER.error("onWebSocketError", cause);
         }
 
         @Override
-        public void onClose(final int closeCode, final String message)
+        public void onWebSocketClose(final int statusCode, final String reason)
         {
             _protocolEngine.closed();
             _activeConnections.remove(_connectionWrapper);
@@ -355,7 +349,7 @@ class WebSocketProvider implements AcceptingTransport
 
     private class ConnectionWrapper implements ServerNetworkConnection, ByteBufferSender
     {
-        private final WebSocket.Connection _connection;
+        private final Session _connection;
         private final SocketAddress _localAddress;
         private final SocketAddress _remoteAddress;
         private final ConcurrentLinkedQueue<QpidByteBuffer> _buffers = new ConcurrentLinkedQueue<>();
@@ -367,7 +361,7 @@ class WebSocketProvider implements AcceptingTransport
         private long _maxWriteIdleMillis;
         private long _maxReadIdleMillis;
 
-        public ConnectionWrapper(final WebSocket.Connection connection,
+        public ConnectionWrapper(final Session connection,
                                  final SocketAddress localAddress,
                                  final SocketAddress remoteAddress,
                                  final MultiVersionProtocolEngine protocolEngine,
@@ -493,7 +487,7 @@ class WebSocketProvider implements AcceptingTransport
         @Override
         public String getTransportInfo()
         {
-            return _connection.getProtocol();
+            return _connection.getProtocolVersion();
         }
 
         @Override
@@ -538,7 +532,7 @@ class WebSocketProvider implements AcceptingTransport
             {
                 try
                 {
-                    _connection.sendMessage(data, 0, size);
+                    _connection.getRemote().sendBytes(ByteBuffer.wrap(data));
                 }
                 catch (IOException e)
                 {
@@ -574,7 +568,7 @@ class WebSocketProvider implements AcceptingTransport
 
         public void tick()
         {
-            _threadPool.dispatch(_tickJob);
+            _threadPool.execute(_tickJob);
         }
     }
 

@@ -564,6 +564,46 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
             {
                 upgradeRootRecord(record);
             }
+            else if (record.getType().equals("Port"))
+            {
+                Map<String, Object> attributes = record.getAttributes();
+                Object protocols = attributes.get("protocols");
+                String type = (String) attributes.get("type");
+                if ((protocols instanceof Collection && ((Collection) protocols).contains("HTTP"))
+                    || "HTTP".equals(type))
+                {
+                    upgradeHttpPortIfRequired(record);
+                }
+            }
+        }
+
+        private void upgradeHttpPortIfRequired(final ConfiguredObjectRecord record)
+        {
+            Map<String, Object> attributes = record.getAttributes();
+            if (attributes.containsKey("context"))
+            {
+                Map<String, String> context = (Map<String, String>) attributes.get("context");
+                if (context != null
+                    && (context.containsKey("port.http.additionalInternalThreads")
+                        || context.containsKey("port.http.maximumQueuedRequests")))
+                {
+                    Map<String, String> updatedContext = new HashMap<>(context);
+                    updatedContext.remove("port.http.additionalInternalThreads");
+                    String acceptorsBacklog = updatedContext.remove("port.http.maximumQueuedRequests");
+                    if (acceptorsBacklog != null)
+                    {
+                        updatedContext.put("qpid.port.http.acceptBacklog", acceptorsBacklog);
+                    }
+                    Map<String, Object> updatedAttributes = new LinkedHashMap<>(attributes);
+                    updatedAttributes.put("context", updatedContext);
+
+                    ConfiguredObjectRecord upgradedRecord = new ConfiguredObjectRecordImpl(record.getId(),
+                                                                                           record.getType(),
+                                                                                           updatedAttributes,
+                                                                                           record.getParents());
+                    getUpdateMap().put(upgradedRecord.getId(), upgradedRecord);
+                }
+            }
         }
 
         @Override
