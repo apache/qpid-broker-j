@@ -104,37 +104,42 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
         encoder.writeInt64(_arrivalTime);
         encoder.writeInt32(_bodySize);
         int headersLength = 0;
-        if(_header.getDeliveryProperties() != null)
+        if (_header != null)
         {
-            headersLength++;
-        }
-        if(_header.getMessageProperties() != null)
-        {
-            headersLength++;
-        }
-        if(_header.getNonStandardProperties() != null)
-        {
-            headersLength += _header.getNonStandardProperties().size();
+            if (_header.getDeliveryProperties() != null)
+            {
+                headersLength++;
+            }
+            if (_header.getMessageProperties() != null)
+            {
+                headersLength++;
+            }
+            if (_header.getNonStandardProperties() != null)
+            {
+                headersLength += _header.getNonStandardProperties().size();
+            }
         }
 
         encoder.writeInt32(headersLength);
 
-        if(_header.getDeliveryProperties() != null)
+        if (_header != null)
         {
-            encoder.writeStruct32(_header.getDeliveryProperties());
-        }
-        if(_header.getMessageProperties() != null)
-        {
-            encoder.writeStruct32(_header.getMessageProperties());
-        }
-        if(_header.getNonStandardProperties() != null)
-        {
-
-            for(Struct header : _header.getNonStandardProperties())
+            if (_header.getDeliveryProperties() != null)
             {
-                encoder.writeStruct32(header);
+                encoder.writeStruct32(_header.getDeliveryProperties());
             }
+            if (_header.getMessageProperties() != null)
+            {
+                encoder.writeStruct32(_header.getMessageProperties());
+            }
+            if (_header.getNonStandardProperties() != null)
+            {
 
+                for (Struct header : _header.getNonStandardProperties())
+                {
+                    encoder.writeStruct32(header);
+                }
+            }
         }
         QpidByteBuffer buf = encoder.getBuffer();
         encoder.close();
