@@ -164,20 +164,13 @@
                         <div class="clear">
                             <div class="formLabel-labelCell">Overflow policy:</div>
                             <div class="formLabel-controlCell">
-                                <select id="formEditQueue.overflowPolicy"
-                                        dojoType="dijit.form.FilteringSelect"
-                                        data-dojo-props="
+                                <input type="text" id="formEditQueue.overflowPolicy"
+                                       data-dojo-type="dijit/form/FilteringSelect"
+                                       data-dojo-props="
                               name: 'overflowPolicy',
-                              value: 'NONE',
-                              searchAttr: 'name',
                               required: false,
                               promptMessage: 'Select overflow policy to use',
-                              title: 'Select overflow policy'">
-                                    <option value="NONE">None</option>
-                                    <option value="RING">Ring</option>
-                                    <option value="PRODUCER_FLOW_CONTROL">Producer Flow Control</option>
-                                    <option value="FLOW_TO_DISK">Flow To Disk</option>
-                                </select>
+                              title: 'Select overflow policy'"/>
                             </div>
                         </div>
                         <div class="clear">

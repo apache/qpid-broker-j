@@ -416,11 +416,13 @@ amqp://guest:guest@client1/development?maxprefetch='1'&amp;brokerlist='tcp://loc
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>Flow to Disk Policy</emphasis>
+                        <emphasis>Flow to Disk</emphasis>
                         -If the queue breaches a limit, newly arriving messages are written to disk and the in-memory
                         representation of the message is minimised. The Broker will transparently retrieve messages
                         from disk as they are required by a consumer or management.  The flow to disk policy does not
                         actually restrict the overall size of the queue, merely the space occupied in memory.
+                        The Broker's other <link linkend="Java-Broker-Runtime-Flow-To-Disk">Flow to Disk feature</link>
+                        operates completely independent of this Queue Overflow Policy.
                     </para>
                 </listitem>
             </itemizedlist>

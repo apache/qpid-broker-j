@@ -143,6 +143,11 @@ define(["dojo/dom",
             .show();
         util.applyMetadataToWidgets(form.domNode, "Queue", "standard", addQueue.management.metadata);
 
+        var overflowPolicyWidget = registry.byId("formAddQueue.overflowPolicy");
+        var validValues = addQueue.management.metadata.getMetaData("Queue", "standard").attributes.overflowPolicy.validValues;
+        var validValueStore = util.makeTypeStore(validValues);
+        overflowPolicyWidget.set("store", validValueStore);
+
         // Add regexp to the numeric fields
         for (var i = 0; i < numericFieldNames.length; i++)
         {

@@ -148,6 +148,12 @@ define(["dojox/html/entities",
                 this.form.reset();
 
                 var that = this;
+
+                var overflowPolicyWidget = registry.byId("formEditQueue.overflowPolicy");
+                var validValues = this.management.metadata.getMetaData("Queue", "standard").attributes.overflowPolicy.validValues;
+                var validValueStore = util.makeTypeStore(validValues);
+                overflowPolicyWidget.set("store", validValueStore);
+
                 util.applyToWidgets(that.allFieldsContainer,
                     "Queue",
                     data.actual.type,
