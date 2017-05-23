@@ -120,5 +120,6 @@ public class HousekeepingExecutor extends ScheduledThreadPoolExecutor
         {
             qpidByteBuffer.dispose();
         }
+        _cachedBufferMap.clear();
     }
 }
