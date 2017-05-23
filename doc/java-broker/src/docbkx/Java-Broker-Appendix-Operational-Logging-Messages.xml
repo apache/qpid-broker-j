@@ -357,30 +357,6 @@
              management credentials that may be used connect to the Broker.</para>
           </entry>
         </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1014">
-          <entry morerows="1">BRK-1014</entry>
-          <entry>Message flow to disk active : Message memory use <replaceable>size of all
-              messages</replaceable> exceeds threshold <replaceable>threshold
-            size</replaceable></entry>
-        </row>
-        <row>
-          <entry>
-            <para>Indicates that the memory space occupied by messages has exceeded the
-              threshold so the flow to disk feature has been activated.</para>
-          </entry>
-        </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1015">
-          <entry morerows="1">BRK-1015</entry>
-          <entry>Message flow to disk inactive : Message memory use <replaceable>size of all
-              messages</replaceable> within threshold <replaceable>threshold
-            size</replaceable></entry>
-        </row>
-        <row>
-          <entry>
-            <para>Indicates that the memory space occupied by messages has fallen below the
-              threshold so the flow to disk feature has been deactivated.</para>
-          </entry>
-        </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1016">
           <entry morerows="1">BRK-1016</entry>
           <entry>Fatal error : <replaceable>root cause</replaceable> : See log file for more information</entry>
@@ -567,6 +543,15 @@
                   when the usage of file system containing Virtualhost message falls under predefined limit.</para>
           </entry>
         </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-VHT-1008">
+          <entry morerows="1">VHT-1008</entry>
+          <entry>Total number of bytes evacuated from memory due to flow to disk : <replaceable>amount</replaceable> bytes</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Number of bytes evacuated from memory due to the <link linkend="Java-Broker-Runtime-Flow-To-Disk">flow to disk feature</link> during the lifetime of the VirtualHost.</para>
+          </entry>
+        </row>
       </tbody>
     </tgroup>
   </table>
@@ -620,30 +605,6 @@
         <row>
           <entry>
             <para>Indicates that a queue has fallen to its resume capacity. See <xref linkend="Qpid-Producer-Flow-Control"/> for details.</para>
-          </entry>
-        </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1014">
-          <entry morerows="1">QUE-1014</entry>
-          <entry>Message flow to disk active : Message memory use <replaceable>size of all
-            messages</replaceable> exceeds threshold <replaceable>threshold
-              size</replaceable></entry>
-        </row>
-        <row>
-          <entry>
-            <para>Indicates that the memory space occupied by messages for this queue
-              has exceeded thevthreshold so the flow to disk feature has been activated.</para>
-          </entry>
-        </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1015">
-          <entry morerows="1">QUE-1015</entry>
-          <entry>Message flow to disk inactive : Message memory use <replaceable>size of all
-            messages</replaceable> within threshold <replaceable>threshold
-              size</replaceable></entry>
-        </row>
-        <row>
-          <entry>
-            <para>Indicates that the memory space occupied by messages for this queue has fallen
-              below the threshold so the flow to disk feature has been deactivated.</para>
           </entry>
         </row>
       </tbody>

@@ -22,9 +22,9 @@
 
 <section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Runtime-Flow-To-Disk">
   <title>Flow to Disk</title>
-  <para>Flow to disk limits the amount of <link linkend="Java-Broker-Runtime-Memory">direct and heap memory</link>
+  <para>Flow to disk limits the amount of <link linkend="Java-Broker-Runtime-Memory">direct memory</link>
     that can be occupied by messages. Once this
-    limit is reached any new transient messages and all existing transient messages will be
+    limit is reached any new transient messages will be
     transferred to disk. Newly arriving transient messages will continue to go to the disk until the
     cumulative size of all messages falls below the limit once again.</para>
   <para>By default the Broker makes 40% of the max direct available memory for messages. This memory is
@@ -39,7 +39,7 @@
   <para>Flow to disk is configured by Broker context variable
       <literal>broker.flowToDiskThreshold</literal>. It is expressed as a size in bytes and defaults
     to 40% of the JVM maximum heap size.</para>
-  <para>Log message <link linkend="Java-Broker-Appendix-Operation-Logging-Message-BRK-1014">BRK-1014</link> is written when the feature activates. Once the total space of all messages
-    decreases below the threshold, the message <link linkend="Java-Broker-Appendix-Operation-Logging-Message-BRK-1015">BRK-1015</link> is written
-    to show that the feature is no longer active.</para>
+  <para>Periodically, the log message <link linkend="Java-Broker-Appendix-Operation-Logging-Message-VHT-1008">VHT-1008</link>
+    will be issued if messages are newly flowed to disk indicating the total amount of bytes evacuated from memory
+    during the lifetime of the VirtualHost.</para>
 </section>
