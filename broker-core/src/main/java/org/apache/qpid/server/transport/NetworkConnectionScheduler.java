@@ -132,6 +132,7 @@ public class NetworkConnectionScheduler
                     {
                         qpidByteBuffer.dispose();
                     }
+                    _cachedBufferMap.clear();
                 }
             };
             _executor.prestartAllCoreThreads();
