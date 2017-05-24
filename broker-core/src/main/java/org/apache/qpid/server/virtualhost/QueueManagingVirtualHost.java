@@ -37,6 +37,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Content;
+import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManageableMessage;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
@@ -85,6 +86,10 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
     @ManagedContextDefault( name = "virtualhost.housekeepingCheckPeriod")
     long DEFAULT_HOUSEKEEPING_CHECK_PERIOD = 30000l;
+
+    String FLOW_TO_DISK_CHECK_PERIOD = "virtualhost.flowToDiskCheckPeriod";
+    @ManagedContextDefault(name = FLOW_TO_DISK_CHECK_PERIOD)
+    long DEFAULT_FLOW_TO_DISK_CHECK_PERIOD = 30000L;
 
     String CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT = "connectionThreadPoolKeepAliveTimeout";
     @SuppressWarnings("unused")
@@ -136,6 +141,10 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
     @ManagedAttribute( defaultValue = "${virtualhost.housekeepingCheckPeriod}")
     long getHousekeepingCheckPeriod();
+
+    @DerivedAttribute( description = "Time (in milliseconds) between checks whether existing messages "
+                                     + "need to be flowed to disk in order to free memory." )
+    long getFlowToDiskCheckPeriod();
 
     String VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE = "virtualhost.connectionThreadPool.size";
     @SuppressWarnings("unused")

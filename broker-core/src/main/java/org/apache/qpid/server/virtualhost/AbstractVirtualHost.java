@@ -273,6 +273,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private int _fileSystemMaxUsagePercent;
     private Collection<VirtualHostLogger> _virtualHostLoggersToClose;
     private PreferenceStore _preferenceStore;
+    private long _flowToDiskCheckPeriod;
 
     public AbstractVirtualHost(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
@@ -583,6 +584,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _messageStore.addEventListener(this, Event.PERSISTENT_MESSAGE_SIZE_UNDERFULL);
 
         _fileSystemMaxUsagePercent = getContextValue(Integer.class, Broker.STORE_FILESYSTEM_MAX_USAGE_PERCENT);
+        _flowToDiskCheckPeriod = getContextValue(Long.class, FLOW_TO_DISK_CHECK_PERIOD);
 
 
         QpidServiceLoader serviceLoader = new QpidServiceLoader();
@@ -1156,17 +1158,20 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return true;
     }
 
-    /**
-     * Initialise a housekeeping task to iterate over queues cleaning expired messages with no consumers
-     * and checking for idle or open transactions that have exceeded the permitted thresholds.
-     *
-     * @param period
-     */
-    private void initialiseHouseKeeping(long period)
+    private void initialiseHouseKeeping()
     {
+        final long period = getHousekeepingCheckPeriod();
         if (period > 0L)
         {
             scheduleHouseKeepingTask(period, new VirtualHostHouseKeepingTask());
+        }
+    }
+
+    private void initialiseFlowToDiskChecking()
+    {
+        final long period = getFlowToDiskCheckPeriod();
+        if (period > 0L)
+        {
             scheduleHouseKeepingTask(period, new FlowToDiskCheckingTask());
         }
     }
@@ -2124,6 +2129,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
+    public long getFlowToDiskCheckPeriod()
+    {
+        return _flowToDiskCheckPeriod;
+    }
+
+    @Override
     public long getStoreTransactionIdleTimeoutClose()
     {
         return _storeTransactionIdleTimeoutClose;
@@ -2672,7 +2683,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         State finalState = State.ERRORED;
         try
         {
-            initialiseHouseKeeping(getHousekeepingCheckPeriod());
+            initialiseHouseKeeping();
+            initialiseFlowToDiskChecking();
             finalState = State.ACTIVE;
             _acceptsConnections.set(true);
         }
