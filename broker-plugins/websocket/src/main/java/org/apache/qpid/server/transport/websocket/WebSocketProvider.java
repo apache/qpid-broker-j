@@ -42,6 +42,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -157,6 +158,21 @@ class WebSocketProvider implements AcceptingTransport
             sslContextFactory.setNeedClientAuth(_port.getNeedClientAuth());
             sslContextFactory.setWantClientAuth(_port.getWantClientAuth());
             connector = new ServerConnector(_server, sslContextFactory, httpConnectionFactory);
+            connector.addBean(new SslHandshakeListener()
+            {
+                @Override
+                public void handshakeFailed(final Event event, final Throwable failure)
+                {
+                    if (LOGGER.isDebugEnabled())
+                    {
+                        LOGGER.info("TLS handshake failed",  failure);
+                    }
+                    else
+                    {
+                        LOGGER.info("TLS handshake failed: " + failure);
+                    }
+                }
+            });
         }
         else
         {

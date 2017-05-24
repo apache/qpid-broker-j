@@ -34,6 +34,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -46,6 +48,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -60,8 +63,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,6 +107,7 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.adapter.AbstractPluginAdapter;
 import org.apache.qpid.server.model.port.HttpPort;
+import org.apache.qpid.server.model.port.HttpPortImpl;
 import org.apache.qpid.server.model.port.PortManager;
 import org.apache.qpid.server.transport.PortBindFailureException;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
@@ -167,9 +171,10 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private boolean _compressResponses;
 
     private boolean _allowPortActivation;
-    private Map<HttpPort<?>, NetworkConnector> _portConnectorMap = new HashMap<>();
+    private Map<HttpPort<?>, ServerConnector> _portConnectorMap = new HashMap<>();
 
     private volatile boolean _serveUncompressedDojo;
+    private volatile ExecutorService _jettyServerExecutor;
 
     @ManagedObjectFactoryConstructor
     public HttpManagement(Map<String, Object> attributes, Broker broker)
@@ -236,6 +241,10 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             }
         }
 
+        if (_jettyServerExecutor != null)
+        {
+            _jettyServerExecutor.shutdown();
+        }
         getBroker().getEventLogger().message(ManagementConsoleMessages.STOPPED(OPERATIONAL_LOGGING_NAME));
         return Futures.immediateFuture(null);
     }
@@ -270,11 +279,12 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         _logger.debug("Starting up web server on {}", ports);
         _allowPortActivation = true;
 
-        Server server = new Server(new ZeroSizedThreadPool());
+        _jettyServerExecutor = Executors.newSingleThreadExecutor((Runnable r) -> new Thread(r, "Jetty-Server-Thread"));
+        Server server = new Server(new ExecutorThreadPool(_jettyServerExecutor));
         int lastPort = -1;
         for (HttpPort<?> port : ports)
         {
-            NetworkConnector connector = createConnector(port, server);
+            ServerConnector connector = createConnector(port, server);
             server.addConnector(connector);
             _portConnectorMap.put(port, connector);
             lastPort = port.getPort();
@@ -399,7 +409,35 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
     }
 
-    private NetworkConnector createConnector(final HttpPort<?> port, final Server server)
+    @Override
+    public int getNumberOfAcceptors(HttpPortImpl httpPort)
+    {
+        ServerConnector c = _portConnectorMap.get(httpPort);
+        if (c != null)
+        {
+            return c.getAcceptors();
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    @Override
+    public int getNumberOfSelectors(HttpPortImpl httpPort)
+    {
+        ServerConnector c = _portConnectorMap.get(httpPort);
+        if (c != null)
+        {
+            return c.getSelectorManager().getSelectorCount();
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    private ServerConnector createConnector(final HttpPort<?> port, final Server server)
     {
         port.setPortManager(this);
 
@@ -443,38 +481,84 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             throw new IllegalArgumentException("Unexpected transport on port " + port.getName() + ":" + transports);
         }
 
-        int maxThreads = port.getThreadPoolMaximum();
-        int minThreads = port.getThreadPoolMinimum();
-        int acceptBacklog = port.getAcceptsBacklogSize();
-        int acceptors = port.getNumberOfAcceptors();
-        int selectors = port.getNumberOfSelectors();
-
-        QueuedThreadPool threadPool = new QueuedThreadPool(maxThreads, minThreads);
-        ServerConnector connector =
-                new ServerConnector(server, threadPool, null, null, acceptors, selectors, connectionFactories)
+        ServerConnector connector = new ServerConnector(server,
+                                                        new QueuedThreadPool(port.getThreadPoolMaximum(),
+                                                                             port.getThreadPoolMinimum()),
+                                                        null,
+                                                        null,
+                                                        port.getDesiredNumberOfAcceptors(),
+                                                        port.getDesiredNumberOfSelectors(),
+                                                        connectionFactories)
+        {
+            @Override
+            public void open() throws IOException
+            {
+                try
                 {
-                    @Override
-                    public void open() throws IOException
-                    {
-                        try
-                        {
-                            super.open();
-                        }
-                        catch (BindException e)
-                        {
-                            InetSocketAddress addr = getHost() == null ? new InetSocketAddress(getPort())
-                                    : new InetSocketAddress(getHost(), getPort());
-                            throw new PortBindFailureException(addr);
-                        }
-                    }
-                };
-        connector.setAcceptQueueSize(acceptBacklog);
+                    super.open();
+                }
+                catch (BindException e)
+                {
+                    InetSocketAddress addr = getHost() == null ? new InetSocketAddress(getPort())
+                            : new InetSocketAddress(getHost(), getPort());
+                    throw new PortBindFailureException(addr);
+                }
+            }
+        };
+
+        connector.setAcceptQueueSize(port.getAcceptBacklogSize());
         String bindingAddress = port.getBindingAddress();
         if (bindingAddress != null && !bindingAddress.trim().equals("") && !bindingAddress.trim().equals("*"))
         {
             connector.setHost(bindingAddress.trim());
         }
         connector.setPort(port.getPort());
+
+        if (transports.contains(Transport.SSL))
+        {
+            connector.addBean(new SslHandshakeListener()
+            {
+                @Override
+                public void handshakeFailed(final Event event, final Throwable failure)
+                {
+                    if (_logger.isDebugEnabled())
+                    {
+                        _logger.info("TLS handshake failed",  failure);
+                    }
+                    else
+                    {
+                        _logger.info("TLS handshake failed: " + failure);
+                    }
+                }
+            });
+        }
+
+
+        int acceptors = connector.getAcceptors();
+        int selectors = connector.getSelectorManager().getSelectorCount();
+        if (_logger.isDebugEnabled())
+        {
+            _logger.debug(
+                    "Created connector for http port {} with maxThreads={}, minThreads={}, acceptors={}, selectors={}, acceptBacklog={}",
+                    port.getName(),
+                    port.getThreadPoolMaximum(),
+                    port.getThreadPoolMinimum(),
+                    acceptors,
+                    selectors,
+                    port.getAcceptBacklogSize());
+        }
+
+        int requiredNumberOfConnections = acceptors + 2 * selectors + 1;
+        if (port.getThreadPoolMaximum() < requiredNumberOfConnections)
+        {
+            throw new IllegalConfigurationException(String.format(
+                    "Insufficient number of threads is configured on http port '%s': max=%d < needed(acceptors=%d + selectors=2*%d + request=1)",
+                    port.getName(),
+                    port.getThreadPoolMaximum(),
+                    acceptors,
+                    selectors));
+        }
+
         return connector;
     }
 
@@ -492,8 +576,9 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
         if (needClientCert && trustStores.isEmpty())
         {
-            throw new IllegalConfigurationException("Client certificate authentication is enabled on AMQP port '"
-                                                    + this.getName() + "' but no trust store defined");
+            throw new IllegalConfigurationException(String.format(
+                    "Client certificate authentication is enabled on HTTPS port '%s' but no trust store defined",
+                    this.getName()));
         }
 
         SSLContext sslContext = SSLUtil.createSslContext(keyStore, trustStores, port.getName());
@@ -589,7 +674,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     private void logOperationalListenMessages()
     {
-        for (Map.Entry<HttpPort<?>, NetworkConnector> portConnector : _portConnectorMap.entrySet())
+        for (Map.Entry<HttpPort<?>, ServerConnector> portConnector : _portConnectorMap.entrySet())
         {
             HttpPort<?> port = portConnector.getKey();
             NetworkConnector connector = portConnector.getValue();
@@ -731,38 +816,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             {
                 throw new IllegalConfigurationException("Only positive integer value can be specified for the session time out attribute");
             }
-        }
-    }
-
-    private static class ZeroSizedThreadPool implements ThreadPool
-    {
-        @Override
-        public void join() throws InterruptedException
-        {
-        }
-
-        @Override
-        public int getThreads()
-        {
-            return 0;
-        }
-
-        @Override
-        public int getIdleThreads()
-        {
-            return 0;
-        }
-
-        @Override
-        public boolean isLowOnThreads()
-        {
-            return false;
-        }
-
-        @Override
-        public void execute(final Runnable command)
-        {
-            throw new IllegalStateException("Job unexpectedly dispatched to server thread pool. Cannot dispatch");
         }
     }
 }

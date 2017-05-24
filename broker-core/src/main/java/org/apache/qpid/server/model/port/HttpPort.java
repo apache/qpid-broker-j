@@ -105,12 +105,20 @@ public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X
                                                             + "matches the HTTP Host in the request")
     boolean isManageBrokerOnNoAliasMatch();
 
-    @DerivedAttribute (description = "Number of acceptor threads")
-    int getNumberOfAcceptors();
+    @DerivedAttribute(description = "Desired number of acceptor threads. You can set it to negative value"
+                                    + " in order to delegate its evaluation to the http server.")
+    int getDesiredNumberOfAcceptors();
 
-    @DerivedAttribute (description = "Number of selector threads")
-    int getNumberOfSelectors();
+    @DerivedAttribute(description = "Desired number of selector threads. You can set it to negative value"
+                                    + " in order to delegate its evaluation to the http server.")
+    int getDesiredNumberOfSelectors();
 
     @DerivedAttribute (description = "Size of accepts backlog")
-    int getAcceptsBacklogSize();
+    int getAcceptBacklogSize();
+
+    @DerivedAttribute (description = "Actual number of acceptor threads.")
+    int getNumberOfAcceptors();
+
+    @DerivedAttribute (description = "Actual number of selector threads.")
+    int getNumberOfSelectors();
 }

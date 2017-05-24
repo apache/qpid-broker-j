@@ -195,7 +195,7 @@ public class MarkableEndPoint implements EndPoint
             int i = 0;
             if (!_preserved.isEmpty())
             {
-                i += fillPreserved(dst);
+                i += fillFromPreserved(dst);
                 if (!_preserved.isEmpty())
                 {
                     return  i;
@@ -225,9 +225,9 @@ public class MarkableEndPoint implements EndPoint
         _marked = false;
     }
 
-    private int fillPreserved(final ByteBuffer dst)
+    private int fillFromPreserved(final ByteBuffer dst)
     {
-        int filledByteNumber = 0;
+        int filled = 0;
         final int pos = BufferUtil.flipToFill(dst);
         try
         {
@@ -248,10 +248,10 @@ public class MarkableEndPoint implements EndPoint
                     dst.put(slice);
                     buffer.position(buffer.position() + dstRemaining);
                 }
-                filledByteNumber += bufRemaining - buffer.remaining();
+                filled += bufRemaining - buffer.remaining();
                 if (buffer.hasRemaining())
                 {
-                    return filledByteNumber;
+                    return filled;
                 }
                 bufferIterator.remove();
             }
@@ -260,7 +260,7 @@ public class MarkableEndPoint implements EndPoint
         {
             BufferUtil.flipToFlush(dst, pos);
         }
-        return filledByteNumber;
+        return filled;
     }
 
     private ByteBuffer preserve(final ByteBuffer dst, final int newLimit, final int oldLimit)

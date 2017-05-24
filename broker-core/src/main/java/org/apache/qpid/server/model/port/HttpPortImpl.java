@@ -102,21 +102,33 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     }
 
     @Override
-    public int getNumberOfAcceptors()
+    public int getDesiredNumberOfAcceptors()
     {
         return _numberOfAcceptors;
     }
 
     @Override
-    public int getNumberOfSelectors()
+    public int getDesiredNumberOfSelectors()
     {
         return _numberOfSelectors;
     }
 
     @Override
-    public int getAcceptsBacklogSize()
+    public int getAcceptBacklogSize()
     {
         return _acceptsBacklogSize;
+    }
+
+    @Override
+    public int getNumberOfAcceptors()
+    {
+        return _portManager == null ? 0 : _portManager.getNumberOfAcceptors(this) ;
+    }
+
+    @Override
+    public int getNumberOfSelectors()
+    {
+        return _portManager == null ? 0 : _portManager.getNumberOfSelectors(this) ;
     }
 
     @Override
@@ -124,19 +136,9 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     {
         super.onOpen();
 
-        int maxThreads = getThreadPoolMaximum();
-        int min = Math.max(1, Math.min(4, maxThreads / 2 - 1));
         _acceptsBacklogSize = getContextValue(Integer.class, HttpPort.PORT_HTTP_ACCEPT_BACKLOG);
         _numberOfAcceptors = getContextValue(Integer.class, HttpPort.PORT_HTTP_NUMBER_OF_ACCEPTORS);
-        if (_numberOfAcceptors < 0) // if _numberOfAcceptors == 0, selectors threads are used as acceptors
-        {
-            _numberOfAcceptors = Math.max(1, Math.min(min, Runtime.getRuntime().availableProcessors() / 8));
-        }
-        _numberOfSelectors = getContextValue(Integer.class, HttpPort.PORT_HTTP_NUMBER_OF_SELECTORS);
-        if (_numberOfSelectors <= 0)
-        {
-            _numberOfSelectors =  Math.max(1, Math.min(min, Runtime.getRuntime().availableProcessors() / 2));
-        }
+        _numberOfSelectors =  getContextValue(Integer.class, HttpPort.PORT_HTTP_NUMBER_OF_SELECTORS);
     }
 
     @Override
@@ -158,10 +160,12 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         super.onValidate();
         validateThreadPoolSettings(this);
 
-        final double acceptsBacklogSize = getContextValue(Integer.class, HttpPort.PORT_HTTP_ACCEPT_BACKLOG);
+        final int acceptsBacklogSize = getContextValue(Integer.class, HttpPort.PORT_HTTP_ACCEPT_BACKLOG);
         if (acceptsBacklogSize < 1)
         {
-            throw new IllegalConfigurationException(String.format("The size of accepts backlog %d is too small. Must be greater than zero.", acceptsBacklogSize));
+            throw new IllegalConfigurationException(String.format(
+                    "The size of accept backlog %d is too small. Must be greater than zero.",
+                    acceptsBacklogSize));
         }
     }
 

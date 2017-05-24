@@ -27,4 +27,8 @@ public interface PortManager
     boolean isActivationAllowed(Port<?> port);
 
     int getBoundPort(HttpPort httpPort);
+
+    int getNumberOfAcceptors(HttpPortImpl httpPort);
+
+    int getNumberOfSelectors(HttpPortImpl httpPort);
 }
