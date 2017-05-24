@@ -1333,12 +1333,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public long getQueueDepthBytesIncludingHeader()
-    {
-        return _queueStatistics.getQueueSizeIncludingHeader();
-    }
-
-    @Override
     public long getAvailableBytes()
     {
         return _queueStatistics.getAvailableSize();

@@ -44,6 +44,7 @@ public class MessageInfoImpl implements MessageInfo
     private final String _state;
     private final int _deliveryCount;
     private final long _size;
+    private final long _headerSize;
     private final long _id;
     private final Map<String, Object> _headers;
     private final String _initialRoutingAddress;
@@ -81,6 +82,7 @@ public class MessageInfoImpl implements MessageInfo
         }
         _deliveryCount = instance.getDeliveryCount();
         _size = message.getSize();
+        _headerSize = message.getSizeIncludingHeader() - message.getSize();
         _id = message.getMessageNumber();
         _initialRoutingAddress = message.getInitialRoutingAddress();
         _notValidBefore = messageHeader.getNotValidBefore() == 0L ? null : new Date(messageHeader.getNotValidBefore());
@@ -111,6 +113,12 @@ public class MessageInfoImpl implements MessageInfo
     public long getSize()
     {
         return _size;
+    }
+
+    @Override
+    public long getHeaderSize()
+    {
+        return _headerSize;
     }
 
     @Override

@@ -57,7 +57,6 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(-1L);
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(-1L);
         when(_queue.getOverflowPolicy()).thenReturn(OverflowPolicy.RING);
-        when(_queue.getQueueDepthBytes()).thenReturn(0L);
         when(_queue.getQueueDepthMessages()).thenReturn(0);
         when(_queue.getLogSubject()).thenReturn(_subject);
 
@@ -68,7 +67,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
     {
         QueueEntry lastEntry = createLastEntry();
         when(_queue.getLeastSignificantOldestEntry()).thenReturn(lastEntry, (QueueEntry) null);
-        when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(10L, 4L);
+        when(_queue.getQueueDepthBytes()).thenReturn(10L, 4L);
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(5L);
         when(_queue.getQueueDepthMessages()).thenReturn(3, 1);
 
@@ -86,7 +85,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
         when(_queue.getLeastSignificantOldestEntry()).thenReturn(lastEntry, (QueueEntry) null);
         when(_queue.getQueueDepthMessages()).thenReturn(10, 5);
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(5L);
-        when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(10L, 4L);
+        when(_queue.getQueueDepthBytes()).thenReturn(10L, 4L);
 
         _ringOverflowPolicyHandler.checkOverflow(null);
 
@@ -98,7 +97,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
 
     public void testCheckOverflowWhenUnderfullBytes() throws Exception
     {
-        when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(5L);
+        when(_queue.getQueueDepthBytes()).thenReturn(5L);
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(5L);
         when(_queue.getQueueDepthMessages()).thenReturn(3);
 
@@ -112,7 +111,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
     {
         when(_queue.getQueueDepthMessages()).thenReturn(5);
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(5L);
-        when(_queue.getQueueDepthBytesIncludingHeader()).thenReturn(10L);
+        when(_queue.getQueueDepthBytes()).thenReturn(10L);
 
         _ringOverflowPolicyHandler.checkOverflow(null);
 

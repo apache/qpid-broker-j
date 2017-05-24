@@ -22,6 +22,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -167,6 +168,11 @@ public class QpidBrokerTestCase extends QpidTestCase
     public boolean isBroker08()
     {
         return BROKER_PROTOCOL.equals(Protocol.AMQP_0_8);
+    }
+
+    public boolean isBrokerPre010()
+    {
+        return EnumSet.of(Protocol.AMQP_0_8, Protocol.AMQP_0_9, Protocol.AMQP_0_9_1).contains(BROKER_PROTOCOL);
     }
 
     public boolean isBroker010()

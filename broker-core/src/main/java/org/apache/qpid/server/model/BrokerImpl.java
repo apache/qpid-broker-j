@@ -575,7 +575,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             if (vh instanceof QueueManagingVirtualHost)
             {
                 QueueManagingVirtualHost<?> host = (QueueManagingVirtualHost<?>)vh;
-                long totalQueueDepthBytes = host.getTotalQueueDepthBytes();
+                long totalQueueDepthBytes = host.getTotalDepthOfQueuesBytes();
                 vhs.put(host, totalQueueDepthBytes);
                 totalSize += totalQueueDepthBytes;
             }

@@ -213,7 +213,10 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     long getMessagesOut();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Total Depth of Queues Including Header")
-    long getTotalDepthOfQueuesBytesIncludingHeader();
+    long getTotalDepthOfQueuesBytes();
+
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Total Depth of Queues")
+    long getTotalDepthOfQueuesMessages();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Total Memory Occupied by Message Headers and Content")
     long getInMemoryMessageSize();
@@ -294,7 +297,6 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
     long getTargetSize();
     void setTargetSize(long targetSize);
-    long getTotalQueueDepthBytes();
 
     MessageDestination getSystemDestination(String name);
 

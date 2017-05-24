@@ -1440,13 +1440,25 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public long getTotalDepthOfQueuesBytesIncludingHeader()
+    public long getTotalDepthOfQueuesBytes()
     {
         long total = 0;
         final Collection<Queue> queues = getChildren(Queue.class);
         for(Queue q : queues)
         {
-            total += q.getQueueDepthBytesIncludingHeader();
+            total += q.getQueueDepthBytes();
+        }
+        return total;
+    }
+
+    @Override
+    public long getTotalDepthOfQueuesMessages()
+    {
+        long total = 0;
+        final Collection<Queue> queues = getChildren(Queue.class);
+        for(Queue q : queues)
+        {
+            total += q.getQueueDepthMessages();
         }
         return total;
     }
@@ -2474,12 +2486,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public long getTotalQueueDepthBytes()
-    {
-        return calculateTotalEnqueuedSize(getChildren(Queue.class));
-    }
-
-    @Override
     public Principal getPrincipal()
     {
         return _principal;
@@ -2578,17 +2584,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 return String.valueOf(connection);
             }
         });
-    }
-
-
-    private long calculateTotalEnqueuedSize(final Collection<Queue> queues)
-    {
-        long total = 0;
-        for(Queue<?> queue : queues)
-        {
-            total += queue.getQueueDepthBytesIncludingHeader();
-        }
-        return total;
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)

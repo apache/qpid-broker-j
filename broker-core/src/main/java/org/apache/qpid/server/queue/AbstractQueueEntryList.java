@@ -45,22 +45,21 @@ abstract class AbstractQueueEntryList implements QueueEntryList
 
     void updateStatsOnEnqueue(QueueEntry entry)
     {
-        final long size = entry.getSize();
+        final long sizeWithHeader = entry.getSizeWithHeader();
         final QueueStatistics queueStatistics = _queueStatistics;
-        queueStatistics.addToAvailable(size);
-        queueStatistics.addToDepthIncludingHeader(entry.getSizeWithHeader());
-        queueStatistics.addToQueue(size);
-        queueStatistics.addToEnqueued(size);
+        queueStatistics.addToAvailable(sizeWithHeader);
+        queueStatistics.addToQueue(sizeWithHeader);
+        queueStatistics.addToEnqueued(sizeWithHeader);
         if(_forcePersistent || (_respectPersistent && entry.getMessage().isPersistent()))
         {
-            queueStatistics.addToPersistentEnqueued(size);
+            queueStatistics.addToPersistentEnqueued(sizeWithHeader);
         }
     }
 
     public void updateStatsOnStateChange(QueueEntry entry, QueueEntry.EntryState fromState, QueueEntry.EntryState toState)
     {
         final QueueStatistics queueStatistics = _queueStatistics;
-        final long size = entry.getSize();
+        final long sizeWithHeader = entry.getSizeWithHeader();
 
         final boolean isConsumerAcquired = toState instanceof MessageInstance.ConsumerAcquiredState;
         final boolean wasConsumerAcquired = fromState instanceof MessageInstance.ConsumerAcquiredState;
@@ -68,33 +67,32 @@ abstract class AbstractQueueEntryList implements QueueEntryList
         switch(fromState.getState())
         {
             case AVAILABLE:
-                queueStatistics.removeFromAvailable(size);
+                queueStatistics.removeFromAvailable(sizeWithHeader);
                 break;
             case ACQUIRED:
                 if(wasConsumerAcquired && !isConsumerAcquired)
                 {
-                    queueStatistics.removeFromUnacknowledged(size);
+                    queueStatistics.removeFromUnacknowledged(sizeWithHeader);
                 }
                 break;
         }
         switch(toState.getState())
         {
             case AVAILABLE:
-                queueStatistics.addToAvailable(size);
+                queueStatistics.addToAvailable(sizeWithHeader);
                 break;
             case ACQUIRED:
                 if(isConsumerAcquired && !wasConsumerAcquired)
                 {
-                    queueStatistics.addToUnacknowledged(size);
+                    queueStatistics.addToUnacknowledged(sizeWithHeader);
                 }
                 break;
             case DELETED:
-                queueStatistics.removeFromQueue(size);
-                queueStatistics.removeFromDepthIncludingHeader(entry.getSizeWithHeader());
-                queueStatistics.addToDequeued(size);
+                queueStatistics.removeFromQueue(sizeWithHeader);
+                queueStatistics.addToDequeued(sizeWithHeader);
                 if(_forcePersistent || (_respectPersistent && entry.isPersistent()))
                 {
-                    queueStatistics.addToPersistentDequeued(size);
+                    queueStatistics.addToPersistentDequeued(sizeWithHeader);
                 }
                 _queue.checkCapacity();
 

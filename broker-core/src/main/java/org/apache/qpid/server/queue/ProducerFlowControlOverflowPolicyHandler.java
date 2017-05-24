@@ -141,7 +141,7 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
 
         private void checkUnderfull(long maximumQueueDepthBytes, long maximumQueueDepthMessages)
         {
-            long queueDepthBytes = _queue.getQueueDepthBytesIncludingHeader();
+            long queueDepthBytes = _queue.getQueueDepthBytes();
             long queueDepthMessages = _queue.getQueueDepthMessages();
 
             if (isUnderfull(queueDepthBytes, maximumQueueDepthBytes)
@@ -166,7 +166,7 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
 
         private void checkOverfull(final long maximumQueueDepthBytes, final long maximumQueueDepthMessages)
         {
-            final long queueDepthBytes = _queue.getQueueDepthBytesIncludingHeader();
+            final long queueDepthBytes = _queue.getQueueDepthBytes();
             final long queueDepthMessages = _queue.getQueueDepthMessages();
 
             if ((maximumQueueDepthBytes >= 0L && queueDepthBytes > maximumQueueDepthBytes) ||

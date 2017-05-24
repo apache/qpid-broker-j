@@ -48,7 +48,7 @@ public class RingOverflowPolicyHandler implements OverflowPolicyHandler
         do
         {
             queueDepthMessages = _queue.getQueueDepthMessages();
-            queueDepthBytes = _queue.getQueueDepthBytesIncludingHeader();
+            queueDepthBytes = _queue.getQueueDepthBytes();
 
             messagesOverflow = maximumQueueDepthMessages >= 0 && queueDepthMessages > maximumQueueDepthMessages;
             bytesOverflow = maximumQueueDepthBytes >= 0 && queueDepthBytes > maximumQueueDepthBytes;
@@ -70,7 +70,7 @@ public class RingOverflowPolicyHandler implements OverflowPolicyHandler
                 else
                 {
                     queueDepthMessages = _queue.getQueueDepthMessages();
-                    queueDepthBytes = _queue.getQueueDepthBytesIncludingHeader();
+                    queueDepthBytes = _queue.getQueueDepthBytes();
                     break;
                 }
             }

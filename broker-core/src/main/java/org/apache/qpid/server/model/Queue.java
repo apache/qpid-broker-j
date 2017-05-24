@@ -326,12 +326,8 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Enqueued (Persistent)")
     long getPersistentEnqueuedMessages();
 
-    @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth")
-    long getQueueDepthBytes();
-
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth Including Header")
-    long getQueueDepthBytesIncludingHeader();
+    long getQueueDepthBytes();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Queue Depth")
     int getQueueDepthMessages();

@@ -62,8 +62,12 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
 
     boolean isConnectionStopped();
 
+    // currently this takes message content size without header.
+    // See also QPID-7689: https://issues.apache.org/jira/browse/QPID-7689?focusedCommentId=16022923#comment-16022923
     void registerMessageReceived(long size, long arrivalTime);
 
+    // currently this takes message content size without header.
+    // See also QPID-7689: https://issues.apache.org/jira/browse/QPID-7689?focusedCommentId=16022923#comment-16022923
     void registerMessageDelivered(long size);
 
     void closeSessionAsync(AMQPSession<?,?> session, CloseReason reason, String message);

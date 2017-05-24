@@ -325,9 +325,9 @@ public class ProducerFlowControlTest extends AbstractTestLogging
     private int getQueueDepthBytes(final String queueName) throws IOException
     {
         // On AMQP 1.0 the size of the message on the broker is not necessarily the size of the message we sent. Therefore, get the actual size from the broker
-        final String requestUrl = String.format("queue/%1$s/%1$s/%2$s/getStatistics?statistics=[\"queueDepthBytesIncludingHeader\"]", TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, queueName);
+        final String requestUrl = String.format("queue/%1$s/%1$s/%2$s/getStatistics?statistics=[\"queueDepthBytes\"]", TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, queueName);
         final Map<String, Object> queueAttributes = _restTestHelper.getJsonAsMap(requestUrl);
-        return ((Number) queueAttributes.get("queueDepthBytesIncludingHeader")).intValue();
+        return ((Number) queueAttributes.get("queueDepthBytes")).intValue();
     }
 
     private void waitForFlowControlAndMessageCount(final String queueUrl, final int messageCount, final int timeout) throws InterruptedException, IOException

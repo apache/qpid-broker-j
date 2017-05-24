@@ -863,7 +863,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         queue.enqueue(message, null, null);
 
         assertEquals("Wrong number of messages in queue",3, queue.getQueueDepthMessages());
-        assertEquals("Wrong size of messages in queue",300, queue.getQueueDepthBytesIncludingHeader());
+        assertEquals("Wrong size of messages in queue",300, queue.getQueueDepthBytes());
         assertEquals("Wrong oldest message", 10l,
                 ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
     }
@@ -894,7 +894,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         queue.enqueue(message, null, null);
 
         assertEquals("Wrong number of messages in queue",4, queue.getQueueDepthMessages());
-        assertEquals("Wrong size of messages in queue",80, queue.getQueueDepthBytesIncludingHeader());
+        assertEquals("Wrong size of messages in queue",80, queue.getQueueDepthBytes());
         assertEquals("Wrong oldest message", 50l,
                 ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
     }
@@ -923,14 +923,14 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         queue.enqueue(message, null, null);
 
         assertEquals("Wrong number of messages in queue",4, queue.getQueueDepthMessages());
-        assertEquals("Wrong size of messages in queue",100, queue.getQueueDepthBytesIncludingHeader());
+        assertEquals("Wrong size of messages in queue",100, queue.getQueueDepthBytes());
 
         message = createMessage(new Long(27), 20, 10);
         when(message.getArrivalTime()).thenReturn(500l);
         queue.enqueue(message, null, null);
 
         assertEquals("Wrong number of messages in queue",3, queue.getQueueDepthMessages());
-        assertEquals("Wrong size of messages in queue",90, queue.getQueueDepthBytesIncludingHeader());
+        assertEquals("Wrong size of messages in queue",90, queue.getQueueDepthBytes());
         assertEquals("Wrong oldest message", 200l,
                 ((AbstractQueue) queue).getEntries().getOldestEntry().getMessage().getArrivalTime());
     }

@@ -57,7 +57,7 @@ public enum NotificationCheck
             {
                 // Check for threshold message size
                 long messageSize;
-                messageSize = (msg == null) ? 0 : msg.getSize();
+                messageSize = (msg == null) ? 0 : msg.getSizeIncludingHeader();
 
                 if (messageSize >= maximumMessageSize)
                 {

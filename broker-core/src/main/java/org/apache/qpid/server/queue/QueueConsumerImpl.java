@@ -340,7 +340,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
         if (messageContainer != null)
         {
             _deliveredCount.incrementAndGet();
-            _deliveredBytes.addAndGet(messageContainer.getMessageInstance().getMessage().getSize());
+            _deliveredBytes.addAndGet(messageContainer.getMessageInstance().getMessage().getSizeIncludingHeader());
         }
         return messageContainer;
     }

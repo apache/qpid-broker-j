@@ -426,15 +426,14 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
 
     protected void addUnacknowledgedMessage(MessageInstance entry)
     {
-        final long size = entry.getMessage().getSize();
-        _unacknowledgedBytes.addAndGet(size);
+        _unacknowledgedBytes.addAndGet(entry.getMessage().getSizeIncludingHeader());
         _unacknowledgedCount.incrementAndGet();
         entry.addStateChangeListener(_unacknowledgedMessageListener);
     }
 
     private void removeUnacknowledgedMessage(MessageInstance entry)
     {
-        _unacknowledgedBytes.addAndGet(-entry.getMessage().getSize());
+        _unacknowledgedBytes.addAndGet(-entry.getMessage().getSizeIncludingHeader());
         _unacknowledgedCount.decrementAndGet();
     }
 

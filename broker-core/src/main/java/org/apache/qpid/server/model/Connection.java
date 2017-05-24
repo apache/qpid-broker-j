@@ -113,9 +113,13 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
                                     + " Disabled if negative.")
     long getMaxUncommittedInMemorySize();
 
+    // currently this reports inbound message content size without header.
+    // See also QPID-7689: https://issues.apache.org/jira/browse/QPID-7689?focusedCommentId=16022923#comment-16022923
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound")
     long getBytesIn();
 
+    // currently this reports outbound  message content size without header.
+    // See also QPID-7689: https://issues.apache.org/jira/browse/QPID-7689?focusedCommentId=16022923#comment-16022923
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound")
     long getBytesOut();
 

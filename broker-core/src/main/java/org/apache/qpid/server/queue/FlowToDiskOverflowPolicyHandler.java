@@ -105,7 +105,7 @@ public class FlowToDiskOverflowPolicyHandler implements OverflowPolicyHandler
 
         private void flowTailToDiskIfNecessary(final long maximumQueueDepthBytes, final long maximumQueueDepthMessages)
         {
-            final long queueDepthBytes = _queue.getQueueDepthBytesIncludingHeader();
+            final long queueDepthBytes = _queue.getQueueDepthBytes();
             final long queueDepthMessages = _queue.getQueueDepthMessages();
 
             if ((maximumQueueDepthBytes >= 0L && queueDepthBytes > maximumQueueDepthBytes) ||
@@ -143,7 +143,7 @@ public class FlowToDiskOverflowPolicyHandler implements OverflowPolicyHandler
                                                    final long maximumQueueDepthBytes,
                                                    final long maximumQueueDepthMessages)
         {
-            final long queueDepthBytes = _queue.getQueueDepthBytesIncludingHeader();
+            final long queueDepthBytes = _queue.getQueueDepthBytes();
             final long queueDepthMessages = _queue.getQueueDepthMessages();
 
             if ((maximumQueueDepthBytes >= 0L && queueDepthBytes > maximumQueueDepthBytes) ||

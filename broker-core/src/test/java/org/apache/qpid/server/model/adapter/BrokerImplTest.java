@@ -290,7 +290,7 @@ public class BrokerImplTest extends QpidTestCase
         TestMemoryVirtualHost vh = new TestMemoryVirtualHost(vhAttributes, vhn)
         {
             @Override
-            public long getTotalQueueDepthBytes()
+            public long getTotalDepthOfQueuesBytes()
             {
                 return totalQueueSize;
             }

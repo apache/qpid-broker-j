@@ -63,7 +63,7 @@ public class NotificationCheckTest extends QpidTestCase
     public void testMessageSizeAlertFires() throws Exception
     {
         when(_queue.getAlertThresholdMessageSize()).thenReturn(1024l);
-        when(_message.getSize()).thenReturn(1023l, 1024l, 1025l);
+        when(_message.getSizeIncludingHeader()).thenReturn(1023l, 1024l, 1025l);
 
         MESSAGE_SIZE_ALERT.notifyIfNecessary(_message, _queue, _listener);
         verifyZeroInteractions(_listener);
