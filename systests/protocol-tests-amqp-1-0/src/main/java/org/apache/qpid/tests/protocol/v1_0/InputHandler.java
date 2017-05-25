@@ -67,7 +67,8 @@ public class InputHandler extends ChannelInboundHandlerAdapter
                                                                                             .registerTransportLayer()
                                                                                             .registerMessagingLayer()
                                                                                             .registerTransactionLayer()
-                                                                                            .registerSecurityLayer();
+                                                                                            .registerSecurityLayer()
+                                                                                            .registerExtensionSoleconnLayer();
     private final ValueHandler _valueHandler;
     private final FrameHandler _frameHandler;
 

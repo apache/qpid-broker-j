@@ -342,7 +342,7 @@ public class TimeToLiveTest extends QpidBrokerTestCase
     public void testActiveTTLwithDurableSubscription() throws Exception
     {
         //Create Client 1
-        TopicConnection clientConnection = (TopicConnection) getConnection();
+        TopicConnection clientConnection = (TopicConnection) getConnectionBuilder().setClientId("clientid").build();
         Session clientSession = clientConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         
         // Create and close the durable subscriber

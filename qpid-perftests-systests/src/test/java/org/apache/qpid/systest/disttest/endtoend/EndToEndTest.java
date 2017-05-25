@@ -348,7 +348,6 @@ public class EndToEndTest extends QpidBrokerTestCase
         {
             Map<String,String> options = new LinkedHashMap<>();
             options.put("amqp.vhost", "test");
-            options.put("jms.clientID", "clientid");
             options.put("jms.username", GUEST_USERNAME);
             options.put("jms.password", GUEST_PASSWORD);
 

@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
 import javax.jms.JMSConsumer;
 import javax.jms.JMSContext;
@@ -37,8 +36,10 @@ import javax.jms.JMSRuntimeException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 import javax.jms.Session;
+import javax.naming.NamingException;
 
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.url.URLSyntaxException;
 
 public class DeliveryDelayTest extends QpidBrokerTestCase
 {
@@ -53,9 +54,8 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
 
     public void testDeliveryDelay() throws Exception
     {
-        ConnectionFactory connectionFactory = getConnectionFactory();
-        try (JMSContext context = connectionFactory.createContext(GUEST_USERNAME, GUEST_PASSWORD);
-             Connection utilityConnection = getUtilityConnection(connectionFactory))
+        try (JMSContext context = getConnectionFactory().createContext(GUEST_USERNAME, GUEST_PASSWORD);
+             Connection utilityConnection = createUtilityConnection())
         {
             Destination queue = createQueue(utilityConnection, getTestQueueName(), true);
 
@@ -91,9 +91,8 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
      */
     public void testDeliveryDelayNotSupportedByQueue_MessageRejected() throws Exception
     {
-        ConnectionFactory connectionFactory = getConnectionFactory();
-        try (JMSContext context = connectionFactory.createContext(GUEST_USERNAME, GUEST_PASSWORD);
-             Connection utilityConnection = getUtilityConnection(connectionFactory))
+        try (JMSContext context = getConnectionFactory().createContext(GUEST_USERNAME, GUEST_PASSWORD);
+             Connection utilityConnection = createUtilityConnection())
         {
             Destination queue = createQueue(utilityConnection, getTestQueueName(), false);
             JMSProducer producer = context.createProducer().setDeliveryDelay(DELIVERY_DELAY);
@@ -117,9 +116,8 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
      */
     public void testDeliveryDelayNotSupportedByQueueViaExchange_MessageRejected() throws Exception
     {
-        ConnectionFactory connectionFactory = getConnectionFactory();
-        try (JMSContext context = connectionFactory.createContext(GUEST_USERNAME, GUEST_PASSWORD);
-             Connection utilityConnection = getUtilityConnection(connectionFactory))
+        try (JMSContext context = getConnectionFactory().createContext(GUEST_USERNAME, GUEST_PASSWORD);
+             Connection utilityConnection = createUtilityConnection())
         {
             String testQueueName = getTestQueueName();
             String testExchangeName = getTestName() + "_exch";
@@ -197,9 +195,9 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
         }
     }
 
-    private Connection getUtilityConnection(final ConnectionFactory connectionFactory) throws JMSException
+    private Connection createUtilityConnection() throws JMSException, NamingException, URLSyntaxException
     {
-        Connection connection = connectionFactory.createConnection(GUEST_USERNAME, GUEST_PASSWORD);
+        Connection connection = getConnectionBuilder().build();
         connection.start();
         return connection;
     }

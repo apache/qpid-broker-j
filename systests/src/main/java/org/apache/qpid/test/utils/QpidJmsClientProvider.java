@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -46,7 +47,7 @@ import javax.naming.NamingException;
 
 public class QpidJmsClientProvider implements JmsProvider
 {
-    private static final String CLIENTID = "clientid";
+    private static final AtomicInteger CLIENTID_COUNTER = new AtomicInteger();
     private final AmqpManagementFacade _managementFacade;
     private final Hashtable<Object, Object> _initialContextEnvironment = new Hashtable<>();
 
@@ -114,7 +115,7 @@ public class QpidJmsClientProvider implements JmsProvider
         if (!options.containsKey("jms.clientID"))
         {
             options = new HashMap<>(options);
-            options.put("jms.clientID", CLIENTID);
+            options.put("jms.clientID", getNextClientId());
         }
         else if (options.get("jms.clientID") == null)
         {
@@ -187,7 +188,7 @@ public class QpidJmsClientProvider implements JmsProvider
 
         final Map<String, String> options =
                 Collections.singletonMap("jms.prefetchPolicy.all", String.valueOf(prefetch));
-        final ConnectionFactory connectionFactory = getConnectionFactory(factoryName, "test", "clientid", options);
+        final ConnectionFactory connectionFactory = getConnectionFactory(factoryName, "test", getNextClientId(), options);
         return connectionFactory.createConnection(QpidBrokerTestCase.GUEST_USERNAME,
                                                   QpidBrokerTestCase.GUEST_PASSWORD);
     }
@@ -205,7 +206,7 @@ public class QpidJmsClientProvider implements JmsProvider
                                             ? "default.ssl"
                                             : "default",
                                     vhost,
-                                    "clientId",
+                                    getNextClientId(),
                                     options).createConnection(QpidBrokerTestCase.GUEST_USERNAME,
                                                               QpidBrokerTestCase.GUEST_PASSWORD);
     }
@@ -223,7 +224,7 @@ public class QpidJmsClientProvider implements JmsProvider
     {
         return getConnectionFactory(Boolean.getBoolean(QpidBrokerTestCase.PROFILE_USE_SSL)
                                             ? "default.ssl"
-                                            : "default", vhost, "clientId").createConnection(username, password);
+                                            : "default", vhost, getNextClientId()).createConnection(username, password);
     }
 
     @Override
@@ -481,5 +482,10 @@ public class QpidJmsClientProvider implements JmsProvider
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private String getNextClientId()
+    {
+        return "clientid-" + CLIENTID_COUNTER.getAndIncrement();
     }
 }

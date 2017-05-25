@@ -239,8 +239,6 @@ public class Asserts
 
         assertEquals("Unexpected value for connection attribute " + Connection.PORT,
                      TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT, connectionData.get(Connection.PORT));
-        assertEquals("Unexpected value of connection attribute " + Connection.CLIENT_ID, "clientid",
-                     connectionData.get(Connection.CLIENT_ID));
         assertEquals("Unexpected value of connection attribute " + Connection.PRINCIPAL, "guest",
                      connectionData.get(Connection.PRINCIPAL));
 

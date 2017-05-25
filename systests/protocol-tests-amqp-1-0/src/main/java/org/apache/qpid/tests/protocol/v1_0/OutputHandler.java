@@ -42,7 +42,8 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
                                                                                             .registerTransportLayer()
                                                                                             .registerMessagingLayer()
                                                                                             .registerTransactionLayer()
-                                                                                            .registerSecurityLayer();
+                                                                                            .registerSecurityLayer()
+                                                                                            .registerExtensionSoleconnLayer();
 
 
     @Override

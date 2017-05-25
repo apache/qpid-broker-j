@@ -66,6 +66,7 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.virtualhost.NoopConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
@@ -260,7 +261,7 @@ public class VirtualHostTest extends QpidTestCase
 
         AMQPConnection modelConnection = mock(AMQPConnection.class);
         when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
-        virtualHost.registerConnection(modelConnection);
+        virtualHost.registerConnection(modelConnection, new NoopConnectionEstablishmentPolicy());
 
         assertEquals("Unexpected number of connections after connection registered", 1, virtualHost.getConnectionCount());
 
@@ -288,7 +289,7 @@ public class VirtualHostTest extends QpidTestCase
 
         AMQPConnection modelConnection = mock(AMQPConnection.class);
         when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
-        virtualHost.registerConnection(modelConnection);
+        virtualHost.registerConnection(modelConnection, new NoopConnectionEstablishmentPolicy());
 
         assertEquals("Unexpected number of connections after connection registered",
                      1,
@@ -410,7 +411,7 @@ public class VirtualHostTest extends QpidTestCase
     {
         VirtualHost<?> host = createVirtualHost(getTestName());
         AbstractAMQPConnection connection = mock(AbstractAMQPConnection.class);
-        host.registerConnection(connection);
+        host.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
         ((EventListener)host).event(Event.PERSISTENT_MESSAGE_SIZE_OVERFULL);
         verify(connection).block();
     }
@@ -485,7 +486,7 @@ public class VirtualHostTest extends QpidTestCase
         AMQPConnection<?> connection = getMockConnection();
 
         assertEquals("unexpected number of connections before test", 0, vhost.getConnectionCount());
-        vhost.registerConnection(connection);
+        vhost.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
         assertEquals("unexpected number of connections after registerConnection", 1, vhost.getConnectionCount());
         assertEquals("unexpected connection object", Collections.singleton(connection), vhost.getConnections());
     }
@@ -495,7 +496,7 @@ public class VirtualHostTest extends QpidTestCase
         QueueManagingVirtualHost<?> vhost = createVirtualHost("sdf");
         AMQPConnection<?> connection = getMockConnection();
 
-        vhost.registerConnection(connection);
+        vhost.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
         assertEquals("unexpected number of connections after registerConnection", 1, vhost.getConnectionCount());
         assertEquals("unexpected connection object", Collections.singleton(connection), vhost.getConnections());
         ((AbstractConfiguredObject<?>)vhost).stop();
@@ -511,7 +512,7 @@ public class VirtualHostTest extends QpidTestCase
         ((AbstractConfiguredObject<?>)vhost).stop();
         try
         {
-            vhost.registerConnection(connection);
+            vhost.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
             fail("exception not thrown");
         }
         catch (VirtualHostUnavailableException e)
@@ -520,7 +521,7 @@ public class VirtualHostTest extends QpidTestCase
         }
         assertEquals("unexpected number of connections", 0, vhost.getConnectionCount());
         ((AbstractConfiguredObject<?>)vhost).start();
-        vhost.registerConnection(connection);
+        vhost.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
         assertEquals("unexpected number of connections", 1, vhost.getConnectionCount());
     }
 
