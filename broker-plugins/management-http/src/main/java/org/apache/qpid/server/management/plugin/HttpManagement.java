@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -62,12 +63,14 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.messages.ManagementConsoleMessages;
 import org.apache.qpid.server.logging.messages.PortMessages;
@@ -482,8 +485,8 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
 
         ServerConnector connector = new ServerConnector(server,
-                                                        new QueuedThreadPool(port.getThreadPoolMaximum(),
-                                                                             port.getThreadPoolMinimum()),
+                                                        new QBBTrackingThreadPool(port.getThreadPoolMaximum(),
+                                                                                  port.getThreadPoolMinimum()),
                                                         null,
                                                         null,
                                                         port.getDesiredNumberOfAcceptors(),
@@ -822,6 +825,74 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             if (value < 0)
             {
                 throw new IllegalConfigurationException("Only positive integer value can be specified for the session time out attribute");
+            }
+        }
+    }
+
+    private static class QBBTrackingThreadPool extends QueuedThreadPool
+    {
+        private final Map<Thread, QpidByteBuffer> _cachedBufferMap = new ConcurrentHashMap<>();
+
+        public QBBTrackingThreadPool(@Name("maxThreads") final int maxThreads, @Name("minThreads") final int minThreads)
+        {
+            super(maxThreads, minThreads);
+        }
+
+        @Override
+        protected void doStop() throws Exception
+        {
+            try
+            {
+                super.doStop();
+            }
+            finally
+            {
+                for (QpidByteBuffer qpidByteBuffer : _cachedBufferMap.values())
+                {
+                    qpidByteBuffer.dispose();
+                }
+                _cachedBufferMap.clear();
+            }
+        }
+
+        @Override
+        protected Thread newThread(final Runnable runnable)
+        {
+            return super.newThread(() ->
+                {
+                    try
+                    {
+                        runnable.run();
+                    }
+                    finally
+                    {
+                        QpidByteBuffer qbb = _cachedBufferMap.remove(Thread.currentThread());
+                        if (qbb != null)
+                        {
+                            qbb.dispose();
+                        }
+                    }
+            });
+        }
+
+        @Override
+        protected void runJob(final Runnable job)
+        {
+            try
+            {
+                super.runJob(job);
+            }
+            finally
+            {
+                final QpidByteBuffer cachedThreadLocalBuffer = QpidByteBuffer.getCachedThreadLocalBuffer();
+                if (cachedThreadLocalBuffer != null)
+                {
+                    _cachedBufferMap.put(Thread.currentThread(), cachedThreadLocalBuffer);
+                }
+                else
+                {
+                    _cachedBufferMap.remove(Thread.currentThread());
+                }
             }
         }
     }

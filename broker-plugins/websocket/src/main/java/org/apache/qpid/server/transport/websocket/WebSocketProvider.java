@@ -30,7 +30,9 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,7 +50,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -122,7 +126,68 @@ class WebSocketProvider implements AcceptingTransport
     {
         _idleTimeoutChecker.start();
 
-        _server = new Server();
+        _server = new Server(new QueuedThreadPool()
+        {
+            private final Map<Thread, QpidByteBuffer> _cachedBufferMap = new ConcurrentHashMap<>();
+
+            @Override
+            protected void doStop() throws Exception
+            {
+                try
+                {
+                    super.doStop();
+                }
+                finally
+                {
+                    for (QpidByteBuffer qpidByteBuffer : _cachedBufferMap.values())
+                    {
+                        qpidByteBuffer.dispose();
+                    }
+                    _cachedBufferMap.clear();
+                }
+            }
+
+            @Override
+            protected Thread newThread(final Runnable runnable)
+            {
+                return super.newThread(() ->
+                                       {
+                                           try
+                                           {
+                                               runnable.run();
+                                           }
+                                           finally
+                                           {
+                                               QpidByteBuffer qbb = _cachedBufferMap.remove(Thread.currentThread());
+                                               if (qbb != null)
+                                               {
+                                                   qbb.dispose();
+                                               }
+                                           }
+                                       });
+            }
+
+            @Override
+            protected void runJob(final Runnable job)
+            {
+                try
+                {
+                    super.runJob(job);
+                }
+                finally
+                {
+                    final QpidByteBuffer cachedThreadLocalBuffer = QpidByteBuffer.getCachedThreadLocalBuffer();
+                    if (cachedThreadLocalBuffer != null)
+                    {
+                        _cachedBufferMap.put(Thread.currentThread(), cachedThreadLocalBuffer);
+                    }
+                    else
+                    {
+                        _cachedBufferMap.remove(Thread.currentThread());
+                    }
+                }
+            }
+        });
 
         final ServerConnector connector;
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
