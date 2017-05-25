@@ -34,6 +34,8 @@ public interface StoredMessage<M extends StorableMessageMetaData>
 
     int getContentSize();
 
+    int getMetadataSize();
+
     void remove();
 
     boolean isInMemory();

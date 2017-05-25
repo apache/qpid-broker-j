@@ -1013,6 +1013,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
         private final long _messageId;
         private final int _contentSize;
+        private final int _metadataSize;
         private MessageDataRef<T> _messageDataRef;
 
         StoredBDBMessage(long messageId, T metaData, boolean isRecovered)
@@ -1022,7 +1023,8 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             _messageDataRef = new MessageDataRef<>(metaData, !isRecovered);
 
             _contentSize = metaData.getContentSize();
-            _inMemorySize.addAndGet(metaData.getStorableSize());
+            _metadataSize = metaData.getStorableSize();
+            _inMemorySize.addAndGet(_metadataSize);
         }
 
         @Override
@@ -1041,7 +1043,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                     checkMessageStoreOpen();
                     metaData = (T) getMessageMetaData(_messageId);
                     _messageDataRef = new MessageDataRef<>(metaData, _messageDataRef.getData(), false);
-                    _inMemorySize.addAndGet(metaData.getStorableSize());
+                    _inMemorySize.addAndGet(getMetadataSize());
                 }
                 return metaData;
             }
@@ -1155,6 +1157,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             return _contentSize;
         }
 
+        @Override
+        public int getMetadataSize()
+        {
+            return _metadataSize;
+        }
+
         synchronized void store(Transaction txn)
         {
             if (!stored())
@@ -1207,7 +1215,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             long bytesCleared = 0;
             if ((metaData =_messageDataRef.getMetaData()) != null)
             {
-                bytesCleared += metaData.getStorableSize();
+                bytesCleared += getMetadataSize();
                 metaData.dispose();
             }
 

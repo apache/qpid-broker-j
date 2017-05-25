@@ -58,7 +58,7 @@ public class FlowToDiskTransactionObserver implements TransactionObserver
                                  final EnqueueableMessage<? extends StorableMessageMetaData> message)
     {
         StoredMessage<? extends StorableMessageMetaData> handle = message.getStoredMessage();
-        long messageSize = handle.getContentSize() + handle.getMetaData().getStorableSize();
+        long messageSize = handle.getContentSize() + handle.getMetadataSize();
 
         long newUncommittedSize = _uncommittedMessageSize.get() + messageSize;
         if (newUncommittedSize > _maxUncommittedInMemorySize)
@@ -121,7 +121,7 @@ public class FlowToDiskTransactionObserver implements TransactionObserver
 
         private void messageEnqueued(StoredMessage<? extends StorableMessageMetaData> handle)
         {
-            long size = handle.getContentSize() + handle.getMetaData().getStorableSize();
+            long size = handle.getContentSize() + handle.getMetadataSize();
             _uncommittedMessageSize.addAndGet(size);
             _uncommittedMessages.add(handle);
         }

@@ -34,6 +34,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
 {
     private final long _messageNumber;
     private final int _contentSize;
+    private final int _metadataSize;
     private final Queue<QpidByteBuffer> _content = new LinkedList<>();
     private volatile T _metaData;
 
@@ -42,6 +43,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         _messageNumber = messageNumber;
         _metaData = metaData;
         _contentSize = _metaData.getContentSize();
+        _metadataSize = _metaData.getStorableSize();
     }
 
     public long getMessageNumber()
@@ -108,6 +110,12 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
     public int getContentSize()
     {
         return _contentSize;
+    }
+
+    @Override
+    public int getMetadataSize()
+    {
+        return _metadataSize;
     }
 
     public T getMetaData()

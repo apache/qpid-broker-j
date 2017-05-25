@@ -1952,9 +1952,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                     if (cumulativeSize <= currentTargetSize)
                                     {
                                         cumulativeSize += storedMessage.getContentSize();
-                                        cumulativeSize += storedMessage.getMetaData() == null
-                                                ? 0
-                                                : storedMessage.getMetaData().getStorableSize();
+                                        cumulativeSize += storedMessage.getMetadataSize();
                                     }
                                     else
                                     {

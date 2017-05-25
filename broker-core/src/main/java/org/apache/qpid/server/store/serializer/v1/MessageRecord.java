@@ -35,7 +35,7 @@ class MessageRecord implements Record
     public MessageRecord(final StoredMessage<?> storedMessage)
     {
         _messageNumber = storedMessage.getMessageNumber();
-        _metaData = new byte[1 + storedMessage.getMetaData().getStorableSize()];
+        _metaData = new byte[1 + storedMessage.getMetadataSize()];
         QpidByteBuffer buf = QpidByteBuffer.wrap(_metaData);
         buf.put((byte)storedMessage.getMetaData().getType().ordinal());
         storedMessage.getMetaData().writeToBuffer(buf);

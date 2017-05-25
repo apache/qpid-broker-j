@@ -187,6 +187,7 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
                                                                   NamedAddressSpace addressSpace)
     {
         final MessageMetaData metaData = convertMetaData(message, addressSpace);
+        final int metadataSize = metaData.getStorableSize();
         return new StoredMessage<org.apache.qpid.server.protocol.v0_8.MessageMetaData>()
         {
             @Override
@@ -211,6 +212,12 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
             public int getContentSize()
             {
                 return metaData.getContentSize();
+            }
+
+            @Override
+            public int getMetadataSize()
+            {
+                return metadataSize;
             }
 
             @Override

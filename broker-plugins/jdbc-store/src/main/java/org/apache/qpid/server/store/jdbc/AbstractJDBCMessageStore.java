@@ -1434,6 +1434,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
         private final long _messageId;
         private final int _contentSize;
+        private final int _metadataSize;
 
         private MessageDataRef<T> _messageDataRef;
 
@@ -1445,7 +1446,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             _messageDataRef = new MessageDataRef<>(metaData, !isRecovered);
 
             _contentSize = metaData.getContentSize();
-            _inMemorySize.addAndGet(metaData.getStorableSize());
+            _metadataSize = metaData.getStorableSize();
+            _inMemorySize.addAndGet(_metadataSize);
         }
 
 
@@ -1467,7 +1469,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     {
                         metaData = (T) AbstractJDBCMessageStore.this.getMetaData(_messageId);
                         _messageDataRef = new MessageDataRef<>(metaData, _messageDataRef.getData(), false);
-                        _inMemorySize.addAndGet(metaData.getStorableSize());
+                        _inMemorySize.addAndGet(getMetadataSize());
                     }
                     catch (SQLException e)
                     {
@@ -1586,6 +1588,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             return _contentSize;
         }
 
+        @Override
+        public int getMetadataSize()
+        {
+            return _metadataSize;
+        }
+
         synchronized void store(final Connection conn) throws SQLException
         {
             if (!stored())
@@ -1641,7 +1649,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             long bytesCleared = 0;
             if ((metaData = _messageDataRef.getMetaData()) != null)
             {
-                bytesCleared += metaData.getStorableSize();
+                bytesCleared += getMetadataSize();
                 metaData.dispose();
             }
 

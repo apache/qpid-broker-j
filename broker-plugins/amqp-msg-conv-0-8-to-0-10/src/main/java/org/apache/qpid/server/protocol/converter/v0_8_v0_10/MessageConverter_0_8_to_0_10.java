@@ -73,6 +73,7 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
     private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final AMQMessage message_0_8)
     {
         final MessageMetaData_0_10 messageMetaData_0_10 = convertMetaData(message_0_8);
+        final int metadataSize = messageMetaData_0_10.getStorableSize();
         return new StoredMessage<MessageMetaData_0_10>()
         {
             @Override
@@ -97,6 +98,12 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
             public int getContentSize()
             {
                 return messageMetaData_0_10.getContentSize();
+            }
+
+            @Override
+            public int getMetadataSize()
+            {
+                return metadataSize;
             }
 
             @Override

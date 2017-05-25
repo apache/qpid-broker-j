@@ -64,6 +64,7 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
     private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final ServerMessage<?> serverMsg)
     {
         final MessageMetaData_0_10 messageMetaData_0_10 = convertMetaData(serverMsg);
+        final int metadataSize = messageMetaData_0_10.getStorableSize();
 
         return new StoredMessage<MessageMetaData_0_10>()
                 {
@@ -89,6 +90,12 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
                     public int getContentSize()
                     {
                         return messageMetaData_0_10.getContentSize();
+                    }
+
+                    @Override
+                    public int getMetadataSize()
+                    {
+                        return metadataSize;
                     }
 
                     @Override

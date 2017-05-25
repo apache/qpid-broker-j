@@ -83,6 +83,7 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
         final MessageMetaData messageMetaData_0_8 = convertMetaData(serverMsg,
                                                                     mimeType,
                                                                     messageContent.length);
+        final int metadataSize = messageMetaData_0_8.getStorableSize();
 
         return new StoredMessage<MessageMetaData>()
         {
@@ -108,6 +109,12 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
             public int getContentSize()
             {
                 return messageContent.length;
+            }
+
+            @Override
+            public int getMetadataSize()
+            {
+                return metadataSize;
             }
 
             @Override

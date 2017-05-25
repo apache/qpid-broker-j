@@ -212,7 +212,7 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
 
                 final InternalMessageMetaData metaData =
                         InternalMessageMetaData.create(persistent, header, bytes.length);
-
+                final int metadataSize = metaData.getStorableSize();
 
                 return new StoredMessage<InternalMessageMetaData>()
                 {
@@ -238,6 +238,12 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
                     public int getContentSize()
                     {
                         return bytes.length;
+                    }
+
+                    @Override
+                    public int getMetadataSize()
+                    {
+                        return metadataSize;
                     }
 
                     @Override

@@ -76,6 +76,7 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
         final MessageMetaData_0_10 messageMetaData_0_10 = convertMetaData(serverMsg,
                                                                           mimeType,
                                                                           messageContent.length);
+        final int metadataSize = messageMetaData_0_10.getStorableSize();
 
         return new StoredMessage<MessageMetaData_0_10>()
                 {
@@ -101,6 +102,12 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
                     public int getContentSize()
                     {
                         return messageContent.length;
+                    }
+
+                    @Override
+                    public int getMetadataSize()
+                    {
+                        return metadataSize;
                     }
 
                     @Override

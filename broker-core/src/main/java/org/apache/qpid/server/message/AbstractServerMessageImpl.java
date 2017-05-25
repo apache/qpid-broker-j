@@ -65,7 +65,7 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
     @Override
     public long getSizeIncludingHeader()
     {
-        return _handle.getMetaData().getContentSize() + _handle.getMetaData().getStorableSize();
+        return _handle.getContentSize() + _handle.getMetadataSize();
     }
 
     public StoredMessage<T> getStoredMessage()
