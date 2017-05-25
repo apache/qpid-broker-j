@@ -163,13 +163,20 @@ class WebSocketProvider implements AcceptingTransport
                 @Override
                 public void handshakeFailed(final Event event, final Throwable failure)
                 {
+                    SSLEngine sslEngine = event.getSSLEngine();
                     if (LOGGER.isDebugEnabled())
                     {
-                        LOGGER.info("TLS handshake failed",  failure);
+                        LOGGER.info("TLS handshake failed: host='{}', port={}",
+                                    sslEngine.getPeerHost(),
+                                    sslEngine.getPeerPort(),
+                                    failure);
                     }
                     else
                     {
-                        LOGGER.info("TLS handshake failed: " + failure);
+                        LOGGER.info("TLS handshake failed: host='{}', port={}: {}",
+                                    sslEngine.getPeerHost(),
+                                    sslEngine.getPeerPort(),
+                                    String.valueOf(failure));
                     }
                 }
             });

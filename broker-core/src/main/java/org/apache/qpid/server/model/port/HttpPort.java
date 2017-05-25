@@ -42,17 +42,20 @@ public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X
 
     String PORT_HTTP_NUMBER_OF_SELECTORS = "qpid.port.http.threadPool.numberOfSelectors";
     @SuppressWarnings("unused")
-    @ManagedContextDefault(name = PORT_HTTP_NUMBER_OF_SELECTORS)
+    @ManagedContextDefault(name = PORT_HTTP_NUMBER_OF_SELECTORS,
+            description = "Desired number of selectors, if negative the number of selector is determined by Jetty")
     long DEFAULT_PORT_HTTP_NUMBER_OF_SELECTORS = -1;
     String PORT_HTTP_NUMBER_OF_ACCEPTORS = "qpid.port.http.threadPool.numberOfAcceptors";
 
     @SuppressWarnings("unused")
-    @ManagedContextDefault(name = PORT_HTTP_NUMBER_OF_ACCEPTORS)
+    @ManagedContextDefault(name = PORT_HTTP_NUMBER_OF_ACCEPTORS,
+            description = "Desired number of acceptors. If negative the number of acceptors is determined by Jetty."
+                          + " If zero, the selector threads are used as acceptors.")
     long DEFAULT_PORT_HTTP_NUMBER_OF_ACCEPTORS = -1;
 
     String PORT_HTTP_ACCEPT_BACKLOG = "qpid.port.http.acceptBacklog";
     @SuppressWarnings("unused")
-    @ManagedContextDefault(name = PORT_HTTP_ACCEPT_BACKLOG)
+    @ManagedContextDefault(name = PORT_HTTP_ACCEPT_BACKLOG, description = "The size of the pending connection backlog")
     int DEFAULT_PORT_HTTP_ACCEPT_BACKLOG = 1024;
 
     @ManagedAttribute(defaultValue = "*")
@@ -105,20 +108,22 @@ public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X
                                                             + "matches the HTTP Host in the request")
     boolean isManageBrokerOnNoAliasMatch();
 
-    @DerivedAttribute(description = "Desired number of acceptor threads. You can set it to negative value"
-                                    + " in order to delegate its evaluation to the http server.")
+    @DerivedAttribute(description = "Desired number of acceptors. See context variable '"
+                                    + PORT_HTTP_NUMBER_OF_ACCEPTORS
+                                    + "'")
     int getDesiredNumberOfAcceptors();
 
-    @DerivedAttribute(description = "Desired number of selector threads. You can set it to negative value"
-                                    + " in order to delegate its evaluation to the http server.")
+    @DerivedAttribute(description = "Desired number of selectors. See context variable '"
+                                    + PORT_HTTP_NUMBER_OF_ACCEPTORS
+                                    + "'")
     int getDesiredNumberOfSelectors();
 
-    @DerivedAttribute (description = "Size of accepts backlog")
+    @DerivedAttribute(description = "Size of accept backlog")
     int getAcceptBacklogSize();
 
-    @DerivedAttribute (description = "Actual number of acceptor threads.")
+    @DerivedAttribute(description = "Actual number of acceptors.")
     int getNumberOfAcceptors();
 
-    @DerivedAttribute (description = "Actual number of selector threads.")
+    @DerivedAttribute(description = "Actual number of selectors.")
     int getNumberOfSelectors();
 }

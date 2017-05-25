@@ -32,12 +32,14 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -281,6 +283,14 @@ public class TlsOrPlainConnectionFactory extends AbstractConnectionFactory
                             sslConnection.setInputBufferSize(getInputBufferSize());
                             sslConnection.setRenegotiationAllowed(_sslContextFactory.isRenegotiationAllowed());
                             _actualConnection = sslConnection;
+
+                            if (_connector instanceof ContainerLifeCycle)
+                            {
+                                ContainerLifeCycle container = (ContainerLifeCycle)_connector;
+                                container.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
+                            }
+                            getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
+
 
                             ConnectionFactory next = _connector.getConnectionFactory(_nextProtocol);
 

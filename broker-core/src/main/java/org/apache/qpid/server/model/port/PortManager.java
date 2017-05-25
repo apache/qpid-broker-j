@@ -28,7 +28,7 @@ public interface PortManager
 
     int getBoundPort(HttpPort httpPort);
 
-    int getNumberOfAcceptors(HttpPortImpl httpPort);
+    int getNumberOfAcceptors(HttpPort httpPort);
 
-    int getNumberOfSelectors(HttpPortImpl httpPort);
+    int getNumberOfSelectors(HttpPort httpPort);
 }

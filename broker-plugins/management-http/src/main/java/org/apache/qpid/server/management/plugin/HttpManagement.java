@@ -107,10 +107,10 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.adapter.AbstractPluginAdapter;
 import org.apache.qpid.server.model.port.HttpPort;
-import org.apache.qpid.server.model.port.HttpPortImpl;
 import org.apache.qpid.server.model.port.PortManager;
 import org.apache.qpid.server.transport.PortBindFailureException;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.util.DaemonThreadFactory;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 @ManagedObject( category = false, type = HttpManagement.PLUGIN_TYPE )
@@ -279,7 +279,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         _logger.debug("Starting up web server on {}", ports);
         _allowPortActivation = true;
 
-        _jettyServerExecutor = Executors.newSingleThreadExecutor((Runnable r) -> new Thread(r, "Jetty-Server-Thread"));
+        _jettyServerExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory("Jetty-Server-Thread"));
         Server server = new Server(new ExecutorThreadPool(_jettyServerExecutor));
         int lastPort = -1;
         for (HttpPort<?> port : ports)
@@ -410,7 +410,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     }
 
     @Override
-    public int getNumberOfAcceptors(HttpPortImpl httpPort)
+    public int getNumberOfAcceptors(HttpPort httpPort)
     {
         ServerConnector c = _portConnectorMap.get(httpPort);
         if (c != null)
@@ -424,7 +424,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     }
 
     @Override
-    public int getNumberOfSelectors(HttpPortImpl httpPort)
+    public int getNumberOfSelectors(HttpPort httpPort)
     {
         ServerConnector c = _portConnectorMap.get(httpPort);
         if (c != null)
@@ -521,13 +521,20 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                 @Override
                 public void handshakeFailed(final Event event, final Throwable failure)
                 {
+                    SSLEngine sslEngine = event.getSSLEngine();
                     if (_logger.isDebugEnabled())
                     {
-                        _logger.info("TLS handshake failed",  failure);
+                        _logger.info("TLS handshake failed: host='{}', port={}",
+                                    sslEngine.getPeerHost(),
+                                    sslEngine.getPeerPort(),
+                                    failure);
                     }
                     else
                     {
-                        _logger.info("TLS handshake failed: " + failure);
+                        _logger.info("TLS handshake failed: host='{}', port={}: {}",
+                                    sslEngine.getPeerHost(),
+                                    sslEngine.getPeerPort(),
+                                    String.valueOf(failure));
                     }
                 }
             });
