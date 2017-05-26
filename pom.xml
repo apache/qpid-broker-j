@@ -130,7 +130,6 @@
 
     <geronimo-jms-1-1-version>1.1.1</geronimo-jms-1-1-version>
     <geronimo-jms-2-0-version>1.0-alpha-2</geronimo-jms-2-0-version>
-    <geronimo-servlet-version>1.0</geronimo-servlet-version>
     <bcel-version>5.2</bcel-version>
 
     <velocity-version>1.4</velocity-version>
@@ -284,20 +283,9 @@
         <version>${geronimo-jms-2-0-version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.geronimo.specs</groupId>
-        <artifactId>geronimo-servlet_3.0_spec</artifactId>
-        <version>${geronimo-servlet-version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
         <version>${jetty-version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -313,6 +301,12 @@
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-server</artifactId>
         <version>${jetty-version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.eclipse.jetty.websocket</groupId>
+            <artifactId>websocket-client</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.bcel</groupId>
@@ -1193,6 +1187,7 @@
                 <includedLicense>Eclipse Public License - Version 1.0</includedLicense>
                 <includedLicense>Common Public License Version 1.0</includedLicense>
                 <includedLicense>Academic Free License v2.1</includedLicense>
+                <includedLicense>COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0</includedLicense>
               </includedLicenses>
               <licenseMerges>
                 <licenseMerge>Apache Software License, Version 2.0|The Apache Software License, Version 2.0|Apache Software License - Version 2.0|Apache v2|Apache 2|Apache License, Version 2.0</licenseMerge>
@@ -1200,6 +1195,7 @@
                 <licenseMerge>BSD License|New BSD|New BSD License|BSD-3-Clause</licenseMerge>
                 <licenseMerge>Eclipse Public License - Version 1.0|Eclipse Public License - v 1.0</licenseMerge>
                 <licenseMerge>Academic Free License v2.1|AFL-2.1</licenseMerge>
+                <licenseMerge>COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0|CDDL + GPLv2 with classpath exception</licenseMerge>
               </licenseMerges>
             </configuration>
             <executions>

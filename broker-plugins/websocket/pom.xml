@@ -37,17 +37,11 @@
             <scope>provided</scope>
         </dependency>
 
-
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-codegen</artifactId>
             <version>${project.version}</version>
             <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.geronimo.specs</groupId>
-            <artifactId>geronimo-servlet_3.0_spec</artifactId>
         </dependency>
 
         <dependency>
@@ -58,6 +52,12 @@
         <dependency>
             <groupId>org.eclipse.jetty.websocket</groupId>
             <artifactId>websocket-server</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.jetty.websocket</groupId>
+                    <artifactId>websocket-client</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
     </dependencies>
