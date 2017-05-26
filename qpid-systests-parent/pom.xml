@@ -38,6 +38,7 @@
     <test.working.directory>${basedir}/..</test.working.directory>
     <test.resource.directory>${basedir}/..</test.resource.directory>
     <test.systest.resource.directory>${basedir}</test.systest.resource.directory>
+    <skip.systests>false</skip.systests>
   </properties>
 
   <dependencies>
@@ -82,6 +83,7 @@
           <systemPropertyVariables>
             <test.output.dir>${test.output.dir}</test.output.dir>
           </systemPropertyVariables>
+          <skipTests>${skip.systests}</skipTests>
         </configuration>
         <executions>
           <execution>
@@ -232,4 +234,20 @@
     </plugins>
   </reporting>
 
+  <profiles>
+    <profile>
+      <id>skip.systests</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>true</skipTests>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
