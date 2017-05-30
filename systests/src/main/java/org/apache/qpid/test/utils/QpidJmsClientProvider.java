@@ -452,6 +452,12 @@ public class QpidJmsClientProvider implements JmsProvider
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public ConnectionBuilder getConnectionBuilder()
+    {
+        return new QpidJmsClientConnectionBuilder();
+    }
+
     private void appendOptions(final Map<String, String> actualOptions, final StringBuilder stem)
     {
         boolean first = true;
