@@ -136,6 +136,8 @@ From: 'Webtide' (https://webtide.com)
   - Jetty :: Websocket :: Servlet Interface (http://www.eclipse.org/jetty/websocket-servlet) org.eclipse.jetty.websocket:websocket-servlet:jar:9.4.3.v20170317
     License: Apache Software License - Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0)    License: Eclipse Public License - Version 1.0  (http://www.eclipse.org/org/documents/epl-v10.php)
 
+From: 'Oracle Corporation' (http://www.oracle.com/)
+  - je  com.sleepycat:je:jar:7.3.7
 
 
 

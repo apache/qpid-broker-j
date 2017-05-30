@@ -26,11 +26,8 @@
   <section xml:id="Java-Broker-Management-Managing-Virtualhost-Nodes-Types">
     <title>Types</title>
     <para> The following virtualhost nodes types are supported. <itemizedlist>
-        <listitem><para>BDB - Node backed with Oracle BDB <footnote>
-              <para>Oracle BDB JE is optional. See <xref linkend="Java-Broker-Miscellaneous-Installing-Oracle-BDB-JE"/>.</para>
-            </footnote></para></listitem>
-        <listitem><para>BDB HA - Node backed with Oracle BDB utilising High
-          Availability</para></listitem>
+        <listitem><para>BDB - Node backed with Oracle Berkeley DB JE</para></listitem>
+        <listitem><para>BDB HA - Node backed with Oracle Berkeley DB JE utilising High Availability</para></listitem>
         <listitem><para>DERBY - Node backed with Apache Derby</para></listitem>
         <listitem><para>JDBC - Node backed with an external database <footnote>
               <para>JDBC 4.0 compatible drivers must be available. See <xref linkend="Java-Broker-Miscellaneous-Installing-External-JDBC-Driver"/></para>

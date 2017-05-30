@@ -62,13 +62,6 @@
     </dependency>
 
     <dependency>
-      <groupId>com.sleepycat</groupId>
-      <artifactId>je</artifactId>
-      <scope>provided</scope>
-      <optional>true</optional>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-jms_2.0_spec</artifactId>
     </dependency>

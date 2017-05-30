@@ -48,9 +48,6 @@ public interface EnvironmentFacade
         put(EnvironmentConfig.FILE_LOGGING_LEVEL, "OFF");
         put(EnvironmentConfig.CONSOLE_LOGGING_LEVEL, "OFF");
         put(EnvironmentConfig.CLEANER_UPGRADE_TO_LOG_VERSION, "-1");
-        // Automatic cleaner adjustment has been seen to stop the cleaner working at all, disable it
-        // Newer versions of BDB JE 6.3 ignore this setting.
-        put(EnvironmentConfig.CLEANER_ADJUST_UTILIZATION, "false");
     }});
 
     String CACHE_MODE_PROPERTY_NAME = "qpid.bdb.cache_mode";

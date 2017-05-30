@@ -50,12 +50,6 @@
     </dependency>
 
     <dependency>
-      <groupId>com.sleepycat</groupId>
-      <artifactId>je</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-bdbstore</artifactId>
       <version>${project.version}</version>

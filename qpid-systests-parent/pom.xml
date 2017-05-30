@@ -172,26 +172,6 @@
               </artifactItems>
             </configuration>
           </execution>
-          <!-- work around to make sure bdb jar available for bdb profiles -->
-          <execution>
-            <id>copy-sleepycat-jar-for-bdb-tests</id>
-            <phase>pre-integration-test</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>com.sleepycat</groupId>
-                  <artifactId>je</artifactId>
-                  <version>${bdb-version}</version>
-                  <type>jar</type>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${project.build.directory}/qpid-broker/${project.version}/lib</outputDirectory>
-            </configuration>
-          </execution>
-
         </executions>
       </plugin>
 

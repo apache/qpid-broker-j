@@ -29,9 +29,7 @@
     <title>Types</title>
     <para>The following virtualhost types are supported. <itemizedlist>
         <listitem>
-          <para>BDB - Virtualhost backed with Oracle BDB <footnote>
-              <para>Oracle BDB JE is optional. See <xref linkend="Java-Broker-Miscellaneous-Installing-Oracle-BDB-JE"/>.</para>
-            </footnote></para>
+          <para>BDB - Virtualhost backed with Oracle Berkeley DB JE</para>
         </listitem>
         <listitem>
           <para>BDB HA - Virtualhost backed with Oracle BDB utilising High Availability</para>

@@ -164,8 +164,8 @@ drwxrwxr-x. 2 alex alex  4096 Nov 25 11:43 lib
   </section>
   <section role="h2" xml:id="Java-Broker-Installation-OptionalDependencies">
     <title>Optional Dependencies</title>
-    <para>If you wish to utilise storage options using Oracle BDB JE or an External Database, see
-      <xref linkend="Java-Broker-Miscellaneous-Installing-Oracle-BDB-JE"/> and <xref linkend="Java-Broker-Miscellaneous-Installing-External-JDBC-Driver"/> for details of
+    <para>If you wish to utilise a storage option using an External Database, see
+      <xref linkend="Java-Broker-Miscellaneous-Installing-External-JDBC-Driver"/> for details of
       installing their dependencies.</para>
   </section>
 </chapter>

@@ -68,31 +68,4 @@ cp <literal>driver</literal>.jar qpid-broker-${project.version}/lib</programlist
     <programlisting>Windows:
 copy <literal>driver</literal>.jar qpid-broker-${project.version}\lib</programlisting>
   </section>
-
-  <section role="h2" xml:id="Java-Broker-Miscellaneous-Installing-Oracle-BDB-JE">
-    <title>Installing Oracle BDB JE</title>
-    <para> The Oracle BDB JE is not distributed with Apache Qpid owing to license considerations.. </para>
-    <para>If you wish to use a BDB Virtualhost Node, BDB Virtualhost, or BDB HA Virtualhost Node you
-      must make the BDB JE's JAR available on the Broker's classpath. </para>
-    <para> Download the Oracle BDB JE ${bdb-version} release <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeDownloadUrl}">from the Oracle website.</link>
-    </para>
-    <para> The download has a name in the form je-${bdb-version}.tar.gz. It is
-      recommended that you confirm the integrity of the download by verifying the MD5. </para>
-    <para>Copy the je-${bdb-version}.jar from within the release into
-        <literal>\${QPID_HOME}/lib</literal> folder.</para>
-
-    <programlisting>Unix:
-cp je-${bdb-version}.jar qpid-broker-${project.version}/lib</programlisting>
-
-    <programlisting>Windows:
-copy je-${bdb-version}.jar qpid-broker-${project.version}\lib</programlisting>
-
-  </section>
-
-
-
-
-
-
-
 </appendix>
