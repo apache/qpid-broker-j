@@ -20,15 +20,9 @@
  */
 package org.apache.qpid.server.model;
 
-import java.security.Principal;
 import java.util.List;
 
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
-
 import org.apache.qpid.server.logging.EventLoggerProvider;
-import org.apache.qpid.server.security.SubjectCreator;
-import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 
@@ -36,14 +30,6 @@ import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 public interface AuthenticationProvider<X extends AuthenticationProvider<X>> extends ConfiguredObject<X>,
                                                                                      EventLoggerProvider
 {
-
-    /**
-     * A temporary method to create SubjectCreator.
-     *
-     * TODO: move all the functionality from SubjectCreator into AuthenticationProvider
-     * @param secure
-     */
-    SubjectCreator getSubjectCreator(final boolean secure);
 
     /**
      * Gets the SASL mechanisms known to this manager.
@@ -61,4 +47,7 @@ public interface AuthenticationProvider<X extends AuthenticationProvider<X>> ext
     List<String> getDisabledMechanisms();
 
     SaslNegotiator createSaslNegotiator(String mechanism, final SaslSettings saslSettings);
+
+    List<String> getAvailableMechanisms(boolean secure);
+
 }

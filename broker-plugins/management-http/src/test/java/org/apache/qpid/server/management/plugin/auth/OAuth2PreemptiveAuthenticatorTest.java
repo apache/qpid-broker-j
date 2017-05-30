@@ -31,6 +31,7 @@ import javax.security.auth.Subject;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
+import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -49,14 +50,17 @@ public class OAuth2PreemptiveAuthenticatorTest extends QpidTestCase
 
     private OAuth2PreemptiveAuthenticator _authenticator;
     private HttpManagementConfiguration _mockConfiguration;
+    private HttpPort _mockPort;
 
     @Override
     protected void setUp() throws Exception
     {
         super.setUp();
-        OAuth2AuthenticationProvider<?> mockAuthProvider = createMockOAuth2AuthenticationProvider();
+        _mockPort = mock(HttpPort.class);
         _mockConfiguration = mock(HttpManagementConfiguration.class);
+        OAuth2AuthenticationProvider<?> mockAuthProvider = createMockOAuth2AuthenticationProvider(_mockPort);
         when(_mockConfiguration.getAuthenticationProvider(any(HttpServletRequest.class))).thenReturn(mockAuthProvider);
+        when(_mockConfiguration.getPort(any(HttpServletRequest.class))).thenReturn(_mockPort);
 
         _authenticator = new OAuth2PreemptiveAuthenticator();
     }
@@ -104,7 +108,7 @@ public class OAuth2PreemptiveAuthenticatorTest extends QpidTestCase
         assertNull("Authenticator did not failed with malformed authentication header", subject);
     }
 
-    private OAuth2AuthenticationProvider<?> createMockOAuth2AuthenticationProvider() throws URISyntaxException
+    private OAuth2AuthenticationProvider<?> createMockOAuth2AuthenticationProvider(final HttpPort mockPort) throws URISyntaxException
     {
         OAuth2AuthenticationProvider authenticationProvider = mock(OAuth2AuthenticationProvider.class);
         SubjectCreator mockSubjectCreator = mock(SubjectCreator.class);
@@ -128,7 +132,7 @@ public class OAuth2PreemptiveAuthenticatorTest extends QpidTestCase
                                                                                    new Exception("authentication failed"));
         SubjectAuthenticationResult failedSubjectAuthenticationResult = new SubjectAuthenticationResult(failedAuthenticationResult);
 
-        when(authenticationProvider.getSubjectCreator(any(Boolean.class))).thenReturn(mockSubjectCreator);
+        when(mockPort.getSubjectCreator(any(Boolean.class))).thenReturn(mockSubjectCreator);
         when(authenticationProvider.authenticateViaAccessToken(TEST_VALID_ACCESS_TOKEN)).thenReturn(mockSuccessfulAuthenticationResult);
         when(authenticationProvider.authenticateViaAccessToken(TEST_INVALID_ACCESS_TOKEN)).thenReturn(failedAuthenticationResult);
         when(authenticationProvider.authenticateViaAccessToken(TEST_UNAUTHORIZED_ACCESS_TOKEN)).thenReturn(mockUnauthorizedAuthenticationResult);

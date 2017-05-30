@@ -220,7 +220,14 @@ public class OAuth2AuthenticationProviderImpl
     @Override
     public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
     {
-        return new OAuth2Negotiator(this);
+        if(OAuth2Negotiator.MECHANISM.equals(mechanism))
+        {
+            return new OAuth2Negotiator(this);
+        }
+        else
+        {
+            return null;
+        }
     }
 
     @Override

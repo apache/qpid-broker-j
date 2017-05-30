@@ -50,23 +50,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFinder;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.Content;
-import org.apache.qpid.server.util.ExternalServiceException;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.OperationTimeoutException;
 import org.apache.qpid.server.model.preferences.UserPreferences;
+import org.apache.qpid.server.util.DataUrlUtils;
+import org.apache.qpid.server.util.ExternalServiceException;
 import org.apache.qpid.server.util.ExternalServiceTimeoutException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
-import org.apache.qpid.server.util.DataUrlUtils;
 
 public class RestServlet extends AbstractServlet
 {
@@ -637,7 +636,7 @@ public class RestServlet extends AbstractServlet
         }
 
 
-        if(operation.isSecure(target, operationArguments) && !(request.isSecure() || HttpManagement.getPort(request).isAllowConfidentialOperationsOnInsecureChannels()))
+        if(operation.isSecure(target, operationArguments) && !(request.isSecure() || HttpManagementUtil.getPort(request).isAllowConfidentialOperationsOnInsecureChannels()))
         {
             sendJsonErrorResponse(request,
                                   response,

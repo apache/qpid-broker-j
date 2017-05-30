@@ -21,12 +21,14 @@
 package org.apache.qpid.server.management.plugin;
 
 import java.util.Set;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.Plugin;
+import org.apache.qpid.server.model.Port;
 
 public interface HttpManagementConfiguration<X extends HttpManagementConfiguration<X>> extends Plugin<X>
 {
@@ -75,4 +77,5 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
     long DEFAULT_PREFERENCE_OPERTAION_TIMEOUT = 10000L;
 
     AuthenticationProvider getAuthenticationProvider(HttpServletRequest request);
+    Port<?> getPort(HttpServletRequest request);
 }

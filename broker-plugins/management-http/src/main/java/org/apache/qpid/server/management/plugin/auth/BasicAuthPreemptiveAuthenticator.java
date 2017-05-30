@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpRequestPreemptiveAuthenticator;
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -45,8 +46,9 @@ public class BasicAuthPreemptiveAuthenticator implements HttpRequestPreemptiveAu
     public Subject attemptAuthentication(final HttpServletRequest request, final HttpManagementConfiguration managementConfiguration)
     {
         String header = request.getHeader("Authorization");
+        final Port<?> port = managementConfiguration.getPort(request);
         final AuthenticationProvider<?> authenticationProvider = managementConfiguration.getAuthenticationProvider(request);
-        SubjectCreator subjectCreator = authenticationProvider.getSubjectCreator(request.isSecure());
+        SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure());
 
         if (header != null && authenticationProvider instanceof UsernamePasswordAuthenticationProvider)
         {

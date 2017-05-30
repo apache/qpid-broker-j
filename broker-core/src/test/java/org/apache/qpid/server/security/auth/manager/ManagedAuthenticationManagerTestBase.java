@@ -35,10 +35,9 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.User;
-import org.apache.qpid.server.security.SubjectCreator;
-import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.User;
+import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -92,10 +91,8 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
 
     public void testMechanisms()
     {
-        SubjectCreator insecureCreator = _authManager.getSubjectCreator(false);
-        assertFalse("PLAIN authentication should not be available on an insecure connection", insecureCreator.getMechanisms().contains("PLAIN"));
-        SubjectCreator secureCreator = _authManager.getSubjectCreator(true);
-        assertTrue("PLAIN authentication should be available on a secure connection", secureCreator.getMechanisms().contains("PLAIN"));
+        assertFalse("PLAIN authentication should not be available on an insecure connection", _authManager.getAvailableMechanisms(false).contains("PLAIN"));
+        assertTrue("PLAIN authentication should be available on a secure connection", _authManager.getAvailableMechanisms(true).contains("PLAIN"));
     }
 
     public void testAddChildAndThenDelete() throws ExecutionException, InterruptedException

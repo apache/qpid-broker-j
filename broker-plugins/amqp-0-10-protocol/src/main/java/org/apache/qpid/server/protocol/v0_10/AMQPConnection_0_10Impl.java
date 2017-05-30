@@ -40,18 +40,17 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.security.SubjectCreator;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionCloseCode;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
+import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.transport.ByteBufferSender;
-import org.apache.qpid.server.protocol.v0_10.transport.ConnectionCloseCode;
 
 
 public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnection_0_10Impl, ServerConnection>
@@ -84,8 +83,7 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
 
         _connection = new ServerConnection(id, broker, port, transport, this);
 
-        SubjectCreator subjectCreator = port.getAuthenticationProvider().getSubjectCreator(transport.isSecure());
-        ServerConnectionDelegate connDelegate = new ServerConnectionDelegate(broker, subjectCreator);
+        ServerConnectionDelegate connDelegate = new ServerConnectionDelegate(port, transport.isSecure());
 
         _connection.setConnectionDelegate(connDelegate);
         _connection.setRemoteAddress(network.getRemoteAddress());
@@ -93,17 +91,13 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
         _inputHandler = new ServerInputHandler(new ServerAssembler(_connection));
         _connection.addFrameSizeObserver(_inputHandler);
 
-        AccessController.doPrivileged(new PrivilegedAction<Object>()
+        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                _connection.setNetworkConnection(getNetwork());
-                _disassembler = new ServerDisassembler(wrapSender(getNetwork().getSender()), Constant.MIN_MAX_FRAME_SIZE);
-                _connection.setSender(_disassembler);
-                _connection.addFrameSizeObserver(_disassembler);
-                return null;
-            }
+            _connection.setNetworkConnection(getNetwork());
+            _disassembler = new ServerDisassembler(wrapSender(getNetwork().getSender()), Constant.MIN_MAX_FRAME_SIZE);
+            _connection.setSender(_disassembler);
+            _connection.addFrameSizeObserver(_disassembler);
+            return null;
         }, getAccessControllerContext());
     }
 
@@ -139,36 +133,33 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
         };
     }
 
+    @Override
     public void received(final QpidByteBuffer buf)
     {
-        AccessController.doPrivileged(new PrivilegedAction<Object>()
+        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
+            updateLastReadTime();
+            try
             {
-                updateLastReadTime();
-                try
+                _inputHandler.received(buf);
+                _connection.receivedComplete();
+            }
+            catch (IllegalArgumentException | IllegalStateException e)
+            {
+                throw new ConnectionScopedRuntimeException(e);
+            }
+            catch (StoreException e)
+            {
+                if (getAddressSpace().isActive())
                 {
-                    _inputHandler.received(buf);
-                    _connection.receivedComplete();
+                    throw new ServerScopedRuntimeException(e);
                 }
-                catch (IllegalArgumentException | IllegalStateException e)
+                else
                 {
                     throw new ConnectionScopedRuntimeException(e);
                 }
-                catch (StoreException e)
-                {
-                    if (getAddressSpace().isActive())
-                    {
-                        throw new ServerScopedRuntimeException(e);
-                    }
-                    else
-                    {
-                        throw new ConnectionScopedRuntimeException(e);
-                    }
-                }
-                return null;
             }
+            return null;
         }, getAccessControllerContext());
     }
 
@@ -177,22 +168,20 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     {
     }
 
+    @Override
     public void writerIdle()
     {
         _connection.doHeartBeat();
     }
 
+    @Override
     public void readerIdle()
     {
-        AccessController.doPrivileged(new PrivilegedAction<Object>()
+        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                _connection.getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " + _connection.getConnectionDelegate().getState(), true));
-                getNetwork().close();
-                return null;
-            }
+            _connection.getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " + _connection.getConnectionDelegate().getState(), true));
+            getNetwork().close();
+            return null;
         }, getAccessControllerContext());
 
     }
@@ -207,18 +196,14 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     {
         try
         {
-            AccessController.doPrivileged(new PrivilegedAction<Void>()
+            AccessController.doPrivileged((PrivilegedAction<Void>) () ->
             {
-                @Override
-                public Void run()
+                _inputHandler.closed();
+                if(_disassembler != null)
                 {
-                    _inputHandler.closed();
-                    if(_disassembler != null)
-                    {
-                        _disassembler.closed();
-                    }
-                    return null;
+                    _disassembler.closed();
                 }
+                return null;
             }, getAccessControllerContext());
         }
         finally
@@ -281,16 +266,19 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
         notifyWork();
     }
 
+    @Override
     public void clearWork()
     {
         _stateChanged.set(false);
     }
 
+    @Override
     public void setWorkListener(final Action<ProtocolEngine> listener)
     {
         _workListener.set(listener);
     }
 
+    @Override
     public boolean hasSessionWithName(final byte[] name)
     {
         return _connection.hasSessionWithName(name);
@@ -319,16 +307,19 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
         _connection.addAsyncTask(action);
     }
 
+    @Override
     public void block()
     {
         _connection.block();
     }
 
+    @Override
     public String getRemoteContainerName()
     {
         return getClientId();
     }
 
+    @Override
     public Collection<? extends Session_0_10> getSessionModels()
     {
         final Collection<org.apache.qpid.server.model.Session> sessions =
@@ -337,11 +328,13 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
         return session_0_10s;
     }
 
+    @Override
     public void unblock()
     {
         _connection.unblock();
     }
 
+    @Override
     public long getSessionCountLimit()
     {
         return _connection.getSessionCountLimit();

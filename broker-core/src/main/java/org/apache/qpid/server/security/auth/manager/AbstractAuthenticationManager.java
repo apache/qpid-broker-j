@@ -22,8 +22,10 @@ package org.apache.qpid.server.security.auth.manager;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -37,15 +39,12 @@ import org.apache.qpid.server.logging.messages.AuthenticationProviderMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Container;
-import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.server.model.port.AbstractPortWithAuthProvider;
-import org.apache.qpid.server.security.SubjectCreator;
 
 public abstract class AbstractAuthenticationManager<T extends AbstractAuthenticationManager<T>>
     extends AbstractConfiguredObject<T>
@@ -83,11 +82,24 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     }
 
     @Override
-    public SubjectCreator getSubjectCreator(final boolean secure)
+    public List<String> getAvailableMechanisms(boolean secure)
     {
-        Collection children = _container.getChildren(GroupProvider.class);
-        return new SubjectCreator(this, children, secure);
+        List<String> mechanisms = getMechanisms();
+        Set<String> filter = getDisabledMechanisms() != null
+                ? new HashSet<>(getDisabledMechanisms())
+                : new HashSet<>() ;
+        if(!secure)
+        {
+            filter.addAll(getSecureOnlyMechanisms());
+        }
+        if (!filter.isEmpty())
+        {
+            mechanisms = new ArrayList<>(mechanisms);
+            mechanisms.removeAll(filter);
+        }
+        return mechanisms;
     }
+
 
     @StateTransition( currentState = State.UNINITIALIZED, desiredState = State.QUIESCED )
     protected ListenableFuture<Void> startQuiesced()
@@ -128,8 +140,7 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
         Collection<Port> ports = new ArrayList<>(_container.getChildren(Port.class));
         for (Port<?> port : ports)
         {
-            if(port instanceof AbstractPortWithAuthProvider
-               && ((AbstractPortWithAuthProvider<?>)port).getAuthenticationProvider() == this)
+            if(port.getAuthenticationProvider() == this)
             {
                 throw new IntegrityViolationException("Authentication provider '" + providerName + "' is set on port " + port.getName());
             }

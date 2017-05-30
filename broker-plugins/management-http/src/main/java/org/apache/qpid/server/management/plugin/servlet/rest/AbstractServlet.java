@@ -47,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.management.plugin.GunzipOutputStream;
-import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
@@ -92,7 +91,7 @@ public abstract class AbstractServlet extends HttpServlet
 
     private ConfiguredObject<?> getManagedObject(final HttpServletRequest request, final HttpServletResponse resp)
     {
-        HttpPort<?> port =  HttpManagement.getPort(request);
+        HttpPort<?> port =  HttpManagementUtil.getPort(request);
         final NamedAddressSpace addressSpace = port.getAddressSpace(request.getServerName());
         if(addressSpace == null)
         {

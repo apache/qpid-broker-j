@@ -215,18 +215,16 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                                                                                         .registerSecurityLayer();
 
 
-    private Map _properties;
+    private Map<Symbol, Object> _properties;
     private boolean _saslComplete;
 
     private SaslNegotiator _saslNegotiator;
     private String _localHostname;
     private long _desiredIdleTimeout;
 
-    private Error _remoteError;
-
     private static final long MINIMUM_SUPPORTED_IDLE_TIMEOUT = 1000L;
 
-    private Map _remoteProperties;
+    private volatile Map<Symbol, Object> _remoteProperties;
 
     private final AtomicBoolean _orderlyClose = new AtomicBoolean(false);
 
@@ -256,7 +254,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         super(broker, network, port, transport, Protocol.AMQP_1_0, id, aggregateTicker);
 
-        _subjectCreator = port.getAuthenticationProvider().getSubjectCreator(transport.isSecure());
+        _subjectCreator = port.getSubjectCreator(transport.isSecure());
 
         _port = port;
 
@@ -426,7 +424,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             default:
                 closeReceived();
         }
-        _remoteError = close.getError();
     }
 
     private void closeReceived()
@@ -435,14 +432,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
         for (final Session_1_0 session : sessions)
         {
-            AccessController.doPrivileged(new PrivilegedAction<Object>()
+            AccessController.doPrivileged((PrivilegedAction<Object>) () ->
             {
-                @Override
-                public Object run()
-                {
-                    session.remoteEnd(new End());
-                    return null;
-                }
+                session.remoteEnd(new End());
+                return null;
             }, session.getAccessControllerContext());
         }
     }
@@ -452,12 +445,14 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         _closedForInput = closed;
     }
 
+    @Override
     public void receiveSaslMechanisms(final SaslMechanisms saslMechanisms)
     {
         LOGGER.info("{} : Unexpected frame sasl-mechanisms", getLogSubject());
         closeSaslWithFailure();
     }
 
+    @Override
     public void receiveSaslResponse(final SaslResponse saslResponse)
     {
         final Binary responseBinary = saslResponse.getResponse();
@@ -500,6 +495,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                || _connectionState == ConnectionState.CLOSE_SENT;
     }
 
+    @Override
     public boolean closedForInput()
     {
         return _closedForInput;
@@ -544,6 +540,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         setClosedForOutput(true);
     }
 
+    @Override
     public String getRemoteContainerId()
     {
         return _remoteContainerId;
@@ -569,12 +566,14 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
     }
 
+    @Override
     public void receiveSaslOutcome(final SaslOutcome saslOutcome)
     {
         LOGGER.info("{} : Unexpected frame sasl-outcome", getLogSubject());
         closeSaslWithFailure();
     }
 
+    @Override
     public void receiveEnd(final short channel, final End end)
     {
 
@@ -596,6 +595,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         closeConnection(AmqpError.INVALID_FIELD, String.format("%s frame received on channel %d which is not mapped", frame.getClass().getSimpleName().toLowerCase(), channel));
     }
 
+    @Override
     public void receiveDisposition(final short channel,
                                    final Disposition disposition)
     {
@@ -612,6 +612,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     }
 
+    @Override
     public void receiveBegin(final short receivingChannelId, final Begin begin)
     {
 
@@ -661,7 +662,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
                     synchronized (_blockingLock)
                     {
-
                         _sessions.add(session);
                         if (_blocking)
                         {
@@ -692,6 +692,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         return -1;
     }
 
+    @Override
     public void handleError(final Error error)
     {
         if (!closedForOutput())
@@ -705,6 +706,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     }
 
+    @Override
     public void receiveTransfer(final short channel, final Transfer transfer)
     {
         assertState(FrameReceivingState.ANY_FRAME);
@@ -719,6 +721,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
     }
 
+    @Override
     public void receiveFlow(final short channel, final Flow flow)
     {
         assertState(FrameReceivingState.ANY_FRAME);
@@ -734,6 +737,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     }
 
+    @Override
     public void receiveOpen(final short channel, final Open open)
     {
         assertState(FrameReceivingState.OPEN_ONLY);
@@ -765,19 +769,16 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         {
             _idleTimeout = open.getIdleTimeOut().longValue();
         }
-        _remoteProperties = open.getProperties();
-        if (_remoteProperties != null)
+        _remoteProperties = open.getProperties() == null ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(open.getProperties()));
+        if (_remoteProperties.containsKey(Symbol.valueOf("product")))
         {
-            if (_remoteProperties.containsKey(Symbol.valueOf("product")))
-            {
-                setClientProduct(_remoteProperties.get(Symbol.valueOf("product")).toString());
-            }
-            if (_remoteProperties.containsKey(Symbol.valueOf("version")))
-            {
-                setClientVersion(_remoteProperties.get(Symbol.valueOf("version")).toString());
-            }
-            setClientId(_remoteContainerId);
+            setClientProduct(_remoteProperties.get(Symbol.valueOf("product")).toString());
         }
+        if (_remoteProperties.containsKey(Symbol.valueOf("version")))
+        {
+            setClientVersion(_remoteProperties.get(Symbol.valueOf("version")).toString());
+        }
+        setClientId(_remoteContainerId);
         if (_idleTimeout != 0L && _idleTimeout < MINIMUM_SUPPORTED_IDLE_TIMEOUT)
         {
             closeConnection(ConnectionError.CONNECTION_FORCED,
@@ -791,7 +792,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         {
             long desiredIdleTimeout = getDesiredIdleTimeout();
             initialiseHeartbeating(_idleTimeout / 2L, desiredIdleTimeout);
-            final NamedAddressSpace addressSpace = ((AmqpPort) _port).getAddressSpace(_localHostname);
+            final NamedAddressSpace addressSpace = _port.getAddressSpace(_localHostname);
             if (addressSpace == null)
             {
                 closeWithError(AmqpError.NOT_FOUND, "Unknown hostname in connection open: '" + _localHostname + "'");
@@ -846,7 +847,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     private void populateConnectionRedirect(final NamedAddressSpace addressSpace, final Error err)
     {
-        final String redirectHost = addressSpace.getRedirectHost(((AmqpPort) _port));
+        final String redirectHost = addressSpace.getRedirectHost(_port);
 
         if(redirectHost == null)
         {
@@ -900,6 +901,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
     }
 
+    @Override
     public void receiveDetach(final short channel, final Detach detach)
     {
         assertState(FrameReceivingState.ANY_FRAME);
@@ -949,6 +951,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         _closedForOutput = closed;
     }
 
+    @Override
     public void receiveSaslInit(final SaslInit saslInit)
     {
         assertState(FrameReceivingState.SASL_INIT_ONLY);
@@ -989,13 +992,13 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             _successfulAuthenticationResult = authenticationResult;
             if (challenge == null || challenge.length == 0)
             {
-                setSubject(_successfulAuthenticationResult.getSubject());
-                SaslOutcome outcome = new SaslOutcome();
-                outcome.setCode(SaslCode.OK);
-                send(new SASLFrame(outcome), null);
-                _saslComplete = true;
-                _frameReceivingState = FrameReceivingState.AMQP_HEADER;
-                disposeSaslNegotiator();
+            setSubject(_successfulAuthenticationResult.getSubject());
+            SaslOutcome outcome = new SaslOutcome();
+            outcome.setCode(SaslCode.OK);
+            send(new SASLFrame(outcome), null);
+            _saslComplete = true;
+            _frameReceivingState = FrameReceivingState.AMQP_HEADER;
+            disposeSaslNegotiator();
             }
             else
             {
@@ -1179,15 +1182,11 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public void readerIdle()
     {
-        AccessController.doPrivileged(new PrivilegedAction<Object>()
+        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                getEventLogger().message(ConnectionMessages.IDLE_CLOSE("", false));
-                getNetwork().close();
-                return null;
-            }
+            getEventLogger().message(ConnectionMessages.IDLE_CLOSE("", false));
+            getNetwork().close();
+            return null;
         }, getAccessControllerContext());
     }
 
@@ -1203,64 +1202,61 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
 
 
+    @Override
     public void received(final QpidByteBuffer msg)
     {
 
-        AccessController.doPrivileged(new PrivilegedAction<Object>()
+        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
+            updateLastReadTime();
+            try
             {
-                updateLastReadTime();
-                try
+                int remaining;
+
+                do
                 {
-                    int remaining;
+                    remaining = msg.remaining();
 
-                    do
+                    switch (_frameReceivingState)
                     {
-                        remaining = msg.remaining();
-
-                        switch (_frameReceivingState)
-                        {
-                            case AMQP_OR_SASL_HEADER:
-                            case AMQP_HEADER:
-                                if (remaining >= 8)
-                                {
-                                    processProtocolHeader(msg);
-                                }
-                                break;
-                            case OPEN_ONLY:
-                            case ANY_FRAME:
-                            case SASL_INIT_ONLY:
-                            case SASL_RESPONSE_ONLY:
-                                _frameHandler.parse(msg);
-                                break;
-                            case CLOSED:
-                                // ignore;
-                                break;
-                        }
-
-
+                        case AMQP_OR_SASL_HEADER:
+                        case AMQP_HEADER:
+                            if (remaining >= 8)
+                            {
+                                processProtocolHeader(msg);
+                            }
+                            break;
+                        case OPEN_ONLY:
+                        case ANY_FRAME:
+                        case SASL_INIT_ONLY:
+                        case SASL_RESPONSE_ONLY:
+                            _frameHandler.parse(msg);
+                            break;
+                        case CLOSED:
+                            // ignore;
+                            break;
                     }
-                    while (msg.remaining() != remaining);
+
+
                 }
-                catch (IllegalArgumentException | IllegalStateException e)
+                while (msg.remaining() != remaining);
+            }
+            catch (IllegalArgumentException | IllegalStateException e)
+            {
+                throw new ConnectionScopedRuntimeException(e);
+            }
+            catch (StoreException e)
+            {
+                if (getAddressSpace().isActive())
+                {
+                    throw new ServerScopedRuntimeException(e);
+                }
+                else
                 {
                     throw new ConnectionScopedRuntimeException(e);
                 }
-                catch (StoreException e)
-                {
-                    if (getAddressSpace().isActive())
-                    {
-                        throw new ServerScopedRuntimeException(e);
-                    }
-                    else
-                    {
-                        throw new ConnectionScopedRuntimeException(e);
-                    }
-                }
-                return null;
             }
+            return null;
         }, getAccessControllerContext());
 
     }
@@ -1272,8 +1268,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             byte[] header = new byte[8];
             msg.get(header);
 
-            final AuthenticationProvider authenticationProvider = getPort().getAuthenticationProvider();
-            final SubjectCreator subjectCreator = authenticationProvider.getSubjectCreator(getTransport().isSecure());
+            final AuthenticationProvider<?> authenticationProvider = getPort().getAuthenticationProvider();
 
             if(Arrays.equals(header, SASL_HEADER))
             {
@@ -1286,7 +1281,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
                 SaslMechanisms mechanisms = new SaslMechanisms();
                 ArrayList<Symbol> mechanismsList = new ArrayList<>();
-                for (String name :  subjectCreator.getMechanisms())
+                for (String name :  authenticationProvider.getAvailableMechanisms(getTransport().isSecure()))
                 {
                     mechanismsList.add(Symbol.valueOf(name));
                 }
@@ -1300,7 +1295,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             {
                 if(!_saslComplete)
                 {
-                    final List<String> mechanisms = subjectCreator.getMechanisms();
+                    final List<String> mechanisms = authenticationProvider.getAvailableMechanisms(getTransport().isSecure());
 
                     if(mechanisms.contains(ExternalAuthenticationManagerImpl.MECHANISM_NAME) && getNetwork().getPeerPrincipal() != null)
                     {
@@ -1340,6 +1335,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
 
+    @Override
     public void closed()
     {
         try
@@ -1363,6 +1359,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
     }
 
+    @Override
     public void send(final AMQFrame amqFrame)
     {
         send(amqFrame, null);
@@ -1370,6 +1367,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
 
 
+    @Override
     public void send(final AMQFrame amqFrame, ByteBuffer buf)
     {
         updateLastWriteTime();
@@ -1468,6 +1466,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         _workListener.set(listener);
     }
 
+    @Override
     public boolean hasSessionWithName(final byte[] name)
     {
         return false;
@@ -1490,18 +1489,11 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             default:
                 cause = AmqpError.INTERNAL_ERROR;
         }
-        Action<ConnectionHandler> action = new Action<ConnectionHandler>()
-        {
-            @Override
-            public void performAction(final ConnectionHandler object)
-            {
-                closeConnection(cause, description);
-
-            }
-        };
+        Action<ConnectionHandler> action = object -> closeConnection(cause, description);
         addAsyncTask(action);
     }
 
+    @Override
     public void closeSessionAsync(final AMQPSession<?,?> session,
                                   final CloseReason reason, final String message)
     {
@@ -1517,24 +1509,18 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             default:
                 cause = AmqpError.INTERNAL_ERROR;
         }
-        addAsyncTask(new Action<ConnectionHandler>()
-        {
+        addAsyncTask(object -> AccessController.doPrivileged(new PrivilegedAction<Void>() {
             @Override
-            public void performAction(final ConnectionHandler object)
+            public Void run()
             {
-                AccessController.doPrivileged(new PrivilegedAction<Void>() {
-                    @Override
-                    public Void run()
-                    {
-                        ((Session_1_0)session).close(cause, message);
-                        return null;
-                    }
-                }, ((Session_1_0)session).getAccessControllerContext());
+                ((Session_1_0)session).close(cause, message);
+                return null;
             }
-        });
+        }, ((Session_1_0)session).getAccessControllerContext()));
 
     }
 
+    @Override
     public void block()
     {
         synchronized (_blockingLock)
@@ -1542,15 +1528,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             if (!_blocking)
             {
                 _blocking = true;
-                doOnIOThreadAsync(
-                        new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                doBlock();
-                            }
-                        });
+                doOnIOThreadAsync(this::doBlock);
             }
         }
     }
@@ -1563,16 +1541,19 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
     }
 
+    @Override
     public String getRemoteContainerName()
     {
         return _remoteContainerId;
     }
 
+    @Override
     public Collection<? extends Session_1_0> getSessionModels()
     {
         return Collections.unmodifiableCollection(_sessions);
     }
 
+    @Override
     public void unblock()
     {
         synchronized (_blockingLock)
@@ -1580,15 +1561,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             if(_blocking)
             {
                 _blocking = false;
-                doOnIOThreadAsync(
-                        new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                doUnblock();
-                            }
-                        });
+                doOnIOThreadAsync(this::doUnblock);
             }
         }
     }
@@ -1719,25 +1692,11 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     final Action<? super ConnectionHandler> asyncAction = _asyncTaskList.poll();
                     if(asyncAction != null)
                     {
-                        return new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                asyncAction.performAction(AMQPConnection_1_0Impl.this);
-                            }
-                        };
+                        return () -> asyncAction.performAction(AMQPConnection_1_0Impl.this);
                     }
                     else
                     {
-                        return new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-
-                            }
-                        };
+                        return () -> { };
                     }
                 }
                 else
@@ -1747,16 +1706,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                         _sessionIterator = _sessionsWithWork.iterator();
                     }
                     final AMQPSession<?,?> session = _sessionIterator.next();
-                    return new Runnable()
+                    return () ->
                     {
-                        @Override
-                        public void run()
+                        _sessionIterator.remove();
+                        if (session.processPending())
                         {
-                            _sessionIterator.remove();
-                            if (session.processPending())
-                            {
-                                _sessionsWithWork.add(session);
-                            }
+                            _sessionsWithWork.add(session);
                         }
                     };
                 }
@@ -1764,14 +1719,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             else if(!_asyncTaskList.isEmpty())
             {
                 final Action<? super ConnectionHandler> asyncAction = _asyncTaskList.poll();
-                return new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        asyncAction.performAction(AMQPConnection_1_0Impl.this);
-                    }
-                };
+                return () -> asyncAction.performAction(AMQPConnection_1_0Impl.this);
             }
             else
             {
@@ -1815,7 +1763,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             @Override
             public IdentifiedTransaction next()
             {
-                IdentifiedTransaction txn = null;
+                IdentifiedTransaction txn;
                 for( ; _index < _openTransactions.length; _index++)
                 {
                     if(_openTransactions[_index] != null)
@@ -1857,7 +1805,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         {
             final int newSize = maxOpenTransactions < 1024 ? 2*maxOpenTransactions : maxOpenTransactions + 1024;
 
-            _openTransactions = new ServerTransaction[2*maxOpenTransactions];
+            _openTransactions = new ServerTransaction[newSize];
             System.arraycopy(openTransactions, 0, _openTransactions, 0, maxOpenTransactions);
 
         }

@@ -22,9 +22,7 @@ package org.apache.qpid.server.model.port;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.SocketAddress;
-import java.security.GeneralSecurityException;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,10 +32,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import javax.security.auth.Subject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -70,12 +65,11 @@ import org.apache.qpid.server.plugin.TransportProviderFactory;
 import org.apache.qpid.server.transport.AcceptingTransport;
 import org.apache.qpid.server.transport.PortBindFailureException;
 import org.apache.qpid.server.transport.TransportProvider;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.PortUtil;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.transport.network.security.ssl.QpidMultipleTrustManager;
-import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
-public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<AmqpPortImpl> implements AmqpPort<AmqpPortImpl>
+public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort<AmqpPortImpl>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AmqpPortImpl.class);

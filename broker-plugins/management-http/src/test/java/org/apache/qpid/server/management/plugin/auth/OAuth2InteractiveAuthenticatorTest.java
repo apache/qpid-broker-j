@@ -21,6 +21,7 @@
 package org.apache.qpid.server.management.plugin.auth;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -89,14 +90,18 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
     private OAuth2InteractiveAuthenticator _authenticator;
     private HttpManagementConfiguration _mockConfiguration;
     private OAuth2AuthenticationProvider<?> _mockAuthProvider;
+    private HttpPort _mockPort;
 
     @Override
     public void setUp() throws Exception
     {
         super.setUp();
-        _mockAuthProvider = createMockOAuth2AuthenticationProvider();
+
+        _mockPort = mock(HttpPort.class);
+        _mockAuthProvider = createMockOAuth2AuthenticationProvider(_mockPort);
         _mockConfiguration = mock(HttpManagementConfiguration.class);
         when(_mockConfiguration.getAuthenticationProvider(any(HttpServletRequest.class))).thenReturn(_mockAuthProvider);
+        when(_mockConfiguration.getPort(any(HttpServletRequest.class))).thenReturn(_mockPort);
 
         _authenticator = new OAuth2InteractiveAuthenticator();
     }
@@ -268,11 +273,12 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         return parameters;
     }
 
-    private OAuth2AuthenticationProvider<?> createMockOAuth2AuthenticationProvider() throws URISyntaxException
+    private OAuth2AuthenticationProvider<?> createMockOAuth2AuthenticationProvider(final HttpPort mockPort) throws URISyntaxException
     {
         OAuth2AuthenticationProvider authenticationProvider = mock(OAuth2AuthenticationProvider.class);
         Broker mockBroker = mock(Broker.class);
         SubjectCreator mockSubjectCreator = mock(SubjectCreator.class);
+        when(_mockPort.getSubjectCreator(anyBoolean())).thenReturn(mockSubjectCreator);
         SubjectAuthenticationResult mockSuccessfulSubjectAuthenticationResult = mock(SubjectAuthenticationResult.class);
         SubjectAuthenticationResult mockUnauthorizedSubjectAuthenticationResult = mock(SubjectAuthenticationResult.class);
         final Subject successfulSubject = new Subject(true,
@@ -311,7 +317,6 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         when(authenticationProvider.getClientId()).thenReturn(TEST_CLIENT_ID);
         when(authenticationProvider.getScope()).thenReturn(TEST_OAUTH2_SCOPE);
         when(authenticationProvider.getParent()).thenReturn(mockBroker);
-        when(authenticationProvider.getSubjectCreator(any(Boolean.class))).thenReturn(mockSubjectCreator);
         when(authenticationProvider.authenticateViaAuthorizationCode(TEST_VALID_AUTHORIZATION_CODE, TEST_REQUEST_HOST)).thenReturn(mockSuccessfulAuthenticationResult);
         when(authenticationProvider.authenticateViaAuthorizationCode(TEST_INVALID_AUTHORIZATION_CODE, TEST_REQUEST_HOST)).thenReturn(failedAuthenticationResult);
         when(authenticationProvider.authenticateViaAuthorizationCode(TEST_UNAUTHORIZED_AUTHORIZATION_CODE, TEST_REQUEST_HOST)).thenReturn(mockUnauthorizedAuthenticationResult);

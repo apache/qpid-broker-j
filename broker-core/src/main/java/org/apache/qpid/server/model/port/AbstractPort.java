@@ -21,6 +21,7 @@
 
 package org.apache.qpid.server.model.port;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -36,20 +37,9 @@ import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.PortMessages;
-import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Connection;
-import org.apache.qpid.server.model.Container;
-import org.apache.qpid.server.model.KeyStore;
-import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.model.Port;
-import org.apache.qpid.server.model.Protocol;
-import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.model.Transport;
-import org.apache.qpid.server.model.TrustStore;
-import org.apache.qpid.server.model.VirtualHostAlias;
+import org.apache.qpid.server.model.*;
+import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
+import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.util.ParameterizedTypes;
 
 public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractConfiguredObject<X> implements Port<X>
@@ -73,6 +63,19 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
 
     @ManagedAttributeField
     private Set<Protocol> _protocols;
+
+    @ManagedAttributeField
+    private AuthenticationProvider _authenticationProvider;
+
+    @ManagedAttributeField
+    private boolean _needClientAuth;
+
+    @ManagedAttributeField
+    private boolean _wantClientAuth;
+
+    @ManagedAttributeField
+    private TrustStore<?> _clientCertRecorder;
+
 
     private List<String> _tlsProtocolBlackList;
     private List<String> _tlsProtocolWhiteList;
@@ -132,23 +135,87 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
                 }
             }
         }
+
+        AuthenticationProvider<?> authenticationProvider = getAuthenticationProvider();
+        final Set<Transport> transports = getTransports();
+        validateAuthenticationMechanisms(authenticationProvider, transports);
+
+        boolean useClientAuth = getNeedClientAuth() || getWantClientAuth();
+
+        if(useClientAuth && (getTrustStores() == null || getTrustStores().isEmpty()))
+        {
+            throw new IllegalConfigurationException("Can't create port which requests SSL client certificates but has no trust stores configured.");
+        }
+
+        if(useClientAuth && !useTLSTransport)
+        {
+            throw new IllegalConfigurationException(
+                    "Can't create port which requests SSL client certificates but doesn't use SSL transport.");
+        }
+
+        if(useClientAuth && getClientCertRecorder() != null)
+        {
+            if(!(getClientCertRecorder() instanceof ManagedPeerCertificateTrustStore))
+            {
+                throw new IllegalConfigurationException("Only trust stores of type " + ManagedPeerCertificateTrustStore.TYPE_NAME + " may be used as the client certificate recorder");
+            }
+        }
     }
 
-    protected final boolean isUsingTLSTransport()
+    private void validateAuthenticationMechanisms(final AuthenticationProvider<?> authenticationProvider,
+                                                  final Set<Transport> transports)
+    {
+        List<String> availableMechanisms = new ArrayList<>(authenticationProvider.getMechanisms());
+        if(authenticationProvider.getDisabledMechanisms() != null)
+        {
+            availableMechanisms.removeAll(authenticationProvider.getDisabledMechanisms());
+        }
+        if (availableMechanisms.isEmpty())
+        {
+            throw new IllegalConfigurationException("The authentication provider '"
+                                                    + authenticationProvider.getName()
+                                                    + "' on port '"
+                                                    + getName()
+                                                    + "' has all authentication mechanisms disabled.");
+        }
+        if (hasNonTLSTransport(transports) && authenticationProvider.getSecureOnlyMechanisms() != null)
+        {
+            availableMechanisms.removeAll(authenticationProvider.getSecureOnlyMechanisms());
+            if(availableMechanisms.isEmpty())
+            {
+                throw new IllegalConfigurationException("The port '"
+                                                        + getName()
+                                                        + "' allows for non TLS connections, but all authentication "
+                                                        + "mechanisms of the authentication provider '"
+                                                        + authenticationProvider.getName()
+                                                        + "' are disabled on non-secure connections.");
+            }
+        }
+    }
+
+    @Override
+    public AuthenticationProvider getAuthenticationProvider()
+    {
+        SystemConfig<?> systemConfig = getAncestor(SystemConfig.class);
+        if(systemConfig.isManagementMode())
+        {
+            return _container.getManagementModeAuthenticationProvider();
+        }
+        return _authenticationProvider;
+    }
+
+
+    private boolean isUsingTLSTransport()
     {
         return isUsingTLSTransport(getTransports());
     }
 
-    protected final boolean isUsingTLSTransport(final Collection<Transport> transports)
+    private boolean isUsingTLSTransport(final Collection<Transport> transports)
     {
         return hasTransportOfType(transports, true);
     }
 
-    protected final boolean hasNonTLSTransport()
-    {
-        return hasNonTLSTransport(getTransports());
-    }
-    protected final boolean hasNonTLSTransport(final Collection<Transport> transports)
+    private boolean hasNonTLSTransport(final Collection<Transport> transports)
     {
         return hasTransportOfType(transports, false);
     }
@@ -213,6 +280,37 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
             if (updated.getKeyStore() == null)
             {
                 throw new IllegalConfigurationException("Can't create port which requires SSL but has no key store configured.");
+            }
+        }
+
+        if(changedAttributes.contains(Port.AUTHENTICATION_PROVIDER) || changedAttributes.contains(Port.TRANSPORTS))
+        {
+            validateAuthenticationMechanisms(updated.getAuthenticationProvider(), updated.getTransports());
+        }
+
+        boolean requiresCertificate = updated.getNeedClientAuth() || updated.getWantClientAuth();
+
+        if (usesSsl)
+        {
+            if ((updated.getTrustStores() == null || updated.getTrustStores().isEmpty() ) && requiresCertificate)
+            {
+                throw new IllegalConfigurationException("Can't create port which requests SSL client certificates but has no trust store configured.");
+            }
+        }
+        else
+        {
+            if (requiresCertificate)
+            {
+                throw new IllegalConfigurationException("Can't create port which requests SSL client certificates but doesn't use SSL transport.");
+            }
+        }
+
+
+        if(requiresCertificate && updated.getClientCertRecorder() != null)
+        {
+            if(!(updated.getClientCertRecorder() instanceof ManagedPeerCertificateTrustStore))
+            {
+                throw new IllegalConfigurationException("Only trust stores of type " + ManagedPeerCertificateTrustStore.TYPE_NAME + " may be used as the client certificate recorder");
             }
         }
     }
@@ -348,6 +446,31 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     public Collection<TrustStore> getTrustStores()
     {
         return _trustStores;
+    }
+
+    @Override
+    public boolean getNeedClientAuth()
+    {
+        return _needClientAuth;
+    }
+
+    @Override
+    public TrustStore<?> getClientCertRecorder()
+    {
+        return _clientCertRecorder;
+    }
+
+    @Override
+    public boolean getWantClientAuth()
+    {
+        return _wantClientAuth;
+    }
+
+    @Override
+    public SubjectCreator getSubjectCreator(final boolean secure)
+    {
+        Collection children = _container.getChildren(GroupProvider.class);
+        return new SubjectCreator(getAuthenticationProvider(), children);
     }
 
     @Override

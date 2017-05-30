@@ -27,6 +27,7 @@ import java.util.Set;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.CommonProperties;
+import org.apache.qpid.server.security.SubjectCreator;
 
 @ManagedContextDependency({CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST})
 @ManagedObject( description = Port.CLASS_DESCRIPTION, amqpName = "org.apache.qpid.Port")
@@ -50,6 +51,8 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
     String AUTHENTICATION_PROVIDER              = "authenticationProvider";
     String KEY_STORE                            = "keyStore";
     String TRUST_STORES                         = "trustStores";
+    String CLIENT_CERT_RECORDER                 = "clientCertRecorder";
+
 
 
     String CONNECTION_MAXIMUM_AUTHENTICATION_DELAY = "connection.maximumAuthenticationDelay";
@@ -91,6 +94,18 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
     @DerivedAttribute
     List<String> getTlsCipherSuiteBlackList();
 
+    @ManagedAttribute
+    boolean getNeedClientAuth();
+
+    @ManagedAttribute
+    boolean getWantClientAuth();
+
+    @ManagedAttribute
+    TrustStore<?> getClientCertRecorder();
+
+    @ManagedAttribute( mandatory = true )
+    AuthenticationProvider<?> getAuthenticationProvider();
+
     Collection<Connection> getConnections();
 
     void start();
@@ -98,4 +113,7 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
     ListenableFuture<Void> startAsync();
 
     NamedAddressSpace getAddressSpace(String name);
+
+    SubjectCreator getSubjectCreator(final boolean secure);
+
 }

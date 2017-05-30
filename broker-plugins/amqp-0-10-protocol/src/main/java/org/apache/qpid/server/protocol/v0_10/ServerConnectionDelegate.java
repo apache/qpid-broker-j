@@ -37,17 +37,18 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.common.ServerPropertyNames;
 import org.apache.qpid.server.configuration.CommonProperties;
-import org.apache.qpid.server.properties.ConnectionStartProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.properties.ConnectionStartProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.*;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
-import org.apache.qpid.server.transport.*;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
@@ -81,24 +82,15 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
 
 
-    public ServerConnectionDelegate(Broker<?> broker, SubjectCreator subjectCreator)
+    public ServerConnectionDelegate(Port<?> port, boolean secure)
     {
-        this(createConnectionProperties(broker), Collections.singletonList((Object)"en_US"), broker, subjectCreator);
-    }
+        _broker = (Broker<?>) port.getParent();
+        _clientProperties = createConnectionProperties((Broker<?>) port.getParent());
+        _mechanisms = new ArrayList<>(port.getAuthenticationProvider().getAvailableMechanisms(secure));
 
-    private ServerConnectionDelegate(Map<String, Object> properties,
-                                     List<Object> locales,
-                                     Broker<?> broker,
-                                     SubjectCreator subjectCreator)
-    {
-        _clientProperties = properties;
-        _mechanisms = (List) subjectCreator.getMechanisms();
-        _locales = locales;
-
-        _broker = broker;
-        _maxNoOfChannels = broker.getConnection_sessionCountLimit();
-        _subjectCreator = subjectCreator;
-        _maximumFrameSize = Math.min(0xffff, broker.getNetworkBufferSize());
+        _maxNoOfChannels = _broker.getConnection_sessionCountLimit();
+        _subjectCreator = port.getSubjectCreator(secure);
+        _maximumFrameSize = Math.min(0xffff, _broker.getNetworkBufferSize());
     }
 
     @Override
@@ -173,7 +165,7 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     {
         assertState(serverConnection, ConnectionState.INIT);
         serverConnection.send(new ProtocolHeader(1, 0, 10));
-        serverConnection.sendConnectionStart(_clientProperties, _mechanisms, _locales);
+        serverConnection.sendConnectionStart(_clientProperties, _mechanisms, Collections.singletonList((Object)"en_US"));
         _state = ConnectionState.AWAIT_START_OK;
     }
 

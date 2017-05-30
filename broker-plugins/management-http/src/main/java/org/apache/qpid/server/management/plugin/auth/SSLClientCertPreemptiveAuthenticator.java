@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpRequestPreemptiveAuthenticator;
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
@@ -50,7 +51,8 @@ public class SSLClientCertPreemptiveAuthenticator implements HttpRequestPreempti
                                          final HttpManagementConfiguration managementConfig)
     {
         final AuthenticationProvider authenticationProvider = managementConfig.getAuthenticationProvider(request);
-        SubjectCreator subjectCreator = authenticationProvider.getSubjectCreator(request.isSecure());
+        final Port<?> port = managementConfig.getPort(request);
+        SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure());
         if(request.isSecure()
            && authenticationProvider instanceof ExternalAuthenticationManager
            && Collections.list(request.getAttributeNames()).contains(CERTIFICATE_ATTRIBUTE_NAME))

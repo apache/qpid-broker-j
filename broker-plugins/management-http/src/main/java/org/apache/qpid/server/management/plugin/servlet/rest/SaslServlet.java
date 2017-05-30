@@ -42,8 +42,10 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.SessionInvalidatedException;
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -74,14 +76,15 @@ public class SaslServlet extends AbstractServlet
 
 
 
+    @Override
     protected void doGet(HttpServletRequest request,
                          HttpServletResponse response,
                          final ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
         getRandom(request);
 
-        SubjectCreator subjectCreator = getSubjectCreator(request);
-        List<String> mechanismsList = subjectCreator.getMechanisms();
+        AuthenticationProvider<?> authenticationProvider = getAuthenticationProvider(request);
+        List<String> mechanismsList = authenticationProvider.getAvailableMechanisms(request.isSecure());
         String[] mechanisms = mechanismsList.toArray(new String[mechanismsList.size()]);
         Map<String, Object> outputObject = new LinkedHashMap<String, Object>();
 
@@ -134,11 +137,11 @@ public class SaslServlet extends AbstractServlet
             String saslResponse = request.getParameter("response");
 
             SubjectCreator subjectCreator = getSubjectCreator(request);
-
+            AuthenticationProvider<?> authenticationProvider = getAuthenticationProvider(request);
             SaslNegotiator saslNegotiator = null;
             if(mechanism != null)
             {
-                if(id == null && subjectCreator.getMechanisms().contains(mechanism))
+                if(id == null && authenticationProvider.getAvailableMechanisms(request.isSecure()).contains(mechanism))
                 {
                     LOGGER.debug("Creating SaslServer for mechanism: {}", mechanism);
 
@@ -291,7 +294,13 @@ public class SaslServlet extends AbstractServlet
 
     private SubjectCreator getSubjectCreator(HttpServletRequest request)
     {
-        return HttpManagementUtil.getManagementConfiguration(getServletContext()).getAuthenticationProvider(request).getSubjectCreator(
-                request.isSecure());
+        final Port<?> port = HttpManagementUtil.getPort(request);
+
+        return port.getSubjectCreator(request.isSecure());
+    }
+
+    private AuthenticationProvider<?> getAuthenticationProvider(final HttpServletRequest request)
+    {
+        return HttpManagementUtil.getManagementConfiguration(getServletContext()).getAuthenticationProvider(request);
     }
 }

@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpRequestPreemptiveAuthenticator;
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
@@ -40,8 +41,9 @@ public class AnonymousPreemptiveAuthenticator implements HttpRequestPreemptiveAu
     public Subject attemptAuthentication(final HttpServletRequest request,
                                          final HttpManagementConfiguration managementConfig)
     {
+        final Port<?> port = managementConfig.getPort(request);
         final AuthenticationProvider authenticationProvider = managementConfig.getAuthenticationProvider(request);
-        SubjectCreator subjectCreator = authenticationProvider.getSubjectCreator(request.isSecure());
+        SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure());
         if(authenticationProvider instanceof AnonymousAuthenticationManager)
         {
             return subjectCreator.createResultWithGroups(((AnonymousAuthenticationManager) authenticationProvider).getAnonymousAuthenticationResult()).getSubject();

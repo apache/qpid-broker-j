@@ -33,6 +33,7 @@ import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
@@ -52,6 +53,7 @@ public class AnonymousInteractiveAuthenticator implements HttpRequestInteractive
     public AuthenticationHandler getAuthenticationHandler(final HttpServletRequest request,
                                                           final HttpManagementConfiguration configuration)
     {
+        final Port<?> port = configuration.getPort(request);
         if(configuration.getAuthenticationProvider(request) instanceof AnonymousAuthenticationManager)
         {
             return response ->
@@ -61,7 +63,7 @@ public class AnonymousInteractiveAuthenticator implements HttpRequestInteractive
                 AuthenticationResult authenticationResult = authenticationProvider.getAnonymousAuthenticationResult();
                 try
                 {
-                    SubjectAuthenticationResult result = authenticationProvider.getSubjectCreator(request.isSecure()).createResultWithGroups(authenticationResult);
+                    SubjectAuthenticationResult result = port.getSubjectCreator(request.isSecure()).createResultWithGroups(authenticationResult);
                     Subject original = result.getSubject();
 
                     if (original == null)

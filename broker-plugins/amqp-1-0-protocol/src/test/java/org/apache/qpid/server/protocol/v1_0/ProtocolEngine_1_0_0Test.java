@@ -72,10 +72,10 @@ import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManag
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
+import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.server.transport.ByteBufferSender;
 
 public class ProtocolEngine_1_0_0Test extends QpidTestCase
 {
@@ -112,6 +112,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         when(_port.getModel()).thenReturn(BrokerModel.getInstance());
         _subjectCreator = mock(SubjectCreator.class);
         _authenticationProvider = mock(AuthenticationProvider.class);
+
         when(_port.getAuthenticationProvider()).thenReturn(_authenticationProvider);
         _virtualHost = mock(VirtualHost.class);
         when(_virtualHost.getChildExecutor()).thenReturn(taskExecutor);
@@ -131,7 +132,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         }).when(_virtualHost).registerConnection(connectionCaptor.capture());
         when(_virtualHost.getPrincipal()).thenReturn(mock(VirtualHostPrincipal.class));
         when(_port.getAddressSpace(anyString())).thenReturn(_virtualHost);
-        when(_authenticationProvider.getSubjectCreator(anyBoolean())).thenReturn(_subjectCreator);
+        when(_port.getSubjectCreator(anyBoolean())).thenReturn(_subjectCreator);
 
         final ArgumentCaptor<Principal> userCaptor = ArgumentCaptor.forClass(Principal.class);
         when(_subjectCreator.createSubjectWithGroups(userCaptor.capture())).then(new Answer<Subject>()
@@ -238,14 +239,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
 
     public void testProtocolEngineWithNoSaslTLSandExternal() throws Exception
     {
-        final Principal principal = new Principal()
-        {
-            @Override
-            public String getName()
-            {
-                return "test";
-            }
-        };
+        final Principal principal = () -> "test";
         when(_networkConnection.getPeerPrincipal()).thenReturn(principal);
 
         allowMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME);
@@ -269,6 +263,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         final AnonymousAuthenticationManager anonymousAuthenticationManager =
                 (new AnonymousAuthenticationManagerFactory()).create(null, attrs, _broker);
         when(_port.getAuthenticationProvider()).thenReturn(anonymousAuthenticationManager);
+        when(_port.getSubjectCreator(anyBoolean())).thenReturn(new SubjectCreator(anonymousAuthenticationManager, Collections.emptyList()));
+
         allowMechanisms(AnonymousAuthenticationManager.MECHANISM_NAME);
 
         createEngine(Transport.TCP);
@@ -302,6 +298,6 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
 
     private void allowMechanisms(String... mechanisms)
     {
-        when(_subjectCreator.getMechanisms()).thenReturn(Arrays.asList(mechanisms));
+        when(_authenticationProvider.getAvailableMechanisms(anyBoolean())).thenReturn(Arrays.asList(mechanisms));
     }
 }

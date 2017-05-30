@@ -69,8 +69,8 @@ public class SubjectCreatorTest extends QpidTestCase
         when(_groupManager1.getGroupPrincipalsForUser(USERNAME_PRINCIPAL)).thenReturn(Collections.singleton(_group1));
         when(_groupManager2.getGroupPrincipalsForUser(USERNAME_PRINCIPAL)).thenReturn(Collections.singleton(_group2));
 
-        _subjectCreator = new SubjectCreator(_authenticationProvider, new HashSet<GroupProvider<?>>(Arrays.asList(_groupManager1, _groupManager2)),
-                                             false);
+        _subjectCreator = new SubjectCreator(_authenticationProvider, new HashSet<GroupProvider<?>>(Arrays.asList(_groupManager1, _groupManager2))
+        );
         _eventLogger = mock(EventLogger.class);
         when(_authenticationProvider.getEventLogger()).thenReturn(_eventLogger);
         _authenticationResult = new AuthenticationResult(USERNAME_PRINCIPAL);
@@ -144,38 +144,5 @@ public class SubjectCreatorTest extends QpidTestCase
         assertEquals(expectedGroupPrincipals, actualGroupPrincipals);
     }
 
-    public void testDisabledMechanisms()
-    {
-        AuthenticationProvider<?> authenticationProvider = mock(AuthenticationProvider.class);
-        SubjectCreator subjectCreator = new SubjectCreator(authenticationProvider,
-                                                           new HashSet<GroupProvider<?>>(Arrays.asList(_groupManager1,
-                                                                                                       _groupManager2)),
-                                                           false);
-        when(authenticationProvider.getMechanisms()).thenReturn(Arrays.asList("PLAIN", "SCRAM-SHA-1"));
-        assertTrue("Should contain SCRAM-SHA-1 mechanism.", subjectCreator.getMechanisms().contains("SCRAM-SHA-1"));
-        assertTrue("Should contain PLAIN mechanism.", subjectCreator.getMechanisms().contains("PLAIN"));
-        when(authenticationProvider.getDisabledMechanisms()).thenReturn(Arrays.asList("SCRAM-SHA-1"));
-        assertFalse("SCRAM-SHA-1 should have been filtered out.", subjectCreator.getMechanisms().contains("SCRAM-SHA-1"));
-        assertTrue("PLAIN should not have been filtered out.", subjectCreator.getMechanisms().contains("PLAIN"));
-    }
 
-    public void testSecureOnlyMechanisms()
-    {
-        AuthenticationProvider<?> authenticationProvider = mock(AuthenticationProvider.class);
-        SubjectCreator subjectCreator;
-        subjectCreator = new SubjectCreator(authenticationProvider,
-                                            new HashSet<GroupProvider<?>>(Arrays.asList(_groupManager1, _groupManager2)),
-                                            false);
-        when(authenticationProvider.getMechanisms()).thenReturn(Arrays.asList("PLAIN", "SCRAM-SHA-1"));
-        assertTrue("Should contain SCRAM-SHA-1 mechanism", subjectCreator.getMechanisms().contains("SCRAM-SHA-1"));
-        assertTrue("Should contain PLAIN mechanism", subjectCreator.getMechanisms().contains("PLAIN"));
-        when(authenticationProvider.getSecureOnlyMechanisms()).thenReturn(Arrays.asList("PLAIN"));
-        assertTrue("SCRAM-SHA-1 should not have been filtered out.", subjectCreator.getMechanisms().contains("SCRAM-SHA-1"));
-        assertFalse("PLAIN should have been filtered out on insecure connection.", subjectCreator.getMechanisms().contains("PLAIN"));
-
-        subjectCreator = new SubjectCreator(authenticationProvider,
-                                            new HashSet<GroupProvider<?>>(Arrays.asList(_groupManager1, _groupManager2)),
-                                            true);
-        assertTrue("SCRAM-SHA-1 should not have been filtered out.", subjectCreator.getMechanisms().contains("SCRAM-SHA-1"));
-        assertTrue("PLAIN should not have been filtered out on secure connection.", subjectCreator.getMechanisms().contains("PLAIN"));}
 }

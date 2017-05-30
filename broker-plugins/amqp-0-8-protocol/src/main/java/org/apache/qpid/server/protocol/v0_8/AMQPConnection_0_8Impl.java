@@ -223,16 +223,19 @@ public class AMQPConnection_0_8Impl
         return broker.getNetworkBufferSize() - AMQFrame.getFrameOverhead();
     }
 
+    @Override
     public boolean isClosing()
     {
         return _orderlyClose.get();
     }
 
+    @Override
     public ClientDeliveryMethod createDeliveryMethod(int channelId)
     {
         return new WriteDeliverMethod(channelId);
     }
 
+    @Override
     public void received(final QpidByteBuffer msg)
     {
         AccessController.doPrivileged(new PrivilegedAction<Void>()
@@ -314,8 +317,7 @@ public class AMQPConnection_0_8Impl
             setProtocolVersion(pv);
 
             StringBuilder mechanismBuilder = new StringBuilder();
-            SubjectCreator subjectCreator = getPort().getAuthenticationProvider().getSubjectCreator(getTransport().isSecure());
-            for(String mechanismName : subjectCreator.getMechanisms())
+            for(String mechanismName : getPort().getAuthenticationProvider().getAvailableMechanisms(getTransport().isSecure()))
             {
                 if(mechanismBuilder.length() != 0)
                 {
@@ -366,6 +368,7 @@ public class AMQPConnection_0_8Impl
         }
     }
 
+    @Override
     public synchronized void writeFrame(AMQDataBlock frame)
     {
         if(_logger.isDebugEnabled())
@@ -397,6 +400,7 @@ public class AMQPConnection_0_8Impl
         }
     }
 
+    @Override
     public boolean channelAwaitingClosure(int channelId)
     {
         return !_closingChannelsList.isEmpty() && _closingChannelsList.containsKey(channelId);
@@ -435,11 +439,13 @@ public class AMQPConnection_0_8Impl
     }
 
 
+    @Override
     public void closeChannel(AMQChannel channel)
     {
         closeChannel(channel, 0, null, false);
     }
 
+    @Override
     public void closeChannelAndWriteFrame(AMQChannel channel, int cause, String message)
     {
         writeFrame(new AMQFrame(channel.getChannelId(),
@@ -478,6 +484,7 @@ public class AMQPConnection_0_8Impl
     }
 
 
+    @Override
     public void closeChannelOk(int channelId)
     {
         _closingChannelsList.remove(channelId);
@@ -535,6 +542,7 @@ public class AMQPConnection_0_8Impl
         }
     }
 
+    @Override
     public void sendConnectionClose(int errorCode,
                                     String message, int channelId)
     {
@@ -574,6 +582,7 @@ public class AMQPConnection_0_8Impl
         getNetwork().close();
     }
 
+    @Override
     public boolean isSendQueueDeleteOkRegardless()
     {
         return _sendQueueDeleteOkRegardless;
@@ -639,6 +648,7 @@ public class AMQPConnection_0_8Impl
         return _protocolVersion.getMajorVersion();
     }
 
+    @Override
     public ProtocolVersion getProtocolVersion()
     {
         return _protocolVersion;
@@ -654,16 +664,19 @@ public class AMQPConnection_0_8Impl
         return getMethodRegistry();
     }
 
+    @Override
     public ProtocolOutputConverter getProtocolOutputConverter()
     {
         return _protocolOutputConverter;
     }
 
+    @Override
     public MethodRegistry getMethodRegistry()
     {
         return _methodRegistry;
     }
 
+    @Override
     public void closed()
     {
         try
@@ -708,6 +721,7 @@ public class AMQPConnection_0_8Impl
     {
     }
 
+    @Override
     public void readerIdle()
     {
         AccessController.doPrivileged(new PrivilegedAction<Object>()
@@ -722,11 +736,13 @@ public class AMQPConnection_0_8Impl
         }, getAccessControllerContext());
     }
 
+    @Override
     public synchronized void writerIdle()
     {
         writeFrame(HeartbeatBody.FRAME);
     }
 
+    @Override
     public long getSessionCountLimit()
     {
         return getMaximumNumberOfChannels();
@@ -737,6 +753,7 @@ public class AMQPConnection_0_8Impl
         return String.valueOf(getNetwork().getRemoteAddress());
     }
 
+    @Override
     public void closeSessionAsync(final AMQPSession<?,?> session, final CloseReason reason, final String message)
     {
         final int cause;
@@ -826,6 +843,7 @@ public class AMQPConnection_0_8Impl
         }
     }
 
+    @Override
     public void unblock()
     {
         synchronized (_channelAddRemoveLock)
@@ -854,6 +872,7 @@ public class AMQPConnection_0_8Impl
     }
 
 
+    @Override
     public void setDeferFlush(boolean deferFlush)
     {
         _deferFlush = deferFlush;
@@ -1214,6 +1233,7 @@ public class AMQPConnection_0_8Impl
 
     }
 
+    @Override
     public int getBinaryDataLimit()
     {
         return _binaryDataLimit;
@@ -1244,11 +1264,13 @@ public class AMQPConnection_0_8Impl
 
     }
 
+    @Override
     public Object getReference()
     {
         return _reference;
     }
 
+    @Override
     public boolean isCloseWhenNoRoute()
     {
         return _closeWhenNoRoute;
@@ -1261,7 +1283,7 @@ public class AMQPConnection_0_8Impl
 
     private SubjectCreator getSubjectCreator()
     {
-        return getPort().getAuthenticationProvider().getSubjectCreator(getTransport().isSecure());
+        return getPort().getSubjectCreator(getTransport().isSecure());
     }
 
     @Override

@@ -45,8 +45,11 @@ import javax.servlet.http.HttpSession;
 import org.apache.qpid.server.management.plugin.servlet.ServletConnectionPrincipal;
 import org.apache.qpid.server.management.plugin.session.LoginLogoutReporter;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.util.Action;
 
 public class HttpManagementUtil
 {
@@ -64,6 +67,9 @@ public class HttpManagementUtil
     private static final String ATTR_LOGIN_LOGOUT_REPORTER = "Qpid.loginLogoutReporter";
     private static final String ATTR_SUBJECT = "Qpid.subject";
     private static final String ATTR_LOG_ACTOR = "Qpid.logActor";
+
+    private static final String ATTR_PORT = "org.apache.qpid.server.model.Port";
+
 
     public static final String ACCEPT_ENCODING_HEADER = "Accept-Encoding";
     public static final String CONTENT_ENCODING_HEADER = "Content-Encoding";
@@ -84,7 +90,17 @@ public class HttpManagementUtil
 
     public static String getRequestSpecificAttributeName(String name, HttpServletRequest request)
     {
-        return name + "." + HttpManagement.getPort(request).getId();
+        return name + "." + getPort(request).getId();
+    }
+
+    static Action<HttpServletRequest> getPortAttributeAction(Port<?> port)
+    {
+        return request -> request.setAttribute(ATTR_PORT, port);
+    }
+
+    public static HttpPort<?> getPort(final HttpServletRequest request)
+    {
+        return (HttpPort<?>)request.getAttribute(ATTR_PORT);
     }
 
     public static Broker<?> getBroker(ServletContext servletContext)

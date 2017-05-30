@@ -23,16 +23,13 @@ package org.apache.qpid.server.security;
 import static org.apache.qpid.server.logging.messages.AuthenticationProviderMessages.AUTHENTICATION_FAILED;
 
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -55,17 +52,14 @@ import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 public class SubjectCreator
 {
     private static final String UNKNOWN_AUTHENTICATION_ID = "<<UNKNOWN>>";
-    private final boolean _secure;
     private AuthenticationProvider<?> _authenticationProvider;
     private Collection<GroupProvider<?>> _groupProviders;
 
     public SubjectCreator(AuthenticationProvider<?> authenticationProvider,
-                          Collection<GroupProvider<?>> groupProviders,
-                          final boolean secure)
+                          Collection<GroupProvider<?>> groupProviders)
     {
         _authenticationProvider = authenticationProvider;
         _groupProviders = groupProviders;
-        _secure = secure;
     }
 
     public AuthenticationProvider<?> getAuthenticationProvider()
@@ -73,35 +67,8 @@ public class SubjectCreator
         return _authenticationProvider;
     }
 
-    /**
-    * Gets the known SASL mechanisms
-    *
-    * @return SASL mechanism names, space separated.
-    */
-    public List<String> getMechanisms()
-    {
-        List<String> mechanisms = _authenticationProvider.getMechanisms();
-        Set<String> filter = _authenticationProvider.getDisabledMechanisms() != null
-                ? new HashSet<>(_authenticationProvider.getDisabledMechanisms())
-                : new HashSet<String>() ;
-        if(!_secure)
-        {
-            filter.addAll(_authenticationProvider.getSecureOnlyMechanisms());
-        }
-        if (!filter.isEmpty())
-        {
-            mechanisms = new ArrayList<>(mechanisms);
-            mechanisms.removeAll(filter);
-        }
-        return mechanisms;
-    }
-
     public SaslNegotiator createSaslNegotiator(String mechanism, final SaslSettings saslSettings)
     {
-        if(!getMechanisms().contains(mechanism))
-        {
-            return null;
-        }
         return _authenticationProvider.createSaslNegotiator(mechanism, saslSettings);
     }
 

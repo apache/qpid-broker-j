@@ -119,7 +119,6 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 @ManagedObject( category = false, type = HttpManagement.PLUGIN_TYPE )
 public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implements HttpManagementConfiguration<HttpManagement>, PortManager
 {
-    private static final String PORT_SERVLET_ATTRIBUTE = "org.apache.qpid.server.model.Port";
     private final Logger _logger = LoggerFactory.getLogger(HttpManagement.class);
     
     // 10 minutes by default
@@ -252,26 +251,31 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return Futures.immediateFuture(null);
     }
 
+    @Override
     public int getSessionTimeout()
     {
         return _sessionTimeout;
     }
 
+    @Override
     public String getCorsAllowOrigins()
     {
         return _corsAllowOrigins;
     }
 
+    @Override
     public Set<String> getCorsAllowMethods()
     {
         return _corsAllowMethods;
     }
 
+    @Override
     public String getCorsAllowHeaders()
     {
         return _corsAllowHeaders;
     }
 
+    @Override
     public boolean getCorsAllowCredentials()
     {
         return _corsAllowCredentials;
@@ -454,7 +458,9 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         httpConnectionFactory.getHttpConfiguration().setSendServerVersion(false);
         httpConnectionFactory.getHttpConfiguration().setSendXPoweredBy(false);
         HttpConfiguration.Customizer requestAttributeCustomizer =
-                (connector, channelConfig, request) -> request.setAttribute(PORT_SERVLET_ATTRIBUTE, port);
+                (connector, httpConfiguration, request) -> HttpManagementUtil.getPortAttributeAction(port)
+                                                                             .performAction(request);
+
         httpConnectionFactory.getHttpConfiguration().addCustomizer(requestAttributeCustomizer);
         httpConnectionFactory.getHttpConfiguration().addCustomizer(new SecureRequestCustomizer());
 
@@ -801,9 +807,10 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return Collections.unmodifiableSet(combinationsAsString);
     }
 
-    public static HttpPort<?> getPort(final HttpServletRequest request)
+    @Override
+    public HttpPort<?> getPort(final HttpServletRequest request)
     {
-        return (HttpPort<?>)request.getAttribute(PORT_SERVLET_ATTRIBUTE);
+        return HttpManagementUtil.getPort(request);
     }
 
     @Override

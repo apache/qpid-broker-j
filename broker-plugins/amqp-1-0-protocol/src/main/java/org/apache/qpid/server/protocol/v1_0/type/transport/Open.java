@@ -66,7 +66,7 @@ public class Open implements FrameBody
     private Symbol[] _desiredCapabilities;
 
     @CompositeTypeField
-    private Map _properties;
+    private Map<Symbol,Object> _properties;
 
     public String getContainerId()
     {
@@ -158,12 +158,12 @@ public class Open implements FrameBody
         _desiredCapabilities = desiredCapabilities;
     }
 
-    public Map getProperties()
+    public Map<Symbol,Object> getProperties()
     {
         return _properties;
     }
 
-    public void setProperties(Map properties)
+    public void setProperties(Map<Symbol,Object> properties)
     {
         _properties = properties;
     }
@@ -268,6 +268,7 @@ public class Open implements FrameBody
         return builder.toString();
     }
 
+    @Override
     public void invoke(short channel, ConnectionHandler conn)
     {
         conn.receiveOpen(channel, this);

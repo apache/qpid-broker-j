@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -81,6 +82,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
     private AggregateTicker _ticker;
     private ByteBufferSender _sender;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -129,7 +131,6 @@ public class AMQPConnection_0_8Test extends QpidTestCase
 
         SubjectCreator subjectCreator = mock(SubjectCreator.class);
 
-        when(subjectCreator.getMechanisms()).thenReturn(Collections.singletonList(SASL_MECH.toString()));
 
         SaslNegotiator saslNegotiator = mock(SaslNegotiator.class);
         when(subjectCreator.createSaslNegotiator(eq(SASL_MECH.toString()), any(SaslSettings.class))).thenReturn(saslNegotiator);
@@ -137,7 +138,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
                 new AuthenticationResult(new AuthenticatedPrincipal(new UsernamePrincipal("username", null))), new Subject()));
 
         AuthenticationProvider authenticationProvider = mock(AuthenticationProvider.class);
-        when(authenticationProvider.getSubjectCreator(false)).thenReturn(subjectCreator);
+        when(authenticationProvider.getAvailableMechanisms(anyBoolean())).thenReturn(Collections.singletonList(SASL_MECH.toString()));
 
         _port = mock(AmqpPort.class);
         when(_port.getParent()).thenReturn(_broker);
@@ -148,6 +149,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         when(_port.getAddressSpace(VIRTUAL_HOST_NAME)).thenReturn(_virtualHost);
         when(_port.getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY)).thenReturn(2500l);
         when(_port.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(Connection.DEFAULT_MAX_MESSAGE_SIZE);
+        when(_port.getSubjectCreator(false)).thenReturn(subjectCreator);
 
         _sender = mock(ByteBufferSender.class);
 
@@ -160,6 +162,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         _ticker = new AggregateTicker();
     }
 
+    @Override
     public void tearDown() throws Exception
     {
         try

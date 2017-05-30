@@ -25,21 +25,19 @@ import java.util.Set;
 
 import javax.net.ssl.SSLContext;
 
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedStatistic;
-import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.StatisticType;
 import org.apache.qpid.server.model.StatisticUnit;
 import org.apache.qpid.server.model.Transport;
-import org.apache.qpid.server.model.TrustStore;
 
 @ManagedObject( category = false, type = "AMQP", amqpName = "org.apache.qpid.AmqpPort")
-public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X>
+public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
 {
     String DEFAULT_AMQP_TCP_NO_DELAY = "true";
 
@@ -112,23 +110,20 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     @ManagedAttribute( defaultValue = "${" + PORT_AMQP_NUMBER_OF_SELECTORS + "}")
     int getNumberOfSelectors();
 
+    @Override
     @ManagedAttribute( defaultValue = DEFAULT_AMQP_NEED_CLIENT_AUTH )
     boolean getNeedClientAuth();
 
+    @Override
     @ManagedAttribute( defaultValue = DEFAULT_AMQP_WANT_CLIENT_AUTH )
     boolean getWantClientAuth();
 
-    @ManagedAttribute
-    TrustStore<?> getClientCertRecorder();
-
-    @ManagedAttribute( mandatory = true )
-    AuthenticationProvider getAuthenticationProvider();
-
-
+    @Override
     @ManagedAttribute( defaultValue = "TCP",
                        validValues = {"org.apache.qpid.server.model.port.AmqpPortImpl#getAllAvailableTransportCombinations()"})
     Set<Transport> getTransports();
 
+    @Override
     @ManagedAttribute( defaultValue = "${" + DEFAULT_AMQP_PROTOCOLS + "}", validValues = {"org.apache.qpid.server.model.port.AmqpPortImpl#getAllAvailableProtocolCombinations()"} )
     Set<Protocol> getProtocols();
 

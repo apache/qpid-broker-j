@@ -290,7 +290,8 @@ public class Asserts
                                     Port.AUTHENTICATION_PROVIDER,
                                     Port.KEY_STORE,
                                     Port.TRUST_STORES,
-                                    Port.PROTOCOLS);
+                                    Port.PROTOCOLS,
+                                    Port.CLIENT_CERT_RECORDER);
             assertNotNull("Unexpected value of attribute " + Port.BINDING_ADDRESS, port.get(Port.BINDING_ADDRESS));
         }
         else
@@ -312,7 +313,8 @@ public class Asserts
                                     Port.WANT_CLIENT_AUTH,
                                     Port.KEY_STORE,
                                     Port.TRUST_STORES,
-                                    Port.PROTOCOLS);
+                                    Port.PROTOCOLS,
+                                    Port.CLIENT_CERT_RECORDER);
         }
 
         @SuppressWarnings("unchecked")

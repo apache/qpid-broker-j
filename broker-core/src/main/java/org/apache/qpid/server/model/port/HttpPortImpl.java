@@ -31,7 +31,7 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.util.PortUtil;
 
-public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<HttpPortImpl> implements HttpPort<HttpPortImpl>
+public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort<HttpPortImpl>
 {
     private PortManager _portManager;
 
@@ -60,6 +60,7 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         super(attributes, container);
     }
 
+    @Override
     public void setPortManager(PortManager manager)
     {
         _portManager = manager;

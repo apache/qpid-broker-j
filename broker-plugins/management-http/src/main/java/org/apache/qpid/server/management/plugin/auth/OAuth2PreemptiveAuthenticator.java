@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpRequestPreemptiveAuthenticator;
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -46,6 +47,7 @@ public class OAuth2PreemptiveAuthenticator implements HttpRequestPreemptiveAuthe
     public Subject attemptAuthentication(final HttpServletRequest request,
                                          final HttpManagementConfiguration configuration)
     {
+        final Port<?> port = configuration.getPort(request);
         final AuthenticationProvider<?> authenticationProvider = configuration.getAuthenticationProvider(request);
         String authorizationHeader = request.getHeader("Authorization");
         String accessToken = null;
@@ -60,7 +62,7 @@ public class OAuth2PreemptiveAuthenticator implements HttpRequestPreemptiveAuthe
             OAuth2AuthenticationProvider<?> oAuth2AuthProvider = (OAuth2AuthenticationProvider<?>) authenticationProvider;
             AuthenticationResult authenticationResult = oAuth2AuthProvider.authenticateViaAccessToken(accessToken);
 
-            SubjectCreator subjectCreator = authenticationProvider.getSubjectCreator(request.isSecure());
+            SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure());
             SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
 
             return result.getSubject();

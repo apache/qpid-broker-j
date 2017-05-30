@@ -42,6 +42,7 @@ import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -88,6 +89,8 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
     public AuthenticationHandler getAuthenticationHandler(final HttpServletRequest request,
                                                           final HttpManagementConfiguration configuration)
     {
+        final Port<?> port = configuration.getPort(request);
+
         if (configuration.getAuthenticationProvider(request) instanceof OAuth2AuthenticationProvider)
         {
             final OAuth2AuthenticationProvider oauth2Provider =
@@ -189,7 +192,7 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
 
                     private Subject createSubject(final AuthenticationResult authenticationResult)
                     {
-                        SubjectCreator subjectCreator = oauth2Provider.getSubjectCreator(request.isSecure());
+                        SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure());
                         SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
                         Subject original = result.getSubject();
 
