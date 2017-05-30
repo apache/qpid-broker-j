@@ -314,4 +314,10 @@ public class QpidJmsClient0xProvider implements JmsProvider
             throw new RuntimeException("No broker details are available.", e);
         }
     }
+
+    @Override
+    public ConnectionBuilder getConnectionBuilder()
+    {
+        return new QpidJmsClient0xConnectionBuilder();
+    }
 }

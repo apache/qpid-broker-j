@@ -2490,29 +2490,38 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public void registerConnection(final AMQPConnection<?> connection)
+    public boolean registerConnection(final AMQPConnection<?> connection,
+                                      final ConnectionEstablishmentPolicy connectionEstablishmentPolicy)
     {
-        doSync(registerConnectionAsync(connection));
+        return doSync(registerConnectionAsync(connection, connectionEstablishmentPolicy));
     }
 
-    public ListenableFuture<Void> registerConnectionAsync(final AMQPConnection<?> connection)
+    public ListenableFuture<Boolean> registerConnectionAsync(final AMQPConnection<?> connection,
+                                                          final ConnectionEstablishmentPolicy connectionEstablishmentPolicy)
     {
-        return doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
+        return doOnConfigThread(new Task<ListenableFuture<Boolean>, RuntimeException>()
         {
             @Override
-            public ListenableFuture<Void> execute()
+            public ListenableFuture<Boolean> execute()
             {
                 if (_acceptsConnections.get())
                 {
-                    _connections.add(connection);
-
-                    if (_blocked.get())
+                    if (connectionEstablishmentPolicy.mayEstablishNewConnection(_connections, connection))
                     {
-                        connection.block();
-                    }
+                        _connections.add(connection);
 
-                    connection.pushScheduler(_networkConnectionScheduler);
-                    return Futures.immediateFuture(null);
+                        if (_blocked.get())
+                        {
+                            connection.block();
+                        }
+
+                        connection.pushScheduler(_networkConnectionScheduler);
+                        return Futures.immediateFuture(true);
+                    }
+                    else
+                    {
+                        return Futures.immediateFuture(false);
+                    }
                 }
                 else
                 {

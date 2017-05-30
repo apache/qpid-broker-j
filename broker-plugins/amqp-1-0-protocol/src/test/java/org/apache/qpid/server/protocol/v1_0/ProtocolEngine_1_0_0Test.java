@@ -74,6 +74,8 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
+import org.apache.qpid.server.virtualhost.ConnectionEstablishmentPolicy;
+import org.apache.qpid.server.virtualhost.NoopConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -121,6 +123,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         when(_virtualHost.isActive()).thenReturn(true);
 
         final ArgumentCaptor<AMQPConnection> connectionCaptor = ArgumentCaptor.forClass(AMQPConnection.class);
+        final ArgumentCaptor<ConnectionEstablishmentPolicy> establishmentPolicyCaptor = ArgumentCaptor.forClass(ConnectionEstablishmentPolicy.class);
         doAnswer(new Answer()
         {
             @Override
@@ -129,7 +132,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
                 _connection = connectionCaptor.getValue();
                 return null;
             }
-        }).when(_virtualHost).registerConnection(connectionCaptor.capture());
+        }).when(_virtualHost).registerConnection(connectionCaptor.capture(), establishmentPolicyCaptor.capture());
         when(_virtualHost.getPrincipal()).thenReturn(mock(VirtualHostPrincipal.class));
         when(_port.getAddressSpace(anyString())).thenReturn(_virtualHost);
         when(_port.getSubjectCreator(anyBoolean(), anyString())).thenReturn(_subjectCreator);
@@ -213,7 +216,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         open.setContainerId("testContainerId");
         _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
 
-        verify(_virtualHost).registerConnection(any(AMQPConnection.class));
+        verify(_virtualHost).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal, new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
@@ -232,7 +235,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         open.setContainerId("testContainerId");
         _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
 
-        verify(_virtualHost, never()).registerConnection(any(AMQPConnection.class));
+        verify(_virtualHost, never()).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
         verify(_networkConnection).close();
     }
 
@@ -251,7 +254,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         open.setContainerId("testContainerId");
         _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
 
-        verify(_virtualHost).registerConnection(any(AMQPConnection.class));
+        verify(_virtualHost).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
         AuthenticatedPrincipal authPrincipal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(authPrincipal);
         assertEquals(authPrincipal, new AuthenticatedPrincipal(principal));
@@ -283,7 +286,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         open.setContainerId("testContainerId");
         _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
 
-        verify(_virtualHost).registerConnection(any(AMQPConnection.class));
+        verify(_virtualHost).registerConnection(any(AMQPConnection.class), any(ConnectionEstablishmentPolicy.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal, new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));

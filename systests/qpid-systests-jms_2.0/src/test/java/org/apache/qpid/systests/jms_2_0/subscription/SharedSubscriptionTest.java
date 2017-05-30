@@ -20,7 +20,6 @@
 package org.apache.qpid.systests.jms_2_0.subscription;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.jms.Connection;
@@ -85,7 +84,7 @@ public class SharedSubscriptionTest extends QpidBrokerTestCase
 
     public void testSharedDurableSubscription() throws Exception
     {
-        Connection connection = getConnectionWithPrefetch(0);
+        Connection connection = getConnectionBuilder().setPrefetch(0).setClientId("myClientId").build();
 
         Session publishingSession = connection.createSession();
         Session subscriber1Session = connection.createSession();
@@ -119,7 +118,7 @@ public class SharedSubscriptionTest extends QpidBrokerTestCase
             restartDefaultBroker();
         }
 
-        connection = getConnectionWithPrefetch(0);
+        connection = getConnectionBuilder().setPrefetch(0).setClientId("myClientId").build();
         subscriber1Session = connection.createSession();
         subscriber2Session = connection.createSession();
 
@@ -147,7 +146,7 @@ public class SharedSubscriptionTest extends QpidBrokerTestCase
 
     public void testUnsubscribe() throws Exception
     {
-        Connection connection = getConnectionWithPrefetch(0);
+        Connection connection = getConnectionBuilder().setPrefetch(0).setClientId("myClientId").build();
         Session session = connection.createSession();
 
         connection.start();
@@ -170,7 +169,7 @@ public class SharedSubscriptionTest extends QpidBrokerTestCase
             restartDefaultBroker();
         }
 
-        connection = getConnectionWithPrefetch(0);
+        connection = getConnectionBuilder().setPrefetch(0).setClientId("myClientId").build();
         session = connection.createSession();
         session.unsubscribe(subscriptionName);
 

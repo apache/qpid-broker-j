@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import static com.google.common.util.concurrent.Futures.allAsList;
+import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_ENFORCEMENT_POLICY;
+
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.AccessControlContext;
@@ -43,9 +46,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
+import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +88,9 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties;
+import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionDetectionPolicy;
+import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslChallenge;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslCode;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
@@ -109,6 +119,7 @@ import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManage
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.ByteBufferSender;
@@ -168,6 +179,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     private boolean _blocking;
     private final Object _blockingLock = new Object();
     private List<Symbol> _offeredCapabilities;
+    private SoleConnectionEnforcementPolicy _soleConnectionEnforcementPolicy;
 
     private enum FrameReceivingState
     {
@@ -212,10 +224,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                                                                                         .registerTransportLayer()
                                                                                         .registerMessagingLayer()
                                                                                         .registerTransactionLayer()
-                                                                                        .registerSecurityLayer();
+                                                                                        .registerSecurityLayer()
+                                                                                        .registerExtensionSoleconnLayer();
 
-
-    private Map<Symbol, Object> _properties;
+    private final Map<Symbol, Object> _properties = new LinkedHashMap<>();
     private boolean _saslComplete;
 
     private SaslNegotiator _saslNegotiator;
@@ -225,6 +237,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     private static final long MINIMUM_SUPPORTED_IDLE_TIMEOUT = 1000L;
 
     private volatile Map<Symbol, Object> _remoteProperties;
+
+    private Set<Symbol> _remoteDesiredCapabilities;
 
     private final AtomicBoolean _orderlyClose = new AtomicBoolean(false);
 
@@ -258,17 +272,15 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
         _port = port;
 
-        Map<Symbol, Object> serverProperties = new LinkedHashMap<>();
-        serverProperties.put(Symbol.valueOf(ServerPropertyNames.PRODUCT), CommonProperties.getProductName());
-        serverProperties.put(Symbol.valueOf(ServerPropertyNames.VERSION), CommonProperties.getReleaseVersion());
-        serverProperties.put(Symbol.valueOf(ServerPropertyNames.QPID_BUILD), CommonProperties.getBuildVersion());
-        serverProperties.put(Symbol.valueOf(ServerPropertyNames.QPID_INSTANCE_NAME), broker.getName());
-
-        setProperties(serverProperties);
+        _properties.put(Symbol.valueOf(ServerPropertyNames.PRODUCT), CommonProperties.getProductName());
+        _properties.put(Symbol.valueOf(ServerPropertyNames.VERSION), CommonProperties.getReleaseVersion());
+        _properties.put(Symbol.valueOf(ServerPropertyNames.QPID_BUILD), CommonProperties.getBuildVersion());
+        _properties.put(Symbol.valueOf(ServerPropertyNames.QPID_INSTANCE_NAME), broker.getName());
 
         List<Symbol> offeredCapabilities = new ArrayList<>();
         offeredCapabilities.add(ANONYMOUS_RELAY);
         offeredCapabilities.add(SHARED_SUBSCRIPTIONS);
+        offeredCapabilities.add(SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER);
 
         setOfferedCapabilities(offeredCapabilities);
 
@@ -770,6 +782,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             _idleTimeout = open.getIdleTimeOut().longValue();
         }
         _remoteProperties = open.getProperties() == null ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(open.getProperties()));
+        _remoteDesiredCapabilities = open.getDesiredCapabilities() == null ? Collections.emptySet() : Sets.newHashSet(open.getDesiredCapabilities());
         if (_remoteProperties.containsKey(Symbol.valueOf("product")))
         {
             setClientProduct(_remoteProperties.get(Symbol.valueOf("product")).toString());
@@ -779,14 +792,26 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             setClientVersion(_remoteProperties.get(Symbol.valueOf("version")).toString());
         }
         setClientId(_remoteContainerId);
+        if (_remoteDesiredCapabilities.contains(SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER))
+        {
+            if (_remoteProperties != null && _remoteProperties.containsKey(SOLE_CONNECTION_ENFORCEMENT_POLICY))
+            {
+                _soleConnectionEnforcementPolicy = SoleConnectionEnforcementPolicy.valueOf(_remoteProperties.get(SOLE_CONNECTION_ENFORCEMENT_POLICY));
+            }
+            else
+            {
+                _soleConnectionEnforcementPolicy = SoleConnectionEnforcementPolicy.REFUSE_CONNECTION;
+            }
+        }
+
         if (_idleTimeout != 0L && _idleTimeout < MINIMUM_SUPPORTED_IDLE_TIMEOUT)
         {
+            _closedOnOpen = true;
             closeConnection(ConnectionError.CONNECTION_FORCED,
                             "Requested idle timeout of "
                             + _idleTimeout
                             + " is too low. The minimum supported timeout is"
                             + MINIMUM_SUPPORTED_IDLE_TIMEOUT);
-            _closedOnOpen = true;
         }
         else
         {
@@ -795,54 +820,131 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             final NamedAddressSpace addressSpace = _port.getAddressSpace(_localHostname);
             if (addressSpace == null)
             {
-                closeWithError(AmqpError.NOT_FOUND, "Unknown hostname in connection open: '" + _localHostname + "'");
+                _closedOnOpen = true;
+                closeConnection(AmqpError.NOT_FOUND, "Unknown hostname in connection open: '" + _localHostname + "'");
             }
             else
             {
-                if (!addressSpace.isActive())
+                receiveOpenInternal(addressSpace);
+            }
+        }
+    }
+
+    private void receiveOpenInternal(final NamedAddressSpace addressSpace)
+    {
+        if (!addressSpace.isActive())
+        {
+            final Error err = new Error();
+            err.setCondition(AmqpError.NOT_FOUND);
+            populateConnectionRedirect(addressSpace, err);
+            _closedOnOpen = true;
+            closeConnection(err);
+        }
+        else
+        {
+            if (AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(getSubject()) == null)
+            {
+                _closedOnOpen = true;
+                closeConnection(AmqpError.NOT_ALLOWED, "Connection has not been authenticated");
+            }
+            else
+            {
+                try
                 {
-                    _closedOnOpen = true;
+                    boolean registerSucceeded = addressSpace.registerConnection(this, (existingConnections, newConnection) ->
+                    {
+                        boolean proceedWithRegistration = true;
+                        if (newConnection instanceof AMQPConnection_1_0Impl && !((AMQPConnection_1_0Impl) newConnection).isClosing())
+                        {
+                            List<ListenableFuture<Void>> rescheduleFutures = new ArrayList<>();
+                            for (AMQPConnection<?> existingConnection : StreamSupport.stream(existingConnections.spliterator(), false)
+                                                                                     .filter(con -> con instanceof AMQPConnection_1_0)
+                                                                                     .filter(con -> !((AMQPConnection_1_0<?>) con).isClosing())
+                                                                                     .filter(con -> con.getRemoteContainerName().equals(newConnection.getRemoteContainerName()))
+                                                                                     .collect(Collectors.toList()))
+                            {
+                                SoleConnectionEnforcementPolicy soleConnectionEnforcementPolicy = null;
+                                if (((AMQPConnection_1_0Impl) existingConnection)._soleConnectionEnforcementPolicy
+                                    != null)
+                                {
+                                    soleConnectionEnforcementPolicy =
+                                            ((AMQPConnection_1_0Impl) existingConnection)._soleConnectionEnforcementPolicy;
+                                }
+                                else if (((AMQPConnection_1_0Impl) newConnection)._soleConnectionEnforcementPolicy != null)
+                                {
+                                    soleConnectionEnforcementPolicy =
+                                            ((AMQPConnection_1_0Impl) newConnection)._soleConnectionEnforcementPolicy;
+                                }
+                                if (SoleConnectionEnforcementPolicy.REFUSE_CONNECTION.equals(soleConnectionEnforcementPolicy))
+                                {
+                                    _properties.put(Symbol.valueOf("amqp:connection-establishment-failed"), true);
+                                    Error error = new Error(AmqpError.INVALID_FIELD,
+                                                            String.format(
+                                                                    "Connection closed due to sole-connection-enforcement-policy '%s'",
+                                                                    soleConnectionEnforcementPolicy.toString()));
+                                    error.setInfo(Collections.singletonMap(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")));
+                                    newConnection.doOnIOThreadAsync(() -> ((AMQPConnection_1_0Impl) newConnection).closeConnection(error));
+                                    proceedWithRegistration = false;
+                                    break;
+                                }
+                                else if (SoleConnectionEnforcementPolicy.CLOSE_EXISTING.equals(soleConnectionEnforcementPolicy))
+                                {
+                                    final Error error = new Error(AmqpError.RESOURCE_LOCKED,
+                                                                  String.format(
+                                                                          "Connection closed due to sole-connection-enforcement-policy '%s'",
+                                                                          soleConnectionEnforcementPolicy.toString()));
+                                    error.setInfo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true));
+                                    rescheduleFutures.add(existingConnection.doOnIOThreadAsync(
+                                            () -> ((AMQPConnection_1_0Impl) existingConnection).closeConnection(error)));
+                                    proceedWithRegistration = false;
+                                }
+                            }
+                            if (!rescheduleFutures.isEmpty())
+                            {
+                                doAfter(allAsList(rescheduleFutures), () -> newConnection.doOnIOThreadAsync(() -> receiveOpenInternal(addressSpace)));
+                            }
+                        }
+                        return proceedWithRegistration;
+                    });
 
-                    final Error err = new Error();
-                    err.setCondition(AmqpError.NOT_FOUND);
-                    populateConnectionRedirect(addressSpace, err);
+                    if (registerSucceeded)
+                    {
+                        setAddressSpace(addressSpace);
 
-                    closeConnection(err);
-
-                    _closedOnOpen = true;
-
+                        if (!addressSpace.authoriseCreateConnection(this))
+                        {
+                            _closedOnOpen = true;
+                            closeConnection(AmqpError.NOT_ALLOWED, "Connection refused");
+                        }
+                        else
+                        {
+                            switch (_connectionState)
+                            {
+                                case UNOPENED:
+                                    sendOpen(_channelMax, _maxFrameSize);
+                                    _connectionState = ConnectionState.OPEN;
+                                    break;
+                                case AWAITING_OPEN:
+                                    _connectionState = ConnectionState.OPEN;
+                                    break;
+                                case CLOSE_SENT:
+                                case CLOSED:
+                                    // already sent our close - probably due to an error
+                                    break;
+                                default:
+                                    _closedOnOpen = true;
+                                    throw new ConnectionScopedRuntimeException("Connection Open failed under mysterious circumstances.");
+                            }
+                        }
+                    }
                 }
-                else
+                catch (VirtualHostUnavailableException e)
                 {
-                    if (AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(getSubject()) == null)
-                    {
-                        closeWithError(AmqpError.NOT_ALLOWED, "Connection has not been authenticated");
-                    }
-                    else
-                    {
-                        try
-                        {
-                            setAddressSpace(addressSpace);
-                        }
-                        catch (VirtualHostUnavailableException e)
-                        {
-                            closeWithError(AmqpError.NOT_ALLOWED, e.getMessage());
-                        }
-                    }
+                    _closedOnOpen = true;
+                    closeConnection(AmqpError.NOT_ALLOWED, e.getMessage());
                 }
             }
         }
-        switch (_connectionState)
-        {
-            case UNOPENED:
-                sendOpen(_channelMax, _maxFrameSize);
-            case AWAITING_OPEN:
-                _connectionState = ConnectionState.OPEN;
-            default:
-                // TODO bad stuff (connection already open)
-
-        }
-
     }
 
     private void populateConnectionRedirect(final NamedAddressSpace addressSpace, final Error err)
@@ -933,11 +1035,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     private void setRemoteAddress(final SocketAddress remoteAddress)
     {
         _remoteAddress = remoteAddress;
-    }
-
-    public void setProperties(final Map<Symbol, Object> properties)
-    {
-        _properties = properties;
     }
 
     public void setOfferedCapabilities(final List<Symbol> offeredCapabilities)
@@ -1620,21 +1717,15 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             open.setOfferedCapabilities(_offeredCapabilities.toArray(new Symbol[_offeredCapabilities.size()]));
         }
 
-        if (_properties != null)
+        if (_remoteDesiredCapabilities.contains(SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER))
         {
-            open.setProperties(_properties);
+            _properties.put(SoleConnectionConnectionProperties.SOLE_CONNECTION_DETECTION_POLICY,
+                            SoleConnectionDetectionPolicy.STRONG);
         }
 
-        sendFrame(CONNECTION_CONTROL_CHANNEL, open);
-    }
+        open.setProperties(_properties);
 
-    private void closeWithError(final AmqpError amqpError, final String errorDescription)
-    {
-        final Error err = new Error();
-        err.setCondition(amqpError);
-        err.setDescription(errorDescription);
-        closeConnection(err);
-        _closedOnOpen = true;
+        sendFrame(CONNECTION_CONTROL_CHANNEL, open);
     }
 
     private Session_1_0 getSession(final short channel)

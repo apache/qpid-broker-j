@@ -91,4 +91,6 @@ public interface JmsProvider
     boolean isQueueExist(Connection con, Queue destination) throws Exception;
 
     String getBrokerDetailsFromDefaultConnectionUrl();
+
+    ConnectionBuilder getConnectionBuilder();
 }

@@ -27,6 +27,8 @@ import java.util.List;
 
 import javax.security.auth.Subject;
 
+import com.google.common.util.concurrent.Futures;
+
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
@@ -98,6 +100,7 @@ public class ServerSessionTest extends QpidTestCase
         AmqpPort port = createMockPort();
 
         final AMQPConnection_0_10 modelConnection = mock(AMQPConnection_0_10.class);
+        when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
         when(modelConnection.getAddressSpace()).thenReturn(_virtualHost);
         when(modelConnection.getContextProvider()).thenReturn(_virtualHost);
         when(modelConnection.getBroker()).thenReturn((Broker)broker);

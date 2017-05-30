@@ -29,6 +29,8 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.codec.*;
 import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
+import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionDetectionPolicy;
+import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.StdDistMode;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
@@ -124,6 +126,12 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
     {
         registerSecurityConstructors(this);
         registerSecurityWriters(this);
+        return this;
+    }
+
+    public AMQPDescribedTypeRegistry registerExtensionSoleconnLayer()
+    {
+        registerExtensionSoleconnWriters(this);
         return this;
     }
 
@@ -230,13 +238,18 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
 
     private static void registerSecurityWriters(final AMQPDescribedTypeRegistry registry)
     {
-    
         SaslMechanismsWriter.register(registry);
         SaslInitWriter.register(registry);
         SaslChallengeWriter.register(registry);
         SaslResponseWriter.register(registry);
         SaslOutcomeWriter.register(registry);
         RestrictedTypeValueWriter.register(registry,SaslCode.class);
+    }
+
+    private static void registerExtensionSoleconnWriters(final AMQPDescribedTypeRegistry registry)
+    {
+        RestrictedTypeValueWriter.register(registry, SoleConnectionEnforcementPolicy.class);
+        RestrictedTypeValueWriter.register(registry, SoleConnectionDetectionPolicy.class);
     }
 
     private static void registerTransportConstructors(final AMQPDescribedTypeRegistry registry)

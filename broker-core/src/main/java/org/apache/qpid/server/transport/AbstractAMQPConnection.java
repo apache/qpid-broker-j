@@ -52,7 +52,6 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.logging.subjects.ConnectionLogSubject;
-import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -71,10 +70,8 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
-import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.FlowToDiskTransactionObserver;
 import org.apache.qpid.server.txn.LocalTransaction;
-import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.txn.TransactionObserver;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
@@ -808,7 +805,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     public void setAddressSpace(NamedAddressSpace addressSpace)
     {
-        addressSpace.registerConnection(this);
         _addressSpace = addressSpace;
 
         if(addressSpace instanceof EventLoggerProvider)

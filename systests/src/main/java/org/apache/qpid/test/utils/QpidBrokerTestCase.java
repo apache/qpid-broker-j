@@ -220,6 +220,12 @@ public class QpidBrokerTestCase extends QpidTestCase
         }
     }
 
+
+    public ConnectionBuilder getConnectionBuilder()
+    {
+        return _jmsProvider.getConnectionBuilder();
+    }
+
     /**
      * Get the default connection factory for the currently used broker
      * Default factory is "local"

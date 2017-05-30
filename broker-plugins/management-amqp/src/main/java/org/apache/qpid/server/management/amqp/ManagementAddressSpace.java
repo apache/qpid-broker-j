@@ -66,6 +66,7 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxNotSupportedException;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.virtualhost.ConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.LinkRegistryModel;
 import org.apache.qpid.server.virtualhost.LinkRegistryFactory;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNode;
@@ -192,9 +193,11 @@ public class ManagementAddressSpace implements NamedAddressSpace
     }
 
     @Override
-    public void registerConnection(final AMQPConnection<?> connection)
+    public boolean registerConnection(final AMQPConnection<?> connection,
+                                      final ConnectionEstablishmentPolicy connectionEstablishmentPolicy)
     {
         _connections.add(connection);
+        return true;
     }
 
     @Override

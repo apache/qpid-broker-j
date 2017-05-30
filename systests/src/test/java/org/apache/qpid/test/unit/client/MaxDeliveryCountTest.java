@@ -97,7 +97,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
         _testQueueName = getTestQueueName();
         boolean durableSub = isDurSubTest();
 
-        Connection connection = getConnection();
+        Connection connection = getConnectionBuilder().setClientId("clientid").build();
         connection.start();
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
         Destination destination;
@@ -207,7 +207,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
 
     private void doTest(final int deliveryMode, final List<Integer> redeliverMsgs, final boolean synchronous, final boolean durableSub) throws Exception
     {
-        final Connection clientConnection = getConnection();
+        final Connection clientConnection = getConnectionBuilder().setClientId("clientid").build();
 
         final boolean transacted = deliveryMode == Session.SESSION_TRANSACTED;
         final Session clientSession = clientConnection.createSession(transacted, deliveryMode);

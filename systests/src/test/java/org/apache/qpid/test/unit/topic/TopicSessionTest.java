@@ -137,13 +137,13 @@ public class TopicSessionTest extends QpidBrokerTestCase
 
     public void testUnsubscriptionAfterConnectionClose() throws Exception
     {
-        TopicConnection con1 = (TopicConnection) getClientConnection("guest", "guest", "clientid");
+        TopicConnection con1 = (TopicConnection) getConnectionBuilder().build();
         Topic topic = createTopic(con1, "MyTopic3");
 
         TopicSession session1 = con1.createTopicSession(true, Session.AUTO_ACKNOWLEDGE);
         TopicPublisher publisher = session1.createPublisher(topic);
 
-        TopicConnection con2 = (TopicConnection) getClientConnection("guest", "guest", "clientid");
+        TopicConnection con2 = (TopicConnection) getConnectionBuilder().setClientId("clientid").build();
         TopicSession session2 = con2.createTopicSession(true, Session.AUTO_ACKNOWLEDGE);
         TopicSubscriber sub = session2.createDurableSubscriber(topic, "subscription0");
 
@@ -157,7 +157,7 @@ public class TopicSessionTest extends QpidBrokerTestCase
         con2.close();
         publisher.publish(session1.createTextMessage("Hello2"));
         session1.commit();
-        con2 = (TopicConnection) getClientConnection("guest", "guest", "clientid");
+        con2 = (TopicConnection) getConnectionBuilder().setClientId("clientid").build();
         session2 = con2.createTopicSession(true,Session.AUTO_ACKNOWLEDGE);
         sub = session2.createDurableSubscriber(topic, "subscription0");
         con2.start();

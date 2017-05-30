@@ -71,9 +71,11 @@ public abstract class AbstractNonConnectionAcceptingVirtualHost<X extends Abstra
     }
 
     @Override
-    public void registerConnection(final AMQPConnection<?> connection)
+    public boolean registerConnection(final AMQPConnection<?> connection,
+                                      final ConnectionEstablishmentPolicy connectionEstablishmentPolicy)
     {
         throwUnsupported();
+        return false;
     }
 
     @Override

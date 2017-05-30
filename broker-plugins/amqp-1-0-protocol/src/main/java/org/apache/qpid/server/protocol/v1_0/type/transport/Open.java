@@ -66,7 +66,7 @@ public class Open implements FrameBody
     private Symbol[] _desiredCapabilities;
 
     @CompositeTypeField
-    private Map<Symbol,Object> _properties;
+    private Map<Symbol, Object> _properties;
 
     public String getContainerId()
     {
@@ -158,12 +158,12 @@ public class Open implements FrameBody
         _desiredCapabilities = desiredCapabilities;
     }
 
-    public Map<Symbol,Object> getProperties()
+    public Map<Symbol, Object> getProperties()
     {
         return _properties;
     }
 
-    public void setProperties(Map<Symbol,Object> properties)
+    public void setProperties(Map<Symbol, Object> properties)
     {
         _properties = properties;
     }
