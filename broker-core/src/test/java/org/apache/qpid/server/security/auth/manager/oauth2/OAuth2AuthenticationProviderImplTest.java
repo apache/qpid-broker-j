@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
@@ -39,6 +40,7 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.CachingAuthenticationProvider;
@@ -158,7 +160,7 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
     {
         _server.setEndpoints(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
                                                       createMockIdentityResolverEndpoint()));
-        final SaslNegotiator negotiator = _authProvider.createSaslNegotiator(OAuth2Negotiator.MECHANISM, null);
+        final SaslNegotiator negotiator = _authProvider.createSaslNegotiator(OAuth2Negotiator.MECHANISM, null, null);
         AuthenticationResult authenticationResult = negotiator.handleResponse(("auth=Bearer " + TEST_VALID_ACCESS_TOKEN + "\1\1").getBytes(UTF8));
 
         assertSuccess(authenticationResult);
@@ -172,7 +174,7 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         _server.setEndpoints(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
                                                       mockIdentityResolverEndpoint));
 
-        final SaslNegotiator negotiator = _authProvider.createSaslNegotiator(OAuth2Negotiator.MECHANISM, null);
+        final SaslNegotiator negotiator = _authProvider.createSaslNegotiator(OAuth2Negotiator.MECHANISM, null, null);
         AuthenticationResult authenticationResult = negotiator.handleResponse(("auth=Bearer " + TEST_INVALID_ACCESS_TOKEN + "\1\1").getBytes(UTF8));
         assertFailure(authenticationResult, "invalid_token");
     }
@@ -184,8 +186,12 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         mockEndpoints.put(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH, createMockIdentityResolverEndpoint());
         _server.setEndpoints(mockEndpoints);
 
+        final NamedAddressSpace mockAddressSpace = mock(NamedAddressSpace.class);
+        when(mockAddressSpace.getName()).thenReturn("mock");
+
         AuthenticationResult authenticationResult =
-                _authProvider.authenticateViaAuthorizationCode(TEST_VALID_AUTHORIZATION_CODE, TEST_REDIRECT_URI);
+                _authProvider.authenticateViaAuthorizationCode(TEST_VALID_AUTHORIZATION_CODE, TEST_REDIRECT_URI,
+                                                               mockAddressSpace);
         assertSuccess(authenticationResult);
     }
 
@@ -199,8 +205,12 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         mockEndpoints.put(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH, createMockIdentityResolverEndpoint());
         _server.setEndpoints(mockEndpoints);
 
+        final NamedAddressSpace mockAddressSpace = mock(NamedAddressSpace.class);
+        when(mockAddressSpace.getName()).thenReturn("mock");
+
         AuthenticationResult authenticationResult =
-                _authProvider.authenticateViaAuthorizationCode(TEST_INVALID_AUTHORIZATION_CODE, TEST_REDIRECT_URI);
+                _authProvider.authenticateViaAuthorizationCode(TEST_INVALID_AUTHORIZATION_CODE, TEST_REDIRECT_URI,
+                                                               mockAddressSpace);
         assertFailure(authenticationResult, "invalid_grant");
     }
 
@@ -209,7 +219,8 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         _server.setEndpoints(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
                                                       createMockIdentityResolverEndpoint()));
 
-        AuthenticationResult authenticationResult = _authProvider.authenticateViaAccessToken(TEST_VALID_ACCESS_TOKEN);
+        AuthenticationResult authenticationResult = _authProvider.authenticateViaAccessToken(TEST_VALID_ACCESS_TOKEN,
+                                                                                             null);
         assertSuccess(authenticationResult);
     }
 
@@ -222,7 +233,7 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
                                                       mockIdentityResolverEndpoint));
 
         AuthenticationResult authenticationResult =
-                _authProvider.authenticateViaAccessToken(TEST_INVALID_ACCESS_TOKEN);
+                _authProvider.authenticateViaAccessToken(TEST_INVALID_ACCESS_TOKEN, null);
         assertFailure(authenticationResult, "invalid_token");
     }
 

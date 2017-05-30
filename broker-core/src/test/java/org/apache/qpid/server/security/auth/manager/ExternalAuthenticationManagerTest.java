@@ -77,7 +77,7 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
 
     public void testAuthenticatePrincipalNull_CausesAuthError() throws Exception
     {
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings);
+        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
         AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
@@ -91,7 +91,7 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
     {
         X500Principal principal = new X500Principal("DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings);
+        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
         AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
@@ -105,7 +105,7 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
     {
         X500Principal principal = new X500Principal("CN=, DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings);
+        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
         AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
@@ -120,7 +120,7 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
         X500Principal principal = new X500Principal("CN=person");
         UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person", _manager);
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings);
+        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
         AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
@@ -136,7 +136,7 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
         X500Principal principal = new X500Principal("CN=person, DC=example, DC=com");
         UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person@example.com", _manager);
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings);
+        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
         AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
@@ -152,7 +152,7 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
         X500Principal principal = new X500Principal("CN=person, DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
         UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person@example.com", _manager);
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings);
+        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
         AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
@@ -168,7 +168,7 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
         X500Principal principal = new X500Principal("CN=person, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
         UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person", _manager);
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings);
+        SaslNegotiator negotiator = _manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
 
         AuthenticationResult result = negotiator.handleResponse(new byte[0]);
         assertNotNull(result);
@@ -188,7 +188,7 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
     {
         X500Principal principal = new X500Principal("CN=person, DC=example, DC=com");
         when(_saslSettings.getExternalPrincipal()).thenReturn(principal);
-        SaslNegotiator negotiator = _managerUsingFullDN.createSaslNegotiator("EXTERNAL", _saslSettings);
+        SaslNegotiator negotiator = _managerUsingFullDN.createSaslNegotiator("EXTERNAL", _saslSettings, null);
         AuthenticationResult result = negotiator.handleResponse(new byte[0]);
 
         assertNotNull(result);
@@ -202,10 +202,10 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
 
     private void createSaslNegotiatorTestImpl(AuthenticationProvider<?> manager) throws Exception
     {
-        SaslNegotiator negotiator = manager.createSaslNegotiator("EXTERNAL", _saslSettings);
+        SaslNegotiator negotiator = manager.createSaslNegotiator("EXTERNAL", _saslSettings, null);
         assertNotNull("Could not create SASL negotiator for 'EXTERNAL' mechanism.", negotiator);
 
-        negotiator = manager.createSaslNegotiator("PLAIN", _saslSettings);
+        negotiator = manager.createSaslNegotiator("PLAIN", _saslSettings, null);
         assertNull("Should not be able to create SASL negotiator with incorrect mechanism.", negotiator);
     }
 

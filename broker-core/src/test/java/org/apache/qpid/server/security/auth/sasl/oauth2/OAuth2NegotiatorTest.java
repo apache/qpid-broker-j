@@ -21,6 +21,7 @@
 package org.apache.qpid.server.security.auth.sasl.oauth2;
 
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -47,7 +48,7 @@ public class OAuth2NegotiatorTest extends QpidTestCase
     {
         super.setUp();
         _authenticationProvider = mock(OAuth2AuthenticationProvider.class);
-        _negotiator = new OAuth2Negotiator(_authenticationProvider);
+        _negotiator = new OAuth2Negotiator(_authenticationProvider, null);
     }
 
     public void testHandleResponse_ResponseHasAuthOnly() throws Exception
@@ -81,11 +82,11 @@ public class OAuth2NegotiatorTest extends QpidTestCase
     private void doHandleResponseWithValidResponse(final byte[] validResponse)
     {
         final AuthenticationResult expectedResult = mock(AuthenticationResult.class);
-        when(_authenticationProvider.authenticateViaAccessToken(eq(VALID_TOKEN))).thenReturn(expectedResult);
+        when(_authenticationProvider.authenticateViaAccessToken(eq(VALID_TOKEN), any())).thenReturn(expectedResult);
         AuthenticationResult actualResult = _negotiator.handleResponse(validResponse);
         assertEquals("Unexpected result", expectedResult, actualResult);
 
-        verify(_authenticationProvider).authenticateViaAccessToken(eq(VALID_TOKEN));
+        verify(_authenticationProvider).authenticateViaAccessToken(eq(VALID_TOKEN), any());
 
         AuthenticationResult secondResult = _negotiator.handleResponse(validResponse);
         assertEquals("Unexpected second result status",

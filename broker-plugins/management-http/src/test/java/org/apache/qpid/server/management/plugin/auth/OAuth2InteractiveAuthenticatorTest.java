@@ -22,7 +22,9 @@ package org.apache.qpid.server.management.plugin.auth;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.matches;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -278,7 +280,7 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         OAuth2AuthenticationProvider authenticationProvider = mock(OAuth2AuthenticationProvider.class);
         Broker mockBroker = mock(Broker.class);
         SubjectCreator mockSubjectCreator = mock(SubjectCreator.class);
-        when(_mockPort.getSubjectCreator(anyBoolean())).thenReturn(mockSubjectCreator);
+        when(_mockPort.getSubjectCreator(anyBoolean(), anyString())).thenReturn(mockSubjectCreator);
         SubjectAuthenticationResult mockSuccessfulSubjectAuthenticationResult = mock(SubjectAuthenticationResult.class);
         SubjectAuthenticationResult mockUnauthorizedSubjectAuthenticationResult = mock(SubjectAuthenticationResult.class);
         final Subject successfulSubject = new Subject(true,
@@ -313,13 +315,13 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
             }
         }).when(mockBroker).authorise(eq(Operation.ACTION("manage")));
 
-        when(authenticationProvider.getAuthorizationEndpointURI()).thenReturn(new URI(TEST_AUTHORIZATION_ENDPOINT));
+        when(authenticationProvider.getAuthorizationEndpointURI(any())).thenReturn(new URI(TEST_AUTHORIZATION_ENDPOINT));
         when(authenticationProvider.getClientId()).thenReturn(TEST_CLIENT_ID);
         when(authenticationProvider.getScope()).thenReturn(TEST_OAUTH2_SCOPE);
         when(authenticationProvider.getParent()).thenReturn(mockBroker);
-        when(authenticationProvider.authenticateViaAuthorizationCode(TEST_VALID_AUTHORIZATION_CODE, TEST_REQUEST_HOST)).thenReturn(mockSuccessfulAuthenticationResult);
-        when(authenticationProvider.authenticateViaAuthorizationCode(TEST_INVALID_AUTHORIZATION_CODE, TEST_REQUEST_HOST)).thenReturn(failedAuthenticationResult);
-        when(authenticationProvider.authenticateViaAuthorizationCode(TEST_UNAUTHORIZED_AUTHORIZATION_CODE, TEST_REQUEST_HOST)).thenReturn(mockUnauthorizedAuthenticationResult);
+        when(authenticationProvider.authenticateViaAuthorizationCode(matches(TEST_VALID_AUTHORIZATION_CODE), matches(TEST_REQUEST_HOST), any())).thenReturn(mockSuccessfulAuthenticationResult);
+        when(authenticationProvider.authenticateViaAuthorizationCode(matches(TEST_INVALID_AUTHORIZATION_CODE), matches(TEST_REQUEST_HOST), any())).thenReturn(failedAuthenticationResult);
+        when(authenticationProvider.authenticateViaAuthorizationCode(matches(TEST_UNAUTHORIZED_AUTHORIZATION_CODE), matches(TEST_REQUEST_HOST), any())).thenReturn(mockUnauthorizedAuthenticationResult);
 
         when(mockSuccessfulSubjectAuthenticationResult.getSubject()).thenReturn(successfulSubject);
         when(mockUnauthorizedSubjectAuthenticationResult.getSubject()).thenReturn(unauthorizedSubject);

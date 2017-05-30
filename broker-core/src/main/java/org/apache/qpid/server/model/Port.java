@@ -114,6 +114,7 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
 
     NamedAddressSpace getAddressSpace(String name);
 
-    SubjectCreator getSubjectCreator(final boolean secure);
+    SubjectCreator getSubjectCreator(final boolean secure, String host);
+
 
 }

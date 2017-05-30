@@ -28,14 +28,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
-
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
-import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AnonymousAuthenticationManagerTest extends QpidTestCase
@@ -69,16 +65,16 @@ public class AnonymousAuthenticationManagerTest extends QpidTestCase
 
     public void testCreateSaslNegotiator() throws Exception
     {
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("ANONYMOUS", null);
+        SaslNegotiator negotiator = _manager.createSaslNegotiator("ANONYMOUS", null, null);
         assertNotNull("Could not create SASL negotiator for mechanism 'ANONYMOUS'", negotiator);
 
-        negotiator = _manager.createSaslNegotiator("PLAIN", null);
+        negotiator = _manager.createSaslNegotiator("PLAIN", null, null);
         assertNull("Should not be able to create SASL negotiator for mechanism 'PLAIN'", negotiator);
     }
 
     public void testAuthenticate() throws Exception
     {
-        SaslNegotiator negotiator = _manager.createSaslNegotiator("ANONYMOUS", null);
+        SaslNegotiator negotiator = _manager.createSaslNegotiator("ANONYMOUS", null, null);
         AuthenticationResult result = negotiator.handleResponse(new byte[0]);
         assertNotNull(result);
         assertEquals("Expected authentication to be successful",

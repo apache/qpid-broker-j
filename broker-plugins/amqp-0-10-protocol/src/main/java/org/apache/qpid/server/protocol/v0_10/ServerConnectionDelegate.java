@@ -82,14 +82,14 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
 
 
-    public ServerConnectionDelegate(Port<?> port, boolean secure)
+    public ServerConnectionDelegate(Port<?> port, boolean secure, final String selectedHost)
     {
         _broker = (Broker<?>) port.getParent();
         _clientProperties = createConnectionProperties((Broker<?>) port.getParent());
         _mechanisms = new ArrayList<>(port.getAuthenticationProvider().getAvailableMechanisms(secure));
 
         _maxNoOfChannels = _broker.getConnection_sessionCountLimit();
-        _subjectCreator = port.getSubjectCreator(secure);
+        _subjectCreator = port.getSubjectCreator(secure, selectedHost);
         _maximumFrameSize = Math.min(0xffff, _broker.getNetworkBufferSize());
     }
 

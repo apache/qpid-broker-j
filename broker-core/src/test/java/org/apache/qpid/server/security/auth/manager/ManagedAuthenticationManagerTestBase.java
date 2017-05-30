@@ -251,7 +251,7 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
         when(saslSettings.getLocalFQDN()).thenReturn("testhost.example.com");
         for (String mechanism : _authManager.getMechanisms())
         {
-            final SaslNegotiator negotiator = _authManager.createSaslNegotiator(mechanism, saslSettings);
+            final SaslNegotiator negotiator = _authManager.createSaslNegotiator(mechanism, saslSettings, null);
             assertNotNull(String.format("Could not create SASL negotiator for mechanism '%s'", mechanism), negotiator);
         }
     }
@@ -260,7 +260,7 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
     {
         final SaslSettings saslSettings = mock(SaslSettings.class);
         when(saslSettings.getLocalFQDN()).thenReturn("testhost.example.com");
-        final SaslNegotiator negotiator = _authManager.createSaslNegotiator("UNSUPPORTED MECHANISM", saslSettings);
+        final SaslNegotiator negotiator = _authManager.createSaslNegotiator("UNSUPPORTED MECHANISM", saslSettings, null);
         assertNull("Should not be able to create SASL negotiator for unsupported mechanism", negotiator);
     }
 

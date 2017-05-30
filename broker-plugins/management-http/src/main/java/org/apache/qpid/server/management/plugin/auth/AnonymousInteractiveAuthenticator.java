@@ -63,7 +63,7 @@ public class AnonymousInteractiveAuthenticator implements HttpRequestInteractive
                 AuthenticationResult authenticationResult = authenticationProvider.getAnonymousAuthenticationResult();
                 try
                 {
-                    SubjectAuthenticationResult result = port.getSubjectCreator(request.isSecure()).createResultWithGroups(authenticationResult);
+                    SubjectAuthenticationResult result = port.getSubjectCreator(request.isSecure(), request.getServerName()).createResultWithGroups(authenticationResult);
                     Subject original = result.getSubject();
 
                     if (original == null)

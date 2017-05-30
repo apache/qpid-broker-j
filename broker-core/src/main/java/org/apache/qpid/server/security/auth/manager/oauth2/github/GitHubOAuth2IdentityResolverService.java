@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
@@ -83,9 +84,10 @@ public class GitHubOAuth2IdentityResolverService implements OAuth2IdentityResolv
 
     @Override
     public Principal getUserPrincipal(final OAuth2AuthenticationProvider<?> authenticationProvider,
-                                      String accessToken) throws IOException, IdentityResolverException
+                                      String accessToken,
+                                      final NamedAddressSpace addressSpace) throws IOException, IdentityResolverException
     {
-        URL userInfoEndpoint = authenticationProvider.getIdentityResolverEndpointURI().toURL();
+        URL userInfoEndpoint = authenticationProvider.getIdentityResolverEndpointURI(addressSpace).toURL();
         TrustStore trustStore = authenticationProvider.getTrustStore();
 
         ConnectionBuilder connectionBuilder = new ConnectionBuilder(userInfoEndpoint);

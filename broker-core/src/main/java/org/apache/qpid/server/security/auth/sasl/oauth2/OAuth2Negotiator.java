@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
@@ -33,12 +34,15 @@ public class OAuth2Negotiator implements SaslNegotiator
 
     public static final String MECHANISM = "XOAUTH2";
     private static final String BEARER_PREFIX = "Bearer ";
+    private final NamedAddressSpace _addressSpace;
     private OAuth2AuthenticationProvider<?> _authenticationProvider;
     private volatile boolean _isComplete;
 
-    public OAuth2Negotiator(OAuth2AuthenticationProvider<?> authenticationProvider)
+    public OAuth2Negotiator(OAuth2AuthenticationProvider<?> authenticationProvider,
+                            final NamedAddressSpace addressSpace)
     {
         _authenticationProvider = authenticationProvider;
+        _addressSpace = addressSpace;
     }
 
     @Override
@@ -61,7 +65,7 @@ public class OAuth2Negotiator implements SaslNegotiator
         {
             if (auth.startsWith(BEARER_PREFIX))
             {
-                return _authenticationProvider.authenticateViaAccessToken(auth.substring(BEARER_PREFIX.length()));
+                return _authenticationProvider.authenticateViaAccessToken(auth.substring(BEARER_PREFIX.length()), _addressSpace);
             }
             else
             {

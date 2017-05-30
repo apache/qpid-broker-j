@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.sasl.PasswordSource;
@@ -110,7 +111,9 @@ public class PlainAuthenticationProvider
     }
 
     @Override
-    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
+    public SaslNegotiator createSaslNegotiator(final String mechanism,
+                                               final SaslSettings saslSettings,
+                                               final NamedAddressSpace addressSpace)
     {
         if (PlainNegotiator.MECHANISM.equals(mechanism))
         {

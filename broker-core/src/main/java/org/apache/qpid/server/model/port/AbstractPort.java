@@ -467,10 +467,19 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     }
 
     @Override
-    public SubjectCreator getSubjectCreator(final boolean secure)
+    public SubjectCreator getSubjectCreator(boolean secure, String host)
     {
         Collection children = _container.getChildren(GroupProvider.class);
-        return new SubjectCreator(getAuthenticationProvider(), children);
+        NamedAddressSpace addressSpace;
+        if(host != null)
+        {
+            addressSpace = getAddressSpace(host);
+        }
+        else
+        {
+            addressSpace = null;
+        }
+        return new SubjectCreator(getAuthenticationProvider(), children, addressSpace);
     }
 
     @Override

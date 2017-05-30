@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v0_8;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -149,7 +150,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         when(_port.getAddressSpace(VIRTUAL_HOST_NAME)).thenReturn(_virtualHost);
         when(_port.getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY)).thenReturn(2500l);
         when(_port.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(Connection.DEFAULT_MAX_MESSAGE_SIZE);
-        when(_port.getSubjectCreator(false)).thenReturn(subjectCreator);
+        when(_port.getSubjectCreator(eq(false), anyString())).thenReturn(subjectCreator);
 
         _sender = mock(ByteBufferSender.class);
 

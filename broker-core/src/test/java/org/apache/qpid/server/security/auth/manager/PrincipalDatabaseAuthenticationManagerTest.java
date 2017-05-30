@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -175,7 +174,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         setupMocks();
 
         SaslSettings saslSettings = mock(SaslSettings.class);
-        SaslNegotiator saslNegotiator = _manager.createSaslNegotiator(MOCK_MECH_NAME, saslSettings);
+        SaslNegotiator saslNegotiator = _manager.createSaslNegotiator(MOCK_MECH_NAME, saslSettings, null);
         assertNotNull(saslNegotiator);
     }
 

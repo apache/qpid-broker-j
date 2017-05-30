@@ -132,7 +132,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         }).when(_virtualHost).registerConnection(connectionCaptor.capture());
         when(_virtualHost.getPrincipal()).thenReturn(mock(VirtualHostPrincipal.class));
         when(_port.getAddressSpace(anyString())).thenReturn(_virtualHost);
-        when(_port.getSubjectCreator(anyBoolean())).thenReturn(_subjectCreator);
+        when(_port.getSubjectCreator(anyBoolean(), anyString())).thenReturn(_subjectCreator);
 
         final ArgumentCaptor<Principal> userCaptor = ArgumentCaptor.forClass(Principal.class);
         when(_subjectCreator.createSubjectWithGroups(userCaptor.capture())).then(new Answer<Subject>()
@@ -263,7 +263,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         final AnonymousAuthenticationManager anonymousAuthenticationManager =
                 (new AnonymousAuthenticationManagerFactory()).create(null, attrs, _broker);
         when(_port.getAuthenticationProvider()).thenReturn(anonymousAuthenticationManager);
-        when(_port.getSubjectCreator(anyBoolean())).thenReturn(new SubjectCreator(anonymousAuthenticationManager, Collections.emptyList()));
+        when(_port.getSubjectCreator(anyBoolean(), anyString())).thenReturn(new SubjectCreator(anonymousAuthenticationManager, Collections.emptyList(), null));
 
         allowMechanisms(AnonymousAuthenticationManager.MECHANISM_NAME);
 

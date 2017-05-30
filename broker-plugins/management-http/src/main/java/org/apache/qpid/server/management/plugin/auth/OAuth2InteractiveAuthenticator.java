@@ -42,6 +42,7 @@ import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.security.SubjectCreator;
@@ -128,14 +129,12 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
             if (authorizationCode == null)
             {
                 final String authorizationRedirectURL = buildAuthorizationRedirectURL(request, oauth2Provider);
-                return new AuthenticationHandler()
+                return response ->
                 {
-                    @Override
-                    public void handleAuthentication(final HttpServletResponse response) throws IOException
-                    {
-                        LOGGER.debug("Sending redirect to authorization endpoint {}", oauth2Provider.getAuthorizationEndpointURI());
-                        response.sendRedirect(authorizationRedirectURL);
-                    }
+                    final NamedAddressSpace addressSpace = configuration.getPort(request).getAddressSpace(request.getServerName());
+
+                    LOGGER.debug("Sending redirect to authorization endpoint {}", oauth2Provider.getAuthorizationEndpointURI(addressSpace));
+                    response.sendRedirect(authorizationRedirectURL);
                 };
             }
             else
@@ -160,12 +159,15 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                 final String originalRequestUri = (String) httpSession.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(
                         ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE,
                         request));
+
+                final NamedAddressSpace addressSpace = configuration.getPort(request).getAddressSpace(request.getServerName());
+
                 return new AuthenticationHandler()
                 {
                     @Override
                     public void handleAuthentication(final HttpServletResponse response) throws IOException
                     {
-                        AuthenticationResult authenticationResult = oauth2Provider.authenticateViaAuthorizationCode(authorizationCode, redirectUri);
+                        AuthenticationResult authenticationResult = oauth2Provider.authenticateViaAuthorizationCode(authorizationCode, redirectUri, addressSpace);
                         try
                         {
                             Subject subject = createSubject(authenticationResult);
@@ -192,7 +194,7 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
 
                     private Subject createSubject(final AuthenticationResult authenticationResult)
                     {
-                        SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure());
+                        SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure(), request.getServerName());
                         SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
                         Subject original = result.getSubject();
 
@@ -249,7 +251,13 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
     {
         final String redirectUri = getRedirectUri(request);
         final String originalRequestUri = getOriginalRequestUri(request);
-        final String authorizationEndpoint = oauth2Provider.getAuthorizationEndpointURI().toString();
+
+        NamedAddressSpace addressSpace = HttpManagementUtil.getPort(request).getAddressSpace(request.getServerName());
+
+        final URI authorizationEndpointURI =
+                oauth2Provider.getAuthorizationEndpointURI(addressSpace);
+
+        final String authorizationEndpoint = authorizationEndpointURI.toString();
         final HttpSession httpSession = request.getSession();
         httpSession.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(REDIRECT_URI_SESSION_ATTRIBUTE,
                                                                                     request), redirectUri);
@@ -268,7 +276,7 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
         }
 
         StringBuilder urlBuilder = new StringBuilder(authorizationEndpoint);
-        String query = oauth2Provider.getAuthorizationEndpointURI().getQuery();
+        String query = authorizationEndpointURI.getQuery();
         if (query == null)
         {
             urlBuilder.append("?");

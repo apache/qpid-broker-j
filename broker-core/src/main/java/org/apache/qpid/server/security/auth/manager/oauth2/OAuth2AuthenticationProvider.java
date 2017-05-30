@@ -26,6 +26,7 @@ import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.CachingAuthenticationProvider;
@@ -45,14 +46,21 @@ public interface OAuth2AuthenticationProvider<T extends OAuth2AuthenticationProv
     @ManagedAttribute( description = "Redirect URI to obtain authorization code grant", mandatory = true, defaultValue = "${this:defaultAuthorizationEndpointURI}")
     URI getAuthorizationEndpointURI();
 
+    URI getAuthorizationEndpointURI(NamedAddressSpace addressSpace);
+
     @ManagedAttribute( description = "Token endpoint URI to exchange an authorization code grant for an access token", mandatory = true, defaultValue = "${this:defaultTokenEndpointURI}" )
     URI getTokenEndpointURI();
+
+    URI getTokenEndpointURI(NamedAddressSpace addressSpace);
 
     @ManagedAttribute( description = "Whether to use basic authentication when accessing the token endpoint", defaultValue = "false" )
     boolean getTokenEndpointNeedsAuth();
 
     @ManagedAttribute( description = "Identity resolver endpoint URI to get user information associated with a given access token", mandatory = true, defaultValue = "${this:defaultIdentityResolverEndpointURI}"  )
     URI getIdentityResolverEndpointURI();
+
+    URI getIdentityResolverEndpointURI(NamedAddressSpace addressSpace);
+
 
     @ManagedAttribute( description = "The type of the IdentityResolver", mandatory = true,
             validValues = {"org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProviderImpl#validIdentityResolvers()"})
@@ -73,12 +81,14 @@ public interface OAuth2AuthenticationProvider<T extends OAuth2AuthenticationProv
     @ManagedAttribute( description = "TrustStore to use when contacting OAuth2 endpoints" )
     TrustStore getTrustStore();
 
+    @Override
     @ManagedAttribute( defaultValue = "[ \"XOAUTH2\" ]")
     List<String> getSecureOnlyMechanisms();
 
-    AuthenticationResult authenticateViaAuthorizationCode(String authorizationCode, final String redirectUri);
+    AuthenticationResult authenticateViaAuthorizationCode(String authorizationCode, final String redirectUri, NamedAddressSpace addressSpace);
 
-    AuthenticationResult authenticateViaAccessToken(String accessToken);
+    AuthenticationResult authenticateViaAccessToken(String accessToken,
+                                                    final NamedAddressSpace addressSpace);
 
     @DerivedAttribute( description = "Default redirect URI to obtain authorization code grant")
     URI getDefaultAuthorizationEndpointURI();

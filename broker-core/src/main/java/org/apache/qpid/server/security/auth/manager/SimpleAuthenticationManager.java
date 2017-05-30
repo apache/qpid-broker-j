@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
@@ -93,7 +94,9 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
     }
 
     @Override
-    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
+    public SaslNegotiator createSaslNegotiator(final String mechanism,
+                                               final SaslSettings saslSettings,
+                                               final NamedAddressSpace addressSpace)
     {
         if (PlainNegotiator.MECHANISM.equals(mechanism))
         {

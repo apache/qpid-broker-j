@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.security.auth.sasl.kerberos.KerberosNegotiator;
@@ -48,7 +49,9 @@ public class KerberosAuthenticationManager extends AbstractAuthenticationManager
     }
 
     @Override
-    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
+    public SaslNegotiator createSaslNegotiator(final String mechanism,
+                                               final SaslSettings saslSettings,
+                                               final NamedAddressSpace addressSpace)
     {
         if(GSSAPI_MECHANISM.equals(mechanism))
         {

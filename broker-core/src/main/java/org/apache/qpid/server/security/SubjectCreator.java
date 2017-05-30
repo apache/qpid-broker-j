@@ -32,6 +32,7 @@ import javax.security.auth.Subject;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.GroupProvider;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
@@ -51,15 +52,17 @@ import org.apache.qpid.server.security.auth.sasl.SaslSettings;
  */
 public class SubjectCreator
 {
-    private static final String UNKNOWN_AUTHENTICATION_ID = "<<UNKNOWN>>";
+    private final NamedAddressSpace _addressSpace;
     private AuthenticationProvider<?> _authenticationProvider;
     private Collection<GroupProvider<?>> _groupProviders;
 
     public SubjectCreator(AuthenticationProvider<?> authenticationProvider,
-                          Collection<GroupProvider<?>> groupProviders)
+                          Collection<GroupProvider<?>> groupProviders,
+                          NamedAddressSpace addressSpace)
     {
         _authenticationProvider = authenticationProvider;
         _groupProviders = groupProviders;
+        _addressSpace = addressSpace;
     }
 
     public AuthenticationProvider<?> getAuthenticationProvider()
@@ -69,7 +72,7 @@ public class SubjectCreator
 
     public SaslNegotiator createSaslNegotiator(String mechanism, final SaslSettings saslSettings)
     {
-        return _authenticationProvider.createSaslNegotiator(mechanism, saslSettings);
+        return _authenticationProvider.createSaslNegotiator(mechanism, saslSettings, _addressSpace);
     }
 
     public SubjectAuthenticationResult authenticate(SaslNegotiator saslNegotiator, byte[] response)

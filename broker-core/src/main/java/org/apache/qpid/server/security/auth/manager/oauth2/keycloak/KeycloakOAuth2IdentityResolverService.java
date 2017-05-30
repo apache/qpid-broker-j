@@ -19,7 +19,7 @@
  *
  */
 
-package org.apache.qpid.server.security.auth.manager.oauth2.google;
+package org.apache.qpid.server.security.auth.manager.oauth2.keycloak;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,12 +61,12 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
  * https://developers.google.com/identity/protocols/OpenIDConnect
  */
 @PluggableService
-public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolverService
+public class KeycloakOAuth2IdentityResolverService implements OAuth2IdentityResolverService
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GoogleOAuth2IdentityResolverService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(KeycloakOAuth2IdentityResolverService.class);
     private static final String UTF8 = StandardCharsets.UTF_8.name();
 
-    public static final String TYPE = "GoogleUserInfo";
+    public static final String TYPE = "KeycloakOpenID";
 
     private final ObjectMapper _objectMapper = new ObjectMapper();
 
@@ -79,9 +79,9 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
     @Override
     public void validate(final OAuth2AuthenticationProvider<?> authProvider) throws IllegalConfigurationException
     {
-        if (!Sets.newHashSet(authProvider.getScope().split("\\s")).contains("profile"))
+        if (!Sets.newHashSet(authProvider.getScope().split("\\s")).contains("openid"))
         {
-            throw new IllegalConfigurationException("This identity resolver requires that scope 'profile' is included in"
+            throw new IllegalConfigurationException("This identity resolver requires that scope 'openid' is included in"
                                                + " the authentication request.");
         }
     }
@@ -145,14 +145,19 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
                         userInfoEndpoint, responseCode));
             }
 
-            final String googleId = responseMap.get("sub");
-            if (googleId == null)
+            String username = responseMap.get("preferred_username");
+            if (username == null)
             {
-                throw new IdentityResolverException(String.format(
-                        "Identity resolver '%s' failed, response did not include 'sub'",
-                        userInfoEndpoint));
+                username = responseMap.get("sub");
+                if (username == null)
+                {
+
+                    throw new IdentityResolverException(String.format(
+                            "Identity resolver '%s' failed, response did not include 'sub'",
+                            userInfoEndpoint));
+                }
             }
-            return new UsernamePrincipal(googleId, authenticationProvider);
+            return new UsernamePrincipal(username, authenticationProvider);
         }
     }
 
@@ -161,7 +166,7 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
     {
         try
         {
-            return new URI("https://accounts.google.com/o/oauth2/v2/auth");
+            return new URI(getEndpointPrefix(oAuth2AuthenticationProvider) + "protocol/openid-connect/auth");
         }
         catch (URISyntaxException e)
         {
@@ -169,12 +174,19 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
         }
     }
 
+    private String getEndpointPrefix(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
+    {
+        String baseUrl = oAuth2AuthenticationProvider.getContextValue(String.class, "keycloak.baseUrl");
+        String domain = oAuth2AuthenticationProvider.getContextValue(String.class, "keycloak.domain");
+        return baseUrl + "/auth/realms/" + domain + "/";
+    }
+
     @Override
     public URI getDefaultTokenEndpointURI(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
     {
         try
         {
-            return new URI("https://www.googleapis.com/oauth2/v4/token");
+            return new URI(getEndpointPrefix(oAuth2AuthenticationProvider) + "protocol/openid-connect/token");
         }
         catch (URISyntaxException e)
         {
@@ -187,7 +199,7 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
     {
         try
         {
-            return new URI("https://www.googleapis.com/oauth2/v3/userinfo");
+            return new URI(getEndpointPrefix(oAuth2AuthenticationProvider) + "protocol/openid-connect/userinfo");
         }
         catch (URISyntaxException e)
         {
@@ -198,6 +210,6 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
     @Override
     public String getDefaultScope(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
     {
-        return "profile";
+        return "openid";
     }
 }

@@ -49,6 +49,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ExternalFileBasedAuthenticationManager;
 import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.SystemConfig;
@@ -158,7 +159,9 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     }
 
     @Override
-    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
+    public SaslNegotiator createSaslNegotiator(final String mechanism,
+                                               final SaslSettings saslSettings,
+                                               final NamedAddressSpace addressSpace)
     {
         return _principalDatabase.createSaslNegotiator(mechanism, saslSettings);
     }

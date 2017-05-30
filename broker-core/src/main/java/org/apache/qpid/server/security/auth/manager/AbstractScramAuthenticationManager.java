@@ -40,6 +40,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedContextDefault;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
@@ -93,7 +94,9 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
     protected abstract String getMechanismName();
 
     @Override
-    public SaslNegotiator createSaslNegotiator(String mechanism, final SaslSettings saslSettings)
+    public SaslNegotiator createSaslNegotiator(String mechanism,
+                                               final SaslSettings saslSettings,
+                                               final NamedAddressSpace addressSpace)
     {
         if(getMechanismName().equals(mechanism))
         {

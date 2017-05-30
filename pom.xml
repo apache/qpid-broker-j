@@ -180,6 +180,7 @@
     <module>broker-plugins/websocket</module>
     <module>broker-plugins/amqp-1-0-bdb-store</module>
     <module>broker-plugins/amqp-1-0-jdbc-store</module>
+    <module>broker-plugins/amqp-1-0-remote-sasl-authenticator</module>
     <module>tools</module>
 
     <module>qpid-systests-parent</module>

@@ -43,7 +43,7 @@ public class AnonymousPreemptiveAuthenticator implements HttpRequestPreemptiveAu
     {
         final Port<?> port = managementConfig.getPort(request);
         final AuthenticationProvider authenticationProvider = managementConfig.getAuthenticationProvider(request);
-        SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure());
+        SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure(), request.getServerName());
         if(authenticationProvider instanceof AnonymousAuthenticationManager)
         {
             return subjectCreator.createResultWithGroups(((AnonymousAuthenticationManager) authenticationProvider).getAnonymousAuthenticationResult()).getSubject();

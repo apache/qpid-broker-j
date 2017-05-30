@@ -1283,7 +1283,7 @@ public class AMQPConnection_0_8Impl
 
     private SubjectCreator getSubjectCreator()
     {
-        return getPort().getSubjectCreator(getTransport().isSecure());
+        return getPort().getSubjectCreator(getTransport().isSecure(), getNetwork().getSelectedHost());
     }
 
     @Override

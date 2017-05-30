@@ -296,7 +296,7 @@ public class SaslServlet extends AbstractServlet
     {
         final Port<?> port = HttpManagementUtil.getPort(request);
 
-        return port.getSubjectCreator(request.isSecure());
+        return port.getSubjectCreator(request.isSecure(), request.getServerName());
     }
 
     private AuthenticationProvider<?> getAuthenticationProvider(final HttpServletRequest request)

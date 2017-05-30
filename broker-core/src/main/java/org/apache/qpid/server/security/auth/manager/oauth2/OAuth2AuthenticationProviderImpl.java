@@ -22,9 +22,12 @@ package org.apache.qpid.server.security.auth.manager.oauth2;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
@@ -34,7 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -49,6 +51,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -60,6 +63,7 @@ import org.apache.qpid.server.security.auth.sasl.oauth2.OAuth2Negotiator;
 import org.apache.qpid.server.util.ConnectionBuilder;
 import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.util.Strings;
 
 public class OAuth2AuthenticationProviderImpl
         extends AbstractAuthenticationManager<OAuth2AuthenticationProviderImpl>
@@ -218,11 +222,13 @@ public class OAuth2AuthenticationProviderImpl
     }
 
     @Override
-    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
+    public SaslNegotiator createSaslNegotiator(final String mechanism,
+                                               final SaslSettings saslSettings,
+                                               final NamedAddressSpace addressSpace)
     {
         if(OAuth2Negotiator.MECHANISM.equals(mechanism))
         {
-            return new OAuth2Negotiator(this);
+            return new OAuth2Negotiator(this, addressSpace);
         }
         else
         {
@@ -231,14 +237,14 @@ public class OAuth2AuthenticationProviderImpl
     }
 
     @Override
-    public AuthenticationResult authenticateViaAuthorizationCode(final String authorizationCode, final String redirectUri)
+    public AuthenticationResult authenticateViaAuthorizationCode(final String authorizationCode, final String redirectUri, NamedAddressSpace addressSpace)
     {
         URL tokenEndpoint;
         HttpURLConnection connection;
         byte[] body;
         try
         {
-            tokenEndpoint = getTokenEndpointURI().toURL();
+            tokenEndpoint = getTokenEndpointURI(addressSpace).toURL();
 
 
             ConnectionBuilder connectionBuilder = new ConnectionBuilder(tokenEndpoint);
@@ -312,7 +318,7 @@ public class OAuth2AuthenticationProviderImpl
                 }
                 String accessToken = String.valueOf(accessTokenObject);
 
-                return authenticateViaAccessToken(accessToken);
+                return authenticateViaAccessToken(accessToken, addressSpace);
             }
             catch (JsonProcessingException e)
             {
@@ -330,24 +336,21 @@ public class OAuth2AuthenticationProviderImpl
     }
 
     @Override
-    public AuthenticationResult authenticateViaAccessToken(final String accessToken)
+    public AuthenticationResult authenticateViaAccessToken(final String accessToken,
+                                                           final NamedAddressSpace addressSpace)
     {
-        return _authenticationResultCacher.getOrLoad(new String[]{accessToken}, new Callable<AuthenticationResult>()
+        return _authenticationResultCacher.getOrLoad(new String[]{accessToken}, () ->
         {
-            @Override
-            public AuthenticationResult call()
+            try
             {
-                try
-                {
-                    final Principal userPrincipal = _identityResolverService.getUserPrincipal(OAuth2AuthenticationProviderImpl.this, accessToken);
-                    OAuth2UserPrincipal oauthUserPrincipal = new OAuth2UserPrincipal(userPrincipal.getName(), accessToken, OAuth2AuthenticationProviderImpl.this);
-                    return new AuthenticationResult(oauthUserPrincipal);
-                }
-                catch (IOException | IdentityResolverException e)
-                {
-                    LOGGER.error("Call to identity resolver failed", e);
-                    return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
-                }
+                final Principal userPrincipal = _identityResolverService.getUserPrincipal(OAuth2AuthenticationProviderImpl.this, accessToken, addressSpace);
+                OAuth2UserPrincipal oauthUserPrincipal = new OAuth2UserPrincipal(userPrincipal.getName(), accessToken, OAuth2AuthenticationProviderImpl.this);
+                return new AuthenticationResult(oauthUserPrincipal);
+            }
+            catch (IOException | IdentityResolverException e)
+            {
+                LOGGER.error("Call to identity resolver failed", e);
+                return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
             }
         });
     }
@@ -359,9 +362,23 @@ public class OAuth2AuthenticationProviderImpl
     }
 
     @Override
+    public URI getAuthorizationEndpointURI(NamedAddressSpace addressSpace)
+    {
+        return getUriForAddressSpace(getAuthorizationEndpointURI(), addressSpace);
+    }
+
+
+    @Override
     public URI getTokenEndpointURI()
     {
         return _tokenEndpointURI;
+    }
+
+    @Override
+    public URI getTokenEndpointURI(NamedAddressSpace addressSpace)
+    {
+
+        return getUriForAddressSpace(getTokenEndpointURI(), addressSpace);
     }
 
     @Override
@@ -369,6 +386,35 @@ public class OAuth2AuthenticationProviderImpl
     {
         return _identityResolverEndpointURI;
     }
+
+    @Override
+    public URI getIdentityResolverEndpointURI(NamedAddressSpace addressSpace)
+    {
+        return getUriForAddressSpace(getIdentityResolverEndpointURI(), addressSpace);
+    }
+
+    private URI getUriForAddressSpace(URI uri, final NamedAddressSpace addressSpace)
+    {
+        try
+        {
+            String vhostName = URLEncoder.encode(addressSpace == null
+                                                         ? ""
+                                                         : addressSpace.getName(),
+                                                 StandardCharsets.UTF_8.name());
+
+            final Strings.MapResolver virtualhostResolver = new Strings.MapResolver(Collections.singletonMap("virtualhost",
+                                                                                                         vhostName));
+
+            String substitutedURI = Strings.expand(uri.toString(), false, virtualhostResolver);
+            uri = new URI(substitutedURI);
+        }
+        catch (UnsupportedEncodingException | URISyntaxException e)
+        {
+            LOGGER.error("Error when attempting to build URI from address space: ", e);
+        }
+        return uri;
+    }
+
 
     @Override
     public URI getPostLogoutURI()

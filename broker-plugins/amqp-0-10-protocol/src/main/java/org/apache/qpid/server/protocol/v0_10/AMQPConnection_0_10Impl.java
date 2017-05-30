@@ -83,7 +83,7 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
 
         _connection = new ServerConnection(id, broker, port, transport, this);
 
-        ServerConnectionDelegate connDelegate = new ServerConnectionDelegate(port, transport.isSecure());
+        ServerConnectionDelegate connDelegate = new ServerConnectionDelegate(port, transport.isSecure(), network.getSelectedHost());
 
         _connection.setConnectionDelegate(connDelegate);
         _connection.setRemoteAddress(network.getRemoteAddress());

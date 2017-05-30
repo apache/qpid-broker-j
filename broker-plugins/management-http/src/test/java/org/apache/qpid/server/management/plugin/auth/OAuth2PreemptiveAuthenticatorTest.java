@@ -19,6 +19,7 @@
 package org.apache.qpid.server.management.plugin.auth;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -132,10 +133,13 @@ public class OAuth2PreemptiveAuthenticatorTest extends QpidTestCase
                                                                                    new Exception("authentication failed"));
         SubjectAuthenticationResult failedSubjectAuthenticationResult = new SubjectAuthenticationResult(failedAuthenticationResult);
 
-        when(mockPort.getSubjectCreator(any(Boolean.class))).thenReturn(mockSubjectCreator);
-        when(authenticationProvider.authenticateViaAccessToken(TEST_VALID_ACCESS_TOKEN)).thenReturn(mockSuccessfulAuthenticationResult);
-        when(authenticationProvider.authenticateViaAccessToken(TEST_INVALID_ACCESS_TOKEN)).thenReturn(failedAuthenticationResult);
-        when(authenticationProvider.authenticateViaAccessToken(TEST_UNAUTHORIZED_ACCESS_TOKEN)).thenReturn(mockUnauthorizedAuthenticationResult);
+        when(mockPort.getSubjectCreator(any(Boolean.class), anyString())).thenReturn(mockSubjectCreator);
+        when(authenticationProvider.authenticateViaAccessToken(TEST_VALID_ACCESS_TOKEN,
+                                                               null)).thenReturn(mockSuccessfulAuthenticationResult);
+        when(authenticationProvider.authenticateViaAccessToken(TEST_INVALID_ACCESS_TOKEN,
+                                                               null)).thenReturn(failedAuthenticationResult);
+        when(authenticationProvider.authenticateViaAccessToken(TEST_UNAUTHORIZED_ACCESS_TOKEN,
+                                                               null)).thenReturn(mockUnauthorizedAuthenticationResult);
 
         when(mockSuccessfulSubjectAuthenticationResult.getSubject()).thenReturn(successfulSubject);
         when(mockUnauthorizedSubjectAuthenticationResult.getSubject()).thenReturn(unauthorizedSubject);

@@ -60,9 +60,9 @@ public class OAuth2PreemptiveAuthenticator implements HttpRequestPreemptiveAuthe
         if (accessToken != null && authenticationProvider instanceof OAuth2AuthenticationProvider)
         {
             OAuth2AuthenticationProvider<?> oAuth2AuthProvider = (OAuth2AuthenticationProvider<?>) authenticationProvider;
-            AuthenticationResult authenticationResult = oAuth2AuthProvider.authenticateViaAccessToken(accessToken);
+            AuthenticationResult authenticationResult = oAuth2AuthProvider.authenticateViaAccessToken(accessToken, null);
 
-            SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure());
+            SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure(), request.getServerName());
             SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
 
             return result.getSubject();

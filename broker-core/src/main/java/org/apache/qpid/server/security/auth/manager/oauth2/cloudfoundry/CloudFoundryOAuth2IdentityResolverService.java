@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
@@ -73,9 +74,10 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
 
     @Override
     public Principal getUserPrincipal(final OAuth2AuthenticationProvider<?> authenticationProvider,
-                                      final String accessToken) throws IOException, IdentityResolverException
+                                      final String accessToken,
+                                      final NamedAddressSpace addressSpace) throws IOException, IdentityResolverException
     {
-        URL checkTokenEndpoint = authenticationProvider.getIdentityResolverEndpointURI().toURL();
+        URL checkTokenEndpoint = authenticationProvider.getIdentityResolverEndpointURI(addressSpace).toURL();
         TrustStore trustStore = authenticationProvider.getTrustStore();
         String clientId = authenticationProvider.getClientId();
         String clientSecret = authenticationProvider.getClientSecret();

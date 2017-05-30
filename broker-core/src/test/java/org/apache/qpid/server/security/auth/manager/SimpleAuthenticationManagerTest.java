@@ -30,8 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.security.sasl.SaslException;
-
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
@@ -76,7 +74,7 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
         for (int i = 0; i < unsupported.length; i++)
         {
             String mechanism = unsupported[i];
-            SaslNegotiator negotiator = _authenticationManager.createSaslNegotiator(mechanism, null);
+            SaslNegotiator negotiator = _authenticationManager.createSaslNegotiator(mechanism, null, null);
             assertNull("Mechanism " + mechanism + " should not be supported by SimpleAuthenticationManager", negotiator);
         }
     }
@@ -157,7 +155,7 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
     private AuthenticationResult authenticatePlain(String userName, String userPassword) throws Exception
     {
         SaslSettings saslSettings = mock(SaslSettings.class);
-        SaslNegotiator saslNegotiator = _authenticationManager.createSaslNegotiator("PLAIN", saslSettings);
+        SaslNegotiator saslNegotiator = _authenticationManager.createSaslNegotiator("PLAIN", saslSettings, null);
         byte[] response = SaslUtil.generatePlainClientResponse(userName, userPassword);
         return saslNegotiator.handleResponse(response);
     }
@@ -166,7 +164,7 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
     {
         SaslSettings saslSettings = mock(SaslSettings.class);
         when(saslSettings.getLocalFQDN()).thenReturn("testHost");
-        SaslNegotiator saslNegotiator = _authenticationManager.createSaslNegotiator("CRAM-MD5", saslSettings);
+        SaslNegotiator saslNegotiator = _authenticationManager.createSaslNegotiator("CRAM-MD5", saslSettings, null);
         AuthenticationResult result = saslNegotiator.handleResponse(new byte[0]);
         assertEquals("Unexpected SASL status", AuthenticationStatus.CONTINUE, result.getStatus());
 

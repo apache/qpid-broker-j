@@ -26,6 +26,7 @@ import java.net.URI;
 import java.security.Principal;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.Pluggable;
 
 public interface OAuth2IdentityResolverService extends Pluggable
@@ -33,7 +34,7 @@ public interface OAuth2IdentityResolverService extends Pluggable
     void validate(final OAuth2AuthenticationProvider<?> authProvider) throws IllegalConfigurationException;
 
     Principal getUserPrincipal(final OAuth2AuthenticationProvider<?> authProvider,
-                               String accessToken) throws IOException, IdentityResolverException;
+                               String accessToken, final NamedAddressSpace addressSpace) throws IOException, IdentityResolverException;
 
     URI getDefaultAuthorizationEndpointURI(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider);
 

@@ -46,7 +46,9 @@ public interface AuthenticationProvider<X extends AuthenticationProvider<X>> ext
     @ManagedAttribute( defaultValue = "[]")
     List<String> getDisabledMechanisms();
 
-    SaslNegotiator createSaslNegotiator(String mechanism, final SaslSettings saslSettings);
+    SaslNegotiator createSaslNegotiator(String mechanism,
+                                        final SaslSettings saslSettings,
+                                        final NamedAddressSpace addressSpace);
 
     List<String> getAvailableMechanisms(boolean secure);
 

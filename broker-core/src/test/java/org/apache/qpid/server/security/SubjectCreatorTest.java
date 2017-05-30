@@ -69,7 +69,8 @@ public class SubjectCreatorTest extends QpidTestCase
         when(_groupManager1.getGroupPrincipalsForUser(USERNAME_PRINCIPAL)).thenReturn(Collections.singleton(_group1));
         when(_groupManager2.getGroupPrincipalsForUser(USERNAME_PRINCIPAL)).thenReturn(Collections.singleton(_group2));
 
-        _subjectCreator = new SubjectCreator(_authenticationProvider, new HashSet<GroupProvider<?>>(Arrays.asList(_groupManager1, _groupManager2))
+        _subjectCreator = new SubjectCreator(_authenticationProvider,
+                                             new HashSet<>(Arrays.asList(_groupManager1, _groupManager2)), null
         );
         _eventLogger = mock(EventLogger.class);
         when(_authenticationProvider.getEventLogger()).thenReturn(_eventLogger);

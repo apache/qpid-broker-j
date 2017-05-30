@@ -52,7 +52,7 @@ public class SSLClientCertPreemptiveAuthenticator implements HttpRequestPreempti
     {
         final AuthenticationProvider authenticationProvider = managementConfig.getAuthenticationProvider(request);
         final Port<?> port = managementConfig.getPort(request);
-        SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure());
+        SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure(), request.getServerName());
         if(request.isSecure()
            && authenticationProvider instanceof ExternalAuthenticationManager
            && Collections.list(request.getAttributeNames()).contains(CERTIFICATE_ATTRIBUTE_NAME))

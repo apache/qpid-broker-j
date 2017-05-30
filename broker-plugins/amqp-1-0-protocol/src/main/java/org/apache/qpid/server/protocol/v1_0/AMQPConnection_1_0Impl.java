@@ -254,7 +254,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         super(broker, network, port, transport, Protocol.AMQP_1_0, id, aggregateTicker);
 
-        _subjectCreator = port.getSubjectCreator(transport.isSecure());
+        _subjectCreator = port.getSubjectCreator(transport.isSecure(), network.getSelectedHost());
 
         _port = port;
 
