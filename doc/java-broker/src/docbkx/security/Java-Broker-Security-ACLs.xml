@@ -189,7 +189,7 @@
           <entry> <command>PUBLISH</command> </entry>
           <entry> <para> Applied on a per message basis on publish message transfers</para> </entry>
           <entry><para>EXCHANGE</para></entry>
-          <entry><para>name, routingkey, immediate, virtualhost_name</para></entry>
+          <entry><para>name, routingkey, virtualhost_name</para></entry>
         </row>
         <row>
           <entry> <command>CREATE</command> </entry>
@@ -412,14 +412,6 @@
           <entry>
             <para>
               String. A name of virtual host to which the rule is applied.
-            </para>
-          </entry>
-        </row>
-        <row>
-          <entry><command>immediate</command></entry>
-          <entry>
-            <para>
-              Boolean. A property can be used to restrict PUBLISH action to publishing only messages with given immediate flag.
             </para>
           </entry>
         </row>
