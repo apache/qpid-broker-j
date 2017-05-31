@@ -111,7 +111,7 @@ public class NoLocalAfterRecoveryTest extends QpidBrokerTestCase
             fail("This test requires a broker with a persistent store");
         }
 
-        Connection connection = getConnection();
+        Connection connection = getConnectionBuilder().setClientId("testClientId").build();
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
         Topic topic = createTopic(connection, MY_TOPIC_SUBSCRIPTION_NAME);
 
@@ -142,7 +142,7 @@ public class NoLocalAfterRecoveryTest extends QpidBrokerTestCase
         //so they are still on the broker. Restart the broker, prompting their recovery.
         restartDefaultBroker();
 
-        Connection connection2 = getConnection();
+        Connection connection2 = getConnectionBuilder().setClientId("testClientId").build();
         connection2.start();
 
         Session session2 = connection2.createSession(true, Session.SESSION_TRANSACTED);
