@@ -49,7 +49,6 @@ public class QpidJmsClientProvider implements JmsProvider
 {
     private static final AtomicInteger CLIENTID_COUNTER = new AtomicInteger();
     private final AmqpManagementFacade _managementFacade;
-    private final Hashtable<Object, Object> _initialContextEnvironment = new Hashtable<>();
 
     public QpidJmsClientProvider(AmqpManagementFacade managementFacade)
     {
@@ -132,7 +131,7 @@ public class QpidJmsClientProvider implements JmsProvider
             options.put("jms.populateJMSXUserID", "true");
         }
 
-
+        final Hashtable<Object, Object> initialContextEnvironment = new Hashtable<>();
         if ("failover".equals(factoryName))
         {
             if (!options.containsKey("failover.maxReconnectAttempts"))
@@ -146,7 +145,7 @@ public class QpidJmsClientProvider implements JmsProvider
                     .append(")");
             appendOptions(options, stem);
 
-            _initialContextEnvironment.put("property.connectionfactory.failover.remoteURI",
+            initialContextEnvironment.put("property.connectionfactory.failover.remoteURI",
                                            stem.toString());
         }
         else if ("default".equals(factoryName))
@@ -156,16 +155,16 @@ public class QpidJmsClientProvider implements JmsProvider
 
             appendOptions(options, stem);
 
-            _initialContextEnvironment.put("property.connectionfactory.default.remoteURI", stem.toString());
+            initialContextEnvironment.put("property.connectionfactory.default.remoteURI", stem.toString());
         }
         else if ("default.ssl".equals(factoryName))
         {
 
             final StringBuilder stem = new StringBuilder("amqps://localhost:").append(String.valueOf(System.getProperty("test.port.ssl")));
             appendOptions(options, stem);
-            _initialContextEnvironment.put("connectionfactory.default.ssl", stem.toString());
+            initialContextEnvironment.put("connectionfactory.default.ssl", stem.toString());
         }
-        return (ConnectionFactory) new InitialContext(_initialContextEnvironment).lookup(factoryName);
+        return (ConnectionFactory) new InitialContext(initialContextEnvironment).lookup(factoryName);
     }
 
     @Override

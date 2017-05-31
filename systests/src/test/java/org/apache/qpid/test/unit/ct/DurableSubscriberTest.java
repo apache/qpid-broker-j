@@ -50,7 +50,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         if (isBrokerStorePersistent())
         {
             //create and register a durable subscriber with a message selector and then close it
-            TopicConnection durConnection = (TopicConnection) getConnection();
+            TopicConnection durConnection = (TopicConnection) getConnectionBuilder().setClientId("testClientId").build();
             final Topic topic = createTopic(durConnection, _topicName);
             TopicSession durSession = durConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
             TopicSubscriber durSub1 = durSession.createDurableSubscriber(topic, "dursub", "testprop='true'", false);
@@ -84,7 +84,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
             pubSession.close();
 
             //now recreate the durable subscriber and check the received messages
-            TopicConnection durConnection2 = (TopicConnection) getConnection();
+            TopicConnection durConnection2 = (TopicConnection) getConnectionBuilder().setClientId("testClientId").build();
             TopicSession durSession2 = durConnection2.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
             TopicSubscriber durSub2 = durSession2.createDurableSubscriber(topic, "dursub", "testprop='true'", false);
             durConnection2.start();
@@ -126,7 +126,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         final String SUB_NAME=getTestQueueName();
         
         //create and register a durable subscriber then unsubscribe it
-        TopicConnection durConnection = (TopicConnection) getConnection();
+        TopicConnection durConnection = (TopicConnection) getConnectionBuilder().setClientId("testClientId").build();
         Topic topic = createTopic(durConnection, _topicName);
         TopicSession durSession = durConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
         TopicSubscriber durSub1 = durSession.createDurableSubscriber(topic, SUB_NAME);
@@ -137,7 +137,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         durConnection.close();
 
         //create and register a durable subscriber with a message selector and then close it
-        TopicConnection durConnection2 = (TopicConnection) getConnection();
+        TopicConnection durConnection2 = (TopicConnection) getConnectionBuilder().setClientId("testClientId").build();
         TopicSession durSession2 = durConnection2.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
         TopicSubscriber durSub2 = durSession2.createDurableSubscriber(topic, SUB_NAME, "testprop='true'", false);
         durConnection2.start();
@@ -174,7 +174,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
 
         //now recreate the durable subscriber with selector to check there are no exceptions generated
         //and then verify the messages are received correctly
-        TopicConnection durConnection3 = (TopicConnection) getConnection();
+        TopicConnection durConnection3 = (TopicConnection) getConnectionBuilder().setClientId("testClientId").build();
         TopicSession durSession3 = (TopicSession) durConnection3.createSession(false, Session.AUTO_ACKNOWLEDGE);
         TopicSubscriber durSub3 = durSession3.createDurableSubscriber(topic, SUB_NAME, "testprop='true'", false);
         durConnection3.start();
@@ -219,7 +219,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         final String SUB_NAME=getTestQueueName();
 
         //create and register a durable subscriber with selector then unsubscribe it
-        TopicConnection durConnection = (TopicConnection) getConnection();
+        TopicConnection durConnection = (TopicConnection) getConnectionBuilder().setClientId("testClientId").build();
         Topic topic = createTopic(durConnection, _topicName);
         TopicSession durSession = durConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
         TopicSubscriber durSub1 = durSession.createDurableSubscriber(topic, SUB_NAME, "testprop='true'", false);
@@ -230,7 +230,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         durConnection.close();
 
         //create and register a durable subscriber without the message selector and then close it
-        TopicConnection durConnection2 = (TopicConnection) getConnection();
+        TopicConnection durConnection2 = (TopicConnection) getConnectionBuilder().setClientId("testClientId").build();
         TopicSession durSession2 = durConnection2.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
         TopicSubscriber durSub2 = durSession2.createDurableSubscriber(topic, SUB_NAME);
         durConnection2.start();
@@ -267,7 +267,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
 
         //now recreate the durable subscriber without selector to check there are no exceptions generated
         //then verify ALL messages sent are received
-        TopicConnection durConnection3 = (TopicConnection) getConnection();
+        TopicConnection durConnection3 = (TopicConnection) getConnectionBuilder().setClientId("testClientId").build();
         TopicSession durSession3 = (TopicSession) durConnection3.createSession(false, Session.AUTO_ACKNOWLEDGE);
         TopicSubscriber durSub3 = durSession3.createDurableSubscriber(topic, SUB_NAME);
         durConnection3.start();
