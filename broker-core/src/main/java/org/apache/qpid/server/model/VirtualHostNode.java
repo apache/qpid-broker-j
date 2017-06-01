@@ -31,7 +31,7 @@ public interface VirtualHostNode<X extends VirtualHostNode<X>> extends Configure
 {
     String QPID_INITIAL_CONFIG_VIRTUALHOST_CONFIG_VAR = "qpid.initial_config_virtualhost_config";
     @ManagedContextDefault(name = QPID_INITIAL_CONFIG_VIRTUALHOST_CONFIG_VAR)
-    String DEFAULT_INITIAL_CONFIG_VIRTUALHOST_CONFIG_VAR = "{ \"type\" : \"DERBY\" }";
+    String DEFAULT_INITIAL_CONFIG_VIRTUALHOST_CONFIG_VAR = "{ \"type\" : \"BDB\" }";
 
     String DEFAULT_VIRTUAL_HOST_NODE = "defaultVirtualHostNode";
 
