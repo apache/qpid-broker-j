@@ -181,21 +181,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     private List<Symbol> _offeredCapabilities;
     private SoleConnectionEnforcementPolicy _soleConnectionEnforcementPolicy;
 
-    private enum FrameReceivingState
-    {
-        AMQP_OR_SASL_HEADER,
-        SASL_INIT_ONLY,
-        SASL_RESPONSE_ONLY,
-        AMQP_HEADER,
-        OPEN_ONLY,
-        ANY_FRAME,
-        CLOSED
-    }
-
-    private volatile FrameReceivingState _frameReceivingState = FrameReceivingState.AMQP_OR_SASL_HEADER;
-
     private static final short CONNECTION_CONTROL_CHANNEL = (short) 0;
-    private static final QpidByteBuffer EMPTY_BYTE_BUFFER = QpidByteBuffer.wrap(new byte[0]);
 
     private static final int DEFAULT_CHANNEL_MAX = Math.min(Integer.getInteger("amqp.channel_max", 255), 0xFFFF);
 
@@ -213,12 +199,11 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     // positioned by the *incoming* channel
     private Session_1_0[] _receivingSessions;
-    private boolean _closedForInput;
-    private boolean _closedForOutput;
+    private volatile boolean _closedForOutput;
 
     private long _idleTimeout;
 
-    private ConnectionState _connectionState = ConnectionState.UNOPENED;
+    private volatile ConnectionState _connectionState = ConnectionState.AWAIT_AMQP_OR_SASL_HEADER;
 
     private AMQPDescribedTypeRegistry _describedTypeRegistry = AMQPDescribedTypeRegistry.newInstance()
                                                                                         .registerTransportLayer()
@@ -228,9 +213,9 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                                                                                         .registerExtensionSoleconnLayer();
 
     private final Map<Symbol, Object> _properties = new LinkedHashMap<>();
-    private boolean _saslComplete;
+    private volatile boolean _saslComplete;
 
-    private SaslNegotiator _saslNegotiator;
+    private volatile SaslNegotiator _saslNegotiator;
     private String _localHostname;
     private long _desiredIdleTimeout;
 
@@ -249,8 +234,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     private final Queue<Action<? super ConnectionHandler>> _asyncTaskList =
             new ConcurrentLinkedQueue<>();
-
-    private boolean _closedOnOpen;
 
     private final Set<AMQPSession<?,?>> _sessionsWithWork =
             Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?,?>, Boolean>());
@@ -305,7 +288,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public void receiveAttach(final short channel, final Attach attach)
     {
-        assertState(FrameReceivingState.ANY_FRAME);
+        assertState(ConnectionState.OPENED);
         final Session_1_0 session = getSession(channel);
         if (session != null)
         {
@@ -380,8 +363,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         _saslComplete = true;
         disposeSaslNegotiator();
-        _frameReceivingState = FrameReceivingState.CLOSED;
-        setClosedForInput(true);
+        _connectionState = ConnectionState.CLOSED;
         addCloseTicker();
     }
 
@@ -401,18 +383,19 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public void receiveClose(final short channel, final Close close)
     {
-        assertState(FrameReceivingState.ANY_FRAME);
-        _frameReceivingState = FrameReceivingState.CLOSED;
-        setClosedForInput(true);
         switch (_connectionState)
         {
-            case UNOPENED:
-            case AWAITING_OPEN:
+            case AWAIT_AMQP_OR_SASL_HEADER:
+            case AWAIT_SASL_INIT:
+            case AWAIT_SASL_RESPONSE:
+            case AWAIT_AMQP_HEADER:
+                throw new ConnectionScopedRuntimeException("Received unexpected close when AMQP connection has not been established.");
+            case AWAIT_OPEN:
                 closeReceived();
                 closeConnection(ConnectionError.CONNECTION_FORCED,
                                 "Connection close sent before connection was opened");
                 break;
-            case OPEN:
+            case OPENED:
                 _connectionState = ConnectionState.CLOSE_RECEIVED;
                 closeReceived();
                 if(close.getError() != null)
@@ -432,9 +415,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 closeReceived();
                 _connectionState = ConnectionState.CLOSED;
                 _orderlyClose.set(true);
-
+                break;
+            case CLOSE_RECEIVED:
+            case CLOSED:
+                break;
             default:
-                closeReceived();
+                throw new ServerScopedRuntimeException("Unknown state: " + _connectionState);
         }
     }
 
@@ -452,11 +438,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
     }
 
-    private void setClosedForInput(final boolean closed)
-    {
-        _closedForInput = closed;
-    }
-
     @Override
     public void receiveSaslMechanisms(final SaslMechanisms saslMechanisms)
     {
@@ -470,7 +451,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         final Binary responseBinary = saslResponse.getResponse();
         byte[] response = responseBinary == null ? new byte[0] : responseBinary.getArray();
 
-        assertState(FrameReceivingState.SASL_RESPONSE_ONLY);
+        assertState(ConnectionState.AWAIT_SASL_RESPONSE);
 
         processSaslResponse(response);
     }
@@ -485,11 +466,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     public SectionDecoderRegistry getSectionDecoderRegistry()
     {
         return _describedTypeRegistry.getSectionDecoderRegistry();
-    }
-
-    private boolean closedForOutput()
-    {
-        return _closedForOutput;
     }
 
     @Override
@@ -510,39 +486,22 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public boolean closedForInput()
     {
-        return _closedForInput;
+        return _connectionState == ConnectionState.CLOSE_RECEIVED || _connectionState == ConnectionState.CLOSED ;
     }
 
     @Override
     public void sessionEnded(final Session_1_0 session)
     {
-        if (!_closedOnOpen)
-        {
-            _sessions.remove(session);
-        }
+        _sessions.remove(session);
     }
 
     private void inputClosed()
     {
-        if (!_closedForInput)
+        if (!closedForInput())
         {
-            _closedForInput = true;
             FRAME_LOGGER.debug("RECV[{}] : {}", _remoteAddress, "Underlying connection closed");
-            switch (_connectionState)
-            {
-                case UNOPENED:
-                case AWAITING_OPEN:
-                case CLOSE_SENT:
-                    _connectionState = ConnectionState.CLOSED;
-                    closeSender();
-                    break;
-                case OPEN:
-                    _connectionState = ConnectionState.CLOSE_RECEIVED;
-                case CLOSED:
-                    // already sent our close - too late to do anything more
-                    break;
-                default:
-            }
+            _connectionState = ConnectionState.CLOSED;
+            closeSender();
             closeReceived();
         }
     }
@@ -565,7 +524,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     public boolean isOpen()
     {
-        return _connectionState == ConnectionState.OPEN;
+        return _connectionState == ConnectionState.OPENED;
     }
 
     @Override
@@ -588,8 +547,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public void receiveEnd(final short channel, final End end)
     {
-
-        assertState(FrameReceivingState.ANY_FRAME);
+        assertState(ConnectionState.OPENED);
         final Session_1_0 session = getSession(channel);
         if (session != null)
         {
@@ -611,7 +569,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     public void receiveDisposition(final short channel,
                                    final Disposition disposition)
     {
-        assertState(FrameReceivingState.ANY_FRAME);
+        assertState(ConnectionState.OPENED);
         final Session_1_0 session = getSession(channel);
         if (session != null)
         {
@@ -628,7 +586,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     public void receiveBegin(final short receivingChannelId, final Begin begin)
     {
 
-        assertState(FrameReceivingState.ANY_FRAME);
+        assertState(ConnectionState.OPENED);
         short sendingChannelId;
         if (begin.getRemoteChannel() != null)
         {
@@ -707,21 +665,16 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public void handleError(final Error error)
     {
-        if (!closedForOutput())
+        if (!_closedForOutput)
         {
-            Close close = new Close();
-            close.setError(error);
-            sendFrame((short) 0, close);
-
-            setClosedForOutput(true);
+            closeConnection(error);
         }
-
     }
 
     @Override
     public void receiveTransfer(final short channel, final Transfer transfer)
     {
-        assertState(FrameReceivingState.ANY_FRAME);
+        assertState(ConnectionState.OPENED);
         final Session_1_0 session = getSession(channel);
         if (session != null)
         {
@@ -736,7 +689,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public void receiveFlow(final short channel, final Flow flow)
     {
-        assertState(FrameReceivingState.ANY_FRAME);
+        assertState(ConnectionState.OPENED);
         final Session_1_0 session = getSession(channel);
         if (session != null)
         {
@@ -752,8 +705,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public void receiveOpen(final short channel, final Open open)
     {
-        assertState(FrameReceivingState.OPEN_ONLY);
-        _frameReceivingState = FrameReceivingState.ANY_FRAME;
+        assertState(ConnectionState.AWAIT_OPEN);
+
         _channelMax = open.getChannelMax() == null ? DEFAULT_CHANNEL_MAX
                 : open.getChannelMax().intValue() < DEFAULT_CHANNEL_MAX
                         ? open.getChannelMax().intValue()
@@ -806,7 +759,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
         if (_idleTimeout != 0L && _idleTimeout < MINIMUM_SUPPORTED_IDLE_TIMEOUT)
         {
-            _closedOnOpen = true;
             closeConnection(ConnectionError.CONNECTION_FORCED,
                             "Requested idle timeout of "
                             + _idleTimeout
@@ -820,7 +772,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             final NamedAddressSpace addressSpace = _port.getAddressSpace(_localHostname);
             if (addressSpace == null)
             {
-                _closedOnOpen = true;
                 closeConnection(AmqpError.NOT_FOUND, "Unknown hostname in connection open: '" + _localHostname + "'");
             }
             else
@@ -837,14 +788,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             final Error err = new Error();
             err.setCondition(AmqpError.NOT_FOUND);
             populateConnectionRedirect(addressSpace, err);
-            _closedOnOpen = true;
             closeConnection(err);
         }
         else
         {
             if (AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(getSubject()) == null)
             {
-                _closedOnOpen = true;
                 closeConnection(AmqpError.NOT_ALLOWED, "Connection has not been authenticated");
             }
             else
@@ -913,26 +862,21 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
                         if (!addressSpace.authoriseCreateConnection(this))
                         {
-                            _closedOnOpen = true;
                             closeConnection(AmqpError.NOT_ALLOWED, "Connection refused");
                         }
                         else
                         {
                             switch (_connectionState)
                             {
-                                case UNOPENED:
+                                case AWAIT_OPEN:
                                     sendOpen(_channelMax, _maxFrameSize);
-                                    _connectionState = ConnectionState.OPEN;
-                                    break;
-                                case AWAITING_OPEN:
-                                    _connectionState = ConnectionState.OPEN;
+                                    _connectionState = ConnectionState.OPENED;
                                     break;
                                 case CLOSE_SENT:
                                 case CLOSED:
                                     // already sent our close - probably due to an error
                                     break;
                                 default:
-                                    _closedOnOpen = true;
                                     throw new ConnectionScopedRuntimeException("Connection Open failed under mysterious circumstances.");
                             }
                         }
@@ -940,7 +884,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 }
                 catch (VirtualHostUnavailableException e)
                 {
-                    _closedOnOpen = true;
                     closeConnection(AmqpError.NOT_ALLOWED, e.getMessage());
                 }
             }
@@ -1006,7 +949,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public void receiveDetach(final short channel, final Detach detach)
     {
-        assertState(FrameReceivingState.ANY_FRAME);
+        assertState(ConnectionState.OPENED);
         final Session_1_0 session = getSession(channel);
         if (session != null)
         {
@@ -1051,7 +994,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public void receiveSaslInit(final SaslInit saslInit)
     {
-        assertState(FrameReceivingState.SASL_INIT_ONLY);
+        assertState(ConnectionState.AWAIT_SASL_INIT);
         if(saslInit.getHostname() != null && !"".equals(saslInit.getHostname().trim()))
         {
             _localHostname = saslInit.getHostname();
@@ -1094,7 +1037,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             outcome.setCode(SaslCode.OK);
             send(new SASLFrame(outcome), null);
             _saslComplete = true;
-            _frameReceivingState = FrameReceivingState.AMQP_HEADER;
+            _connectionState = ConnectionState.AWAIT_AMQP_HEADER;
             disposeSaslNegotiator();
             }
             else
@@ -1118,7 +1061,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         challengeBody.setChallenge(new Binary(challenge));
         send(new SASLFrame(challengeBody), null);
 
-        _frameReceivingState = FrameReceivingState.SASL_RESPONSE_ONLY;
+        _connectionState = ConnectionState.AWAIT_SASL_RESPONSE;
     }
 
     private void handleSaslError()
@@ -1176,16 +1119,27 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         close.setError(error);
         switch (_connectionState)
         {
-            case UNOPENED:
+            case AWAIT_AMQP_OR_SASL_HEADER:
+            case AWAIT_SASL_INIT:
+            case AWAIT_SASL_RESPONSE:
+            case AWAIT_AMQP_HEADER:
+                throw new ConnectionScopedRuntimeException("Connection is closed before being fully established: " + error.getDescription());
+
+            case AWAIT_OPEN:
                 sendOpen(0, 0);
                 sendClose(close);
                 _connectionState = ConnectionState.CLOSED;
                 break;
-            case AWAITING_OPEN:
-            case OPEN:
+            case OPENED:
                 sendClose(close);
                 _connectionState = ConnectionState.CLOSE_SENT;
                 addCloseTicker();
+                break;
+            case CLOSE_RECEIVED:
+                sendClose(close);
+                _connectionState = ConnectionState.CLOSED;
+                addCloseTicker();
+                break;
             case CLOSE_SENT:
             case CLOSED:
                 // already sent our close - too late to do anything more
@@ -1314,21 +1268,23 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 {
                     remaining = msg.remaining();
 
-                    switch (_frameReceivingState)
+                    switch (_connectionState)
                     {
-                        case AMQP_OR_SASL_HEADER:
-                        case AMQP_HEADER:
+                        case AWAIT_AMQP_OR_SASL_HEADER:
+                        case AWAIT_AMQP_HEADER:
                             if (remaining >= 8)
                             {
                                 processProtocolHeader(msg);
                             }
                             break;
-                        case OPEN_ONLY:
-                        case ANY_FRAME:
-                        case SASL_INIT_ONLY:
-                        case SASL_RESPONSE_ONLY:
+                        case AWAIT_SASL_INIT:
+                        case AWAIT_SASL_RESPONSE:
+                        case AWAIT_OPEN:
+                        case OPENED:
+                        case CLOSE_SENT:
                             _frameHandler.parse(msg);
                             break;
+                        case CLOSE_RECEIVED:
                         case CLOSED:
                             // ignore;
                             break;
@@ -1385,7 +1341,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 mechanisms.setSaslServerMechanisms(mechanismsList.toArray(new Symbol[mechanismsList.size()]));
                 send(new SASLFrame(mechanisms), null);
 
-                _frameReceivingState = FrameReceivingState.SASL_INIT_ONLY;
+                _connectionState = ConnectionState.AWAIT_SASL_INIT;
                 _frameHandler = getFrameHandler(true);
             }
             else if(Arrays.equals(header, AMQP_HEADER))
@@ -1411,7 +1367,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
                 }
                 getSender().send(QpidByteBuffer.wrap(AMQP_HEADER));
-                _frameReceivingState = FrameReceivingState.OPEN_ONLY;
+                _connectionState = ConnectionState.AWAIT_OPEN;
                 _frameHandler = getFrameHandler(false);
 
             }
@@ -1717,7 +1673,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             open.setOfferedCapabilities(_offeredCapabilities.toArray(new Symbol[_offeredCapabilities.size()]));
         }
 
-        if (_remoteDesiredCapabilities.contains(SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER))
+        if (_remoteDesiredCapabilities != null
+            && _remoteDesiredCapabilities.contains(SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER))
         {
             _properties.put(SoleConnectionConnectionProperties.SOLE_CONNECTION_DETECTION_POLICY,
                             SoleConnectionDetectionPolicy.STRONG);
@@ -1749,11 +1706,14 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
 
-    private void assertState(final FrameReceivingState state)
+    private void assertState(final ConnectionState state)
     {
-        if(_frameReceivingState != state)
+        if (_connectionState != state)
         {
-            throw new ConnectionScopedRuntimeException("Unexpected state, client has sent frame in an illegal order.  Required state: " + state + ", actual state: " + _frameReceivingState);
+            throw new ConnectionScopedRuntimeException(String.format(
+                    "Unexpected state, client has sent frame in an illegal order.  Required state: %s, actual state: %s",
+                    state,
+                    _connectionState));
         }
     }
 

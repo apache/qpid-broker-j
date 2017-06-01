@@ -23,9 +23,12 @@ package org.apache.qpid.server.protocol.v1_0;
 
 public enum ConnectionState
 {
-    UNOPENED,
-    AWAITING_OPEN,
-    OPEN,
+    AWAIT_AMQP_OR_SASL_HEADER,
+    AWAIT_SASL_INIT,     // SASL AMQP header received, SASL mechanisms sent
+    AWAIT_SASL_RESPONSE, // SASL INIT received
+    AWAIT_AMQP_HEADER,   // SASL negotiation completed and SASL outcome is sent
+    AWAIT_OPEN,          // Headers exchanged
+    OPENED,
     CLOSE_RECEIVED,
     CLOSE_SENT,
     CLOSED
