@@ -397,7 +397,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
         root.getSessionHandler().getSessionCookieConfig().setName(JSESSIONID_COOKIE_PREFIX + lastPort);
         root.getSessionHandler().getSessionCookieConfig().setHttpOnly(true);
-        root.getSessionHandler().getSessionCookieConfig().setMaxAge(getSessionTimeout());
+        root.getSessionHandler().setMaxInactiveInterval(getSessionTimeout());
 
         return server;
     }

@@ -45,7 +45,7 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
     @ManagedAttribute( defaultValue = "false" )
     boolean isHttpBasicAuthenticationEnabled();
 
-    @ManagedAttribute( defaultValue = "600" )
+    @ManagedAttribute( defaultValue = "600", description = "The maximum time interval, in seconds, that Web Management will keep the session open between client accesses.")
     public int getSessionTimeout();
 
     @ManagedAttribute( defaultValue = "" )
