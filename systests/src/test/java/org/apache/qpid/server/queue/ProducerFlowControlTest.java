@@ -74,6 +74,10 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         super.setUp();
 
         _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
+    }
+
+    private void init() throws Exception
+    {
         _monitor.markDiscardPoint();
 
         if (!isBroker10())
@@ -94,36 +98,16 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         _utilitySession = utilityConnection.createSession(true, Session.SESSION_TRANSACTED);
         String tmpQueueName = getTestQueueName() + "_Tmp";
         Queue tmpQueue = createTestQueue(_utilitySession, tmpQueueName);
-        MessageProducer  tmpQueueProducer= _utilitySession.createProducer(tmpQueue);
+        MessageProducer tmpQueueProducer= _utilitySession.createProducer(tmpQueue);
         tmpQueueProducer.send(nextMessage(0, _utilitySession));
         _utilitySession.commit();
 
         _messageSizeIncludingHeader = getQueueDepthBytes(tmpQueueName);
     }
 
-    @Override
-    public void tearDown() throws Exception
-    {
-        try
-        {
-            try
-            {
-                _producerConnection.close();
-                _consumerConnection.close();
-            }
-            finally
-            {
-                _restTestHelper.tearDown();
-            }
-        }
-        finally
-        {
-            super.tearDown();
-        }
-    }
-
     public void testCapacityExceededCausesBlock() throws Exception
     {
+        init();
         String queueName = getTestQueueName();
 
         int capacity = _messageSizeIncludingHeader * 3 + _messageSizeIncludingHeader / 2;
@@ -156,6 +140,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
 
     public void testBrokerLogMessages() throws Exception
     {
+        init();
         String queueName = getTestQueueName();
 
         int capacity = _messageSizeIncludingHeader * 3 + _messageSizeIncludingHeader / 2;
@@ -184,6 +169,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
 
     public void testFlowControlOnCapacityResumeEqual() throws Exception
     {
+        init();
         String queueName = getTestQueueName();
 
         int capacity = _messageSizeIncludingHeader * 3 + _messageSizeIncludingHeader / 2;
@@ -216,6 +202,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
 
     public void testFlowControlSoak() throws Exception
     {
+        init();
         String queueName = getTestQueueName();
         
 
@@ -266,6 +253,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
 
     public void testFlowControlAttributeModificationViaREST() throws Exception
     {
+        init();
         String queueName = getTestQueueName();
 
         createAndBindQueueWithFlowControlEnabled(_producerSession, queueName, 0, 0);
@@ -323,6 +311,26 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         assertNotNull("Should have received second message", _consumer.receive(RECEIVE_TIMEOUT));
     }
 
+    public void testProducerFlowControlIsTriggeredOnEnqueueAsPartOfAsyncTransaction() throws Exception
+    {
+        long oneHourMilliseconds = 60 * 60 * 1000L;
+        setSystemProperty("virtualhost.housekeepingCheckPeriod", String.valueOf(oneHourMilliseconds));
+
+        restartDefaultBroker();
+        Connection connection = getConnection();
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+        String queueName = getTestQueueName();
+        createAndBindQueueWithFlowControlEnabled(session, queueName, 1, 0, true, false);
+
+        sendMessage(session, _queue, 1);
+
+        String queueUrl = String.format("queue/%1$s/%1$s/%2$s", TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, queueName);
+        waitForFlowControlAndMessageCount(queueUrl, 1, 2000);
+
+        assertTrue("Message flow is not stopped", isFlowStopped(queueUrl));
+    }
+
     private int getQueueDepthBytes(final String queueName) throws IOException
     {
         // On AMQP 1.0 the size of the message on the broker is not necessarily the size of the message we sent. Therefore, get the actual size from the broker
@@ -365,6 +373,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
 
     public void testQueueDeleteWithBlockedFlow() throws Exception
     {
+        init();
         String queueName = getTestQueueName();
         int capacity = _messageSizeIncludingHeader * 3 + _messageSizeIncludingHeader / 2;
         int resumeCapacity = _messageSizeIncludingHeader * 2;

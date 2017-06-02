@@ -1605,14 +1605,18 @@ public class ServerSession extends SessionInvoker
     }
 
 
-    public void receivedComplete()
+    void receivedComplete()
     {
-        final Collection<ConsumerTarget_0_10> subscriptions = getSubscriptions();
-        for (ConsumerTarget_0_10 subscription_0_10 : subscriptions)
+        runAsSubject(() ->
         {
-            subscription_0_10.flushCreditState(false);
-        }
-        awaitCommandCompletion();
+            final Collection<ConsumerTarget_0_10> subscriptions = getSubscriptions();
+            for (ConsumerTarget_0_10 subscription_0_10 : subscriptions)
+            {
+                subscription_0_10.flushCreditState(false);
+            }
+            awaitCommandCompletion();
+            return null;
+        });
     }
 
     public int getUnacknowledgedMessageCount()
