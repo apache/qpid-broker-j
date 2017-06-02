@@ -38,6 +38,7 @@ define(["dojo/_base/declare",
         "qpid/management/editQueue",
         "qpid/common/JsonRest",
         "dojox/grid/EnhancedGrid",
+        "qpid/management/query/QueryGrid",
         "dojo/data/ObjectStore",
         "dojox/html/entities",
         "dojo/text!showQueue.html",
@@ -64,6 +65,7 @@ define(["dojo/_base/declare",
               editQueue,
               JsonRest,
               EnhancedGrid,
+              QueryGrid,
               ObjectStore,
               entities,
               template)
@@ -359,6 +361,7 @@ define(["dojo/_base/declare",
         {
             var that = this;
             this.management = tabObject.management;
+            this.controller = tabObject.controller;
             this.modelObj = tabObject.modelObj;
             this.tabObject = tabObject;
             this.contentPane = tabObject.contentPane;
@@ -437,24 +440,62 @@ define(["dojo/_base/declare",
                 }
             }]);
 
-            that.consumersGrid = new UpdatableStore([], findNode("consumers"), [{
-                name: "Name",
-                field: "name",
-                width: "40%"
-            }, {
-                name: "Mode",
-                field: "distributionMode",
-                width: "20%"
-            }, {
-                name: "Msgs Rate",
-                field: "msgRate",
-                width: "20%"
-            }, {
-                name: "Bytes Rate",
-                field: "bytesRate",
-                width: "20%"
-            }]);
+            this.consumersGrid = new QueryGrid({
+                detectChanges: true,
+                rowsPerPage: 10,
+                transformer: lang.hitch(this, this._transformConsumerData),
+                management: this.management,
+                parentObject: this.modelObj,
+                category: "Consumer",
+                selectClause: "id, name, distributionMode, "
+                              + "session.$parent.id AS connectionId, session.$parent.name AS connectionName, session.$parent.principal AS connectionPrincipal,"
+                              + "messagesOut, bytesOut, unacknowledgedMessages, unacknowledgedBytes",
+                where: "to_string($parent.id) = '" + this.modelObj.id + "'",
+                orderBy: "name",
+                columns: [{
+                    label: "Name",
+                    field: "name"
+                }, {
+                    label: "Mode",
+                    field: "distributionMode"
+                }, {
+                    label: "Connection",
+                    field: "connectionName"
+                },{
+                    label: "User",
+                    field: "connectionPrincipal"
+                }, {
+                    label: "Unacknowledged (msgs)",
+                    field: "unacknowledgedMessages"
+                }, {
+                    label: "Unacknowledged (bytes)",
+                    field: "unacknowledgedBytes",
+                    formatter: formatter.formatBytes
+                }, {
+                    label: "Msgs Rate",
+                    field: "msgOutRate"
+                }, {
+                    label: "Bytes Rate",
+                    field: "bytesOutRate"
+                }
+                ]
+            }, findNode("consumers"));
 
+            this.consumersGrid.on('rowBrowsed',
+                                  lang.hitch(this, function(event)
+                                  {
+                                      var connectionId = this.consumersGrid.row(event.id).data.connectionId;
+                                      this.controller.showById(connectionId);
+                                  }));
+            this.consumersGrid.startup();
+
+            // Add onShow handler to work around an issue with not rendering of grid columns before first update.
+            // It seems if dgrid is created when tab is not shown (not active) the grid columns are not rendered.
+            this.contentPane.on("show",
+                function()
+                {
+                    that.consumersGrid.resize();
+                });
         }
 
         function renderMaximumQueueDepthMessages(valueElement, value, bytes)
@@ -584,6 +625,9 @@ define(["dojo/_base/declare",
 
             var thisObj = this;
 
+            thisObj.consumersGrid.updateData();
+            thisObj.consumersGrid.resize();
+
             var queuePromise = this.management.load(this.modelObj, {excludeInheritedContext: true, depth: 1 });
             var publishingLinkPromise = this.management.load({type: "queue", name: "getPublishingLinks", parent: this.modelObj});
 
@@ -655,30 +699,6 @@ define(["dojo/_base/declare",
                         var bytesOutFormat = formatter.formatBytes(bytesOutRate);
                         thisObj.bytesOutRate.innerHTML = "(" + bytesOutFormat.value;
                         thisObj.bytesOutRateUnits.innerHTML = bytesOutFormat.units + "/s)";
-
-                        if (consumers && thisObj.consumers)
-                        {
-                            for (i = 0; i < consumers.length; i++)
-                            {
-                                var consumer = consumers[i];
-                                for (j = 0; j < thisObj.consumers.length; j++)
-                                {
-                                    var oldConsumer = thisObj.consumers[j];
-                                    if (oldConsumer.id == consumer.id)
-                                    {
-                                        var msgRate = (1000 * (consumer.messagesOut - oldConsumer.messagesOut))
-                                                      / samplePeriod;
-                                        consumer.msgRate = msgRate.toFixed(0) + "msg/s";
-
-                                        var bytesRate = (1000 * (consumer.bytesOut - oldConsumer.bytesOut))
-                                                        / samplePeriod;
-                                        var bytesRateFormat = formatter.formatBytes(bytesRate);
-                                        consumer.bytesRate = bytesRateFormat.value + bytesRateFormat.units + "/s";
-                                    }
-                                }
-                            }
-                        }
-
                     }
 
                     thisObj.sampleTime = sampleTime;
@@ -690,10 +710,6 @@ define(["dojo/_base/declare",
 
                     // update bindings
                     thisObj.bindingsGrid.update(bindings);
-
-                    // update consumers
-                    thisObj.consumersGrid.update(thisObj.queueData.consumers)
-
                 }, function (error)
                 {
                     util.tabErrorHandler(error, {
@@ -704,6 +720,45 @@ define(["dojo/_base/declare",
                         category: "Queue"
                     });
                 });
+        };
+
+        QueueUpdater.prototype._transformConsumerData = function (data)
+        {
+            var sampleTime = new Date();
+            var consumers = util.queryResultToObjects(data);
+            if (this._previousConsumerSampleTime)
+            {
+                var samplePeriod = sampleTime.getTime() - this._previousConsumerSampleTime.getTime();
+                for (var i = 0; i < consumers.length; i++)
+                {
+                    var consumer = consumers[i];
+                    var oldConsumer = null;
+                    for (var j = 0; j < this._previousConsumers.length; j++)
+                    {
+                        if (this._previousConsumers[j].id == consumer.id)
+                        {
+                            oldConsumer = this._previousConsumers[j];
+                            break;
+                        }
+                    }
+                    var msgOutRate = 0;
+                    var bytesOutRate = 0;
+
+                    if (oldConsumer)
+                    {
+                        msgOutRate = (1000 * (consumer.messagesOut - oldConsumer.messagesOut))
+                                     / samplePeriod;
+                        bytesOutRate = (1000 * (consumer.bytesOut - oldConsumer.bytesOut)) / samplePeriod;
+                    }
+
+                    consumer.msgOutRate = msgOutRate.toFixed(0) + " msg/s";
+                    var bytesOutRateFormat = formatter.formatBytes(bytesOutRate);
+                    consumer.bytesOutRate = bytesOutRateFormat.value + " " + bytesOutRateFormat.units + "/s";
+                }
+            }
+            this._previousConsumerSampleTime = sampleTime;
+            this._previousConsumers = consumers;
+            return consumers;
         };
 
         Queue.prototype.deleteQueue = function ()

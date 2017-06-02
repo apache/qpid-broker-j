@@ -175,7 +175,7 @@ define(["dojo/_base/xhr",
                 }
             }
             return confirmed;
-        }
+        };
 
         util.buildDeleteQuery = function (data, url, idParam)
         {
@@ -193,7 +193,7 @@ define(["dojo/_base/xhr",
                 queryParam += ( idParam || "id" ) + "=" + encodeURIComponent(data[i].id);
             }
             return url + queryParam;
-        }
+        };
 
         util.deleteSelectedObjects =
             function (grid, confirmationMessageStart, management, modelObj, updater, idParam, callback)
@@ -202,7 +202,7 @@ define(["dojo/_base/xhr",
                 {
                     util.deleteObjects(management, data, modelObj, idParam, grid, updater, callback);
                 });
-            }
+            };
 
         util.deleteObjects = function (management, data, modelObj, idParam, grid, updater, callback)
         {
@@ -227,7 +227,7 @@ define(["dojo/_base/xhr",
                         callback(data);
                     }
                 }, util.xhrErrorHandler);
-        }
+        };
 
         util.deleteSelectedRows = function (grid, confirmationMessageStart, management, url, updater, idParam, callback)
         {
@@ -235,7 +235,7 @@ define(["dojo/_base/xhr",
             {
                 util.deleteData(management, data, url, idParam, grid, updater, callback);
             });
-        }
+        };
 
         util.deleteData = function (management, data, url, idParam, grid, updater, callback)
         {
@@ -253,7 +253,7 @@ define(["dojo/_base/xhr",
                         callback(data);
                     }
                 }, util.xhrErrorHandler);
-        }
+        };
 
         util.findAllWidgets = function (root)
         {
@@ -285,11 +285,11 @@ define(["dojo/_base/xhr",
                     item.destroyRecursive();
                 });
                 dom.empty(tabData.contentPane.containerNode);
-            }
+            };
 
             var closeTab = function (e)
             {
-                tabData.contentPane.onClose()
+                tabData.contentPane.onClose();
                 tabData.tabContainer.removeChild(tabData.contentPane);
                 tabData.contentPane.destroyRecursive();
             };
@@ -297,7 +297,7 @@ define(["dojo/_base/xhr",
             util.responseErrorHandler(error, {
                 "404": util.warnOn404ErrorHandler(message, tabData.contentPane.containerNode, cleanUpTab, closeTab)
             });
-        }
+        };
 
         util.warnOn404ErrorHandler = function (message, containerNode, cleanUpCallback, onClickHandler)
         {
@@ -535,7 +535,7 @@ define(["dojo/_base/xhr",
                     util.parse(containerNode, template, postParseCallback);
                 }
             });
-        }
+        };
 
         util.parse = function (containerNode, template, postParseCallback)
         {
@@ -551,7 +551,7 @@ define(["dojo/_base/xhr",
                 {
                     console.error("Parse error:" + e);
                 });
-        }
+        };
         util.buildUI = function (containerNode, parent, htmlTemplateLocation, fieldNames, obj, postParseCallback)
         {
             this.parseHtmlIntoDiv(containerNode, htmlTemplateLocation, function ()
@@ -571,7 +571,7 @@ define(["dojo/_base/xhr",
                 }
             });
 
-        }
+        };
 
         util.updateUI = function (data, fieldNames, obj, formatters)
         {
@@ -598,7 +598,7 @@ define(["dojo/_base/xhr",
                     fieldNode.innerHTML = (value == undefined || value == null) ? "" : entities.encode(String(value));
                 }
             }
-        }
+        };
 
         util.applyMetadataToWidgets = function (domRoot, category, type, meta)
         {
@@ -621,7 +621,7 @@ define(["dojo/_base/xhr",
             {
                 widgetconfigurer.disableIfImmutable(widget, category, type, meta);
             });
-        }
+        };
 
         util.getFormWidgetValues = function (form, initialData)
         {
@@ -698,7 +698,7 @@ define(["dojo/_base/xhr",
                 }
             }
             return values;
-        }
+        };
 
         util.updateUpdatableStore = function (updatableStore, data)
         {
@@ -714,7 +714,7 @@ define(["dojo/_base/xhr",
                     updatableStore.grid.render();
                 }
             }
-        }
+        };
 
         util.makeTypeStore = function (types)
         {
@@ -728,7 +728,7 @@ define(["dojo/_base/xhr",
                 });
             }
             return new Memory({data: typeData});
-        }
+        };
 
         util.makeInstanceStore = function (management, parentCategory, category, callback)
         {
@@ -797,24 +797,24 @@ define(["dojo/_base/xhr",
                 // add new option to list
                 multiSelectWidget.appendChild(newOption);
             }
-        }
+        };
 
         var singleContextVarRegexp = "(\\${[\\w+\\.\\-:]+})";
 
         util.numericOrContextVarRegexp = function (constraints)
         {
             return "^(\\d+)|" + singleContextVarRegexp + "$";
-        }
+        };
 
         util.signedOrContextVarRegexp = function (constraints)
         {
             return "^(-?\\d+)|" + singleContextVarRegexp + "$";
-        }
+        };
 
         util.nameOrContextVarRegexp = function (constraints)
         {
             return "^(\\w+)|" + singleContextVarRegexp + "$";
-        }
+        };
 
         util.jdbcUrlOrContextVarRegexp = function (constraints)
         {
@@ -824,7 +824,7 @@ define(["dojo/_base/xhr",
         util.nodeAddressOrContextVarRegexp = function (constraints)
         {
             return "^(([0-9a-zA-Z.\\-_]|::)+:[0-9]{1,5})|" + singleContextVarRegexp + "$";
-        }
+        };
 
         util.resizeContentAreaAndRepositionDialog = function (contentNode, dialog)
         {
@@ -1020,7 +1020,6 @@ define(["dojo/_base/xhr",
                     evt.stopPropagation();
                 }
             });
-        }
-
+        };
         return util;
     });

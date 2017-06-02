@@ -27,13 +27,16 @@ define(function ()
         {
             var returnVal = {
                 units: "B",
-                value: "0"
+                value: "0",
+                toString : function()
+                {
+                    return this.value + " " + this.units;
+                }
             };
 
             if (amount < 1000)
             {
                 returnVal.value = amount.toPrecision(3);
-                ;
             }
             else if (amount < 1000 * 1024)
             {

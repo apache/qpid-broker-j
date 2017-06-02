@@ -580,11 +580,11 @@ define(["dojo/parser",
                 {
                     var connection = connections[i];
                     var oldConnection = null;
-                    for (var j = 0; j < this._previousConnections.length; j++)
+                    for (var j = 0; j < this._previousConsumers.length; j++)
                     {
-                        if (this._previousConnections[j].id == connection.id)
+                        if (this._previousConsumers[j].id == connection.id)
                         {
-                            oldConnection = this._previousConnections[j];
+                            oldConnection = this._previousConsumers[j];
                             break;
                         }
                     }
@@ -611,7 +611,7 @@ define(["dojo/parser",
                 }
             }
             this._previousConnectionSampleTime = sampleTime;
-            this._previousConnections = connections;
+            this._previousConsumers = connections;
             return connections;
         };
 

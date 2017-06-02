@@ -47,6 +47,9 @@ public interface Consumer<X extends Consumer<X,T>, T extends ConsumerTarget> ext
     @DerivedAttribute
     String getLinkName();
 
+    @DerivedAttribute
+    Session<?> getSession();
+
     @ManagedAttribute(immutable = true)
     String getDistributionMode();
 
@@ -78,9 +81,6 @@ public interface Consumer<X extends Consumer<X,T>, T extends ConsumerTarget> ext
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Prefetch")
     long getUnacknowledgedMessages();
-
-
-    AMQPSession<?,?> getSession();
 
     long getConsumerNumber();
 

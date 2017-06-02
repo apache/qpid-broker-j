@@ -521,6 +521,7 @@ td.advancedSearchField, col.autoWidth {
 }
 
 .claro.qpid .dgrid-header .dgrid-cell { font-weight: normal; }
+
 .virtualHostConnections .field-name { width: 20%; }
 .virtualHostConnections .field-principal { width: 10% }
 .virtualHostConnections .field-port { width: 10% }
@@ -530,6 +531,23 @@ td.advancedSearchField, col.autoWidth {
 .virtualHostConnections .field-bytesInRate { width: 10% }
 .virtualHostConnections .field-msgOutRate { width: 10% }
 .virtualHostConnections .field-bytesOutRate { width: 10% }
+
+.queueConsumers .field-name { width: 30%; }
+.queueConsumers .field-distributionMode { width: 10% }
+.queueConsumers .field-connectionName { width: 10% }
+.queueConsumers .field-connectionPrincipal { width: 10% }
+.queueConsumers .field-unacknowledgedMessages { width: 10% }
+.queueConsumers .field-unacknowledgedBytes { width: 10% }
+.queueConsumers .field-msgOutRate { width: 10% }
+.queueConsumers .field-bytesOutRate { width: 10% }
+
+.connectionConsumers .field-name { width: 30%; }
+.connectionConsumers .field-distributionMode { width: 10% }
+.connectionConsumers .field-queueName { width: 20% }
+.connectionConsumers .field-unacknowledgedMessages { width: 10% }
+.connectionConsumers .field-unacknowledgedBytes { width: 10% }
+.connectionConsumers .field-msgOutRate { width: 10% }
+.connectionConsumers .field-bytesOutRate { width: 10% }
 
 .radioButtonIndent {
     padding-left: 20px;
