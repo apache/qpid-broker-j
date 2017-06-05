@@ -1431,8 +1431,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     @Override
     public long getConsumerCount()
     {
-        // TODO - fix statistic - need to count consumers
-        return -1;
+        return _consumers.size();
     }
 
     @Override

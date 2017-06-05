@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,11 +65,14 @@ import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.StateChangeListener;
 
 class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerTarget_1_0.class);
     private final boolean _acquires;
+    private final AtomicLong _unacknowledgedCount = new AtomicLong(0);
+    private final AtomicLong _unacknowledgedBytes = new AtomicLong(0);
 
     private long _deliveryTag = 0L;
 
@@ -76,7 +80,25 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     private final AMQPDescribedTypeRegistry _typeRegistry;
     private SendingLinkEndpoint _linkEndpoint;
     private final SectionEncoder _sectionEncoder;
-    private boolean _queueEmpty;
+
+    private final StateChangeListener<MessageInstance, MessageInstance.EntryState> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, MessageInstance.EntryState>()
+    {
+        @Override
+        public void stateChanged(MessageInstance entry, MessageInstance.EntryState oldState, MessageInstance.EntryState newState)
+        {
+            if (isConsumerAcquiredStateForThis(oldState) && !isConsumerAcquiredStateForThis(newState))
+            {
+                removeUnacknowledgedMessage(entry);
+                entry.removeStateChangeListener(this);
+            }
+        }
+
+        private boolean isConsumerAcquiredStateForThis(MessageInstance.EntryState state)
+        {
+            return state instanceof MessageInstance.ConsumerAcquiredState
+                   && ((MessageInstance.ConsumerAcquiredState) state).getConsumer().getTarget() == ConsumerTarget_1_0.this;
+        }
+    };
 
     public ConsumerTarget_1_0(final SendingLinkEndpoint linkEndpoint, boolean acquires)
     {
@@ -212,9 +234,16 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                 }
                 else
                 {
-                    UnsettledAction action = _acquires
-                            ? new DispositionAction(tag, entry, consumer)
-                            : new DoNothingAction();
+                    final UnsettledAction action;
+                    if (_acquires)
+                    {
+                        action = new DispositionAction(tag, entry, consumer);
+                        addUnacknowledgedMessage(entry);
+                    }
+                    else
+                    {
+                        action = new DoNothingAction();
+                    }
 
                     _linkEndpoint.addUnsettled(tag, action, entry);
                 }
@@ -233,11 +262,12 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                     {
                         txn.addPostTransactionAction(new ServerTransaction.Action()
                         {
-
+                            @Override
                             public void postCommit()
                             {
                             }
 
+                            @Override
                             public void onRollback()
                             {
                                 entry.release(consumer);
@@ -591,6 +621,19 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         }
     }
 
+    private void addUnacknowledgedMessage(MessageInstance entry)
+    {
+        _unacknowledgedCount.incrementAndGet();
+        _unacknowledgedBytes.addAndGet(entry.getMessage().getSizeIncludingHeader());
+        entry.addStateChangeListener(_unacknowledgedMessageListener);
+    }
+
+    private void removeUnacknowledgedMessage(MessageInstance entry)
+    {
+        _unacknowledgedBytes.addAndGet(-entry.getMessage().getSizeIncludingHeader());
+        _unacknowledgedCount.decrementAndGet();
+    }
+
     private class DoNothingAction implements UnsettledAction
     {
         public DoNothingAction()
@@ -617,15 +660,13 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     @Override
     public long getUnacknowledgedBytes()
     {
-        // TODO
-        return 0;
+        return _unacknowledgedBytes.get();
     }
 
     @Override
     public long getUnacknowledgedMessages()
     {
-        // TODO
-        return 0;
+        return _unacknowledgedCount.get();
     }
 
     @Override
