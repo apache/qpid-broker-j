@@ -128,6 +128,10 @@ public class BDBLinkStore extends AbstractLinkStore
             getEnvironmentFacade().deleteDatabase(LINKS_DB_NAME);
             getEnvironmentFacade().deleteDatabase(LINKS_VERSION_DB_NAME);
         }
+        catch (IllegalStateException e)
+        {
+            LOGGER.warn("Could not delete Link store: {}", e.getMessage());
+        }
         catch (RuntimeException e)
         {
             getEnvironmentFacade().handleDatabaseException("Failed deletion of database", e);

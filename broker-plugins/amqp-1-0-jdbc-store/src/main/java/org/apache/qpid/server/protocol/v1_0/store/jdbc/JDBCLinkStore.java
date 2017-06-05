@@ -193,6 +193,10 @@ public class JDBCLinkStore extends AbstractLinkStore
             dropLinksStatement.execute(String.format("DROP TABLE %s", getLinksTableName()));
             dropVersionsStatement.execute(String.format("DROP TABLE %s", getVersionTableName()));
         }
+        catch (IllegalStateException e)
+        {
+            LOGGER.warn("Could not delete Link store: {}", e.getMessage());
+        }
         catch (SQLException e)
         {
             throw new StoreException("Error deleting Link store", e);
