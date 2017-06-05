@@ -72,12 +72,17 @@ public class ProducerFlowControlTest extends AbstractTestLogging
     {
         getDefaultBrokerConfiguration().addHttpManagementConfiguration();
         super.setUp();
+    }
 
-        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
+    public void startDefaultBroker()
+    {
+        // broker start-up is delegated to the tests
     }
 
     private void init() throws Exception
     {
+        super.startDefaultBroker();
+        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
         _monitor.markDiscardPoint();
 
         if (!isBroker10())
@@ -315,8 +320,9 @@ public class ProducerFlowControlTest extends AbstractTestLogging
     {
         long oneHourMilliseconds = 60 * 60 * 1000L;
         setSystemProperty("virtualhost.housekeepingCheckPeriod", String.valueOf(oneHourMilliseconds));
+        super.startDefaultBroker();
+        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
 
-        restartDefaultBroker();
         Connection connection = getConnection();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
