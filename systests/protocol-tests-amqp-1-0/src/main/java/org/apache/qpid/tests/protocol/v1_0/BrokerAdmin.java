@@ -22,11 +22,14 @@ package org.apache.qpid.tests.protocol.v1_0;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.plugin.Pluggable;
 
 public interface BrokerAdmin extends Pluggable
 {
     String TEST_QUEUE_NAME = "testQueue";
+    Long RESTART_TIMEOUT = Long.getLong("brokerAdmin.restart_timeout", 10000);
 
     void beforeTestClass(final Class testClass);
     void beforeTestMethod(final Class testClass, final Method method);
@@ -38,6 +41,9 @@ public interface BrokerAdmin extends Pluggable
     void createQueue(String queueName);
     void deleteQueue(String queueName);
     void putMessageOnQueue(String queueName, String... messages);
+
+    boolean supportsRestart();
+    ListenableFuture<Void> restart();
 
     enum PortType
     {

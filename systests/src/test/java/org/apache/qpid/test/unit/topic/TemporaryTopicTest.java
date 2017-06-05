@@ -52,8 +52,8 @@ public class TemporaryTopicTest extends QpidBrokerTestCase
         conn.start();
         producer.send(session.createTextMessage("hello"));
 
-        final TextMessage tm1 = (TextMessage) consumer1.receive(2000);
-        final TextMessage tm2 = (TextMessage) consumer2.receive(2000);
+        final TextMessage tm1 = (TextMessage) consumer1.receive(getReceiveTimeout());
+        final TextMessage tm2 = (TextMessage) consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Message not received by subscriber1", tm1);
         assertEquals("hello", tm1.getText());
@@ -165,7 +165,7 @@ public class TemporaryTopicTest extends QpidBrokerTestCase
         final MessageConsumer consumer1 = session.createConsumer(topic);
         conn.start();
         producer.send(session.createTextMessage("message1"));
-        TextMessage tm = (TextMessage) consumer1.receive(2000);
+        TextMessage tm = (TextMessage) consumer1.receive(getReceiveTimeout());
         assertNotNull("Message not received by first consumer", tm);
         assertEquals("message1", tm.getText());
         consumer1.close();
@@ -173,7 +173,7 @@ public class TemporaryTopicTest extends QpidBrokerTestCase
         final MessageConsumer consumer2 = session.createConsumer(topic);
         conn.start();
         producer.send(session.createTextMessage("message2"));
-        tm = (TextMessage) consumer2.receive(2000);
+        tm = (TextMessage) consumer2.receive(getReceiveTimeout());
         assertNotNull("Message not received by second consumer", tm);
         assertEquals("message2", tm.getText());
         consumer2.close();

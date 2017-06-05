@@ -66,11 +66,12 @@ public abstract class LinkStoreTestCase extends QpidTestCase
         _source.setExpiryPolicy(TerminusExpiryPolicy.CONNECTION_CLOSE);
         _source.setFilter(Collections.singletonMap("foo", NoLocalFilter.INSTANCE));
         _source.setOutcomes(new Accepted().getSymbol());
-        _source.setDynamicNodeProperties(Collections.singletonMap("dynamicProperty", "dynamicPropertyValue"));
+        _source.setDynamicNodeProperties(Collections.singletonMap(Symbol.valueOf("dynamicProperty"),
+                                                                  "dynamicPropertyValue"));
         _source.setTimeout(new UnsignedInteger(1));
 
         _target.setTimeout(new UnsignedInteger(2));
-        _target.setDynamicNodeProperties(Collections.singletonMap("targetDynamicProperty",
+        _target.setDynamicNodeProperties(Collections.singletonMap(Symbol.valueOf("targetDynamicProperty"),
                                                                   "targetDynamicPropertyValue"));
         _target.setDynamic(Boolean.TRUE);
         _target.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);

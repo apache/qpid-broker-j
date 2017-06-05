@@ -130,7 +130,8 @@ public class Asserts
                                         ConfiguredObject.CONTEXT,
                                         ConfiguredObject.DESIRED_STATE,
                                         Queue.DEFAULT_FILTERS,
-                                        Queue.ENSURE_NONDESTRUCTIVE_CONSUMERS);
+                                        Queue.ENSURE_NONDESTRUCTIVE_CONSUMERS,
+                                        Queue.CREATING_LINK_INFO);
 
         assertEquals("Unexpected value of queue attribute " + Queue.NAME, queueName, queueData.get(Queue.NAME));
         assertNotNull("Unexpected value of queue attribute " + Queue.ID, queueData.get(Queue.ID));
@@ -340,7 +341,8 @@ public class Asserts
                                 ConfiguredObject.LAST_UPDATED_TIME,
                                 ConfiguredObject.DESCRIPTION,
                                 ConfiguredObject.CONTEXT,
-                                ConfiguredObject.DESIRED_STATE);
+                                ConfiguredObject.DESIRED_STATE,
+                                Exchange.CREATING_LINK_INFO);
 
         assertEquals("Unexpected value of exchange attribute " + Exchange.NAME, exchangeName,
                      exchangeData.get(Exchange.NAME));

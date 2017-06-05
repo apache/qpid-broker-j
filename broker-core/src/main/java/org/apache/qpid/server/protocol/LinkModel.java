@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol;
 
-public interface LinkModel
+import org.apache.qpid.server.util.Deletable;
+
+public interface LinkModel extends Deletable<LinkModel>
 {
 }

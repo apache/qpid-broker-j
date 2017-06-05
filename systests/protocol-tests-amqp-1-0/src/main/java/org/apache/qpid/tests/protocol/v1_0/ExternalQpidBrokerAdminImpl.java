@@ -22,6 +22,7 @@ package org.apache.qpid.tests.protocol.v1_0;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,6 +92,18 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     public void putMessageOnQueue(final String queueName, final String... messages)
     {
         LOGGER.debug(String.format("puting of %d messages on queue '%s' requested", messages.length, queueName));
+    }
+
+    @Override
+    public boolean supportsRestart()
+    {
+        return false;
+    }
+
+    @Override
+    public ListenableFuture<Void> restart()
+    {
+        throw new UnsupportedOperationException("External Qpid Broker does not support restart.");
     }
 
     @Override

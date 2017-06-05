@@ -21,6 +21,7 @@
 package org.apache.qpid.server.exchange;
 
 import java.security.AccessControlException;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,13 +37,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.security.auth.Subject;
+
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.binding.BindingImpl;
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.BindingMessages;
@@ -66,9 +69,14 @@ import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.protocol.LinkModel;
+import org.apache.qpid.server.queue.CreatingLinkInfo;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.StorableMessageMetaData;
+import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.Deletable;
+import org.apache.qpid.server.util.DeleteDeleteTask;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -96,6 +104,8 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     private Exchange<?> _alternateExchange;
     @ManagedAttributeField
     private UnroutableMessageBehaviour _unroutableMessageBehaviour;
+    @ManagedAttributeField
+    private CreatingLinkInfo _creatingLinkInfo;
 
     private QueueManagingVirtualHost<?> _virtualHost;
 
@@ -118,6 +128,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     private final List<Binding> _bindings = new CopyOnWriteArrayList<>();
 
     private final ConcurrentMap<MessageSender, Integer> _linkedSenders = new ConcurrentHashMap<>();
+    private final List<Action<? super Deletable<?>>> _deleteTaskList = new CopyOnWriteArrayList<>();
 
     public AbstractExchange(Map<String, Object> attributes, QueueManagingVirtualHost<?> vhost)
     {
@@ -153,6 +164,15 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                || name.startsWith("amq.") || name.startsWith("qpid.");
     }
 
+    @Override
+    protected void validateOnCreate()
+    {
+        super.validateOnCreate();
+        if (getCreatingLinkInfo() != null && !isSystemProcess())
+        {
+            throw new IllegalConfigurationException(String.format("Cannot specify creatingLinkInfo for exchange '%s'", getName()));
+        }
+    }
 
     @Override
     protected void onOpen()
@@ -175,7 +195,30 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 }
             }
         }
-        // Log Exchange creation
+
+        if (getLifetimePolicy() == LifetimePolicy.DELETE_ON_CREATING_LINK_CLOSE)
+        {
+            if (_creatingLinkInfo != null)
+            {
+                final LinkModel link;
+                if (_creatingLinkInfo.isSendingLink())
+                {
+                    link = _virtualHost.getSendingLink(_creatingLinkInfo.getRemoteContainerId(), _creatingLinkInfo.getLinkName());
+                }
+                else
+                {
+                    link = _virtualHost.getReceivingLink(_creatingLinkInfo.getRemoteContainerId(), _creatingLinkInfo.getLinkName());
+                }
+                addLifetimeConstraint(link);
+            }
+            else
+            {
+                throw new IllegalArgumentException("Exchanges created with a lifetime policy of "
+                                                   + getLifetimePolicy()
+                                                   + " must be created from a AMQP 1.0 link.");
+            }
+        }
+
         getEventLogger().message(ExchangeMessages.CREATED(getType(), getName(), isDurable()));
     }
 
@@ -185,9 +228,32 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         return _virtualHost.getEventLogger();
     }
 
+    private void performDeleteTasks()
+    {
+        for (Action<? super Deletable<?>> task : _deleteTaskList)
+        {
+            task.performAction(null);
+        }
+
+        _deleteTaskList.clear();
+    }
+
     public boolean isAutoDelete()
     {
         return getLifetimePolicy() != LifetimePolicy.PERMANENT;
+    }
+
+    private void addLifetimeConstraint(final Deletable<? extends Deletable> lifetimeObject)
+    {
+        final Action<Deletable> deleteExchangeTask = object -> Subject.doAs(getSubjectWithAddedSystemRights(),
+                                                                            (PrivilegedAction<Void>) () ->
+                                                                            {
+                                                                                AbstractExchange.this.delete();
+                                                                                return null;
+                                                                            });
+
+        lifetimeObject.addDeleteTask(deleteExchangeTask);
+        _deleteTaskList.add(new DeleteDeleteTask(lifetimeObject, deleteExchangeTask));
     }
 
     private void deleteWithChecks()
@@ -204,6 +270,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
         if(_closed.compareAndSet(false,true))
         {
+            performDeleteTasks();
 
             for(Binding b : _bindings)
             {
@@ -639,6 +706,12 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             durableBindings = Collections.emptyList();
         }
         return durableBindings;
+    }
+
+    @Override
+    public CreatingLinkInfo getCreatingLinkInfo()
+    {
+        return _creatingLinkInfo;
     }
 
     private MessageDestination getAttainedMessageDestination(final String name)

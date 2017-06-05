@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,15 +17,39 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
 
-public enum LifetimePolicy
+package org.apache.qpid.server.queue;
+
+public class CreatingLinkInfoImpl implements CreatingLinkInfo
 {
-    PERMANENT,
-    DELETE_ON_CONNECTION_CLOSE,
-    DELETE_ON_SESSION_END,
-    DELETE_ON_NO_OUTBOUND_LINKS,
-    DELETE_ON_NO_LINKS,
-    DELETE_ON_CREATING_LINK_CLOSE,
-    IN_USE
+    private final boolean _isSendingLink;
+    private final String _remoteContainerId;
+    private final String _linkName;
+
+    public CreatingLinkInfoImpl(final boolean isSendingLink,
+                                final String remoteContainerId,
+                                final String linkName)
+    {
+        _isSendingLink = isSendingLink;
+        _remoteContainerId = remoteContainerId;
+        _linkName = linkName;
+    }
+
+    @Override
+    public boolean isSendingLink()
+    {
+        return _isSendingLink;
+    }
+
+    @Override
+    public String getRemoteContainerId()
+    {
+        return _remoteContainerId;
+    }
+
+    @Override
+    public String getLinkName()
+    {
+        return _linkName;
+    }
 }

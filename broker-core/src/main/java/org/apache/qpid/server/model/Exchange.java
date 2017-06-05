@@ -27,6 +27,8 @@ import org.apache.qpid.server.exchange.ExchangeReferrer;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSender;
+import org.apache.qpid.server.queue.CreatingLinkInfo;
+import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 @ManagedObject( description = Exchange.CLASS_DESCRIPTION,
@@ -43,6 +45,7 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     String ALTERNATE_EXCHANGE                   = "alternateExchange";
     String DURABLE_BINDINGS = "durableBindings";
     String UNROUTABLE_MESSAGE_BEHAVIOUR = "unroutableMessageBehaviour";
+    String CREATING_LINK_INFO = "creatingLinkInfo";
 
     enum UnroutableMessageBehaviour
     {
@@ -65,6 +68,9 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
 
     @DerivedAttribute(persist = true)
     Collection<Binding> getDurableBindings();
+
+    @ManagedAttribute(immutable = true, description = "Information about the AMQP 1.0 Link that created this Exchange if any.")
+    CreatingLinkInfo getCreatingLinkInfo();
 
     // Statistics
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Bindings")

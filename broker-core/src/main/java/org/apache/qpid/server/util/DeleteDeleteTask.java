@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,15 +17,25 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
 
-public enum LifetimePolicy
+package org.apache.qpid.server.util;
+
+public class DeleteDeleteTask implements Action<Deletable>
 {
-    PERMANENT,
-    DELETE_ON_CONNECTION_CLOSE,
-    DELETE_ON_SESSION_END,
-    DELETE_ON_NO_OUTBOUND_LINKS,
-    DELETE_ON_NO_LINKS,
-    DELETE_ON_CREATING_LINK_CLOSE,
-    IN_USE
+
+    private final Deletable<? extends Deletable> _lifetimeObject;
+    private final Action<? super Deletable> _deleteTask;
+
+    public DeleteDeleteTask(final Deletable<? extends Deletable> lifetimeObject,
+                            final Action<? super Deletable> deleteTask)
+    {
+        _lifetimeObject = lifetimeObject;
+        _deleteTask = deleteTask;
+    }
+
+    @Override
+    public void performAction(final Deletable object)
+    {
+        _lifetimeObject.removeDeleteTask(_deleteTask);
+    }
 }

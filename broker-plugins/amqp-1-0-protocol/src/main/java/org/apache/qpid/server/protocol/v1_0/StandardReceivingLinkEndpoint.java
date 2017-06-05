@@ -40,6 +40,7 @@ import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
@@ -468,9 +469,20 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
         setDeliveryCount(attach.getInitialDeliveryCount());
 
-        final ReceivingDestination destination = getSession().getReceivingDestination(attachTarget);
+        final ReceivingDestination destination = getSession().getReceivingDestination(getLink(), attachTarget);
         target.setAddress(attachTarget.getAddress());
         target.setDynamic(attachTarget.getDynamic());
+        if (Boolean.TRUE.equals(attachTarget.getDynamic()) && attachTarget.getDynamicNodeProperties() != null)
+        {
+            Map<Symbol, Object> dynamicNodeProperties = new HashMap<>();
+            if (attachTarget.getDynamicNodeProperties().containsKey(Session_1_0.LIFETIME_POLICY))
+            {
+                dynamicNodeProperties.put(Session_1_0.LIFETIME_POLICY,
+                                          attachTarget.getDynamicNodeProperties().get(Session_1_0.LIFETIME_POLICY));
+            }
+            source.setDynamicNodeProperties(dynamicNodeProperties);
+        }
+
         target.setCapabilities(destination.getCapabilities());
         target.setDurable(TerminusDurability.min(attachTarget.getDurable(),
                                                  getLink().getHighestSupportedTerminusDurability()));
@@ -520,7 +532,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         Source source = (Source) attach.getSource();
         Target target = getTarget();
 
-        final ReceivingDestination destination = getSession().getReceivingDestination(getTarget());
+        final ReceivingDestination destination = getSession().getReceivingDestination(getLink(), getTarget());
         target.setCapabilities(destination.getCapabilities());
         setCapabilities(Arrays.asList(destination.getCapabilities()));
         setDestination(destination);

@@ -24,23 +24,13 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.LifetimePolicy;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class DeleteOnNoLinksOrMessages
-  implements LifetimePolicy
-  {
-
-
+public class DeleteOnNoLinksOrMessages implements LifetimePolicy
+{
     @Override
     public String toString()
     {
-        StringBuilder builder = new StringBuilder("DeleteOnNoLinksOrMessages{");
-        final int origLength = builder.length();
-
-        builder.append('}');
-        return builder.toString();
+        return "DeleteOnNoLinksOrMessages{}";
     }
-
-
-  }
+}

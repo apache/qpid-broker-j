@@ -30,8 +30,6 @@ import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 import javax.jms.TextMessage;
 
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
@@ -169,13 +167,10 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
     {
         final Connection conn = getConnection();
         final Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        final AMQSession<?, ?> amqSession = (AMQSession<?, ?>)session; // Required to observe the queue binding on the Broker
         final TemporaryQueue queue = session.createTemporaryQueue();
         assertNotNull(queue);
         final MessageConsumer consumer = session.createConsumer(queue);
         conn.start();
-
-        assertTrue("Queue should be bound", amqSession.isQueueBound((AMQDestination)queue));
 
         try
         {
@@ -207,10 +202,6 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
         catch (JMSException je)
         {
             //pass
-            assertEquals("Cannot consume from a deleted destination", je.getMessage());
         }
-
-        assertFalse("Queue should no longer be bound", amqSession.isQueueBound((AMQDestination)queue));
-
     }
 }

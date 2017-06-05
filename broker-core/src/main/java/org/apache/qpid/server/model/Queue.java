@@ -34,6 +34,7 @@ import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.queue.CreatingLinkInfo;
 import org.apache.qpid.server.queue.NotificationCheck;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.queue.QueueEntry;
@@ -73,6 +74,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     String MAXIMUM_DELIVERY_ATTEMPTS = "maximumDeliveryAttempts";
     String NO_LOCAL = "noLocal";
     String OWNER = "owner";
+    String CREATING_LINK_INFO = "creatingLinkInfo";
 
     String QUEUE_FLOW_STOPPED = "queueFlowStopped";
     String MAXIMUM_MESSAGE_TTL = "maximumMessageTtl";
@@ -125,6 +127,9 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     @DerivedAttribute( persist = true )
     String getOwner();
+
+    @ManagedAttribute(immutable = true, description = "Information about the AMQP 1.0 Link that created this Queue if any.")
+    CreatingLinkInfo getCreatingLinkInfo();
 
     @SuppressWarnings("unused")
     @ManagedAttribute

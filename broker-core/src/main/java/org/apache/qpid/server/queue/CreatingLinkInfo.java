@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,15 +17,18 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
 
-public enum LifetimePolicy
+package org.apache.qpid.server.queue;
+
+import org.apache.qpid.server.model.ManagedAttributeValue;
+import org.apache.qpid.server.model.ManagedAttributeValueType;
+
+@ManagedAttributeValueType
+public interface CreatingLinkInfo extends ManagedAttributeValue
 {
-    PERMANENT,
-    DELETE_ON_CONNECTION_CLOSE,
-    DELETE_ON_SESSION_END,
-    DELETE_ON_NO_OUTBOUND_LINKS,
-    DELETE_ON_NO_LINKS,
-    DELETE_ON_CREATING_LINK_CLOSE,
-    IN_USE
+    boolean isSendingLink();
+
+    String getRemoteContainerId();
+
+    String getLinkName();
 }

@@ -98,6 +98,7 @@ import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
+import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
@@ -114,6 +115,7 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.Deletable;
+import org.apache.qpid.server.util.DeleteDeleteTask;
 import org.apache.qpid.server.util.MapValueConverter;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
@@ -197,9 +199,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final AtomicBoolean _deleted = new AtomicBoolean(false);
     private final SettableFuture<Integer> _deleteFuture = SettableFuture.create();
 
-    private final List<Action<? super X>> _deleteTaskList =
-            new CopyOnWriteArrayList<>();
-
+    private final List<Action<? super X>> _deleteTaskList = new CopyOnWriteArrayList<>();
 
     private LogSubject _logSubject;
 
@@ -244,6 +244,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private long _maximumQueueDepthMessages;
     @ManagedAttributeField
     private long _maximumQueueDepthBytes;
+    @ManagedAttributeField
+    private CreatingLinkInfo _creatingLinkInfo;
 
     private static final int RECOVERING = 1;
     private static final int COMPLETING_RECOVERY = 2;
@@ -313,6 +315,16 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         _recovering.set(RECOVERED);
+    }
+
+    @Override
+    protected void validateOnCreate()
+    {
+        super.validateOnCreate();
+        if (getCreatingLinkInfo() != null && !isSystemProcess())
+        {
+            throw new IllegalConfigurationException(String.format("Cannot specify creatingLinkInfo for queue '%s'", getName()));
+        }
     }
 
     @Override
@@ -441,6 +453,28 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                    + " must be created from a connection.");
             }
         }
+        else if (getLifetimePolicy() == LifetimePolicy.DELETE_ON_CREATING_LINK_CLOSE)
+        {
+            if (_creatingLinkInfo != null)
+            {
+                final LinkModel link;
+                if (_creatingLinkInfo.isSendingLink())
+                {
+                    link = _virtualHost.getSendingLink(_creatingLinkInfo.getRemoteContainerId(), _creatingLinkInfo.getLinkName());
+                }
+                else
+                {
+                    link = _virtualHost.getReceivingLink(_creatingLinkInfo.getRemoteContainerId(), _creatingLinkInfo.getLinkName());
+                }
+                addLifetimeConstraint(link);
+            }
+            else
+            {
+                throw new IllegalArgumentException("Queues created with a lifetime policy of "
+                                                   + getLifetimePolicy()
+                                                   + " must be created from a AMQP 1.0 link.");
+            }
+        }
 
 
         // Log the creation of this Queue.
@@ -540,23 +574,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private void addLifetimeConstraint(final Deletable<? extends Deletable> lifetimeObject)
     {
-        final Action<Deletable> deleteQueueTask = new Action<Deletable>()
-        {
-            @Override
-            public void performAction(final Deletable object)
-            {
-                Subject.doAs(getSubjectWithAddedSystemRights(),
-                             new PrivilegedAction<Void>()
-                             {
-                                 @Override
-                                 public Void run()
-                                 {
-                                     AbstractQueue.this.delete();
-                                     return null;
-                                 }
-                             });
-            }
-        };
+        final Action<Deletable> deleteQueueTask = object -> Subject.doAs(getSubjectWithAddedSystemRights(),
+                                                                         (PrivilegedAction<Void>) () ->
+                                                                         {
+                                                                             AbstractQueue.this.delete();
+                                                                             return null;
+                                                                         });
 
         lifetimeObject.addDeleteTask(deleteQueueTask);
         addDeleteTask(new DeleteDeleteTask(lifetimeObject, deleteQueueTask));
@@ -693,6 +716,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
         return null;
+    }
+
+    @Override
+    public CreatingLinkInfo getCreatingLinkInfo()
+    {
+        return _creatingLinkInfo;
     }
 
     public VirtualHost<?> getVirtualHost()
@@ -2202,26 +2231,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public Set<NotificationCheck> getNotificationChecks()
     {
         return _notificationChecks;
-    }
-
-    private static class DeleteDeleteTask implements Action<Deletable>
-    {
-
-        private final Deletable<? extends Deletable> _lifetimeObject;
-        private final Action<? super Deletable> _deleteQueueOwnerTask;
-
-        public DeleteDeleteTask(final Deletable<? extends Deletable> lifetimeObject,
-                                final Action<? super Deletable> deleteQueueOwnerTask)
-        {
-            _lifetimeObject = lifetimeObject;
-            _deleteQueueOwnerTask = deleteQueueOwnerTask;
-        }
-
-        @Override
-        public void performAction(final Deletable object)
-        {
-            _lifetimeObject.removeDeleteTask(_deleteQueueOwnerTask);
-        }
     }
 
     abstract class BaseMessageContent implements Content, CustomRestHeaders

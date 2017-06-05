@@ -35,6 +35,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import ch.qos.logback.classic.LoggerContext;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +69,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     private Container<?> _broker;
     private VirtualHostNode<?> _currentVirtualHostNode;
     private String _currentWorkDirectory;
+    private boolean _isPersistentStore;
 
     @Override
     public void beforeTestClass(final Class testClass)
@@ -116,6 +119,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
 
         final String virtualHostNodeName = testClass.getSimpleName() + "_" + method.getName();
         final String storeType = System.getProperty("virtualhostnode.type");
+        _isPersistentStore = !"Memory".equals(storeType);
 
         String storeDir = null;
         if (System.getProperty("profile", "").startsWith("java-dby-mem"))
@@ -299,6 +303,30 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             });
         }
 
+    }
+
+    @Override
+    public boolean supportsRestart()
+    {
+        return _isPersistentStore;
+    }
+
+    @Override
+    public ListenableFuture<Void> restart()
+    {
+        try
+        {
+            LOGGER.info("Stopping VirtualHostNode for restart");
+            _currentVirtualHostNode.stop();
+            LOGGER.info("Starting VirtualHostNode for restart");
+            _currentVirtualHostNode.start();
+            LOGGER.info("Restarting VirtualHostNode completed");
+        }
+        catch (Exception e)
+        {
+            return Futures.immediateFailedFuture(e);
+        }
+        return Futures.immediateFuture(null);
     }
 
     @Override

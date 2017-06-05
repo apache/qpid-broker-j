@@ -48,13 +48,13 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnNoMessages;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Filter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.NoLocalFilter;
@@ -292,13 +292,13 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         Source newSource = (Source) attach.getSource();
         Source oldSource = getSource();
 
-        final SendingDestination destination = getSession().getSendingDestination(getLinkName(), oldSource);
+        final SendingDestination destination = getSession().getSendingDestination(getLink(), oldSource);
         prepareConsumerOptionsAndFilters(destination);
 
         if (getDestination() instanceof ExchangeDestination && !Boolean.TRUE.equals(newSource.getDynamic()))
         {
             final SendingDestination newDestination =
-                    getSession().getSendingDestination(getLinkName(), newSource);
+                    getSession().getSendingDestination(getLink(), newSource);
             if (getSession().updateSourceForSubscription(this, newSource, newDestination))
             {
                 setDestination(newDestination);
@@ -323,13 +323,13 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         Source newSource = (Source) attach.getSource();
         Source oldSource = getSource();
 
-        final SendingDestination destination = getSession().getSendingDestination(getLinkName(), oldSource);
+        final SendingDestination destination = getSession().getSendingDestination(getLink(), oldSource);
         prepareConsumerOptionsAndFilters(destination);
 
         if (getDestination() instanceof ExchangeDestination && !Boolean.TRUE.equals(newSource.getDynamic()))
         {
             final SendingDestination newDestination =
-                    getSession().getSendingDestination(getLinkName(), newSource);
+                    getSession().getSendingDestination(getLink(), newSource);
             if (getSession().updateSourceForSubscription(this, newSource, newDestination))
             {
                 setDestination(newDestination);
@@ -359,7 +359,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             throw new AmqpErrorException(new Error(AmqpError.NOT_FOUND, ""));
         }
 
-        final SendingDestination destination = getSession().getSendingDestination(getLinkName(), getSource());
+        final SendingDestination destination = getSession().getSendingDestination(getLink(), getSource());
         prepareConsumerOptionsAndFilters(destination);
 
         attachReceived(attach);
@@ -639,13 +639,23 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 
             source.setAddress(attachSource.getAddress());
             source.setDynamic(attachSource.getDynamic());
+            if (Boolean.TRUE.equals(attachSource.getDynamic()) && attachSource.getDynamicNodeProperties() != null)
+            {
+                Map<Symbol, Object> dynamicNodeProperties = new HashMap<>();
+                if (attachSource.getDynamicNodeProperties().containsKey(Session_1_0.LIFETIME_POLICY))
+                {
+                    dynamicNodeProperties.put(Session_1_0.LIFETIME_POLICY,
+                                              attachSource.getDynamicNodeProperties().get(Session_1_0.LIFETIME_POLICY));
+                }
+                source.setDynamicNodeProperties(dynamicNodeProperties);
+            }
             source.setDurable(TerminusDurability.min(attachSource.getDurable(),
                                                      getLink().getHighestSupportedTerminusDurability()));
             source.setExpiryPolicy(attachSource.getExpiryPolicy());
             source.setDistributionMode(attachSource.getDistributionMode());
             source.setFilter(attachSource.getFilter());
             source.setCapabilities(attachSource.getCapabilities());
-            final SendingDestination destination = getSession().getSendingDestination(attach.getName(), source);
+            final SendingDestination destination = getSession().getSendingDestination(getLink(), source);
             source.setCapabilities(destination.getCapabilities());
             if (destination instanceof ExchangeDestination)
             {

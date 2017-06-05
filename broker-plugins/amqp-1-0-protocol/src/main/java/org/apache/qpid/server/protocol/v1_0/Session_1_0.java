@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.security.auth.Subject;
 
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -64,6 +65,7 @@ import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
@@ -108,6 +110,8 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SessionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.server.queue.CreatingLinkInfo;
+import org.apache.qpid.server.queue.CreatingLinkInfoImpl;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.session.AbstractAMQPSession;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -121,7 +125,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 {
     public static final Symbol DELAYED_DELIVERY = Symbol.valueOf("DELAYED_DELIVERY");
     private static final Logger _logger = LoggerFactory.getLogger(Session_1_0.class);
-    private static final Symbol LIFETIME_POLICY = Symbol.valueOf("lifetime-policy");
+    public static final Symbol LIFETIME_POLICY = Symbol.valueOf("lifetime-policy");
     private static final EnumSet<SessionState> END_STATES =
             EnumSet.of(SessionState.END_RECVD, SessionState.END_PIPE, SessionState.END_SENT, SessionState.ENDED);
 
@@ -683,15 +687,17 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         return _accessControllerContext;
     }
 
-    public ReceivingDestination getReceivingDestination(final Target target) throws AmqpErrorException
+    public ReceivingDestination getReceivingDestination(final Link_1_0<?, ?> link,
+                                                        final Target target) throws AmqpErrorException
     {
         final ReceivingDestination destination;
         if (target != null)
         {
             if (Boolean.TRUE.equals(target.getDynamic()))
             {
-                MessageDestination tempQueue = createDynamicDestination(target.getDynamicNodeProperties());
-                target.setAddress(tempQueue.getName());
+                MessageDestination tempDestination = createDynamicDestination(link, target.getDynamicNodeProperties(), target.getCapabilities());
+                // TODO: avoid NPE
+                target.setAddress(tempDestination.getName());
             }
 
             String addr = target.getAddress();
@@ -793,13 +799,14 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         return false;
     }
 
-    public SendingDestination getSendingDestination(final String linkName, final Source source) throws AmqpErrorException
+    public SendingDestination getSendingDestination(final Link_1_0<?, ?> link,
+                                                    final Source source) throws AmqpErrorException
     {
         SendingDestination destination = null;
 
         if (Boolean.TRUE.equals(source.getDynamic()))
         {
-            MessageSource tempQueue = createDynamicSource(source.getDynamicNodeProperties());
+            MessageSource tempQueue = createDynamicSource(link, source.getDynamicNodeProperties());
             source.setAddress(tempQueue.getName()); // todo : temporary topic
         }
 
@@ -808,7 +815,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         {
             if (!address.startsWith("/") && address.contains("/"))
             {
-                destination = createExchangeDestination(address, linkName, source);
+                destination = createExchangeDestination(address, link.getName(), source);
             }
             else
             {
@@ -819,7 +826,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 }
                 else
                 {
-                    destination = createExchangeDestination(address, null, linkName, source);
+                    destination = createExchangeDestination(address, null, link.getName(), source);
                 }
             }
         }
@@ -1023,17 +1030,16 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         return false;
     }
 
-    private MessageSource createDynamicSource(Map properties)
+    private MessageSource createDynamicSource(final Link_1_0<?, ?> link,
+                                              Map properties)
     {
         final String queueName = _primaryDomain + "TempQueue" + UUID.randomUUID().toString();
-        MessageSource queue = null;
         try
         {
-            Map<String, Object> attributes = convertDynamicNodePropertiesToAttributes(properties, queueName);
+            Map<String, Object> attributes = convertDynamicNodePropertiesToAttributes(link, properties, queueName);
 
-
-
-            queue = getAddressSpace().createMessageSource(MessageSource.class, attributes);
+            return Subject.doAs(getSubjectWithAddedSystemRights(),
+                                (PrivilegedAction<MessageSource>) () -> getAddressSpace().createMessageSource(MessageSource.class, attributes));
         }
         catch (AccessControlException e)
         {
@@ -1042,28 +1048,36 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             error.setDescription(e.getMessage());
 
             _connection.close(error);
+            return null;
         }
         catch (AbstractConfiguredObject.DuplicateNameException e)
         {
             _logger.error("A temporary queue was created with a name which collided with an existing queue name");
             throw new ConnectionScopedRuntimeException(e);
         }
-
-        return queue;
     }
 
 
-    private MessageDestination createDynamicDestination(Map properties)
+    private MessageDestination createDynamicDestination(final Link_1_0<?, ?> link,
+                                                        Map properties,
+                                                        final Symbol[] capabilities)
     {
-        final String queueName = _primaryDomain + "TempQueue" + UUID.randomUUID().toString();
-        MessageDestination queue = null;
+        final Set<Symbol> capabilitySet = capabilities == null ? Collections.emptySet() : Sets.newHashSet(capabilities);
+        boolean isTopic = capabilitySet.contains(Symbol.valueOf("temporary-topic")) || capabilitySet.contains(Symbol.valueOf("topic"));
+        final String destName = _primaryDomain + (isTopic ? "TempTopic" : "TempQueue") + UUID.randomUUID().toString();
         try
         {
-            Map<String, Object> attributes = convertDynamicNodePropertiesToAttributes(properties, queueName);
+            Map<String, Object> attributes = convertDynamicNodePropertiesToAttributes(link, properties, destName);
 
 
+            Class<? extends MessageDestination> clazz = isTopic ? Exchange.class : MessageDestination.class;
+            if (isTopic)
+            {
+                attributes.put(Exchange.TYPE, ExchangeDefaults.FANOUT_EXCHANGE_CLASS);
+            }
 
-            queue = getAddressSpace().createMessageDestination(MessageDestination.class, attributes);
+            return Subject.doAs(getSubjectWithAddedSystemRights(),
+                                (PrivilegedAction<MessageDestination>) () -> getAddressSpace().createMessageDestination(clazz, attributes));
         }
         catch (AccessControlException e)
         {
@@ -1072,50 +1086,54 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             error.setDescription(e.getMessage());
 
             _connection.close(error);
+            return null;
         }
         catch (AbstractConfiguredObject.DuplicateNameException e)
         {
-            _logger.error("A temporary queue was created with a name which collided with an existing queue name");
+            _logger.error("A temporary destination was created with a name which collided with an existing destination name '{}'", destName);
             throw new ConnectionScopedRuntimeException(e);
         }
-
-        return queue;
     }
 
-    private Map<String, Object> convertDynamicNodePropertiesToAttributes(final Map properties, final String queueName)
+    private Map<String, Object> convertDynamicNodePropertiesToAttributes(final Link_1_0<?, ?> link,
+                                                                         final Map properties,
+                                                                         final String nodeName)
     {
         // TODO convert AMQP 1-0 node properties to queue attributes
         LifetimePolicy lifetimePolicy = properties == null
                                         ? null
                                         : (LifetimePolicy) properties.get(LIFETIME_POLICY);
+
         Map<String,Object> attributes = new HashMap<>();
-        attributes.put(Queue.ID, UUID.randomUUID());
-        attributes.put(Queue.NAME, queueName);
-        attributes.put(Queue.DURABLE, false);
+        attributes.put(ConfiguredObject.ID, UUID.randomUUID());
+        attributes.put(ConfiguredObject.NAME, nodeName);
+        attributes.put(ConfiguredObject.DURABLE, true);
 
         if(lifetimePolicy instanceof DeleteOnNoLinks)
         {
-            attributes.put(Queue.LIFETIME_POLICY,
+            attributes.put(ConfiguredObject.LIFETIME_POLICY,
                            org.apache.qpid.server.model.LifetimePolicy.DELETE_ON_NO_LINKS);
         }
         else if(lifetimePolicy instanceof DeleteOnNoLinksOrMessages)
         {
-            attributes.put(Queue.LIFETIME_POLICY,
+            attributes.put(ConfiguredObject.LIFETIME_POLICY,
                            org.apache.qpid.server.model.LifetimePolicy.IN_USE);
         }
         else if(lifetimePolicy instanceof DeleteOnClose)
         {
-            attributes.put(Queue.LIFETIME_POLICY,
-                           org.apache.qpid.server.model.LifetimePolicy.DELETE_ON_CONNECTION_CLOSE);
+            attributes.put(ConfiguredObject.LIFETIME_POLICY,
+                           org.apache.qpid.server.model.LifetimePolicy.DELETE_ON_CREATING_LINK_CLOSE);
+            final CreatingLinkInfo linkInfo = new CreatingLinkInfoImpl(link.getRole() == Role.SENDER, link.getRemoteContainerId(), link.getName());
+            attributes.put("creatingLinkInfo", linkInfo);
         }
         else if(lifetimePolicy instanceof DeleteOnNoMessages)
         {
-            attributes.put(Queue.LIFETIME_POLICY,
+            attributes.put(ConfiguredObject.LIFETIME_POLICY,
                            org.apache.qpid.server.model.LifetimePolicy.IN_USE);
         }
         else
         {
-            attributes.put(Queue.LIFETIME_POLICY,
+            attributes.put(ConfiguredObject.LIFETIME_POLICY,
                            org.apache.qpid.server.model.LifetimePolicy.DELETE_ON_CONNECTION_CLOSE);
         }
         return attributes;

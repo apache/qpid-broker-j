@@ -208,7 +208,8 @@ public class FrameTransport implements AutoCloseable
         PerformativeResponse response = (PerformativeResponse) getNextResponse();
         if (!(response.getFrameBody() instanceof Close))
         {
-            throw new IllegalStateException("Unexpected response to connection Close");
+            throw new IllegalStateException(String.format(
+                    "Unexpected response to connection Close. Expected Close got '%s'", response.getFrameBody()));
         }
     }
 
@@ -224,7 +225,8 @@ public class FrameTransport implements AutoCloseable
         PerformativeResponse response = (PerformativeResponse) getNextResponse();
         if (!(response.getFrameBody() instanceof Begin))
         {
-            throw new IllegalStateException("Unexpected response to connection Begin");
+            throw new IllegalStateException(String.format(
+                    "Unexpected response to connection Begin. Expected Begin got '%s'", response.getFrameBody()));
         }
     }
 

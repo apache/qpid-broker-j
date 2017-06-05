@@ -19,8 +19,10 @@
 
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 
 import com.google.common.util.concurrent.FutureCallback;
@@ -32,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
@@ -44,6 +47,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.util.Action;
 
 public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Link_1_0<S, T>
 {
@@ -59,6 +63,7 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
     private volatile S _source;
     private volatile T _target;
     private boolean _stealingInProgress;
+    private final Queue<Action<? super Link_1_0<S, T>>> _deleteTasks = new ConcurrentLinkedQueue<>();
 
     public LinkImpl(final String remoteContainerId, final String linkName, final Role role, final LinkRegistry linkRegistry)
     {
@@ -113,6 +118,13 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
     @Override
     public void linkClosed()
     {
+        Iterator<Action<? super Link_1_0<S, T>>> iterator = _deleteTasks.iterator();
+        while (iterator.hasNext())
+        {
+            final Action<? super Link_1_0<S, T>> deleteTask = iterator.next();
+            deleteTask.performAction(this);
+            iterator.remove();
+        }
         discardEndpoint();
         _linkRegistry.linkClosed(this);
     }
@@ -297,6 +309,18 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
         {
             returnFuture.setException(e.getCause());
         }
+    }
+
+    @Override
+    public void addDeleteTask(final Action<? super LinkModel> task)
+    {
+        _deleteTasks.add(task);
+    }
+
+    @Override
+    public void removeDeleteTask(final Action<? super LinkModel> task)
+    {
+        _deleteTasks.remove(task);
     }
 
 

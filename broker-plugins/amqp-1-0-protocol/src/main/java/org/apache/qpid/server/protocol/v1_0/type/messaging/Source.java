@@ -51,7 +51,7 @@ public class Source implements BaseSource
     private Boolean _dynamic;
 
     @CompositeTypeField
-    private Map _dynamicNodeProperties;
+    private Map<Symbol, Object> _dynamicNodeProperties;
 
     @CompositeTypeField
     private DistributionMode _distributionMode;
@@ -118,12 +118,12 @@ public class Source implements BaseSource
         _dynamic = dynamic;
     }
 
-    public Map getDynamicNodeProperties()
+    public Map<Symbol, Object> getDynamicNodeProperties()
     {
         return _dynamicNodeProperties;
     }
 
-    public void setDynamicNodeProperties(Map dynamicNodeProperties)
+    public void setDynamicNodeProperties(Map<Symbol, Object> dynamicNodeProperties)
     {
         _dynamicNodeProperties = dynamicNodeProperties;
     }

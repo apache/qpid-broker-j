@@ -20,9 +20,11 @@
 
 package org.apache.qpid.server.protocol.v1_0;
 
+import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.util.Action;
 
 public class LinkDefinitionImpl<S extends BaseSource, T extends BaseTarget> implements LinkDefinition<S, T>
 {
@@ -73,5 +75,17 @@ public class LinkDefinitionImpl<S extends BaseSource, T extends BaseTarget> impl
     public T getTarget()
     {
         return _target;
+    }
+
+    @Override
+    public void addDeleteTask(final Action<? super LinkModel> task)
+    {
+        throw new UnsupportedOperationException("");
+    }
+
+    @Override
+    public void removeDeleteTask(final Action<? super LinkModel> task)
+    {
+        throw new UnsupportedOperationException("");
     }
 }
