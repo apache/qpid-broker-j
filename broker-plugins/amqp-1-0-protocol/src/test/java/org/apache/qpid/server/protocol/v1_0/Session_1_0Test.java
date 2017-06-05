@@ -314,7 +314,7 @@ public class Session_1_0Test extends QpidTestCase
 
         _session.receiveAttach(nullSourceAttach);
         ArgumentCaptor<FrameBody> frameCapture = ArgumentCaptor.forClass(FrameBody.class);
-        verify(_connection, times(3)).sendFrame(eq((short) _session.getChannelId()), frameCapture.capture());
+        verify(_connection, times(3)).sendFrame(eq(_session.getChannelId()), frameCapture.capture());
         Attach sentAttach = (Attach) frameCapture.getAllValues().get(2);
 
         assertEquals("Unexpected name", nullSourceAttach.getName(), sentAttach.getName());
@@ -382,7 +382,7 @@ public class Session_1_0Test extends QpidTestCase
         sendDetach(_session, attach.getHandle(), false);
 
         ArgumentCaptor<FrameBody> frameCapture = ArgumentCaptor.forClass(FrameBody.class);
-        verify(_connection, times(2)).sendFrame(eq((short) _session.getChannelId()), frameCapture.capture());
+        verify(_connection, times(2)).sendFrame(eq(_session.getChannelId()), frameCapture.capture());
         assertTrue(frameCapture.getAllValues().get(1) instanceof Detach);
 
         assertQueues(TOPIC_NAME, LifetimePolicy.PERMANENT);
@@ -410,7 +410,7 @@ public class Session_1_0Test extends QpidTestCase
         sendDetach(_session, attach.getHandle(), false);
 
         ArgumentCaptor<FrameBody> frameCapture = ArgumentCaptor.forClass(FrameBody.class);
-        verify(_connection, times(2)).sendFrame(eq((short) _session.getChannelId()), frameCapture.capture());
+        verify(_connection, times(2)).sendFrame(eq(_session.getChannelId()), frameCapture.capture());
         assertTrue(frameCapture.getAllValues().get(1) instanceof Detach);
 
         assertQueues(TOPIC_NAME, LifetimePolicy.PERMANENT);
@@ -527,7 +527,7 @@ public class Session_1_0Test extends QpidTestCase
         assertEquals("Unexpected consumers size", 1, consumers.size());
 
         ArgumentCaptor<FrameBody> frameCapture = ArgumentCaptor.forClass(FrameBody.class);
-        verify(_connection).sendFrame(eq((short) _session.getChannelId()), frameCapture.capture());
+        verify(_connection).sendFrame(eq(_session.getChannelId()), frameCapture.capture());
         Attach sentAttach = (Attach) frameCapture.getValue();
 
         assertEquals("Unexpected name", receivedAttach.getName(), sentAttach.getName());
@@ -559,7 +559,7 @@ public class Session_1_0Test extends QpidTestCase
                                   final int invocationOffset)
     {
         ArgumentCaptor<FrameBody> frameCapture = ArgumentCaptor.forClass(FrameBody.class);
-        verify(connection, times(invocationOffset + 1)).sendFrame(eq((short) session.getChannelId()), frameCapture.capture());
+        verify(connection, times(invocationOffset + 1)).sendFrame(eq(session.getChannelId()), frameCapture.capture());
         List<FrameBody> sentFrames = frameCapture.getAllValues();
 
         assertTrue("unexpected Frame sent", sentFrames.get(invocationOffset) instanceof Detach);
@@ -591,7 +591,7 @@ public class Session_1_0Test extends QpidTestCase
                                  final int invocationOffset)
     {
         ArgumentCaptor<FrameBody> frameCapture = ArgumentCaptor.forClass(FrameBody.class);
-        verify(connection, times(invocationOffset + 1)).sendFrame(eq((short) session.getChannelId()),
+        verify(connection, times(invocationOffset + 1)).sendFrame(eq(session.getChannelId()),
                                                                   frameCapture.capture());
         return (Attach) frameCapture.getAllValues().get(invocationOffset);
     }
@@ -615,7 +615,7 @@ public class Session_1_0Test extends QpidTestCase
     private void assertAttachFailed(final AMQPConnection_1_0 connection, final Session_1_0 session, final Attach attach, int invocationOffset)
     {
         ArgumentCaptor<FrameBody> frameCapture = ArgumentCaptor.forClass(FrameBody.class);
-        verify(connection, times(invocationOffset + 2)).sendFrame(eq((short) session.getChannelId()), frameCapture.capture());
+        verify(connection, times(invocationOffset + 2)).sendFrame(eq(session.getChannelId()), frameCapture.capture());
         List<FrameBody> sentFrames = frameCapture.getAllValues();
 
         assertTrue("unexpected Frame sent", sentFrames.get(invocationOffset) instanceof Attach);
@@ -749,7 +749,7 @@ public class Session_1_0Test extends QpidTestCase
     {
         Begin begin = mock(Begin.class);
         when(begin.getNextOutgoingId()).thenReturn(new UnsignedInteger(channelId));
-        Session_1_0 session = new Session_1_0(connection, begin, (short) channelId, (short) channelId, 2048);
+        Session_1_0 session = new Session_1_0(connection, begin, channelId, channelId, 2048);
         return session;
     }
 

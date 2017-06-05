@@ -170,7 +170,7 @@ public class Disposition implements FrameBody
         return builder.toString();
     }
 
-    public void invoke(short channel, ConnectionHandler conn)
+    public void invoke(int channel, ConnectionHandler conn)
     {
         conn.receiveDisposition(channel, this);
     }

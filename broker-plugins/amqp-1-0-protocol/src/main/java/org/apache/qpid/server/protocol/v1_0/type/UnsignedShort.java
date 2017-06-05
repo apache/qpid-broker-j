@@ -37,7 +37,7 @@ public final class UnsignedShort extends Number implements Comparable<UnsignedSh
         }
     }
 
-    public UnsignedShort(short underlying)
+    private UnsignedShort(short underlying)
     {
         _underlying = underlying;
     }
@@ -122,14 +122,22 @@ public final class UnsignedShort extends Number implements Comparable<UnsignedSh
         }
     }
 
+    public static UnsignedShort valueOf(int intValue)
+    {
+        if (intValue < 0 || intValue >= (1 << 16))
+        {
+            throw new NumberFormatException(String.format("Value \"%d\" lies outside the range [%d-%d).",
+                                                          intValue,
+                                                          0,
+                                                          (1 << 16)));
+        }
+
+        return valueOf((short) intValue);
+    }
+
     public static UnsignedShort valueOf(final String value)
     {
         int intVal = Integer.parseInt(value);
-        if(intVal < 0 || intVal >= (1<<16))
-        {
-            throw new NumberFormatException("Value \""+value+"\" lies outside the range [" + 0 + "-" + (1<<16) +").");
-        }
-        return valueOf((short)intVal);
-
+        return valueOf(intVal);
     }
 }

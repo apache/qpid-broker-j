@@ -269,7 +269,7 @@ public class Open implements FrameBody
     }
 
     @Override
-    public void invoke(short channel, ConnectionHandler conn)
+    public void invoke(int channel, ConnectionHandler conn)
     {
         conn.receiveOpen(channel, this);
     }

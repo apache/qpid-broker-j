@@ -25,5 +25,5 @@ import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 
 public interface FrameBody
 {
-    void invoke(short channel, ConnectionHandler conn);
+    void invoke(int channel, ConnectionHandler conn);
 }

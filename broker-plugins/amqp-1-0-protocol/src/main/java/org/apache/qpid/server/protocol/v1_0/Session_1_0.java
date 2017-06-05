@@ -138,8 +138,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private final Map<UnsignedInteger, LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> _inputHandleToEndpoint = new HashMap<>();
     private final Set<LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> _associatedLinkEndpoints = new HashSet<>();
 
-    private final short _receivingChannel;
-    private final short _sendingChannel;
+    private final int _receivingChannel;
+    private final int _sendingChannel;
 
 
     private static final int DEFAULT_SESSION_BUFFER_SIZE = 1 << 11;
@@ -172,8 +172,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     public Session_1_0(final AMQPConnection_1_0 connection,
                        Begin begin,
-                       short sendingChannelId,
-                       short receivingChannelId,
+                       int sendingChannelId,
+                       int receivingChannelId,
                        int incomingWindow)
     {
         super(connection, sendingChannelId);
@@ -254,7 +254,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             SequenceNumber end = new SequenceNumber(last.intValue());
             while (pos.compareTo(end) <= 0)
             {
-                unsettled.remove(new UnsignedInteger(pos.intValue()));
+                unsettled.remove(UnsignedInteger.valueOf(pos.intValue()));
                 pos.incr();
             }
         }
@@ -469,18 +469,22 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
         }
 
-        UnsignedInteger deliveryId = disposition.getFirst();
-        UnsignedInteger last = disposition.getLast();
-        if(last == null)
+        SequenceNumber deliveryId = new SequenceNumber(disposition.getFirst().intValue());
+        SequenceNumber last;
+        if(disposition.getLast() == null)
         {
             last = deliveryId;
+        }
+        else
+        {
+            last = new SequenceNumber(disposition.getLast().intValue());
         }
 
 
         while(deliveryId.compareTo(last)<=0)
         {
-
-            Delivery delivery = unsettledTransfers.get(deliveryId);
+            UnsignedInteger deliveryIdUnsigned = UnsignedInteger.valueOf(deliveryId.intValue());
+            Delivery delivery = unsettledTransfers.get(deliveryIdUnsigned);
             if(delivery != null)
             {
                 delivery.getLinkEndpoint().receiveDeliveryState(delivery,
@@ -488,10 +492,10 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                                                                 disposition.getSettled());
                 if (Boolean.TRUE.equals(disposition.getSettled()))
                 {
-                    unsettledTransfers.remove(deliveryId);
+                    unsettledTransfers.remove(deliveryIdUnsigned);
                 }
             }
-            deliveryId = deliveryId.add(UnsignedInteger.ONE);
+            deliveryId.incr();
         }
         if(Boolean.TRUE.equals(disposition.getSettled()))
         {
@@ -561,18 +565,16 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 break;
             case ACTIVE:
                 detachLinks();
-                short sendChannel = _sendingChannel;
-                _connection.sendEnd(sendChannel, end, true);
+                _connection.sendEnd(_sendingChannel, end, true);
                 _sessionState = SessionState.END_SENT;
                 break;
             default:
-                sendChannel = _sendingChannel;
                 End reply = new End();
                 Error error = new Error();
                 error.setCondition(AmqpError.ILLEGAL_STATE);
                 error.setDescription("END called on Session which has not been opened");
                 reply.setError(error);
-                _connection.sendEnd(sendChannel, reply, true);
+                _connection.sendEnd(_sendingChannel, reply, true);
                 break;
 
 

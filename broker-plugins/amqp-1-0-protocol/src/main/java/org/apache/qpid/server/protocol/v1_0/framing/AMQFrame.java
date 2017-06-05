@@ -47,17 +47,17 @@ public abstract class AMQFrame<T>
         return _payload;
     }
 
-    public static TransportFrame createAMQFrame(short channel, FrameBody frameBody)
+    public static TransportFrame createAMQFrame(int channel, FrameBody frameBody)
     {
         return createAMQFrame(channel, frameBody, null);
     }
 
-    public static TransportFrame createAMQFrame(short channel, FrameBody frameBody, List<QpidByteBuffer> payload)
+    public static TransportFrame createAMQFrame(int channel, FrameBody frameBody, List<QpidByteBuffer> payload)
     {
         return new TransportFrame(channel, frameBody, payload);
     }
 
-    abstract public short getChannel();
+    abstract public int getChannel();
 
     abstract public byte getFrameType();
 

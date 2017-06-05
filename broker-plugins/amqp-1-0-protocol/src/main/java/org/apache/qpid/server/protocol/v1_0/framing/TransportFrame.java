@@ -26,21 +26,21 @@ import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 public final class TransportFrame extends AMQFrame<FrameBody>
 {
 
-    private final short _channel;
+    private final int _channel;
 
-    public TransportFrame(short channel, FrameBody frameBody)
+    public TransportFrame(int channel, FrameBody frameBody)
     {
         super(frameBody);
         _channel = channel;
     }
 
-    public TransportFrame(short channel, FrameBody frameBody, List<QpidByteBuffer> payload)
+    public TransportFrame(int channel, FrameBody frameBody, List<QpidByteBuffer> payload)
     {
         super(frameBody, payload);
         _channel = channel;
     }
 
-    @Override public short getChannel()
+    @Override public int getChannel()
     {
         return _channel;
     }

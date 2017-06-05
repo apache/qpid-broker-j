@@ -23,5 +23,5 @@ import org.apache.qpid.server.protocol.v1_0.SASLEndpoint;
 
 public interface SaslFrameBody
 {
-    void invoke(final short channel, SASLEndpoint conn);
+    void invoke(final int channel, SASLEndpoint conn);
 }

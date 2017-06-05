@@ -143,55 +143,55 @@ public class InputHandler extends ChannelInboundHandlerAdapter
     private class MyConnectionHandler implements ConnectionHandler
     {
         @Override
-        public void receiveOpen(final short channel, final Open close)
+        public void receiveOpen(final int channel, final Open close)
         {
             System.out.println();
         }
 
         @Override
-        public void receiveClose(final short channel, final Close close)
+        public void receiveClose(final int channel, final Close close)
         {
 
         }
 
         @Override
-        public void receiveBegin(final short channel, final Begin begin)
+        public void receiveBegin(final int channel, final Begin begin)
         {
 
         }
 
         @Override
-        public void receiveEnd(final short channel, final End end)
+        public void receiveEnd(final int channel, final End end)
         {
 
         }
 
         @Override
-        public void receiveAttach(final short channel, final Attach attach)
+        public void receiveAttach(final int channel, final Attach attach)
         {
 
         }
 
         @Override
-        public void receiveDetach(final short channel, final Detach detach)
+        public void receiveDetach(final int channel, final Detach detach)
         {
 
         }
 
         @Override
-        public void receiveTransfer(final short channel, final Transfer transfer)
+        public void receiveTransfer(final int channel, final Transfer transfer)
         {
 
         }
 
         @Override
-        public void receiveDisposition(final short channel, final Disposition disposition)
+        public void receiveDisposition(final int channel, final Disposition disposition)
         {
 
         }
 
         @Override
-        public void receiveFlow(final short channel, final Flow flow)
+        public void receiveFlow(final int channel, final Flow flow)
         {
 
         }

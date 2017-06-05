@@ -181,7 +181,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     private List<Symbol> _offeredCapabilities;
     private SoleConnectionEnforcementPolicy _soleConnectionEnforcementPolicy;
 
-    private static final short CONNECTION_CONTROL_CHANNEL = (short) 0;
+    private static final int CONNECTION_CONTROL_CHANNEL = 0;
 
     private static final int DEFAULT_CHANNEL_MAX = Math.min(Integer.getInteger("amqp.channel_max", 255), 0xFFFF);
 
@@ -286,7 +286,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void receiveAttach(final short channel, final Attach attach)
+    public void receiveAttach(final int channel, final Attach attach)
     {
         assertState(ConnectionState.OPENED);
         final Session_1_0 session = getSession(channel);
@@ -351,11 +351,11 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         FRAME_LOGGER.debug("RECV[{}|{}] : {}", _remoteAddress, channel, val);
         if (val instanceof FrameBody)
         {
-            ((FrameBody) val).invoke((short) channel, this);
+            ((FrameBody) val).invoke(channel, this);
         }
         else if (val instanceof SaslFrameBody)
         {
-            ((SaslFrameBody) val).invoke((short) channel, this);
+            ((SaslFrameBody) val).invoke(channel, this);
         }
     }
 
@@ -381,7 +381,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void receiveClose(final short channel, final Close close)
+    public void receiveClose(final int channel, final Close close)
     {
         switch (_connectionState)
         {
@@ -528,7 +528,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void sendEnd(final short channel, final End end, final boolean remove)
+    public void sendEnd(final int channel, final End end, final boolean remove)
     {
         sendFrame(channel, end);
         if (remove)
@@ -545,7 +545,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void receiveEnd(final short channel, final End end)
+    public void receiveEnd(final int channel, final End end)
     {
         assertState(ConnectionState.OPENED);
         final Session_1_0 session = getSession(channel);
@@ -560,13 +560,13 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
     }
 
-    private void closeConnectionWithInvalidChannel(final short channel, final FrameBody frame)
+    private void closeConnectionWithInvalidChannel(final int channel, final FrameBody frame)
     {
         closeConnection(AmqpError.INVALID_FIELD, String.format("%s frame received on channel %d which is not mapped", frame.getClass().getSimpleName().toLowerCase(), channel));
     }
 
     @Override
-    public void receiveDisposition(final short channel,
+    public void receiveDisposition(final int channel,
                                    final Disposition disposition)
     {
         assertState(ConnectionState.OPENED);
@@ -583,11 +583,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void receiveBegin(final short receivingChannelId, final Begin begin)
+    public void receiveBegin(final int receivingChannelId, final Begin begin)
     {
 
         assertState(ConnectionState.OPENED);
-        short sendingChannelId;
         if (begin.getRemoteChannel() != null)
         {
             closeConnection(ConnectionError.FRAMING_ERROR,
@@ -603,7 +602,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
             if (_receivingSessions[receivingChannelId] == null)
             {
-                sendingChannelId = getFirstFreeChannel();
+                int sendingChannelId = getFirstFreeChannel();
                 if (sendingChannelId == -1)
                 {
                     closeConnection(ConnectionError.FRAMING_ERROR,
@@ -650,13 +649,13 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     }
 
-    private short getFirstFreeChannel()
+    private int getFirstFreeChannel()
     {
         for (int i = 0; i <= _channelMax; i++)
         {
             if (_sendingSessions[i] == null)
             {
-                return (short) i;
+                return i;
             }
         }
         return -1;
@@ -672,7 +671,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void receiveTransfer(final short channel, final Transfer transfer)
+    public void receiveTransfer(final int channel, final Transfer transfer)
     {
         assertState(ConnectionState.OPENED);
         final Session_1_0 session = getSession(channel);
@@ -687,7 +686,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void receiveFlow(final short channel, final Flow flow)
+    public void receiveFlow(final int channel, final Flow flow)
     {
         assertState(ConnectionState.OPENED);
         final Session_1_0 session = getSession(channel);
@@ -703,7 +702,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void receiveOpen(final short channel, final Open open)
+    public void receiveOpen(final int channel, final Open open)
     {
         assertState(ConnectionState.AWAIT_OPEN);
 
@@ -717,8 +716,9 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             _sendingSessions = new Session_1_0[_channelMax + 1];
         }
         _maxFrameSize = open.getMaxFrameSize() == null
+                        || open.getMaxFrameSize().longValue() > getBroker().getNetworkBufferSize()
                 ? getBroker().getNetworkBufferSize()
-                : Math.min(open.getMaxFrameSize().intValue(), getBroker().getNetworkBufferSize());
+                : open.getMaxFrameSize().intValue();
         _remoteContainerId = open.getContainerId();
 
         if(open.getHostname() != null && !"".equals(open.getHostname().trim()))
@@ -947,7 +947,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void receiveDetach(final short channel, final Detach detach)
+    public void receiveDetach(final int channel, final Detach detach)
     {
         assertState(ConnectionState.OPENED);
         final Session_1_0 session = getSession(channel);
@@ -1150,7 +1150,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public int sendFrame(final short channel, final FrameBody body, final List<QpidByteBuffer> payload)
+    public int sendFrame(final int channel, final FrameBody body, final List<QpidByteBuffer> payload)
     {
         if (!_closedForOutput)
         {
@@ -1214,7 +1214,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void sendFrame(final short channel, final FrameBody body)
+    public void sendFrame(final int channel, final FrameBody body)
     {
         sendFrame(channel, body, null);
     }
@@ -1628,9 +1628,9 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public long getSessionCountLimit()
+    public int getSessionCountLimit()
     {
-        return _channelMax+1;
+        return _channelMax + 1;
     }
 
     @Override
@@ -1685,7 +1685,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         sendFrame(CONNECTION_CONTROL_CHANNEL, open);
     }
 
-    private Session_1_0 getSession(final short channel)
+    private Session_1_0 getSession(final int channel)
     {
         Session_1_0 session = _receivingSessions[channel];
         if (session == null)

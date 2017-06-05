@@ -59,11 +59,11 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
 
     AMQPDescribedTypeRegistry getDescribedTypeRegistry();
 
-    int sendFrame(short channel, FrameBody body, List<QpidByteBuffer> payload);
+    int sendFrame(int channel, FrameBody body, List<QpidByteBuffer> payload);
 
-    void sendFrame(short channel, FrameBody body);
+    void sendFrame(int channel, FrameBody body);
 
-    void sendEnd(short sendChannel, End end, boolean b);
+    void sendEnd(int sendChannel, End end, boolean b);
 
     void sessionEnded(Session_1_0 session_1_0);
 

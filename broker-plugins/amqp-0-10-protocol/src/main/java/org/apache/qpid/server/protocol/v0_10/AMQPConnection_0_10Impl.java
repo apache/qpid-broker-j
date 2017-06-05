@@ -335,7 +335,7 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     }
 
     @Override
-    public long getSessionCountLimit()
+    public int getSessionCountLimit()
     {
         return _connection.getSessionCountLimit();
     }

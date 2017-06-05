@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.transport.ByteBufferSender;
 
 public class FrameWriter
@@ -62,7 +63,7 @@ public class FrameWriter
         body.putInt(totalSize);
         body.put((byte)2); // DOFF
         body.put(frame.getFrameType()); // AMQP Frame Type
-        body.putShort(frame.getChannel());
+        body.putShort(UnsignedShort.valueOf(frame.getChannel()).shortValue());
         if(typeWriter != null)
         {
             typeWriter.writeToBuffer(body);

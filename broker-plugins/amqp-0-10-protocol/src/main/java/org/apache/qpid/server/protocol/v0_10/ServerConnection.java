@@ -439,7 +439,7 @@ public class ServerConnection extends ConnectionInvoker
     }
 
 
-    public long getSessionCountLimit()
+    public int getSessionCountLimit()
     {
         return getChannelMax();
     }

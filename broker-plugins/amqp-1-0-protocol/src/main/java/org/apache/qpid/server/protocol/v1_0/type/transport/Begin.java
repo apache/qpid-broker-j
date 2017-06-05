@@ -224,7 +224,7 @@ public class Begin implements FrameBody
         return builder.toString();
     }
 
-    public void invoke(short channel, ConnectionHandler conn)
+    public void invoke(int channel, ConnectionHandler conn)
     {
         conn.receiveBegin(channel, this);
     }

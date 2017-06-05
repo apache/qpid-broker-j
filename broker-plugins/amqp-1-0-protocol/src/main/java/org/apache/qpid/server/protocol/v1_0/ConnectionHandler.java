@@ -36,23 +36,23 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public interface ConnectionHandler extends SASLEndpoint
 {
-    void receiveOpen(short channel, Open close);
+    void receiveOpen(int channel, Open close);
 
-    void receiveClose(short channel, Close close);
+    void receiveClose(int channel, Close close);
 
-    void receiveBegin(short channel, Begin begin);
+    void receiveBegin(int channel, Begin begin);
 
-    void receiveEnd(short channel, End end);
+    void receiveEnd(int channel, End end);
 
-    void receiveAttach(short channel, Attach attach);
+    void receiveAttach(int channel, Attach attach);
 
-    void receiveDetach(short channel, Detach detach);
+    void receiveDetach(int channel, Detach detach);
 
-    void receiveTransfer(short channel, Transfer transfer);
+    void receiveTransfer(int channel, Transfer transfer);
 
-    void receiveDisposition(short channel, Disposition disposition);
+    void receiveDisposition(int channel, Disposition disposition);
 
-    void receiveFlow(short channel, Flow flow);
+    void receiveFlow(int channel, Flow flow);
 
     int getMaxFrameSize();
 

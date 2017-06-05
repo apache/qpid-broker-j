@@ -118,7 +118,7 @@ public class AMQPConnection_0_8Impl
 
     private volatile SaslNegotiator _saslNegotiator;
 
-    private volatile long _maxNoOfChannels;
+    private volatile int _maxNoOfChannels;
 
     private volatile ProtocolVersion _protocolVersion;
     private volatile MethodRegistry _methodRegistry;
@@ -429,12 +429,12 @@ public class AMQPConnection_0_8Impl
         session.dispose();
     }
 
-    public long getMaximumNumberOfChannels()
+    public int getMaximumNumberOfChannels()
     {
         return _maxNoOfChannels;
     }
 
-    private void setMaximumNumberOfChannels(Long value)
+    private void setMaximumNumberOfChannels(int value)
     {
         _maxNoOfChannels = value;
     }
@@ -744,7 +744,7 @@ public class AMQPConnection_0_8Impl
     }
 
     @Override
-    public long getSessionCountLimit()
+    public int getSessionCountLimit()
     {
         return getMaximumNumberOfChannels();
     }
@@ -1226,8 +1226,8 @@ public class AMQPConnection_0_8Impl
             setMaxFrameSize(calculatedFrameMax);
 
             //0 means no implied limit, except that forced by protocol limitations (0xFFFF)
-            setMaximumNumberOfChannels( ((channelMax == 0l) || (channelMax > 0xFFFFL))
-                                               ? 0xFFFFL
+            setMaximumNumberOfChannels( ((channelMax == 0) || (channelMax > 0xFFFF))
+                                               ? 0xFFFF
                                                : channelMax);
 
         }

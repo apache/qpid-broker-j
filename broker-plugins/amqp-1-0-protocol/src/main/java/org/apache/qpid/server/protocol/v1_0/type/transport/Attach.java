@@ -358,7 +358,7 @@ public class Attach implements FrameBody
         return builder.toString();
     }
 
-    public void invoke(short channel, ConnectionHandler conn)
+    public void invoke(int channel, ConnectionHandler conn)
     {
         conn.receiveAttach(channel, this);
     }

@@ -88,7 +88,7 @@ public class SaslOutcome
         return builder.toString();
     }
 
-    public void invoke(final short channel, SASLEndpoint conn)
+    public void invoke(final int channel, SASLEndpoint conn)
     {
         conn.receiveSaslOutcome(this);
     }

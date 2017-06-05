@@ -29,7 +29,7 @@ public final class SASLFrame extends AMQFrame<SaslFrameBody>
         super(frameBody);
     }
 
-    @Override public short getChannel()
+    @Override public int getChannel()
     {
         return (short)0;
     }

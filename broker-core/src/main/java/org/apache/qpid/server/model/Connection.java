@@ -91,7 +91,7 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     String getRemoteProcessPid();
 
     @DerivedAttribute
-    long getSessionCountLimit();
+    int getSessionCountLimit();
 
     @DerivedAttribute
     Transport getTransport();
