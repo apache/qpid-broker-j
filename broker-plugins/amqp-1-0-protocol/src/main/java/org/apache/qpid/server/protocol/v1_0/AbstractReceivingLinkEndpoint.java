@@ -129,7 +129,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                 }
                 _unsettledIds.put(deliveryTag, transientState);
                 setLinkCredit(getLinkCredit().subtract(UnsignedInteger.ONE));
-                setDeliveryCount(getDeliveryCount().add(UnsignedInteger.ONE));
+                getDeliveryCount().incr();
             }
             else
             {
@@ -159,7 +159,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
     @Override public void receiveFlow(final Flow flow)
     {
         setAvailable(flow.getAvailable());
-        setDeliveryCount(flow.getDeliveryCount());
+        setDeliveryCount(new SequenceNumber(flow.getDeliveryCount().intValue()));
     }
 
     public boolean settled(final Binary deliveryTag)

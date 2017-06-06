@@ -260,7 +260,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
     public void attachReceived(final Attach attach) throws AmqpErrorException
     {
         super.attachReceived(attach);
-        setDeliveryCount(attach.getInitialDeliveryCount());
+        setDeliveryCount(new SequenceNumber(attach.getInitialDeliveryCount().intValue()));
     }
 
     @Override

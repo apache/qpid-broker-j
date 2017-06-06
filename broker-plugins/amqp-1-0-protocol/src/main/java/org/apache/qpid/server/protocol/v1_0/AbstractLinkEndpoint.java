@@ -60,7 +60,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
     private volatile boolean _stopped;
     private volatile boolean _stoppedUpdated;
     private Symbol[] _capabilities;
-    private UnsignedInteger _deliveryCount;
+    private SequenceNumber _deliveryCount;
     private UnsignedInteger _linkCredit;
     private UnsignedInteger _available;
     private Boolean _drain;
@@ -174,7 +174,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         return getSession().getConnection().getAddressSpace();
     }
 
-    public void setDeliveryCount(final UnsignedInteger deliveryCount)
+    protected void setDeliveryCount(final SequenceNumber deliveryCount)
     {
         _deliveryCount = deliveryCount;
     }
@@ -194,7 +194,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         _drain = drain;
     }
 
-    public UnsignedInteger getDeliveryCount()
+    protected SequenceNumber getDeliveryCount()
     {
         return _deliveryCount;
     }
@@ -303,7 +303,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
 
         if (getRole() == Role.SENDER)
         {
-            attachToSend.setInitialDeliveryCount(_deliveryCount);
+            attachToSend.setInitialDeliveryCount(_deliveryCount.unsignedIntegerValue());
         }
 
         switch (_state)
@@ -402,7 +402,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
             }
             else
             {
-                UnsignedInteger clientsCredit = _lastSentCreditLimit.subtract(_deliveryCount);
+                UnsignedInteger clientsCredit = _lastSentCreditLimit.subtract(_deliveryCount.unsignedIntegerValue());
 
                 // client has used up over half their credit allowance ?
                 boolean sendFlow = _linkCredit.subtract(clientsCredit).compareTo(clientsCredit) >= 0;
@@ -445,18 +445,18 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         if(_state == State.ATTACHED || _state == State.ATTACH_SENT)
         {
             Flow flow = new Flow();
-            flow.setDeliveryCount(_deliveryCount);
+            flow.setDeliveryCount(_deliveryCount.unsignedIntegerValue());
             flow.setEcho(echo);
             if(_stopped)
             {
                 flow.setLinkCredit(UnsignedInteger.ZERO);
                 flow.setDrain(true);
-                _lastSentCreditLimit = _deliveryCount;
+                _lastSentCreditLimit = _deliveryCount.unsignedIntegerValue();
             }
             else
             {
                 flow.setLinkCredit(_linkCredit);
-                _lastSentCreditLimit = _linkCredit.add(_deliveryCount);
+                _lastSentCreditLimit = _linkCredit.add(_deliveryCount.unsignedIntegerValue());
                 flow.setDrain(_drain);
             }
             flow.setAvailable(_available);

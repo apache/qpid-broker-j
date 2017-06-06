@@ -21,9 +21,11 @@
 
 package org.apache.qpid.server.protocol.v1_0;
 
-public class SequenceNumber implements Comparable<SequenceNumber>, Cloneable
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+
+public class SequenceNumber implements Comparable<SequenceNumber>
 {
-    private int _seqNo;
+    private volatile int _seqNo;
 
     public SequenceNumber(int seqNo)
     {
@@ -42,17 +44,7 @@ public class SequenceNumber implements Comparable<SequenceNumber>, Cloneable
         return this;
     }
 
-    public static SequenceNumber add(SequenceNumber a, int i)
-    {
-        return a.clone().add(i);
-    }
-
-    public static SequenceNumber subtract(SequenceNumber a, int i)
-    {
-        return a.clone().add(-i);
-    }
-
-    private SequenceNumber add(int i)
+    public SequenceNumber add(int i)
     {
         _seqNo+=i;
         return this;
@@ -92,12 +84,6 @@ public class SequenceNumber implements Comparable<SequenceNumber>, Cloneable
     }
 
     @Override
-    public SequenceNumber clone()
-    {
-        return new SequenceNumber(_seqNo);
-    }
-
-    @Override
     public String toString()
     {
         return "SN{" + _seqNo + '}';
@@ -111,5 +97,10 @@ public class SequenceNumber implements Comparable<SequenceNumber>, Cloneable
     public long longValue()
     {
         return  ((long) _seqNo) & 0xFFFFFFFFL;
+    }
+
+    public UnsignedInteger unsignedIntegerValue()
+    {
+        return UnsignedInteger.valueOf(_seqNo);
     }
 }

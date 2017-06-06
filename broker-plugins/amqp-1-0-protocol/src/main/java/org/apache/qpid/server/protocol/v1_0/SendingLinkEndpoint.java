@@ -100,7 +100,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     public SendingLinkEndpoint(final Session_1_0 session, final LinkImpl<Source, Target> link)
     {
         super(session, link);
-        setDeliveryCount(UnsignedInteger.valueOf(0));
+        setDeliveryCount(new SequenceNumber(0));
         setAvailable(UnsignedInteger.valueOf(0));
         setCapabilities(Arrays.asList(AMQPConnection_1_0.SHARED_SUBSCRIPTIONS));
     }
@@ -390,7 +390,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             setLinkCredit(getLinkCredit().subtract(UnsignedInteger.ONE));
         }
 
-        setDeliveryCount(UnsignedInteger.valueOf((getDeliveryCount().intValue() + 1)));
+        getDeliveryCount().incr();
 
         xfr.setHandle(getLocalHandle());
 
@@ -418,7 +418,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     {
         if (_draining)
         {
-            setDeliveryCount(getDeliveryCount().add(getLinkCredit()));
+            getDeliveryCount().add(getLinkCredit().intValue());
             setLinkCredit(UnsignedInteger.ZERO);
             sendFlow();
             _draining = false;
@@ -433,8 +433,8 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     @Override
     public void receiveFlow(final Flow flow)
     {
-        UnsignedInteger t = flow.getDeliveryCount();
-        UnsignedInteger c = flow.getLinkCredit();
+        UnsignedInteger receiverDeliveryCount = flow.getDeliveryCount();
+        UnsignedInteger receiverLinkCredit = flow.getLinkCredit();
         setDrain(flow.getDrain());
 
         Map options;
@@ -443,20 +443,21 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
              _transactionId = (Binary) options.get(Symbol.valueOf("txn-id"));
         }
 
-        if(t == null)
+        if(receiverDeliveryCount == null)
         {
-            setLinkCredit(c);
+            setLinkCredit(receiverLinkCredit);
         }
         else
         {
-            UnsignedInteger limit = t.add(c);
-            if(limit.compareTo(getDeliveryCount())<=0)
+            // 2.6.7 Flow Control : link_credit_snd := delivery_count_rcv + link_credit_rcv - delivery_count_snd
+            UnsignedInteger limit = receiverDeliveryCount.add(receiverLinkCredit);
+            if(limit.compareTo(getDeliveryCount().unsignedIntegerValue())<=0)
             {
                 setLinkCredit(UnsignedInteger.valueOf(0));
             }
             else
             {
-                setLinkCredit(limit.subtract(getDeliveryCount()));
+                setLinkCredit(limit.subtract(getDeliveryCount().unsignedIntegerValue()));
             }
         }
         flowStateChanged();

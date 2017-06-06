@@ -467,7 +467,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         Target target = new Target();
         Target attachTarget = (Target) attach.getTarget();
 
-        setDeliveryCount(attach.getInitialDeliveryCount());
+        setDeliveryCount(new SequenceNumber(attach.getInitialDeliveryCount().intValue()));
 
         target.setAddress(attachTarget.getAddress());
         target.setDynamic(attachTarget.getDynamic());
