@@ -469,7 +469,6 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
         setDeliveryCount(attach.getInitialDeliveryCount());
 
-        final ReceivingDestination destination = getSession().getReceivingDestination(getLink(), attachTarget);
         target.setAddress(attachTarget.getAddress());
         target.setDynamic(attachTarget.getDynamic());
         if (Boolean.TRUE.equals(attachTarget.getDynamic()) && attachTarget.getDynamicNodeProperties() != null)
@@ -480,14 +479,31 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                 dynamicNodeProperties.put(Session_1_0.LIFETIME_POLICY,
                                           attachTarget.getDynamicNodeProperties().get(Session_1_0.LIFETIME_POLICY));
             }
-            source.setDynamicNodeProperties(dynamicNodeProperties);
+            target.setDynamicNodeProperties(dynamicNodeProperties);
         }
-
-        target.setCapabilities(destination.getCapabilities());
         target.setDurable(TerminusDurability.min(attachTarget.getDurable(),
                                                  getLink().getHighestSupportedTerminusDurability()));
+        final List<Symbol> targetCapabilities = new ArrayList<>();
+        if (attachTarget.getCapabilities() != null)
+        {
+            final List<Symbol> desiredCapabilities = Arrays.asList(attachTarget.getCapabilities());
+            if (desiredCapabilities.contains(Symbol.valueOf("temporary-topic")))
+            {
+                targetCapabilities.add(Symbol.valueOf("temporary-topic"));
+            }
+            if (desiredCapabilities.contains(Symbol.valueOf("topic")))
+            {
+                targetCapabilities.add(Symbol.valueOf("topic"));
+            }
+            target.setCapabilities(targetCapabilities.toArray(new Symbol[targetCapabilities.size()]));
+        }
 
-        setCapabilities(Arrays.asList(destination.getCapabilities()));
+        final ReceivingDestination destination = getSession().getReceivingDestination(getLink(), target);
+
+        targetCapabilities.addAll(Arrays.asList(destination.getCapabilities()));
+        target.setCapabilities(targetCapabilities.toArray(new Symbol[targetCapabilities.size()]));
+
+        setCapabilities(targetCapabilities);
         setDestination(destination);
 
         Map initialUnsettledMap = getInitialUnsettledMap();

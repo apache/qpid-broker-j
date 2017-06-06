@@ -42,6 +42,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
@@ -64,7 +65,7 @@ public class DeleteOnCloseTest extends ProtocolTestBase
     @SpecificationTest(section = "3.5.10",
             description = "A node dynamically created with this lifetime policy will be deleted at the point that the link which caused its\n"
                           + "creation ceases to exist.")
-    public void deleteOnClose() throws Exception
+    public void deleteOnCloseOnSource() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress))
         {
@@ -93,6 +94,56 @@ public class DeleteOnCloseTest extends ProtocolTestBase
             final String newTempQueueAddress = ((Source) attachResponse.getSource()).getAddress();
 
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+
+            Detach detach = new Detach();
+            detach.setHandle(attach.getHandle());
+            detach.setClosed(true);
+            transport.sendPerformative(detach);
+            PerformativeResponse detachResponse = (PerformativeResponse) transport.getNextResponse();
+            assertThat(detachResponse, is(notNullValue()));
+            assertThat(detachResponse.getFrameBody(), is(instanceOf(Detach.class)));
+
+            assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(false));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "3.5.10",
+            description = "A node dynamically created with this lifetime policy will be deleted at the point that the link which caused its\n"
+                          + "creation ceases to exist.")
+    public void deleteOnCloseOnTarget() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        {
+            transport.doBeginSession();
+
+            Attach attach = new Attach();
+            attach.setName("testSendingLink");
+            attach.setHandle(UnsignedInteger.ZERO);
+            attach.setRole(Role.SENDER);
+            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
+
+            attach.setSource(new Source());
+
+            Target target = new Target();
+            target.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
+            target.setDynamic(true);
+            attach.setTarget(target);
+
+            transport.sendPerformative(attach);
+
+            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getFrameBody(), is(instanceOf(Attach.class)));
+            final Attach attachResponse = (Attach) response.getFrameBody();
+            assertThat(attachResponse.getTarget(), is(notNullValue()));
+            final String newTempQueueAddress = ((Target) attachResponse.getTarget()).getAddress();
+
+            assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
+
+            PerformativeResponse flowResponse = (PerformativeResponse) transport.getNextResponse();
+            assertThat(flowResponse, is(notNullValue()));
+            assertThat(flowResponse.getFrameBody(), is(instanceOf(Flow.class)));
 
             Detach detach = new Detach();
             detach.setHandle(attach.getHandle());

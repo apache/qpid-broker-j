@@ -63,9 +63,9 @@ public class TemporaryDestinationTest extends ProtocolTestBase
             description = "To create a node with the required lifecycle properties, establish a uniquely named sending link with "
                           + "the dynamic field of target set true, the expiry-policy field of target set to symbol “link-detach”, and the "
                           + "dynamic-node-properties field of target containing the “lifetime-policy” symbol key mapped to delete-on-close.")
-    public void deleteOnCloseWithLinkDetachForQueue() throws Exception
+    public void deleteOnCloseWithConnectionCloseForQueue() throws Exception
     {
-        deleteOnCloseWithLinkDetach(new Symbol[]{Symbol.valueOf("temporary-queue")});
+        deleteOnCloseWithConnectionClose(new Symbol[]{Symbol.valueOf("temporary-queue")});
     }
 
     @Test
@@ -73,12 +73,12 @@ public class TemporaryDestinationTest extends ProtocolTestBase
             description = "To create a node with the required lifecycle properties, establish a uniquely named sending link with "
                           + "the dynamic field of target set true, the expiry-policy field of target set to symbol “link-detach”, and the "
                           + "dynamic-node-properties field of target containing the “lifetime-policy” symbol key mapped to delete-on-close.")
-    public void deleteOnCloseWithLinkDetachForTopic() throws Exception
+    public void deleteOnCloseWithConnectionCloseForTopic() throws Exception
     {
-        deleteOnCloseWithLinkDetach(new Symbol[]{Symbol.valueOf("temporary-topic")});
+        deleteOnCloseWithConnectionClose(new Symbol[]{Symbol.valueOf("temporary-topic")});
     }
 
-    private void deleteOnCloseWithLinkDetach(final Symbol[] targetCapabilities) throws Exception
+    private void deleteOnCloseWithConnectionClose(final Symbol[] targetCapabilities) throws Exception
     {
         String newTemporaryNodeAddress = null;
 

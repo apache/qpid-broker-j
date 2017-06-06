@@ -19,9 +19,6 @@
  */
 package org.apache.qpid.systest.rest;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assume.assumeThat;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -93,8 +90,10 @@ public class ExportImportMessagesRestTest extends QpidRestTestCase
 
     public void testExtractImportEndToEnd() throws Exception
     {
-        assumeThat(isBrokerStorePersistent(), is(true));
-
+        if (!isBrokerStorePersistent())
+        {
+            return;
+        }
         changeVirtualHostState(_virtualHostNodeName, _virtualHostName, "STOPPED");
 
         byte[] extractedBytes = getRestTestHelper().getBytes(_extractOpUrl);
