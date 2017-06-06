@@ -155,7 +155,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private final UnsignedInteger _incomingWindow;
     private SequenceNumber _nextOutgoingId = new SequenceNumber(_initialOutgoingId.intValue());
     private final UnsignedInteger _outgoingWindow = UnsignedInteger.valueOf(DEFAULT_SESSION_BUFFER_SIZE);
-    private UnsignedInteger _remoteIncomingWindow;
+    private volatile long _remoteIncomingWindow;
     private UnsignedInteger _remoteOutgoingWindow = UnsignedInteger.ZERO;
     private UnsignedInteger _lastSentIncomingLimit;
 
@@ -269,7 +269,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     public boolean hasCreditToSend()
     {
-        boolean b = _remoteIncomingWindow != null && _remoteIncomingWindow.intValue() > 0;
+        boolean b = _remoteIncomingWindow > 0;
         boolean b1 = getOutgoingWindow() != null && getOutgoingWindow().compareTo(UnsignedInteger.ZERO) > 0;
         return b && b1;
     }
@@ -292,7 +292,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             {
                 final Delivery delivery = new Delivery(xfr, endpoint);
                 _outgoingUnsettled.put(deliveryId, delivery);
-                _remoteIncomingWindow = _remoteIncomingWindow.subtract(UnsignedInteger.ONE);
                 endpoint.addUnsettled(delivery);
             }
         }
@@ -305,18 +304,16 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 if (!settled)
                 {
                     delivery.addTransfer(xfr);
-                    _remoteIncomingWindow = _remoteIncomingWindow.subtract(UnsignedInteger.ONE);
                 }
                 else
                 {
-                    _remoteIncomingWindow = _remoteIncomingWindow.add(new UnsignedInteger(delivery.getNumberOfTransfers()));
                     endpoint.settle(delivery.getDeliveryTag());
                     _outgoingUnsettled.remove(deliveryId);
                 }
             }
         }
         xfr.setDeliveryId(deliveryId);
-
+        _remoteIncomingWindow--;
         try
         {
             List<QpidByteBuffer> payload = xfr.getPayload();
@@ -414,47 +411,54 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     public void receiveFlow(final Flow flow)
     {
-        UnsignedInteger handle = flow.getHandle();
-        final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> endpoint =
-                handle == null ? null : _inputHandleToEndpoint.get(handle);
-
-        final UnsignedInteger nextOutgoingId =
-                flow.getNextIncomingId() == null ? _initialOutgoingId : flow.getNextIncomingId();
-        long limit = (nextOutgoingId.longValue() + flow.getIncomingWindow().longValue());
-        _remoteIncomingWindow = UnsignedInteger.valueOf(limit - _nextOutgoingId.longValue());
-
-        _nextIncomingId = new SequenceNumber(flow.getNextOutgoingId().intValue());
-        _remoteOutgoingWindow = flow.getOutgoingWindow();
-
-        if (endpoint != null)
+        final SequenceNumber flowNextIncomingId = new SequenceNumber(flow.getNextIncomingId() == null
+                                                                             ? _initialOutgoingId.intValue()
+                                                                             : flow.getNextIncomingId().intValue());
+        if (flowNextIncomingId.compareTo(_nextOutgoingId) > 0)
         {
-            endpoint.receiveFlow(flow);
-
-            if (Boolean.TRUE.equals(flow.getEcho()))
-            {
-                endpoint.sendFlow();
-            }
+            final End end = new End();
+            end.setError(new Error(SessionError.WINDOW_VIOLATION,
+                                   String.format("Next incoming id '%d' exceeds next outgoing id '%d'",
+                                                 flowNextIncomingId,
+                                                 _nextOutgoingId)));
+            end(end);
         }
         else
         {
-            final Collection<LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> allLinkEndpoints =
-                    _inputHandleToEndpoint.values();
-            for (LinkEndpoint<? extends BaseSource, ? extends BaseTarget> le : allLinkEndpoints)
-            {
-                le.flowStateChanged();
-            }
+            _remoteIncomingWindow = flowNextIncomingId.longValue() + flow.getIncomingWindow().longValue()
+                                    - _nextOutgoingId.longValue();
 
-            if (Boolean.TRUE.equals(flow.getEcho()))
+            _nextIncomingId = new SequenceNumber(flow.getNextOutgoingId().intValue());
+            _remoteOutgoingWindow = flow.getOutgoingWindow();
+
+            UnsignedInteger handle = flow.getHandle();
+            final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> endpoint =
+                    handle == null ? null : _inputHandleToEndpoint.get(handle);
+
+            if (endpoint != null)
             {
-                sendFlow();
+                endpoint.receiveFlow(flow);
+
+                if (Boolean.TRUE.equals(flow.getEcho()))
+                {
+                    endpoint.sendFlow();
+                }
+            }
+            else
+            {
+                final Collection<LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> allLinkEndpoints =
+                        _inputHandleToEndpoint.values();
+                for (LinkEndpoint<? extends BaseSource, ? extends BaseTarget> le : allLinkEndpoints)
+                {
+                    le.flowStateChanged();
+                }
+
+                if (Boolean.TRUE.equals(flow.getEcho()))
+                {
+                    sendFlow();
+                }
             }
         }
-    }
-
-    public void setNextIncomingId(final UnsignedInteger nextIncomingId)
-    {
-        _nextIncomingId = new SequenceNumber(nextIncomingId.intValue());
-
     }
 
     public void receiveDisposition(final Disposition disposition)
@@ -530,11 +534,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         flow.setNextOutgoingId(UnsignedInteger.valueOf(_nextOutgoingId.intValue()));
         flow.setOutgoingWindow(_outgoingWindow);
         send(flow);
-    }
-
-    public void setRemoteIncomingWindow(final UnsignedInteger remoteIncomingWindow)
-    {
-        _remoteIncomingWindow = remoteIncomingWindow;
     }
 
     public void receiveDetach(final Detach detach)
