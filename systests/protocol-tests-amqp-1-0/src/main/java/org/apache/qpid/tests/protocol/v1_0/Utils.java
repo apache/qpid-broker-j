@@ -27,12 +27,16 @@ import static org.hamcrest.Matchers.is;
 
 import java.net.InetSocketAddress;
 
+import org.hamcrest.core.Is;
+
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public class Utils
 {
@@ -76,6 +80,39 @@ public class Utils
                 assertThat(validationDetachResponse.getFrameBody(), is(instanceOf(Detach.class)));
             }
             return queueExists;
+        }
+    }
+
+    public static Object receiveMessage(final InetSocketAddress brokerAddress,
+                                        final String queueName) throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(brokerAddress))
+        {
+            transport.doAttachReceivingLink(queueName);
+            Flow flow = new Flow();
+            flow.setIncomingWindow(UnsignedInteger.ONE);
+            flow.setNextIncomingId(UnsignedInteger.ZERO);
+            flow.setOutgoingWindow(UnsignedInteger.ZERO);
+            flow.setNextOutgoingId(UnsignedInteger.ZERO);
+            flow.setHandle(UnsignedInteger.ZERO);
+            flow.setLinkCredit(UnsignedInteger.ONE);
+
+            transport.sendPerformative(flow);
+
+            MessageDecoder messageDecoder = new MessageDecoder();
+            boolean hasMore;
+            do
+            {
+                PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
+                assertThat(response, Is.is(notNullValue()));
+                assertThat(response.getFrameBody(), Is.is(instanceOf(Transfer.class)));
+                Transfer responseTransfer = (Transfer) response.getFrameBody();
+                messageDecoder.addTransfer(responseTransfer);
+                hasMore = Boolean.TRUE.equals(responseTransfer.getMore());
+            }
+            while (hasMore);
+
+            return messageDecoder.getData();
         }
     }
 }

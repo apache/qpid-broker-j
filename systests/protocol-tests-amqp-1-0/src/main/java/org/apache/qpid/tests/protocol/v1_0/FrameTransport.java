@@ -232,11 +232,16 @@ public class FrameTransport implements AutoCloseable
 
     public void doAttachReceivingLink(String queueName) throws Exception
     {
+        doAttachReceivingLink(UnsignedInteger.ZERO, queueName);
+    }
+
+    public void doAttachReceivingLink(final UnsignedInteger handle, String queueName) throws Exception
+    {
         doBeginSession();
         Role localRole = Role.RECEIVER;
         Attach attach = new Attach();
         attach.setName("testReceivingLink");
-        attach.setHandle(new UnsignedInteger(0));
+        attach.setHandle(handle);
         attach.setRole(localRole);
         Source source = new Source();
         source.setAddress(queueName);
@@ -256,7 +261,6 @@ public class FrameTransport implements AutoCloseable
     public void doAttachSendingLink(final UnsignedInteger handle,
                                     final String destination) throws Exception
     {
-        doBeginSession();
         Attach attach = new Attach();
         attach.setName("testSendingLink");
         attach.setHandle(handle);
@@ -267,6 +271,12 @@ public class FrameTransport implements AutoCloseable
         Target target = new Target();
         target.setAddress(destination);
         attach.setTarget(target);
+        doAttachSendingLink(attach);
+    }
+
+    public void doAttachSendingLink(final Attach attach) throws Exception
+    {
+        doBeginSession();
 
         sendPerformative(attach);
         PerformativeResponse response = (PerformativeResponse) getNextResponse();

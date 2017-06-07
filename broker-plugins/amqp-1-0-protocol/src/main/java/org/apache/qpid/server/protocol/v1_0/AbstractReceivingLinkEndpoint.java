@@ -54,22 +54,11 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
     {
 
         UnsignedInteger _deliveryId;
-        int _credit = 1;
         boolean _settled;
 
         private TransientState(final UnsignedInteger transferId)
         {
             _deliveryId = transferId;
-        }
-
-        void incrementCredit()
-        {
-            _credit++;
-        }
-
-        public int getCredit()
-        {
-            return _credit;
         }
 
         public UnsignedInteger getDeliveryId()
@@ -134,7 +123,6 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
             else
             {
                 transientState = _unsettledIds.get(deliveryTag);
-                transientState.incrementCredit();
                 if (delivery.isSettled())
                 {
                     transientState.setSettled(true);

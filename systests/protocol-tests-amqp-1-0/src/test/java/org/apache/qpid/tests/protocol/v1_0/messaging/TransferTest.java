@@ -37,6 +37,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -46,9 +47,12 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
@@ -93,21 +97,23 @@ public class TransferTest extends ProtocolTestBase
     }
 
     @Test
-    @Ignore("QPID-7749")
     @SpecificationTest(section = "2.6.12",
             description = "Transferring A Message.")
-    public void transfer() throws Exception
+    public void transferUnsettled() throws Exception
     {
+        String sentData = "foo";
         try (FrameTransport transport = new FrameTransport(_brokerAddress))
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
             transport.doAttachSendingLink(linkHandle, BrokerAdmin.TEST_QUEUE_NAME);
 
             MessageEncoder messageEncoder = new MessageEncoder();
-            messageEncoder.addData("foo");
+            messageEncoder.addData(sentData);
 
             Transfer transfer = new Transfer();
             transfer.setHandle(linkHandle);
+            transfer.setDeliveryId(UnsignedInteger.ZERO);
+            transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
             transfer.setPayload(messageEncoder.getPayload());
 
             transport.sendPerformative(transfer);
@@ -119,8 +125,96 @@ public class TransferTest extends ProtocolTestBase
             assertThat(responseDisposition.getRole(), is(Role.RECEIVER));
             assertThat(responseDisposition.getSettled(), is(Boolean.TRUE));
             assertThat(responseDisposition.getState(), is(instanceOf(Accepted.class)));
+        }
+    }
 
-            transport.assertNoMoreResponses();
+    @Test
+    @SpecificationTest(section = "2.7.5",
+            description = "If first, this indicates that the receiver MUST settle the delivery once it has arrived without waiting for the sender to settle first")
+    public void transferReceiverSettleModeFirst() throws Exception
+    {
+        String sentData = "foo";
+        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        {
+            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
+            Attach attach = new Attach();
+            attach.setName("testSendingLink");
+            attach.setHandle(linkHandle);
+            attach.setRole(Role.SENDER);
+            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
+            attach.setRcvSettleMode(ReceiverSettleMode.SECOND);
+            Source source = new Source();
+            attach.setSource(source);
+            Target target = new Target();
+            target.setAddress(BrokerAdmin.TEST_QUEUE_NAME);
+            attach.setTarget(target);
+
+            transport.doAttachSendingLink(attach);
+
+            MessageEncoder messageEncoder = new MessageEncoder();
+            messageEncoder.addData(sentData);
+
+            Transfer transfer = new Transfer();
+            transfer.setHandle(linkHandle);
+            transfer.setDeliveryId(UnsignedInteger.ZERO);
+            transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
+            transfer.setPayload(messageEncoder.getPayload());
+            transfer.setRcvSettleMode(ReceiverSettleMode.FIRST);
+
+            transport.sendPerformative(transfer);
+            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
+
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getFrameBody(), is(instanceOf(Disposition.class)));
+            Disposition responseDisposition = (Disposition) response.getFrameBody();
+            assertThat(responseDisposition.getRole(), is(Role.RECEIVER));
+            assertThat(responseDisposition.getSettled(), is(Boolean.TRUE));
+            assertThat(responseDisposition.getState(), is(instanceOf(Accepted.class)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "2.7.5",
+            description = "If the negotiated link value is first, then it is illegal to set this field to second.")
+    public void transferReceiverSettleModeCannotBeSecondWhenLinkModeIsFirst() throws Exception
+    {
+        String sentData = "foo";
+        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        {
+            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
+            Attach attach = new Attach();
+            attach.setName("testSendingLink");
+            attach.setHandle(linkHandle);
+            attach.setRole(Role.SENDER);
+            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
+            attach.setRcvSettleMode(ReceiverSettleMode.FIRST);
+            Source source = new Source();
+            attach.setSource(source);
+            Target target = new Target();
+            target.setAddress(BrokerAdmin.TEST_QUEUE_NAME);
+            attach.setTarget(target);
+
+            transport.doAttachSendingLink(attach);
+
+            MessageEncoder messageEncoder = new MessageEncoder();
+            messageEncoder.addData(sentData);
+
+            Transfer transfer = new Transfer();
+            transfer.setHandle(linkHandle);
+            transfer.setDeliveryId(UnsignedInteger.ZERO);
+            transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
+            transfer.setPayload(messageEncoder.getPayload());
+            transfer.setRcvSettleMode(ReceiverSettleMode.SECOND);
+
+            transport.sendPerformative(transfer);
+            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
+
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getFrameBody(), is(instanceOf(Detach.class)));
+            Detach detach = (Detach) response.getFrameBody();
+            Error error = detach.getError();
+            assertThat(error, is(notNullValue()));
+            assertThat(error.getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
         }
     }
 

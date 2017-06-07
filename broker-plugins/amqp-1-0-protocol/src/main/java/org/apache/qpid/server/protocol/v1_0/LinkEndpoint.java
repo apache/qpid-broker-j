@@ -28,7 +28,9 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 
 public interface LinkEndpoint<S extends BaseSource, T extends BaseTarget>
 {
@@ -67,4 +69,8 @@ public interface LinkEndpoint<S extends BaseSource, T extends BaseTarget>
     void destroy();
 
     void close(Error error);
+
+    SenderSettleMode getSendingSettlementMode();
+
+    ReceiverSettleMode getReceivingSettlementMode();
 }

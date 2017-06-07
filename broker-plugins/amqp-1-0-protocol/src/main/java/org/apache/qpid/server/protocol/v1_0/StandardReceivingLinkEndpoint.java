@@ -93,6 +93,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         setCreditWindow();
     }
 
+
     private TerminusDurability getDurability()
     {
         return getTarget().getDurable();
@@ -106,6 +107,8 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         org.apache.qpid.server.protocol.v1_0.type.DeliveryState xfrState = xfr.getState();
         final Binary deliveryTag = xfr.getDeliveryTag();
         UnsignedInteger messageFormat = null;
+        ReceiverSettleMode transferReceiverSettleMode = null;
+        Error error = null;
         if(Boolean.TRUE.equals(xfr.getMore()) && _incompleteMessage == null)
         {
             _incompleteMessage = new ArrayList<>();
@@ -124,11 +127,25 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
             fragments = new ArrayList<>(_incompleteMessage.size());
 
-            for(Transfer t : _incompleteMessage)
+            for (Transfer t : _incompleteMessage)
             {
-                if(t.getMessageFormat() != null && messageFormat == null)
+                if (t.getMessageFormat() != null && messageFormat == null)
                 {
                     messageFormat = t.getMessageFormat();
+                }
+
+                if (t.getRcvSettleMode() != null)
+                {
+                    if (transferReceiverSettleMode == null)
+                    {
+                        transferReceiverSettleMode = t.getRcvSettleMode();
+                    }
+                    else if (!transferReceiverSettleMode.equals(t.getRcvSettleMode()))
+                    {
+                        error = new Error(AmqpError.INVALID_FIELD,
+                                          "Transfer \"rcv-settle-mode\" is set to different value than on previous transfer.");
+                        break;
+                    }
                 }
                 fragments.addAll(t.getPayload());
                 t.dispose();
@@ -142,8 +159,25 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
             _messageDeliveryTag = deliveryTag;
             fragments = xfr.getPayload();
             messageFormat = xfr.getMessageFormat();
-
+            transferReceiverSettleMode = xfr.getRcvSettleMode();
             xfr.dispose();
+        }
+
+        if (error == null && !ReceiverSettleMode.SECOND.equals(getReceivingSettlementMode())
+            && ReceiverSettleMode.SECOND.equals(transferReceiverSettleMode))
+        {
+            error = new Error(AmqpError.INVALID_FIELD,
+                              "Transfer \"rcv-settle-mode\" cannot be \"first\" when link \"rcv-settle-mode\" is set to \"second\".");
+
+        }
+
+        if (error != null)
+        {
+            for (QpidByteBuffer fragment : fragments)
+            {
+                fragment.dispose();
+            }
+            return error;
         }
 
         if(_resumedMessage)
@@ -151,7 +185,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
             if(_unsettledMap.containsKey(_messageDeliveryTag))
             {
                 Outcome outcome = _unsettledMap.get(_messageDeliveryTag);
-                boolean settled = ReceiverSettleMode.FIRST.equals(getReceivingSettlementMode());
+                boolean settled = shouldReceiverSettleFirst(transferReceiverSettleMode);
                 updateDisposition(_messageDeliveryTag, (DeliveryState) outcome, settled);
                 if(settled)
                 {
@@ -279,7 +313,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     }
 
 
-                    boolean settled = ReceiverSettleMode.FIRST.equals(getReceivingSettlementMode()                                                             );
+                    boolean settled = shouldReceiverSettleFirst(transferReceiverSettleMode);
 
                     if (!settled)
                     {
@@ -323,6 +357,16 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
             }
         }
         return null;
+    }
+
+    private boolean shouldReceiverSettleFirst(ReceiverSettleMode transferReceiverSettleMode)
+    {
+        if (transferReceiverSettleMode == null)
+        {
+            transferReceiverSettleMode = getReceivingSettlementMode();
+        }
+
+        return transferReceiverSettleMode == null || ReceiverSettleMode.FIRST.equals(transferReceiverSettleMode);
     }
 
     @Override
@@ -598,5 +642,22 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         }
 
         attachReceived(attach);
+    }
+
+    @Override
+    protected void detach(Error error, boolean close)
+    {
+        super.detach(error, close);
+
+        if (_incompleteMessage != null)
+        {
+            for (Transfer t : _incompleteMessage)
+            {
+                t.dispose();
+            }
+            _incompleteMessage = null;
+        }
+        _messageDeliveryTag = null;
+        _resumedMessage = false;
     }
 }

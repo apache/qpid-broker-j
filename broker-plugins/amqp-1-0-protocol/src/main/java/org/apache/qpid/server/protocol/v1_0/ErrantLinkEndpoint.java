@@ -28,7 +28,9 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 
 public class ErrantLinkEndpoint<S extends BaseSource, T extends BaseTarget> implements LinkEndpoint<S, T>
 {
@@ -121,6 +123,18 @@ public class ErrantLinkEndpoint<S extends BaseSource, T extends BaseTarget> impl
         _session.dissociateEndpoint(this);
         destroy();
         _link.linkClosed();
+    }
+
+    @Override
+    public SenderSettleMode getSendingSettlementMode()
+    {
+        return null;
+    }
+
+    @Override
+    public ReceiverSettleMode getReceivingSettlementMode()
+    {
+        return null;
     }
 
     @Override

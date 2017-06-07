@@ -343,7 +343,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         detach(error, true);
     }
 
-    private void detach(Error error, boolean close)
+    protected void detach(Error error, boolean close)
     {
         //TODO
         switch (_state)
@@ -474,11 +474,13 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         return _link;
     }
 
+    @Override
     public SenderSettleMode getSendingSettlementMode()
     {
         return _sendingSettlementMode;
     }
 
+    @Override
     public ReceiverSettleMode getReceivingSettlementMode()
     {
         return _receivingSettlementMode;

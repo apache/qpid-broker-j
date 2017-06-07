@@ -36,13 +36,12 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.protocol.v1_0.MessageDecoder;
 import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
+import org.apache.qpid.tests.protocol.v1_0.Utils;
 
 public class FlowTest extends ProtocolTestBase
 {
@@ -138,35 +137,9 @@ public class FlowTest extends ProtocolTestBase
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "foo");
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
-        {
-            transport.doAttachReceivingLink(BrokerAdmin.TEST_QUEUE_NAME);
-            Flow flow = new Flow();
-            flow.setIncomingWindow(UnsignedInteger.ONE);
-            flow.setNextIncomingId(UnsignedInteger.ZERO);
-            flow.setOutgoingWindow(UnsignedInteger.ZERO);
-            flow.setNextOutgoingId(UnsignedInteger.ZERO);
-            flow.setHandle(UnsignedInteger.ZERO); // TODO
-            flow.setLinkCredit(UnsignedInteger.ONE);
 
-            transport.sendPerformative(flow);
-
-            MessageDecoder messageDecoder = new MessageDecoder();
-            boolean hasMore;
-            do
-            {
-                PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-                assertThat(response, is(notNullValue()));
-                assertThat(response.getFrameBody(), is(instanceOf(Transfer.class)));
-                Transfer responseTransfer = (Transfer) response.getFrameBody();
-                messageDecoder.addTransfer(responseTransfer);
-                hasMore = Boolean.TRUE.equals(responseTransfer.getMore());
-            }
-            while (hasMore);
-
-            String data = (String) messageDecoder.getData();
-            assertThat(data, is(equalTo("foo")));
-        }
+        String data = (String) Utils.receiveMessage(addr, BrokerAdmin.TEST_QUEUE_NAME);
+        assertThat(data, is(equalTo("foo")));
     }
 
 
