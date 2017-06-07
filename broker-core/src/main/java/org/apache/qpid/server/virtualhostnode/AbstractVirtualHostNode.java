@@ -26,7 +26,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,9 +44,9 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ConfigStoreMessages;
 import org.apache.qpid.server.logging.subjects.MessageStoreLogSubject;
@@ -98,7 +97,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
 
     private MessageStoreLogSubject _configurationStoreLogSubject;
 
-    private TaskExecutor _virtualHostExecutor;
+    private volatile TaskExecutor _virtualHostExecutor;
 
     @ManagedAttributeField
     private boolean _defaultVirtualHostNode;
@@ -112,20 +111,6 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     public AbstractVirtualHostNode(Broker<?> parent, Map<String, Object> attributes)
     {
         super(parent, attributes);
-        _virtualHostExecutor = getTaskExecutor().getFactory().newInstance("VirtualHostNode-" + getName() + "-Config", new TaskExecutor.PrincipalAccessor()
-        {
-            @Override
-            public Principal getPrincipal()
-            {
-                VirtualHost<?> virtualHost = getVirtualHost();
-                if (virtualHost != null)
-                {
-                    return virtualHost.getPrincipal();
-                }
-                return null;
-            }
-        });
-        _virtualHostExecutor.start();
         _broker = parent;
         SystemConfig<?> systemConfig = getAncestor(SystemConfig.class);
         _eventLogger = systemConfig.getEventLogger();
@@ -135,6 +120,17 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     public void onOpen()
     {
         super.onOpen();
+        _virtualHostExecutor = getTaskExecutor().getFactory().newInstance("VirtualHostNode-" + getName() + "-Config",
+                                                                          () ->
+                                                                          {
+                                                                              VirtualHost<?> virtualHost = getVirtualHost();
+                                                                              if (virtualHost != null)
+                                                                              {
+                                                                                  return virtualHost.getPrincipal();
+                                                                              }
+                                                                              return null;
+                                                                          });
+        _virtualHostExecutor.start();
         _durableConfigurationStore = createConfigurationStore();
     }
 
