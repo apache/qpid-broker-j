@@ -96,6 +96,37 @@ public class TransferTest extends ProtocolTestBase
         }
     }
 
+    @Ignore("QPID-7816")
+    @Test
+    @SpecificationTest(section = "2.7.5",
+            description = "[delivery-tag] MUST be specified for the first transfer "
+                          + "[...] and can only be omitted for continuation transfers.")
+    public void transferWithoutDeliveryTag() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        {
+            final UnsignedInteger linkHandle = UnsignedInteger.ONE;
+            transport.doAttachSendingLink(linkHandle, BrokerAdmin.TEST_QUEUE_NAME);
+
+            MessageEncoder messageEncoder = new MessageEncoder();
+            messageEncoder.addData("foo");
+
+            Transfer transfer = new Transfer();
+            transfer.setHandle(linkHandle);
+            transfer.setDeliveryId(UnsignedInteger.ZERO);
+            transfer.setPayload(messageEncoder.getPayload());
+
+            transport.sendPerformative(transfer);
+            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
+
+            assertThat(response, is(notNullValue()));
+            assertThat(response.getFrameBody(), is(instanceOf(Close.class)));
+            Close responseClose = (Close) response.getFrameBody();
+            assertThat(responseClose.getError(), is(notNullValue()));
+            assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.INVALID_FIELD));
+        }
+    }
+
     @Test
     @SpecificationTest(section = "2.6.12",
             description = "Transferring A Message.")
