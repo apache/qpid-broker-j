@@ -169,12 +169,6 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
          * is scheduled to become default after JE 5.1.
          */
         put(ReplicationConfig.PROTOCOL_OLD_STRING_ENCODING, Boolean.FALSE.toString());
-        /**
-         * Parameter decreased as a default 5min interval may lead to bigger data losses on Node
-         * with NO_SYN durability in case if such Node crushes.
-         */
-        put(ReplicationConfig.LOG_FLUSH_TASK_INTERVAL, "1 min");
-
          /**
           * Allow Replica to proceed with transactions regardless of the state of a Replica
           * At the moment we do not read or write databases on Replicas.
