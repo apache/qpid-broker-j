@@ -316,7 +316,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         assertNotNull("Should have received second message", _consumer.receive(RECEIVE_TIMEOUT));
     }
 
-    public void testProducerFlowControlIsTriggeredOnEnqueueAsPartOfAsyncTransaction() throws Exception
+    public void testProducerFlowControlIsTriggeredOnEnqueue() throws Exception
     {
         long oneHourMilliseconds = 60 * 60 * 1000L;
         setSystemProperty("virtualhost.housekeepingCheckPeriod", String.valueOf(oneHourMilliseconds));
