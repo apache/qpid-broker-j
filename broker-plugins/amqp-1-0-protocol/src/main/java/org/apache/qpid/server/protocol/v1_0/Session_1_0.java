@@ -701,11 +701,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             String addr = target.getAddress();
             if (addr == null || "".equals(addr.trim()))
             {
-                MessageDestination messageDestination = getAddressSpace().getDefaultDestination();
-                destination = new NodeReceivingDestination(messageDestination, target.getDurable(),
-                                                           target.getExpiryPolicy(), "",
-                                                           target.getCapabilities(),
-                                                           _connection.getEventLogger());
+                destination = new AnonymousRelayDestination(getAddressSpace(), target, _connection.getEventLogger());
             }
             else if (!addr.startsWith("/") && addr.contains("/"))
             {
@@ -761,11 +757,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             destination = null;
         }
 
-        if (destination != null)
-        {
-            target.setCapabilities(destination.getCapabilities());
-        }
-        else
+        if (destination == null)
         {
             throw new AmqpErrorException(AmqpError.NOT_FOUND,
                                          String.format("Could not find destination for target '%s'", target));

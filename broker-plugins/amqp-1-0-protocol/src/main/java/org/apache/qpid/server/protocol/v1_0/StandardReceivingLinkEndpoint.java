@@ -276,9 +276,9 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     final long arrivalTime = serverMessage.getArrivalTime();
                     session.getAMQPConnection()
                            .checkAuthorizedMessagePrincipal(serverMessage.getMessageHeader().getUserId());
-                    getReceivingDestination().authorizePublish(session.getSecurityToken(), routingAddress);
 
-                    Outcome outcome = getReceivingDestination().send(serverMessage, routingAddress, transaction, null);
+                    Outcome outcome = getReceivingDestination().send(serverMessage, routingAddress, transaction,
+                                                                     session.getSecurityToken());
                     Source source = getSource();
 
                     DeliveryState resultantState;
@@ -592,6 +592,8 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         Source source = (Source) attach.getSource();
         Target target = getTarget();
 
+        // TODO: This seems a bit weird. Similar code is in attachReceived.
+        // We also seem to send back a different target than we are using.
         final ReceivingDestination destination = getSession().getReceivingDestination(getLink(), getTarget());
         target.setCapabilities(destination.getCapabilities());
         setCapabilities(Arrays.asList(destination.getCapabilities()));

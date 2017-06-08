@@ -48,48 +48,6 @@ public class SyncPublishTest extends QpidBrokerTestCase
         super.tearDown();
     }
 
-    public void testAnonPublisherUnknownDestination() throws Exception
-    {
-        Session session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        MessageProducer producer = session.createProducer(null);
-        try
-        {
-            final Queue queue = session.createQueue(isBroker10() ? "amq.direct/unknown" : "direct://amq.direct/unknown/unknown");
-            producer.send(queue, session.createTextMessage("hello"));
-            fail("Send to unknown destination should result in error");
-        }
-        catch (JMSException e)
-        {
-            // pass
-        }
-    }
-
-
-    public void testAnonPublisherUnknownDestinationTransactional() throws Exception
-    {
-        Session session = _connection.createSession(true, Session.SESSION_TRANSACTED);
-        MessageProducer producer = session.createProducer(null);
-        try
-        {
-            final Queue queue = session.createQueue(isBroker10() ? "amq.direct/unknown" : "direct://amq.direct/unknown/unknown");
-            producer.send(queue,session.createTextMessage("hello"));
-            fail("Send to unknown destination should result in error");
-        }
-        catch (JMSException e)
-        {
-            // pass
-        }
-        try
-        {
-            session.commit();
-        }
-        catch (JMSException e)
-        {
-            fail("session should commit successfully even though the message was not sent");
-        }
-
-    }
-
     public void testQueueRemovedAfterConsumerCreated() throws JMSException
     {
         Session session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);

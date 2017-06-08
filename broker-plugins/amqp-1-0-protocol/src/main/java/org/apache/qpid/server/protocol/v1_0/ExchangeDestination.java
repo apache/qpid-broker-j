@@ -29,7 +29,6 @@ import java.util.List;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
@@ -44,7 +43,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.Action;
 
 public class ExchangeDestination extends QueueDestination
 {
@@ -100,8 +98,10 @@ public class ExchangeDestination extends QueueDestination
     public Outcome send(final ServerMessage<?> message,
                         final String routingAddress,
                         ServerTransaction txn,
-                        final Action<MessageInstance> action)
+                        final SecurityToken securityToken)
     {
+        _exchange.authorisePublish(securityToken, Collections.singletonMap("routingKey", routingAddress));
+
         final InstanceProperties instanceProperties =
             new InstanceProperties()
             {
@@ -128,7 +128,7 @@ public class ExchangeDestination extends QueueDestination
         final RoutingResult result = _exchange.route(message,
                                                      routingAddress,
                                                      instanceProperties);
-        int enqueues = result.send(txn, action);
+        int enqueues = result.send(txn, null);
 
         if(enqueues == 0)
         {
@@ -150,16 +150,6 @@ public class ExchangeDestination extends QueueDestination
     public MessageDestination getMessageDestination()
     {
         return _exchange;
-    }
-
-    @Override
-    public void authorizePublish(final SecurityToken securityToken,
-                                 final String routingAddress)
-    {
-        _exchange.authorisePublish(securityToken,
-                            Collections.<String,Object>singletonMap("routingKey", routingAddress));
-
-
     }
 
     @Override

@@ -29,7 +29,6 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
@@ -43,7 +42,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.Action;
 
 public class NodeReceivingDestination implements ReceivingDestination
 {
@@ -82,8 +80,10 @@ public class NodeReceivingDestination implements ReceivingDestination
 
     public Outcome send(final ServerMessage<?> message,
                         final String routingAddress, ServerTransaction txn,
-                        final Action<MessageInstance> action)
+                        final SecurityToken securityToken)
     {
+        _destination.authorisePublish(securityToken, Collections.singletonMap("routingKey", routingAddress));
+
         final InstanceProperties instanceProperties =
             new InstanceProperties()
             {
@@ -108,7 +108,7 @@ public class NodeReceivingDestination implements ReceivingDestination
                 }};
 
         RoutingResult result = _destination.route(message, routingAddress, instanceProperties);
-        int enqueues = result.send(txn, action);
+        int enqueues = result.send(txn, null);
 
         if(enqueues == 0)
         {
@@ -152,19 +152,10 @@ public class NodeReceivingDestination implements ReceivingDestination
     }
 
     @Override
-    public void authorizePublish(final SecurityToken securityToken,
-                                 final String routingAddress)
-    {
-            _destination.authorisePublish(securityToken,
-                                          Collections.<String, Object>singletonMap("routingKey", routingAddress));
-
-    }
-
-    @Override
     public String getRoutingAddress(final Message_1_0 message)
     {
-        MessageMetaData_1_0.MessageHeader_1_0 messageHeader = message.getMessageHeader();
         String routingAddress;
+        MessageMetaData_1_0.MessageHeader_1_0 messageHeader = message.getMessageHeader();
         final String to = messageHeader.getTo();
         if (to != null
             && (_destination.getName() == null || _destination.getName().trim().equals("")))

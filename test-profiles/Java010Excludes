@@ -69,8 +69,6 @@ org.apache.qpid.test.unit.client.AMQSessionTest#testQueueDepthForQueueThatDoesNo
 
 org.apache.qpid.client.prefetch.PrefetchBehaviourTest#testPrefetchWindowExpandsOnReceiveTransaction
 
-org.apache.qpid.client.SyncPublishTest#*
-
 // QPID-6722: Race client side means that session close can end in exception when failover is in progress.
 org.apache.qpid.client.failover.FailoverBehaviourTest#testConnectionCloseInterruptsFailover
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testConnectionCloseInterruptsFailover
@@ -89,3 +87,7 @@ org.apache.qpid.systests.jms_2_0.*
 
 // Exclude 1.0 protocol tests
 org.apache.qpid.tests.protocol.v1_0.*
+
+// QPID-7818: Messages published into non existing queue are discarded on 0-10 path
+org.apache.qpid.systest.AnonymousProducerTest#testPublishIntoNonExistingQueue
+org.apache.qpid.systest.AnonymousProducerTest#testSyncPublishIntoNonExistingQueue

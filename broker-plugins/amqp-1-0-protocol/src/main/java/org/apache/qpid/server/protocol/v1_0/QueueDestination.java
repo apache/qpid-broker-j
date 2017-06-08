@@ -23,7 +23,6 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.util.Collections;
 
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
@@ -32,7 +31,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.Action;
 
 public class QueueDestination extends MessageSourceDestination implements ReceivingDestination
 {
@@ -53,8 +51,9 @@ public class QueueDestination extends MessageSourceDestination implements Receiv
 
     public Outcome send(final ServerMessage<?> message,
                         final String routingAddress, ServerTransaction txn,
-                        final Action<MessageInstance> action)
+                        final SecurityToken securityToken)
     {
+        getQueue().authorisePublish(securityToken, Collections.emptyMap());
 
         txn.enqueue(getMessageSource(), message, new ServerTransaction.EnqueueAction()
         {
@@ -65,7 +64,7 @@ public class QueueDestination extends MessageSourceDestination implements Receiv
             {
                 try
                 {
-                    getQueue().enqueue(message, action, records[0]);
+                    getQueue().enqueue(message, null, records[0]);
                 }
                 finally
                 {
@@ -98,14 +97,6 @@ public class QueueDestination extends MessageSourceDestination implements Receiv
     public String getRoutingAddress(Message_1_0 message)
     {
         return "";
-    }
-
-    @Override
-    public void authorizePublish(final SecurityToken securityToken,
-                                 final String routingAddress)
-    {
-
-        getQueue().authorisePublish(securityToken, Collections.<String, Object>emptyMap());
     }
 
     @Override
