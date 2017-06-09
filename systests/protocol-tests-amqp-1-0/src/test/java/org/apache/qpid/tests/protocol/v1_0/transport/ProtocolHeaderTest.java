@@ -66,6 +66,26 @@ public class ProtocolHeaderTest extends ProtocolTestBase
             HeaderResponse response = (HeaderResponse) transport.getNextResponse();
             assertArrayEquals("Unexpected protocol header response", bytes, response.getHeader());
         }
+    }
 
+    @Test
+    @SpecificationTest(section = "2.2",
+            description = " A client might request use of a protocol id that is unacceptable to a server. [...]"
+                          + "In this case, the server MUST send a protocol header with an acceptable protocol id"
+                          + "(and version) and then close the socket.")
+    public void unacceptableProtocolIdSent_SaslAcceptable() throws Exception
+    {
+        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
+        try (FrameTransport transport = new FrameTransport(addr))
+        {
+            byte[] rawHeaderBytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
+            byte[] expectedSaslHeaderBytes = "AMQP\3\1\0\0".getBytes(StandardCharsets.UTF_8);
+            transport.sendProtocolHeader(rawHeaderBytes);
+            HeaderResponse response = (HeaderResponse) transport.getNextResponse();
+
+            assertArrayEquals("Unexpected protocol header response", expectedSaslHeaderBytes, response.getHeader());
+
+            transport.assertNoMoreResponses();
+        }
     }
 }

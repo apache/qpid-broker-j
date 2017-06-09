@@ -41,7 +41,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public class FrameHandler implements ProtocolHandler
 {
-    public static Logger LOGGER = LoggerFactory.getLogger(FrameHandler.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger(FrameHandler.class);
     private final boolean _isSasl;
 
     private final ConnectionHandler _connectionHandler;

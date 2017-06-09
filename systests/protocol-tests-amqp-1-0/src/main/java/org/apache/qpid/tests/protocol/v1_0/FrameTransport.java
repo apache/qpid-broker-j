@@ -20,12 +20,14 @@
 package org.apache.qpid.tests.protocol.v1_0;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertNull;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,8 +56,10 @@ import org.hamcrest.CoreMatchers;
 import org.hamcrest.core.Is;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.framing.SASLFrame;
 import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
@@ -70,17 +74,24 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public class FrameTransport implements AutoCloseable
 {
-    private static final Set<Integer> AMQP_CONNECTION_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
     public static final long RESPONSE_TIMEOUT = 6000;
+    private static final Set<Integer> AMQP_CONNECTION_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private static final Response CHANNEL_CLOSED_RESPONSE = new ChannelClosedResponse();
 
     private final Channel _channel;
     private final BlockingQueue<Response> _queue = new ArrayBlockingQueue<>(100);
     private final EventLoopGroup _workerGroup;
 
+    private volatile boolean _channelClosedSeen = false;
     private int _amqpConnectionId;
     private short _amqpChannelId;
 
     public FrameTransport(final InetSocketAddress brokerAddress)
+    {
+        this(brokerAddress, false);
+    }
+
+    public FrameTransport(final InetSocketAddress brokerAddress, boolean isSasl)
     {
         _workerGroup = new NioEventLoopGroup();
 
@@ -95,12 +106,16 @@ public class FrameTransport implements AutoCloseable
                 @Override
                 public void initChannel(SocketChannel ch) throws Exception
                 {
-                    ch.pipeline().addLast(new InputHandler(_queue))
-                                 .addLast(new OutputHandler());
+                    ch.pipeline().addLast(new InputHandler(_queue, isSasl)).addLast(new OutputHandler());
                 }
             });
 
             _channel = b.connect(brokerAddress).sync().channel();
+            _channel.closeFuture().addListener(future ->
+                                               {
+                                                   _channelClosedSeen = true;
+                                                   _queue.add(CHANNEL_CLOSED_RESPONSE);
+                                               });
         }
         catch (InterruptedException e)
         {
@@ -134,8 +149,16 @@ public class FrameTransport implements AutoCloseable
 
     public ListenableFuture<Void> sendPerformative(final FrameBody frameBody, UnsignedShort channel) throws Exception
     {
-        final List<QpidByteBuffer> payload = frameBody instanceof Transfer ? ((Transfer)frameBody).getPayload() : null;
+        final List<QpidByteBuffer> payload = frameBody instanceof Transfer ? ((Transfer) frameBody).getPayload() : null;
         TransportFrame transportFrame = new TransportFrame(channel.shortValue(), frameBody, payload);
+        ChannelFuture channelFuture = _channel.writeAndFlush(transportFrame);
+        channelFuture.sync();
+        return JdkFutureAdapters.listenInPoolThread(channelFuture);
+    }
+
+    public ListenableFuture<Void> sendPerformative(final SaslFrameBody frameBody) throws Exception
+    {
+        SASLFrame transportFrame = new SASLFrame(frameBody);
         ChannelFuture channelFuture = _channel.writeAndFlush(transportFrame);
         channelFuture.sync();
         return JdkFutureAdapters.listenInPoolThread(channelFuture);
@@ -172,6 +195,52 @@ public class FrameTransport implements AutoCloseable
     public Response getNextResponse() throws Exception
     {
         return _queue.poll(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
+    }
+
+    public <R extends Response> R getNextResponse(Class<? extends Response> expectedResponseClass) throws Exception
+    {
+        R actualResponse = (R) getNextResponse();
+        if (actualResponse == null)
+        {
+            throw new IllegalStateException(String.format("No response received within timeout %d - expecting %s",
+                                                          RESPONSE_TIMEOUT, expectedResponseClass.getName()));
+        }
+        else if (!expectedResponseClass.isAssignableFrom(actualResponse.getClass()))
+        {
+            throw new IllegalStateException(String.format("Unexpected response - expecting %s - received - %s",
+                                                          expectedResponseClass.getName(),
+                                                          actualResponse.getClass().getName()));
+        }
+
+        return actualResponse;
+    }
+
+    public <P> P getNextPerformativeResponse(Class<?> expectedFrameBodyClass) throws Exception
+    {
+        final P actualFrameBody;
+        if (SaslFrameBody.class.isAssignableFrom(expectedFrameBodyClass))
+        {
+            SaslPerformativeResponse response = getNextResponse(SaslPerformativeResponse.class);
+            actualFrameBody = (P) response.getFrameBody();
+        }
+        else if (FrameBody.class.isAssignableFrom(expectedFrameBodyClass))
+        {
+            PerformativeResponse response = getNextResponse(PerformativeResponse.class);
+            actualFrameBody = (P) response.getFrameBody();
+        }
+        else
+        {
+            throw new IllegalArgumentException(String.format("Unexpected class %s", expectedFrameBodyClass.getName()));
+        }
+
+        if (!expectedFrameBodyClass.isAssignableFrom(actualFrameBody.getClass()))
+        {
+            throw new IllegalStateException(String.format("Unexpected response - expecting %s - received - %s",
+                                                          expectedFrameBodyClass.getName(),
+                                                          actualFrameBody.getClass().getName()));
+        }
+
+        return actualFrameBody;
     }
 
     public void doProtocolNegotiation() throws Exception
@@ -286,7 +355,6 @@ public class FrameTransport implements AutoCloseable
         Attach responseAttach = (Attach) response.getFrameBody();
         assertThat(responseAttach.getTarget(), is(notNullValue()));
 
-
         PerformativeResponse flowResponse = (PerformativeResponse) getNextResponse();
         assertThat(flowResponse, Is.is(CoreMatchers.notNullValue()));
         assertThat(flowResponse.getFrameBody(), Is.is(CoreMatchers.instanceOf(Flow.class)));
@@ -295,8 +363,15 @@ public class FrameTransport implements AutoCloseable
     public void assertNoMoreResponses() throws Exception
     {
         Response response = getNextResponse();
-        assertNull("Unexpected response.", response);
+        assertThat(response, anyOf(nullValue(), instanceOf(ChannelClosedResponse.class)));
     }
+
+    public void assertNoMoreResponsesAndChannelClosed() throws Exception
+    {
+        assertNoMoreResponses();
+        assertThat(_channelClosedSeen, is(true));
+    }
+
 
     private int getConnectionId()
     {
@@ -309,5 +384,40 @@ public class FrameTransport implements AutoCloseable
             }
         }
         return _amqpConnectionId;
+    }
+
+    public void assertChannelClosed()
+    {
+        try
+        {
+            ChannelFuture channelFuture = _channel.write(new byte[]{0});
+            channelFuture.sync();
+            throw new IllegalStateException(
+                    "Expecting the channel to be already closed by, but it was able to take more input.");
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+        catch (Exception e)
+        {
+            if (e instanceof ClosedChannelException)
+            {
+                // PASS
+            }
+            else
+            {
+                throw new IllegalStateException("Unexpected exception", e);
+            }
+        }
+    }
+
+    private static class ChannelClosedResponse implements Response
+    {
+        @Override
+        public String toString()
+        {
+            return "ChannelClosed";
+        }
     }
 }

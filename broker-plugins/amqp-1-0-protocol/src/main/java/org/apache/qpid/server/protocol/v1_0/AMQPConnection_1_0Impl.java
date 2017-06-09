@@ -274,6 +274,138 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         _frameWriter = new FrameWriter(getDescribedTypeRegistry(), getSender());
     }
 
+    @Override
+    public void receiveSaslInit(final SaslInit saslInit)
+    {
+        assertState(ConnectionState.AWAIT_SASL_INIT);
+        if(saslInit.getHostname() != null && !"".equals(saslInit.getHostname().trim()))
+        {
+            _localHostname = saslInit.getHostname();
+        }
+        else if(getNetwork().getSelectedHost() != null)
+        {
+            _localHostname = getNetwork().getSelectedHost();
+        }
+        String mechanism = saslInit.getMechanism().toString();
+        final Binary initialResponse = saslInit.getInitialResponse();
+        byte[] response = initialResponse == null ? new byte[0] : initialResponse.getArray();
+
+        List<String> availableMechanisms =
+                _subjectCreator.getAuthenticationProvider().getAvailableMechanisms(getTransport().isSecure());
+        if (!availableMechanisms.contains(mechanism))
+        {
+            handleSaslError();
+        }
+        else
+        {
+            _saslNegotiator = _subjectCreator.createSaslNegotiator(mechanism, this);
+            processSaslResponse(response);
+        }
+    }
+
+    @Override
+    public void receiveSaslResponse(final SaslResponse saslResponse)
+    {
+        assertState(ConnectionState.AWAIT_SASL_RESPONSE);
+        final Binary responseBinary = saslResponse.getResponse();
+        byte[] response = responseBinary == null ? new byte[0] : responseBinary.getArray();
+
+        processSaslResponse(response);
+    }
+
+    @Override
+    public void receiveSaslMechanisms(final SaslMechanisms saslMechanisms)
+    {
+        LOGGER.info("{} : Unexpected frame sasl-mechanisms", getLogSubject());
+        closeSaslWithFailure();
+    }
+
+    @Override
+    public void receiveSaslChallenge(final SaslChallenge saslChallenge)
+    {
+        LOGGER.info("{} : Unexpected frame sasl-challenge", getLogSubject());
+        closeSaslWithFailure();
+    }
+
+    @Override
+    public void receiveSaslOutcome(final SaslOutcome saslOutcome)
+    {
+        LOGGER.info("{} : Unexpected frame sasl-outcome", getLogSubject());
+        closeSaslWithFailure();
+    }
+
+    private void processSaslResponse(final byte[] response)
+    {
+        byte[] challenge = null;
+        SubjectAuthenticationResult authenticationResult = _successfulAuthenticationResult;
+        if (authenticationResult == null)
+        {
+            authenticationResult = _subjectCreator.authenticate(_saslNegotiator, response != null ? response : new byte[0]);
+            challenge = authenticationResult.getChallenge();
+        }
+
+        if (authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.SUCCESS)
+        {
+            _successfulAuthenticationResult = authenticationResult;
+            if (challenge == null || challenge.length == 0)
+            {
+                setSubject(_successfulAuthenticationResult.getSubject());
+                SaslOutcome outcome = new SaslOutcome();
+                outcome.setCode(SaslCode.OK);
+                send(new SASLFrame(outcome), null);
+                _saslComplete = true;
+                _connectionState = ConnectionState.AWAIT_AMQP_HEADER;
+                disposeSaslNegotiator();
+            }
+            else
+            {
+                continueSaslNegotiation(challenge);
+            }
+        }
+        else if(authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.CONTINUE)
+        {
+            continueSaslNegotiation(challenge);
+        }
+        else
+        {
+            handleSaslError();
+        }
+    }
+
+    private void continueSaslNegotiation(final byte[] challenge)
+    {
+        SaslChallenge challengeBody = new SaslChallenge();
+        challengeBody.setChallenge(new Binary(challenge));
+        send(new SASLFrame(challengeBody), null);
+
+        _connectionState = ConnectionState.AWAIT_SASL_RESPONSE;
+    }
+
+    private void handleSaslError()
+    {
+        SaslOutcome outcome = new SaslOutcome();
+        outcome.setCode(SaslCode.AUTH);
+        send(new SASLFrame(outcome), null);
+        _saslComplete = true;
+        closeSaslWithFailure();
+    }
+
+    private void closeSaslWithFailure()
+    {
+        _saslComplete = true;
+        disposeSaslNegotiator();
+        _connectionState = ConnectionState.CLOSED;
+        addCloseTicker();
+    }
+
+    private void disposeSaslNegotiator()
+    {
+        if (_saslNegotiator != null)
+        {
+            _saslNegotiator.dispose();
+        }
+        _saslNegotiator = null;
+    }
 
     private void setUserPrincipal(final Principal user)
     {
@@ -359,26 +491,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
     }
 
-    private void closeSaslWithFailure()
-    {
-        _saslComplete = true;
-        disposeSaslNegotiator();
-        _connectionState = ConnectionState.CLOSED;
-        addCloseTicker();
-    }
-
-    private void disposeSaslNegotiator()
-    {
-        _saslNegotiator.dispose();
-        _saslNegotiator = null;
-    }
-
-    @Override
-    public void receiveSaslChallenge(final SaslChallenge saslChallenge)
-    {
-        LOGGER.info("{} : Unexpected frame sasl-challenge", getLogSubject());
-        closeSaslWithFailure();
-    }
 
     @Override
     public void receiveClose(final int channel, final Close close)
@@ -438,23 +550,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
     }
 
-    @Override
-    public void receiveSaslMechanisms(final SaslMechanisms saslMechanisms)
-    {
-        LOGGER.info("{} : Unexpected frame sasl-mechanisms", getLogSubject());
-        closeSaslWithFailure();
-    }
-
-    @Override
-    public void receiveSaslResponse(final SaslResponse saslResponse)
-    {
-        final Binary responseBinary = saslResponse.getResponse();
-        byte[] response = responseBinary == null ? new byte[0] : responseBinary.getArray();
-
-        assertState(ConnectionState.AWAIT_SASL_RESPONSE);
-
-        processSaslResponse(response);
-    }
 
     @Override
     public AMQPDescribedTypeRegistry getDescribedTypeRegistry()
@@ -535,13 +630,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         {
             _sendingSessions[channel] = null;
         }
-    }
-
-    @Override
-    public void receiveSaslOutcome(final SaslOutcome saslOutcome)
-    {
-        LOGGER.info("{} : Unexpected frame sasl-outcome", getLogSubject());
-        closeSaslWithFailure();
     }
 
     @Override
@@ -877,7 +965,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                                     // already sent our close - probably due to an error
                                     break;
                                 default:
-                                    throw new ConnectionScopedRuntimeException("Connection Open failed under mysterious circumstances.");
+                                    throw new ConnectionScopedRuntimeException(String.format(
+                                            "Unexpected state %s during connection open.", _connectionState));
                             }
                         }
                     }
@@ -992,85 +1081,9 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public void receiveSaslInit(final SaslInit saslInit)
-    {
-        assertState(ConnectionState.AWAIT_SASL_INIT);
-        if(saslInit.getHostname() != null && !"".equals(saslInit.getHostname().trim()))
-        {
-            _localHostname = saslInit.getHostname();
-        }
-        else if(getNetwork().getSelectedHost() != null)
-        {
-            _localHostname = getNetwork().getSelectedHost();
-        }
-        String mechanism = saslInit.getMechanism() == null ? null : saslInit.getMechanism().toString();
-        final Binary initialResponse = saslInit.getInitialResponse();
-        byte[] response = initialResponse == null ? new byte[0] : initialResponse.getArray();
-
-        _saslNegotiator = _subjectCreator.createSaslNegotiator(mechanism, this);
-        processSaslResponse(response);
-    }
-
-    @Override
     public String getLocalFQDN()
     {
         return _localHostname != null ? _localHostname : super.getLocalFQDN();
-    }
-
-    private void processSaslResponse(final byte[] response)
-    {
-        byte[] challenge = null;
-        SubjectAuthenticationResult authenticationResult = _successfulAuthenticationResult;
-        if (authenticationResult == null)
-        {
-            authenticationResult = _subjectCreator.authenticate(_saslNegotiator, response != null ? response : new byte[0]);
-            challenge = authenticationResult.getChallenge();
-        }
-
-        if (authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.SUCCESS)
-        {
-            _successfulAuthenticationResult = authenticationResult;
-            if (challenge == null || challenge.length == 0)
-            {
-            setSubject(_successfulAuthenticationResult.getSubject());
-            SaslOutcome outcome = new SaslOutcome();
-            outcome.setCode(SaslCode.OK);
-            send(new SASLFrame(outcome), null);
-            _saslComplete = true;
-            _connectionState = ConnectionState.AWAIT_AMQP_HEADER;
-            disposeSaslNegotiator();
-            }
-            else
-            {
-                continueSaslNegotiation(challenge);
-            }
-        }
-        else if(authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.CONTINUE)
-        {
-            continueSaslNegotiation(challenge);
-        }
-        else
-        {
-            handleSaslError();
-        }
-    }
-
-    private void continueSaslNegotiation(final byte[] challenge)
-    {
-        SaslChallenge challengeBody = new SaslChallenge();
-        challengeBody.setChallenge(new Binary(challenge));
-        send(new SASLFrame(challengeBody), null);
-
-        _connectionState = ConnectionState.AWAIT_SASL_RESPONSE;
-    }
-
-    private void handleSaslError()
-    {
-        SaslOutcome outcome = new SaslOutcome();
-        outcome.setCode(SaslCode.AUTH);
-        send(new SASLFrame(outcome), null);
-        _saslComplete = true;
-        closeSaslWithFailure();
     }
 
     @Override
@@ -1417,7 +1430,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         send(amqFrame, null);
     }
-
 
 
     @Override

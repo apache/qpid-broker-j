@@ -27,6 +27,7 @@
   }, {
     "name" : "plain",
     "type" : "Plain",
+    "secureOnlyMechanisms" : [],
     "users" : [ {
       "name" : "admin",
       "type" : "managed",

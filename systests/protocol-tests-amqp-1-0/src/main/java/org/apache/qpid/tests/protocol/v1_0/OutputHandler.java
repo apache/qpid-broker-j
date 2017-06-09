@@ -28,11 +28,7 @@ import io.netty.channel.ChannelPromise;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
-import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
-import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
-import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
-import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.transport.ByteBufferSender;
 
@@ -50,7 +46,7 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
     public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise) throws Exception
     {
 
-        if (msg instanceof TransportFrame)
+        if (msg instanceof AMQFrame)
         {
             FrameWriter _frameWriter = new FrameWriter(TYPE_REGISTRY, new ByteBufferSender()
             {
@@ -86,7 +82,7 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
 
                 }
             });
-            _frameWriter.send((TransportFrame) msg);
+            _frameWriter.send(((AMQFrame) msg));
         }
         else
         {

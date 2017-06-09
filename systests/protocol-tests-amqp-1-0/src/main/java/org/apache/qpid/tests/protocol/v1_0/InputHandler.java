@@ -38,6 +38,7 @@ import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslChallenge;
+import org.apache.qpid.server.protocol.v1_0.type.security.SaslCode;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslMechanisms;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslOutcome;
@@ -56,12 +57,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public class InputHandler extends ChannelInboundHandlerAdapter
 {
-    private enum ParsingState
-    {
-        HEADER,
-        PERFORMATIVES
-    };
-
     private static final Logger LOGGER = LoggerFactory.getLogger(InputHandler.class);
     private static final AMQPDescribedTypeRegistry TYPE_REGISTRY = AMQPDescribedTypeRegistry.newInstance()
                                                                                             .registerTransportLayer()
@@ -69,18 +64,27 @@ public class InputHandler extends ChannelInboundHandlerAdapter
                                                                                             .registerTransactionLayer()
                                                                                             .registerSecurityLayer()
                                                                                             .registerExtensionSoleconnLayer();
+
+    private enum ParsingState
+    {
+        HEADER,
+        PERFORMATIVES
+    };
+
+    private final MyConnectionHandler _connectionHandler;
     private final ValueHandler _valueHandler;
-    private final FrameHandler _frameHandler;
+    private final BlockingQueue<Response> _responseQueue;
 
     private QpidByteBuffer _inputBuffer = QpidByteBuffer.allocate(0);
-    private BlockingQueue<Response> _responseQueue;
-    private ParsingState _state = ParsingState.HEADER;
+    private volatile FrameHandler _frameHandler;
+    private volatile ParsingState _state = ParsingState.HEADER;
 
-    public InputHandler(final BlockingQueue<Response> queue)
+    public InputHandler(final BlockingQueue<Response> queue, final boolean isSasl)
     {
 
         _valueHandler = new ValueHandler(TYPE_REGISTRY);
-        _frameHandler = new FrameHandler(_valueHandler, new MyConnectionHandler(), false);
+        _connectionHandler = new MyConnectionHandler();
+        _frameHandler = new FrameHandler(_valueHandler, _connectionHandler, isSasl);
 
         _responseQueue = queue;
     }
@@ -140,12 +144,17 @@ public class InputHandler extends ChannelInboundHandlerAdapter
         }
     }
 
+    private void resetInputHandlerAfterSaslOutcome()
+    {
+        _state = ParsingState.HEADER;
+        _frameHandler = new FrameHandler(_valueHandler, _connectionHandler, false);
+    }
+
     private class MyConnectionHandler implements ConnectionHandler
     {
         @Override
         public void receiveOpen(final int channel, final Open close)
         {
-            System.out.println();
         }
 
         @Override
@@ -211,7 +220,7 @@ public class InputHandler extends ChannelInboundHandlerAdapter
         @Override
         public void handleError(final Error parsingError)
         {
-
+            LOGGER.error("Unexpected error {}", parsingError);
         }
 
         @Override
@@ -230,16 +239,24 @@ public class InputHandler extends ChannelInboundHandlerAdapter
                 int channel = channelFrameBody.getChannel();
                 if (val instanceof FrameBody)
                 {
-                    response = new PerformativeResponse((short) channel, (FrameBody) val);
+                    FrameBody frameBody = (FrameBody) val;
+                    response = new PerformativeResponse((short) channel, frameBody);
                 }
                 else if (val instanceof SaslFrameBody)
                 {
-                    throw new UnsupportedOperationException("TODO: ");
+                    SaslFrameBody frameBody = (SaslFrameBody) val;
+                    response = new SaslPerformativeResponse((short) channel, frameBody);
+
+                    if (frameBody instanceof SaslOutcome && ((SaslOutcome) frameBody).getCode().equals(SaslCode.OK))
+                    {
+                        resetInputHandlerAfterSaslOutcome();
+                    }
                 }
                 else
                 {
-                    throw new UnsupportedOperationException("Unexoected frame type : " + val.getClass());
+                    throw new UnsupportedOperationException("Unexpected frame type : " + val.getClass());
                 }
+
                 _responseQueue.add(response);
             }
         }
