@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -42,16 +41,6 @@ import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationPropertiesSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.DeliveryAnnotationsSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.FooterSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
@@ -248,7 +237,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     session.getAMQPConnection()
                            .checkAuthorizedMessagePrincipal(serverMessage.getMessageHeader().getUserId());
 
-                    Outcome outcome = getReceivingDestination().send(format, serverMessage, transaction,
+                    Outcome outcome = getReceivingDestination().send(serverMessage, transaction,
                                                                      session.getSecurityToken());
                     Source source = getSource();
 

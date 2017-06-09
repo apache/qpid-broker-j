@@ -32,7 +32,4 @@ public interface MessageFormat<M extends ServerMessage<?>> extends Pluggable
     Class<M> getMessageClass();
     List<QpidByteBuffer> convertToMessageFormat(M message);
     M createMessage(List<QpidByteBuffer> buf, MessageStore store, final Object connectionReference);
-    String getRoutingAddress(M message,
-                             String destinationAddress,
-                             String initialDestinationRoutingAddress);
 }

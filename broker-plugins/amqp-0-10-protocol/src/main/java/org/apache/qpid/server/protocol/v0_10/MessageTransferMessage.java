@@ -86,6 +86,17 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
         return true;
     }
 
+    @Override
+    public String getRoutingAddress(final String destinationAddress, final String initialDestinationRoutingAddress)
+    {
+        String initialRoutingAddress = getInitialRoutingAddress();
+        if(initialRoutingAddress != null && destinationAddress != null && initialRoutingAddress.startsWith(destinationAddress+"/"))
+        {
+            initialRoutingAddress = initialRoutingAddress.substring(destinationAddress.length() + 1);
+        }
+        return initialRoutingAddress;
+    }
+
     public Header getHeader()
     {
         return getMetaData().getHeader();

@@ -136,18 +136,4 @@ public class MessageFormat_0_10 implements MessageFormat<MessageTransferMessage>
             throw new ConnectionScopedRuntimeException("Error parsing AMQP 0-10 message format", e);
         }
     }
-
-
-    @Override
-    public String getRoutingAddress(final MessageTransferMessage message,
-                                    final String destinationAddress,
-                                    final String initialDestinationRoutingAddress)
-    {
-        String initialRoutingAddress = message.getInitialRoutingAddress();
-        if(initialRoutingAddress != null && destinationAddress != null && initialRoutingAddress.startsWith(destinationAddress+"/"))
-        {
-            initialRoutingAddress = initialRoutingAddress.substring(destinationAddress.length() + 1);
-        }
-        return initialRoutingAddress;
-    }
 }

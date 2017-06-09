@@ -139,6 +139,12 @@ class MockServerMessage implements ServerMessage
     }
 
     @Override
+    public String getRoutingAddress(final String destinationAddress, final String initialDestinationRoutingAddress)
+    {
+        return null;
+    }
+
+    @Override
     public long getArrivalTime()
     {
         throw new UnsupportedOperationException();

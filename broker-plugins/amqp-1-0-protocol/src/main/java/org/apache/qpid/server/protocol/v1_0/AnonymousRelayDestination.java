@@ -32,7 +32,6 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -74,13 +73,10 @@ public class AnonymousRelayDestination implements ReceivingDestination
     }
 
     @Override
-    public <M extends ServerMessage<?>> Outcome send(final MessageFormat<M> messageFormat,
-                                                     final M message,
-                                                     final ServerTransaction txn,
-                                                     final SecurityToken securityToken)
+    public Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken)
     {
         final ReceivingDestination destination;
-        final String routingAddress = messageFormat.getRoutingAddress(message, null, null);
+        final String routingAddress = message.getRoutingAddress(null, null);
         if (!routingAddress.startsWith("/") && routingAddress.contains("/"))
         {
             String[] parts = routingAddress.split("/", 2);
@@ -142,7 +138,7 @@ public class AnonymousRelayDestination implements ReceivingDestination
         }
         else
         {
-            outcome = destination.send(messageFormat, message, txn, securityToken);
+            outcome = destination.send(message, txn, securityToken);
         }
         return outcome;
     }

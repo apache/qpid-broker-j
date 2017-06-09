@@ -124,6 +124,12 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
 
         @Override
+        public String getRoutingAddress(final String destinationAddress, final String initialDestinationRoutingAddress)
+        {
+            return null;
+        }
+
+        @Override
         public long getExpiration()
         {
             return 0;

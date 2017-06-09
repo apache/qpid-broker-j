@@ -32,7 +32,6 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -79,12 +78,9 @@ public class NodeReceivingDestination implements ReceivingDestination
         return OUTCOMES;
     }
 
-    public <M extends ServerMessage<?>> Outcome send(final MessageFormat<M> messageFormat,
-                                                     final M message,
-                                                     final ServerTransaction txn,
-                                                     final SecurityToken securityToken)
+    public Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken)
     {
-        final String routingAddress = messageFormat.getRoutingAddress(message, _destination.getName(), null);
+        final String routingAddress = message.getRoutingAddress(_destination.getName(), null);
         _destination.authorisePublish(securityToken, Collections.singletonMap("routingKey", routingAddress));
 
         final InstanceProperties instanceProperties =

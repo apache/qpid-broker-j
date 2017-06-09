@@ -55,4 +55,6 @@ public interface ServerMessage<T extends StorableMessageMetaData> extends Enqueu
     Object getConnectionReference();
 
     boolean isResourceAcceptable(TransactionLogResource resource);
+
+    String getRoutingAddress(String destinationAddress, String initialDestinationRoutingAddress);
 }

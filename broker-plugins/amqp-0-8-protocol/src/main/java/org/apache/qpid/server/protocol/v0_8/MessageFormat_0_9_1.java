@@ -244,17 +244,4 @@ public class MessageFormat_0_9_1 implements MessageFormat<AMQMessage>
         }
         throw new BufferUnderflowException();
     }
-
-    @Override
-    public String getRoutingAddress(final AMQMessage message,
-                                    final String destinationAddress,
-                                    final String initialDestinationRoutingAddress)
-    {
-        String initialRoutingAddress = message.getInitialRoutingAddress();
-        if(initialRoutingAddress != null && destinationAddress != null && initialRoutingAddress.startsWith(destinationAddress+"/"))
-        {
-            initialRoutingAddress = initialRoutingAddress.substring(destinationAddress.length() + 1);
-        }
-        return initialRoutingAddress;
-    }
 }

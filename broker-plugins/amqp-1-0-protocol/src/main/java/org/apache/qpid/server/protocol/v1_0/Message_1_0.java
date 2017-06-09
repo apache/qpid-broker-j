@@ -118,6 +118,59 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
         return getMessageHeader().getNotValidBefore() == 0L || resourceSupportsDeliveryDelay(resource);
     }
 
+    @Override
+    public String getRoutingAddress(final String destinationAddress, final String initialDestinationRoutingAddress)
+    {
+        String routingAddress;
+        MessageMetaData_1_0.MessageHeader_1_0 messageHeader = getMessageHeader();
+        if (initialDestinationRoutingAddress == null)
+        {
+            final String to = messageHeader.getTo();
+            if (to != null && (destinationAddress == null || destinationAddress.trim().equals("")))
+            {
+                routingAddress = to;
+            }
+            else if (to != null && to.startsWith(destinationAddress + "/"))
+            {
+                routingAddress = to.substring(1 + destinationAddress.length());
+            }
+            else if (to != null && !to.equals(destinationAddress))
+            {
+                routingAddress = to;
+            }
+            else if (messageHeader.getHeader("routing-key") instanceof String)
+            {
+                routingAddress = (String) messageHeader.getHeader("routing-key");
+            }
+            else if (messageHeader.getHeader("routing_key") instanceof String)
+            {
+                routingAddress = (String) messageHeader.getHeader("routing_key");
+            }
+            else if (messageHeader.getSubject() != null)
+            {
+                routingAddress = messageHeader.getSubject();
+            }
+            else
+            {
+                routingAddress = "";
+            }
+        }
+        else
+        {
+            if (messageHeader.getTo() != null
+                && messageHeader.getTo().startsWith(destinationAddress + "/" + initialDestinationRoutingAddress + "/"))
+            {
+                final int prefixLength = 2 + destinationAddress.length() + initialDestinationRoutingAddress.length();
+                routingAddress = messageHeader.getTo().substring(prefixLength);
+            }
+            else
+            {
+                routingAddress = initialDestinationRoutingAddress;
+            }
+        }
+        return routingAddress;
+    }
+
     private boolean resourceSupportsDeliveryDelay(final TransactionLogResource resource)
     {
         return resource instanceof Queue && ((Queue<?>)resource).isHoldOnPublishEnabled();

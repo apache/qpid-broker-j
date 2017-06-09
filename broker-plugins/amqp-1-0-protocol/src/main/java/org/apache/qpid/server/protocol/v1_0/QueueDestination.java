@@ -26,7 +26,6 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.security.SecurityToken;
@@ -50,10 +49,7 @@ public class QueueDestination extends MessageSourceDestination implements Receiv
         return OUTCOMES;
     }
 
-    public <M extends ServerMessage<?>> Outcome send(final MessageFormat<M> messageFormat,
-                                                     final M message,
-                                                     final ServerTransaction txn,
-                                                     final SecurityToken securityToken)
+    public Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken)
     {
         getQueue().authorisePublish(securityToken, Collections.emptyMap());
 

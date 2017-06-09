@@ -76,6 +76,12 @@ public class AbstractServerMessageTest extends QpidTestCase
         {
             return true;
         }
+
+        @Override
+        public String getRoutingAddress(final String destinationAddress, final String initialDestinationRoutingAddress)
+        {
+            return null;
+        }
     }
 
     private TransactionLogResource createQueue(String name)

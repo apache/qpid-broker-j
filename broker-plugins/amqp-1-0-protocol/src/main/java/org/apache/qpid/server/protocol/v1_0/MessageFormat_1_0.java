@@ -112,61 +112,6 @@ public class MessageFormat_1_0 implements MessageFormat<Message_1_0>
         return message;
     }
 
-    @Override
-    public String getRoutingAddress(final Message_1_0 message,
-                                    final String destinationAddress,
-                                    final String initialDestinationRoutingAddress)
-    {
-        String routingAddress;
-        MessageMetaData_1_0.MessageHeader_1_0 messageHeader = message.getMessageHeader();
-        if (initialDestinationRoutingAddress == null)
-        {
-            final String to = messageHeader.getTo();
-            if (to != null && (destinationAddress == null || destinationAddress.trim().equals("")))
-            {
-                routingAddress = to;
-            }
-            else if (to != null && to.startsWith(destinationAddress + "/"))
-            {
-                routingAddress = to.substring(1 + destinationAddress.length());
-            }
-            else if (to != null && !to.equals(destinationAddress))
-            {
-                routingAddress = to;
-            }
-            else if (messageHeader.getHeader("routing-key") instanceof String)
-            {
-                routingAddress = (String) messageHeader.getHeader("routing-key");
-            }
-            else if (messageHeader.getHeader("routing_key") instanceof String)
-            {
-                routingAddress = (String) messageHeader.getHeader("routing_key");
-            }
-            else if (messageHeader.getSubject() != null)
-            {
-                routingAddress = messageHeader.getSubject();
-            }
-            else
-            {
-                routingAddress = "";
-            }
-        }
-        else
-        {
-            if (messageHeader.getTo() != null
-                && messageHeader.getTo().startsWith(destinationAddress + "/" + initialDestinationRoutingAddress + "/"))
-            {
-                final int prefixLength = 2 + destinationAddress.length() + initialDestinationRoutingAddress.length();
-                routingAddress = messageHeader.getTo().substring(prefixLength);
-            }
-            else
-            {
-                routingAddress = initialDestinationRoutingAddress;
-            }
-        }
-        return routingAddress;
-    }
-
     private MessageMetaData_1_0 createMessageMetaData(final List<QpidByteBuffer> fragments,
                                                       final List<EncodingRetainingSection<?>> dataSections)
     {
