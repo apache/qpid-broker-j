@@ -200,7 +200,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 public boolean handle(final StoredMessage<?> storedMessage)
                 {
                     long messageNumber = storedMessage.getMessageNumber();
-                    if ( _continueRecovery.get() && messageNumber < _maxMessageId - 1)
+                    if ( _continueRecovery.get() && messageNumber < _maxMessageId)
                     {
                         if (!_recoveredMessages.containsKey(messageNumber))
                         {

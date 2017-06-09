@@ -21,7 +21,9 @@
 package org.apache.qpid.server.virtualhost;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -35,8 +37,10 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
@@ -112,7 +116,8 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
         when(_store.newTransaction()).thenReturn(mock(Transaction.class));
 
         final List<StoredMessage<?>> testMessages = new ArrayList<>();
-        testMessages.add(createTestMessage(1L));
+        StoredMessage<?> storedMessage = createTestMessage(1L);
+        testMessages.add(storedMessage);
         StoredMessage newMessage = createTestMessage(4L);
         testMessages.add(newMessage);
 
@@ -129,6 +134,19 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
         assertNull(result.get());
 
         verify(newMessage, times(0)).remove();
+        verify(queue).recover(argThat(new ArgumentMatcher<ServerMessage>()
+        {
+            @Override
+            public boolean matches(final Object argument)
+            {
+                if (argument instanceof ServerMessage)
+                {
+                    ServerMessage serverMessage = (ServerMessage)argument;
+                    return serverMessage.getMessageNumber() == storedMessage.getMessageNumber();
+                }
+                return false;
+            }
+        }), same(messageEnqueueRecord));
     }
 
     private StoredMessage<?> createTestMessage(final long messageNumber)
