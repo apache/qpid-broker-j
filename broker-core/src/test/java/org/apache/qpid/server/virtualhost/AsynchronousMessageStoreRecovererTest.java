@@ -118,6 +118,9 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
         final List<StoredMessage<?>> testMessages = new ArrayList<>();
         StoredMessage<?> storedMessage = createTestMessage(1L);
         testMessages.add(storedMessage);
+        StoredMessage<?> orphanedMessage = createTestMessage(2L);
+        testMessages.add(orphanedMessage);
+
         StoredMessage newMessage = createTestMessage(4L);
         testMessages.add(newMessage);
 
@@ -133,6 +136,7 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
         ListenableFuture<Void> result = recoverer.recover(_virtualHost);
         assertNull(result.get());
 
+        verify(orphanedMessage, times(1)).remove();
         verify(newMessage, times(0)).remove();
         verify(queue).recover(argThat(new ArgumentMatcher<ServerMessage>()
         {
