@@ -199,13 +199,16 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 @Override
                 public boolean handle(final StoredMessage<?> storedMessage)
                 {
-
                     long messageNumber = storedMessage.getMessageNumber();
-                    if (!_recoveredMessages.containsKey(messageNumber))
+                    if ( _continueRecovery.get() && messageNumber < _maxMessageId - 1)
                     {
-                        messagesToDelete.add(storedMessage);
+                        if (!_recoveredMessages.containsKey(messageNumber))
+                        {
+                            messagesToDelete.add(storedMessage);
+                        }
+                        return true;
                     }
-                    return _continueRecovery.get() && messageNumber < _maxMessageId - 1;
+                    return false;
                 }
             });
             for(StoredMessage<?> storedMessage : messagesToDelete)
@@ -222,6 +225,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             messagesToDelete.clear();
             _recoveredMessages.clear();
             _storeReader.close();
+            _queueRecoveryExecutor.shutdown();
         }
 
         private synchronized ServerMessage<?> getRecoveredMessage(final long messageId)
