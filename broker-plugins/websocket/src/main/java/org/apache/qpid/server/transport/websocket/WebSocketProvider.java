@@ -350,7 +350,7 @@ class WebSocketProvider implements AcceptingTransport
         Server server = _server;
         return server == null || server.getConnectors().length == 0 || !(server.getConnectors()[0] instanceof ServerConnector) ?
                 _port.getPort() :
-                ((ServerConnector) server.getConnectors()[0]).getPort();
+                ((ServerConnector) server.getConnectors()[0]).getLocalPort();
     }
 
     public class AmqpWebSocket extends WebSocketAdapter
