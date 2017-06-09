@@ -33,6 +33,7 @@ import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -95,11 +96,12 @@ public class ExchangeDestination extends QueueDestination
         return OUTCOMES;
     }
 
-    public Outcome send(final ServerMessage<?> message,
-                        final String routingAddress,
-                        ServerTransaction txn,
-                        final SecurityToken securityToken)
+    public <M extends ServerMessage<?>> Outcome send(final MessageFormat<M> messageFormat,
+                                                     final M message,
+                                                     final ServerTransaction txn,
+                                                     final SecurityToken securityToken)
     {
+        final String routingAddress = messageFormat.getRoutingAddress(message, _exchange.getName(), _initialRoutingAddress);
         _exchange.authorisePublish(securityToken, Collections.singletonMap("routingKey", routingAddress));
 
         final InstanceProperties instanceProperties =
@@ -152,61 +154,6 @@ public class ExchangeDestination extends QueueDestination
         return _exchange;
     }
 
-    @Override
-    public String getRoutingAddress(final Message_1_0 message)
-    {
-        String routingAddress;
-        MessageMetaData_1_0.MessageHeader_1_0 messageHeader = message.getMessageHeader();
-        if(_initialRoutingAddress == null)
-        {
-            final String to = messageHeader.getTo();
-            if (to != null
-                && (_exchange.getName() == null || _exchange.getName().trim().equals("")))
-            {
-                routingAddress = to;
-            }
-            else if (to != null
-                     && to.startsWith(_exchange.getName() + "/"))
-            {
-                routingAddress = to.substring(1 + _exchange.getName().length());
-            }
-            else if (to != null && !to.equals(_exchange.getName()))
-            {
-                routingAddress = to;
-            }
-            else if (messageHeader.getHeader("routing-key") instanceof String)
-            {
-                routingAddress = (String) messageHeader.getHeader("routing-key");
-            }
-            else if (messageHeader.getHeader("routing_key") instanceof String)
-            {
-                routingAddress = (String) messageHeader.getHeader("routing_key");
-            }
-            else if (messageHeader.getSubject() != null)
-            {
-                routingAddress = messageHeader.getSubject();
-            }
-            else
-            {
-                routingAddress = "";
-            }
-
-        }
-        else
-        {
-            if (messageHeader.getTo() != null
-                && messageHeader.getTo().startsWith(_exchange.getName() + "/" + _initialRoutingAddress + "/"))
-            {
-                routingAddress = messageHeader.getTo().substring(2+_exchange.getName().length()+_initialRoutingAddress.length());
-            }
-            else
-            {
-                routingAddress = _initialRoutingAddress;
-            }
-        }
-        return routingAddress;
-    }
-
     TerminusDurability getDurability()
     {
         return _durability;
@@ -226,11 +173,6 @@ public class ExchangeDestination extends QueueDestination
     public Exchange<?> getExchange()
     {
         return _exchange;
-    }
-
-    public String getInitialRoutingAddress()
-    {
-        return _initialRoutingAddress;
     }
 
     @Override

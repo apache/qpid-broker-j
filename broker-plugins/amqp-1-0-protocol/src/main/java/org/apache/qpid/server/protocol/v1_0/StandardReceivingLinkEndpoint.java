@@ -63,8 +63,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
-import org.apache.qpid.server.store.MessageHandle;
-import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -200,45 +198,18 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         else
         {
             ServerMessage<?> serverMessage;
-            String routingAddress;
 
-            if(messageFormat == null || UnsignedInteger.ZERO.equals(messageFormat))
+            MessageFormat format = MessageFormatRegistry.getFormat(messageFormat == null ? 0 : messageFormat.intValue());
+            if(format != null)
             {
-                List<EncodingRetainingSection<?>> dataSections = new ArrayList<>();
-
-                MessageMetaData_1_0 mmd = createMessageMetaData(fragments, dataSections);
-                MessageHandle<MessageMetaData_1_0> handle = getAddressSpace().getMessageStore().addMessage(mmd);
-
-                for (EncodingRetainingSection<?> dataSection : dataSections)
-                {
-                    for (QpidByteBuffer buf : dataSection.getEncodedForm())
-                    {
-                        handle.addContent(buf);
-                        buf.dispose();
-                    }
-                    dataSection.dispose();
-                }
-                final StoredMessage<MessageMetaData_1_0> storedMessage = handle.allContentAdded();
-                Message_1_0 message = new Message_1_0(storedMessage, getSession().getConnection().getReference());
-
-                routingAddress = getReceivingDestination().getRoutingAddress(message);
-                serverMessage = message;
+                serverMessage = format.createMessage(fragments, getAddressSpace().getMessageStore(), getSession().getConnection().getReference());
             }
             else
             {
-                MessageFormat format = MessageFormatRegistry.getFormat(messageFormat.intValue());
-                if(format != null)
-                {
-                    serverMessage = format.createMessage(fragments, getAddressSpace().getMessageStore(), getSession().getConnection().getReference());
-                    routingAddress = format.getRoutingAddress(serverMessage, getReceivingDestination().getAddress());
-                }
-                else
-                {
-                    final Error err = new Error();
-                    err.setCondition(AmqpError.NOT_IMPLEMENTED);
-                    err.setDescription("Unknown message format: " + messageFormat);
-                    return err;
-                }
+                final Error err = new Error();
+                err.setCondition(AmqpError.NOT_IMPLEMENTED);
+                err.setDescription("Unknown message format: " + messageFormat);
+                return err;
             }
 
             for(QpidByteBuffer fragment: fragments)
@@ -277,7 +248,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     session.getAMQPConnection()
                            .checkAuthorizedMessagePrincipal(serverMessage.getMessageHeader().getUserId());
 
-                    Outcome outcome = getReceivingDestination().send(serverMessage, routingAddress, transaction,
+                    Outcome outcome = getReceivingDestination().send(format, serverMessage, transaction,
                                                                      session.getSecurityToken());
                     Source source = getSource();
 
@@ -396,110 +367,6 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         {
             _unsettledMap.remove(deliveryTag);
         }
-    }
-
-
-    private MessageMetaData_1_0 createMessageMetaData(final List<QpidByteBuffer> fragments,
-                                                      final List<EncodingRetainingSection<?>> dataSections)
-    {
-
-        List<EncodingRetainingSection<?>> sections;
-        try
-        {
-            sections = getSectionDecoder().parseAll(fragments);
-        }
-        catch (AmqpErrorException e)
-        {
-            LOGGER.error("Decoding read section error", e);
-            // TODO - fix error handling
-            throw new IllegalArgumentException(e);
-        }
-
-        long contentSize = 0L;
-
-        HeaderSection headerSection = null;
-        PropertiesSection propertiesSection = null;
-        DeliveryAnnotationsSection deliveryAnnotationsSection = null;
-        MessageAnnotationsSection messageAnnotationsSection = null;
-        ApplicationPropertiesSection applicationPropertiesSection = null;
-        FooterSection footerSection = null;
-
-        Iterator<EncodingRetainingSection<?>> iter = sections.iterator();
-        EncodingRetainingSection<?> s = iter.hasNext() ? iter.next() : null;
-        if (s instanceof HeaderSection)
-        {
-            headerSection = (HeaderSection) s;
-            s = iter.hasNext() ? iter.next() : null;
-        }
-
-        if (s instanceof DeliveryAnnotationsSection)
-        {
-            deliveryAnnotationsSection = (DeliveryAnnotationsSection) s;
-            s = iter.hasNext() ? iter.next() : null;
-        }
-
-        if (s instanceof MessageAnnotationsSection)
-        {
-            messageAnnotationsSection = (MessageAnnotationsSection) s;
-            s = iter.hasNext() ? iter.next() : null;
-        }
-
-        if (s instanceof PropertiesSection)
-        {
-            propertiesSection = (PropertiesSection) s;
-            s = iter.hasNext() ? iter.next() : null;
-        }
-
-        if (s instanceof ApplicationPropertiesSection)
-        {
-            applicationPropertiesSection = (ApplicationPropertiesSection) s;
-            s = iter.hasNext() ? iter.next() : null;
-        }
-
-        if (s instanceof AmqpValueSection)
-        {
-            contentSize = s.getEncodedSize();
-            dataSections.add(s);
-            s = iter.hasNext() ? iter.next() : null;
-        }
-        else if (s instanceof DataSection)
-        {
-            do
-            {
-                contentSize += s.getEncodedSize();
-                dataSections.add(s);
-                s = iter.hasNext() ? iter.next() : null;
-            }
-            while (s instanceof DataSection);
-        }
-        else if (s instanceof AmqpSequenceSection)
-        {
-            do
-            {
-                contentSize += s.getEncodedSize();
-                dataSections.add(s);
-                s = iter.hasNext() ? iter.next() : null;
-            }
-            while (s instanceof AmqpSequenceSection);
-        }
-
-        if (s instanceof FooterSection)
-        {
-            footerSection = (FooterSection) s;
-            s = iter.hasNext() ? iter.next() : null;
-        }
-        if (s != null)
-        {
-            throw new ConnectionScopedRuntimeException(String.format("Encountered unexpected section '%s'", s.getClass().getSimpleName()));
-        }
-        return new MessageMetaData_1_0(headerSection,
-                                       deliveryAnnotationsSection,
-                                       messageAnnotationsSection,
-                                       propertiesSection,
-                                       applicationPropertiesSection,
-                                       footerSection,
-                                       System.currentTimeMillis(),
-                                       contentSize);
     }
 
     @Override

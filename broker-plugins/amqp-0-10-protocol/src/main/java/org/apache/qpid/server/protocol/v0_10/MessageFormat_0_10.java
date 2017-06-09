@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.plugin.MessageFormat;
+import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
@@ -35,6 +36,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.Header;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.Struct;
 
+@PluggableService
 public class MessageFormat_0_10 implements MessageFormat<MessageTransferMessage>
 {
 
@@ -137,7 +139,9 @@ public class MessageFormat_0_10 implements MessageFormat<MessageTransferMessage>
 
 
     @Override
-    public String getRoutingAddress(final MessageTransferMessage message, final String destinationAddress)
+    public String getRoutingAddress(final MessageTransferMessage message,
+                                    final String destinationAddress,
+                                    final String initialDestinationRoutingAddress)
     {
         String initialRoutingAddress = message.getInitialRoutingAddress();
         if(initialRoutingAddress != null && destinationAddress != null && initialRoutingAddress.startsWith(destinationAddress+"/"))

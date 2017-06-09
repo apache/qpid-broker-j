@@ -32,6 +32,7 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -73,12 +74,13 @@ public class AnonymousRelayDestination implements ReceivingDestination
     }
 
     @Override
-    public Outcome send(final ServerMessage<?> message,
-                        final String routingAddress,
-                        final ServerTransaction txn,
-                        final SecurityToken securityToken)
+    public <M extends ServerMessage<?>> Outcome send(final MessageFormat<M> messageFormat,
+                                                     final M message,
+                                                     final ServerTransaction txn,
+                                                     final SecurityToken securityToken)
     {
         final ReceivingDestination destination;
+        final String routingAddress = messageFormat.getRoutingAddress(message, null, null);
         if (!routingAddress.startsWith("/") && routingAddress.contains("/"))
         {
             String[] parts = routingAddress.split("/", 2);
@@ -140,7 +142,7 @@ public class AnonymousRelayDestination implements ReceivingDestination
         }
         else
         {
-            outcome = destination.send(message, routingAddress, txn, securityToken);
+            outcome = destination.send(messageFormat, message, txn, securityToken);
         }
         return outcome;
     }
@@ -150,36 +152,6 @@ public class AnonymousRelayDestination implements ReceivingDestination
     {
         // TODO - fix
         return 20000;
-    }
-
-    @Override
-    public String getRoutingAddress(final Message_1_0 message)
-    {
-        String routingAddress;
-        MessageMetaData_1_0.MessageHeader_1_0 messageHeader = message.getMessageHeader();
-        final String to = messageHeader.getTo();
-        if (to != null)
-        {
-            routingAddress = to;
-        }
-        else if (messageHeader.getHeader("routing-key") instanceof String)
-        {
-            routingAddress = (String) messageHeader.getHeader("routing-key");
-        }
-        else if (messageHeader.getHeader("routing_key") instanceof String)
-        {
-            routingAddress = (String) messageHeader.getHeader("routing_key");
-        }
-        else if (messageHeader.getSubject() != null)
-        {
-            routingAddress = messageHeader.getSubject();
-        }
-        else
-        {
-            routingAddress = "";
-        }
-
-        return routingAddress;
     }
 
     @Override

@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -37,14 +38,12 @@ public interface ReceivingDestination extends Destination
 
     Outcome[] getOutcomes();
 
-    Outcome send(ServerMessage<?> message,
-                 final String routingAddress,
-                 ServerTransaction txn,
-                 final SecurityToken securityToken);
+    <M extends ServerMessage<?>> Outcome send(final MessageFormat<M> messageFormat,
+                                              final M message,
+                                              final ServerTransaction txn,
+                                              final SecurityToken securityToken);
 
     int getCredit();
-
-    String getRoutingAddress(Message_1_0 message);
 
     String getAddress();
 

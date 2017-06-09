@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.plugin.MessageFormat;
@@ -33,6 +34,7 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
+@PluggableService
 public class MessageFormat_0_9_1 implements MessageFormat<AMQMessage>
 {
 
@@ -244,7 +246,9 @@ public class MessageFormat_0_9_1 implements MessageFormat<AMQMessage>
     }
 
     @Override
-    public String getRoutingAddress(final AMQMessage message, final String destinationAddress)
+    public String getRoutingAddress(final AMQMessage message,
+                                    final String destinationAddress,
+                                    final String initialDestinationRoutingAddress)
     {
         String initialRoutingAddress = message.getInitialRoutingAddress();
         if(initialRoutingAddress != null && destinationAddress != null && initialRoutingAddress.startsWith(destinationAddress+"/"))
