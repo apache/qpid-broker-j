@@ -43,7 +43,7 @@ public class Utils
     public static boolean doesNodeExist(final InetSocketAddress brokerAddress,
                                         final String nodeAddress) throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(brokerAddress))
+        try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
         {
             transport.doBeginSession();
 
@@ -86,7 +86,7 @@ public class Utils
     public static Object receiveMessage(final InetSocketAddress brokerAddress,
                                         final String queueName) throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(brokerAddress))
+        try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
         {
             transport.doAttachReceivingLink(queueName);
             Flow flow = new Flow();

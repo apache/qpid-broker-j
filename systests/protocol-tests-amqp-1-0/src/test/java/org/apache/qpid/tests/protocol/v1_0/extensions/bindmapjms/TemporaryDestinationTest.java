@@ -82,7 +82,7 @@ public class TemporaryDestinationTest extends ProtocolTestBase
     {
         String newTemporaryNodeAddress = null;
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             transport.doBeginSession();
 
@@ -124,7 +124,7 @@ public class TemporaryDestinationTest extends ProtocolTestBase
             transport.doCloseConnection();
         }
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             transport.doBeginSession();
             assertThat(Utils.doesNodeExist(_brokerAddress, newTemporaryNodeAddress), is(false));

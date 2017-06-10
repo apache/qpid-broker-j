@@ -65,7 +65,7 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
     @Test
     public void basicNegotiation() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect();)
         {
             transport.doProtocolNegotiation();
             Open open = new Open();
@@ -93,7 +93,7 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
     @Test
     public void newConnectionRefused() throws Exception
     {
-        try (FrameTransport transport1 = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
             transport1.doProtocolNegotiation();
             Open open = new Open();
@@ -108,7 +108,7 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
             assertThat(response, is(notNullValue()));
             assertThat(response.getFrameBody(), is(instanceOf(Open.class)));
 
-            try (FrameTransport transport2 = new FrameTransport(_brokerAddress))
+            try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 transport2.doProtocolNegotiation();
                 Open open2 = new Open();
@@ -142,7 +142,7 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
     @Test
     public void weakDetection() throws Exception
     {
-        try (FrameTransport transport1 = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
             transport1.doProtocolNegotiation();
             Open open = new Open();
@@ -155,7 +155,7 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
             assertThat(response, is(notNullValue()));
             assertThat(response.getFrameBody(), is(instanceOf(Open.class)));
 
-            try (FrameTransport transport2 = new FrameTransport(_brokerAddress))
+            try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 transport2.doProtocolNegotiation();
                 Open open2 = new Open();
@@ -188,7 +188,7 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
     @Test
     public void strongDetection() throws Exception
     {
-        try (FrameTransport transport1 = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
             transport1.doProtocolNegotiation();
             Open open = new Open();
@@ -210,7 +210,7 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
                            is(equalTo(SoleConnectionDetectionPolicy.STRONG.getValue())));
             }
 
-            try (FrameTransport transport2 = new FrameTransport(_brokerAddress))
+            try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 transport2.doProtocolNegotiation();
                 Open open2 = new Open();
@@ -241,7 +241,7 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
     @Test
     public void refuseIsDefault() throws Exception
     {
-        try (FrameTransport transport1 = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
             transport1.doProtocolNegotiation();
             Open open = new Open();
@@ -255,7 +255,7 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
             assertThat(response, is(notNullValue()));
             assertThat(response.getFrameBody(), is(instanceOf(Open.class)));
 
-            try (FrameTransport transport2 = new FrameTransport(_brokerAddress))
+            try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 transport2.doProtocolNegotiation();
                 Open open2 = new Open();

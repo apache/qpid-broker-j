@@ -33,21 +33,6 @@ import org.apache.qpid.tests.protocol.v1_0.HeaderResponse;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 
-
-/*
-
-TODO
-
-logging - log per test?
-protocol assertions
-admin factory
-performative test
-embedded broker per test admin impl that creates broker per test
-embedded broker per class admin impl creates/destroys vhost per test
-queue creation?
- */
-
-
 public class ProtocolHeaderTest extends ProtocolTestBase
 {
     @Test
@@ -59,7 +44,7 @@ public class ProtocolHeaderTest extends ProtocolTestBase
     public void successfulHeaderExchange() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             byte[] bytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
             transport.sendProtocolHeader(bytes);
@@ -76,7 +61,7 @@ public class ProtocolHeaderTest extends ProtocolTestBase
     public void unacceptableProtocolIdSent_SaslAcceptable() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             byte[] rawHeaderBytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
             byte[] expectedSaslHeaderBytes = "AMQP\3\1\0\0".getBytes(StandardCharsets.UTF_8);

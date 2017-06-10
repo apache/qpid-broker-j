@@ -52,7 +52,7 @@ public class FlowTest extends ProtocolTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             transport.doAttachReceivingLink(BrokerAdmin.TEST_QUEUE_NAME);
             Flow flow = new Flow();
@@ -74,7 +74,7 @@ public class FlowTest extends ProtocolTestBase
     public void sessionEchoFlow() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             transport.doBeginSession();
             Flow flow = new Flow();
@@ -102,7 +102,7 @@ public class FlowTest extends ProtocolTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             final UnsignedInteger handle = UnsignedInteger.ONE;
             transport.doAttachSendingLink(handle, BrokerAdmin.TEST_QUEUE_NAME);
@@ -152,7 +152,7 @@ public class FlowTest extends ProtocolTestBase
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             transport.doAttachReceivingLink(BrokerAdmin.TEST_QUEUE_NAME);
 

@@ -429,7 +429,10 @@ class WebSocketProvider implements AcceptingTransport
         @Override
         public void onWebSocketClose(final int statusCode, final String reason)
         {
-            _protocolEngine.closed();
+            if (_protocolEngine != null)
+            {
+                _protocolEngine.closed();
+            }
             _activeConnections.remove(_connectionWrapper);
             _idleTimeoutChecker.wakeup();
         }

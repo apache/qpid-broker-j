@@ -56,7 +56,7 @@ public class MixedPolicy extends ProtocolTestBase
     @Test
     public void firstCloseThenRefuse() throws Exception
     {
-        try (FrameTransport transport1 = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
             transport1.doProtocolNegotiation();
             Open open = new Open();
@@ -71,7 +71,7 @@ public class MixedPolicy extends ProtocolTestBase
             assertThat(response, is(notNullValue()));
             assertThat(response.getFrameBody(), is(instanceOf(Open.class)));
 
-            try (FrameTransport transport2 = new FrameTransport(_brokerAddress))
+            try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 transport2.doProtocolNegotiation();
                 Open open2 = new Open();
@@ -90,7 +90,7 @@ public class MixedPolicy extends ProtocolTestBase
                 assertThat(response2, is(notNullValue()));
                 assertThat(response2.getFrameBody(), is(instanceOf(Open.class)));
 
-                try (FrameTransport transport3 = new FrameTransport(_brokerAddress))
+                try (FrameTransport transport3 = new FrameTransport(_brokerAddress).connect())
                 {
                     transport3.doProtocolNegotiation();
                     Open open3 = new Open();
@@ -115,7 +115,7 @@ public class MixedPolicy extends ProtocolTestBase
     @Test
     public void firstRefuseThenClose() throws Exception
     {
-        try (FrameTransport transport1 = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
             transport1.doProtocolNegotiation();
             Open open = new Open();
@@ -130,7 +130,7 @@ public class MixedPolicy extends ProtocolTestBase
             assertThat(response, is(notNullValue()));
             assertThat(response.getFrameBody(), is(instanceOf(Open.class)));
 
-            try (FrameTransport transport2 = new FrameTransport(_brokerAddress))
+            try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
                 transport2.doProtocolNegotiation();
                 Open open2 = new Open();

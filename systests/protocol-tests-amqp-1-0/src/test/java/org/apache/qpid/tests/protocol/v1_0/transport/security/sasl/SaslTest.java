@@ -66,7 +66,7 @@ public class SaslTest extends ProtocolTestBase
     public void saslSuccessfulAuthentication() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try (FrameTransport transport = new FrameTransport(addr, true))
+        try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
@@ -99,7 +99,7 @@ public class SaslTest extends ProtocolTestBase
     public void saslSuccessfulAuthenticationWithChallengeResponse() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try (FrameTransport transport = new FrameTransport(addr, true))
+        try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
@@ -138,7 +138,7 @@ public class SaslTest extends ProtocolTestBase
     public void saslUnsuccessfulAuthentication() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try (FrameTransport transport = new FrameTransport(addr, true))
+        try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
@@ -168,7 +168,7 @@ public class SaslTest extends ProtocolTestBase
     public void unsupportedSaslMechanism() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try (FrameTransport transport = new FrameTransport(addr, true))
+        try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
@@ -194,7 +194,7 @@ public class SaslTest extends ProtocolTestBase
     public void authenticationBypassDisallowed() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try (FrameTransport transport = new FrameTransport(addr, true))
+        try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
@@ -217,7 +217,7 @@ public class SaslTest extends ProtocolTestBase
     public void clientSendsSaslMechanisms() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try (FrameTransport transport = new FrameTransport(addr, true))
+        try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
@@ -238,7 +238,7 @@ public class SaslTest extends ProtocolTestBase
     public void clientSendsSaslChallenge() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try (FrameTransport transport = new FrameTransport(addr, true))
+        try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
@@ -259,7 +259,7 @@ public class SaslTest extends ProtocolTestBase
     public void clientSendsSaslOutcome() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
-        try (FrameTransport transport = new FrameTransport(addr, true))
+        try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);

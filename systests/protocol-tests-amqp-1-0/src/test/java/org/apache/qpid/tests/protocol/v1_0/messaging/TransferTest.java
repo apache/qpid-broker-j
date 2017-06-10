@@ -79,7 +79,7 @@ public class TransferTest extends ProtocolTestBase
             description = "Transfer without mandatory fields should result in a decoding error.")
     public void emptyTransfer() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
             transport.doAttachSendingLink(linkHandle, BrokerAdmin.TEST_QUEUE_NAME);
@@ -103,7 +103,7 @@ public class TransferTest extends ProtocolTestBase
                           + "[...] and can only be omitted for continuation transfers.")
     public void transferWithoutDeliveryTag() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ONE;
             transport.doAttachSendingLink(linkHandle, BrokerAdmin.TEST_QUEUE_NAME);
@@ -133,7 +133,7 @@ public class TransferTest extends ProtocolTestBase
     public void transferUnsettled() throws Exception
     {
         String sentData = "foo";
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
             transport.doAttachSendingLink(linkHandle, BrokerAdmin.TEST_QUEUE_NAME);
@@ -165,7 +165,7 @@ public class TransferTest extends ProtocolTestBase
     public void transferReceiverSettleModeFirst() throws Exception
     {
         String sentData = "foo";
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
             Attach attach = new Attach();
@@ -210,7 +210,7 @@ public class TransferTest extends ProtocolTestBase
     public void transferReceiverSettleModeCannotBeSecondWhenLinkModeIsFirst() throws Exception
     {
         String sentData = "foo";
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
             Attach attach = new Attach();
@@ -253,7 +253,7 @@ public class TransferTest extends ProtocolTestBase
     @SpecificationTest(section = "", description = "Pipelined message send")
     public void presettledPipelined() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             byte[] protocolHeader = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
             Open open = new Open();

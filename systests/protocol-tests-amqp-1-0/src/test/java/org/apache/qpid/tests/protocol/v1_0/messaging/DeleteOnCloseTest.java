@@ -67,7 +67,7 @@ public class DeleteOnCloseTest extends ProtocolTestBase
                           + "creation ceases to exist.")
     public void deleteOnCloseOnSource() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             transport.doBeginSession();
 
@@ -113,7 +113,7 @@ public class DeleteOnCloseTest extends ProtocolTestBase
                           + "creation ceases to exist.")
     public void deleteOnCloseOnTarget() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             transport.doBeginSession();
 
@@ -163,7 +163,7 @@ public class DeleteOnCloseTest extends ProtocolTestBase
                           + "creation ceases to exist.")
     public void doesNotDeleteOnDetach() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             transport.doBeginSession();
 
@@ -208,7 +208,7 @@ public class DeleteOnCloseTest extends ProtocolTestBase
         assumeThat(getBrokerAdmin().supportsRestart(), is(true));
 
         final String newTempQueueAddress;
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             transport.doBeginSession();
 

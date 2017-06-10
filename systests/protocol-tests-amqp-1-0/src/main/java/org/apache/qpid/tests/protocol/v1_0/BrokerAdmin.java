@@ -48,6 +48,7 @@ public interface BrokerAdmin extends Pluggable
     enum PortType
     {
         ANONYMOUS_AMQP,
+        ANONYMOUS_AMQPWS,
         AMQP
     }
 }

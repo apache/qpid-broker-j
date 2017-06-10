@@ -53,7 +53,7 @@ public class AttachTest extends ProtocolTestBase
     public void emptyAttach() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             transport.doBeginSession();
             Attach attach = new Attach();
@@ -76,7 +76,7 @@ public class AttachTest extends ProtocolTestBase
     public void successfulAttachAsSender() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             transport.doBeginSession();
             Attach attach = new Attach();
@@ -112,7 +112,7 @@ public class AttachTest extends ProtocolTestBase
         String queueName = "testQueue";
         getBrokerAdmin().createQueue(queueName);
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             Role localRole = Role.RECEIVER;
             transport.doBeginSession();

@@ -73,6 +73,26 @@
       "type" : "nameAlias",
       "durable" : true
     } ]
+  }, {
+    "name" : "ANONYMOUS_AMQPWS",
+    "type" : "AMQP",
+    "authenticationProvider" : "anon",
+    "port" : "0",
+    "transports" : ["WS"],
+    "protocols" : [ "AMQP_1_0" ],
+    "virtualhostaliases" : [ {
+      "name" : "defaultAlias",
+      "type" : "defaultAlias",
+      "durable" : true
+    }, {
+      "name" : "hostnameAlias",
+      "type" : "hostnameAlias",
+      "durable" : true
+    }, {
+      "name" : "nameAlias",
+      "type" : "nameAlias",
+      "durable" : true
+    } ]
   } ],
   "virtualhostnodes" : []
 }

@@ -50,7 +50,7 @@ public class BeginTest extends ProtocolTestBase
     public void emptyBegin() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try(FrameTransport transport = new FrameTransport(addr))
+        try(FrameTransport transport = new FrameTransport(addr).connect())
         {
             transport.doOpenConnection();
             Begin begin = new Begin();
@@ -72,7 +72,7 @@ public class BeginTest extends ProtocolTestBase
     public void successfulBegin() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             transport.doOpenConnection();
             Begin begin = new Begin();
@@ -103,7 +103,7 @@ public class BeginTest extends ProtocolTestBase
     public void channelMax() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-        try (FrameTransport transport = new FrameTransport(addr))
+        try (FrameTransport transport = new FrameTransport(addr).connect())
         {
             UnsignedShort channelMax = UnsignedShort.valueOf((short) 5);
             transport.doProtocolNegotiation();

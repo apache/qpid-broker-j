@@ -27,7 +27,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,6 +37,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.JdkFutureAdapters;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.netty.bootstrap.Bootstrap;
@@ -47,6 +47,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -78,10 +79,12 @@ public class FrameTransport implements AutoCloseable
     private static final Set<Integer> AMQP_CONNECTION_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private static final Response CHANNEL_CLOSED_RESPONSE = new ChannelClosedResponse();
 
-    private final Channel _channel;
     private final BlockingQueue<Response> _queue = new ArrayBlockingQueue<>(100);
     private final EventLoopGroup _workerGroup;
+    private final InetSocketAddress _brokerAddress;
+    private final boolean _isSasl;
 
+    private Channel _channel;
     private volatile boolean _channelClosedSeen = false;
     private int _amqpConnectionId;
     private short _amqpChannelId;
@@ -93,8 +96,18 @@ public class FrameTransport implements AutoCloseable
 
     public FrameTransport(final InetSocketAddress brokerAddress, boolean isSasl)
     {
+        _brokerAddress = brokerAddress;
+        _isSasl = isSasl;
         _workerGroup = new NioEventLoopGroup();
+    }
 
+    public InetSocketAddress getBrokerAddress()
+    {
+        return _brokerAddress;
+    }
+
+    public FrameTransport connect()
+    {
         try
         {
             Bootstrap b = new Bootstrap();
@@ -106,11 +119,12 @@ public class FrameTransport implements AutoCloseable
                 @Override
                 public void initChannel(SocketChannel ch) throws Exception
                 {
-                    ch.pipeline().addLast(new InputHandler(_queue, isSasl)).addLast(new OutputHandler());
+                    ChannelPipeline pipeline = ch.pipeline();
+                    buildInputOutputPipeline(pipeline);
                 }
             });
 
-            _channel = b.connect(brokerAddress).sync().channel();
+            _channel = b.connect(_brokerAddress).sync().channel();
             _channel.closeFuture().addListener(future ->
                                                {
                                                    _channelClosedSeen = true;
@@ -121,6 +135,12 @@ public class FrameTransport implements AutoCloseable
         {
             throw new RuntimeException(e);
         }
+        return this;
+    }
+
+    protected void buildInputOutputPipeline(final ChannelPipeline pipeline)
+    {
+        pipeline.addLast(new InputHandler(_queue, _isSasl)).addLast(new OutputHandler());
     }
 
     @Override
@@ -128,8 +148,12 @@ public class FrameTransport implements AutoCloseable
     {
         try
         {
-            _channel.disconnect().sync();
-            _channel.close().sync();
+            if (_channel != null)
+            {
+                _channel.disconnect().sync();
+                _channel.close().sync();
+                _channel = null;
+            }
         }
         finally
         {
@@ -140,6 +164,7 @@ public class FrameTransport implements AutoCloseable
 
     public ListenableFuture<Void> sendProtocolHeader(final byte[] bytes) throws Exception
     {
+        Preconditions.checkState(_channel != null, "Not connected");
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         buffer.writeBytes(bytes);
         ChannelFuture channelFuture = _channel.writeAndFlush(buffer);
@@ -149,6 +174,7 @@ public class FrameTransport implements AutoCloseable
 
     public ListenableFuture<Void> sendPerformative(final FrameBody frameBody, UnsignedShort channel) throws Exception
     {
+        Preconditions.checkState(_channel != null, "Not connected");
         final List<QpidByteBuffer> payload = frameBody instanceof Transfer ? ((Transfer) frameBody).getPayload() : null;
         TransportFrame transportFrame = new TransportFrame(channel.shortValue(), frameBody, payload);
         ChannelFuture channelFuture = _channel.writeAndFlush(transportFrame);
@@ -372,7 +398,6 @@ public class FrameTransport implements AutoCloseable
         assertThat(_channelClosedSeen, is(true));
     }
 
-
     private int getConnectionId()
     {
         if (_amqpConnectionId == 0)
@@ -384,32 +409,6 @@ public class FrameTransport implements AutoCloseable
             }
         }
         return _amqpConnectionId;
-    }
-
-    public void assertChannelClosed()
-    {
-        try
-        {
-            ChannelFuture channelFuture = _channel.write(new byte[]{0});
-            channelFuture.sync();
-            throw new IllegalStateException(
-                    "Expecting the channel to be already closed by, but it was able to take more input.");
-        }
-        catch (InterruptedException e)
-        {
-            Thread.currentThread().interrupt();
-        }
-        catch (Exception e)
-        {
-            if (e instanceof ClosedChannelException)
-            {
-                // PASS
-            }
-            else
-            {
-                throw new IllegalStateException("Unexpected exception", e);
-            }
-        }
     }
 
     private static class ChannelClosedResponse implements Response
