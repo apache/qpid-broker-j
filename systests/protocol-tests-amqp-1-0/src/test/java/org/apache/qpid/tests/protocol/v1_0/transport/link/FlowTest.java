@@ -61,8 +61,8 @@ public class FlowTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Close.class)));
-            Close responseClose = (Close) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Close.class)));
+            Close responseClose = (Close) response.getBody();
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), is(AmqpError.DECODE_ERROR));
         }
@@ -88,8 +88,8 @@ public class FlowTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Flow.class)));
-            Flow responseFlow = (Flow) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Flow.class)));
+            Flow responseFlow = (Flow) response.getBody();
             assertThat(responseFlow.getEcho(), not(equalTo(Boolean.TRUE)));
             assertThat(responseFlow.getHandle(), is(nullValue()));
         }
@@ -121,8 +121,8 @@ public class FlowTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Flow.class)));
-            Flow responseFlow = (Flow) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Flow.class)));
+            Flow responseFlow = (Flow) response.getBody();
             assertThat(responseFlow.getEcho(), not(equalTo(Boolean.TRUE)));
             assertThat(responseFlow.getHandle(), is(notNullValue()));
         }
@@ -172,8 +172,8 @@ public class FlowTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Flow.class)));
-            Flow responseFlow = (Flow) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Flow.class)));
+            Flow responseFlow = (Flow) response.getBody();
             assertThat(responseFlow.getHandle(), is(notNullValue()));
             assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
             assertThat(responseFlow.getDrain(), is(equalTo(Boolean.TRUE)));

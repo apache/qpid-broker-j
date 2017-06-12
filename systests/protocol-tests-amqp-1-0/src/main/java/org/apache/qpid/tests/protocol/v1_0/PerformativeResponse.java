@@ -21,7 +21,7 @@ package org.apache.qpid.tests.protocol.v1_0;
 
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 
-public class PerformativeResponse implements Response
+public class PerformativeResponse implements Response<FrameBody>
 {
     private final short _channelId;
     private final FrameBody _frameBody;
@@ -33,10 +33,12 @@ public class PerformativeResponse implements Response
         _frameBody = frameBody;
     }
 
-    public FrameBody getFrameBody()
+    @Override
+    public FrameBody getBody()
     {
         return _frameBody;
     }
+
 
     public short getChannelId()
     {

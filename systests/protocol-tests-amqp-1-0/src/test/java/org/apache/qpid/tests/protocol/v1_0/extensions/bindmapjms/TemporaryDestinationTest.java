@@ -105,8 +105,8 @@ public class TemporaryDestinationTest extends ProtocolTestBase
 
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Attach.class)));
-            final Attach attachResponse = (Attach) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Attach.class)));
+            final Attach attachResponse = (Attach) response.getBody();
             assertThat(attachResponse.getSource(), is(notNullValue()));
             assertThat(attachResponse.getTarget(), is(notNullValue()));
 
@@ -118,7 +118,7 @@ public class TemporaryDestinationTest extends ProtocolTestBase
             final PerformativeResponse flowResponse = ((PerformativeResponse) transport.getNextResponse());
             if (flowResponse != null)
             {
-                assertThat(flowResponse.getFrameBody(), is(instanceOf(Flow.class)));
+                assertThat(flowResponse.getBody(), is(instanceOf(Flow.class)));
             }
 
             transport.doCloseConnection();

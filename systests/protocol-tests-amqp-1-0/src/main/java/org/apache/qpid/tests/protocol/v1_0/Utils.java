@@ -59,8 +59,8 @@ public class Utils
             transport.sendPerformative(validationAttach);
             PerformativeResponse validationResponse = (PerformativeResponse) transport.getNextResponse();
             assertThat(validationResponse, is(notNullValue()));
-            assertThat(validationResponse.getFrameBody(), is(instanceOf(Attach.class)));
-            final Attach attachValidationResponse = (Attach) validationResponse.getFrameBody();
+            assertThat(validationResponse.getBody(), is(instanceOf(Attach.class)));
+            final Attach attachValidationResponse = (Attach) validationResponse.getBody();
             if (attachValidationResponse.getSource() != null)
             {
                 queueExists = true;
@@ -70,14 +70,14 @@ public class Utils
                 transport.sendPerformative(validationDetach);
                 PerformativeResponse validationDetachResponse = (PerformativeResponse) transport.getNextResponse();
                 assertThat(validationDetachResponse, is(notNullValue()));
-                assertThat(validationDetachResponse.getFrameBody(), is(instanceOf(Detach.class)));
+                assertThat(validationDetachResponse.getBody(), is(instanceOf(Detach.class)));
             }
             else
             {
                 queueExists = false;
                 PerformativeResponse validationDetachResponse = (PerformativeResponse) transport.getNextResponse();
                 assertThat(validationDetachResponse, is(notNullValue()));
-                assertThat(validationDetachResponse.getFrameBody(), is(instanceOf(Detach.class)));
+                assertThat(validationDetachResponse.getBody(), is(instanceOf(Detach.class)));
             }
             return queueExists;
         }
@@ -105,8 +105,8 @@ public class Utils
             {
                 PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
                 assertThat(response, Is.is(notNullValue()));
-                assertThat(response.getFrameBody(), Is.is(instanceOf(Transfer.class)));
-                Transfer responseTransfer = (Transfer) response.getFrameBody();
+                assertThat(response.getBody(), Is.is(instanceOf(Transfer.class)));
+                Transfer responseTransfer = (Transfer) response.getBody();
                 messageDecoder.addTransfer(responseTransfer);
                 hasMore = Boolean.TRUE.equals(responseTransfer.getMore());
             }

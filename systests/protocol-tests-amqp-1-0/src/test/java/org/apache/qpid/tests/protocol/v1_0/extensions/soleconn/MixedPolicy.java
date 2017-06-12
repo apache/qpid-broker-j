@@ -69,7 +69,7 @@ public class MixedPolicy extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport1.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Open.class)));
+            assertThat(response.getBody(), is(instanceOf(Open.class)));
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
@@ -84,11 +84,11 @@ public class MixedPolicy extends ProtocolTestBase
 
                 final PerformativeResponse closeResponse1 = (PerformativeResponse) transport1.getNextResponse();
                 assertThat(closeResponse1, is(notNullValue()));
-                assertThat(closeResponse1.getFrameBody(), is(instanceOf(Close.class)));
+                assertThat(closeResponse1.getBody(), is(instanceOf(Close.class)));
 
                 PerformativeResponse response2 = (PerformativeResponse) transport2.getNextResponse();
                 assertThat(response2, is(notNullValue()));
-                assertThat(response2.getFrameBody(), is(instanceOf(Open.class)));
+                assertThat(response2.getBody(), is(instanceOf(Open.class)));
 
                 try (FrameTransport transport3 = new FrameTransport(_brokerAddress).connect())
                 {
@@ -103,10 +103,10 @@ public class MixedPolicy extends ProtocolTestBase
 
                     PerformativeResponse closeResponse3 = (PerformativeResponse) transport3.getNextResponse();
                     assertThat(closeResponse3, is(notNullValue()));
-                    assertThat(closeResponse3.getFrameBody(), is(instanceOf(Open.class)));
+                    assertThat(closeResponse3.getBody(), is(instanceOf(Open.class)));
                     PerformativeResponse closeResponse3b = (PerformativeResponse) transport3.getNextResponse();
                     assertThat(closeResponse3b, is(notNullValue()));
-                    assertThat(closeResponse3b.getFrameBody(), is(instanceOf(Close.class)));
+                    assertThat(closeResponse3b.getBody(), is(instanceOf(Close.class)));
                 }
             }
         }
@@ -128,7 +128,7 @@ public class MixedPolicy extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport1.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Open.class)));
+            assertThat(response.getBody(), is(instanceOf(Open.class)));
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
@@ -143,10 +143,10 @@ public class MixedPolicy extends ProtocolTestBase
 
                 final PerformativeResponse openResponse2 = (PerformativeResponse) transport2.getNextResponse();
                 assertThat(openResponse2, is(notNullValue()));
-                assertThat(openResponse2.getFrameBody(), is(instanceOf(Open.class)));
+                assertThat(openResponse2.getBody(), is(instanceOf(Open.class)));
                 final PerformativeResponse closeResponse2 = (PerformativeResponse) transport2.getNextResponse();
                 assertThat(closeResponse2, is(notNullValue()));
-                assertThat(closeResponse2.getFrameBody(), is(instanceOf(Close.class)));
+                assertThat(closeResponse2.getBody(), is(instanceOf(Close.class)));
             }
         }
     }

@@ -88,8 +88,8 @@ public class DeleteOnCloseTest extends ProtocolTestBase
 
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Attach.class)));
-            final Attach attachResponse = (Attach) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Attach.class)));
+            final Attach attachResponse = (Attach) response.getBody();
             assertThat(attachResponse.getSource(), is(notNullValue()));
             final String newTempQueueAddress = ((Source) attachResponse.getSource()).getAddress();
 
@@ -101,7 +101,7 @@ public class DeleteOnCloseTest extends ProtocolTestBase
             transport.sendPerformative(detach);
             PerformativeResponse detachResponse = (PerformativeResponse) transport.getNextResponse();
             assertThat(detachResponse, is(notNullValue()));
-            assertThat(detachResponse.getFrameBody(), is(instanceOf(Detach.class)));
+            assertThat(detachResponse.getBody(), is(instanceOf(Detach.class)));
 
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(false));
         }
@@ -134,8 +134,8 @@ public class DeleteOnCloseTest extends ProtocolTestBase
 
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Attach.class)));
-            final Attach attachResponse = (Attach) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Attach.class)));
+            final Attach attachResponse = (Attach) response.getBody();
             assertThat(attachResponse.getTarget(), is(notNullValue()));
             final String newTempQueueAddress = ((Target) attachResponse.getTarget()).getAddress();
 
@@ -143,7 +143,7 @@ public class DeleteOnCloseTest extends ProtocolTestBase
 
             PerformativeResponse flowResponse = (PerformativeResponse) transport.getNextResponse();
             assertThat(flowResponse, is(notNullValue()));
-            assertThat(flowResponse.getFrameBody(), is(instanceOf(Flow.class)));
+            assertThat(flowResponse.getBody(), is(instanceOf(Flow.class)));
 
             Detach detach = new Detach();
             detach.setHandle(attach.getHandle());
@@ -151,7 +151,7 @@ public class DeleteOnCloseTest extends ProtocolTestBase
             transport.sendPerformative(detach);
             PerformativeResponse detachResponse = (PerformativeResponse) transport.getNextResponse();
             assertThat(detachResponse, is(notNullValue()));
-            assertThat(detachResponse.getFrameBody(), is(instanceOf(Detach.class)));
+            assertThat(detachResponse.getBody(), is(instanceOf(Detach.class)));
 
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(false));
         }
@@ -184,8 +184,8 @@ public class DeleteOnCloseTest extends ProtocolTestBase
 
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Attach.class)));
-            final Attach attachResponse = (Attach) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Attach.class)));
+            final Attach attachResponse = (Attach) response.getBody();
             assertThat(attachResponse.getSource(), is(notNullValue()));
             final String newTempQueueAddress = ((Source) attachResponse.getSource()).getAddress();
 
@@ -196,7 +196,7 @@ public class DeleteOnCloseTest extends ProtocolTestBase
             transport.sendPerformative(detach);
             PerformativeResponse detachResponse = (PerformativeResponse) transport.getNextResponse();
             assertThat(detachResponse, is(notNullValue()));
-            assertThat(detachResponse.getFrameBody(), is(instanceOf(Detach.class)));
+            assertThat(detachResponse.getBody(), is(instanceOf(Detach.class)));
 
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
         }
@@ -230,8 +230,8 @@ public class DeleteOnCloseTest extends ProtocolTestBase
 
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Attach.class)));
-            final Attach attachResponse = (Attach) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Attach.class)));
+            final Attach attachResponse = (Attach) response.getBody();
             assertThat(attachResponse.getSource(), is(notNullValue()));
             newTempQueueAddress = ((Source) attachResponse.getSource()).getAddress();
 

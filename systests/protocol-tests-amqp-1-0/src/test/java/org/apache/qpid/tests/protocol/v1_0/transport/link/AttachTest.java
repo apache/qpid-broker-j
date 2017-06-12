@@ -62,8 +62,8 @@ public class AttachTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Close.class)));
-            Close responseClose = (Close) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Close.class)));
+            Close responseClose = (Close) response.getBody();
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
         }
@@ -93,8 +93,8 @@ public class AttachTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Attach.class)));
-            Attach responseAttach = (Attach) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Attach.class)));
+            Attach responseAttach = (Attach) response.getBody();
             assertThat(responseAttach.getName(), is(notNullValue()));
             assertThat(responseAttach.getHandle().longValue(), is(both(greaterThanOrEqualTo(0L)).and(lessThan(UnsignedInteger.MAX_VALUE.longValue()))));
             assertThat(responseAttach.getRole(), is(Role.RECEIVER));
@@ -130,8 +130,8 @@ public class AttachTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Attach.class)));
-            Attach responseAttach = (Attach) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Attach.class)));
+            Attach responseAttach = (Attach) response.getBody();
             assertThat(responseAttach.getName(), is(notNullValue()));
             assertThat(responseAttach.getHandle().longValue(), is(both(greaterThanOrEqualTo(0L)).and(lessThan(UnsignedInteger.MAX_VALUE.longValue()))));
             assertThat(responseAttach.getRole(), is(Role.SENDER));

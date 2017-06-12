@@ -58,8 +58,8 @@ public class BeginTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Close.class)));
-            Close responseClose = (Close) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Close.class)));
+            Close responseClose = (Close) response.getBody();
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
         }
@@ -85,8 +85,8 @@ public class BeginTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Begin.class)));
-            Begin responseBegin = (Begin) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Begin.class)));
+            Begin responseBegin = (Begin) response.getBody();
             assertThat(responseBegin.getRemoteChannel(), equalTo(channel));
             assertThat(responseBegin.getIncomingWindow(), is(instanceOf(UnsignedInteger.class)));
             assertThat(responseBegin.getOutgoingWindow(), is(instanceOf(UnsignedInteger.class)));
@@ -115,7 +115,7 @@ public class BeginTest extends ProtocolTestBase
             transport.sendPerformative(open, UnsignedShort.valueOf((short) 0));
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Open.class)));
+            assertThat(response.getBody(), is(instanceOf(Open.class)));
 
             Begin begin = new Begin();
             begin.setNextOutgoingId(UnsignedInteger.ZERO);
@@ -127,8 +127,8 @@ public class BeginTest extends ProtocolTestBase
             response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Close.class)));
-            Close responseClose = (Close) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Close.class)));
+            Close responseClose = (Close) response.getBody();
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(ConnectionError.FRAMING_ERROR));
         }

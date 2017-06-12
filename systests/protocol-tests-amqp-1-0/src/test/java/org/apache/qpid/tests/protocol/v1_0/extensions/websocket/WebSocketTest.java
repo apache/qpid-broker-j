@@ -55,8 +55,8 @@ public class WebSocketTest extends ProtocolTestBase
         {
             byte[] bytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
             transport.sendProtocolHeader(bytes);
-            HeaderResponse response = (HeaderResponse) transport.getNextResponse();
-            assertArrayEquals("Unexpected protocol header response", bytes, response.getHeader());
+            HeaderResponse response = transport.getNextResponse();
+            assertArrayEquals("Unexpected protocol header response", bytes, response.getBody());
         }
     }
 
@@ -70,13 +70,13 @@ public class WebSocketTest extends ProtocolTestBase
         {
             byte[] bytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
             transport.sendProtocolHeader(bytes);
-            HeaderResponse response = (HeaderResponse) transport.getNextResponse();
-            assertArrayEquals("Unexpected protocol header response", bytes, response.getHeader());
+            HeaderResponse response = transport.getNextResponse();
+            assertArrayEquals("Unexpected protocol header response", bytes, response.getBody());
 
             Open open = new Open();
             open.setContainerId("testContainerId");
             transport.sendPerformative(open, UnsignedShort.valueOf((short) 0));
-            Open responseOpen = transport.getNextPerformativeResponse(Open.class);
+            Open responseOpen = transport.getNextResponseBody(Open.class);
 
             assertThat(responseOpen.getContainerId(), is(notNullValue()));
             assertThat(responseOpen.getMaxFrameSize().longValue(),
@@ -100,7 +100,7 @@ public class WebSocketTest extends ProtocolTestBase
             Open open = new Open();
             open.setContainerId("testContainerId");
             transport.sendPerformative(open, UnsignedShort.valueOf((short) 0));
-            Open responseOpen = transport.getNextPerformativeResponse(Open.class);
+            Open responseOpen = transport.getNextResponseBody(Open.class);
 
             assertThat(responseOpen.getContainerId(), is(notNullValue()));
             assertThat(responseOpen.getMaxFrameSize().longValue(),

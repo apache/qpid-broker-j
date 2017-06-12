@@ -79,7 +79,8 @@ public class FrameTransport implements AutoCloseable
     private static final Set<Integer> AMQP_CONNECTION_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private static final Response CHANNEL_CLOSED_RESPONSE = new ChannelClosedResponse();
 
-    private final BlockingQueue<Response> _queue = new ArrayBlockingQueue<>(100);
+    private final BlockingQueue<Response<?>> _queue = new ArrayBlockingQueue<>(100);
+
     private final EventLoopGroup _workerGroup;
     private final InetSocketAddress _brokerAddress;
     private final boolean _isSasl;
@@ -218,14 +219,14 @@ public class FrameTransport implements AutoCloseable
         return sendPipelined(null, frames);
     }
 
-    public Response getNextResponse() throws Exception
+    public <T extends Response<?>> T getNextResponse() throws Exception
     {
-        return _queue.poll(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
+        return (T)_queue.poll(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
     }
 
-    public <R extends Response> R getNextResponse(Class<? extends Response> expectedResponseClass) throws Exception
+    public <R extends Response<?>> R getNextResponse(Class<R> expectedResponseClass) throws Exception
     {
-        R actualResponse = (R) getNextResponse();
+        R actualResponse = getNextResponse();
         if (actualResponse == null)
         {
             throw new IllegalStateException(String.format("No response received within timeout %d - expecting %s",
@@ -241,23 +242,10 @@ public class FrameTransport implements AutoCloseable
         return actualResponse;
     }
 
-    public <P> P getNextPerformativeResponse(Class<?> expectedFrameBodyClass) throws Exception
+    public <T> T getNextResponseBody(Class<T> expectedFrameBodyClass) throws Exception
     {
-        final P actualFrameBody;
-        if (SaslFrameBody.class.isAssignableFrom(expectedFrameBodyClass))
-        {
-            SaslPerformativeResponse response = getNextResponse(SaslPerformativeResponse.class);
-            actualFrameBody = (P) response.getFrameBody();
-        }
-        else if (FrameBody.class.isAssignableFrom(expectedFrameBodyClass))
-        {
-            PerformativeResponse response = getNextResponse(PerformativeResponse.class);
-            actualFrameBody = (P) response.getFrameBody();
-        }
-        else
-        {
-            throw new IllegalArgumentException(String.format("Unexpected class %s", expectedFrameBodyClass.getName()));
-        }
+        Response<T>  response = getNextResponse();
+        T actualFrameBody =  response.getBody();
 
         if (!expectedFrameBodyClass.isAssignableFrom(actualFrameBody.getClass()))
         {
@@ -275,7 +263,7 @@ public class FrameTransport implements AutoCloseable
         sendProtocolHeader(bytes);
         HeaderResponse response = (HeaderResponse) getNextResponse();
 
-        if (!Arrays.equals(bytes, response.getHeader()))
+        if (!Arrays.equals(bytes, response.getBody()))
         {
             throw new IllegalStateException("Unexpected protocol header");
         }
@@ -289,7 +277,7 @@ public class FrameTransport implements AutoCloseable
         open.setContainerId(String.format("testContainer-%d", getConnectionId()));
         sendPerformative(open, UnsignedShort.valueOf((short) 0));
         PerformativeResponse response = (PerformativeResponse) getNextResponse();
-        if (!(response.getFrameBody() instanceof Open))
+        if (!(response.getBody() instanceof Open))
         {
             throw new IllegalStateException("Unexpected response to connection Open");
         }
@@ -301,10 +289,10 @@ public class FrameTransport implements AutoCloseable
 
         sendPerformative(close, UnsignedShort.valueOf((short) 0));
         PerformativeResponse response = (PerformativeResponse) getNextResponse();
-        if (!(response.getFrameBody() instanceof Close))
+        if (!(response.getBody() instanceof Close))
         {
             throw new IllegalStateException(String.format(
-                    "Unexpected response to connection Close. Expected Close got '%s'", response.getFrameBody()));
+                    "Unexpected response to connection Close. Expected Close got '%s'", response.getBody()));
         }
     }
 
@@ -318,10 +306,10 @@ public class FrameTransport implements AutoCloseable
         _amqpChannelId = (short) 1;
         sendPerformative(begin, UnsignedShort.valueOf(_amqpChannelId));
         PerformativeResponse response = (PerformativeResponse) getNextResponse();
-        if (!(response.getFrameBody() instanceof Begin))
+        if (!(response.getBody() instanceof Begin))
         {
             throw new IllegalStateException(String.format(
-                    "Unexpected response to connection Begin. Expected Begin got '%s'", response.getFrameBody()));
+                    "Unexpected response to connection Begin. Expected Begin got '%s'", response.getBody()));
         }
     }
 
@@ -348,8 +336,8 @@ public class FrameTransport implements AutoCloseable
         PerformativeResponse response = (PerformativeResponse) getNextResponse();
 
         assertThat(response, is(notNullValue()));
-        assertThat(response.getFrameBody(), is(instanceOf(Attach.class)));
-        Attach responseAttach = (Attach) response.getFrameBody();
+        assertThat(response.getBody(), is(instanceOf(Attach.class)));
+        Attach responseAttach = (Attach) response.getBody();
         assertThat(responseAttach.getSource(), is(notNullValue()));
     }
 
@@ -377,13 +365,13 @@ public class FrameTransport implements AutoCloseable
         PerformativeResponse response = (PerformativeResponse) getNextResponse();
 
         assertThat(response, is(notNullValue()));
-        assertThat(response.getFrameBody(), is(instanceOf(Attach.class)));
-        Attach responseAttach = (Attach) response.getFrameBody();
+        assertThat(response.getBody(), is(instanceOf(Attach.class)));
+        Attach responseAttach = (Attach) response.getBody();
         assertThat(responseAttach.getTarget(), is(notNullValue()));
 
         PerformativeResponse flowResponse = (PerformativeResponse) getNextResponse();
         assertThat(flowResponse, Is.is(CoreMatchers.notNullValue()));
-        assertThat(flowResponse.getFrameBody(), Is.is(CoreMatchers.instanceOf(Flow.class)));
+        assertThat(flowResponse.getBody(), Is.is(CoreMatchers.instanceOf(Flow.class)));
     }
 
     public void assertNoMoreResponses() throws Exception
@@ -411,12 +399,18 @@ public class FrameTransport implements AutoCloseable
         return _amqpConnectionId;
     }
 
-    private static class ChannelClosedResponse implements Response
+    private static class ChannelClosedResponse implements Response<Void>
     {
         @Override
         public String toString()
         {
             return "ChannelClosed";
+        }
+
+        @Override
+        public Void getBody()
+        {
+            return null;
         }
     }
 }

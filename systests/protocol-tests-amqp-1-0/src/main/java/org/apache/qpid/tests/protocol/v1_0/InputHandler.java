@@ -73,13 +73,13 @@ public class InputHandler extends ChannelInboundHandlerAdapter
 
     private final MyConnectionHandler _connectionHandler;
     private final ValueHandler _valueHandler;
-    private final BlockingQueue<Response> _responseQueue;
+    private final BlockingQueue<Response<?>> _responseQueue;
 
     private QpidByteBuffer _inputBuffer = QpidByteBuffer.allocate(0);
     private volatile FrameHandler _frameHandler;
     private volatile ParsingState _state = ParsingState.HEADER;
 
-    public InputHandler(final BlockingQueue<Response> queue, final boolean isSasl)
+    public InputHandler(final BlockingQueue<Response<?>> queue, final boolean isSasl)
     {
 
         _valueHandler = new ValueHandler(TYPE_REGISTRY);

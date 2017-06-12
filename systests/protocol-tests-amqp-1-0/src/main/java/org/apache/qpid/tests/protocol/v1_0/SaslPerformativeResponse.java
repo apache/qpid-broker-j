@@ -22,7 +22,7 @@ package org.apache.qpid.tests.protocol.v1_0;
 
 import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
 
-public class SaslPerformativeResponse implements Response
+public class SaslPerformativeResponse implements Response<SaslFrameBody>
 {
     private final short _channelId;
     private final SaslFrameBody _frameBody;
@@ -34,7 +34,8 @@ public class SaslPerformativeResponse implements Response
         _frameBody = frameBody;
     }
 
-    public SaslFrameBody getFrameBody()
+    @Override
+    public SaslFrameBody getBody()
     {
         return _frameBody;
     }

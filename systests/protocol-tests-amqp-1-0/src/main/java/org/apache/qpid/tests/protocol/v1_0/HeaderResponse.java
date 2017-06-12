@@ -21,7 +21,7 @@ package org.apache.qpid.tests.protocol.v1_0;
 
 import java.util.Arrays;
 
-public class HeaderResponse implements Response
+public class HeaderResponse implements Response<byte[]>
 {
     private final byte[] _header;
 
@@ -30,7 +30,8 @@ public class HeaderResponse implements Response
         _header = header;
     }
 
-    public byte[] getHeader()
+    @Override
+    public byte[] getBody()
     {
         return _header;
     }

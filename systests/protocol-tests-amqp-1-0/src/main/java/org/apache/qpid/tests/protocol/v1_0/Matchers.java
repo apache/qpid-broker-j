@@ -49,7 +49,7 @@ public class Matchers
                 {
                     return false;
                 }
-                if (!Arrays.equals(expectedHeader, ((HeaderResponse) o).getHeader()))
+                if (!Arrays.equals(expectedHeader, ((HeaderResponse) o).getBody()))
                 {
                     return false;
                 }

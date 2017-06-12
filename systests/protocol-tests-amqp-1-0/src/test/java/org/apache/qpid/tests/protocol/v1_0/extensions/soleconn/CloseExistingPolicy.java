@@ -77,8 +77,8 @@ public class CloseExistingPolicy extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Open.class)));
-            Open responseOpen = (Open) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Open.class)));
+            Open responseOpen = (Open) response.getBody();
             assertThat(Arrays.asList(responseOpen.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
             if (responseOpen.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
             {
@@ -105,7 +105,7 @@ public class CloseExistingPolicy extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport1.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Open.class)));
+            assertThat(response.getBody(), is(instanceOf(Open.class)));
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
@@ -120,16 +120,16 @@ public class CloseExistingPolicy extends ProtocolTestBase
 
                 final PerformativeResponse closeResponse1 = (PerformativeResponse) transport1.getNextResponse();
                 assertThat(closeResponse1, is(notNullValue()));
-                assertThat(closeResponse1.getFrameBody(), is(instanceOf(Close.class)));
-                Close close1 = (Close) closeResponse1.getFrameBody();
+                assertThat(closeResponse1.getBody(), is(instanceOf(Close.class)));
+                Close close1 = (Close) closeResponse1.getBody();
                 assertThat(close1.getError(), is(notNullValue()));
                 assertThat(close1.getError().getCondition(), is(equalTo(AmqpError.RESOURCE_LOCKED)));
                 assertThat(close1.getError().getInfo(), is(equalTo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true))));
 
                 PerformativeResponse response2 = (PerformativeResponse) transport2.getNextResponse();
                 assertThat(response2, is(notNullValue()));
-                assertThat(response2.getFrameBody(), is(instanceOf(Open.class)));
-                Open responseOpen2 = (Open) response2.getFrameBody();
+                assertThat(response2.getBody(), is(instanceOf(Open.class)));
+                Open responseOpen2 = (Open) response2.getBody();
                 assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
                 if (responseOpen2.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
                 {
@@ -156,7 +156,7 @@ public class CloseExistingPolicy extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport1.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Open.class)));
+            assertThat(response.getBody(), is(instanceOf(Open.class)));
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
@@ -171,16 +171,16 @@ public class CloseExistingPolicy extends ProtocolTestBase
 
                 final PerformativeResponse closeResponse1 = (PerformativeResponse) transport1.getNextResponse();
                 assertThat(closeResponse1, is(notNullValue()));
-                assertThat(closeResponse1.getFrameBody(), is(instanceOf(Close.class)));
-                Close close1 = (Close) closeResponse1.getFrameBody();
+                assertThat(closeResponse1.getBody(), is(instanceOf(Close.class)));
+                Close close1 = (Close) closeResponse1.getBody();
                 assertThat(close1.getError(), is(notNullValue()));
                 assertThat(close1.getError().getCondition(), is(equalTo(AmqpError.RESOURCE_LOCKED)));
                 assertThat(close1.getError().getInfo(), is(equalTo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true))));
 
                 PerformativeResponse response2 = (PerformativeResponse) transport2.getNextResponse();
                 assertThat(response2, is(notNullValue()));
-                assertThat(response2.getFrameBody(), is(instanceOf(Open.class)));
-                Open responseOpen2 = (Open) response2.getFrameBody();
+                assertThat(response2.getBody(), is(instanceOf(Open.class)));
+                Open responseOpen2 = (Open) response2.getBody();
                 assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
                 if (responseOpen2.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
                 {
@@ -208,8 +208,8 @@ public class CloseExistingPolicy extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport1.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Open.class)));
-            Open responseOpen = (Open) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Open.class)));
+            Open responseOpen = (Open) response.getBody();
             assertThat(Arrays.asList(responseOpen.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
             if (responseOpen.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
             {
@@ -228,16 +228,16 @@ public class CloseExistingPolicy extends ProtocolTestBase
 
                 final PerformativeResponse closeResponse1 = (PerformativeResponse) transport1.getNextResponse();
                 assertThat(closeResponse1, is(notNullValue()));
-                assertThat(closeResponse1.getFrameBody(), is(instanceOf(Close.class)));
-                Close close1 = (Close) closeResponse1.getFrameBody();
+                assertThat(closeResponse1.getBody(), is(instanceOf(Close.class)));
+                Close close1 = (Close) closeResponse1.getBody();
                 assertThat(close1.getError(), is(notNullValue()));
                 assertThat(close1.getError().getCondition(), is(equalTo(AmqpError.RESOURCE_LOCKED)));
                 assertThat(close1.getError().getInfo(), is(equalTo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true))));
 
                 PerformativeResponse response2 = (PerformativeResponse) transport2.getNextResponse();
                 assertThat(response2, is(notNullValue()));
-                assertThat(response2.getFrameBody(), is(instanceOf(Open.class)));
-                Open responseOpen2 = (Open) response2.getFrameBody();
+                assertThat(response2.getBody(), is(instanceOf(Open.class)));
+                Open responseOpen2 = (Open) response2.getBody();
                 assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
                 if (responseOpen2.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
                 {

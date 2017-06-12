@@ -49,7 +49,7 @@ public class ProtocolHeaderTest extends ProtocolTestBase
             byte[] bytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
             transport.sendProtocolHeader(bytes);
             HeaderResponse response = (HeaderResponse) transport.getNextResponse();
-            assertArrayEquals("Unexpected protocol header response", bytes, response.getHeader());
+            assertArrayEquals("Unexpected protocol header response", bytes, response.getBody());
         }
     }
 
@@ -68,7 +68,7 @@ public class ProtocolHeaderTest extends ProtocolTestBase
             transport.sendProtocolHeader(rawHeaderBytes);
             HeaderResponse response = (HeaderResponse) transport.getNextResponse();
 
-            assertArrayEquals("Unexpected protocol header response", expectedSaslHeaderBytes, response.getHeader());
+            assertArrayEquals("Unexpected protocol header response", expectedSaslHeaderBytes, response.getBody());
 
             transport.assertNoMoreResponses();
         }

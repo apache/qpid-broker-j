@@ -71,9 +71,9 @@ public class SaslTest extends ProtocolTestBase
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
 
-            assertThat(saslHeaderResponse.getHeader(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
+            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
-            SaslMechanisms saslMechanismsResponse = transport.getNextPerformativeResponse(SaslMechanisms.class);
+            SaslMechanisms saslMechanismsResponse = transport.getNextResponseBody(SaslMechanisms.class);
             assertThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
 
 
@@ -82,12 +82,12 @@ public class SaslTest extends ProtocolTestBase
             saslInit.setInitialResponse(new Binary("\0guest\0guest".getBytes(StandardCharsets.US_ASCII)));
             transport.sendPerformative(saslInit);
 
-            SaslOutcome saslOutcome = transport.getNextPerformativeResponse(SaslOutcome.class);
+            SaslOutcome saslOutcome = transport.getNextResponseBody(SaslOutcome.class);
             assertThat(saslOutcome.getCode(), equalTo(SaslCode.OK));
 
             transport.sendProtocolHeader(AMQP_HEADER_BYTES);
             HeaderResponse headerResponse = transport.getNextResponse(HeaderResponse.class);
-            assertThat(headerResponse.getHeader(), is(equalTo(AMQP_HEADER_BYTES)));
+            assertThat(headerResponse.getBody(), is(equalTo(AMQP_HEADER_BYTES)));
 
             transport.assertNoMoreResponses();
         }
@@ -104,16 +104,16 @@ public class SaslTest extends ProtocolTestBase
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
 
-            assertThat(saslHeaderResponse.getHeader(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
+            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
-            SaslMechanisms saslMechanismsResponse = transport.getNextPerformativeResponse(SaslMechanisms.class);
+            SaslMechanisms saslMechanismsResponse = transport.getNextResponseBody(SaslMechanisms.class);
             assertThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(CRAM_MD5));
 
             SaslInit saslInit = new SaslInit();
             saslInit.setMechanism(CRAM_MD5);
             transport.sendPerformative(saslInit);
 
-            SaslChallenge challenge = transport.getNextPerformativeResponse(SaslChallenge.class);
+            SaslChallenge challenge = transport.getNextResponseBody(SaslChallenge.class);
             assertThat(challenge.getChallenge(), is(notNullValue()));
 
             byte[] response = generateCramMD5ClientResponse("guest", "guest", challenge.getChallenge().getArray());
@@ -122,12 +122,12 @@ public class SaslTest extends ProtocolTestBase
             saslResponse.setResponse(new Binary(response));
             transport.sendPerformative(saslResponse);
 
-            SaslOutcome saslOutcome = transport.getNextPerformativeResponse(SaslOutcome.class);
+            SaslOutcome saslOutcome = transport.getNextResponseBody(SaslOutcome.class);
             assertThat(saslOutcome.getCode(), equalTo(SaslCode.OK));
 
             transport.sendProtocolHeader(AMQP_HEADER_BYTES);
             HeaderResponse headerResponse = transport.getNextResponse(HeaderResponse.class);
-            assertThat(headerResponse.getHeader(), is(equalTo(AMQP_HEADER_BYTES)));
+            assertThat(headerResponse.getBody(), is(equalTo(AMQP_HEADER_BYTES)));
 
             transport.assertNoMoreResponses();
         }
@@ -143,9 +143,9 @@ public class SaslTest extends ProtocolTestBase
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
 
-            assertThat(saslHeaderResponse.getHeader(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
+            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
-            SaslMechanisms saslMechanismsResponse = transport.getNextPerformativeResponse(SaslMechanisms.class);
+            SaslMechanisms saslMechanismsResponse = transport.getNextResponseBody(SaslMechanisms.class);
             assertThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
 
             SaslInit saslInit = new SaslInit();
@@ -153,7 +153,7 @@ public class SaslTest extends ProtocolTestBase
             saslInit.setInitialResponse(new Binary("\0guest\0badpassword".getBytes(StandardCharsets.US_ASCII)));
             transport.sendPerformative(saslInit);
 
-            SaslOutcome saslOutcome = transport.getNextPerformativeResponse(SaslOutcome.class);
+            SaslOutcome saslOutcome = transport.getNextResponseBody(SaslOutcome.class);
             assertThat(saslOutcome.getCode(), equalTo(SaslCode.AUTH));
 
             transport.assertNoMoreResponsesAndChannelClosed();
@@ -173,15 +173,15 @@ public class SaslTest extends ProtocolTestBase
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
 
-            assertThat(saslHeaderResponse.getHeader(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
+            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
-            transport.getNextPerformativeResponse(SaslMechanisms.class);
+            transport.getNextResponseBody(SaslMechanisms.class);
 
             SaslInit saslInit = new SaslInit();
             saslInit.setMechanism(Symbol.getSymbol("NOT-A-MECHANISM"));
             transport.sendPerformative(saslInit);
 
-            SaslOutcome saslOutcome = transport.getNextPerformativeResponse(SaslOutcome.class);
+            SaslOutcome saslOutcome = transport.getNextResponseBody(SaslOutcome.class);
             assertThat(saslOutcome.getCode(), equalTo(SaslCode.AUTH));
             assertThat(saslOutcome.getAdditionalData(), is(nullValue()));
 
@@ -198,9 +198,9 @@ public class SaslTest extends ProtocolTestBase
         {
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
-            assertThat(saslHeaderResponse.getHeader(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
+            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
-            transport.getNextPerformativeResponse(SaslMechanisms.class);
+            transport.getNextResponseBody(SaslMechanisms.class);
 
             Open open = new Open();
             open.setContainerId("testContainerId");
@@ -221,9 +221,9 @@ public class SaslTest extends ProtocolTestBase
         {
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
-            assertThat(saslHeaderResponse.getHeader(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
+            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
-            transport.getNextPerformativeResponse(SaslMechanisms.class);
+            transport.getNextResponseBody(SaslMechanisms.class);
 
             SaslMechanisms clientMechs = new SaslMechanisms();
             clientMechs.setSaslServerMechanisms(new Symbol[] {Symbol.valueOf("CLIENT-MECH")});
@@ -242,9 +242,9 @@ public class SaslTest extends ProtocolTestBase
         {
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
-            assertThat(saslHeaderResponse.getHeader(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
+            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
-            transport.getNextPerformativeResponse(SaslMechanisms.class);
+            transport.getNextResponseBody(SaslMechanisms.class);
 
             SaslChallenge saslChallenge = new SaslChallenge();
             saslChallenge.setChallenge(new Binary(new byte[] {}));
@@ -263,9 +263,9 @@ public class SaslTest extends ProtocolTestBase
         {
             transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
             HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
-            assertThat(saslHeaderResponse.getHeader(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
+            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
-            transport.getNextPerformativeResponse(SaslMechanisms.class);
+            transport.getNextResponseBody(SaslMechanisms.class);
 
             SaslOutcome saslOutcome = new SaslOutcome();
             saslOutcome.setCode(SaslCode.OK);

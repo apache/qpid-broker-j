@@ -110,8 +110,8 @@ public class TransferTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Close.class)));
-            Close responseClose = (Close) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Close.class)));
+            Close responseClose = (Close) response.getBody();
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
         }
@@ -141,8 +141,8 @@ public class TransferTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Close.class)));
-            Close responseClose = (Close) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Close.class)));
+            Close responseClose = (Close) response.getBody();
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.INVALID_FIELD));
         }
@@ -172,8 +172,8 @@ public class TransferTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Disposition.class)));
-            Disposition responseDisposition = (Disposition) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Disposition.class)));
+            Disposition responseDisposition = (Disposition) response.getBody();
             assertThat(responseDisposition.getRole(), is(Role.RECEIVER));
             assertThat(responseDisposition.getSettled(), is(Boolean.TRUE));
             assertThat(responseDisposition.getState(), is(instanceOf(Accepted.class)));
@@ -217,8 +217,8 @@ public class TransferTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Disposition.class)));
-            Disposition responseDisposition = (Disposition) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Disposition.class)));
+            Disposition responseDisposition = (Disposition) response.getBody();
             assertThat(responseDisposition.getRole(), is(Role.RECEIVER));
             assertThat(responseDisposition.getSettled(), is(Boolean.TRUE));
             assertThat(responseDisposition.getState(), is(instanceOf(Accepted.class)));
@@ -262,8 +262,8 @@ public class TransferTest extends ProtocolTestBase
             PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
 
             assertThat(response, is(notNullValue()));
-            assertThat(response.getFrameBody(), is(instanceOf(Detach.class)));
-            Detach detach = (Detach) response.getFrameBody();
+            assertThat(response.getBody(), is(instanceOf(Detach.class)));
+            Detach detach = (Detach) response.getBody();
             Error error = detach.getError();
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
@@ -321,16 +321,16 @@ public class TransferTest extends ProtocolTestBase
 
             final PerformativeResponse openResponse = (PerformativeResponse) transport.getNextResponse();
             assertThat(openResponse, is(notNullValue()));
-            assertThat(openResponse.getFrameBody(), is(instanceOf(Open.class)));
+            assertThat(openResponse.getBody(), is(instanceOf(Open.class)));
             final PerformativeResponse beginResponse = (PerformativeResponse) transport.getNextResponse();
             assertThat(beginResponse, is(notNullValue()));
-            assertThat(beginResponse.getFrameBody(), is(instanceOf(Begin.class)));
+            assertThat(beginResponse.getBody(), is(instanceOf(Begin.class)));
             final PerformativeResponse attachResponse = (PerformativeResponse) transport.getNextResponse();
             assertThat(attachResponse, is(notNullValue()));
-            assertThat(attachResponse.getFrameBody(), is(instanceOf(Attach.class)));
+            assertThat(attachResponse.getBody(), is(instanceOf(Attach.class)));
             final PerformativeResponse flowResponse = (PerformativeResponse) transport.getNextResponse();
             assertThat(flowResponse, is(notNullValue()));
-            assertThat(flowResponse.getFrameBody(), is(instanceOf(Flow.class)));
+            assertThat(flowResponse.getBody(), is(instanceOf(Flow.class)));
 /*
             final PerformativeResponse dispositionResponse = (PerformativeResponse) transport.getNextResponse();
             assertThat(dispositionResponse, is(notNullValue()));
@@ -344,7 +344,7 @@ public class TransferTest extends ProtocolTestBase
 */
             final PerformativeResponse closeResponse = (PerformativeResponse) transport.getNextResponse();
             assertThat(closeResponse, is(notNullValue()));
-            assertThat(closeResponse.getFrameBody(), is(instanceOf(Close.class)));
+            assertThat(closeResponse.getBody(), is(instanceOf(Close.class)));
         }
     }
 
@@ -357,7 +357,7 @@ public class TransferTest extends ProtocolTestBase
                           + "detached by the receiver with the same error.")
     public void durableTransferWithRejectedOutcome() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Attach attach = new Attach();
             attach.setName("testLink");
@@ -390,8 +390,8 @@ public class TransferTest extends ProtocolTestBase
             if (getBrokerAdmin().supportsRestart())
             {
                 assertThat(response, is(notNullValue()));
-                assertThat(response.getFrameBody(), is(instanceOf(Disposition.class)));
-                final Disposition receivedDisposition = (Disposition) response.getFrameBody();
+                assertThat(response.getBody(), is(instanceOf(Disposition.class)));
+                final Disposition receivedDisposition = (Disposition) response.getBody();
                 assertThat(receivedDisposition.getSettled(), is(true));
                 assertThat(receivedDisposition.getState(), is(instanceOf(Outcome.class)));
                 assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Accepted.ACCEPTED_SYMBOL));
@@ -399,8 +399,8 @@ public class TransferTest extends ProtocolTestBase
             else
             {
                 assertThat(response, is(notNullValue()));
-                assertThat(response.getFrameBody(), is(instanceOf(Disposition.class)));
-                final Disposition receivedDisposition = (Disposition) response.getFrameBody();
+                assertThat(response.getBody(), is(instanceOf(Disposition.class)));
+                final Disposition receivedDisposition = (Disposition) response.getBody();
                 assertThat(receivedDisposition.getSettled(), is(true));
                 assertThat(receivedDisposition.getState(), is(instanceOf(Outcome.class)));
                 assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Rejected.REJECTED_SYMBOL));
@@ -417,7 +417,7 @@ public class TransferTest extends ProtocolTestBase
                           + "detached by the receiver with the same error.")
     public void durableTransferWithoutRejectedOutcome() throws Exception
     {
-        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Attach attach = new Attach();
             attach.setName("testLink");
@@ -450,8 +450,8 @@ public class TransferTest extends ProtocolTestBase
             if (getBrokerAdmin().supportsRestart())
             {
                 assertThat(response, is(notNullValue()));
-                assertThat(response.getFrameBody(), is(instanceOf(Disposition.class)));
-                final Disposition receivedDisposition = (Disposition) response.getFrameBody();
+                assertThat(response.getBody(), is(instanceOf(Disposition.class)));
+                final Disposition receivedDisposition = (Disposition) response.getBody();
                 assertThat(receivedDisposition.getSettled(), is(true));
                 assertThat(receivedDisposition.getState(), is(instanceOf(Outcome.class)));
                 assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Accepted.ACCEPTED_SYMBOL));
@@ -459,8 +459,8 @@ public class TransferTest extends ProtocolTestBase
             else
             {
                 assertThat(response, is(notNullValue()));
-                assertThat(response.getFrameBody(), is(instanceOf(Detach.class)));
-                final Detach receivedDetach = (Detach) response.getFrameBody();
+                assertThat(response.getBody(), is(instanceOf(Detach.class)));
+                final Detach receivedDetach = (Detach) response.getBody();
                 assertThat(receivedDetach.getError(), is(notNullValue()));
                 assertThat(receivedDetach.getError().getCondition(), is(AmqpError.PRECONDITION_FAILED));
             }
