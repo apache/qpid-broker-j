@@ -107,6 +107,18 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public boolean isSASLSupported()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isSASLMechanismSupported(final String mechanismName)
+    {
+        return true;
+    }
+
+    @Override
     public String getType()
     {
         return "EXTERNAL_BROKER";

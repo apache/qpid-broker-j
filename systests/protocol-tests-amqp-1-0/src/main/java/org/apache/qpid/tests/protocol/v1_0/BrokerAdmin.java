@@ -45,6 +45,9 @@ public interface BrokerAdmin extends Pluggable
     boolean supportsRestart();
     ListenableFuture<Void> restart();
 
+    boolean isSASLSupported();
+    boolean isSASLMechanismSupported(String mechanismName);
+
     enum PortType
     {
         ANONYMOUS_AMQP,

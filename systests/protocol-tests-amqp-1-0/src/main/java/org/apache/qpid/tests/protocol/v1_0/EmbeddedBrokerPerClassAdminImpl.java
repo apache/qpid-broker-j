@@ -330,6 +330,18 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public boolean isSASLSupported()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isSASLMechanismSupported(final String mechanismName)
+    {
+        return true;
+    }
+
+    @Override
     public String getType()
     {
         return "EMBEDDED_BROKER_PER_CLASS";
