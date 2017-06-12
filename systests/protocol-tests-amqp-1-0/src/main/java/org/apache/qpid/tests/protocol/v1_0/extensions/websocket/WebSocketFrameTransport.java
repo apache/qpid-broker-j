@@ -53,27 +53,24 @@ public class WebSocketFrameTransport extends FrameTransport
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketFrameTransport.class);
 
-    private WebSocketFramingOutputHandler _webSocketFramingOutputHandler;
-    private WebSocketDeframingInputHandler _webSocketDeframingInputHandler;
-    private WebSocketClientHandler _webSocketClientHandler;
+    private final WebSocketFramingOutputHandler _webSocketFramingOutputHandler = new WebSocketFramingOutputHandler();
+    private final WebSocketDeframingInputHandler _webSocketDeframingInputHandler = new WebSocketDeframingInputHandler();
+    private final WebSocketClientHandler _webSocketClientHandler;
 
     public WebSocketFrameTransport(final InetSocketAddress addr)
     {
         super(addr);
-    }
-
-    @Override
-    protected void buildInputOutputPipeline(final ChannelPipeline pipeline)
-    {
         URI uri = URI.create(String.format("tcp://%s:%d/",
                                            getBrokerAddress().getHostString(),
                                            getBrokerAddress().getPort()));
         _webSocketClientHandler = new WebSocketClientHandler(
                 WebSocketClientHandshakerFactory.newHandshaker(
                         uri, WebSocketVersion.V13, "amqp", false, new DefaultHttpHeaders()), uri);
-        _webSocketFramingOutputHandler = new WebSocketFramingOutputHandler();
-        _webSocketDeframingInputHandler = new WebSocketDeframingInputHandler();
+    }
 
+    @Override
+    protected void buildInputOutputPipeline(final ChannelPipeline pipeline)
+    {
         pipeline.addLast(new HttpClientCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(_webSocketClientHandler);
@@ -105,26 +102,36 @@ public class WebSocketFrameTransport extends FrameTransport
         {
             if (msg instanceof ByteBuf)
             {
-                final ByteBuf buf = ((ByteBuf) msg);
+                final ByteBuf buf = ((ByteBuf) msg).retain();
+
                 if (_splitFrames)
                 {
-                    buf.forEachByte(b ->
-                                    {
-                                        ByteBuf byteBuf = Unpooled.copiedBuffer(new byte[] {b});
-                                        BinaryWebSocketFrame frame = new BinaryWebSocketFrame(byteBuf);
-                                        ctx.write(frame, promise);
-                                        return false;
-                                    });
+                    while(buf.isReadable())
+                    {
+
+                        byte b = buf.readByte();
+                        BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.wrappedBuffer(new byte[] {b}));
+                        if (buf.isReadable())
+                        {
+                            ctx.writeAndFlush(frame);
+                        }
+                        else
+                        {
+                            ctx.writeAndFlush(frame, promise);
+                        }
+                    }
+
+                    buf.release();
                 }
                 else
                 {
                     BinaryWebSocketFrame frame = new BinaryWebSocketFrame((ByteBuf) msg);
-                    ctx.write(frame, promise);
+                    ctx.writeAndFlush(frame, promise);
                 }
             }
             else
             {
-                ctx.write(msg, promise);
+                ctx.writeAndFlush(msg, promise);
             }
         }
 

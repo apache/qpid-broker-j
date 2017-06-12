@@ -32,7 +32,6 @@ import static org.junit.Assert.assertArrayEquals;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
@@ -46,6 +45,9 @@ import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 
 public class WebSocketTest extends ProtocolTestBase
 {
+
+    public static final byte[] AMQP_HEADER = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
+
     @Test
     @SpecificationTest(section = "2.1", description = "Opening a WebSocket Connection")
     public void protocolHeader() throws Exception
@@ -53,29 +55,26 @@ public class WebSocketTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
         try (FrameTransport transport = new WebSocketFrameTransport(addr).connect())
         {
-            byte[] bytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
-            transport.sendProtocolHeader(bytes);
+            transport.sendProtocolHeader(AMQP_HEADER);
             HeaderResponse response = transport.getNextResponse();
-            assertArrayEquals("Unexpected protocol header response", bytes, response.getBody());
+            assertArrayEquals("Unexpected protocol header response", AMQP_HEADER, response.getBody());
         }
     }
 
     @Test
     @SpecificationTest(section = "2.4", description = "[...] a single AMQP frame MAY be split over one or more consecutive WebSocket messages. ")
-    @Ignore("QPID-7817")
     public void amqpFramesSplitOverManyWebSocketFrames() throws Exception
     {
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
         try (FrameTransport transport = new WebSocketFrameTransport(addr).splitAmqpFrames().connect())
         {
-            byte[] bytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
-            transport.sendProtocolHeader(bytes);
-            HeaderResponse response = transport.getNextResponse();
-            assertArrayEquals("Unexpected protocol header response", bytes, response.getBody());
+            transport.sendProtocolHeader(AMQP_HEADER);
+            HeaderResponse response = transport.getNextResponse(HeaderResponse.class);
+            assertArrayEquals("Unexpected protocol header response", AMQP_HEADER, response.getBody());
 
             Open open = new Open();
             open.setContainerId("testContainerId");
-            transport.sendPerformative(open, UnsignedShort.valueOf((short) 0));
+            transport.sendPerformative(open, UnsignedShort.ZERO);
             Open responseOpen = transport.getNextResponseBody(Open.class);
 
             assertThat(responseOpen.getContainerId(), is(notNullValue()));
@@ -99,7 +98,7 @@ public class WebSocketTest extends ProtocolTestBase
 
             Open open = new Open();
             open.setContainerId("testContainerId");
-            transport.sendPerformative(open, UnsignedShort.valueOf((short) 0));
+            transport.sendPerformative(open, UnsignedShort.ZERO);
             Open responseOpen = transport.getNextResponseBody(Open.class);
 
             assertThat(responseOpen.getContainerId(), is(notNullValue()));

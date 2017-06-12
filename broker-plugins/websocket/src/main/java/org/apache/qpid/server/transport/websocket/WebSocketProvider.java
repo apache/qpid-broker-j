@@ -50,13 +50,15 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -88,6 +90,7 @@ class WebSocketProvider implements AcceptingTransport
     private final Transport _transport;
     private final SSLContext _sslContext;
     private final AmqpPort<?> _port;
+    private final Broker<?> _broker;
     private final Set<Protocol> _supported;
     private final Protocol _defaultSupportedProtocolReply;
     private final MultiVersionProtocolEngineFactory _factory;
@@ -108,11 +111,12 @@ class WebSocketProvider implements AcceptingTransport
         _transport = transport;
         _sslContext = sslContext;
         _port = port;
+        _broker = ((Broker<?>) port.getParent());
         _supported = supported;
         _defaultSupportedProtocolReply = defaultSupportedProtocolReply;
 
         _factory = new MultiVersionProtocolEngineFactory(
-                        (Broker<?>) _port.getParent(),
+                        _broker,
                         _supported,
                         _defaultSupportedProtocolReply,
                         _port,
@@ -353,16 +357,21 @@ class WebSocketProvider implements AcceptingTransport
                 ((ServerConnector) server.getConnectors()[0]).getLocalPort();
     }
 
-    public class AmqpWebSocket extends WebSocketAdapter
+    @WebSocket
+    public class AmqpWebSocket
     {
+        private volatile QpidByteBuffer _netInputBuffer;
         private volatile MultiVersionProtocolEngine _protocolEngine;
         private volatile ConnectionWrapper _connectionWrapper;
 
-        @Override
+        AmqpWebSocket()
+        {
+            _netInputBuffer = QpidByteBuffer.allocateDirect(_broker.getNetworkBufferSize());
+        }
+
+        @OnWebSocketConnect @SuppressWarnings("unused")
         public void onWebSocketConnect(final Session session)
         {
-            super.onWebSocketConnect(session);
-
             SocketAddress localAddress = session.getLocalAddress();
             SocketAddress remoteAddress = session.getRemoteAddress();
             _protocolEngine = _factory.newProtocolEngine(remoteAddress);
@@ -386,12 +395,11 @@ class WebSocketProvider implements AcceptingTransport
 
         }
 
-        @Override
-        public void onWebSocketBinary(final byte[] data, final int offset, final int length)
+        @OnWebSocketMessage @SuppressWarnings("unused")
+        public void onWebSocketBinary(Session sess, final byte[] payload, int offset, final int len)
         {
             synchronized (_connectionWrapper)
             {
-
                 _protocolEngine.clearWork();
                 try
                 {
@@ -402,13 +410,26 @@ class WebSocketProvider implements AcceptingTransport
                         iter.next().run();
                     }
 
-                    for (QpidByteBuffer qpidByteBuffer : QpidByteBuffer.asQpidByteBuffers(data, offset, length))
+                    int lastRead;
+                    int remaining = len;
+                    do
                     {
-                        _protocolEngine.received(qpidByteBuffer);
-                        qpidByteBuffer.dispose();
-                    }
+                        int chunkLen = Math.min(remaining, _netInputBuffer.remaining());
+                        _netInputBuffer.put(payload, offset, chunkLen);
+                        remaining =- chunkLen;
+                        offset =+ chunkLen;
 
-                    _connectionWrapper.doWrite();
+                        _netInputBuffer.flip();
+                        _protocolEngine.received(_netInputBuffer);
+                        _connectionWrapper.doWrite();
+                        _netInputBuffer.compact();
+                    }
+                    while(remaining > 0);
+
+                    if (LOGGER.isDebugEnabled())
+                    {
+                        LOGGER.debug("Read {} byte(s)", len);
+                    }
                 }
                 finally
                 {
@@ -416,17 +437,17 @@ class WebSocketProvider implements AcceptingTransport
                 }
             }
             _idleTimeoutChecker.wakeup();
-
         }
 
-        @Override
-        public void onWebSocketError(final Throwable cause)
+        /** AMQP frames MUST be sent as binary data payloads of WebSocket messages.*/
+        @OnWebSocketMessage @SuppressWarnings("unused")
+        public void onWebSocketText(Session sess, String text)
         {
-            super.onWebSocketError(cause);
-            LOGGER.error("onWebSocketError", cause);
+            LOGGER.info("Unexpected websocket text message received, closing connection");
+            sess.close();
         }
 
-        @Override
+        @OnWebSocketClose @SuppressWarnings("unused")
         public void onWebSocketClose(final int statusCode, final String reason)
         {
             if (_protocolEngine != null)
@@ -435,6 +456,7 @@ class WebSocketProvider implements AcceptingTransport
             }
             _activeConnections.remove(_connectionWrapper);
             _idleTimeoutChecker.wakeup();
+            _netInputBuffer.dispose();
         }
     }
 
@@ -486,7 +508,6 @@ class WebSocketProvider implements AcceptingTransport
         @Override
         public void start()
         {
-
         }
 
         @Override
@@ -605,6 +626,8 @@ class WebSocketProvider implements AcceptingTransport
             QpidByteBuffer buf;
             while((buf = _buffers.poll())!= null)
             {
+                // TODO: For efficiency perhaps only coalesce sequential small buffers and let large buffers
+                // go alone in a binary message.  This would likely avoid the memory copies of large transfer payloads
                 size += buf.remaining();
                 toBeWritten.add(buf);
             }
@@ -624,6 +647,10 @@ class WebSocketProvider implements AcceptingTransport
                 try
                 {
                     _connection.getRemote().sendBytes(ByteBuffer.wrap(data));
+                    if (LOGGER.isDebugEnabled())
+                    {
+                        LOGGER.debug("Written {} byte(s)", data.length);
+                    }
                 }
                 catch (IOException e)
                 {

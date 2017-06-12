@@ -28,7 +28,6 @@ public final class UnsignedShort extends Number implements Comparable<UnsignedSh
     private final short _underlying;
     private static final UnsignedShort[] cachedValues = new UnsignedShort[256];
     public static final UnsignedShort MAX_VALUE = new UnsignedShort((short) 0xffff);
-
     static
     {
         for(short i = 0; i < 256; i++)
@@ -36,6 +35,8 @@ public final class UnsignedShort extends Number implements Comparable<UnsignedSh
             cachedValues[i] = new UnsignedShort(i);
         }
     }
+
+    public static final UnsignedShort ZERO = UnsignedShort.valueOf((short) 0);
 
     private UnsignedShort(short underlying)
     {
@@ -56,7 +57,7 @@ public final class UnsignedShort extends Number implements Comparable<UnsignedSh
     @Override
     public long longValue()
     {
-        return ((long) _underlying) & 0xFFFFl;
+        return ((long) _underlying) & 0xFFFFL;
     }
 
     @Override
