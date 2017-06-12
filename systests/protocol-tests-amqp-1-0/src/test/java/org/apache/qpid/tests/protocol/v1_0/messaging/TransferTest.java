@@ -32,15 +32,19 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
@@ -66,12 +70,29 @@ import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 public class TransferTest extends ProtocolTestBase
 {
     private InetSocketAddress _brokerAddress;
+    private String _originalMmsMessageStorePersistence;
 
     @Before
     public void setUp()
     {
+        _originalMmsMessageStorePersistence = System.getProperty("qpid.tests.mms.messagestore.persistence");
+        System.setProperty("qpid.tests.mms.messagestore.persistence", "false");
+
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
+    }
+
+    @After
+    public void tearDown()
+    {
+        if (_originalMmsMessageStorePersistence != null)
+        {
+            System.setProperty("qpid.tests.mms.messagestore.persistence", _originalMmsMessageStorePersistence);
+        }
+        else
+        {
+            System.clearProperty("qpid.tests.mms.messagestore.persistence");
+        }
     }
 
     @Test
@@ -278,6 +299,8 @@ public class TransferTest extends ProtocolTestBase
             MessageEncoder messageEncoder = new MessageEncoder();
             messageEncoder.addData("foo");
             Transfer transfer = new Transfer();
+            transfer.setDeliveryId(UnsignedInteger.ONE);
+            transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
             transfer.setHandle(linkHandle);
             transfer.setPayload(messageEncoder.getPayload());
             transfer.setSettled(Boolean.TRUE);
@@ -322,6 +345,125 @@ public class TransferTest extends ProtocolTestBase
             final PerformativeResponse closeResponse = (PerformativeResponse) transport.getNextResponse();
             assertThat(closeResponse, is(notNullValue()));
             assertThat(closeResponse.getFrameBody(), is(instanceOf(Close.class)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "3.2.1",
+            description = "Durable messages MUST NOT be lost even if an intermediary is unexpectedly terminated and "
+                          + "restarted. A target which is not capable of fulfilling this guarantee MUST NOT accept messages "
+                          + "where the durable header is set to true: if the source allows the rejected outcome then the "
+                          + "message SHOULD be rejected with the precondition-failed error, otherwise the link MUST be "
+                          + "detached by the receiver with the same error.")
+    public void durableTransferWithRejectedOutcome() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        {
+            final Attach attach = new Attach();
+            attach.setName("testLink");
+            attach.setRole(Role.SENDER);
+            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
+            attach.setHandle(linkHandle);
+            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
+            Target target = new Target();
+            target.setAddress(BrokerAdmin.TEST_QUEUE_NAME);
+            attach.setTarget(target);
+            final Source source = new Source();
+            source.setOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL);
+            attach.setSource(source);
+            transport.doAttachSendingLink(attach);
+
+            MessageEncoder messageEncoder = new MessageEncoder();
+            final Header header = new Header();
+            header.setDurable(true);
+            messageEncoder.setHeader(header);
+            messageEncoder.addData("test message data.");
+            Transfer transfer = new Transfer();
+            transfer.setDeliveryId(UnsignedInteger.ONE);
+            transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
+            transfer.setHandle(linkHandle);
+            transfer.setPayload(messageEncoder.getPayload());
+
+            transport.sendPerformative(transfer);
+            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
+
+            if (getBrokerAdmin().supportsRestart())
+            {
+                assertThat(response, is(notNullValue()));
+                assertThat(response.getFrameBody(), is(instanceOf(Disposition.class)));
+                final Disposition receivedDisposition = (Disposition) response.getFrameBody();
+                assertThat(receivedDisposition.getSettled(), is(true));
+                assertThat(receivedDisposition.getState(), is(instanceOf(Outcome.class)));
+                assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Accepted.ACCEPTED_SYMBOL));
+            }
+            else
+            {
+                assertThat(response, is(notNullValue()));
+                assertThat(response.getFrameBody(), is(instanceOf(Disposition.class)));
+                final Disposition receivedDisposition = (Disposition) response.getFrameBody();
+                assertThat(receivedDisposition.getSettled(), is(true));
+                assertThat(receivedDisposition.getState(), is(instanceOf(Outcome.class)));
+                assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Rejected.REJECTED_SYMBOL));
+            }
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "3.2.1",
+            description = "Durable messages MUST NOT be lost even if an intermediary is unexpectedly terminated and "
+                          + "restarted. A target which is not capable of fulfilling this guarantee MUST NOT accept messages "
+                          + "where the durable header is set to true: if the source allows the rejected outcome then the "
+                          + "message SHOULD be rejected with the precondition-failed error, otherwise the link MUST be "
+                          + "detached by the receiver with the same error.")
+    public void durableTransferWithoutRejectedOutcome() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress))
+        {
+            final Attach attach = new Attach();
+            attach.setName("testLink");
+            attach.setRole(Role.SENDER);
+            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
+            attach.setHandle(linkHandle);
+            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
+            Target target = new Target();
+            target.setAddress(BrokerAdmin.TEST_QUEUE_NAME);
+            attach.setTarget(target);
+            final Source source = new Source();
+            source.setOutcomes(Accepted.ACCEPTED_SYMBOL);
+            attach.setSource(source);
+            transport.doAttachSendingLink(attach);
+
+            MessageEncoder messageEncoder = new MessageEncoder();
+            final Header header = new Header();
+            header.setDurable(true);
+            messageEncoder.setHeader(header);
+            messageEncoder.addData("test message data.");
+            Transfer transfer = new Transfer();
+            transfer.setDeliveryId(UnsignedInteger.ONE);
+            transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
+            transfer.setHandle(linkHandle);
+            transfer.setPayload(messageEncoder.getPayload());
+
+            transport.sendPerformative(transfer);
+            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
+
+            if (getBrokerAdmin().supportsRestart())
+            {
+                assertThat(response, is(notNullValue()));
+                assertThat(response.getFrameBody(), is(instanceOf(Disposition.class)));
+                final Disposition receivedDisposition = (Disposition) response.getFrameBody();
+                assertThat(receivedDisposition.getSettled(), is(true));
+                assertThat(receivedDisposition.getState(), is(instanceOf(Outcome.class)));
+                assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Accepted.ACCEPTED_SYMBOL));
+            }
+            else
+            {
+                assertThat(response, is(notNullValue()));
+                assertThat(response.getFrameBody(), is(instanceOf(Detach.class)));
+                final Detach receivedDetach = (Detach) response.getFrameBody();
+                assertThat(receivedDetach.getError(), is(notNullValue()));
+                assertThat(receivedDetach.getError().getCondition(), is(AmqpError.PRECONDITION_FAILED));
+            }
         }
     }
 }

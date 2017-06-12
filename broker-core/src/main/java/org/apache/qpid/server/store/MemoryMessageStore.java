@@ -321,7 +321,7 @@ public class MemoryMessageStore implements MessageStore
     @Override
     public boolean isPersistent()
     {
-        return false;
+        return Boolean.parseBoolean(System.getProperty("qpid.tests.mms.messagestore.persistence", "false"));
     }
 
     @Override

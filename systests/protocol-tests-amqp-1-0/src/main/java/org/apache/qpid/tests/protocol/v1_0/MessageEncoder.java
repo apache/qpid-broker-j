@@ -25,29 +25,33 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
-import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 
 public class MessageEncoder
 {
-    private static final AMQPDescribedTypeRegistry
-            AMQP_DESCRIBED_TYPE_REGISTRY = AMQPDescribedTypeRegistry.newInstance()
-                                                                    .registerTransportLayer()
-                                                                    .registerMessagingLayer();
+    private Header _header;
     private List<String> _data = new LinkedList<>();
-    private SectionEncoder _encoder = new SectionEncoderImpl(AMQP_DESCRIBED_TYPE_REGISTRY);
 
     public void addData(final String data)
     {
         _data.add(data);
     }
 
+    public void setHeader(Header header)
+    {
+        _header = header;
+    }
+
     public List<QpidByteBuffer> getPayload()
     {
         List<QpidByteBuffer> payload = new ArrayList<>();
+        if (_header != null)
+        {
+            payload.addAll(_header.createEncodingRetainingSection().getEncodedForm());
+        }
+
         if (_data.isEmpty())
         {
             throw new IllegalStateException("Message should have at least one data section");

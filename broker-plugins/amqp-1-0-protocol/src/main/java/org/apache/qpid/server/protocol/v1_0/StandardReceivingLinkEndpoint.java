@@ -41,6 +41,7 @@ import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
@@ -237,9 +238,29 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     session.getAMQPConnection()
                            .checkAuthorizedMessagePrincipal(serverMessage.getMessageHeader().getUserId());
 
-                    Outcome outcome = getReceivingDestination().send(serverMessage, transaction,
-                                                                     session.getSecurityToken());
+                    Outcome outcome;
                     Source source = getSource();
+                    if (serverMessage.isPersistent() && !getAddressSpace().getMessageStore().isPersistent())
+                    {
+                        final Error preconditionFailedError = new Error(AmqpError.PRECONDITION_FAILED,
+                                                                        "Non-durable message store cannot accept durable message.");
+                        if (source.getOutcomes() != null && Arrays.asList(source.getOutcomes())
+                                                                  .contains(Rejected.REJECTED_SYMBOL))
+                        {
+                            final Rejected rejected = new Rejected();
+                            rejected.setError(preconditionFailedError);
+                            outcome = rejected;
+                        }
+                        else
+                        {
+                            return preconditionFailedError;
+                        }
+                    }
+                    else
+                    {
+                        outcome = getReceivingDestination().send(serverMessage, transaction,
+                                                                 session.getSecurityToken());
+                    }
 
                     DeliveryState resultantState;
 
