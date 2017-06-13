@@ -416,8 +416,8 @@ class WebSocketProvider implements AcceptingTransport
                     {
                         int chunkLen = Math.min(remaining, _netInputBuffer.remaining());
                         _netInputBuffer.put(payload, offset, chunkLen);
-                        remaining =- chunkLen;
-                        offset =+ chunkLen;
+                        remaining -= chunkLen;
+                        offset += chunkLen;
 
                         _netInputBuffer.flip();
                         _protocolEngine.received(_netInputBuffer);
