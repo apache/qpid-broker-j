@@ -41,6 +41,7 @@ import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
@@ -264,7 +265,17 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
                     DeliveryState resultantState;
 
-                    if(source.getOutcomes() == null || Arrays.asList(source.getOutcomes()).contains(outcome.getSymbol()))
+                    final List<Symbol> sourceSupportedOutcomes = new ArrayList<>();
+                    if (source.getOutcomes() != null)
+                    {
+                        sourceSupportedOutcomes.addAll(Arrays.asList(source.getOutcomes()));
+                    }
+                    else if (source.getDefaultOutcome() == null)
+                    {
+                        sourceSupportedOutcomes.add(Accepted.ACCEPTED_SYMBOL);
+                    }
+
+                    if (sourceSupportedOutcomes.contains(outcome.getSymbol()))
                     {
                         if (transactionId == null)
                         {
@@ -278,21 +289,16 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                             resultantState = transactionalState;
                         }
                     }
-                    else if(transactionId != null)
+                    else
                     {
-                        // cause the txn to fail
-                        if(transaction instanceof LocalTransaction)
+                        if(transactionId != null && transaction instanceof LocalTransaction
+                           && source.getDefaultOutcome() != null
+                           && outcome.getSymbol() != source.getDefaultOutcome().getSymbol())
                         {
                             ((LocalTransaction) transaction).setRollbackOnly();
                         }
                         resultantState = null;
                     }
-                    else
-                    {
-                        // we should just use the default outcome
-                        resultantState = null;
-                    }
-
 
                     boolean settled = shouldReceiverSettleFirst(transferReceiverSettleMode);
 

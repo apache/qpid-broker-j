@@ -58,6 +58,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnNoMessages;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Filter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.NoLocalFilter;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.StdDistMode;
@@ -641,6 +642,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             final Modified defaultOutcome = new Modified();
             defaultOutcome.setDeliveryFailed(true);
             source.setDefaultOutcome(defaultOutcome);
+            source.setOutcomes(Accepted.ACCEPTED_SYMBOL, Released.RELEASED_SYMBOL, Rejected.REJECTED_SYMBOL);
             source.setAddress(attachSource.getAddress());
             source.setDynamic(attachSource.getDynamic());
             if (Boolean.TRUE.equals(attachSource.getDynamic()) && attachSource.getDynamicNodeProperties() != null)

@@ -20,6 +20,7 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,16 +33,17 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declare;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declared;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionErrors;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
-import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -137,9 +139,28 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
                     {
                         Discharge discharge = (Discharge) command;
 
-                        final Error error = discharge(session.binaryToInteger(discharge.getTxnId()),
-                                                      Boolean.TRUE.equals(discharge.getFail()));
-                        updateDisposition(deliveryTag, error == null ? new Accepted() : null, true);
+                        Error error = discharge(discharge.getTxnId(), Boolean.TRUE.equals(discharge.getFail()));
+                        final DeliveryState outcome;
+                        if (error == null)
+                        {
+                            outcome = new Accepted();
+                        }
+                        else if (Arrays.asList(getSource().getOutcomes()).contains(Rejected.REJECTED_SYMBOL))
+                        {
+                            final Rejected rejected = new Rejected();
+                            rejected.setError(error);
+                            outcome = rejected;
+                            error = null;
+                        }
+                        else
+                        {
+                            outcome = null;
+                        }
+
+                        if (error == null)
+                        {
+                            updateDisposition(deliveryTag, outcome, true);
+                        }
                         return error;
                     }
                     else
@@ -168,10 +189,21 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
         return null;
     }
 
-    private Error discharge(Integer transactionId, boolean fail)
+    private Error discharge(Binary transactionIdAsBinary, boolean fail)
     {
         Error error = null;
-        ServerTransaction txn = _createdTransactions.get(transactionId);
+        Integer transactionId = null;
+        ServerTransaction txn = null;
+        try
+        {
+            transactionId = getSession().binaryToInteger(transactionIdAsBinary);
+            txn = _createdTransactions.get(transactionId);
+        }
+        catch (IllegalArgumentException e)
+        {
+           // pass
+        }
+
         if(txn != null)
         {
             if(fail)
@@ -189,7 +221,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
                 txn.rollback();
                 getSession().incrementRolledBackTransactions();
                 error = new Error();
-                error.setCondition(LinkError.DETACH_FORCED);
+                error.setCondition(TransactionErrors.TRANSACTION_ROLLBACK);
                 error.setDescription("The transaction was marked as rollback only due to an earlier issue (e.g. a published message was sent settled but could not be enqueued)");
             }
             _createdTransactions.remove(transactionId);
@@ -198,8 +230,8 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
         else
         {
             error = new Error();
-            error.setCondition(AmqpError.NOT_FOUND);
-            error.setDescription("Unknown transactionId" + transactionId);
+            error.setCondition(TransactionErrors.UNKNOWN_ID);
+            error.setDescription("Unknown transactionId " + transactionIdAsBinary.toString());
         }
         return error;
     }
