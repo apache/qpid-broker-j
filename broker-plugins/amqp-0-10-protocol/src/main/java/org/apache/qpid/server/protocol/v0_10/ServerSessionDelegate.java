@@ -23,19 +23,20 @@ package org.apache.qpid.server.protocol.v0_10;
 import java.nio.charset.StandardCharsets;
 import java.security.AccessControlException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import com.google.common.util.concurrent.Futures;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
@@ -52,6 +53,7 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
@@ -79,7 +81,7 @@ import org.apache.qpid.server.txn.TimeoutDtxException;
 import org.apache.qpid.server.txn.UnknownDtxBranchException;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
+import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
@@ -861,6 +863,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                 return;
             }
         }
+        String alternateExchangeName = method.getAlternateExchange();
         if(nameNullOrEmpty(method.getExchange()))
         {
             // special case handling to fake the existence of the default exchange for 0-10
@@ -871,11 +874,11 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                           + " of type " + ExchangeDefaults.DIRECT_EXCHANGE_CLASS
                           + " to " + method.getType() +".");
             }
-            if(!nameNullOrEmpty(method.getAlternateExchange()))
+            if(!nameNullOrEmpty(alternateExchangeName))
             {
                 exception(session, method, ExecutionErrorCode.NOT_ALLOWED,
                           "Attempt to set alternate exchange of the default exchange "
-                          + " to " + method.getAlternateExchange() +".");
+                          + " to " + alternateExchangeName + ".");
             }
         }
         else
@@ -911,7 +914,13 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                     attributes.put(org.apache.qpid.server.model.Exchange.DURABLE, method.getDurable());
                     attributes.put(org.apache.qpid.server.model.Exchange.LIFETIME_POLICY,
                                    method.getAutoDelete() ? LifetimePolicy.DELETE_ON_NO_LINKS : LifetimePolicy.PERMANENT);
-                    attributes.put(org.apache.qpid.server.model.Exchange.ALTERNATE_EXCHANGE, method.getAlternateExchange());
+                    if (method.hasAlternateExchange() && !nameNullOrEmpty(alternateExchangeName))
+                    {
+                        validateAlternateExchangeIsNotQueue(addressSpace, alternateExchangeName);
+
+                        attributes.put(org.apache.qpid.server.model.Exchange.ALTERNATE_BINDING,
+                                       Collections.singletonMap(AlternateBinding.DESTINATION, alternateExchangeName));
+                    }
                     addressSpace.createMessageDestination(Exchange.class, attributes);;
                 }
                 catch(ReservedExchangeNameException e)
@@ -919,8 +928,9 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                     Exchange<?> existingExchange = getExchange(session, exchangeName);
                     if(existingExchange == null
                        || !existingExchange.getType().equals(method.getType())
-                       || (method.hasAlternateExchange() && (existingExchange.getAlternateExchange() == null ||
-                                                             !method.getAlternateExchange().equals(existingExchange.getAlternateExchange().getName()))) )
+                       || (method.hasAlternateExchange() && (existingExchange.getAlternateBinding() == null ||
+                                                             !alternateExchangeName
+                                                                    .equals(existingExchange.getAlternateBinding().getDestination()))) )
                     {
                         exception(session, method, ExecutionErrorCode.NOT_ALLOWED, "Attempt to declare exchange: "
                                                                                    + exchangeName + " which begins with reserved name or prefix.");
@@ -947,21 +957,23 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                                         + " to " + method.getType() +".");
                     }
                     else if(method.hasAlternateExchange()
-                              && (exchange.getAlternateExchange() == null ||
-                                  !method.getAlternateExchange().equals(exchange.getAlternateExchange().getName())))
+                              && (exchange.getAlternateBinding() == null ||
+                                  !alternateExchangeName.equals(exchange.getAlternateBinding().getDestination())))
                     {
                         exception(session, method, ExecutionErrorCode.NOT_ALLOWED,
-                                "Attempt to change alternate exchange of: " + exchangeName
-                                        + " from " + exchange.getAlternateExchange()
-                                        + " to " + method.getAlternateExchange() +".");
+                                  "Attempt to change alternate exchange of: " + exchangeName
+                                  + " from " + exchange.getAlternateBinding()
+                                  + " to " + alternateExchangeName + ".");
                     }
                 }
                 catch (AccessControlException e)
                 {
                     exception(session, method, ExecutionErrorCode.UNAUTHORIZED_ACCESS, e.getMessage());
                 }
-
-
+                catch (IllegalConfigurationException e)
+                {
+                    exception(session, method, ExecutionErrorCode.ILLEGAL_ARGUMENT, e.getMessage());
+                }
             }
         }
     }
@@ -1095,9 +1107,9 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                 {
                     exchange.delete();
                 }
-                catch (ExchangeIsAlternateException e)
+                catch (MessageDestinationIsAlternateException e)
                 {
-                    exception(session, method, ExecutionErrorCode.NOT_ALLOWED, "Exchange in use as an alternate exchange");
+                    exception(session, method, ExecutionErrorCode.NOT_ALLOWED, "Exchange in use as an alternate binding destination");
                 }
                 catch (RequiredExchangeException e)
                 {
@@ -1518,19 +1530,16 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
 
                 final String alternateExchangeName = method.getAlternateExchange();
 
+                final Map<String, Object> arguments = QueueArgumentsConverter.convertWireArgsToModel(queueName,
+                                                                                                     method.getArguments());
 
-                final Map<String, Object> arguments = QueueArgumentsConverter.convertWireArgsToModel(method.getArguments());
-
-                if(alternateExchangeName != null && alternateExchangeName.length() != 0)
+                if (method.hasAlternateExchange() && !nameNullOrEmpty(alternateExchangeName))
                 {
-                    arguments.put(Queue.ALTERNATE_EXCHANGE, alternateExchangeName);
+                    validateAlternateExchangeIsNotQueue(addressSpace, alternateExchangeName);
+                    arguments.put(Queue.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, alternateExchangeName));
                 }
 
-                final UUID id = UUID.randomUUID();
-
-                arguments.put(Queue.ID, id);
                 arguments.put(Queue.NAME, queueName);
-
 
                 if(!arguments.containsKey(Queue.LIFETIME_POLICY))
                 {
@@ -1578,6 +1587,20 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
             {
                 exception(session, method, ExecutionErrorCode.UNAUTHORIZED_ACCESS, e.getMessage());
             }
+            catch (IllegalConfigurationException e)
+            {
+                exception(session, method, ExecutionErrorCode.ILLEGAL_ARGUMENT, e.getMessage());
+            }
+        }
+    }
+
+    private void validateAlternateExchangeIsNotQueue(final NamedAddressSpace addressSpace, final String alternateExchangeName)
+    {
+        MessageDestination alternateMessageDestination = addressSpace.getAttainedMessageDestination(alternateExchangeName, false);
+        if (alternateMessageDestination != null && !(alternateMessageDestination instanceof Exchange))
+        {
+            throw new IllegalConfigurationException(String.format(
+                    "Alternate exchange '%s' is not a destination of type 'exchange'.", alternateExchangeName));
         }
     }
 

@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-import static org.apache.qpid.server.model.Initialization.materialize;
-
 import java.security.AccessControlContext;
 import java.util.Collection;
 import java.util.List;
@@ -75,15 +73,6 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     String NODE_AUTO_CREATION_POLICIES = "nodeAutoCreationPolicies";
 
 
-    String QUEUE_DEAD_LETTER_QUEUE_ENABLED      = "queue.deadLetterQueueEnabled";
-
-    @ManagedContextDefault( name = "queue.deadLetterQueueEnabled")
-    boolean DEFAULT_DEAD_LETTER_QUEUE_ENABLED = false;
-
-    String DEFAULT_DLE_NAME_SUFFIX = "_DLE";
-    String PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX = "qpid.broker_dead_letter_exchange_suffix";
-    String PROPERTY_DEAD_LETTER_QUEUE_SUFFIX = "qpid.broker_dead_letter_queue_suffix";
-
     @ManagedContextDefault( name = "virtualhost.housekeepingCheckPeriod")
     long DEFAULT_HOUSEKEEPING_CHECK_PERIOD = 30000l;
 
@@ -135,9 +124,6 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
                           + "written to the logs.")
     long getStoreTransactionOpenTimeoutWarn();
 
-
-    @ManagedAttribute( defaultValue = "${queue.deadLetterQueueEnabled}", initialization = materialize)
-    boolean isQueue_deadLetterQueueEnabled();
 
     @ManagedAttribute( defaultValue = "${virtualhost.housekeepingCheckPeriod}")
     long getHousekeepingCheckPeriod();
@@ -286,7 +272,6 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     Queue<?> getAttainedQueue(UUID id);
 
     Queue<?> getAttainedQueue(String name);
-
 
     String getLocalAddress(String routingAddress);
 

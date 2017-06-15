@@ -33,6 +33,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstance.ConsumerAcquiredState;
 import org.apache.qpid.server.message.MessageInstance.EntryState;
@@ -473,12 +474,12 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
             if(owningResource instanceof Queue)
             {
                 final Queue<?> queue = (Queue<?>)owningResource;
-                final Exchange alternateExchange = queue.getAlternateExchange();
+                final MessageDestination alternateBindingDestination = queue.getAlternateBindingDestination();
 
-                if(alternateExchange != null)
+                if(alternateBindingDestination != null)
                 {
                     getEventLogger().message(ChannelMessages.DISCARDMSG_NOROUTE(msg.getMessageNumber(),
-                                                                           alternateExchange.getName()));
+                                                                           alternateBindingDestination.getName()));
                 }
                 else
                 {

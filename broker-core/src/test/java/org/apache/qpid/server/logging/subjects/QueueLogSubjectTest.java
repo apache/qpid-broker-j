@@ -23,6 +23,7 @@ package org.apache.qpid.server.logging.subjects;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,7 +35,7 @@ public class QueueLogSubjectTest extends AbstractTestLogSubject
 {
 
     private Queue<?> _queue;
-    private VirtualHost _testVhost;
+    private QueueManagingVirtualHost _testVhost;
 
     @Override
     public void setUp() throws Exception

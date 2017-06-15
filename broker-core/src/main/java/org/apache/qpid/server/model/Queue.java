@@ -27,7 +27,7 @@ import java.util.Set;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.server.exchange.ExchangeReferrer;
+import org.apache.qpid.server.exchange.DestinationReferrer;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInfo;
@@ -43,12 +43,13 @@ import org.apache.qpid.server.queue.QueueEntryVisitor;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.util.Deletable;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 @ManagedObject( defaultType = "standard",
         amqpName = "org.apache.qpid.Queue",
         description = Queue.CLASS_DESCRIPTION )
 public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
-                                                   Comparable<X>, ExchangeReferrer,
+                                                   Comparable<X>, DestinationReferrer,
                                                    BaseQueue,
                                                    MessageSource,
                                                    MessageDestination,
@@ -65,7 +66,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     String ALERT_THRESHOLD_MESSAGE_SIZE = "alertThresholdMessageSize";
     String ALERT_THRESHOLD_QUEUE_DEPTH_BYTES = "alertThresholdQueueDepthBytes";
     String ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES = "alertThresholdQueueDepthMessages";
-    String ALTERNATE_EXCHANGE = "alternateExchange";
+    String ALTERNATE_BINDING = "alternateBinding";
     String EXCLUSIVE = "exclusive";
     String MESSAGE_DURABILITY = "messageDurability";
     String MESSAGE_GROUP_KEY = "messageGroupKey";
@@ -109,7 +110,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     String DEFAULT_EXCLUSIVITY = "NONE";
 
     @ManagedAttribute
-    Exchange getAlternateExchange();
+    AlternateBinding getAlternateBinding();
 
     @ManagedAttribute( defaultValue = "${queue.defaultExclusivityPolicy}")
     ExclusivityPolicy getExclusive();
@@ -447,7 +448,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     LogSubject getLogSubject();
 
-    VirtualHost<?> getVirtualHost();
+    QueueManagingVirtualHost<?> getVirtualHost();
 
     boolean isUnused();
 

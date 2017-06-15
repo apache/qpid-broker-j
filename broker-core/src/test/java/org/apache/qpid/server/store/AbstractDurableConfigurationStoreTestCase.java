@@ -40,9 +40,9 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -57,28 +57,23 @@ import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
-import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTestCase
 {
     private static final String EXCHANGE = org.apache.qpid.server.model.Exchange.class.getSimpleName();
-    private static final String BINDING = org.apache.qpid.server.model.Binding.class.getSimpleName();
     private static final String QUEUE = Queue.class.getSimpleName();
-
     private static final UUID ANY_UUID = UUID.randomUUID();
     private static final Map ANY_MAP = new HashMap();
-    public static final String STANDARD = "standard";
-
+    private static final String STANDARD = "standard";
 
     private String _storePath;
     private String _storeName;
 
     private ConfiguredObjectRecordHandler _handler;
 
-    private static final String ROUTING_KEY = "routingKey";
-    private static final String QUEUE_NAME = "queueName";
     private Map<String,Object> _bindingArgs;
     private UUID _queueId;
     private UUID _exchangeId;
@@ -89,6 +84,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
 
     private ConfiguredObjectRecord _rootRecord;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -102,7 +98,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
 
         _handler = mock(ConfiguredObjectRecordHandler.class);
 
-        _bindingArgs = new HashMap<String, Object>();
+        _bindingArgs = new HashMap<>();
         String argKey = AMQPFilterTypes.JMS_SELECTOR.toString();
         String argValue = "some selector expression";
         _bindingArgs.put(argKey, argValue);
@@ -126,6 +122,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
 
     protected abstract VirtualHostNode createVirtualHostNode(String storeLocation, ConfiguredObjectFactory factory);
 
+    @Override
     public void tearDown() throws Exception
     {
         try
@@ -162,7 +159,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
 
     private Map<String,Object> map(Object... vals)
     {
-        Map<String,Object> map = new HashMap<String, Object>();
+        Map<String,Object> map = new HashMap<>();
         boolean isValue = false;
         String key = null;
         for(Object obj : vals)
@@ -189,15 +186,6 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
 
         reopenStore();
         verify(_handler, never()).handle(any(ConfiguredObjectRecord.class));
-    }
-
-
-    private ConfiguredObjectRecord matchesRecord(UUID id,
-                                                 String type,
-                                                 Map<String, Object> attributes,
-                                                 final Map<String, UUID> parents)
-    {
-        return argThat(new ConfiguredObjectMatcher(id, type, attributes, parents));
     }
 
     private ConfiguredObjectRecord matchesRecord(UUID id, String type, Map<String, Object> attributes)
@@ -227,7 +215,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
             {
                 ConfiguredObjectRecord binding = (ConfiguredObjectRecord) argument;
 
-                Map<String,Object> arg = new HashMap<String, Object>(binding.getAttributes());
+                Map<String,Object> arg = new HashMap<>(binding.getAttributes());
                 arg.remove("createdBy");
                 arg.remove("createdTime");
                 arg.remove("lastUpdatedTime");
@@ -258,7 +246,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         }
     }
 
-    public void testCreateQueueAMQQueue() throws Exception
+    public void testCreateQueue() throws Exception
     {
         Queue<?> queue = createTestQueue(getName(), getName() + "Owner", true, null);
         _configStore.create(queue.asObjectRecord());
@@ -266,7 +254,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         reopenStore();
         _configStore.openConfigurationStore(_handler);
 
-        Map<String, Object> queueAttributes = new HashMap<String, Object>();
+        Map<String, Object> queueAttributes = new HashMap<>();
         queueAttributes.put(Queue.NAME, getName());
         queueAttributes.put(Queue.OWNER, getName()+"Owner");
         queueAttributes.put(Queue.EXCLUSIVE, ExclusivityPolicy.CONTAINER.name());
@@ -274,62 +262,9 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         verify(_handler).handle(matchesRecord(_queueId, QUEUE, queueAttributes));
     }
 
-    public void testCreateQueueAMQQueueFieldTable() throws Exception
+    public void testUpdateQueue() throws Exception
     {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, Boolean.TRUE);
-        attributes.put(Queue.MAXIMUM_DELIVERY_ATTEMPTS, 10);
-        attributes.put(Queue.TYPE, STANDARD);
-        Queue<?> queue = createTestQueue(getName(), getName() + "Owner", true, attributes);
-
-        _configStore.create(queue.asObjectRecord());
-
-        reopenStore();
-        _configStore.openConfigurationStore(_handler);
-
-        Map<String,Object> queueAttributes = new HashMap<String, Object>();
-
-        queueAttributes.put(Queue.NAME, getName());
-        queueAttributes.put(Queue.OWNER, getName()+"Owner");
-        queueAttributes.put(Queue.EXCLUSIVE, ExclusivityPolicy.CONTAINER.name());
-        queueAttributes.putAll(attributes);
-
-        verify(_handler).handle(matchesRecord(_queueId, QUEUE, queueAttributes));
-    }
-
-    public void testCreateQueueAMQQueueWithAlternateExchange() throws Exception
-    {
-        Exchange<?> alternateExchange = createTestAlternateExchange();
-
-        Queue<?> queue = createTestQueue(getName(), getName() + "Owner", true, alternateExchange, null);
-        _configStore.create(queue.asObjectRecord());
-
-        reopenStore();
-        _configStore.openConfigurationStore(_handler);
-
-        Map<String, Object> queueAttributes = new HashMap<String, Object>();
-        queueAttributes.put(Queue.NAME, getName());
-        queueAttributes.put(Queue.OWNER, getName()+"Owner");
-        queueAttributes.put(Queue.EXCLUSIVE, ExclusivityPolicy.CONTAINER.name());
-        queueAttributes.put(Queue.ALTERNATE_EXCHANGE, alternateExchange.getId().toString());
-        queueAttributes.put(Queue.TYPE, STANDARD);
-        verify(_handler).handle(matchesRecord(_queueId, QUEUE, queueAttributes));
-    }
-
-    private Exchange<?> createTestAlternateExchange()
-    {
-        UUID exchUuid = UUID.randomUUID();
-        Exchange<?> alternateExchange = mock(Exchange.class);
-        when(alternateExchange.getId()).thenReturn(exchUuid);
-        return alternateExchange;
-    }
-
-    public void testUpdateQueueExclusivity() throws Exception
-    {
-        // create queue
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, Boolean.TRUE);
-        attributes.put(Queue.MAXIMUM_DELIVERY_ATTEMPTS, 10);
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put(Queue.TYPE, STANDARD);
         Queue<?> queue = createTestQueue(getName(), getName() + "Owner", true, attributes);
 
@@ -343,7 +278,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         reopenStore();
         _configStore.openConfigurationStore(_handler);
 
-        Map<String,Object> queueAttributes = new HashMap<String, Object>();
+        Map<String,Object> queueAttributes = new HashMap<>();
 
         queueAttributes.put(Queue.NAME, getName());
         queueAttributes.putAll(attributes);
@@ -352,43 +287,12 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
 
     }
 
-    public void testUpdateQueueAlternateExchange() throws Exception
-    {
-        // create queue
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, Boolean.TRUE);
-        attributes.put(Queue.MAXIMUM_DELIVERY_ATTEMPTS, 10);
-        Queue<?> queue = createTestQueue(getName(), getName() + "Owner", true, attributes);
-        _configStore.create(queue.asObjectRecord());
-
-        // update the queue to have exclusive=false
-        Exchange<?> alternateExchange = createTestAlternateExchange();
-        queue = createTestQueue(getName(), getName() + "Owner", false, alternateExchange, attributes);
-
-        _configStore.update(false, queue.asObjectRecord());
-
-        reopenStore();
-        _configStore.openConfigurationStore(_handler);
-
-        Map<String,Object> queueAttributes = new HashMap<String, Object>();
-
-        queueAttributes.put(Queue.NAME, getName());
-        queueAttributes.putAll(attributes);
-        queueAttributes.put(Queue.ALTERNATE_EXCHANGE, alternateExchange.getId().toString());
-        queueAttributes.put(Queue.TYPE, STANDARD);
-        verify(_handler).handle(matchesRecord(_queueId, QUEUE, queueAttributes));
-    }
 
     public void testRemoveQueue() throws Exception
     {
-        // create queue
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, Boolean.TRUE);
-        attributes.put(Queue.MAXIMUM_DELIVERY_ATTEMPTS, 10);
-        Queue<?> queue = createTestQueue(getName(), getName() + "Owner", true, attributes);
+        Queue<?> queue = createTestQueue(getName(), getName() + "Owner", true, Collections.emptyMap());
         _configStore.create(queue.asObjectRecord());
 
-        // remove queue
         _configStore.remove(queue.asObjectRecord());
         reopenStore();
         verify(_handler, never()).handle(any(ConfiguredObjectRecord.class));
@@ -399,36 +303,22 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
                                      boolean exclusive,
                                      final Map<String, Object> arguments) throws StoreException
     {
-        return createTestQueue(queueName, queueOwner, exclusive, null, arguments);
-    }
-
-    private Queue<?> createTestQueue(String queueName,
-                                     String queueOwner,
-                                     boolean exclusive,
-                                     Exchange<?> alternateExchange,
-                                     final Map<String, Object> arguments) throws StoreException
-    {
         Queue queue = BrokerTestHelper.mockWithSystemPrincipal(Queue.class, mock(Principal.class));
         when(queue.getName()).thenReturn(queueName);
         when(queue.isExclusive()).thenReturn(exclusive);
         when(queue.getId()).thenReturn(_queueId);
         when(queue.getType()).thenReturn(STANDARD);
-        when(queue.getAlternateExchange()).thenReturn(alternateExchange);
-        when(queue.getCategoryClass()).thenReturn((Class)Queue.class);
+        when(queue.getCategoryClass()).thenReturn(Queue.class);
         when(queue.isDurable()).thenReturn(true);
         TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         when(queue.getTaskExecutor()).thenReturn(taskExecutor);
         when(queue.getChildExecutor()).thenReturn(taskExecutor);
 
-        final VirtualHost vh = mock(VirtualHost.class);
+        final QueueManagingVirtualHost vh = mock(QueueManagingVirtualHost.class);
         when(queue.getVirtualHost()).thenReturn(vh);
-        final Map<String,Object> attributes = arguments == null ? new LinkedHashMap<String, Object>() : new LinkedHashMap<String, Object>(arguments);
+        final Map<String,Object> attributes = arguments == null ? new LinkedHashMap<>() : new LinkedHashMap<>(arguments);
         attributes.put(Queue.NAME, queueName);
         attributes.put(Queue.TYPE, STANDARD);
-        if(alternateExchange != null)
-        {
-            attributes.put(Queue.ALTERNATE_EXCHANGE, alternateExchange);
-        }
         if(exclusive)
         {
             when(queue.getOwner()).thenReturn(queueOwner);
@@ -466,7 +356,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
     private Exchange<?> createTestExchange()
     {
         Exchange exchange = mock(Exchange.class);
-        Map<String,Object> actualAttributes = new HashMap<String, Object>();
+        Map<String,Object> actualAttributes = new HashMap<>();
         actualAttributes.put("name", getName());
         actualAttributes.put("type", getName() + "Type");
         actualAttributes.put("lifetimePolicy", LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);

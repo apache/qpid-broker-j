@@ -20,18 +20,24 @@
  */
 package org.apache.qpid.server.queue;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 
 public class QueueArgumentsConverter
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(QueueArgumentsConverter.class);
+
     public static final String X_QPID_FLOW_RESUME_CAPACITY = "x-qpid-flow-resume-capacity";
     public static final String X_QPID_CAPACITY = "x-qpid-capacity";
     public static final String X_QPID_MINIMUM_ALERT_REPEAT_GAP = "x-qpid-minimum-alert-repeat-gap";
@@ -79,6 +85,10 @@ public class QueueArgumentsConverter
 
     static final Map<String, String> ATTRIBUTE_MAPPINGS = new LinkedHashMap<String, String>();
 
+    private static final String ALTERNATE_EXCHANGE = "alternateExchange";
+    private static final String DEFAULT_DLQ_NAME_SUFFIX = "_DLQ";
+    private static String PROPERTY_DEAD_LETTER_QUEUE_SUFFIX = "qpid.broker_dead_letter_queue_suffix";
+
     static
     {
         ATTRIBUTE_MAPPINGS.put(X_QPID_MINIMUM_ALERT_REPEAT_GAP, Queue.ALERT_REPEAT_GAP);
@@ -100,10 +110,7 @@ public class QueueArgumentsConverter
         ATTRIBUTE_MAPPINGS.put(X_QPID_PRIORITIES, PriorityQueue.PRIORITIES);
 
         ATTRIBUTE_MAPPINGS.put(X_QPID_DESCRIPTION, Queue.DESCRIPTION);
-        ATTRIBUTE_MAPPINGS.put(Queue.ALTERNATE_EXCHANGE, Queue.ALTERNATE_EXCHANGE);
 
-
-        ATTRIBUTE_MAPPINGS.put(X_QPID_DLQ_ENABLED, AbstractVirtualHost.CREATE_DLQ_ON_CREATION);
         ATTRIBUTE_MAPPINGS.put(QPID_GROUP_HEADER_KEY, Queue.MESSAGE_GROUP_KEY);
         ATTRIBUTE_MAPPINGS.put(QPID_DEFAULT_MESSAGE_GROUP_ARG, Queue.MESSAGE_GROUP_DEFAULT_GROUP);
 
@@ -121,7 +128,8 @@ public class QueueArgumentsConverter
     }
 
 
-    public static Map<String,Object> convertWireArgsToModel(Map<String,Object> wireArguments)
+    public static Map<String,Object> convertWireArgsToModel(final String queueName,
+                                                            Map<String, Object> wireArguments)
     {
         Map<String,Object> modelArguments = new HashMap<String, Object>();
         if(wireArguments != null)
@@ -147,10 +155,7 @@ public class QueueArgumentsConverter
                 modelArguments.put(Queue.MESSAGE_GROUP_SHARED_GROUPS,
                                    AbstractQueue.SHARED_MSG_GROUP_ARG_VALUE.equals(String.valueOf(wireArguments.get(QPID_SHARED_MSG_GROUP))));
             }
-            if(wireArguments.get(X_QPID_DLQ_ENABLED) != null)
-            {
-                modelArguments.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, Boolean.parseBoolean(wireArguments.get(X_QPID_DLQ_ENABLED).toString()));
-            }
+
 
             if(wireArguments.get(QPID_NO_LOCAL) != null)
             {
@@ -177,6 +182,23 @@ public class QueueArgumentsConverter
                 modelArguments.put(Queue.OVERFLOW_POLICY, OverflowPolicy.PRODUCER_FLOW_CONTROL);
             }
 
+            if (wireArguments.get(ALTERNATE_EXCHANGE) != null)
+            {
+                modelArguments.put(Queue.ALTERNATE_BINDING,
+                                   Collections.singletonMap(AlternateBinding.DESTINATION,
+                                                            wireArguments.get(ALTERNATE_EXCHANGE)));
+            }
+            else if (wireArguments.containsKey(X_QPID_DLQ_ENABLED))
+            {
+                Object argument = wireArguments.get(X_QPID_DLQ_ENABLED);
+                if ((argument instanceof Boolean && ((Boolean) argument).booleanValue())
+                    || (argument instanceof String && Boolean.parseBoolean((String)argument)))
+                {
+                    modelArguments.put(Queue.ALTERNATE_BINDING,
+                                       Collections.singletonMap(AlternateBinding.DESTINATION,
+                                                                getDeadLetterQueueName(queueName)));
+                }
+            }
         }
         return modelArguments;
     }
@@ -208,5 +230,10 @@ public class QueueArgumentsConverter
         }
 
         return wireArguments;
+    }
+
+    private static String getDeadLetterQueueName(String name)
+    {
+        return name + System.getProperty(PROPERTY_DEAD_LETTER_QUEUE_SUFFIX, DEFAULT_DLQ_NAME_SUFFIX);
     }
 }

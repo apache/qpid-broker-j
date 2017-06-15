@@ -71,6 +71,7 @@ import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.exchange.DestinationReferrer;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.server.filter.MessageFilter;
@@ -85,6 +86,7 @@ import org.apache.qpid.server.logging.subjects.QueueLogSubject;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.message.MessageDeletedException;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.message.MessageInfoImpl;
 import org.apache.qpid.server.message.MessageInstance;
@@ -118,6 +120,7 @@ import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.util.DeleteDeleteTask;
 import org.apache.qpid.server.util.MapValueConverter;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
@@ -151,8 +154,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private QueueConsumerManagerImpl _queueConsumerManager;
 
-    @ManagedAttributeField( beforeSet = "preSetAlternateExchange", afterSet = "postSetAlternateExchange")
-    private Exchange _alternateExchange;
+    @ManagedAttributeField( beforeSet = "preSetAlternateBinding", afterSet = "postSetAlternateBinding")
+    private AlternateBinding _alternateBinding;
 
     private volatile QueueConsumer<?,?> _exclusiveSubscriber;
 
@@ -253,17 +256,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private final AtomicInteger _recovering = new AtomicInteger(RECOVERING);
     private final AtomicInteger _enqueuingWhileRecovering = new AtomicInteger(0);
-
     private final ConcurrentLinkedQueue<EnqueueRequest> _postRecoveryQueue = new ConcurrentLinkedQueue<>();
-
-    private boolean _closing;
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
+    private final Set<DestinationReferrer> _referrers = Collections.newSetFromMap(new ConcurrentHashMap<DestinationReferrer,Boolean>());
+
+    private boolean _closing;
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
     private AdvanceConsumersTask _queueHouseKeepingTask;
     private volatile int _bindingCount;
     private volatile OverflowPolicyHandler _overflowPolicyHandler;
     private long _flowToDiskThreshold;
+    private volatile MessageDestination _alternateBindingDestination;
 
     private interface HoldMethod
     {
@@ -314,6 +318,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                          });
         }
 
+        validateOrCreateAlternateBinding(this, true);
         _recovering.set(RECOVERED);
     }
 
@@ -556,6 +561,20 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                             });
         }
 
+        if (getAlternateBinding() != null)
+        {
+            String alternateDestination = getAlternateBinding().getDestination();
+            _alternateBindingDestination = getOpenedMessageDestination(alternateDestination);
+            if (_alternateBindingDestination != null)
+            {
+                _alternateBindingDestination.addReference(this);
+            }
+            else
+            {
+                _logger.warn("Cannot find alternate binding destination '{}' for queue '{}'", alternateDestination, toString());
+            }
+        }
+
         updateAlertChecks();
     }
 
@@ -570,6 +589,21 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                      isDurable(),
                                      !isDurable(),
                                      false);
+    }
+
+    private MessageDestination getOpenedMessageDestination(final String name)
+    {
+        MessageDestination destination = getVirtualHost().getSystemDestination(name);
+        if(destination == null)
+        {
+            destination = getVirtualHost().getChildByName(Exchange.class, name);
+        }
+
+        if(destination == null)
+        {
+            destination = getVirtualHost().getChildByName(Queue.class, name);
+        }
+        return destination;
     }
 
     private void addLifetimeConstraint(final Deletable<? extends Deletable> lifetimeObject)
@@ -621,32 +655,43 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _exclusive != ExclusivityPolicy.NONE;
     }
 
-    public Exchange<?> getAlternateExchange()
+    @Override
+    public AlternateBinding getAlternateBinding()
     {
-        return _alternateExchange;
+        return _alternateBinding;
     }
 
-    public void setAlternateExchange(Exchange<?> exchange)
+    public void setAlternateBinding(AlternateBinding alternateBinding)
     {
-        _alternateExchange = exchange;
+        _alternateBinding = alternateBinding;
     }
 
     @SuppressWarnings("unused")
-    private void postSetAlternateExchange()
+    private void postSetAlternateBinding()
     {
-        if(_alternateExchange != null)
+        if(_alternateBinding != null)
         {
-            _alternateExchange.addReference(this);
+            _alternateBindingDestination = _virtualHost.getAttainedMessageDestination(_alternateBinding.getDestination(), false);
+            if (_alternateBindingDestination != null)
+            {
+                _alternateBindingDestination.addReference(this);
+            }
         }
     }
 
     @SuppressWarnings("unused")
-    private void preSetAlternateExchange()
+    private void preSetAlternateBinding()
     {
-        if(_alternateExchange != null)
+        if(_alternateBindingDestination != null)
         {
-            _alternateExchange.removeReference(this);
+            _alternateBindingDestination.removeReference(this);
         }
+    }
+
+    @Override
+    public MessageDestination getAlternateBindingDestination()
+    {
+        return _alternateBindingDestination;
     }
 
     @Override
@@ -724,7 +769,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _creatingLinkInfo;
     }
 
-    public VirtualHost<?> getVirtualHost()
+    public QueueManagingVirtualHost<?> getVirtualHost()
     {
         return _virtualHost;
     }
@@ -1689,6 +1734,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         if (_deleted.compareAndSet(false, true))
         {
+            if(hasReferrers())
+            {
+                throw new MessageDestinationIsAlternateException(getName());
+            }
+
             final int queueDepthMessages = getQueueDepthMessages();
 
             for(MessageSender sender : _linkedSenders.keySet())
@@ -1715,8 +1765,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                 routeToAlternate(entries);
 
-                preSetAlternateExchange();
-                _alternateExchange = null;
+                preSetAlternateBinding();
+                _alternateBinding = null;
 
                 _stopped.set(true);
                 _queueHouseKeepingTask.cancel();
@@ -2818,7 +2868,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.DELETED)
     private ListenableFuture<Void> doDeleteBeforeInitialize()
     {
-        preSetAlternateExchange();
+        preSetAlternateBinding();
         setState(State.DELETED);
         return Futures.immediateFuture(null);
     }
@@ -2987,6 +3037,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                             + attrName);
                 }
             }
+        }
+
+        if (changedAttributes.contains(ALTERNATE_BINDING))
+        {
+            validateOrCreateAlternateBinding(queue, false);
         }
     }
 
@@ -3176,6 +3231,23 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return getEntries().getLeastSignificantOldestEntry();
     }
 
+    @Override
+    public void removeReference(DestinationReferrer destinationReferrer)
+    {
+        _referrers.remove(destinationReferrer);
+    }
+
+    @Override
+    public void addReference(DestinationReferrer destinationReferrer)
+    {
+        _referrers.add(destinationReferrer);
+    }
+
+    private boolean hasReferrers()
+    {
+        return !_referrers.isEmpty();
+    }
+
     private class MessageFinder implements QueueEntryVisitor
     {
         private final long _messageNumber;
@@ -3353,4 +3425,36 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         _bindingCount--;
     }
+
+    private void validateOrCreateAlternateBinding(final Queue<?> queue, final boolean mayCreate)
+    {
+        Object value = queue.getAttribute(ALTERNATE_BINDING);
+        if (value instanceof AlternateBinding)
+        {
+            AlternateBinding alternateBinding = (AlternateBinding) value;
+            String destinationName = alternateBinding.getDestination();
+            MessageDestination messageDestination =
+                    _virtualHost.getAttainedMessageDestination(destinationName, mayCreate);
+            if (messageDestination == null)
+            {
+                throw new IllegalConfigurationException(String.format(
+                        "Cannot create alternate binding for '%s' : Alternate binding destination '%s' cannot be found.",
+                        getName(), destinationName));
+            }
+            else if (messageDestination == this)
+            {
+                throw new IllegalConfigurationException(String.format(
+                        "Cannot create alternate binding for '%s' : Alternate binding destination cannot refer to self.",
+                        getName()));
+            }
+            else if (isDurable() && !messageDestination.isDurable())
+            {
+                throw new IllegalConfigurationException(String.format(
+                        "Cannot create alternate binding for '%s' : Alternate binding destination '%s' is not durable.",
+                        getName(),
+                        destinationName));
+            }
+        }
+    }
+
 }

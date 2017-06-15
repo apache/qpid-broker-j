@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.exchange.DestinationReferrer;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageContainer;
@@ -89,7 +90,7 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
     public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
             throws AccessControlException
     {
-        throw new AccessControlException("Sending messages to temporary addresses in a management addres spaceis not supported");
+        throw new AccessControlException("Sending messages to temporary addresses in a management address space is not supported");
     }
 
     @Override
@@ -116,6 +117,22 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
     public void linkRemoved(final MessageSender sender, final PublishingLink link)
     {
 
+    }
+
+    @Override
+    public MessageDestination getAlternateBindingDestination()
+    {
+        return null;
+    }
+
+    @Override
+    public void removeReference(final DestinationReferrer destinationReferrer)
+    {
+    }
+
+    @Override
+    public void addReference(final DestinationReferrer destinationReferrer)
+    {
     }
 
     @Override

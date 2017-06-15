@@ -49,7 +49,7 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         _upgraderAndRecoverer = new VirtualHostStoreUpgraderAndRecoverer(_virtualHostNode);
     }
 
-    public void testUpgradeForFlowControlFrom_6_1() throws Exception
+    public void testUpgradeFlowControlFrom_6_1() throws Exception
     {
         Map<String, Object> rootAttributes = new HashMap<>();
         rootAttributes.put("modelVersion", "6.1");
@@ -81,6 +81,122 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         assertEquals("Unexpected overflowPolicy",
                      OverflowPolicy.PRODUCER_FLOW_CONTROL.name(),
                      String.valueOf(upgradedAttributes.get("overflowPolicy")));
+    }
+
+    public void testUpgradeQueueAlternateExchangeFrom_6_1() throws Exception
+    {
+        Map<String, Object> rootAttributes = new HashMap<>();
+        rootAttributes.put("modelVersion", "6.1");
+        rootAttributes.put("name", "root");
+        ConfiguredObjectRecord rootRecord =
+                new ConfiguredObjectRecordImpl(UUID.randomUUID(), "VirtualHost", rootAttributes);
+        Map<String, Object> queueAttributes = new HashMap<>();
+        queueAttributes.put("name", "queue");
+        queueAttributes.put("alternateExchange", "testExchange");
+
+        ConfiguredObjectRecord queueRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Queue", queueAttributes,
+                                                                            Collections.singletonMap(rootRecord.getType(),
+                                                                                                     rootRecord.getId()));
+
+        final Map<String, Object> exchangeAttributes = new HashMap<>();
+        exchangeAttributes.put("name", "testExchange");
+        ConfiguredObjectRecord exchangeRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Exchange", exchangeAttributes,
+                                                                               Collections.singletonMap(rootRecord.getType(),
+                                                                                                     rootRecord.getId()));
+        List<ConfiguredObjectRecord> records = Arrays.asList(rootRecord, queueRecord, exchangeRecord);
+        List<ConfiguredObjectRecord> upgradedRecords =
+                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
+
+        ConfiguredObjectRecord upgradedQueueRecord = findRecordById(queueRecord.getId(), upgradedRecords);
+        assertNotNull("Upgraded queue record not found ", upgradedQueueRecord);
+
+        Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
+        assertNotNull("Upgraded attributes not found", upgradedAttributes);
+
+        assertTrue("Attribute 'alternateBinding' was not added", upgradedAttributes.containsKey("alternateBinding"));
+        assertEquals("Unexpected alternateBinding",
+                     new HashMap<>(Collections.singletonMap("destination", "testExchange")),
+                     new HashMap<>(((Map<String, String>) upgradedAttributes.get("alternateBinding"))));
+        assertFalse("Attribute 'alternateExchange' was not removed", upgradedAttributes.containsKey("alternateExchange"));
+
+    }
+
+    public void testUpgradeExchangeAlternateExchangeFrom_6_1() throws Exception
+    {
+        Map<String, Object> rootAttributes = new HashMap<>();
+        rootAttributes.put("modelVersion", "6.1");
+        rootAttributes.put("name", "root");
+        ConfiguredObjectRecord rootRecord =
+                new ConfiguredObjectRecordImpl(UUID.randomUUID(), "VirtualHost", rootAttributes);
+
+        final Map<String, Object> alternateExchangeAttributes = new HashMap<>();
+        alternateExchangeAttributes.put("name", "testExchange");
+        ConfiguredObjectRecord alternateExchangeRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Exchange", alternateExchangeAttributes,
+                                                                               Collections.singletonMap(rootRecord.getType(),
+                                                                                                        rootRecord.getId()));
+
+        Map<String, Object> exchangeAttributes = new HashMap<>();
+        exchangeAttributes.put("name", "exchange");
+        exchangeAttributes.put("alternateExchange", "testExchange");
+
+        ConfiguredObjectRecord exchangeRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Exchange", exchangeAttributes,
+                                                                            Collections.singletonMap(rootRecord.getType(),
+                                                                                                     rootRecord.getId()));
+
+        List<ConfiguredObjectRecord> records = Arrays.asList(rootRecord, exchangeRecord, alternateExchangeRecord);
+        List<ConfiguredObjectRecord> upgradedRecords =
+                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
+
+        ConfiguredObjectRecord upgradedQueueRecord = findRecordById(exchangeRecord.getId(), upgradedRecords);
+        assertNotNull("Upgraded exchange record not found ", upgradedQueueRecord);
+
+        Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
+        assertNotNull("Upgraded attributes not found", upgradedAttributes);
+
+        assertTrue("Attribute 'alternateBinding' was not added", upgradedAttributes.containsKey("alternateBinding"));
+        assertEquals("Unexpected alternateBinding",
+                     new HashMap<>(Collections.singletonMap("destination", "testExchange")),
+                     new HashMap<>(((Map<String, String>) upgradedAttributes.get("alternateBinding"))));
+        assertFalse("Attribute 'alternateExchange' was not removed", upgradedAttributes.containsKey("alternateExchange"));
+
+    }
+    public void testUpgradeExchangeAlternateExchangeSpecifiedWithUUIDFrom_6_1() throws Exception
+    {
+        Map<String, Object> rootAttributes = new HashMap<>();
+        rootAttributes.put("modelVersion", "6.1");
+        rootAttributes.put("name", "root");
+        ConfiguredObjectRecord rootRecord =
+                new ConfiguredObjectRecordImpl(UUID.randomUUID(), "VirtualHost", rootAttributes);
+
+        final Map<String, Object> alternateExchangeAttributes = new HashMap<>();
+        alternateExchangeAttributes.put("name", "testExchange");
+        UUID alternateExchangeId = UUID.randomUUID();
+        ConfiguredObjectRecord alternateExchangeRecord = new ConfiguredObjectRecordImpl(alternateExchangeId, "Exchange", alternateExchangeAttributes,
+                                                                                        Collections.singletonMap(rootRecord.getType(),
+                                                                                                                 rootRecord.getId()));
+        Map<String, Object> exchangeAttributes = new HashMap<>();
+        exchangeAttributes.put("name", "exchange");
+        exchangeAttributes.put("alternateExchange", alternateExchangeId.toString());
+
+        ConfiguredObjectRecord exchangeRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Exchange", exchangeAttributes,
+                                                                               Collections.singletonMap(rootRecord.getType(),
+                                                                                                        rootRecord.getId()));
+
+        List<ConfiguredObjectRecord> records = Arrays.asList(rootRecord, exchangeRecord, alternateExchangeRecord);
+        List<ConfiguredObjectRecord> upgradedRecords =
+                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
+
+        ConfiguredObjectRecord upgradedQueueRecord = findRecordById(exchangeRecord.getId(), upgradedRecords);
+        assertNotNull("Upgraded exchange record not found ", upgradedQueueRecord);
+
+        Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
+        assertNotNull("Upgraded attributes not found", upgradedAttributes);
+
+        assertTrue("Attribute 'alternateBinding' was not added", upgradedAttributes.containsKey("alternateBinding"));
+        assertEquals("Unexpected alternateBinding",
+                     new HashMap<>(Collections.singletonMap("destination", "testExchange")),
+                     new HashMap<>(((Map<String, String>) upgradedAttributes.get("alternateBinding"))));
+        assertFalse("Attribute 'alternateExchange' was not removed", upgradedAttributes.containsKey("alternateExchange"));
     }
 
     private ConfiguredObjectRecord findRecordById(UUID id, List<ConfiguredObjectRecord> records)

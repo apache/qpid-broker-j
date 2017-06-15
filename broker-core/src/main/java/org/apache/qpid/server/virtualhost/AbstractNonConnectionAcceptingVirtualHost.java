@@ -199,6 +199,12 @@ public abstract class AbstractNonConnectionAcceptingVirtualHost<X extends Abstra
     }
 
     @Override
+    public MessageDestination getAttainedMessageDestination(final String name, final boolean mayCreate)
+    {
+        return null;
+    }
+
+    @Override
     protected void logOperation(final String operation)
     {
         getAncestor(Broker.class).getEventLogger().message(VirtualHostMessages.OPERATION(operation));

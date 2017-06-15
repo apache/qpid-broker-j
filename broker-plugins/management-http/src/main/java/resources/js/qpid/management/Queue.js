@@ -35,7 +35,7 @@ define(["dojo/_base/declare",
         "qpid/management/addBinding",
         "qpid/management/moveCopyMessages",
         "qpid/management/showMessage",
-        "qpid/management/editQueue",
+        "qpid/management/addQueue",
         "qpid/common/JsonRest",
         "dojox/grid/EnhancedGrid",
         "qpid/management/query/QueryGrid",
@@ -62,7 +62,7 @@ define(["dojo/_base/declare",
               addBinding,
               moveMessages,
               showMessage,
-              editQueue,
+              addQueue,
               JsonRest,
               EnhancedGrid,
               QueryGrid,
@@ -243,7 +243,7 @@ define(["dojo/_base/declare",
                     connect.connect(registry.byNode(editQueueButton), "onClick", function (evt)
                     {
                         event.stop(evt);
-                        editQueue.show(that.management, that.modelObj);
+                        addQueue.show(that.management, that.modelObj, that.queueUpdater.queueData);
                     });
                     that.queueUpdater.update(function ()
                     {
@@ -405,7 +405,7 @@ define(["dojo/_base/declare",
                         "alertThresholdQueueDepthBytes",
                         "alertThresholdQueueDepthBytesUnits",
                         "alertThresholdQueueDepthMessages",
-                        "alternateExchange",
+                        "alternateBinding",
                         "messageGroups",
                         "messageGroupKey",
                         "messageGroupSharedGroups",
@@ -560,8 +560,9 @@ define(["dojo/_base/declare",
             this.minimumMessageTtl.innerHTML = entities.encode(String(this.queueData["minimumMessageTtl"]));
             this.maximumMessageTtl.innerHTML = entities.encode(String(this.queueData["maximumMessageTtl"]));
 
-            this.alternateExchange.innerHTML =
-                this.queueData["alternateExchange"] ? entities.encode(String(this.queueData["alternateExchange"])) : "";
+            this.alternateBinding.innerHTML =
+                this.queueData["alternateBinding"] && this.queueData["alternateBinding"]["destination"]
+                    ? entities.encode(String(this.queueData["alternateBinding"]["destination"])) : "";
 
             this.queueDepthMessagesIncludingHeader.innerHTML = entities.encode(String(this.queueData["queueDepthMessages"]));
             bytesDepth = formatter.formatBytes(this.queueData["queueDepthBytesIncludingHeader"]);

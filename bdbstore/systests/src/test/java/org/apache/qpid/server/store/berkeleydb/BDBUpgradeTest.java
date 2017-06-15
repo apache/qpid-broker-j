@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.jms.Connection;
@@ -50,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.exchange.ExchangeDefaults;
+import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -363,14 +366,15 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
 
         //verify the queue exists, has the expected alternate exchange and max delivery count
         Map<String, Object> queueAttributes = getQueueAttributes(QUEUE_WITH_DLQ_NAME);
-        assertEquals("Queue does not have the expected AlternateExchange", QUEUE_WITH_DLQ_NAME + "_DLE",
-                     (String) queueAttributes.get(org.apache.qpid.server.model.Queue.ALTERNATE_EXCHANGE));
+        assertEquals("Queue does not have the expected AlternateExchange",
+                     new HashMap<>(Collections.singletonMap(AlternateBinding.DESTINATION, QUEUE_WITH_DLQ_NAME + "_DLE")),
+                     new HashMap<>(((Map<String, Object>) queueAttributes.get(Exchange.ALTERNATE_BINDING))));
         assertEquals("Unexpected maximum delivery count", 2,
                      ((Number) queueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS)).intValue());
 
         Map<String, Object> dlQueueAttributes = getQueueAttributes(QUEUE_WITH_DLQ_NAME + "_DLQ");
         assertNull("Queue should not have an AlternateExchange",
-                   dlQueueAttributes.get(org.apache.qpid.server.model.Queue.ALTERNATE_EXCHANGE));
+                   dlQueueAttributes.get(org.apache.qpid.server.model.Queue.ALTERNATE_BINDING));
         assertEquals("Unexpected maximum delivery count", 0,
                      ((Number) dlQueueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS)).intValue());
 

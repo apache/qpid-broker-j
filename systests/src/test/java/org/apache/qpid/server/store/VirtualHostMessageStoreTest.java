@@ -731,7 +731,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         attributes.put(org.apache.qpid.server.model.Exchange.DURABLE, durable);
         attributes.put(org.apache.qpid.server.model.Exchange.LIFETIME_POLICY,
                 durable ? LifetimePolicy.DELETE_ON_NO_LINKS : LifetimePolicy.PERMANENT);
-        attributes.put(org.apache.qpid.server.model.Exchange.ALTERNATE_EXCHANGE, null);
+        attributes.put(org.apache.qpid.server.model.Exchange.ALTERNATE_BINDING, null);
         exchange = _virtualHost.createChild(Exchange.class, attributes);
 
         return exchange;

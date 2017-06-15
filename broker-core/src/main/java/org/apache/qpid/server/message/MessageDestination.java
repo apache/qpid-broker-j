@@ -23,6 +23,7 @@ package org.apache.qpid.server.message;
 import java.security.AccessControlException;
 import java.util.Map;
 
+import org.apache.qpid.server.exchange.DestinationReferrer;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.security.SecurityToken;
@@ -53,4 +54,10 @@ public interface MessageDestination extends MessageNode
 
     void linkAdded(MessageSender sender, PublishingLink link);
     void linkRemoved(MessageSender sender, PublishingLink link);
+
+    MessageDestination getAlternateBindingDestination();
+
+    void addReference(DestinationReferrer destinationReferrer);
+
+    void removeReference(DestinationReferrer destinationReferrer);
 }

@@ -744,3 +744,8 @@ td.advancedSearchField, col.autoWidth {
 {
     font-style: italic;
 }
+
+.claro .loading
+{
+    background-image: url("../dojo/dijit/themes/claro/images/loadingAnimation.gif");
+}

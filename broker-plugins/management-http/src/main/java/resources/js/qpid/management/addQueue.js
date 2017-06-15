@@ -23,155 +23,219 @@ define(["dojo/dom",
         "dojo/_base/window",
         "dijit/registry",
         "dojo/parser",
+        "dojo/_base/lang",
         "dojo/_base/array",
         "dojo/_base/event",
         'dojo/_base/json',
         "dojo/query",
         'qpid/common/util',
         "dojo/text!addQueue.html",
+        "qpid/common/AlternateBinding",
         "qpid/common/ContextVariablesEditor",
-        "dijit/form/NumberSpinner", // required by the form
-    /* dojox/ validate resources */
         "dojox/validate/us",
         "dojox/validate/web",
-    /* basic dijit classes */
         "dijit/Dialog",
         "dijit/form/CheckBox",
-        "dijit/form/Textarea",
         "dijit/form/FilteringSelect",
-        "dijit/form/TextBox",
         "dijit/form/ValidationTextBox",
-        "dijit/form/DateTextBox",
-        "dijit/form/TimeTextBox",
         "dijit/form/Button",
-        "dijit/form/RadioButton",
         "dijit/form/Form",
-        "dijit/form/DateTextBox",
-    /* basic dojox classes */
-        "dojox/form/BusyButton",
-        "dojox/form/CheckedMultiSelect",
-        "dojo/domReady!"], function (dom, construct, win, registry, parser, array, event, json, query, util, template)
-{
-
-    var addQueue = {};
-
-    var node = construct.create("div", null, win.body(), "last");
-
-    var requiredFields = {sorted: "sortKey"};
-
-    var numericFieldNames = ["maximumMessageTtl",
-                             "minimumMessageTtl",
-                             "alertThresholdQueueDepthMessages",
-                             "alertThresholdQueueDepthBytes",
-                             "alertThresholdMessageAge",
-                             "alertThresholdMessageSize",
-                             "alertRepeatGap",
-                             "maximumDeliveryAttempts"];
-
-    var theForm;
-    node.innerHTML = template;
-    addQueue.dialogNode = dom.byId("addQueue");
-    parser.instantiate([addQueue.dialogNode]);
-
-    // for children which have name type, add a function to make all the associated atrributes
-    // visible / invisible as the select is changed
-    theForm = registry.byId("formAddQueue");
-    var typeSelector = registry.byId("formAddQueue.type");
-    typeSelector.on("change", function (value)
+        "dojo/domReady!"],
+    function (dom, construct, win, registry, parser, lang, array, event, json, query, util, template)
     {
-        query(".typeSpecificDiv")
-            .forEach(function (node, index, arr)
+        var hideDialog = function ()
+        {
+            registry.byId("addQueue")
+                .hide();
+        };
+
+        var requiredFields = {sorted: "sortKey"};
+
+        var numericFieldNames = ["maximumMessageTtl",
+                                 "minimumMessageTtl",
+                                 "alertThresholdQueueDepthMessages",
+                                 "alertThresholdQueueDepthBytes",
+                                 "alertThresholdMessageAge",
+                                 "alertThresholdMessageSize",
+                                 "alertRepeatGap",
+                                 "maximumDeliveryAttempts"];
+
+        var addQueue = {
+            _init: function ()
             {
-                if (node.id === "formAddQueueType:" + value)
-                {
-                    node.style.display = "block";
-                    if (addQueue.management)
+                var node = construct.create("div", {innerHTML: template});
+                parser.parse(node)
+                    .then(lang.hitch(this, function (instances)
                     {
-                        util.applyMetadataToWidgets(node, "Queue", value, addQueue.management.metadata);
+                        this._postParse();
+                    }));
+            },
+            _postParse: function ()
+            {
+                this.alternateBinding = registry.byId("formAddQueue.alternateBinding");
+                this.form = registry.byId("formAddQueue");
+
+                for (var i = 0; i < numericFieldNames.length; i++)
+                {
+                    registry.byId("formAddQueue." + numericFieldNames[i])
+                        .set("regExpGen", util.numericOrContextVarRegexp);
+                }
+
+                registry.byId("formAddQueue.maximumQueueDepthBytes")
+                    .set("regExpGen", util.signedOrContextVarRegexp);
+                registry.byId("formAddQueue.maximumQueueDepthMessages")
+                    .set("regExpGen", util.signedOrContextVarRegexp);
+
+                this.queueName = registry.byId("formAddQueue.name");
+                this.queueName.set("regExpGen", util.nameOrContextVarRegexp);
+                this.queueDurable = registry.byId("formAddQueue.durable");
+                this.queueType = registry.byId("formAddQueue.type");
+                this.context = registry.byId("formAddQueue.context");
+                this.overflowPolicyWidget = registry.byId("formAddQueue.overflowPolicy");
+                this.editNodeBanner = dom.byId("addQueue.editNoteBanner");
+
+
+                registry.byId("formAddQueue.cancelButton")
+                    .on("click", function (e)
+                    {
+                        event.stop(e);
+                        hideDialog();
+                    });
+
+                registry.byId("formAddQueue.saveButton")
+                    .on("click", lang.hitch(this, function (e)
+                    {
+                        this._submit(e);
+                    }));
+
+                registry.byId("formAddQueue.type")
+                    .on("change", function (value)
+                    {
+                        query(".typeSpecificDiv")
+                            .forEach(function (node, index, arr)
+                            {
+                                if (node.id === "formAddQueueType:" + value)
+                                {
+                                    node.style.display = "block";
+                                    if (addQueue.management)
+                                    {
+                                        util.applyMetadataToWidgets(node, "Queue", value, addQueue.management.metadata);
+                                    }
+                                }
+                                else
+                                {
+                                    node.style.display = "none";
+                                }
+                            });
+                        for (var requiredField in requiredFields)
+                        {
+                            dijit.byId('formAddQueue.' + requiredFields[requiredField]).required =
+                                (requiredField == value);
+                        }
+                    });
+            },
+
+            _submit: function (e)
+            {
+                event.stop(e);
+                if (this.form.validate())
+                {
+                    var queueData = util.getFormWidgetValues(this.form, this.initialData);
+                    var context = this.context.get("value");
+                    if (context)
+                    {
+                        queueData["context"] = context;
                     }
+                    queueData.alternateBinding = this.alternateBinding.valueAsJson();
+
+                    if (this.initialData && this.initialData.id)
+                    {
+                        this.management.update(this.modelObj, queueData)
+                            .then(hideDialog);
+                    }
+                    else
+                    {
+                        this.management.create("queue", this.modelObj, queueData)
+                            .then(hideDialog);
+                    }
+                    return false;
                 }
                 else
                 {
-                    node.style.display = "none";
+                    alert('Form contains invalid data.  Please correct first');
+                    return false;
                 }
-            });
-        for (var requiredField in requiredFields)
-        {
-            dijit.byId('formAddQueue.' + requiredFields[requiredField]).required = (requiredField == value);
-        }
-    });
+            },
 
-    theForm.on("submit", function (e)
-    {
-
-        event.stop(e);
-        if (theForm.validate())
-        {
-
-            var newQueue = util.getFormWidgetValues(theForm);
-            var context = addQueue.context.get("value");
-            if (context)
+            show: function (management, modelObj, effectiveData)
             {
-                newQueue["context"] = context;
-            }
+                this.management = management;
+                this.modelObj = modelObj;
 
-            addQueue.management.create("queue", addQueue.modelObj, newQueue)
-                .then(function (x)
+                this.alternateBindingLoadPromise =
+                    this.alternateBinding.loadData(management, effectiveData ? modelObj.parent : modelObj);
+                this.form.reset();
+
+                if (effectiveData)
                 {
-                    registry.byId("addQueue")
-                        .hide();
-                });
-            return false;
+                    var afterLoad = lang.hitch(this, function (data)
+                    {
+                        var actualData = data.actual;
+                        var effectiveData = data.effective;
+                        this.initialData = actualData;
+                        this.effectiveData = effectiveData;
+                        this.queueType.set("value", actualData.type);
+                        this.queueType.set("disabled", true);
+                        this.queueName.set("disabled", true);
+                        this.queueDurable.set("disabled", true);
+                        this.queueName.set("value", actualData.name);
+                        this.context.setData(actualData.context, effectiveData.context, data.inheritedActual.context);
+                        this.editNodeBanner.style.display = "block";
+                        this._show();
+                    });
+                    util.loadData(management, modelObj, afterLoad, {depth: 1});
+                }
+                else
+                {
+                    this.editNodeBanner.style.display = "none";
+                    this.queueType.set("disabled", false);
+                    this.queueName.set("disabled", false);
+                    this.queueDurable.set("disabled", false);
+                    this.initialData = {"type": "standard"};
+                    this.effectiveData = {};
+                    util.loadEffectiveAndInheritedActualData(management, modelObj, lang.hitch(this, function (data)
+                    {
+                        this.context.setData(data.actual.context, data.effective.context, data.inheritedActual.context);
+                        this._show();
+                    }), {depth: 1});
+                }
+            },
 
-        }
-        else
-        {
-            alert('Form contains invalid data.  Please correct first');
-            return false;
-        }
+            _show: function ()
+            {
+                this.alternateBindingLoadPromise.then(lang.hitch(this, function ()
+                {
+                    var alternate = this.initialData.alternateBinding;
+                    if (alternate && alternate.destination)
+                    {
+                        this.alternateBinding.set("value", alternate.destination);
+                    }
+                }));
 
+                util.applyToWidgets(this.form.domNode,
+                    "Queue",
+                    this.initialData.type,
+                    this.initialData,
+                    this.management.metadata);
+
+                var validValues = this.management.metadata.getMetaData("Queue",
+                    this.initialData.type).attributes.overflowPolicy.validValues;
+                var validValueStore = util.makeTypeStore(validValues);
+                this.overflowPolicyWidget.set("store", validValueStore);
+                registry.byId("addQueue").show();
+            }
+        };
+
+        addQueue._init();
+        return addQueue;
     });
-
-    addQueue.show = function (management, modelObj)
-    {
-        addQueue.management = management;
-        addQueue.modelObj = modelObj;
-
-        var form = registry.byId("formAddQueue");
-        form.reset();
-        registry.byId("addQueue")
-            .show();
-        util.applyMetadataToWidgets(form.domNode, "Queue", "standard", addQueue.management.metadata);
-
-        var overflowPolicyWidget = registry.byId("formAddQueue.overflowPolicy");
-        var validValues = addQueue.management.metadata.getMetaData("Queue", "standard").attributes.overflowPolicy.validValues;
-        var validValueStore = util.makeTypeStore(validValues);
-        overflowPolicyWidget.set("store", validValueStore);
-
-        // Add regexp to the numeric fields
-        for (var i = 0; i < numericFieldNames.length; i++)
-        {
-            registry.byId("formAddQueue." + numericFieldNames[i])
-                .set("regExpGen", util.numericOrContextVarRegexp);
-        }
-
-        registry.byId("formAddQueue.maximumQueueDepthBytes").set("regExpGen", util.signedOrContextVarRegexp);
-        registry.byId("formAddQueue.maximumQueueDepthMessages").set("regExpGen", util.signedOrContextVarRegexp);
-
-        if (!this.context)
-        {
-            this.context = new qpid.common.ContextVariablesEditor({
-                name: 'context',
-                title: 'Context variables'
-            });
-            this.context.placeAt(dom.byId("formAddQueue.context"));
-        }
-
-        util.loadEffectiveAndInheritedActualData(management, modelObj, function (data)
-        {
-            addQueue.context.setData(data.actual.context, data.effective.context, data.inheritedActual.context);
-        });
-    };
-
-    return addQueue;
-});

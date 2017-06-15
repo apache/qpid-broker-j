@@ -23,11 +23,13 @@ package org.apache.qpid.server.store;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -42,10 +44,8 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
-import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationStoreUpgraderAndRecoverer
 {
@@ -258,24 +258,26 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if("VirtualHost".equals(record.getType()))
+            if ("VirtualHost".equals(record.getType()))
             {
                 upgradeRootRecord(record);
             }
-            else if("Queue".equals(record.getType()))
+            else if ("Queue".equals(record.getType()))
             {
                 Map<String, Object> newAttributes = new LinkedHashMap<String, Object>();
-                if(record.getAttributes().get(ARGUMENTS) instanceof Map)
+                if (record.getAttributes().get(ARGUMENTS) instanceof Map)
                 {
-                    newAttributes.putAll(QueueArgumentsConverter.convertWireArgsToModel((Map<String, Object>) record.getAttributes()
-                            .get(ARGUMENTS)));
+                    newAttributes.putAll(convertWireArgsToModel((Map<String, Object>) record.getAttributes()
+                                                                                            .get(ARGUMENTS)));
                 }
                 newAttributes.putAll(record.getAttributes());
 
-                record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), newAttributes, record.getParents());
+                record = new ConfiguredObjectRecordImpl(record.getId(),
+                                                        record.getType(),
+                                                        newAttributes,
+                                                        record.getParents());
                 getUpdateMap().put(record.getId(), record);
             }
-
         }
 
         @Override
@@ -283,6 +285,65 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         {
         }
 
+        private final Map<String, String> ATTRIBUTE_MAPPINGS = new LinkedHashMap<>();
+
+        {
+            ATTRIBUTE_MAPPINGS.put("x-qpid-minimum-alert-repeat-gap", "alertRepeatGap");
+            ATTRIBUTE_MAPPINGS.put("x-qpid-maximum-message-age", "alertThresholdMessageAge");
+            ATTRIBUTE_MAPPINGS.put("x-qpid-maximum-message-size", "alertThresholdMessageSize");
+            ATTRIBUTE_MAPPINGS.put("x-qpid-maximum-message-count", "alertThresholdQueueDepthMessages");
+            ATTRIBUTE_MAPPINGS.put("x-qpid-maximum-queue-depth", "alertThresholdQueueDepthBytes");
+            ATTRIBUTE_MAPPINGS.put("qpid.alert_count", "alertThresholdQueueDepthMessages");
+            ATTRIBUTE_MAPPINGS.put("qpid.alert_size", "alertThresholdQueueDepthBytes");
+            ATTRIBUTE_MAPPINGS.put("qpid.alert_repeat_gap", "alertRepeatGap");
+            ATTRIBUTE_MAPPINGS.put("x-qpid-maximum-delivery-count", "maximumDeliveryAttempts");
+            ATTRIBUTE_MAPPINGS.put("x-qpid-capacity", "queueFlowControlSizeBytes");
+            ATTRIBUTE_MAPPINGS.put("x-qpid-flow-resume-capacity", "queueFlowResumeSizeBytes");
+            ATTRIBUTE_MAPPINGS.put("qpid.queue_sort_key", "sortKey");
+            ATTRIBUTE_MAPPINGS.put("qpid.last_value_queue_key", "lvqKey");
+            ATTRIBUTE_MAPPINGS.put("x-qpid-priorities", "priorities");
+            ATTRIBUTE_MAPPINGS.put("x-qpid-description", "description");
+            ATTRIBUTE_MAPPINGS.put("x-qpid-dlq-enabled", "x-qpid-dlq-enabled");
+            ATTRIBUTE_MAPPINGS.put("qpid.group_header_key", "messageGroupKey");
+            ATTRIBUTE_MAPPINGS.put("qpid.default-message-group", "messageGroupDefaultGroup");
+            ATTRIBUTE_MAPPINGS.put("no-local", "noLocal");
+            ATTRIBUTE_MAPPINGS.put("qpid.message_durability", "messageDurability");
+        }
+
+        private Map<String, Object> convertWireArgsToModel(Map<String, Object> wireArguments)
+        {
+            Map<String, Object> modelArguments = new HashMap<>();
+            if (wireArguments != null)
+            {
+                for (Map.Entry<String, String> entry : ATTRIBUTE_MAPPINGS.entrySet())
+                {
+                    if (wireArguments.containsKey(entry.getKey()))
+                    {
+                        modelArguments.put(entry.getValue(), wireArguments.get(entry.getKey()));
+                    }
+                }
+                if (wireArguments.containsKey("qpid.last_value_queue")
+                    && !wireArguments.containsKey("qpid.last_value_queue_key"))
+                {
+                    modelArguments.put("lvqKey", "qpid.LVQ_key");
+                }
+                if (wireArguments.containsKey("qpid.shared_msg_group"))
+                {
+                    modelArguments.put("messageGroupSharedGroups",
+                                       "1".equals(String.valueOf(wireArguments.get("qpid.shared_msg_group"))));
+                }
+                if (wireArguments.get("x-qpid-dlq-enabled") != null)
+                {
+                    modelArguments.put("x-qpid-dlq-enabled",
+                                       Boolean.parseBoolean(wireArguments.get("x-qpid-dlq-enabled").toString()));
+                }
+                if (wireArguments.get("no-local") != null)
+                {
+                    modelArguments.put("noLocal", Boolean.parseBoolean(wireArguments.get("no-local").toString()));
+                }
+            }
+            return modelArguments;
+        }
     }
 
     /*
@@ -429,7 +490,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                     throw new IllegalConfigurationException("Queue name is not found in queue configuration entry attributes: " + attributes);
                 }
 
-                String dleSuffix = System.getProperty(QueueManagingVirtualHost.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, DEFAULT_DLE_NAME_SUFFIX);
+                String dleSuffix = System.getProperty("qpid.broker_dead_letter_exchange_suffix", DEFAULT_DLE_NAME_SUFFIX);
                 String dleExchangeName = queueName + dleSuffix;
 
                 ConfiguredObjectRecord exchangeRecord = findConfiguredObjectRecordInUpdateMap("Exchange", dleExchangeName);
@@ -553,6 +614,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         private final Map<UUID, ConfiguredObjectRecord> _exchanges = new HashMap<>();
         private final Map<UUID, String> _queues = new HashMap<>();
         private final Map<String, List<Map<String,Object>>> _queueBindings = new HashMap<>();
+        private Set<UUID> _destinationsWithAlternateExchange = new HashSet<>();
 
 
         public Upgrader_6_1_to_7_0()
@@ -565,7 +627,26 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         {
             if("VirtualHost".equals(record.getType()))
             {
-                upgradeRootRecord(record);
+                record = upgradeRootRecord(record);
+                Map<String, Object> attributes = new HashMap<>(record.getAttributes());
+                boolean modified = attributes.remove("queue_deadLetterQueueEnabled") != null;
+                Object context = attributes.get("context");
+                if(context instanceof Map)
+                {
+                    Map<String,Object> contextMap = new HashMap<>((Map<String,Object>) context);
+                    modified |= contextMap.remove("queue.deadLetterQueueEnabled") != null;
+                    if (modified)
+                    {
+                        attributes.put("context", contextMap);
+                    }
+                }
+
+                if (modified)
+                {
+                    record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), attributes, record.getParents());
+                    getUpdateMap().put(record.getId(), record);
+                }
+
             }
             else if("Binding".equals(record.getType()))
             {
@@ -603,6 +684,13 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                                                                String.valueOf(existingBinding.get("queue")),
                                                                existingBinding.get("arguments")));
                     }
+                }
+
+                if (record.getAttributes().containsKey("alternateExchange"))
+                {
+                    _destinationsWithAlternateExchange.add(record.getId());
+
+                    getUpdateMap().put(record.getId(), record);
                 }
             }
             else if("Queue".equals(record.getType()))
@@ -642,6 +730,14 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                     }
                 }
 
+                boolean addToUpdateMap = false;
+                if (attributes.containsKey("alternateExchange"))
+                {
+                    _destinationsWithAlternateExchange.add(record.getId());
+                    addToUpdateMap = true;
+
+                }
+
                 if(attributes.containsKey("bindings"))
                 {
                     _queueBindings.put(String.valueOf(attributes.get("name")),
@@ -651,7 +747,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
 
                 _queues.put(record.getId(), (String) attributes.get("name"));
 
-                if (!attributes.equals(new HashMap<>(record.getAttributes())))
+                if (!attributes.equals(new HashMap<>(record.getAttributes())) || addToUpdateMap)
                 {
                     getUpdateMap().put(record.getId(),
                                        new ConfiguredObjectRecordImpl(record.getId(),
@@ -748,6 +844,62 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                 }
 
             }
+
+            for (UUID recordId : _destinationsWithAlternateExchange)
+            {
+                ConfiguredObjectRecord record = getUpdateMap().get(recordId);
+                Map<String, Object> attributes = new HashMap<>(record.getAttributes());
+
+                String exchangeNameOrUuid = String.valueOf(attributes.remove("alternateExchange"));
+
+                ConfiguredObjectRecord exchangeRecord = getExchangeFromNameOrUUID(exchangeNameOrUuid);
+                if (exchangeRecord != null)
+                {
+                    attributes.put("alternateBinding",
+                                   Collections.singletonMap("destination", exchangeRecord.getAttributes().get("name")));
+                }
+                else
+                {
+                    throw new IllegalConfigurationException(String.format(
+                            "Cannot upgrade record UUID '%s' as cannot find exchange with name or UUID '%s'",
+                            recordId,
+                            exchangeNameOrUuid));
+                }
+
+                getUpdateMap().put(record.getId(),
+                                   new ConfiguredObjectRecordImpl(record.getId(),
+                                                                  record.getType(),
+                                                                  attributes,
+                                                                  record.getParents()));
+            }
+        }
+
+        private ConfiguredObjectRecord getExchangeFromNameOrUUID(final String exchangeNameOrUuid)
+        {
+            for(ConfiguredObjectRecord record : _exchanges.values())
+            {
+                if(exchangeNameOrUuid.equals(record.getAttributes().get("name")))
+                {
+                    return record;
+                }
+                else
+                {
+                    try
+                    {
+                        UUID uuid = UUID.fromString(exchangeNameOrUuid);
+                        if (uuid.equals(record.getId()))
+                        {
+                            return record;
+                        }
+                    }
+                    catch (IllegalArgumentException e)
+                    {
+                        // ignore - not a UUID
+                    }
+                }
+            }
+
+            return null;
         }
 
         private UUID getExchangeIdFromNameOrId(final String exchange)

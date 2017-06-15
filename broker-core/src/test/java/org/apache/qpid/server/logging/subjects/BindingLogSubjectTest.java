@@ -24,6 +24,7 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -37,7 +38,7 @@ public class BindingLogSubjectTest extends AbstractTestLogSubject
     private Queue<?> _queue;
     private String _routingKey;
     private Exchange<?> _exchange;
-    private VirtualHost _testVhost;
+    private QueueManagingVirtualHost _testVhost;
 
     @Override
     public void setUp() throws Exception

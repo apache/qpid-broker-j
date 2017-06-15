@@ -19,9 +19,10 @@
  -
  -->
 <div class="dijitHidden">
-    <div data-dojo-type="dijit.Dialog" data-dojo-props="title:'Add Queue'" id="addQueue">
+    <div data-dojo-type="dijit.Dialog" data-dojo-props="title:'Queue'" id="addQueue">
         <form id="formAddQueue" method="post" dojoType="dijit.form.Form">
 
+            <div class="editNoteBanner" id="addQueue.editNoteBanner">NOTE: All changes will only take effect after Virtual Host restart.</div>
             <div class="clear">
                 <div class="formLabel-labelCell">Queue Name*:</div>
                 <div class="formLabel-controlCell">
@@ -292,26 +293,27 @@
                                    data-dojo-props="
                                       name: 'maximumDeliveryAttempts',
                                       placeHolder: 'number of retries',
-                                      promptMessage: 'Maximum number of delivery attempts before the message will be sent to the alternate exchange',
-                                      title: 'Enter the maximum number of delivery attempts before the message will be sent to the alternate exchange',
+                                      promptMessage: 'Maximum number of delivery attempts before the message will be sent to the alternate binding',
+                                      title: 'Enter the maximum number of delivery attempts before the message will be sent to the alternate binding',
                                       trim: true"/>
                         </div>
                     </div>
                     <div class="clear">
-                        <div class="formLabel-labelCell">Create DLQ?</div>
+                        <div class="formLabel-labelCell">Alternate Binding:</div>
                         <div class="formLabel-controlCell">
-                            <input type="checkbox" id="formAddQueue.dlqEnabled"
-                                   dojoType="dijit.form.CheckBox"
+                            <input type="select" id="formAddQueue.alternateBinding"
+                                   data-dojo-type="qpid/common/AlternateBinding"
                                    data-dojo-props="
-                                  name: 'x-qpid-dlq-enabled',
-                                  value: 'dlqEnabled',
-                                  title: 'Controls where a dead letter queue is automatically created',
-                                  checked: false"/>
+                                      name: 'alternateBinding',
+                                      value: ' ',
+                                      placeHolder: 'alternate binding',
+                                      promptMessage: 'Alternate binding to redirect messages to',
+                                      title: 'Select an alternate binding to redirect messages on queue deletion or exceeding of maximum delivery retries'"/>
                         </div>
                     </div>
 
                     <div class="clear"></div>
-                    <div class="infoMessage">Configuring maximum delivery retries on a queue which has no DLQ or alternate <br/>exchange will result in messages being discarded after the limit is reached.</div>
+                    <div class="infoMessage">Configuring maximum delivery retries on a queue which has no alternate binding (DLQ or exchange) <br/> will result in messages being discarded after the limit is reached.</div>
 
                     <div class="clear">
                         <div class="formLabel-labelCell">Message Group Key:</div>
@@ -354,14 +356,18 @@
                 <div class="clear"></div>
             </div>
 
-          <div class="clear" data-dojo-type="dijit/TitlePane" data-dojo-props="title: 'Context variables',  open: false">
-              <div id="formAddQueue.context" ></div>
-          </div>
+            <div class="editorPanel clear"
+                 data-dojo-type="dijit/TitlePane"
+                 data-dojo-props="title: 'Context variables',  open: false">
+                <div id="formAddQueue.context"
+                     data-dojo-type="qpid.common.ContextVariablesEditor"
+                     data-dojo-props="name: 'context', title: 'Context variables'"></div>
+            </div>
 
-          <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
-            <!-- submit buttons -->
-            <input type="submit" value="Create Queue" label="Create Queue" dojoType="dijit.form.Button" />
-          </div>
+            <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
+                  <input type="submit" data-dojo-type="dijit/form/Button" id="formAddQueue.saveButton" data-dojo-props="label: 'Save'"/>
+                  <button data-dojo-type="dijit/form/Button" id="formAddQueue.cancelButton" data-dojo-props="label: 'Cancel'" ></button>
+            </div>
 
         </form>
     </div>

@@ -28,7 +28,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.exchange.DestinationReferrer;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
@@ -38,7 +40,6 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PublishingLink;
-import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.session.AMQPSession;
@@ -186,6 +187,22 @@ class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanc
     public void linkRemoved(final MessageSender sender, final PublishingLink link)
     {
 
+    }
+
+    @Override
+    public MessageDestination getAlternateBindingDestination()
+    {
+        return null;
+    }
+
+    @Override
+    public void removeReference(final DestinationReferrer destinationReferrer)
+    {
+    }
+
+    @Override
+    public void addReference(final DestinationReferrer destinationReferrer)
+    {
     }
 
     @Override

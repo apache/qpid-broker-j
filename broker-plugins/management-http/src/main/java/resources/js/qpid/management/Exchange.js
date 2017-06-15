@@ -22,6 +22,7 @@ define(["dojo/_base/xhr",
         "dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
+        "dojo/_base/event",
         "dojo/json",
         "dojo/_base/lang",
         "dojo/promise/all",
@@ -32,6 +33,7 @@ define(["dojo/_base/xhr",
         "qpid/common/formatter",
         "qpid/common/UpdatableStore",
         "qpid/management/addBinding",
+        "qpid/management/addExchange",
         "dojox/grid/EnhancedGrid",
         "dojox/html/entities",
         "dojo/text!showExchange.html",
@@ -40,6 +42,7 @@ define(["dojo/_base/xhr",
               parser,
               query,
               connect,
+              event,
               json,
               lang,
               all,
@@ -50,6 +53,7 @@ define(["dojo/_base/xhr",
               formatter,
               UpdatableStore,
               addBinding,
+              addExchange,
               EnhancedGrid,
               entities,
               template)
@@ -97,13 +101,21 @@ define(["dojo/_base/xhr",
                     var addBindingButton = query(".addBindingButton", contentPane.containerNode)[0];
                     connect.connect(registry.byNode(addBindingButton), "onClick", function (evt)
                     {
+                        event.stop(evt);
                         addBinding.show(that.management, that.modelObj);
                     });
 
                     var deleteBindingButton = query(".deleteBindingButton", contentPane.containerNode)[0];
                     connect.connect(registry.byNode(deleteBindingButton), "onClick", function (evt)
                     {
+                        event.stop(evt);
                         that.deleteBindings();
+                    });
+                    var editExchangeButton = query(".editExchangeButton", contentPane.containerNode)[0];
+                    connect.connect(registry.byNode(editExchangeButton), "onClick", function (evt)
+                    {
+                        event.stop(evt);
+                        addExchange.show(that.management, that.modelObj, that.exchangeUpdater.exchangeData);
                     });
 
                     var isStandard = util.isReservedExchangeName(that.name);
@@ -117,6 +129,7 @@ define(["dojo/_base/xhr",
                     {
                         connect.connect(node, "onClick", function (evt)
                         {
+                            event.stop(evt);
                             that.deleteExchange();
                         });
                     }
@@ -195,15 +208,7 @@ define(["dojo/_base/xhr",
                         "state",
                         "durable",
                         "lifetimePolicy",
-                        "alertRepeatGap",
-                        "alertRepeatGapUnits",
-                        "alertThresholdMessageAge",
-                        "alertThresholdMessageAgeUnits",
-                        "alertThresholdMessageSize",
-                        "alertThresholdMessageSizeUnits",
-                        "alertThresholdQueueDepthBytes",
-                        "alertThresholdQueueDepthBytesUnits",
-                        "alertThresholdQueueDepthMessages",
+                        "alternateBinding",
                         "msgInRate",
                         "bytesInRate",
                         "bytesInRateUnits",
@@ -255,7 +260,9 @@ define(["dojo/_base/xhr",
             this.state.innerHTML = entities.encode(String(this.exchangeData["state"]));
             this.durable.innerHTML = entities.encode(String(this.exchangeData["durable"]));
             this.lifetimePolicy.innerHTML = entities.encode(String(this.exchangeData["lifetimePolicy"]));
-
+            this.alternateBinding.innerHTML =
+                this.exchangeData["alternateBinding"] && this.exchangeData["alternateBinding"]["destination"]
+                    ? entities.encode(String(this.exchangeData["alternateBinding"]["destination"])) : "";
         };
 
         ExchangeUpdater.prototype.update = function (callback)

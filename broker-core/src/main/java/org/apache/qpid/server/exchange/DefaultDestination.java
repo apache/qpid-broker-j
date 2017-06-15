@@ -21,7 +21,6 @@ package org.apache.qpid.server.exchange;
 import java.security.AccessControlException;
 import java.util.Map;
 
-import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSender;
@@ -147,5 +146,21 @@ public class DefaultDestination implements MessageDestination, PermissionedObjec
     public void linkRemoved(final MessageSender sender, final PublishingLink link)
     {
 
+    }
+
+    @Override
+    public MessageDestination getAlternateBindingDestination()
+    {
+        return null;
+    }
+
+    @Override
+    public void removeReference(final DestinationReferrer destinationReferrer)
+    {
+    }
+
+    @Override
+    public void addReference(final DestinationReferrer destinationReferrer)
+    {
     }
 }

@@ -46,6 +46,7 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.TestConsumerTarget;
@@ -59,6 +60,7 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
@@ -70,6 +72,7 @@ import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
+import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -963,6 +966,92 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         message = createMessage(new Long(id), headerSize, payloadSize);
         result = queue.route(message, message.getInitialRoutingAddress(), null);
         assertTrue("Result should include not accepting route", result.hasNotAcceptingRoutableQueue());
+    }
+
+    public void testAlternateBindingValidationRejectsNonExistingDestination()
+    {
+        Map<String, Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, getTestName());
+        attributes.put(Queue.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, "nonExisting"));
+
+        try
+        {
+            _virtualHost.createChild(Queue.class, attributes);
+            fail("Expected exception is not thrown");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
+    public void testAlternateBindingValidationRejectsSelf()
+    {
+        Map<String, String> alternateBinding = Collections.singletonMap(AlternateBinding.DESTINATION, _qname);
+        Map<String, Object> newAttributes = Collections.singletonMap(Queue.ALTERNATE_BINDING, alternateBinding);
+        try
+        {
+            _queue.setAttributes(newAttributes);
+            fail("Expected exception is not thrown");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
+    public void testDurableQueueRejectsNonDurableAlternateBinding()
+    {
+        Map<String, Object> dlqAttributes = new HashMap<>(_arguments);
+        String dlqName = getTestName() + "_DLQ";
+        dlqAttributes.put(Queue.NAME, dlqName);
+        dlqAttributes.put(Queue.DURABLE, false);
+        _virtualHost.createChild(Queue.class, dlqAttributes);
+
+        Map<String, Object> queueAttributes = new HashMap<>(_arguments);
+        queueAttributes.put(Queue.NAME, getTestName());
+        queueAttributes.put(Queue.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, dlqName));
+        queueAttributes.put(Queue.DURABLE, true);
+
+        try
+        {
+            _virtualHost.createChild(Queue.class, queueAttributes);
+            fail("Expected exception is not thrown");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
+    public void testAlternateBinding()
+    {
+        Map<String, Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, getTestName());
+        attributes.put(Queue.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, _qname));
+
+        Queue newQueue = _virtualHost.createChild(Queue.class, attributes);
+
+        assertEquals("Unexpected alternate binding", _qname, newQueue.getAlternateBinding().getDestination());
+    }
+
+    public void testDeleteOfQueueSetAsAlternate()
+    {
+        Map<String, Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, getTestName());
+        attributes.put(Queue.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, _qname));
+
+        Queue newQueue = _virtualHost.createChild(Queue.class, attributes);
+        assertEquals("Unexpected alternate binding", _qname, newQueue.getAlternateBinding().getDestination());
+        try
+        {
+            _queue.delete();
+            fail("Expected exception is not thrown");
+        }
+        catch (MessageDestinationIsAlternateException e)
+        {
+            //pass
+        }
     }
 
     private long getExpirationOnQueue(final Queue<?> queue, long arrivalTime, long expiration)

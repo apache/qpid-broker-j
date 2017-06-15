@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.connection.SessionPrincipal;
+import org.apache.qpid.server.exchange.DestinationReferrer;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
@@ -67,8 +68,8 @@ import org.apache.qpid.server.txn.DtxNotSupportedException;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.ConnectionEstablishmentPolicy;
-import org.apache.qpid.server.virtualhost.LinkRegistryModel;
 import org.apache.qpid.server.virtualhost.LinkRegistryFactory;
+import org.apache.qpid.server.virtualhost.LinkRegistryModel;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNode;
 
 public class ManagementAddressSpace implements NamedAddressSpace
@@ -165,6 +166,12 @@ public class ManagementAddressSpace implements NamedAddressSpace
         }
 
         return null;
+    }
+
+    @Override
+    public MessageDestination getAttainedMessageDestination(final String name, final boolean mayCreate)
+    {
+        return getAttainedMessageDestination(name);
     }
 
     ProxyMessageSource getProxyNode(final String name)
@@ -412,6 +419,22 @@ public class ManagementAddressSpace implements NamedAddressSpace
         public void linkRemoved(final MessageSender sender, final PublishingLink link)
         {
 
+        }
+
+        @Override
+        public MessageDestination getAlternateBindingDestination()
+        {
+            return null;
+        }
+
+        @Override
+        public void removeReference(final DestinationReferrer destinationReferrer)
+        {
+        }
+
+        @Override
+        public void addReference(final DestinationReferrer destinationReferrer)
+        {
         }
     }
 }

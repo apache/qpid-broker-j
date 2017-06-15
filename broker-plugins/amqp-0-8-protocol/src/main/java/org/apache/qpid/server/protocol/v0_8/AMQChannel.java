@@ -52,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.protocol.ErrorCodes;
@@ -91,7 +92,7 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
+import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
 
@@ -113,6 +114,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             return input.getMessageInstance();
         }
     };
+    private static final String ALTERNATE_EXCHANGE = "alternateExchange";
     private final DefaultQueueAssociationClearingTask
             _defaultQueueAssociationClearingTask = new DefaultQueueAssociationClearingTask();
 
@@ -1638,16 +1640,10 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 {
                     final Queue<?> queue = (Queue<?>) owningResource;
 
-                    final Exchange altExchange = queue.getAlternateExchange();
+                    final MessageDestination alternateBindingDestination = queue.getAlternateBindingDestination();
 
-                    if (altExchange == null)
+                    if (alternateBindingDestination == null)
                     {
-                        if (_logger.isDebugEnabled())
-                        {
-                            _logger.debug(
-                                    "No alternate exchange configured for queue, must discard the message as unable to DLQ: delivery tag: "
-                                    + deliveryTag);
-                        }
                         messageWithSubject(ChannelMessages.DISCARDMSG_NOALTEXCH(msg.getMessageNumber(),
                                                                                 queue.getName(),
                                                                                 msg.getInitialRoutingAddress()));
@@ -1655,14 +1651,8 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     }
                     else
                     {
-                        if (_logger.isDebugEnabled())
-                        {
-                            _logger.debug(
-                                    "Routing process provided no queues to enqueue the message on, must discard message as unable to DLQ: delivery tag: "
-                                    + deliveryTag);
-                        }
                         messageWithSubject(ChannelMessages.DISCARDMSG_NOROUTE(msg.getMessageNumber(),
-                                                                              altExchange.getName()));
+                                                                              alternateBindingDestination.getName()));
                     }
                 }
             }
@@ -2726,9 +2716,13 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     attributes.put(Exchange.DURABLE, durable);
                     attributes.put(Exchange.LIFETIME_POLICY,
                                    autoDelete ? LifetimePolicy.DELETE_ON_NO_LINKS : LifetimePolicy.PERMANENT);
-                    if (!attributes.containsKey(Exchange.ALTERNATE_EXCHANGE))
+
+                    Object alternateExchange = attributes.remove(ALTERNATE_EXCHANGE);
+                    if (alternateExchange != null)
                     {
-                        attributes.put(Exchange.ALTERNATE_EXCHANGE, null);
+                        validateAlternateExchangeIsNotQueue(virtualHost, String.valueOf(alternateExchange));
+                        attributes.put(Exchange.ALTERNATE_BINDING,
+                                       Collections.singletonMap(AlternateBinding.DESTINATION, alternateExchange));
                     }
                     exchange = virtualHost.createMessageDestination(Exchange.class, attributes);
 
@@ -2810,6 +2804,16 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     }
 
+    private void validateAlternateExchangeIsNotQueue(final NamedAddressSpace addressSpace, final String alternateExchangeName)
+    {
+        MessageDestination alternateMessageDestination = addressSpace.getAttainedMessageDestination(alternateExchangeName, false);
+        if (alternateMessageDestination != null && !(alternateMessageDestination instanceof Exchange))
+        {
+            throw new IllegalConfigurationException(String.format(
+                    "Alternate exchange '%s' is not a destination of type 'exchange'.", alternateExchangeName));
+        }
+    }
+
     @Override
     public void receiveExchangeDelete(final AMQShortString exchangeStr, final boolean ifUnused, final boolean nowait)
     {
@@ -2858,9 +2862,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                             _connection.writeFrame(responseBody.generateFrame(getChannelId()));
                         }
                     }
-                    catch (ExchangeIsAlternateException e)
+                    catch (MessageDestinationIsAlternateException e)
                     {
-                        closeChannel(ErrorCodes.NOT_ALLOWED, "Exchange in use as an alternate exchange");
+                        closeChannel(ErrorCodes.NOT_ALLOWED, "Exchange in use as an alternate binding destination");
                     }
                     catch (RequiredExchangeException e)
                     {
@@ -3064,9 +3068,17 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
             try
             {
-                Map<String, Object> attributes =
-                        QueueArgumentsConverter.convertWireArgsToModel(FieldTable.convertToMap(arguments));
                 final String queueNameString = AMQShortString.toString(queueName);
+                Map<String, Object> wireArguments = FieldTable.convertToMap(arguments);
+                Object alternateExchange = wireArguments.get(ALTERNATE_EXCHANGE);
+                if (alternateExchange != null)
+                {
+                    validateAlternateExchangeIsNotQueue(virtualHost, String.valueOf(alternateExchange));
+                }
+
+                Map<String, Object> attributes =
+                        QueueArgumentsConverter.convertWireArgsToModel(queueNameString, wireArguments);
+
                 attributes.put(Queue.NAME, queueNameString);
                 attributes.put(Queue.DURABLE, durable);
 

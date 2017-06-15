@@ -35,6 +35,18 @@
                     <div class="formLabel-labelCell">State:</div>
                     <div class="state formValue-valueCell"></div>
                 </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell">Durable:</div>
+                    <div class="durable formValue-valueCell""></div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell">Lifespan:</div>
+                    <div class="lifetimePolicy formValue-valueCell""></div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell">Alternate Binding:</div>
+                    <div class="alternateBinding formValue-valueCell"></div>
+                </div>
             </div>
             <div class="alignRight">
                 <div class="clear">
@@ -57,27 +69,17 @@
                 </div>
             </div>
         </div>
-        <div class="clear">
-            <div class="formLabel-labelCell">Durable:</div>
-            <div class="durable"></div>
-        </div>
-        <div class="clear">
-            <div class="formLabel-labelCell">Lifespan:</div>
-            <div class="lifetimePolicy"></div>
-        </div>
 
         <div class="clear"></div>
     </div>
+    <div class="dijitDialogPaneActionBar">
+        <button data-dojo-type="dijit.form.Button" class="editExchangeButton" type="button">Edit Exchange</button>
+        <button data-dojo-type="dijit.form.Button" class="deleteExchangeButton" type="button">Delete Exchange</button>
+    </div>
     <br/>
-
     <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Bindings'">
         <div class="bindings"></div>
         <button data-dojo-type="dijit.form.Button" class="addBindingButton">Add Binding</button>
         <button data-dojo-type="dijit.form.Button" class="deleteBindingButton">Delete Binding</button>
-    </div>
-    <br/>
-
-    <div class="dijitDialogPaneActionBar">
-        <button data-dojo-type="dijit.form.Button" class="deleteExchangeButton" type="button">Delete Exchange</button>
     </div>
 </div>

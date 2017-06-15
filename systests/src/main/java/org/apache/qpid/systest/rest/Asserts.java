@@ -90,8 +90,6 @@ public class Asserts
                      virtualHost.get(VirtualHost.DURABLE));
         assertEquals("Unexpected value of attribute " + VirtualHost.LIFETIME_POLICY, LifetimePolicy.PERMANENT.name(),
                      virtualHost.get(VirtualHost.LIFETIME_POLICY));
-        assertEquals("Unexpected value of attribute " + QueueManagingVirtualHost.QUEUE_DEAD_LETTER_QUEUE_ENABLED, Boolean.FALSE,
-                     virtualHost.get(QueueManagingVirtualHost.QUEUE_DEAD_LETTER_QUEUE_ENABLED));
 
         @SuppressWarnings("unchecked")
         Map<String, Object> statistics = (Map<String, Object>) virtualHost.get(STATISTICS_ATTRIBUTE);
@@ -119,7 +117,7 @@ public class Asserts
                                         Queue.LAST_UPDATED_TIME,
                                         Queue.TYPE,
                                         Queue.DESCRIPTION,
-                                        Queue.ALTERNATE_EXCHANGE,
+                                        Queue.ALTERNATE_BINDING,
                                         Queue.OWNER,
                                         Queue.NO_LOCAL,
                                         LastValueQueue.LVQ_KEY,
@@ -334,7 +332,7 @@ public class Asserts
     {
         assertNotNull("Exchange " + exchangeName + " is not found!", exchangeData);
         assertAttributesPresent(exchangeData, BrokerModel.getInstance().getTypeRegistry().getAttributeNames(Exchange.class),
-                                Exchange.ALTERNATE_EXCHANGE,
+                                Exchange.ALTERNATE_BINDING,
                                 ConfiguredObject.CREATED_BY,
                                 ConfiguredObject.CREATED_TIME,
                                 ConfiguredObject.LAST_UPDATED_BY,

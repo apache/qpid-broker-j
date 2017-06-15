@@ -33,11 +33,13 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDeletedException;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -573,7 +575,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         }
 
         final Queue<?> currentQueue = getQueue();
-        Exchange<?> alternateExchange = currentQueue.getAlternateExchange();
+        MessageDestination alternateBindingDestination = currentQueue.getAlternateBindingDestination();
         boolean autocommit =  txn == null;
 
         if(autocommit)
@@ -582,9 +584,9 @@ public abstract class QueueEntryImpl implements QueueEntry
         }
 
         RoutingResult result;
-        if (alternateExchange != null)
+        if (alternateBindingDestination != null)
         {
-            result = alternateExchange.route(getMessage(), getMessage().getInitialRoutingAddress(),
+            result = alternateBindingDestination.route(getMessage(), getMessage().getInitialRoutingAddress(),
                                                            getInstanceProperties());
         }
         else

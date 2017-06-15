@@ -55,6 +55,7 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.exchange.DestinationReferrer;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.AMQMessageHeader;
@@ -381,6 +382,22 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     public void linkRemoved(final MessageSender sender, final PublishingLink link)
     {
 
+    }
+
+    @Override
+    public MessageDestination getAlternateBindingDestination()
+    {
+        return null;
+    }
+
+    @Override
+    public void removeReference(final DestinationReferrer destinationReferrer)
+    {
+    }
+
+    @Override
+    public void addReference(final DestinationReferrer destinationReferrer)
+    {
     }
 
     private synchronized void enqueue(InternalMessage message,

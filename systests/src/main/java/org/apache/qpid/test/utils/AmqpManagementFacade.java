@@ -298,7 +298,7 @@ public class AmqpManagementFacade
                     return new HashMap<>(bodyMap);
                 }
             }
-            throw new IllegalArgumentException("Cannot parse the results from a management read");
+            throw new IllegalArgumentException("Management read failed : " + response.getStringProperty("statusCode") + " - " + response.getStringProperty("statusDescription"));
         }
         finally
         {

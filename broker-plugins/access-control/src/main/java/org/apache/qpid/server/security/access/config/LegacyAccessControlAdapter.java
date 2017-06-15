@@ -262,13 +262,14 @@ class LegacyAccessControlAdapter
         properties.put(ObjectProperties.Property.TEMPORARY, lifeTimePolicy != LifetimePolicy.PERMANENT);
         properties.put(ObjectProperties.Property.DURABLE, (Boolean)queue.getAttribute(ConfiguredObject.DURABLE));
         properties.put(ObjectProperties.Property.EXCLUSIVE, queue.getAttribute(Queue.EXCLUSIVE) != ExclusivityPolicy.NONE);
-        Object alternateExchange = queue.getAttribute(Queue.ALTERNATE_EXCHANGE);
-        if (alternateExchange != null)
+        Object alternateBinding = queue.getAttribute(Queue.ALTERNATE_BINDING);
+        if (alternateBinding instanceof AlternateBinding)
         {
-            String name = alternateExchange instanceof ConfiguredObject ?
-                    (String)((ConfiguredObject)alternateExchange).getAttribute(ConfiguredObject.NAME) :
-                    String.valueOf(alternateExchange);
-            properties.put(ObjectProperties.Property.ALTERNATE, name);
+            String name = ((AlternateBinding)alternateBinding).getDestination();
+            if (name != null && !"".equals(name))
+            {
+                properties.put(ObjectProperties.Property.ALTERNATE, name);
+            }
         }
         String owner = (String)queue.getAttribute(Queue.OWNER);
         if (owner != null)

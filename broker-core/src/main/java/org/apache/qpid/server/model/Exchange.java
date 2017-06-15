@@ -23,26 +23,25 @@ package org.apache.qpid.server.model;
 import java.util.Collection;
 import java.util.Map;
 
-import org.apache.qpid.server.exchange.ExchangeReferrer;
+import org.apache.qpid.server.exchange.DestinationReferrer;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.queue.CreatingLinkInfo;
-import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 @ManagedObject( description = Exchange.CLASS_DESCRIPTION,
         amqpName = "org.apache.qpid.Exchange"
         )
 public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, MessageDestination,
-                                                         ExchangeReferrer, MessageSender
+                                                         DestinationReferrer, MessageSender
 {
     String CLASS_DESCRIPTION = "<p>An Exchange is a named entity within the Virtualhost which receives messages from "
                                + "producers and routes them to matching Queues within the Virtualhost.</p>"
                                + "<p>The server provides a set of exchange types with each exchange type implementing "
                                + "a different routing algorithm.</p>";
 
-    String ALTERNATE_EXCHANGE                   = "alternateExchange";
+    String ALTERNATE_BINDING = "alternateBinding";
     String DURABLE_BINDINGS = "durableBindings";
     String UNROUTABLE_MESSAGE_BEHAVIOUR = "unroutableMessageBehaviour";
     String CREATING_LINK_INFO = "creatingLinkInfo";
@@ -55,7 +54,7 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     // Attributes
 
     @ManagedAttribute
-    Exchange<?> getAlternateExchange();
+    AlternateBinding getAlternateBinding();
 
     @ManagedAttribute(description = "(AMQP 1.0 only) Default behaviour to apply when a message is not routed to any queues", defaultValue = "DISCARD")
     UnroutableMessageBehaviour getUnroutableMessageBehaviour();
@@ -175,12 +174,6 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     @DoOnConfigThread
     boolean isBound(@Param(name = "arguments") Map<String, Object> arguments,
                     @Param(name = "queue") Queue<?> queue);
-
-    void removeReference(ExchangeReferrer exchange);
-
-    void addReference(ExchangeReferrer exchange);
-
-    boolean hasReferrers();
 
     EventLogger getEventLogger();
 

@@ -35,6 +35,7 @@ import java.util.Map;
 
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.queue.QueueConsumer;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class LegacyAccessControlAdapterTest extends QpidTestCase
@@ -45,7 +46,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     private static final String TEST_QUEUE = "testQueue";
 
     private LegacyAccessControl _accessControl;
-    private VirtualHost<?> _virtualHost;
+    private QueueManagingVirtualHost<?> _virtualHost;
     private Broker _broker;
     private VirtualHostNode<?> _virtualHostNode;
     private LegacyAccessControlAdapter _adapter;
@@ -55,7 +56,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     {
         super.setUp();
         _accessControl = mock(LegacyAccessControl.class);
-        _virtualHost = mock(VirtualHost.class);
+        _virtualHost = mock(QueueManagingVirtualHost.class);
 
 
         when(_virtualHost.getName()).thenReturn(TEST_VIRTUAL_HOST);
@@ -260,7 +261,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(queue.getAttribute(Queue.OWNER)).thenReturn(null);
         when(queue.getAttribute(Queue.EXCLUSIVE)).thenReturn(ExclusivityPolicy.NONE);
         when(queue.getAttribute(Queue.DURABLE)).thenReturn(false);
-        when(queue.getAttribute(Queue.ALTERNATE_EXCHANGE)).thenReturn(null);
+        when(queue.getAttribute(Queue.ALTERNATE_BINDING)).thenReturn(null);
         when(queue.getCategoryClass()).thenReturn(Queue.class);
         when(queue.getParent()).thenReturn(vh);
 

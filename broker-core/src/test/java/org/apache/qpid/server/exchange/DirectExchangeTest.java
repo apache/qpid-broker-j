@@ -19,16 +19,18 @@
  */
 package org.apache.qpid.server.exchange;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.qpid.server.exchange.ExchangeDefaults;
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
+import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -124,19 +126,19 @@ public class DirectExchangeTest extends QpidTestCase
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(Queue.NAME, getTestName());
         attributes.put(Queue.DURABLE, false);
-        attributes.put(Queue.ALTERNATE_EXCHANGE, _exchange.getName());
+        attributes.put(Queue.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, _exchange.getName()));
 
         Queue queue = (Queue) _vhost.createChild(Queue.class, attributes);
         queue.open();
 
-        assertEquals("Unexpected alternate exchange on queue", _exchange, queue.getAlternateExchange());
+        assertEquals("Unexpected alternate exchange on queue", _exchange, queue.getAlternateBindingDestination());
 
         try
         {
             _exchange.delete();
-            fail("Exchange deletion should fail with ExchangeIsAlternateException");
+            fail("Exchange deletion should fail with MessageDestinationIsAlternateException");
         }
-        catch(ExchangeIsAlternateException e)
+        catch(MessageDestinationIsAlternateException e)
         {
             // pass
         }
@@ -145,4 +147,78 @@ public class DirectExchangeTest extends QpidTestCase
         assertEquals("Unexpected desired exchange state", State.ACTIVE, _exchange.getDesiredState());
     }
 
+    public void testAlternateBindingValidationRejectsNonExistingDestination()
+    {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(Exchange.NAME, getTestName());
+        attributes.put(Exchange.TYPE, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
+        attributes.put(Exchange.ALTERNATE_BINDING,
+                       Collections.singletonMap(AlternateBinding.DESTINATION, "nonExisting"));
+
+        try
+        {
+            _vhost.createChild(Exchange.class, attributes);
+            fail("Expected exception is not thrown");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
+    public void testAlternateBindingValidationRejectsSelf()
+    {
+        Map<String, String> alternateBinding = Collections.singletonMap(AlternateBinding.DESTINATION, _exchange.getName());
+        Map<String, Object> newAttributes = Collections.singletonMap(Exchange.ALTERNATE_BINDING, alternateBinding);
+        try
+        {
+            _exchange.setAttributes(newAttributes);
+            fail("Expected exception is not thrown");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
+    public void testDurableExchangeRejectsNonDurableAlternateBinding()
+    {
+        Map<String, Object> dlqAttributes = new HashMap<>();
+        String dlqName = getTestName() + "_DLQ";
+        dlqAttributes.put(Queue.NAME, dlqName);
+        dlqAttributes.put(Queue.DURABLE, false);
+        _vhost.createChild(Queue.class, dlqAttributes);
+
+        Map<String, Object> exchangeAttributes = new HashMap<>();
+        exchangeAttributes.put(Exchange.NAME, getTestName());
+        exchangeAttributes.put(Exchange.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, dlqName));
+        exchangeAttributes.put(Exchange.DURABLE, true);
+        exchangeAttributes.put(Exchange.TYPE, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
+
+        try
+        {
+            _vhost.createChild(Exchange.class, exchangeAttributes);
+            fail("Expected exception is not thrown");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
+    public void testAlternateBinding()
+    {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(Exchange.NAME, getTestName());
+        attributes.put(Exchange.TYPE, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
+        attributes.put(Exchange.ALTERNATE_BINDING,
+                       Collections.singletonMap(AlternateBinding.DESTINATION, _exchange.getName()));
+        attributes.put(Exchange.DURABLE, false);
+
+        Exchange newExchange = _vhost.createChild(Exchange.class, attributes);
+
+        assertEquals("Unexpected alternate binding",
+                     _exchange.getName(),
+                     newExchange.getAlternateBinding().getDestination());
+    }
 }

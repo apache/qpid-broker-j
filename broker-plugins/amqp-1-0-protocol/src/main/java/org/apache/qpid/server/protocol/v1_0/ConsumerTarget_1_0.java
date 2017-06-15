@@ -35,6 +35,7 @@ import org.apache.qpid.server.consumer.AbstractConsumerTarget;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
@@ -601,9 +602,9 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                 {
                     final Queue<?> queue = (Queue<?>) owningResource;
 
-                    final Exchange altExchange = queue.getAlternateExchange();
+                    final MessageDestination alternateBindingDestination = queue.getAlternateBindingDestination();
 
-                    if (altExchange == null)
+                    if (alternateBindingDestination == null)
                     {
                         eventLogger.message(logSubject,
                                             ChannelMessages.DISCARDMSG_NOALTEXCH(message.getMessageNumber(),
@@ -614,7 +615,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                     {
                         eventLogger.message(logSubject,
                                             ChannelMessages.DISCARDMSG_NOROUTE(message.getMessageNumber(),
-                                                                               altExchange.getName()));
+                                                                               alternateBindingDestination.getName()));
                     }
                 }
             }

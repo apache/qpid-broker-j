@@ -57,8 +57,10 @@ import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ConfiguredDerivedMethodAttribute;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.DoOnConfigThread;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.LifetimePolicy;
@@ -78,7 +80,7 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.util.DeleteDeleteTask;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
-import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
+import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
@@ -100,8 +102,8 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     private static final Operation PUBLISH_ACTION = Operation.ACTION("publish");
     private final AtomicBoolean _closed = new AtomicBoolean();
 
-    @ManagedAttributeField(beforeSet = "preSetAlternateExchange", afterSet = "postSetAlternateExchange" )
-    private Exchange<?> _alternateExchange;
+    @ManagedAttributeField(beforeSet = "preSetAlternateBinding", afterSet = "postSetAlternateBinding" )
+    private AlternateBinding _alternateBinding;
     @ManagedAttributeField
     private UnroutableMessageBehaviour _unroutableMessageBehaviour;
     @ManagedAttributeField
@@ -116,7 +118,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     //The logSubject for ths exchange
     private LogSubject _logSubject;
-    private Map<ExchangeReferrer,Object> _referrers = new ConcurrentHashMap<ExchangeReferrer,Object>();
+    private final Set<DestinationReferrer> _referrers = Collections.newSetFromMap(new ConcurrentHashMap<DestinationReferrer,Boolean>());
 
     private final AtomicLong _receivedMessageCount = new AtomicLong();
     private final AtomicLong _receivedMessageSize = new AtomicLong();
@@ -129,6 +131,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     private final ConcurrentMap<MessageSender, Integer> _linkedSenders = new ConcurrentHashMap<>();
     private final List<Action<? super Deletable<?>>> _deleteTaskList = new CopyOnWriteArrayList<>();
+    private volatile MessageDestination _alternateBindingDestination;
 
     public AbstractExchange(Map<String, Object> attributes, QueueManagingVirtualHost<?> vhost)
     {
@@ -158,6 +161,14 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         }
     }
 
+    @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+
+        validateOrCreateAlternateBinding(((Exchange<?>) proxyForValidation), false);
+    }
+
     private boolean isReservedExchangeName(String name)
     {
         return name == null || ExchangeDefaults.DEFAULT_EXCHANGE_NAME.equals(name)
@@ -172,6 +183,13 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         {
             throw new IllegalConfigurationException(String.format("Cannot specify creatingLinkInfo for exchange '%s'", getName()));
         }
+    }
+
+    @Override
+    protected void onCreate()
+    {
+        super.onCreate();
+        validateOrCreateAlternateBinding(this, true);
     }
 
     @Override
@@ -219,6 +237,20 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             }
         }
 
+        if (getAlternateBinding() != null)
+        {
+            String alternateDestination = getAlternateBinding().getDestination();
+            _alternateBindingDestination = getOpenedMessageDestination(alternateDestination);
+            if (_alternateBindingDestination != null)
+            {
+                _alternateBindingDestination.addReference(this);
+            }
+            else
+            {
+                _logger.warn("Cannot find alternate binding destination '{}' for exchange '{}'", alternateDestination, toString());
+            }
+        }
+
         getEventLogger().message(ExchangeMessages.CREATED(getType(), getName(), isDurable()));
     }
 
@@ -260,7 +292,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     {
         if(hasReferrers())
         {
-            throw new ExchangeIsAlternateException(getName());
+            throw new MessageDestinationIsAlternateException(getName());
         }
 
         if(isReservedExchangeName(getName()))
@@ -285,9 +317,9 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 sender.destinationRemoved(this);
             }
 
-            if (_alternateExchange != null)
+            if (_alternateBindingDestination != null)
             {
-                _alternateExchange.removeReference(AbstractExchange.this);
+                _alternateBindingDestination.removeReference(AbstractExchange.this);
             }
 
             getEventLogger().message(_logSubject, ExchangeMessages.DELETED());
@@ -475,41 +507,51 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     }
 
     @Override
-    public Exchange<?> getAlternateExchange()
+    public AlternateBinding getAlternateBinding()
     {
-        return _alternateExchange;
+        return _alternateBinding;
     }
 
-    private void preSetAlternateExchange()
+    private void preSetAlternateBinding()
     {
-        if (_alternateExchange != null)
+        if (_alternateBindingDestination != null)
         {
-            _alternateExchange.removeReference(this);
+            _alternateBindingDestination.removeReference(this);
         }
     }
 
     @SuppressWarnings("unused")
-    private void postSetAlternateExchange()
+    private void postSetAlternateBinding()
     {
-        if(_alternateExchange != null)
+        if(_alternateBinding != null)
         {
-            _alternateExchange.addReference(this);
+            _alternateBindingDestination = _virtualHost.getAttainedMessageDestination(_alternateBinding.getDestination(), false);
+            if (_alternateBindingDestination != null)
+            {
+                _alternateBindingDestination.addReference(this);
+            }
         }
     }
 
     @Override
-    public void removeReference(ExchangeReferrer exchange)
+    public MessageDestination getAlternateBindingDestination()
     {
-        _referrers.remove(exchange);
+        return _alternateBindingDestination;
     }
 
     @Override
-    public void addReference(ExchangeReferrer exchange)
+    public void removeReference(DestinationReferrer destinationReferrer)
     {
-        _referrers.put(exchange, Boolean.TRUE);
+        _referrers.remove(destinationReferrer);
     }
 
-    public boolean hasReferrers()
+    @Override
+    public void addReference(DestinationReferrer destinationReferrer)
+    {
+        _referrers.add(destinationReferrer);
+    }
+
+    private boolean hasReferrers()
     {
         return !_referrers.isEmpty();
     }
@@ -578,10 +620,10 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
             if (!routingResult.hasRoutes())
             {
-                Exchange altExchange = getAlternateExchange();
-                if (altExchange != null)
+                MessageDestination alternateBindingDestination = getAlternateBindingDestination();
+                if (alternateBindingDestination != null)
                 {
-                    routingResult.add(altExchange.route(message, routingAddress, instanceProperties));
+                    routingResult.add(alternateBindingDestination.route(message, routingAddress, instanceProperties));
                 }
             }
 
@@ -722,19 +764,18 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     private MessageDestination getOpenedMessageDestination(final String name)
     {
-        MessageDestination destination = getVirtualHost().getChildByName(Queue.class, name);
-        if(destination == null)
-        {
-            destination = getVirtualHost().getSystemDestination(name);
-        }
-
+        MessageDestination destination = getVirtualHost().getSystemDestination(name);
         if(destination == null)
         {
             destination = getVirtualHost().getChildByName(Exchange.class, name);
         }
+
+        if(destination == null)
+        {
+            destination = getVirtualHost().getChildByName(Queue.class, name);
+        }
         return destination;
     }
-
 
     @Override
     public boolean unbind(@Param(name = "destination", mandatory = true) final String destination,
@@ -856,7 +897,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.DELETED)
     private ListenableFuture<Void>  doDeleteBeforeInitialize()
     {
-        preSetAlternateExchange();
+        preSetAlternateBinding();
         setState(State.DELETED);
         return Futures.immediateFuture(null);
     }
@@ -868,11 +909,11 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         try
         {
             deleteWithChecks();
-            preSetAlternateExchange();
+            preSetAlternateBinding();
             setState(State.DELETED);
             return Futures.immediateFuture(null);
         }
-        catch(ExchangeIsAlternateException | RequiredExchangeException e)
+        catch(MessageDestinationIsAlternateException | RequiredExchangeException e)
         {
             // let management know about constraint violations
             // in order to report error back to caller
@@ -987,6 +1028,37 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         if(oldValue != 1)
         {
             _linkedSenders.put(sender, oldValue-1);
+        }
+    }
+
+    private void validateOrCreateAlternateBinding(final Exchange<?> exchange, final boolean mayCreate)
+    {
+        Object value = exchange.getAttribute(ALTERNATE_BINDING);
+        if (value instanceof AlternateBinding)
+        {
+            AlternateBinding alternateBinding = (AlternateBinding) value;
+            String destinationName = alternateBinding.getDestination();
+            MessageDestination messageDestination =
+                    _virtualHost.getAttainedMessageDestination(destinationName, mayCreate);
+            if (messageDestination == null)
+            {
+                throw new IllegalConfigurationException(String.format(
+                        "Cannot create alternate binding for '%s' : Alternate binding destination '%s' cannot be found.",
+                        getName(), destinationName));
+            }
+            else if (messageDestination == this)
+            {
+                throw new IllegalConfigurationException(String.format(
+                        "Cannot create alternate binding for '%s' : Alternate binding destination cannot refer to self.",
+                        getName()));
+            }
+            else if (isDurable() && !messageDestination.isDurable())
+            {
+                throw new IllegalConfigurationException(String.format(
+                        "Cannot create alternate binding for '%s' : Alternate binding destination '%s' is not durable.",
+                        getName(),
+                        destinationName));
+            }
         }
     }
 }

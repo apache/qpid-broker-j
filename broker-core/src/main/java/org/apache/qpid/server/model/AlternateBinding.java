@@ -18,14 +18,16 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.virtualhost;
+package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.model.IntegrityViolationException;
+import java.util.Map;
 
-public class ExchangeIsAlternateException extends IntegrityViolationException
+@ManagedAttributeValueType
+public interface AlternateBinding extends ManagedAttributeValue
 {
-    public ExchangeIsAlternateException(String name)
-    {
-        super("Exchange '" + name + "' is in use as an alternate exchange");
-    }
+    String DESTINATION = "destination";
+
+    String getDestination();
+
+    Map<String, Object> getAttributes();
 }

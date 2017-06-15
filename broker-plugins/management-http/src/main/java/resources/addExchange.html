@@ -19,7 +19,7 @@
  -
  -->
 <div class="dijitHidden">
-    <div data-dojo-type="dijit.Dialog" style="width:600px;" data-dojo-props="title:'Add Exchange'" id="addExchange">
+    <div data-dojo-type="dijit.Dialog" style="width:600px;" data-dojo-props="title:'Exchange'" id="addExchange">
         <form id="formAddExchange" method="post" dojoType="dijit.form.Form">
             <div class="clear">
                 <div class="formLabel-labelCell">Name*:</div>
@@ -62,12 +62,31 @@
                               checked: true"/>
                 </div>
             </div>
+            <div class="clear">
+                <div class="formLabel-labelCell">Alternate Binding:</div>
+                <div class="formLabel-controlCell">
+                    <input type="select" id="formAddExchange.alternateBinding"
+                           data-dojo-type="qpid/common/AlternateBinding"
+                           data-dojo-props="
+                                      name: 'alternateBinding',
+                                      value: ' ',
+                                      placeHolder: 'alternate binding',
+                                      promptMessage: 'Alternate binding to redirect messages to',
+                                      title: 'Select an alternate binding to redirect messages to'"/>
+                </div>
+            </div>
 
-
-            <div class="clear"></div>
+            <div class="editorPanel clear"
+                 data-dojo-type="dijit/TitlePane"
+                 data-dojo-props="title: 'Context variables',  open: false">
+                <div id="formAddExchange.context"
+                     data-dojo-type="qpid.common.ContextVariablesEditor"
+                     data-dojo-props="name: 'context', title: 'Context variables'"></div>
+            </div>
 
             <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
-                <input type="submit" value="Create Exchange" label="Create Exchange" dojoType="dijit.form.Button" />
+                <input type="submit" data-dojo-type="dijit/form/Button" id="formAddExchange.saveButton" data-dojo-props="label: 'Save'"/>
+                <button data-dojo-type="dijit/form/Button" id="formAddExchange.cancelButton" data-dojo-props="label: 'Cancel'" ></button>
             </div>
         </form>
     </div>

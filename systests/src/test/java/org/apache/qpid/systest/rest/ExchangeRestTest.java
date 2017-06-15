@@ -21,10 +21,12 @@
 package org.apache.qpid.systest.rest;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
 
 public class ExchangeRestTest extends QpidRestTestCase
@@ -74,24 +76,24 @@ public class ExchangeRestTest extends QpidRestTestCase
         String exchangeName = getTestName();
         String exchangeUrl = "exchange/test/test/" + exchangeName;
 
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put(Exchange.NAME, exchangeName);
         attributes.put(Exchange.TYPE, "direct");
-        int responseCode = getRestTestHelper().submitRequest(exchangeUrl, "PUT", attributes);
-        assertEquals("Exchange should be created", 201, responseCode);
+        getRestTestHelper().submitRequest(exchangeUrl, "PUT", attributes, 201);
 
         Map<String, Object> exchange = getRestTestHelper().getJsonAsSingletonList(exchangeUrl);
         assertNotNull("Exchange not found", exchange);
 
-        attributes = new HashMap<String, Object>();
+        attributes = new HashMap<>();
         attributes.put(Exchange.NAME, exchangeName);
-        attributes.put(Exchange.ALTERNATE_EXCHANGE, "amq.direct");
+        attributes.put(Exchange.ALTERNATE_BINDING,
+                       Collections.singletonMap(AlternateBinding.DESTINATION, "amq.direct"));
 
-        responseCode = getRestTestHelper().submitRequest(exchangeUrl, "PUT", attributes);
-        assertEquals("Exchange update should be supported", 200, responseCode);
+        getRestTestHelper().submitRequest(exchangeUrl, "PUT", attributes, 200);
         exchange = getRestTestHelper().getJsonAsSingletonList(exchangeUrl);
         assertNotNull("Exchange not found", exchange);
-        assertEquals("amq.direct",exchange.get(Exchange.ALTERNATE_EXCHANGE));
+        assertEquals(new HashMap<>(Collections.singletonMap(AlternateBinding.DESTINATION, "amq.direct")),
+                     new HashMap<>(((Map<String, Object>) exchange.get(Exchange.ALTERNATE_BINDING))));
     }
 
     private void assertExchange(String exchangeName, Map<String, Object> exchange)

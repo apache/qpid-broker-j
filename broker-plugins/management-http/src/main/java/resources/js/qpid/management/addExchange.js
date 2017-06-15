@@ -23,104 +23,180 @@ define(["dojo/dom",
         "dojo/_base/window",
         "dijit/registry",
         "dojo/parser",
+        "dojo/_base/lang",
         "dojo/_base/array",
         "dojo/_base/event",
         "dojo/_base/json",
         "qpid/common/util",
         "dojo/text!addExchange.html",
-        "dijit/form/NumberSpinner", // required by the form
-    /* dojox/ validate resources */
+        "qpid/common/AlternateBinding",
+        "qpid/common/ContextVariablesEditor",
         "dojox/validate/us",
         "dojox/validate/web",
-    /* basic dijit classes */
+        "dijit/TitlePane",
         "dijit/Dialog",
         "dijit/form/CheckBox",
-        "dijit/form/Textarea",
         "dijit/form/FilteringSelect",
-        "dijit/form/TextBox",
         "dijit/form/ValidationTextBox",
-        "dijit/form/DateTextBox",
-        "dijit/form/TimeTextBox",
         "dijit/form/Button",
-        "dijit/form/RadioButton",
         "dijit/form/Form",
-        "dijit/form/DateTextBox",
-    /* basic dojox classes */
-        "dojox/form/BusyButton",
-        "dojox/form/CheckedMultiSelect",
-        "dojo/domReady!"], function (dom, construct, win, registry, parser, array, event, json, util, template)
+        "dojo/domReady!"], function (dom, construct, win, registry, parser, lang, array, event, json, util, template)
 {
-
-    var addExchange = {};
-
-    var node = construct.create("div", null, win.body(), "last");
-
-    var theForm;
-    node.innerHTML = template;
-    addExchange.dialogNode = dom.byId("addExchange");
-    parser.instantiate([addExchange.dialogNode]);
-
-    theForm = registry.byId("formAddExchange");
-    array.forEach(theForm.getDescendants(), function (widget)
+    var hideDialog = function ()
     {
-        if (widget.name === "type")
-        {
-            widget.on("change", function (isChecked)
-            {
-
-                var obj = registry.byId(widget.id + ":fields");
-                if (obj)
-                {
-                    if (isChecked)
-                    {
-                        obj.domNode.style.display = "block";
-                        obj.resize();
-                    }
-                    else
-                    {
-                        obj.domNode.style.display = "none";
-                        obj.resize();
-                    }
-                }
-            })
-        }
-
-    });
-
-    theForm.on("submit", function (e)
-    {
-
-        event.stop(e);
-        if (theForm.validate())
-        {
-            var newExchange = util.getFormWidgetValues(theForm, null);
-            var that = this;
-            addExchange.management.create("exchange", addExchange.modelObj, newExchange)
-                .then(function (x)
-                {
-                    registry.byId("addExchange")
-                        .hide();
-                });
-            return false;
-
-        }
-        else
-        {
-            alert('Form contains invalid data.  Please correct first');
-            return false;
-        }
-
-    });
-
-    addExchange.show = function (management, modelObj)
-    {
-        addExchange.management = management
-        addExchange.modelObj = modelObj;
-        registry.byId("formAddExchange")
-            .reset();
-        registry.byId("addExchange")
-            .show();
+        registry.byId("addExchange").hide();
     };
 
+    var addExchange = {
+        _init: function ()
+        {
+            var node = construct.create("div", {innerHTML: template});
+            parser.parse(node)
+                .then(lang.hitch(this, function (instances)
+                {
+                    this._postParse();
+                }));
+        },
+        _postParse: function ()
+        {
+            this.alternateBinding = registry.byId("formAddExchange.alternateBinding");
+            this.form = registry.byId("formAddExchange");
+            this.exchangeName = registry.byId("formAddExchange.name");
+            this.exchangeDurable = registry.byId("formAddExchange.durable");
+            this.exchangeName.set("regExpGen", util.nameOrContextVarRegexp);
+            this.exchangeType = registry.byId("formAddExchange.type");
+            this.context = registry.byId("formAddExchange.context");
+
+            registry.byId("formAddExchange.cancelButton")
+                .on("click", function (e)
+                {
+                    event.stop(e);
+                    hideDialog();
+                });
+
+            registry.byId("formAddExchange.saveButton")
+                .on("click", function (e)
+                {
+                    addExchange._submit(e);
+                });
+
+            array.forEach(this.form.getDescendants(), function (widget)
+            {
+                if (widget.name === "type")
+                {
+                    widget.on("change", function (isChecked)
+                    {
+
+                        var obj = registry.byId(widget.id + ":fields");
+                        if (obj)
+                        {
+                            if (isChecked)
+                            {
+                                obj.domNode.style.display = "block";
+                                obj.resize();
+                            }
+                            else
+                            {
+                                obj.domNode.style.display = "none";
+                                obj.resize();
+                            }
+                        }
+                    })
+                }
+
+            });
+        },
+
+        show: function (management, modelObj, effectiveData)
+        {
+            this.management = management;
+            this.modelObj = modelObj;
+
+            this.alternateBindingLoadPromise =
+                this.alternateBinding.loadData(management, effectiveData ? modelObj.parent : modelObj);
+            this.form.reset();
+
+            if (effectiveData)
+            {
+                var afterLoad = lang.hitch(this, function (data)
+                {
+                    var actualData = data.actual;
+                    var effectiveData = data.effective;
+                    this.initialData = actualData;
+                    this.effectiveData = effectiveData;
+                    this.exchangeType.set("value", actualData.type);
+                    this.exchangeType.set("disabled", true);
+                    this.exchangeName.set("disabled", true);
+                    this.exchangeDurable.set("disabled", true);
+                    this.exchangeName.set("value", actualData.name);
+                    this.context.setData(actualData.context, effectiveData.context, data.inheritedActual.context);
+                    this._show();
+                });
+                util.loadData(management, modelObj, afterLoad, {depth: 1});
+            }
+            else
+            {
+                this.exchangeType.set("disabled", false);
+                this.exchangeName.set("disabled", false);
+                this.exchangeDurable.set("disabled", false);
+                this.initialData = {};
+                this.effectiveData = {};
+                util.loadEffectiveAndInheritedActualData(management, modelObj, lang.hitch(this, function (data)
+                {
+                    this.context.setData(data.actual.context, data.effective.context, data.inheritedActual.context);
+                    this._show();
+                }), {depth: 1});
+            }
+        },
+
+        _show: function ()
+        {
+            this.alternateBindingLoadPromise.then(lang.hitch(this, function ()
+            {
+                var alternate = this.initialData.alternateBinding;
+                if (alternate && alternate.destination)
+                {
+                    this.alternateBinding.set("value", alternate.destination);
+                }
+            }));
+
+            util.applyToWidgets(this.form.domNode,
+                "Exchange",
+                this.initialData.type || "direct",
+                this.initialData,
+                this.management.metadata);
+
+            registry.byId("addExchange").show();
+        },
+
+         _submit : function (e)
+        {
+            event.stop(e);
+            if (this.form.validate())
+            {
+                var exchangeData = util.getFormWidgetValues(this.form, this.initialData);
+                var context = this.context.get("value");
+                if (context)
+                {
+                    exchangeData["context"] = context;
+                }
+                exchangeData.alternateBinding = this.alternateBinding.valueAsJson();
+
+                if (this.initialData && this.initialData.id)
+                {
+                    this.management.update(this.modelObj, exchangeData) .then(hideDialog);
+                }
+                else
+                {
+                    this.management.create("exchange", this.modelObj, exchangeData) .then(hideDialog);
+                }
+            }
+            else
+            {
+                alert('Form contains invalid data.  Please correct first');
+            }
+        }
+    };
+    addExchange._init();
     return addExchange;
 });

@@ -43,7 +43,6 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.LastValueQueue;
 import org.apache.qpid.server.queue.PriorityQueue;
 import org.apache.qpid.server.queue.SortedQueue;
-import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.derby.DerbyVirtualHostImpl;
@@ -677,46 +676,6 @@ public class VirtualHostRestTest extends QpidRestTestCase
         assertEquals("Unexpected sorted key attribute", "sortme", sortedQueue.get(SortedQueue.SORT_KEY));
         assertEquals("Unexpected lvq key attribute", "LVQ", lvqQueue.get(LastValueQueue.LVQ_KEY));
         assertEquals("Unexpected priorities key attribute", 10, priorityQueue.get(PriorityQueue.PRIORITIES));
-    }
-
-    @SuppressWarnings("unchecked")
-    public void testCreateQueueWithDLQEnabled() throws Exception
-    {
-        String queueName = getTestQueueName();
-
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, true);
-
-        //verify the starting state
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test");
-        List<Map<String, Object>> queues = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_QUEUES_ATTRIBUTE);
-        List<Map<String, Object>> exchanges = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_EXCHANGES_ATTRIBUTE);
-
-        assertNull("queue "+ queueName + " should not have already been present", getRestTestHelper().find(Queue.NAME, queueName , queues));
-        assertNull("queue "+ queueName + "_DLQ should not have already been present", getRestTestHelper().find(Queue.NAME, queueName + "_DLQ" , queues));
-        assertNull("exchange should not have already been present", getRestTestHelper().find(Exchange.NAME, queueName + "_DLE" , exchanges));
-
-        //create the queue
-        createQueue(queueName, "standard", attributes);
-
-        //verify the new queue, as well as the DLQueue and DLExchange have been created
-        hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test");
-        queues = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_QUEUES_ATTRIBUTE);
-        exchanges = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_EXCHANGES_ATTRIBUTE);
-
-        Map<String, Object> queue = getRestTestHelper().find(Queue.NAME, queueName , queues);
-        Map<String, Object> dlqQueue = getRestTestHelper().find(Queue.NAME, queueName + "_DLQ" , queues);
-        Map<String, Object> dlExchange = getRestTestHelper().find(Exchange.NAME, queueName + "_DLE" , exchanges);
-        assertNotNull("queue should have been present", queue);
-        assertNotNull("queue should have been present", dlqQueue);
-        assertNotNull("exchange should have been present", dlExchange);
-
-        //verify that the alternate exchange is set as expected on the new queue
-        Map<String, Object> queueAttributes = new HashMap<String, Object>();
-        queueAttributes.put(Queue.ALTERNATE_EXCHANGE, queueName + "_DLE");
-
-        Asserts.assertQueue(queueName, "standard", queue, queueAttributes);
-        Asserts.assertQueue(queueName, "standard", queue, null);
     }
 
     public void testObjectsWithSlashes() throws Exception

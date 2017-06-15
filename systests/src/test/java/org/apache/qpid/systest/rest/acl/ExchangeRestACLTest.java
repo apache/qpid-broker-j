@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
 import org.apache.qpid.server.model.AccessControlProvider;
+import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.systest.rest.QpidRestTestCase;
@@ -197,33 +198,33 @@ public class ExchangeRestACLTest extends QpidRestTestCase
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
-        int responseCode = createExchange();
+        createExchange();
 
         assertExchangeExists();
 
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Exchange.NAME, _exchangeName);
-        attributes.put(Exchange.ALTERNATE_EXCHANGE, "my-alternate-exchange");
+        attributes.put(Exchange.ALTERNATE_BINDING,
+                       Collections.singletonMap(AlternateBinding.DESTINATION, "my-alternate-exchange"));
 
-        responseCode = getRestTestHelper().submitRequest(_exchangeUrl, "PUT", attributes);
-        assertEquals("Exchange 'my-alternate-exchange' does not exist", AbstractServlet.SC_UNPROCESSABLE_ENTITY, responseCode);
+        getRestTestHelper().submitRequest(_exchangeUrl, "PUT", attributes, AbstractServlet.SC_UNPROCESSABLE_ENTITY);
     }
 
     public void testSetExchangeAttributesDenied() throws Exception
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
-        int responseCode = createExchange();
+        createExchange();
         assertExchangeExists();
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
 
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Exchange.NAME, _exchangeName);
-        attributes.put(Exchange.ALTERNATE_EXCHANGE, "my-alternate-exchange");
+        attributes.put(Exchange.ALTERNATE_BINDING,
+                       Collections.singletonMap(AlternateBinding.DESTINATION, "my-alternate-exchange"));
 
-        responseCode = getRestTestHelper().submitRequest(_exchangeUrl, "PUT", attributes);
-        assertEquals("Setting of exchange attribites should be allowed", 403, responseCode);
+        getRestTestHelper().submitRequest(_exchangeUrl, "PUT", attributes, 403);
     }
 
     public void testBindToExchangeAllowed() throws Exception

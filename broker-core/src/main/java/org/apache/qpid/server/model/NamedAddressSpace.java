@@ -44,6 +44,8 @@ public interface NamedAddressSpace extends Named
 
     MessageDestination getAttainedMessageDestination(String name);
 
+    MessageDestination getAttainedMessageDestination(String name, boolean mayCreate);
+
     boolean registerConnection(AMQPConnection<?> connection,
                                final ConnectionEstablishmentPolicy connectionEstablishmentPolicy);
     void deregisterConnection(AMQPConnection<?> connection);

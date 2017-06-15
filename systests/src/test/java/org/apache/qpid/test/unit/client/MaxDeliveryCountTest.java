@@ -22,6 +22,7 @@ package org.apache.qpid.test.unit.client;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
-import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -38,14 +38,14 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
-import javax.jms.Topic;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.client.RejectBehaviour;
 import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
+import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 
@@ -71,21 +71,20 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
     private static final int MAX_DELIVERY_COUNT = 2;
     private CountDownLatch _awaitCompletion;
 
-    protected long _awaitEmptyQueue;
-    protected long _awaitCompletionTimeout = 20;
+    private long _awaitEmptyQueue;
+    private long _awaitCompletionTimeout = 20;
 
     /** index numbers of messages to be redelivered */
     private final List<Integer> _redeliverMsgs = Arrays.asList(1, 2, 5, 14);
     private String _testQueueName;
+    private Queue _testDeadLetterQueue;
+    private Queue _testQueue;
 
     @Override
     public void setUp() throws Exception
     {
         _awaitEmptyQueue = Long.parseLong(System.getProperty("MaxDeliveryCountTest.awaitEmptyQueue", "2500"));
         _awaitCompletionTimeout = Long.parseLong(System.getProperty("MaxDeliveryCountTest.awaitCompletionTimeout", "20000"));
-
-        setTestSystemProperty("queue.deadLetterQueueEnabled","true");
-        setTestSystemProperty("queue.maximumDeliveryAttempts", String.valueOf(MAX_DELIVERY_COUNT));
 
         // Set client-side flag to allow the server to determine if messages
         // dead-lettered or requeued.
@@ -95,31 +94,28 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
         }
         super.setUp();
         _testQueueName = getTestQueueName();
-        boolean durableSub = isDurSubTest();
+        String testDeadLetterQueueName = _testQueueName + "_DLQ";
 
         Connection connection = getConnectionBuilder().setClientId("clientid").build();
         connection.start();
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        Destination destination;
-        if(durableSub)
-        {
-            destination = createTopic(connection, _testQueueName);
-            session.createDurableSubscriber((Topic)destination, getName()).close();
-        }
-        else
-        {
-            final Map<String, Object> attributes = new HashMap<>();
-            attributes.put(org.apache.qpid.server.model.Queue.NAME, _testQueueName);
-            attributes.put(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS, MAX_DELIVERY_COUNT);
-            attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, true);
-            createEntityUsingAmqpManagement(_testQueueName,
-                                            session,
-                                            "org.apache.qpid.StandardQueue",
-                                            attributes);
-            destination = getQueueFromName(session, _testQueueName);
-        }
 
-        MessageProducer producer = session.createProducer(destination);
+        _testDeadLetterQueue = createTestQueue(session, testDeadLetterQueueName);
+
+        final Map<String, Object> attributes = new HashMap<>();
+        attributes.put(org.apache.qpid.server.model.Queue.NAME, _testQueueName);
+        attributes.put(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS, MAX_DELIVERY_COUNT);
+        attributes.put(org.apache.qpid.server.model.Queue.ALTERNATE_BINDING,
+                       new ObjectMapper().writeValueAsString(Collections.singletonMap(AlternateBinding.DESTINATION,
+                                                                                      testDeadLetterQueueName)));
+        createEntityUsingAmqpManagement(_testQueueName,
+                                        session,
+                                        "org.apache.qpid.StandardQueue",
+                                        attributes);
+        _testQueue = getQueueFromName(session, _testQueueName);
+
+
+        MessageProducer producer = session.createProducer(_testQueue);
         for (int count = 1; count <= MSG_COUNT; count++)
         {
             Message msg = session.createTextMessage(generateContent(count));
@@ -139,96 +135,57 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
         return "Message " + count + " content.";
     }
 
-    /**
-     * Test that Max Redelivery is enforced when using onMessage() on a
-     * Client-Ack session.
-     */
     public void testAsynchronousClientAckSession() throws Exception
     {
-        doTest(Session.CLIENT_ACKNOWLEDGE, _redeliverMsgs, false, false);
+        doTest(Session.CLIENT_ACKNOWLEDGE, _redeliverMsgs, false);
     }
 
-    /**
-     * Test that Max Redelivery is enforced when using onMessage() on a
-     * transacted session.
-     */
     public void testAsynchronousTransactedSession() throws Exception
     {
-        doTest(Session.SESSION_TRANSACTED, _redeliverMsgs, false, false);
+        doTest(Session.SESSION_TRANSACTED, _redeliverMsgs, false);
     }
 
-    /**
-     * Test that Max Redelivery is enforced when using onMessage() on an
-     * Auto-Ack session.
-     */
     public void testAsynchronousAutoAckSession() throws Exception
     {
-        doTest(Session.AUTO_ACKNOWLEDGE, _redeliverMsgs, false, false);
+        doTest(Session.AUTO_ACKNOWLEDGE, _redeliverMsgs, false);
     }
 
-    /**
-     * Test that Max Redelivery is enforced when using onMessage() on a
-     * Dups-OK session.
-     */
     public void testAsynchronousDupsOkSession() throws Exception
     {
-        doTest(Session.DUPS_OK_ACKNOWLEDGE, _redeliverMsgs, false, false);
+        doTest(Session.DUPS_OK_ACKNOWLEDGE, _redeliverMsgs, false);
     }
 
-    /**
-     * Test that Max Redelivery is enforced when using recieve() on a
-     * Client-Ack session.
-     */
     public void testSynchronousClientAckSession() throws Exception
     {
-        doTest(Session.CLIENT_ACKNOWLEDGE, _redeliverMsgs, true, false);
+        doTest(Session.CLIENT_ACKNOWLEDGE, _redeliverMsgs, true);
     }
 
-    /**
-     * Test that Max Redelivery is enforced when using recieve() on a
-     * transacted session.
-     */
     public void testSynchronousTransactedSession() throws Exception
     {
-        doTest(Session.SESSION_TRANSACTED, _redeliverMsgs, true, false);
-    }
-
-    public void testDurableSubscription() throws Exception
-    {
-        doTest(Session.SESSION_TRANSACTED, _redeliverMsgs, false, true);
+        doTest(Session.SESSION_TRANSACTED, _redeliverMsgs, true);
     }
 
     public void testWhenBrokerIsRestartedAfterEnqeuingMessages() throws Exception
     {
         restartDefaultBroker();
 
-        doTest(Session.SESSION_TRANSACTED, _redeliverMsgs, true, false);
+        doTest(Session.SESSION_TRANSACTED, _redeliverMsgs, true);
     }
 
-    private void doTest(final int deliveryMode, final List<Integer> redeliverMsgs, final boolean synchronous, final boolean durableSub) throws Exception
+    private void doTest(final int deliveryMode,
+                        final List<Integer> redeliverMsgs,
+                        final boolean synchronous) throws Exception
     {
         final Connection clientConnection = getConnectionBuilder().setClientId("clientid").build();
 
         final boolean transacted = deliveryMode == Session.SESSION_TRANSACTED;
         final Session clientSession = clientConnection.createSession(transacted, deliveryMode);
 
-        MessageConsumer consumer;
-        Destination dest = durableSub ? clientSession.createTopic(_testQueueName) : clientSession.createQueue(_testQueueName);
-        Queue checkQueue;
-        if(durableSub)
-        {
-            consumer = clientSession.createDurableSubscriber((Topic)dest, getName());
+        MessageConsumer consumer = clientSession.createConsumer(_testQueue);
 
-            checkQueue = clientSession.createQueue(getDurableSubscriptionQueueName());
-        }
-        else
-        {
-            consumer = clientSession.createConsumer(dest);
-            checkQueue = (Queue) dest;
-        }
         clientConnection.start();
         assertEquals("The queue should have " + MSG_COUNT + " msgs at start",
-                MSG_COUNT, getQueueDepth(clientConnection, checkQueue));
+                MSG_COUNT, getQueueDepth(clientConnection, _testQueue));
 
 
         int expectedDeliveries = MSG_COUNT + ((MAX_DELIVERY_COUNT -1) * redeliverMsgs.size());
@@ -269,17 +226,17 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
             && clientSession.getAcknowledgeMode() != Session.CLIENT_ACKNOWLEDGE)
         {
             final long timeout = System.currentTimeMillis() + _awaitEmptyQueue;
-            while(getQueueDepth(clientConnection, checkQueue) > 0 && System.currentTimeMillis() < timeout)
+            while(getQueueDepth(clientConnection, _testQueue) > 0 && System.currentTimeMillis() < timeout)
             {
                 Thread.sleep(100);
             }
         }
 
         //check the source queue is now empty
-        assertEquals("The queue should have 0 msgs left", 0, getQueueDepth(clientConnection, checkQueue));
+        assertEquals("The queue should have 0 msgs left", 0, getQueueDepth(clientConnection, _testQueue));
 
         //check the DLQ has the required number of rejected-without-requeue messages
-        verifyDLQdepth(redeliverMsgs.size(), clientSession, durableSub, clientConnection);
+        verifyDLQdepth(redeliverMsgs.size(), clientConnection);
 
         if (!isBroker10())
         {
@@ -294,62 +251,33 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
                 clientConnection2.start();
 
                 //verify the messages on the DLQ
-                verifyDLQcontent(clientConnection2, redeliverMsgs, getTestQueueName(), durableSub);
+                verifyDLQcontent(clientConnection2, redeliverMsgs);
                 clientConnection2.close();
             }
             else
             {
 
                 //verify the messages on the DLQ
-                verifyDLQcontent(clientConnection, redeliverMsgs, getTestQueueName(), durableSub);
+                verifyDLQcontent(clientConnection, redeliverMsgs);
                 clientConnection.close();
             }
         }
 
     }
 
-    private String getDurableSubscriptionQueueName()
+    private void verifyDLQdepth(int expectedQueueDepth, final Connection clientConnection) throws Exception
     {
-        if ( isBroker10())
-        {
-            return "qpidsub_/clientid_/" + getName() + "_/durable";
-        }
-        else
-        {
-            return "clientid:" + getName();
-        }
-    }
-
-    private void verifyDLQdepth(int expected,
-                                Session clientSession,
-                                boolean durableSub,
-                                final Connection clientConnection) throws Exception
-    {
-        String queueName = (durableSub ? getDurableSubscriptionQueueName() : _testQueueName )
-                           + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
-
-        assertEquals("The DLQ should have " + expected + " msgs on it",
-                     expected,
-                     getQueueDepth(clientConnection, clientSession.createQueue(queueName)));
+        assertEquals("The DLQ should have " + expectedQueueDepth + " msgs on it",
+                     expectedQueueDepth,
+                     getQueueDepth(clientConnection, _testDeadLetterQueue));
     }
 
 
-    private void verifyDLQcontent(Connection clientConnection, List<Integer> redeliverMsgs, String destName, boolean durableSub) throws JMSException
+    private void verifyDLQcontent(Connection clientConnection, List<Integer> redeliverMsgs) throws JMSException
     {
         Session clientSession = clientConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-        MessageConsumer consumer;
-        if(durableSub)
-        {
-            String queueName = (durableSub ? getDurableSubscriptionQueueName() : _testQueueName )
-                               + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
-            consumer = clientSession.createConsumer(clientSession.createQueue(queueName));
-        }
-        else
-        {
-            consumer = clientSession.createConsumer(
-                    clientSession.createQueue(destName + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX));
-        }
+        MessageConsumer consumer = clientSession.createConsumer(_testDeadLetterQueue);
 
         //keep track of the message we expect to still be on the DLQ
         List<Integer> outstandingMessages = new ArrayList<>(redeliverMsgs);
@@ -667,9 +595,4 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
             }
         }
    }
-
-    private boolean isDurSubTest()
-    {
-        return getTestQueueName().contains("DurableSubscription");
-    }
 }
