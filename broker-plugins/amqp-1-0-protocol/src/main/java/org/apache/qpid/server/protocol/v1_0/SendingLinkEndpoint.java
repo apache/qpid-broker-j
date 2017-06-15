@@ -638,6 +638,9 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             source = new Source();
             Source attachSource = (Source) attach.getSource();
 
+            final Modified defaultOutcome = new Modified();
+            defaultOutcome.setDeliveryFailed(true);
+            source.setDefaultOutcome(defaultOutcome);
             source.setAddress(attachSource.getAddress());
             source.setDynamic(attachSource.getDynamic());
             if (Boolean.TRUE.equals(attachSource.getDynamic()) && attachSource.getDynamicNodeProperties() != null)
