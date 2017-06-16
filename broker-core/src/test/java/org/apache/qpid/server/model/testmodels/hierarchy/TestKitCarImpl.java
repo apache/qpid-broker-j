@@ -20,11 +20,8 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import java.util.Map;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
@@ -52,13 +49,6 @@ public class TestKitCarImpl extends AbstractConfiguredObject<TestKitCarImpl>
     public TestKitCarImpl(final Map<String, Object> attributes)
     {
         super(null, attributes, newTaskExecutor(), TestModel.getInstance());
-    }
-
-    @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
-                                                                             final Map<String, Object> attributes)
-    {
-        return getObjectFactory().createAsync(childClass, attributes, this);
     }
 
     @Override

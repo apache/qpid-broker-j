@@ -709,7 +709,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     @SuppressWarnings("unchecked")
     @Override
-    public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
+    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
                                                                           final Map<String, Object> attributes)
     {
         if (childClass == VirtualHostNode.class)
@@ -718,10 +718,8 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         }
         else
         {
-            return getObjectFactory().createAsync(childClass, attributes, this);
+            return super.addChildAsync(childClass, attributes);
         }
-
-
     }
 
     @Override

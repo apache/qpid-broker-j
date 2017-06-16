@@ -395,17 +395,6 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
         return null;
     }
 
-    @Override
-    public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
-                                                                          final Map<String, Object> attributes)
-    {
-        if (VirtualHostAlias.class.isAssignableFrom(childClass))
-        {
-            return getObjectFactory().createAsync(childClass, attributes, this);
-        }
-        return super.addChildAsync(childClass, attributes);
-    }
-
     protected State onActivate()
     {
         // no-op: expected to be overridden by subclass

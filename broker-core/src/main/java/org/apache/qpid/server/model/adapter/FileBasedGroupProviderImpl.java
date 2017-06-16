@@ -194,7 +194,7 @@ public class FileBasedGroupProviderImpl
     }
 
     @Override
-    public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
+    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
                                                                           Map<String, Object> attributes)
     {
         if (childClass == Group.class)
@@ -217,10 +217,10 @@ public class FileBasedGroupProviderImpl
             return Futures.immediateFuture((C) groupAdapter);
 
         }
-
-        throw new IllegalArgumentException(
-                "This group provider does not support creating children of type: "
-                        + childClass);
+        else
+        {
+            return super.addChildAsync(childClass, attributes);
+        }
     }
 
     private Set<Principal> getGroupPrincipals()
@@ -357,9 +357,8 @@ public class FileBasedGroupProviderImpl
             }
         }
 
-
         @Override
-        public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
+        protected  <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
                                                                               Map<String, Object> attributes)
         {
             if (childClass == GroupMember.class)
@@ -376,10 +375,10 @@ public class FileBasedGroupProviderImpl
                 return Futures.immediateFuture((C) groupMemberAdapter);
 
             }
-
-            throw new IllegalArgumentException(
-                    "This group provider does not support creating children of type: "
-                            + childClass);
+            else
+            {
+                return super.addChildAsync(childClass, attributes);
+            }
         }
 
         @StateTransition( currentState = State.ACTIVE, desiredState = State.DELETED )

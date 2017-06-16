@@ -118,10 +118,9 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.util.DeleteDeleteTask;
-import org.apache.qpid.server.util.MapValueConverter;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
+import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
@@ -407,9 +406,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         else if(_exclusive == ExclusivityPolicy.PRINCIPAL)
         {
-            String owner = MapValueConverter.getStringAttribute(Queue.OWNER, attributes, null);
-            if(owner != null)
+            if (attributes.get(Queue.OWNER) != null)
             {
+                String owner = String.valueOf(attributes.get(Queue.OWNER));
                 Principal ownerPrincipal;
                 try
                 {
@@ -424,10 +423,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         else if(_exclusive == ExclusivityPolicy.CONTAINER)
         {
-            String owner = MapValueConverter.getStringAttribute(Queue.OWNER, attributes, null);
-            if(owner != null)
+            if (attributes.get(Queue.OWNER) != null)
             {
-                _exclusiveOwner = owner;
+                _exclusiveOwner = String.valueOf(attributes.get(Queue.OWNER));
             }
         }
 

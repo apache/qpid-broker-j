@@ -835,13 +835,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                                                              Map<String, Object> attributes)
     {
         checkVHostStateIsActive();
-
-        if(childClass == Exchange.class || childClass == Queue.class || childClass == VirtualHostLogger.class || childClass == VirtualHostAccessControlProvider.class)
-        {
-            return getObjectFactory().createAsync(childClass, attributes, this);
-        }
-
-        throw new IllegalArgumentException("Cannot create a child of class " + childClass.getSimpleName());
+        return super.addChildAsync(childClass, attributes);
     }
 
 

@@ -285,17 +285,6 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 + ", state=" + getState() + ", priority=" + _priority + ", designatedPrimary=" + _designatedPrimary + ", quorumOverride=" + _quorumOverride + ", role=" + getRole() + "]";
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass, Map<String, Object> attributes)
-    {
-        if(childClass == VirtualHost.class)
-        {
-            return getObjectFactory().createAsync(childClass, attributes, this);
-        }
-        return super.addChildAsync(childClass, attributes);
-    }
-
     @Override
     public BDBConfigurationStore getConfigurationStore()
     {

@@ -26,9 +26,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Group;
-import org.apache.qpid.server.model.GroupMember;
 import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
@@ -46,20 +44,6 @@ public class GroupImpl extends AbstractConfiguredObject<GroupImpl> implements Gr
                      GroupProvider<?> provider)
     {
         super(provider, attributes);
-    }
-
-    @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
-                                                                             final Map<String, Object> attributes)
-    {
-        if(childClass == GroupMember.class)
-        {
-            return getObjectFactory().createAsync(childClass, attributes, this);
-        }
-        else
-        {
-            return super.addChildAsync(childClass, attributes);
-        }
     }
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.ERRORED }, desiredState = State.ACTIVE )

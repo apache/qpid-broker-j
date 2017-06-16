@@ -2131,11 +2131,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         });
     }
 
-
     protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
                                                                              Map<String, Object> attributes)
     {
-        throw new UnsupportedOperationException();
+        return getObjectFactory().createAsync(childClass, attributes, this);
     }
 
     private <C extends ConfiguredObject> void registerChild(final C child)

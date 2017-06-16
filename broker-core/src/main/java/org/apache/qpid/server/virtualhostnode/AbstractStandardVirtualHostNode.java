@@ -58,18 +58,6 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
         super(parent, attributes);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
-                                                                             Map<String, Object> attributes)
-    {
-        if(childClass == VirtualHost.class)
-        {
-            return getObjectFactory().createAsync(childClass, attributes, this);
-        }
-        return super.addChildAsync(childClass, attributes);
-    }
-
     @Override
     protected ListenableFuture<Void> activate()
     {

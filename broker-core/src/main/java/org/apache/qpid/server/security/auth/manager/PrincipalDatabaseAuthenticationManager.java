@@ -307,7 +307,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     }
 
     @Override
-    public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
+    protected  <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
                                                                           Map<String, Object> attributes)
     {
         if(childClass == User.class)
@@ -333,8 +333,10 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
             _userMap.put(p, principalAdapter);
             return Futures.immediateFuture((C)principalAdapter);
         }
-
-        return super.addChildAsync(childClass, attributes);
+        else
+        {
+            return super.addChildAsync(childClass, attributes);
+        }
     }
 
 

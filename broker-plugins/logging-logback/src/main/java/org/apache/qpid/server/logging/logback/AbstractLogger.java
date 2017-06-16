@@ -123,13 +123,6 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
         });
     }
 
-    @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
-                                                                             Map<String, Object> attributes)
-    {
-        return getObjectFactory().createAsync(childClass, attributes, this);
-    }
-
     public final long getErrorCount()
     {
         return _compositeFilter.getErrorCount();

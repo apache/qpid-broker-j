@@ -70,13 +70,13 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
+import org.apache.qpid.server.transport.network.NetworkConnection;
+import org.apache.qpid.server.transport.network.Ticker;
 import org.apache.qpid.server.txn.FlowToDiskTransactionObserver;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.TransactionObserver;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
-import org.apache.qpid.server.transport.network.NetworkConnection;
-import org.apache.qpid.server.transport.network.Ticker;
 
 public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,T>, T>
         extends AbstractConfiguredObject<C>
@@ -641,7 +641,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     }
 
     @Override
-    public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
+    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
                                                                           Map<String, Object> attributes)
     {
         if(childClass == Session.class)
