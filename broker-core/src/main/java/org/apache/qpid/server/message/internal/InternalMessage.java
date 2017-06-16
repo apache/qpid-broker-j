@@ -48,7 +48,7 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
     private static final String NON_AMQP_MESSAGE = "Non-AMQP Message";
     private final Object _messageBody;
     private InternalMessageHeader _header;
-    private String _initialRoutingAddress;
+    private String _initialRoutingAddress = "";
 
 
     InternalMessage(final StoredMessage<InternalMessageMetaData> handle,
@@ -116,17 +116,6 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
     public boolean isResourceAcceptable(final TransactionLogResource resource)
     {
         return true;
-    }
-
-    @Override
-    public String getRoutingAddress(final String destinationAddress, final String initialDestinationRoutingAddress)
-    {
-        String initialRoutingAddress = getInitialRoutingAddress();
-        if(initialRoutingAddress != null && destinationAddress != null && initialRoutingAddress.startsWith(destinationAddress+"/"))
-        {
-            initialRoutingAddress = initialRoutingAddress.substring(destinationAddress.length() + 1);
-        }
-        return initialRoutingAddress;
     }
 
     public Object getMessageBody()
@@ -292,6 +281,6 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
 
     public void setInitialRoutingAddress(final String initialRoutingAddress)
     {
-        _initialRoutingAddress = initialRoutingAddress;
+        _initialRoutingAddress = initialRoutingAddress == null ? "" : initialRoutingAddress;
     }
 }

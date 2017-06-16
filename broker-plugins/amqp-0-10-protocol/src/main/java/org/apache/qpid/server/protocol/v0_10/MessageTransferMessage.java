@@ -50,7 +50,8 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
 
     public String getInitialRoutingAddress()
     {
-        return getMetaData().getRoutingKey();
+        final String routingKey = getMetaData().getRoutingKey();
+        return routingKey == null ? "" : routingKey;
     }
 
     public AMQMessageHeader getMessageHeader()
@@ -84,17 +85,6 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
     public boolean isResourceAcceptable(final TransactionLogResource resource)
     {
         return true;
-    }
-
-    @Override
-    public String getRoutingAddress(final String destinationAddress, final String initialDestinationRoutingAddress)
-    {
-        String initialRoutingAddress = getInitialRoutingAddress();
-        if(initialRoutingAddress != null && destinationAddress != null && initialRoutingAddress.startsWith(destinationAddress+"/"))
-        {
-            initialRoutingAddress = initialRoutingAddress.substring(destinationAddress.length() + 1);
-        }
-        return initialRoutingAddress;
     }
 
     public Header getHeader()

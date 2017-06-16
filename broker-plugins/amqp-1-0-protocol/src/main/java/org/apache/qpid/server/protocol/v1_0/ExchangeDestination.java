@@ -97,7 +97,7 @@ public class ExchangeDestination extends QueueDestination
 
     public Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken)
     {
-        final String routingAddress = message.getRoutingAddress(_exchange.getName(), _initialRoutingAddress);
+        final String routingAddress = getRoutingAddress(message);
         _exchange.authorisePublish(securityToken, Collections.singletonMap("routingKey", routingAddress));
 
         final InstanceProperties instanceProperties =
@@ -148,6 +148,30 @@ public class ExchangeDestination extends QueueDestination
     public MessageDestination getMessageDestination()
     {
         return _exchange;
+    }
+
+    private String getRoutingAddress(final ServerMessage<?> message)
+    {
+        String routingAddress;
+        if (_initialRoutingAddress == null)
+        {
+            return ReceivingDestination.getRoutingAddress(message, _exchange.getName());
+        }
+        else
+        {
+            String initialRoutingAddress = message.getInitialRoutingAddress();
+            if (initialRoutingAddress.startsWith(_exchange.getName() + "/" + _initialRoutingAddress + "/"))
+            {
+                routingAddress = initialRoutingAddress.substring(2
+                                                                 + _exchange.getName().length()
+                                                                 + _initialRoutingAddress.length());
+            }
+            else
+            {
+                routingAddress = _initialRoutingAddress;
+            }
+        }
+        return routingAddress;
     }
 
     TerminusDurability getDurability()

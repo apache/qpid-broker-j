@@ -44,7 +44,7 @@ public class AbstractServerMessageTest extends QpidTestCase
         @Override
         public String getInitialRoutingAddress()
         {
-            return null;
+            return "";
         }
 
         @Override
@@ -75,12 +75,6 @@ public class AbstractServerMessageTest extends QpidTestCase
         public boolean isResourceAcceptable(final TransactionLogResource resource)
         {
             return true;
-        }
-
-        @Override
-        public String getRoutingAddress(final String destinationAddress, final String initialDestinationRoutingAddress)
-        {
-            return null;
         }
     }
 

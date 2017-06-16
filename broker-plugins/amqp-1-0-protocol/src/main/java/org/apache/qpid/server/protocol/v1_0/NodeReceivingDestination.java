@@ -80,7 +80,7 @@ public class NodeReceivingDestination implements ReceivingDestination
 
     public Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken)
     {
-        final String routingAddress = message.getRoutingAddress(_destination.getName(), null);
+        final String routingAddress = ReceivingDestination.getRoutingAddress(message, _address);
         _destination.authorisePublish(securityToken, Collections.singletonMap("routingKey", routingAddress));
 
         final InstanceProperties instanceProperties =

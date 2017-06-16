@@ -23,7 +23,6 @@ package org.apache.qpid.server.protocol.v1_0;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
-
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -44,4 +43,14 @@ public interface ReceivingDestination extends Destination
     String getAddress();
 
     MessageDestination getMessageDestination();
+
+    static String getRoutingAddress(final ServerMessage<?> message, final String destinationName)
+    {
+        String initialRoutingAddress = message.getInitialRoutingAddress();
+        if (destinationName != null && initialRoutingAddress.startsWith(destinationName + "/"))
+        {
+            initialRoutingAddress = initialRoutingAddress.substring(destinationName.length() + 1);
+        }
+        return initialRoutingAddress;
+    }
 }
