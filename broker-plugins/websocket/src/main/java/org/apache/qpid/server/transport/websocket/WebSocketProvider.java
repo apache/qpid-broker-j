@@ -363,6 +363,7 @@ class WebSocketProvider implements AcceptingTransport
         private volatile QpidByteBuffer _netInputBuffer;
         private volatile MultiVersionProtocolEngine _protocolEngine;
         private volatile ConnectionWrapper _connectionWrapper;
+        private volatile boolean _unexpectedByteBufferSizeReported;
 
         AmqpWebSocket()
         {
@@ -422,7 +423,7 @@ class WebSocketProvider implements AcceptingTransport
                         _netInputBuffer.flip();
                         _protocolEngine.received(_netInputBuffer);
                         _connectionWrapper.doWrite();
-                        _netInputBuffer.compact();
+                        restoreApplicationBufferForWrite();
                     }
                     while(remaining > 0);
 
@@ -439,6 +440,51 @@ class WebSocketProvider implements AcceptingTransport
             _idleTimeoutChecker.wakeup();
         }
 
+        private void restoreApplicationBufferForWrite()
+        {
+            QpidByteBuffer oldNetInputBuffer = _netInputBuffer;
+            int unprocessedDataLength = _netInputBuffer.remaining();
+
+            _netInputBuffer.limit(_netInputBuffer.capacity());
+            _netInputBuffer = oldNetInputBuffer.slice();
+            _netInputBuffer.limit(unprocessedDataLength);
+            oldNetInputBuffer.dispose();
+            if (_netInputBuffer.limit() != _netInputBuffer.capacity())
+            {
+                _netInputBuffer.position(_netInputBuffer.limit());
+                _netInputBuffer.limit(_netInputBuffer.capacity());
+            }
+            else
+            {
+                QpidByteBuffer currentBuffer = _netInputBuffer;
+                int newBufSize;
+
+                if (currentBuffer.capacity() < _broker.getNetworkBufferSize())
+                {
+                    newBufSize = _broker.getNetworkBufferSize();
+                }
+                else
+                {
+                    newBufSize = currentBuffer.capacity() + _broker.getNetworkBufferSize();
+                    reportUnexpectedByteBufferSizeUsage();
+                }
+
+                _netInputBuffer = QpidByteBuffer.allocateDirect(newBufSize);
+                _netInputBuffer.put(currentBuffer);
+                currentBuffer.dispose();
+            }
+        }
+
+        private void reportUnexpectedByteBufferSizeUsage()
+        {
+            if (!_unexpectedByteBufferSizeReported)
+            {
+                LOGGER.info("At least one frame unexpectedly does not fit into default byte buffer size ({}B) on a connection {}.",
+                            _broker.getNetworkBufferSize(), this.toString());
+                _unexpectedByteBufferSizeReported = true;
+            }
+        }
+        
         /** AMQP frames MUST be sent as binary data payloads of WebSocket messages.*/
         @OnWebSocketMessage @SuppressWarnings("unused")
         public void onWebSocketText(Session sess, String text)
