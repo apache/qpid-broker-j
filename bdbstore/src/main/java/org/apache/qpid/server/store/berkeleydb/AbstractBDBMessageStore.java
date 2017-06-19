@@ -71,6 +71,7 @@ import org.apache.qpid.server.store.berkeleydb.tuple.XidBinding;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
+import org.apache.qpid.server.util.CachingUUIDFactory;
 
 
 public abstract class AbstractBDBMessageStore implements MessageStore
@@ -624,9 +625,8 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     {
 
         DatabaseEntry key = new DatabaseEntry();
-        QueueEntryBinding keyBinding = QueueEntryBinding.getInstance();
-        QueueEntryKey dd = new QueueEntryKey(queue.getId(), messageId);
-        keyBinding.objectToEntry(dd, key);
+        QueueEntryKey queueEntryKey = new QueueEntryKey(queue.getId(), messageId);
+        QueueEntryBinding.objectToEntry(queueEntryKey, key);
         DatabaseEntry value = new DatabaseEntry();
         value.setData(ENQUEUE_RECORD_VALUE, 0, ENQUEUE_RECORD_VALUE.length);
 
@@ -666,10 +666,9 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     {
 
         DatabaseEntry key = new DatabaseEntry();
-        QueueEntryBinding keyBinding = QueueEntryBinding.getInstance();
         QueueEntryKey queueEntryKey = new QueueEntryKey(queueId, messageId);
         UUID id = queueId;
-        keyBinding.objectToEntry(queueEntryKey, key);
+        QueueEntryBinding.objectToEntry(queueEntryKey, key);
 
         getLogger().debug("Dequeue message id {} from queue with id {}", messageId, id);
 
@@ -713,8 +712,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
         DatabaseEntry value = new DatabaseEntry();
         PreparedTransaction preparedTransaction = new PreparedTransaction(enqueues, dequeues);
-        PreparedTransactionBinding valueBinding = new PreparedTransactionBinding();
-        valueBinding.objectToEntry(preparedTransaction, value);
+        PreparedTransactionBinding.objectToEntry(preparedTransaction, value);
         for(org.apache.qpid.server.store.Transaction.EnqueueRecord enqueue : enqueues)
         {
             StoredMessage storedMessage = enqueue.getMessage().getStoredMessage();
@@ -1528,13 +1526,13 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 DatabaseEntry value = new DatabaseEntry();
                 value.setPartial(0, 0, true);
 
-                QueueEntryBinding keyBinding = QueueEntryBinding.getInstance();
-                keyBinding.objectToEntry(new QueueEntryKey(queue.getId(), 0l), key);
+                CachingUUIDFactory uuidFactory = new CachingUUIDFactory();
+                QueueEntryBinding.objectToEntry(new QueueEntryKey(queue.getId(), 0L), key);
 
                 if (!searchCompletedSuccessfully && (searchCompletedSuccessfully =
                         cursor.getSearchKeyRange(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS))
                 {
-                    QueueEntryKey entry = keyBinding.entryToObject(key);
+                    QueueEntryKey entry = QueueEntryBinding.entryToObject(uuidFactory, key);
                     if (entry.getQueueId().equals(queue.getId()))
                     {
                         entries.add(entry);
@@ -1545,7 +1543,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 {
                     while (cursor.getNext(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS)
                     {
-                        QueueEntryKey entry = keyBinding.entryToObject(key);
+                        QueueEntryKey entry = QueueEntryBinding.entryToObject(uuidFactory, key);
                         if (entry.getQueueId().equals(queue.getId()))
                         {
                             entries.add(entry);
@@ -1585,13 +1583,13 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             try(Cursor cursor = getDeliveryDb().openCursor(null, null))
             {
                 DatabaseEntry key = new DatabaseEntry();
-                QueueEntryBinding keyBinding = QueueEntryBinding.getInstance();
+                CachingUUIDFactory uuidFactory = new CachingUUIDFactory();
 
                 DatabaseEntry value = new DatabaseEntry();
                 value.setPartial(0, 0, true);
                 while (cursor.getNext(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS)
                 {
-                    QueueEntryKey entry = keyBinding.entryToObject(key);
+                    QueueEntryKey entry = QueueEntryBinding.entryToObject(uuidFactory, key);
                     entries.add(entry);
                 }
             }
@@ -1619,15 +1617,15 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
             try(Cursor cursor = getXidDb().openCursor(null, null))
             {
+                CachingUUIDFactory uuidFactory = new CachingUUIDFactory();
                 DatabaseEntry key = new DatabaseEntry();
                 XidBinding keyBinding = XidBinding.getInstance();
-                PreparedTransactionBinding valueBinding = new PreparedTransactionBinding();
                 DatabaseEntry value = new DatabaseEntry();
 
                 while (cursor.getNext(key, value, LockMode.READ_UNCOMMITTED) == OperationStatus.SUCCESS)
                 {
                     Xid xid = keyBinding.entryToObject(key);
-                    PreparedTransaction preparedTransaction = valueBinding.entryToObject(value);
+                    PreparedTransaction preparedTransaction = PreparedTransactionBinding.entryToObject(uuidFactory, value);
                     if (!handler.handle(new BDBStoredXidRecord(xid.getFormat(), xid.getGlobalId(), xid.getBranchId()),
                                         preparedTransaction.getEnqueues(), preparedTransaction.getDequeues()))
                     {

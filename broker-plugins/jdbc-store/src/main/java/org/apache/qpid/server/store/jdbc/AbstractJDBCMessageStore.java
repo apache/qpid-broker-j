@@ -68,6 +68,7 @@ import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.server.txn.Xid;
+import org.apache.qpid.server.util.CachingUUIDFactory;
 
 public abstract class AbstractJDBCMessageStore implements MessageStore
 {
@@ -1845,6 +1846,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             Connection conn = null;
             try
             {
+                CachingUUIDFactory uuidFactory = new CachingUUIDFactory();
                 conn = newAutoCommitConnection();
                 PreparedStatement stmt = conn.prepareStatement("SELECT queue_id, message_id FROM " + getQueueEntryTableName()
                                                                + " WHERE queue_id = ? ORDER BY queue_id, message_id");
@@ -1858,7 +1860,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                         {
                             String id = rs.getString(1);
                             long messageId = rs.getLong(2);
-                            if (!handler.handle(new JDBCEnqueueRecord(UUID.fromString(id), messageId)))
+                            UUID uuid = uuidFactory.createUuidFromString(id);
+                            if (!handler.handle(new JDBCEnqueueRecord(uuid, messageId)))
                             {
                                 break;
                             }
@@ -1893,6 +1896,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             Connection conn = null;
             try
             {
+                CachingUUIDFactory uuidFactory = new CachingUUIDFactory();
                 conn = newAutoCommitConnection();
                 Statement stmt = conn.createStatement();
                 try
@@ -1905,7 +1909,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                         {
                             String id = rs.getString(1);
                             long messageId = rs.getLong(2);
-                            if (!handler.handle(new JDBCEnqueueRecord(UUID.fromString(id), messageId)))
+                            UUID queueId = uuidFactory.createUuidFromString(id);
+                            if (!handler.handle(new JDBCEnqueueRecord(queueId, messageId)))
                             {
                                 break;
                             }
@@ -1970,6 +1975,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
                 for (Xid xid : xids)
                 {
+                    CachingUUIDFactory uuidFactory = new CachingUUIDFactory();
                     List<RecordImpl> enqueues = new ArrayList<>();
                     List<RecordImpl> dequeues = new ArrayList<>();
 
@@ -1990,7 +1996,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                             {
 
                                 String actionType = rs.getString(1);
-                                UUID queueId = UUID.fromString(rs.getString(2));
+                                UUID queueId = uuidFactory.createUuidFromString(rs.getString(2));
                                 long messageId = rs.getLong(3);
 
                                 RecordImpl record = new RecordImpl(queueId, messageId);
