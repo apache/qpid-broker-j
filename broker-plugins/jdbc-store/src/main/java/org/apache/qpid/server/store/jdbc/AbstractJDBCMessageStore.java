@@ -127,40 +127,26 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private void setMaxMessageId(final Connection conn, final String query, int col) throws SQLException
     {
-        PreparedStatement statement =
-                conn.prepareStatement(query);
-        try
+        try (PreparedStatement statement = conn.prepareStatement(query))
         {
-            ResultSet rs = statement.executeQuery();
-            try
+            try (ResultSet rs = statement.executeQuery())
             {
-                while(rs.next())
+                while (rs.next())
                 {
                     long maxMessageId = rs.getLong(col);
-                    if(_messageId.get() < maxMessageId)
+                    if (_messageId.get() < maxMessageId)
                     {
                         _messageId.set(maxMessageId);
                     }
                 }
-
             }
-            finally
-            {
-                rs.close();
-            }
-        }
-        finally
-        {
-            statement.close();
         }
     }
 
     protected void upgrade(ConfiguredObject<?> parent) throws StoreException
     {
-        Connection conn = null;
-        try
+        try(Connection conn = newAutoCommitConnection())
         {
-            conn = newAutoCommitConnection();
             if (tableExists(getDbVersionTableName(), conn))
             {
                 upgradeIfNecessary(parent);
@@ -169,10 +155,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         catch (SQLException e)
         {
             throw new StoreException("Failed to upgrade database", e);
-        }
-        finally
-        {
-            JdbcUtils.closeConnection(conn, getLogger());
         }
     }
 
@@ -275,11 +257,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     protected void createOrOpenMessageStoreDatabase() throws StoreException
     {
-        Connection conn = null;
-        try
+        try(Connection conn =  newAutoCommitConnection())
         {
-            conn = newAutoCommitConnection();
-
             createVersionTable(conn);
             createQueueEntryTable(conn);
             createMetaDataTable(conn);
@@ -290,10 +269,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         catch (SQLException e)
         {
             throw new StoreException("Failed to create message store tables", e);
-        }
-        finally
-        {
-            JdbcUtils.closeConnection(conn, getLogger());
         }
     }
 
@@ -444,34 +419,34 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private void removeMessage(long messageId)
     {
-        try
+        try(Connection conn = newConnection())
         {
-            Connection conn = newConnection();
             try
             {
-                PreparedStatement stmt = conn.prepareStatement("DELETE FROM " + getMetaDataTableName()
-                                                               + " WHERE message_id = ?");
-                try
+                try(PreparedStatement stmt = conn.prepareStatement("DELETE FROM " + getMetaDataTableName()
+                                                                   + " WHERE message_id = ?"))
                 {
-                    stmt.setLong(1,messageId);
+                    stmt.setLong(1, messageId);
                     int results = stmt.executeUpdate();
                     stmt.close();
 
                     if (results == 0)
                     {
-                        getLogger().debug("Message id {} not found (attempt to remove failed - probably application initiated rollback)", messageId);
+                        getLogger().debug(
+                                "Message id {} not found (attempt to remove failed - probably application initiated rollback)",
+
+                                messageId);
                     }
 
                     getLogger().debug("Deleted metadata for message {}", messageId);
-
-                    stmt = conn.prepareStatement("DELETE FROM " + getMessageContentTableName()
-                                                 + " WHERE message_id = ?");
-                    stmt.setLong(1, messageId);
-                    results = stmt.executeUpdate();
                 }
-                finally
+
+                try(PreparedStatement stmt = conn.prepareStatement("DELETE FROM " + getMessageContentTableName()
+                + " WHERE message_id = ?"))
                 {
-                    stmt.close();
+
+                    stmt.setLong(1, messageId);
+                    int results = stmt.executeUpdate();
                 }
                 conn.commit();
             }
@@ -487,11 +462,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 }
 
                 throw e;
-
-            }
-            finally
-            {
-                conn.close();
             }
         }
         catch (SQLException e)
@@ -636,12 +606,10 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
         Connection conn = connWrapper.getConnection();
 
-
         try
         {
-            PreparedStatement stmt = conn.prepareStatement("DELETE FROM " + getXidTableName()
-                                                           + " WHERE format = ? and global_id = ? and branch_id = ?");
-            try
+            try(PreparedStatement stmt = conn.prepareStatement("DELETE FROM " + getXidTableName()
+                                                                + " WHERE format = ? and global_id = ? and branch_id = ?"))
             {
                 stmt.setLong(1,format);
                 stmt.setBytes(2,globalId);
@@ -655,14 +623,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     throw new StoreException("Unable to find message with xid");
                 }
             }
-            finally
-            {
-                stmt.close();
-            }
 
-            stmt = conn.prepareStatement("DELETE FROM " + getXidActionsTableName()
-                                         + " WHERE format = ? and global_id = ? and branch_id = ?");
-            try
+            try(PreparedStatement stmt = conn.prepareStatement("DELETE FROM " + getXidActionsTableName()
+                                                               + " WHERE format = ? and global_id = ? and branch_id = ?"))
             {
                 stmt.setLong(1,format);
                 stmt.setBytes(2,globalId);
@@ -670,11 +633,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 int results = stmt.executeUpdate();
 
             }
-            finally
-            {
-                stmt.close();
-            }
-
         }
         catch (SQLException e)
         {
@@ -693,18 +651,13 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         try
         {
 
-            PreparedStatement stmt = conn.prepareStatement("INSERT INTO " + getXidTableName()
-                                                           + " ( format, global_id, branch_id ) values (?, ?, ?)");
-            try
+            try(PreparedStatement stmt = conn.prepareStatement("INSERT INTO " + getXidTableName()
+                                                               + " ( format, global_id, branch_id ) values (?, ?, ?)"))
             {
                 stmt.setLong(1,format);
                 stmt.setBytes(2, globalId);
                 stmt.setBytes(3, branchId);
                 stmt.executeUpdate();
-            }
-            finally
-            {
-                stmt.close();
             }
 
             for(Transaction.EnqueueRecord enqueue : enqueues)
@@ -716,12 +669,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 }
             }
 
-
-            stmt = conn.prepareStatement("INSERT INTO " + getXidActionsTableName()
-                                         + " ( format, global_id, branch_id, action_type, " +
-                                         "queue_id, message_id ) values (?,?,?,?,?,?) ");
-
-            try
+            try(PreparedStatement stmt = conn.prepareStatement("INSERT INTO " + getXidActionsTableName()
+                                                               + " ( format, global_id, branch_id, action_type, " +
+                                                               "queue_id, message_id ) values (?,?,?,?,?,?) "))
             {
                 stmt.setLong(1,format);
                 stmt.setBytes(2, globalId);
@@ -749,10 +699,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     }
                 }
 
-            }
-            finally
-            {
-                stmt.close();
             }
             return Collections.emptyList();
         }
@@ -885,9 +831,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
         getLogger().debug("Adding metadata for message {}", messageId);
 
-        PreparedStatement stmt = conn.prepareStatement("INSERT INTO " + getMetaDataTableName()
-                                                       + "( message_id , meta_data ) values (?, ?)");
-        try
+        try(PreparedStatement stmt = conn.prepareStatement("INSERT INTO " + getMetaDataTableName()
+                                                           + "( message_id , meta_data ) values (?, ?)"))
         {
             stmt.setLong(1, messageId);
 
@@ -899,8 +844,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             buf = buf.slice();
 
             metaData.writeToBuffer(buf);
-            ByteArrayInputStream bis = new ByteArrayInputStream(underlying);
-            try
+            try(ByteArrayInputStream bis = new ByteArrayInputStream(underlying))
             {
                 stmt.setBinaryStream(2, bis, underlying.length);
                 int result = stmt.executeUpdate();
@@ -910,23 +854,10 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     throw new StoreException("Unable to add meta data for message " + messageId);
                 }
             }
-            finally
+            catch (IOException e)
             {
-                try
-                {
-                    bis.close();
-                }
-                catch (IOException e)
-                {
-
-                    throw new SQLException(e);
-                }
+                throw new SQLException("Failed to close ByteArrayInputStream", e);
             }
-
-        }
-        finally
-        {
-            stmt.close();
         }
 
     }
@@ -1004,25 +935,23 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private StorableMessageMetaData getMetaData(long messageId) throws SQLException
     {
 
-        Connection conn = newAutoCommitConnection();
-        try
+        try (Connection conn = newAutoCommitConnection())
         {
-            PreparedStatement stmt = conn.prepareStatement("SELECT meta_data FROM " + getMetaDataTableName()
-                                                           + " WHERE message_id = ?");
-            try
+            try (PreparedStatement stmt = conn.prepareStatement("SELECT meta_data FROM " + getMetaDataTableName()
+                                                                + " WHERE message_id = ?"))
             {
-                stmt.setLong(1,messageId);
-                ResultSet rs = stmt.executeQuery();
-                try
+                stmt.setLong(1, messageId);
+                try (ResultSet rs = stmt.executeQuery())
                 {
 
-                    if(rs.next())
+                    if (rs.next())
                     {
                         byte[] dataAsBytes = getBlobAsBytes(rs, 1);
                         QpidByteBuffer buf = QpidByteBuffer.wrap(dataAsBytes);
                         buf.position(1);
                         buf = buf.slice();
-                        int typeOrdinal = dataAsBytes[0] & 0xff;;
+                        int typeOrdinal = dataAsBytes[0] & 0xff;
+
                         MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(typeOrdinal);
                         StorableMessageMetaData metaData = type.createMetaData(buf);
                         buf.dispose();
@@ -1033,19 +962,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                         throw new StoreException("Meta data not found for message with id " + messageId);
                     }
                 }
-                finally
-                {
-                    rs.close();
-                }
             }
-            finally
-            {
-                stmt.close();
-            }
-        }
-        finally
-        {
-            conn.close();
         }
     }
 
@@ -1055,8 +972,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                             Collection<QpidByteBuffer> contentBody)
     {
         getLogger().debug("Adding content for message {}", messageId);
-
-        PreparedStatement stmt = null;
 
         int size = 0;
 
@@ -1071,11 +986,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             buf.copyTo(dst);
         }
 
-        try
+        try(PreparedStatement stmt = conn.prepareStatement("INSERT INTO " + getMessageContentTableName()
+                                                           + "( message_id, content ) values (?, ?)"))
         {
-
-            stmt = conn.prepareStatement("INSERT INTO " + getMessageContentTableName()
-                                         + "( message_id, content ) values (?, ?)");
             stmt.setLong(1, messageId);
             stmt.setBinaryStream(2, new ByteArrayInputStream(data), data.length);
             stmt.executeUpdate();
@@ -1085,25 +998,16 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             JdbcUtils.closeConnection(conn, getLogger());
             throw new StoreException("Error adding content for message " + messageId + ": " + e.getMessage(), e);
         }
-        finally
-        {
-            JdbcUtils.closePreparedStatement(stmt, getLogger());
-        }
     }
 
     Collection<QpidByteBuffer> getAllContent(long messageId) throws StoreException
     {
-        Connection conn = null;
-        PreparedStatement stmt = null;
-
         getLogger().debug("Message Id: {} Getting content body", messageId);
 
-        try
+        try(Connection conn = newAutoCommitConnection();
+            PreparedStatement stmt = conn.prepareStatement("SELECT content FROM " + getMessageContentTableName()
+        + " WHERE message_id = ?"))
         {
-            conn = newAutoCommitConnection();
-
-            stmt = conn.prepareStatement("SELECT content FROM " + getMessageContentTableName()
-                                         + " WHERE message_id = ?");
             stmt.setLong(1,messageId);
             ResultSet rs = stmt.executeQuery();
 
@@ -1131,11 +1035,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         catch (SQLException e)
         {
             throw new StoreException("Error retrieving content for message " + messageId + ": " + e.getMessage(), e);
-        }
-        finally
-        {
-            JdbcUtils.closePreparedStatement(stmt, getLogger());
-            JdbcUtils.closeConnection(conn, getLogger());
         }
     }
 
@@ -1737,11 +1636,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         {
             checkMessageStoreOpen();
 
-            Connection conn = null;
             StoredJDBCMessage message;
-            try
+            try(Connection conn = newAutoCommitConnection())
             {
-                conn = newAutoCommitConnection();
                 try (PreparedStatement stmt = conn.prepareStatement("SELECT message_id, meta_data FROM " + getMetaDataTableName()
                                                                     + " WHERE message_id = ?"))
                 {
@@ -1772,10 +1669,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
                 throw new StoreException("Error encountered when visiting messages", e);
             }
-            finally
-            {
-                JdbcUtils.closeConnection(conn, getLogger());
-            }
         }
 
         @Override
@@ -1790,15 +1683,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         {
             checkMessageStoreOpen();
 
-            Connection conn = null;
-            try
+            try(Connection conn = newAutoCommitConnection())
             {
-                conn = newAutoCommitConnection();
-                Statement stmt = conn.createStatement();
-                try
+                try (Statement stmt = conn.createStatement())
                 {
-                    ResultSet rs = stmt.executeQuery("SELECT message_id, meta_data FROM " + getMetaDataTableName());
-                    try
+                    try (ResultSet rs = stmt.executeQuery("SELECT message_id, meta_data FROM "
+                                                          + getMetaDataTableName()))
                     {
                         while (rs.next())
                         {
@@ -1807,7 +1697,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                             QpidByteBuffer buf = QpidByteBuffer.wrap(dataAsBytes);
                             buf.position(1);
                             buf = buf.slice();
-                            MessageMetaDataType<?> type = MessageMetaDataTypeRegistry.fromOrdinal(((int)dataAsBytes[0]) &0xff);
+                            MessageMetaDataType<?> type =
+                                    MessageMetaDataTypeRegistry.fromOrdinal(((int) dataAsBytes[0]) & 0xff);
                             StorableMessageMetaData metaData = type.createMetaData(buf);
                             buf.dispose();
                             StoredJDBCMessage message = createStoredJDBCMessage(messageId, metaData, true);
@@ -1817,23 +1708,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                             }
                         }
                     }
-                    finally
-                    {
-                        rs.close();
-                    }
-                }
-                finally
-                {
-                    stmt.close();
                 }
             }
             catch (SQLException e)
             {
                 throw new StoreException("Error encountered when visiting messages", e);
-            }
-            finally
-            {
-                JdbcUtils.closeConnection(conn, getLogger());
             }
         }
 
@@ -1843,18 +1722,16 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         {
             checkMessageStoreOpen();
 
-            Connection conn = null;
-            try
+            try(Connection conn = newAutoCommitConnection())
             {
                 CachingUUIDFactory uuidFactory = new CachingUUIDFactory();
-                conn = newAutoCommitConnection();
-                PreparedStatement stmt = conn.prepareStatement("SELECT queue_id, message_id FROM " + getQueueEntryTableName()
-                                                               + " WHERE queue_id = ? ORDER BY queue_id, message_id");
-                try
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT queue_id, message_id FROM "
+                                                                    + getQueueEntryTableName()
+                                                                    + " WHERE queue_id = ? ORDER BY queue_id, "
+                                                                    + "message_id"))
                 {
                     stmt.setString(1, queue.getId().toString());
-                    ResultSet rs = stmt.executeQuery();
-                    try
+                    try (ResultSet rs = stmt.executeQuery())
                     {
                         while (rs.next())
                         {
@@ -1867,25 +1744,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                             }
                         }
                     }
-                    finally
-                    {
-                        rs.close();
-                    }
-                }
-                finally
-                {
-                    stmt.close();
                 }
             }
             catch (SQLException e)
             {
                 throw new StoreException("Error encountered when visiting message instances", e);
             }
-            finally
-            {
-                JdbcUtils.closeConnection(conn, getLogger());
-            }
-
         }
 
         @Override
@@ -1893,17 +1757,13 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         {
             checkMessageStoreOpen();
 
-            Connection conn = null;
-            try
+            try(Connection conn = newAutoCommitConnection())
             {
                 CachingUUIDFactory uuidFactory = new CachingUUIDFactory();
-                conn = newAutoCommitConnection();
-                Statement stmt = conn.createStatement();
-                try
+                try (Statement stmt = conn.createStatement())
                 {
-                    ResultSet rs = stmt.executeQuery("SELECT queue_id, message_id FROM " + getQueueEntryTableName()
-                                                     + " ORDER BY queue_id, message_id");
-                    try
+                    try (ResultSet rs = stmt.executeQuery("SELECT queue_id, message_id FROM " + getQueueEntryTableName()
+                                                          + " ORDER BY queue_id, message_id"))
                     {
                         while (rs.next())
                         {
@@ -1916,23 +1776,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                             }
                         }
                     }
-                    finally
-                    {
-                        rs.close();
-                    }
-                }
-                finally
-                {
-                    stmt.close();
                 }
             }
             catch (SQLException e)
             {
                 throw new StoreException("Error encountered when visiting message instances", e);
-            }
-            finally
-            {
-                JdbcUtils.closeConnection(conn, getLogger());
             }
         }
 
@@ -1941,17 +1789,14 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         {
             checkMessageStoreOpen();
 
-            Connection conn = null;
-            try
+            try(Connection conn = newAutoCommitConnection())
             {
-                conn = newAutoCommitConnection();
                 List<Xid> xids = new ArrayList<Xid>();
 
-                Statement stmt = conn.createStatement();
-                try
+                try (Statement stmt = conn.createStatement())
                 {
-                    ResultSet rs = stmt.executeQuery("SELECT format, global_id, branch_id FROM " + getXidTableName());
-                    try
+                    try (ResultSet rs = stmt.executeQuery("SELECT format, global_id, branch_id FROM "
+                                                          + getXidTableName()))
                     {
                         while (rs.next())
                         {
@@ -1962,14 +1807,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                             xids.add(new Xid(format, globalId, branchId));
                         }
                     }
-                    finally
-                    {
-                        rs.close();
-                    }
-                }
-                finally
-                {
-                    stmt.close();
                 }
 
 
@@ -1979,18 +1816,16 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     List<RecordImpl> enqueues = new ArrayList<>();
                     List<RecordImpl> dequeues = new ArrayList<>();
 
-                    PreparedStatement pstmt = conn.prepareStatement("SELECT action_type, queue_id, message_id FROM " + getXidActionsTableName()
-                                                                    +
-                                                                    " WHERE format = ? and global_id = ? and branch_id = ?");
-
-                    try
+                    try (PreparedStatement pstmt = conn.prepareStatement(
+                            "SELECT action_type, queue_id, message_id FROM " + getXidActionsTableName()
+                            +
+                            " WHERE format = ? and global_id = ? and branch_id = ?"))
                     {
                         pstmt.setLong(1, xid.getFormat());
                         pstmt.setBytes(2, xid.getGlobalId());
                         pstmt.setBytes(3, xid.getBranchId());
 
-                        ResultSet rs = pstmt.executeQuery();
-                        try
+                        try (ResultSet rs = pstmt.executeQuery())
                         {
                             while (rs.next())
                             {
@@ -2004,14 +1839,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                                 records.add(record);
                             }
                         }
-                        finally
-                        {
-                            rs.close();
-                        }
-                    }
-                    finally
-                    {
-                        pstmt.close();
                     }
 
                     if (!handler.handle(new JDBCStoredXidRecord(xid.getFormat(), xid.getGlobalId(), xid.getBranchId()),
@@ -2027,10 +1854,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
                 throw new StoreException("Error encountered when visiting distributed transactions", e);
 
-            }
-            finally
-            {
-                JdbcUtils.closeConnection(conn, getLogger());
             }
         }
     }
