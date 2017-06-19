@@ -26,6 +26,8 @@ import java.util.UUID;
 import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
+import com.sleepycat.je.DatabaseEntry;
+
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -34,49 +36,53 @@ import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.store.berkeleydb.AbstractBDBMessageStore;
 import org.apache.qpid.server.store.berkeleydb.entry.PreparedTransaction;
+import org.apache.qpid.server.util.CachingUUIDFactory;
 
-public class PreparedTransactionBinding extends TupleBinding<PreparedTransaction>
+public class PreparedTransactionBinding
 {
-    @Override
-    public PreparedTransaction entryToObject(TupleInput input)
+    private PreparedTransactionBinding()
     {
-        Transaction.EnqueueRecord[] enqueues = readEnqueueRecords(input);
+    }
 
-        Transaction.DequeueRecord[] dequeues = readDequeueRecords(input);
-
+    public static PreparedTransaction entryToObject(final CachingUUIDFactory uuidFactory, final DatabaseEntry value)
+    {
+        TupleInput input = TupleBinding.entryToInput(value);
+        Transaction.EnqueueRecord[] enqueues = readEnqueueRecords(uuidFactory, input);
+        Transaction.DequeueRecord[] dequeues = readDequeueRecords(uuidFactory, input);
         return new PreparedTransaction(enqueues, dequeues);
     }
 
-    private Transaction.EnqueueRecord[] readEnqueueRecords(TupleInput input)
+    private static Transaction.EnqueueRecord[] readEnqueueRecords(final CachingUUIDFactory uuidFactory, TupleInput input)
     {
         Transaction.EnqueueRecord[] records = new Transaction.EnqueueRecord[input.readInt()];
         for(int i = 0; i < records.length; i++)
         {
-            records[i] = new EnqueueRecordImpl(new UUID(input.readLong(), input.readLong()), input.readLong());
+            UUID queueId = uuidFactory.createUuidFromBits(input.readLong(), input.readLong());
+            records[i] = new EnqueueRecordImpl(queueId, input.readLong());
         }
         return records;
     }
 
-    private Transaction.DequeueRecord[] readDequeueRecords(TupleInput input)
+    private static Transaction.DequeueRecord[] readDequeueRecords(final CachingUUIDFactory uuidFactory, TupleInput input)
     {
         Transaction.DequeueRecord[] records = new Transaction.DequeueRecord[input.readInt()];
         for(int i = 0; i < records.length; i++)
         {
-            records[i] = new DequeueRecordImpl(new UUID(input.readLong(), input.readLong()), input.readLong());
+            UUID queueId = uuidFactory.createUuidFromBits(input.readLong(), input.readLong());
+            records[i] = new DequeueRecordImpl(queueId, input.readLong());
         }
         return records;
     }
 
-
-    @Override
-    public void objectToEntry(PreparedTransaction preparedTransaction, TupleOutput output)
+    public static void objectToEntry(final PreparedTransaction preparedTransaction, final DatabaseEntry value)
     {
-        writeRecords(preparedTransaction.getEnqueues(), output);
-        writeRecords(preparedTransaction.getDequeues(), output);
-
+        TupleOutput tupleOutput = new TupleOutput();
+        writeRecords(preparedTransaction.getEnqueues(), tupleOutput);
+        writeRecords(preparedTransaction.getDequeues(), tupleOutput);
+        TupleBinding.outputToEntry(tupleOutput, value);
     }
 
-    private void writeRecords(Transaction.EnqueueRecord[] records, TupleOutput output)
+    private static void writeRecords(Transaction.EnqueueRecord[] records, TupleOutput output)
     {
         if(records == null)
         {
@@ -95,7 +101,7 @@ public class PreparedTransactionBinding extends TupleBinding<PreparedTransaction
         }
     }
 
-    private void writeRecords(Transaction.DequeueRecord[] records, TupleOutput output)
+    private static void writeRecords(Transaction.DequeueRecord[] records, TupleOutput output)
     {
         if(records == null)
         {
@@ -120,7 +126,7 @@ public class PreparedTransactionBinding extends TupleBinding<PreparedTransaction
         private long _messageNumber;
         private UUID _queueId;
 
-        public EnqueueRecordImpl(UUID queueId, long messageNumber)
+        EnqueueRecordImpl(UUID queueId, long messageNumber)
         {
             _messageNumber = messageNumber;
             _queueId = queueId;
@@ -175,7 +181,7 @@ public class PreparedTransactionBinding extends TupleBinding<PreparedTransaction
 
         private final AbstractBDBMessageStore.BDBEnqueueRecord _record;
 
-        public DequeueRecordImpl(final UUID queueId, final long messageNumber)
+        DequeueRecordImpl(final UUID queueId, final long messageNumber)
         {
             _record = new AbstractBDBMessageStore.BDBEnqueueRecord(queueId, messageNumber);
         }
