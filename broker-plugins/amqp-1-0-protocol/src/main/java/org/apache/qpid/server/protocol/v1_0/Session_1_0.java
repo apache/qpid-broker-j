@@ -41,7 +41,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.security.auth.Subject;
@@ -54,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.filter.SelectorParsingException;
@@ -66,14 +66,12 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.framing.OversizeFrameException;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
@@ -131,8 +129,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     private final AMQPConnection_1_0<?> _connection;
     private AtomicBoolean _closed = new AtomicBoolean();
-
-    private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_1_0>> _consumers = new CopyOnWriteArrayList<>();
 
     private Session<?> _modelObject = this;
 
@@ -1421,12 +1417,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     }
 
     @Override
-    public long getConsumerCount()
-    {
-        return _consumers.size();
-    }
-
-    @Override
     public String toLogString()
     {
         final AMQPConnection<?> amqpConnection = getAMQPConnection();
@@ -1471,12 +1461,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     public SecurityToken getSecurityToken()
     {
         return _token;
-    }
-
-    @Override
-    public Collection<Consumer<?, ConsumerTarget_1_0>> getConsumers()
-    {
-        return Collections.unmodifiableCollection(_consumers);
     }
 
     @Override

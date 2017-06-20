@@ -21,14 +21,12 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 import java.security.AccessControlContext;
-import java.util.Collection;
 import java.util.List;
 
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.model.Connection;
-import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.session.AbstractAMQPSession;
@@ -106,18 +104,6 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     public boolean getBlocking()
     {
         return _serverSession.getBlocking();
-    }
-
-    @Override
-    public Collection<Consumer<?, ConsumerTarget_0_10>> getConsumers()
-    {
-        return _serverSession.getConsumers();
-    }
-
-    @Override
-    public long getConsumerCount()
-    {
-        return _serverSession.getConsumerCount();
     }
 
     @Override

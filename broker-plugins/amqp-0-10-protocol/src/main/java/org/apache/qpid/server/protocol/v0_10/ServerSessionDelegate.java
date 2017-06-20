@@ -354,13 +354,12 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                         }
                         for(MessageSource source : sources)
                         {
-                            ((ServerSession) session).register(
-                                    source.addConsumer(target,
-                                                       filterManager,
-                                                       MessageTransferMessage.class,
-                                                       destination,
-                                                       options,
-                                                       priority));
+                            source.addConsumer(target,
+                                               filterManager,
+                                               MessageTransferMessage.class,
+                                               destination,
+                                               options,
+                                               priority);
                         }
                         target.updateNotifyWorkDesired();
                     }

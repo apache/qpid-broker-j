@@ -859,17 +859,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         Object exclusiveOwner = _exclusiveOwner;
+        final AMQPSession<?, T> session = target.getSession();
         switch(_exclusive)
         {
             case CONNECTION:
                 if(exclusiveOwner == null)
                 {
-                    exclusiveOwner = target.getSession().getAMQPConnection();
-                    addExclusivityConstraint(target.getSession().getAMQPConnection());
+                    exclusiveOwner = session.getAMQPConnection();
+                    addExclusivityConstraint(session.getAMQPConnection());
                 }
                 else
                 {
-                    if(exclusiveOwner != target.getSession().getAMQPConnection())
+                    if(exclusiveOwner != session.getAMQPConnection())
                     {
                         throw new ConsumerAccessRefused();
                     }
@@ -878,12 +879,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case SESSION:
                 if(exclusiveOwner == null)
                 {
-                    exclusiveOwner = target.getSession();
-                    addExclusivityConstraint(target.getSession());
+                    exclusiveOwner = session;
+                    addExclusivityConstraint(session);
                 }
                 else
                 {
-                    if(exclusiveOwner != target.getSession())
+                    if(exclusiveOwner != session)
                     {
                         throw new ConsumerAccessRefused();
                     }
@@ -896,7 +897,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 }
                 break;
             case PRINCIPAL:
-                Principal currentAuthorizedPrincipal = target.getSession().getAMQPConnection().getAuthorizedPrincipal();
+                Principal currentAuthorizedPrincipal = session.getAMQPConnection().getAuthorizedPrincipal();
                 if(exclusiveOwner == null)
                 {
                     exclusiveOwner = currentAuthorizedPrincipal;
@@ -912,11 +913,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case CONTAINER:
                 if(exclusiveOwner == null)
                 {
-                    exclusiveOwner = target.getSession().getAMQPConnection().getRemoteContainerName();
+                    exclusiveOwner = session.getAMQPConnection().getRemoteContainerName();
                 }
                 else
                 {
-                    if(!exclusiveOwner.equals(target.getSession().getAMQPConnection().getRemoteContainerName()))
+                    if(!exclusiveOwner.equals(session.getAMQPConnection().getRemoteContainerName()))
                     {
                         throw new ConsumerAccessRefused();
                     }
@@ -1015,6 +1016,20 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         childAdded(consumer);
         consumer.addChangeListener(_deletedChildListener);
+
+        session.incConsumerCount();
+        addChangeListener(new AbstractConfigurationChangeListener()
+        {
+            @Override
+            public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+            {
+                if (child.equals(consumer))
+                {
+                    session.decConsumerCount();
+                    removeChangeListener(this);
+                }
+            }
+        });
 
         return consumer;
     }

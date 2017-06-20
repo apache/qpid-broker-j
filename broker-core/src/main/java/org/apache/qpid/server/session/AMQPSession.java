@@ -20,20 +20,16 @@
  */
 package org.apache.qpid.server.session;
 
-import java.util.Collection;
-import java.util.UUID;
-
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogSubject;
-import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.transport.network.Ticker;
+import org.apache.qpid.server.util.Deletable;
 
 public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSession<S, X>,
                              X extends ConsumerTarget<X>> extends Session<S>,
@@ -70,7 +66,9 @@ public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSessio
 
     long getConsumerCount();
 
-    Collection<Consumer<?,X>> getConsumers();
+    void incConsumerCount();
+
+    void decConsumerCount();
 
     /**
      * Return the time the current transaction started.

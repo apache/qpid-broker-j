@@ -56,7 +56,6 @@ import java.util.SortedMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -79,16 +78,25 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v0_10.transport.*;
-import org.apache.qpid.server.protocol.v0_10.transport.Xid;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.protocol.v0_10.transport.Frame;
-import org.apache.qpid.server.txn.*;
+import org.apache.qpid.server.txn.AlreadyKnownDtxException;
+import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
+import org.apache.qpid.server.txn.DistributedTransaction;
+import org.apache.qpid.server.txn.DtxNotSelectedException;
+import org.apache.qpid.server.txn.IncorrectDtxStateException;
+import org.apache.qpid.server.txn.JoinAndResumeDtxException;
+import org.apache.qpid.server.txn.LocalTransaction;
+import org.apache.qpid.server.txn.NotAssociatedDtxException;
+import org.apache.qpid.server.txn.RollbackOnlyDtxException;
+import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.txn.SuspendAndFailDtxException;
+import org.apache.qpid.server.txn.TimeoutDtxException;
+import org.apache.qpid.server.txn.UnknownDtxBranchException;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
@@ -151,8 +159,6 @@ public class ServerSession extends SessionInvoker
 
     private final AtomicLong _txnCount = new AtomicLong(0);
     private Map<String, ConsumerTarget_0_10> _subscriptions = new ConcurrentHashMap<String, ConsumerTarget_0_10>();
-
-    private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_0_10>> _consumers = new CopyOnWriteArrayList<>();
 
     private AtomicReference<LogMessage> _forcedCloseLogMessage = new AtomicReference<LogMessage>();
 
@@ -1202,15 +1208,6 @@ public class ServerSession extends SessionInvoker
     }
 
 
-    public void register(final MessageInstanceConsumer<ConsumerTarget_0_10> messageInstanceConsumer)
-    {
-        if(messageInstanceConsumer instanceof Consumer<?,?>)
-        {
-            final Consumer<?,ConsumerTarget_0_10> consumer = (Consumer<?,ConsumerTarget_0_10>) messageInstanceConsumer;
-            _consumers.add(consumer);
-        }
-    }
-
     public ConsumerTarget_0_10 getSubscription(String destination)
     {
         return _subscriptions.get(destination == null ? NULL_DESTINATION : destination);
@@ -1725,17 +1722,6 @@ public class ServerSession extends SessionInvoker
         {
             return _future.isDone();
         }
-    }
-
-    public long getConsumerCount()
-    {
-        return _subscriptions.values().size();
-    }
-
-    public Collection<Consumer<?, ConsumerTarget_0_10>> getConsumers()
-    {
-
-        return Collections.unmodifiableCollection(_consumers);
     }
 
     public void setModelObject(final Session_0_10 session)

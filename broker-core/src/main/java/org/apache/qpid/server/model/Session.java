@@ -56,8 +56,6 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
     boolean isProducerFlowBlocked();
 
 
-    Collection<? extends Consumer> getConsumers();
-
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Consumers")
     long getConsumerCount();
 

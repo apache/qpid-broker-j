@@ -29,11 +29,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
 
 import com.google.common.base.Supplier;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -60,10 +60,9 @@ import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.TransactionTimeoutTicker;
-import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.FutureHelper;
-import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.transport.network.Ticker;
+import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
                                           X extends ConsumerTarget<X>>
@@ -84,6 +83,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     protected final LogSubject _logSubject;
 
     protected final List<Action<? super S>> _taskList = new CopyOnWriteArrayList<>();
+    private final AtomicInteger _consumerCount = new AtomicInteger();
 
     protected final Set<AbstractConsumerTarget> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
     private Iterator<AbstractConsumerTarget> _processPendingIterator;
@@ -404,6 +404,24 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         {
             getAMQPConnection().notifyWork(this);
         }
+    }
+
+    @Override
+    public final long getConsumerCount()
+    {
+        return _consumerCount.get();
+    }
+
+    @Override
+    public final void incConsumerCount()
+    {
+        _consumerCount.incrementAndGet();
+    }
+
+    @Override
+    public final void decConsumerCount()
+    {
+        _consumerCount.decrementAndGet();
     }
 
     protected abstract void updateBlockedStateIfNecessary();

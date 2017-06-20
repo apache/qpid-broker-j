@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -53,12 +52,11 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.filter.AMQPFilterTypes;
-import org.apache.qpid.server.exchange.ExchangeDefaults;
-import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
+import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.filter.ArrivalTimeFilter;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.FilterManagerFactory;
@@ -76,7 +74,19 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.*;
+import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.AlternateBinding;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.ExclusivityPolicy;
+import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.model.NoFactoryForTypeException;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.Session;
+import org.apache.qpid.server.model.UnknownConfiguredObjectException;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.UnacknowledgedMessageMap.Visitor;
 import org.apache.qpid.server.protocol.v0_8.transport.*;
@@ -178,7 +188,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     private final ClientDeliveryMethod _clientDeliveryMethod;
 
     private final ImmediateAction _immediateAction = new ImmediateAction();
-    private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_0_8>> _consumers = new CopyOnWriteArrayList<>();
     private Session<?> _modelObject;
     private long _blockTime;
     private long _blockingTimeout;
@@ -737,17 +746,11 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
             for(MessageSource source : sources)
             {
-                MessageInstanceConsumer<ConsumerTarget_0_8> sub =
-                        source.addConsumer(target,
-                                           filterManager,
-                                           AMQMessage.class,
-                                           AMQShortString.toString(tag),
-                                           options, priority);
-                if (sub instanceof Consumer<?, ?>)
-                {
-                    final Consumer<?,ConsumerTarget_0_8> modelConsumer = (Consumer<?,ConsumerTarget_0_8>) sub;
-                    _consumers.add(modelConsumer);
-                }
+                source.addConsumer(target,
+                                   filterManager,
+                                   AMQMessage.class,
+                                   AMQShortString.toString(tag),
+                                   options, priority);
             }
             target.updateNotifyWorkDesired();
         }
@@ -777,16 +780,8 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
 
         ConsumerTarget_0_8 target = _tag2SubscriptionTargetMap.remove(consumerTag);
-        Collection<MessageInstanceConsumer> subs = target == null ? null : target.getConsumers();
-        if (subs != null)
+        if (target != null)
         {
-            for(MessageInstanceConsumer sub : subs)
-            {
-                if (sub instanceof Consumer<?,?>)
-                {
-                    _consumers.remove(sub);
-                }
-            }
             target.close();
             return true;
         }
@@ -1736,18 +1731,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             _action.postCommit();
             _action = null;
         }
-    }
-
-    @Override
-    public long getConsumerCount()
-    {
-        return _tag2SubscriptionTargetMap.size();
-    }
-
-    @Override
-    public Collection<Consumer<?,ConsumerTarget_0_8>> getConsumers()
-    {
-        return Collections.unmodifiableCollection(_consumers);
     }
 
     @Override
