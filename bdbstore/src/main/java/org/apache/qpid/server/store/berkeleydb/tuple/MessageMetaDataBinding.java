@@ -22,11 +22,6 @@ package org.apache.qpid.server.store.berkeleydb.tuple;
 
 import com.sleepycat.bind.EntryBinding;
 import com.sleepycat.je.DatabaseEntry;
-import java.nio.ByteBuffer;
-
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,13 +50,24 @@ public class MessageMetaDataBinding implements EntryBinding<StorableMessageMetaD
     @Override
     public StorableMessageMetaData entryToObject(DatabaseEntry entry)
     {
-        QpidByteBuffer buf = QpidByteBuffer.wrap(entry.getData(), entry.getOffset(), entry.getSize());
+        QpidByteBuffer buf;
+        if (entry.getSize() > QpidByteBuffer.getPooledBufferSize())
+        {
+            buf = QpidByteBuffer.wrap(entry.getData(), entry.getOffset(), entry.getSize());
+        }
+        else
+        {
+            buf = QpidByteBuffer.allocateDirect(entry.getSize());
+            buf.put(entry.getData(), entry.getOffset(), entry.getSize());
+            buf.flip();
+        }
         final int bodySize = buf.getInt() ^ 0x80000000;
         final int metaDataType = buf.get() & 0xff;
-        buf = buf.slice();
-        buf.limit(bodySize-1);
+        QpidByteBuffer slice = buf.slice();
+        slice.limit(bodySize-1);
         MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(metaDataType);
-        final StorableMessageMetaData metaData = type.createMetaData(buf);
+        final StorableMessageMetaData metaData = type.createMetaData(slice);
+        slice.dispose();
         buf.dispose();
         return metaData;
     }

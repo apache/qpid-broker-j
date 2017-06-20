@@ -996,13 +996,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     if(rs.next())
                     {
                         byte[] dataAsBytes = getBlobAsBytes(rs, 1);
-                        QpidByteBuffer buf = QpidByteBuffer.wrap(dataAsBytes);
-                        buf.position(1);
-                        buf = buf.slice();
-                        MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(dataAsBytes[0]);
-                        StorableMessageMetaData metaData = type.createMetaData(buf);
-                        buf.dispose();
-                        return metaData;
+                        return getStorableMessageMetaData(dataAsBytes);
                     }
                     else
                     {
@@ -1726,14 +1720,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                         if (rs.next())
                         {
                             byte[] dataAsBytes = getBlobAsBytes(rs, 2);
-                            QpidByteBuffer buf = QpidByteBuffer.wrap(dataAsBytes);
-                            buf.position(1);
-                            buf = buf.slice();
-                            MessageMetaDataType<?> type = MessageMetaDataTypeRegistry.fromOrdinal(dataAsBytes[0]);
-                            StorableMessageMetaData metaData = type.createMetaData(buf);
-                            buf.dispose();
+                            StorableMessageMetaData metaData = getStorableMessageMetaData(dataAsBytes);
                             message = createStoredJDBCMessage(messageId, metaData, true);
-
                         }
                         else
                         {
@@ -2004,6 +1992,29 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 JdbcUtils.closeConnection(conn, getLogger());
             }
         }
+    }
+
+    private StorableMessageMetaData getStorableMessageMetaData(final byte[] dataAsBytes)
+    {
+        final QpidByteBuffer buf;
+        if (dataAsBytes.length > QpidByteBuffer.getPooledBufferSize())
+        {
+            buf =  QpidByteBuffer.wrap(dataAsBytes);
+        }
+        else
+        {
+            buf = QpidByteBuffer.allocateDirect(dataAsBytes.length);
+            buf.put(dataAsBytes);
+            buf.flip();
+        }
+        buf.position(1);
+        QpidByteBuffer slice = buf.slice();
+        int typeOrdinal = dataAsBytes[0] & 0xff;
+        MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(typeOrdinal);
+        StorableMessageMetaData metaData = type.createMetaData(slice);
+        slice.dispose();
+        buf.dispose();
+        return metaData;
     }
 
     protected abstract void storedSizeChange(int storeSizeIncrease);
