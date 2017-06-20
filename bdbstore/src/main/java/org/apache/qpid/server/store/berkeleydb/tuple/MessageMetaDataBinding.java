@@ -51,13 +51,24 @@ public class MessageMetaDataBinding implements EntryBinding<StorableMessageMetaD
     @Override
     public StorableMessageMetaData entryToObject(DatabaseEntry entry)
     {
-        QpidByteBuffer buf = QpidByteBuffer.wrap(entry.getData(), entry.getOffset(), entry.getSize());
+        QpidByteBuffer buf;
+        if (entry.getSize() > QpidByteBuffer.getPooledBufferSize())
+        {
+            buf = QpidByteBuffer.wrap(entry.getData(), entry.getOffset(), entry.getSize());
+        }
+        else
+        {
+            buf = QpidByteBuffer.allocateDirect(entry.getSize());
+            buf.put(entry.getData(), entry.getOffset(), entry.getSize());
+            buf.flip();
+        }
         final int bodySize = buf.getInt() ^ 0x80000000;
         final int metaDataType = buf.get() & 0xff;
-        buf = buf.slice();
-        buf.limit(bodySize-1);
+        QpidByteBuffer slice = buf.slice();
+        slice.limit(bodySize-1);
         MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(metaDataType);
-        final StorableMessageMetaData metaData = type.createMetaData(buf);
+        final StorableMessageMetaData metaData = type.createMetaData(slice);
+        slice.dispose();
         buf.dispose();
         return metaData;
     }
