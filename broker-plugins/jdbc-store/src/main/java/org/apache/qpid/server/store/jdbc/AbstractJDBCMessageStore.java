@@ -22,6 +22,7 @@ package org.apache.qpid.server.store.jdbc;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -946,16 +947,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
                     if (rs.next())
                     {
-                        byte[] dataAsBytes = getBlobAsBytes(rs, 1);
-                        QpidByteBuffer buf = QpidByteBuffer.wrap(dataAsBytes);
-                        buf.position(1);
-                        buf = buf.slice();
-                        int typeOrdinal = dataAsBytes[0] & 0xff;
-
-                        MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(typeOrdinal);
-                        StorableMessageMetaData metaData = type.createMetaData(buf);
-                        buf.dispose();
-                        return metaData;
+                        return getStorableMessageMetaData(messageId, getBlobAsBytes(rs, 1));
                     }
                     else
                     {
@@ -963,6 +955,27 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     }
                 }
             }
+        }
+    }
+
+    private StorableMessageMetaData getStorableMessageMetaData(final long messageId, final byte[] blobAsBytes)
+            throws SQLException
+    {
+        try(InputStream stream = new ByteArrayInputStream(blobAsBytes))
+        {
+            int typeOrdinal = stream.read() & 0xff;
+            MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(typeOrdinal);
+            List<QpidByteBuffer> bufs = QpidByteBuffer.asQpidByteBuffers(stream);
+            StorableMessageMetaData metaData = type.createMetaData(bufs);
+            for (final QpidByteBuffer buf : bufs)
+            {
+                buf.dispose();
+            }
+            return metaData;
+        }
+        catch (IOException e)
+        {
+            throw new StoreException("Failed to stream metadata for message with id " + messageId, e);
         }
     }
 
@@ -1648,14 +1661,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                         if (rs.next())
                         {
                             byte[] dataAsBytes = getBlobAsBytes(rs, 2);
-                            QpidByteBuffer buf = QpidByteBuffer.wrap(dataAsBytes);
-                            buf.position(1);
-                            buf = buf.slice();
-                            MessageMetaDataType<?> type = MessageMetaDataTypeRegistry.fromOrdinal(dataAsBytes[0]);
-                            StorableMessageMetaData metaData = type.createMetaData(buf);
-                            buf.dispose();
+                            StorableMessageMetaData metaData = getStorableMessageMetaData(messageId, dataAsBytes);
                             message = createStoredJDBCMessage(messageId, metaData, true);
-
                         }
                         else
                         {
@@ -1694,13 +1701,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                         {
                             long messageId = rs.getLong(1);
                             byte[] dataAsBytes = getBlobAsBytes(rs, 2);
-                            QpidByteBuffer buf = QpidByteBuffer.wrap(dataAsBytes);
-                            buf.position(1);
-                            buf = buf.slice();
-                            MessageMetaDataType<?> type =
-                                    MessageMetaDataTypeRegistry.fromOrdinal(((int) dataAsBytes[0]) & 0xff);
-                            StorableMessageMetaData metaData = type.createMetaData(buf);
-                            buf.dispose();
+                            StorableMessageMetaData metaData = getStorableMessageMetaData(messageId, dataAsBytes);
                             StoredJDBCMessage message = createStoredJDBCMessage(messageId, metaData, true);
                             if (!handler.handle(message))
                             {

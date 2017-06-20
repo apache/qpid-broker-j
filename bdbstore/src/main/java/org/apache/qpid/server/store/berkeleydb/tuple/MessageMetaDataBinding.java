@@ -20,23 +20,25 @@
  */
 package org.apache.qpid.server.store.berkeleydb.tuple;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.util.List;
+
 import com.sleepycat.bind.EntryBinding;
 import com.sleepycat.je.DatabaseEntry;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.MessageMetaDataTypeRegistry;
 import org.apache.qpid.server.store.StorableMessageMetaData;
+import org.apache.qpid.server.store.StoreException;
 
 /**
  * Handles the mapping to and from message meta data
  */
 public class MessageMetaDataBinding implements EntryBinding<StorableMessageMetaData>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MessageMetaDataBinding.class);
 
     private static final MessageMetaDataBinding INSTANCE = new MessageMetaDataBinding();
 
@@ -51,15 +53,28 @@ public class MessageMetaDataBinding implements EntryBinding<StorableMessageMetaD
     @Override
     public StorableMessageMetaData entryToObject(DatabaseEntry entry)
     {
-        QpidByteBuffer buf = QpidByteBuffer.wrap(entry.getData(), entry.getOffset(), entry.getSize());
-        final int bodySize = buf.getInt() ^ 0x80000000;
-        final int metaDataType = buf.get() & 0xff;
-        buf = buf.slice();
-        buf.limit(bodySize-1);
-        MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(metaDataType);
-        final StorableMessageMetaData metaData = type.createMetaData(buf);
-        buf.dispose();
-        return metaData;
+        try(DataInputStream stream = new DataInputStream(new ByteArrayInputStream(entry.getData(),
+                                                                                  entry.getOffset(),
+                                                                                  entry.getSize())))
+        {
+            final int bodySize = stream.readInt() ^ 0x80000000;
+            final int metaDataType = stream.readByte() & 0xff;
+            MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(metaDataType);
+
+            List<QpidByteBuffer> bufs = QpidByteBuffer.asQpidByteBuffers(stream);
+
+            final StorableMessageMetaData metaData = type.createMetaData(bufs);
+
+            for (final QpidByteBuffer buf : bufs)
+            {
+                buf.dispose();
+            }
+            return metaData;
+        }
+        catch (IOException e)
+        {
+            throw new StoreException(String.format("Unable to convert entry %s to metadata", entry));
+        }
     }
 
     @Override

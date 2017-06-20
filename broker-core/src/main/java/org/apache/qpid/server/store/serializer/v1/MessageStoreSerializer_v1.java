@@ -24,6 +24,7 @@ package org.apache.qpid.server.store.serializer.v1;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -307,7 +308,7 @@ public class MessageStoreSerializer_v1 implements MessageStoreSerializer
                     MessageMetaDataTypeRegistry.fromOrdinal(metaData[0] & 0xff);
             QpidByteBuffer buf = QpidByteBuffer.wrap(metaData, 1, metaData.length - 1);
             final StorableMessageMetaData storableMessageMetaData =
-                    metaDataType.createMetaData(buf);
+                    metaDataType.createMetaData(Collections.singletonList(buf));
             buf.dispose();
             final MessageHandle<StorableMessageMetaData> handle =
                     store.addMessage(storableMessageMetaData);

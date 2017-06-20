@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.hamcrest.Description;
 import org.mockito.ArgumentMatcher;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.UUIDGenerator;
@@ -52,7 +53,12 @@ public abstract class MessageStoreTestCase extends QpidTestCase
     private MessageStore _store;
     private ConfiguredObject<?> _parent;
     private MessageStore.MessageStoreReader _storeReader;
+    private static final int BUFFER_SIZE = 10;
+    private static final int POOL_SIZE = 20;
+    private static final double SPARSITY_FRACTION = 1.0;
 
+
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -63,6 +69,16 @@ public abstract class MessageStoreTestCase extends QpidTestCase
 
         _store.openMessageStore(_parent);
         _storeReader = _store.newMessageStoreReader();
+
+        QpidByteBuffer.deinitialisePool();
+        QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
+    }
+
+    @Override
+    public void tearDown() throws Exception
+    {
+        QpidByteBuffer.deinitialisePool();
+        super.tearDown();
     }
 
     protected abstract VirtualHost createVirtualHost();
@@ -383,7 +399,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
 
         StoredMessage<?> retrievedMessage = retrievedMessageRef.get();
         assertNotNull("Message was not found", retrievedMessageRef);
-        assertEquals("Unexpected retreived message", message.getMessageNumber(), retrievedMessage.getMessageNumber());
+        assertEquals("Unexpected retrieved message", message.getMessageNumber(), retrievedMessage.getMessageNumber());
 
         retrievedMessage.remove();
 

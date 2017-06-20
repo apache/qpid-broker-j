@@ -21,20 +21,19 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
-import org.apache.qpid.server.protocol.v0_10.transport.EncoderUtils;
-import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.EncoderUtils;
 import org.apache.qpid.server.protocol.v0_10.transport.Header;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
 import org.apache.qpid.server.protocol.v0_10.transport.Struct;
+import org.apache.qpid.server.store.StorableMessageMetaData;
 
 public class MessageMetaData_0_10 implements StorableMessageMetaData
 {
@@ -246,9 +245,9 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
 
     private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData_0_10>
     {
-        public MessageMetaData_0_10 createMetaData(QpidByteBuffer buf)
+        public MessageMetaData_0_10 createMetaData(List<QpidByteBuffer> buf)
         {
-            ServerDecoder decoder = new ServerDecoder(Collections.singletonList(buf));
+            ServerDecoder decoder = new ServerDecoder(buf);
 
             long arrivalTime = decoder.readInt64();
             int bodySize = decoder.readInt32();

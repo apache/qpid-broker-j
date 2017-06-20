@@ -20,6 +20,7 @@
 
 package org.apache.qpid.server.bytebuffer;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,6 +34,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import com.google.common.io.ByteStreams;
 import org.junit.Assert;
@@ -897,6 +900,19 @@ public class QpidByteBufferTest extends QpidTestCase
 
         child.dispose();
         assertTrue("Buffer should be sparse", grandChild.isSparse());
+    }
+
+    public void testAsQpidByteBuffers() throws IOException
+    {
+        byte[] dataForTwoBufs = "01234567890".getBytes(StandardCharsets.US_ASCII);
+        Collection<QpidByteBuffer> qpidByteBuffers = QpidByteBuffer.asQpidByteBuffers(new ByteArrayInputStream(dataForTwoBufs));
+        assertEquals("Unexpected number of bufs", 2, qpidByteBuffers.size());
+        Iterator<QpidByteBuffer> itr = qpidByteBuffers.iterator();
+        assertEquals("Unexpected remaining in first buf", 10, itr.next().remaining());
+        assertEquals("Unexpected remaining in second buf", 1, itr.next().remaining());
+
+        Collection<QpidByteBuffer> bufsForEmptyBytes = QpidByteBuffer.asQpidByteBuffers(new ByteArrayInputStream(new byte[]{}));
+        assertEquals("Unexpected number of bufs for empty buffer", 0, bufsForEmptyBytes.size());
     }
 
     private void doDeflateInflate(byte[] input,

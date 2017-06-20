@@ -676,6 +676,22 @@ public class QpidByteBuffer implements AutoCloseable
         }
     }
 
+    public static List<QpidByteBuffer> asQpidByteBuffers(final InputStream stream) throws IOException
+    {
+        List<QpidByteBuffer> bufs = new ArrayList<>();
+        byte[] transferBuf = new byte[QpidByteBuffer.getPooledBufferSize()];
+        int read = stream.read(transferBuf);
+        while(read > 0)
+        {
+            QpidByteBuffer chunk = QpidByteBuffer.allocateDirect(read);
+            chunk.put(transferBuf, 0, read);
+            chunk.flip();
+            bufs.add(chunk);
+            read = stream.read(transferBuf);
+        }
+        return bufs;
+    }
+
     public static SSLEngineResult encryptSSL(SSLEngine engine,
                                              final Collection<QpidByteBuffer> buffers,
                                              QpidByteBuffer dest) throws SSLException

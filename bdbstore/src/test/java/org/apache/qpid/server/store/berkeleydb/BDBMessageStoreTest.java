@@ -66,7 +66,7 @@ public class BDBMessageStoreTest extends MessageStoreTestCase
     private String _storeLocation;
 
     @Override
-    protected void tearDown() throws Exception
+    public void tearDown() throws Exception
     {
         try
         {

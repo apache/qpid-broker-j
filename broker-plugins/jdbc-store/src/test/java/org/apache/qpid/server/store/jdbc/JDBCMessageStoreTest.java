@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreTestCase;
@@ -41,6 +42,18 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
 {
     public static final String TEST_TABLE_PREFIX = "TEST_TABLE_PREFIX_";
     private String _connectionURL;
+    private static final int BUFFER_SIZE = 10;
+    private static final int POOL_SIZE = 20;
+    private static final double SPARSITY_FRACTION = 1.0;
+
+
+    @Override
+    public void setUp() throws Exception
+    {
+        super.setUp();
+        QpidByteBuffer.deinitialisePool();
+        QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
+    }
 
     @Override
     public void tearDown() throws Exception
@@ -54,6 +67,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         }
         finally
         {
+            QpidByteBuffer.deinitialisePool();
             super.tearDown();
         }
     }

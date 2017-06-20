@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
+import java.util.List;
+
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
@@ -40,9 +42,9 @@ public class MessageMetaDataType_0_10 implements MessageMetaDataType<MessageMeta
     }
 
     @Override
-    public MessageMetaData_0_10 createMetaData(QpidByteBuffer buf)
+    public MessageMetaData_0_10 createMetaData(List<QpidByteBuffer> bufs)
     {
-        return MessageMetaData_0_10.FACTORY.createMetaData(buf);
+        return MessageMetaData_0_10.FACTORY.createMetaData(bufs);
     }
 
     @Override
@@ -51,11 +53,13 @@ public class MessageMetaDataType_0_10 implements MessageMetaDataType<MessageMeta
         return new MessageTransferMessage(msg, null);
     }
 
+    @Override
     public int hashCode()
     {
         return ordinal();
     }
 
+    @Override
     public boolean equals(Object o)
     {
         return o != null && o.getClass() == getClass();

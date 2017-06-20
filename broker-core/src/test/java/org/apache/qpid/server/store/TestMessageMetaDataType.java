@@ -21,6 +21,7 @@
 package org.apache.qpid.server.store;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
@@ -41,9 +42,9 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
     }
 
     @Override
-    public TestMessageMetaData createMetaData(QpidByteBuffer buf)
+    public TestMessageMetaData createMetaData(List<QpidByteBuffer> bufs)
     {
-        return TestMessageMetaData.FACTORY.createMetaData(buf);
+        return TestMessageMetaData.FACTORY.createMetaData(bufs);
     }
 
     @Override
@@ -52,11 +53,13 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         return new TestServerMessage(msg);
     }
 
+    @Override
     public int hashCode()
     {
         return ordinal();
     }
 
+    @Override
     public boolean equals(Object o)
     {
         return o != null && o.getClass() == getClass();

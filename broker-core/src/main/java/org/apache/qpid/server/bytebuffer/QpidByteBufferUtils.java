@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,12 +17,10 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.protocol.v1_0.codec;
+package org.apache.qpid.server.bytebuffer;
 
 import java.nio.BufferUnderflowException;
 import java.util.List;
-
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public class QpidByteBufferUtils
 {
