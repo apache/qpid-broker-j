@@ -545,6 +545,54 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         assertNotNull("Derived attribute (productVersion) should be available", getValueFromMapResponse(responseMessage, "productVersion"));
     }
 
+    public void testReadObject_ObjectNotFound() throws Exception
+    {
+        if (!_runTest)
+        {
+            return;
+        }
+        setupVirtualHostManagementConnection();
+
+        MapMessage message = _session.createMapMessage();
+
+        message.setStringProperty("type", "org.apache.qpid.Exchange");
+        message.setStringProperty("operation", "READ");
+        message.setStringProperty("index", "object-path");
+        message.setStringProperty("key", "not-found-exchange");
+        message.setJMSReplyTo(_replyAddress);
+        _producer.send(message);
+
+        Message responseMessage = _consumer.receive(getReceiveTimeout());
+        assertNotNull("A response message was not sent", responseMessage);
+        assertTrue("The response message does not have a status code",
+                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
+        assertEquals("Incorrect response code", 404, responseMessage.getIntProperty("statusCode"));
+    }
+
+    public void testInvokeOperation_ObjectNotFound() throws Exception
+    {
+        if (!_runTest)
+        {
+            return;
+        }
+        setupVirtualHostManagementConnection();
+
+        MapMessage message = _session.createMapMessage();
+
+        message.setStringProperty("type", "org.apache.qpid.Exchange");
+        message.setStringProperty("operation", "getStatistics");
+        message.setStringProperty("index", "object-path");
+        message.setStringProperty("key", "not-found-exchange");
+        message.setJMSReplyTo(_replyAddress);
+        _producer.send(message);
+
+        Message responseMessage = _consumer.receive(getReceiveTimeout());
+        assertNotNull("A response message was not sent", responseMessage);
+        assertTrue("The response message does not have a status code",
+                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
+        assertEquals("Incorrect response code", 404, responseMessage.getIntProperty("statusCode"));
+    }
+
     // create a virtual host from $management
     public void testCreateVirtualHost() throws Exception
     {

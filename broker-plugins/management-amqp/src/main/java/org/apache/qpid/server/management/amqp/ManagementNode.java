@@ -835,37 +835,46 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         final Map<String, Object> headers = requestHeader.getHeaderMap();
 
         ConfiguredObject<?> object = findObject(clazz, headers);
-        Map<String,Object> parameters = new HashMap<>(headers);
-        parameters.remove(KEY_ATTRIBUTE);
-        parameters.remove(IDENTITY_ATTRIBUTE);
-        parameters.remove(TYPE_ATTRIBUTE);
-        parameters.remove(INDEX_ATTRIBUTE);
-        parameters.remove(OPERATION_HEADER);
-
-        Iterator<String> paramIterator = parameters.keySet().iterator();
-        while (paramIterator.hasNext())
+        if (object == null)
         {
-            final String paramName = paramIterator.next();
-            if(paramName.startsWith("JMS_QPID"))
+            return createFailureResponse(message, STATUS_CODE_NOT_FOUND, "Not found");
+        }
+
+
+        try
+        {
+            Map<String,Object> parameters = new HashMap<>(headers);
+            parameters.remove(KEY_ATTRIBUTE);
+            parameters.remove(IDENTITY_ATTRIBUTE);
+            parameters.remove(TYPE_ATTRIBUTE);
+            parameters.remove(INDEX_ATTRIBUTE);
+            parameters.remove(OPERATION_HEADER);
+
+            parameters.keySet().removeIf(paramName -> paramName.startsWith("JMS_QPID"));
+
+            final MutableMessageHeader responseHeader = new MutableMessageHeader();
+            responseHeader.setCorrelationId(requestHeader.getCorrelationId() == null
+                                                    ? requestHeader.getMessageId()
+                                                    : requestHeader.getCorrelationId());
+            responseHeader.setMessageId(UUID.randomUUID().toString());
+            responseHeader.setHeader(STATUS_CODE_HEADER, STATUS_CODE_OK);
+
+            Serializable result = (Serializable) method.perform(object, parameters);
+            if(result == null)
             {
-                paramIterator.remove();
+                result = new byte[0];
             }
-
+            return InternalMessage.createMessage(_addressSpace.getMessageStore(), responseHeader,
+                                                 result, false);
         }
-        final MutableMessageHeader responseHeader = new MutableMessageHeader();
-        responseHeader.setCorrelationId(requestHeader.getCorrelationId() == null
-                                                ? requestHeader.getMessageId()
-                                                : requestHeader.getCorrelationId());
-        responseHeader.setMessageId(UUID.randomUUID().toString());
-        responseHeader.setHeader(STATUS_CODE_HEADER, STATUS_CODE_OK);
-
-        Serializable result = (Serializable) method.perform(object, parameters);
-        if(result == null)
+        catch (IllegalArgumentException | IllegalStateException | IllegalConfigurationException e)
         {
-            result = new byte[0];
+            return createFailureResponse(message, STATUS_CODE_BAD_REQUEST, e.getMessage());
         }
-        return InternalMessage.createMessage(_addressSpace.getMessageStore(), responseHeader,
-                                             result, false);
+        catch (AccessControlException e)
+        {
+            return createFailureResponse(message, STATUS_CODE_FORBIDDEN, "Forbidden");
+        }
     }
 
     String generatePath(final ConfiguredObject<?> object)
