@@ -113,6 +113,12 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public boolean isWebSocketSupported()
+    {
+        return true;
+    }
+
+    @Override
     public boolean isSASLMechanismSupported(final String mechanismName)
     {
         return true;

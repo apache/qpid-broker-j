@@ -342,6 +342,12 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public boolean isWebSocketSupported()
+    {
+        return true;
+    }
+
+    @Override
     public String getValidUsername()
     {
         return "guest";

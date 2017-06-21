@@ -65,7 +65,7 @@ public class WebSocketFrameTransport extends FrameTransport
                                            getBrokerAddress().getPort()));
         _webSocketClientHandler = new WebSocketClientHandler(
                 WebSocketClientHandshakerFactory.newHandshaker(
-                        uri, WebSocketVersion.V13, "amqp", false, new DefaultHttpHeaders()), uri);
+                        uri, WebSocketVersion.V13, "amqp", false, new DefaultHttpHeaders()));
     }
 
     @Override
@@ -170,7 +170,7 @@ public class WebSocketFrameTransport extends FrameTransport
         private final WebSocketClientHandshaker _handshaker;
         private ChannelPromise _handshakeFuture;
 
-        WebSocketClientHandler(final WebSocketClientHandshaker handshaker, final URI uri)
+        WebSocketClientHandler(final WebSocketClientHandshaker handshaker)
         {
             _handshaker = handshaker;
         }

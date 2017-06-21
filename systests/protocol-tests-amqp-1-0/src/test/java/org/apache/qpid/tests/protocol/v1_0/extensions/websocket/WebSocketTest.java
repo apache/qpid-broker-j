@@ -28,10 +28,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
@@ -45,8 +47,13 @@ import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 
 public class WebSocketTest extends ProtocolTestBase
 {
-
     public static final byte[] AMQP_HEADER = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
+
+    @Before
+    public void setUp()
+    {
+        assumeThat("Broker support for AMQP over websockets is required", getBrokerAdmin().isWebSocketSupported(), is(true));
+    }
 
     @Test
     @SpecificationTest(section = "2.1", description = "Opening a WebSocket Connection")
@@ -86,6 +93,8 @@ public class WebSocketTest extends ProtocolTestBase
     @SpecificationTest(section = "2.1", description = "Opening a WebSocket Connection")
     public void successfulOpen() throws Exception
     {
+        assumeThat(getBrokerAdmin().isWebSocketSupported(), is(true));
+
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
         try (FrameTransport transport = new WebSocketFrameTransport(addr).connect())
         {
