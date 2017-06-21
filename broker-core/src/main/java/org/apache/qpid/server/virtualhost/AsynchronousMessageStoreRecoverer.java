@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.Executors;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -58,6 +58,7 @@ import org.apache.qpid.server.txn.DtxBranch;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.pool.QpidByteBufferDisposingThreadPoolExecutor;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.Xid;
 import org.apache.qpid.transport.util.Functions;
@@ -97,7 +98,11 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private final Set<AMQQueue<?>> _recoveringQueues = new CopyOnWriteArraySet<>();
         private final AtomicBoolean _recoveryComplete = new AtomicBoolean();
         private final Map<Long, MessageReference<? extends ServerMessage<?>>> _recoveredMessages = new HashMap<>();
-        private final ListeningExecutorService _queueRecoveryExecutor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
+        private final ListeningExecutorService _queueRecoveryExecutor =
+                MoreExecutors.listeningDecorator(new QpidByteBufferDisposingThreadPoolExecutor(0, Integer.MAX_VALUE,
+                                                                                               60L, TimeUnit.SECONDS,
+                                                                                               new SynchronousQueue<Runnable>()));
+
         private final MessageStore.MessageStoreReader _storeReader;
         private AtomicBoolean _continueRecovery = new AtomicBoolean(true);
 
