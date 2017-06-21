@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.pool.QpidByteBufferDisposingThreadPoolExecutor;
 
 public class NetworkConnectionScheduler
 {
@@ -101,38 +102,9 @@ public class NetworkConnectionScheduler
         try
         {
             _selectorThread = new SelectorThread(this, _numberOfSelectors);
-            _executor = new ThreadPoolExecutor(_poolSize, _poolSize,
-                                               _threadKeepAliveTimeout, TimeUnit.MINUTES,
-                                               new LinkedBlockingQueue<Runnable>(), _factory)
-            {
-                private final Map<Thread, QpidByteBuffer> _cachedBufferMap = new ConcurrentHashMap<>();
-
-                @Override
-                protected void afterExecute(final Runnable r, final Throwable t)
-                {
-                    super.afterExecute(r, t);
-                    final QpidByteBuffer cachedThreadLocalBuffer = QpidByteBuffer.getCachedThreadLocalBuffer();
-                    if (cachedThreadLocalBuffer != null)
-                    {
-                        _cachedBufferMap.put(Thread.currentThread(), cachedThreadLocalBuffer);
-                    }
-                    else
-                    {
-                        _cachedBufferMap.remove(Thread.currentThread());
-                    }
-                }
-
-                @Override
-                protected void terminated()
-                {
-                    super.terminated();
-                    for (QpidByteBuffer qpidByteBuffer : _cachedBufferMap.values())
-                    {
-                        qpidByteBuffer.dispose();
-                    }
-                    _cachedBufferMap.clear();
-                }
-            };
+            _executor = new QpidByteBufferDisposingThreadPoolExecutor(_poolSize, _poolSize,
+                                                                      _threadKeepAliveTimeout, TimeUnit.MINUTES,
+                                                                      new LinkedBlockingQueue<>(), _factory);
             _executor.prestartAllCoreThreads();
             _executor.allowCoreThreadTimeOut(true);
             for(int i = 0 ; i < _poolSize; i++)

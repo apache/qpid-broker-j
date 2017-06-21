@@ -30,10 +30,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,6 +46,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.pool.QpidByteBufferDisposingThreadPoolExecutor;
 import org.apache.qpid.server.util.FutureHelper;
 
 public class TaskExecutorImpl implements TaskExecutor
@@ -84,15 +84,20 @@ public class TaskExecutorImpl implements TaskExecutor
         if (_running.compareAndSet(false, true))
         {
             LOGGER.debug("Starting task executor {}", _name);
-            _executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1, new ThreadFactory()
-            {
-                @Override
-                public Thread newThread(Runnable r)
-                {
-                    _taskThread = new TaskThread(r, _name, TaskExecutorImpl.this);
-                    return _taskThread;
-                }
-            }));
+            _executor = MoreExecutors.listeningDecorator(new QpidByteBufferDisposingThreadPoolExecutor(1,
+                                                                                                       1,
+                                                                                                       0L,
+                                                                                                       TimeUnit.MILLISECONDS,
+                                                                                                       new LinkedBlockingQueue<>(),
+                                                                                                       r ->
+                                                                                                       {
+                                                                                                           _taskThread =
+                                                                                                                   new TaskThread(
+                                                                                                                           r,
+                                                                                                                           _name,
+                                                                                                                           TaskExecutorImpl.this);
+                                                                                                           return _taskThread;
+                                                                                                       }));
             LOGGER.debug("Task executor is started");
         }
     }
