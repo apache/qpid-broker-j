@@ -20,8 +20,6 @@
 
 package org.apache.qpid.tests.protocol.v1_0.messaging;
 
-import static org.hamcrest.CoreMatchers.either;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,25 +27,24 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.protocol.v1_0.MessageEncoder;
-import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 import org.apache.qpid.tests.protocol.v1_0.Response;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
@@ -74,34 +71,30 @@ public class MessageFormat extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
-            transport.doAttachSendingLink(linkHandle, BrokerAdmin.TEST_QUEUE_NAME);
+            final Response<?> latestResponse = transport.newInteraction()
+                                                        .negotiateProtocol().consumeResponse()
+                                                        .open().consumeResponse(Open.class)
+                                                        .begin().consumeResponse(Begin.class)
+                                                        .attachRole(Role.SENDER)
+                                                        .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                                        .attach().consumeResponse(Attach.class)
+                                                        .consumeResponse(Flow.class)
+                                                        .transferMore(true)
+                                                        .transferMessageFormat(UnsignedInteger.ZERO)
+                                                        .transferPayloadData("testData")
+                                                        .transfer()
+                                                        .consumeResponse(null, Flow.class, Disposition.class)
+                                                        .transferDeliveryTag(null)
+                                                        .transferDeliveryId(null)
+                                                        .transferMore(false)
+                                                        .transferMessageFormat(UnsignedInteger.ONE)
+                                                        .transferPayloadData("moreTestData")
+                                                        .transfer()
+                                                        .consumeResponse(Detach.class, End.class, Close.class)
+                                                        .getLatestResponse();
 
-            MessageEncoder messageEncoder = new MessageEncoder();
-            messageEncoder.addData("foo");
-
-            Transfer transfer = new Transfer();
-            transfer.setHandle(linkHandle);
-            transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
-            transfer.setDeliveryId(UnsignedInteger.ONE);
-            transfer.setMore(true);
-            transfer.setMessageFormat(UnsignedInteger.valueOf(0));
-            transfer.setPayload(messageEncoder.getPayload());
-            transport.sendPerformative(transfer);
-
-            final Response<?> response = transport.getNextResponse();
-            if (response != null)
-            {
-                assertThat(response.getBody(), is(instanceOf(Disposition.class)));
-            }
-
-            messageEncoder.addData("bar");
-            transfer.setMessageFormat(UnsignedInteger.valueOf(1));
-            transport.sendPerformative(transfer);
-
-            final Response<?> response2 = transport.getNextResponse();
-            assertThat(response2, is(notNullValue()));
-            final Object responseBody = response2.getBody();
+            assertThat(latestResponse, is(notNullValue()));
+            final Object responseBody = latestResponse.getBody();
             final Error error;
             if (responseBody instanceof Detach)
             {

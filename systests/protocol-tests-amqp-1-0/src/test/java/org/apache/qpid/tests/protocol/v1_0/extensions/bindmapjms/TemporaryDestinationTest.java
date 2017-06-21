@@ -20,7 +20,6 @@
 
 package org.apache.qpid.tests.protocol.v1_0.extensions.bindmapjms;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -33,17 +32,17 @@ import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.Session_1_0;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
-import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnClose;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
+import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
@@ -84,29 +83,21 @@ public class TemporaryDestinationTest extends ProtocolTestBase
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            transport.doBeginSession();
-
-            Attach attach = new Attach();
-            attach.setName("testSendingLink");
-            attach.setHandle(UnsignedInteger.ZERO);
-            attach.setRole(Role.SENDER);
-            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
-
-            attach.setSource(new Source());
-
             Target target = new Target();
             target.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
             target.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
             target.setDynamic(true);
             target.setCapabilities(targetCapabilities);
-            attach.setTarget(target);
 
-            transport.sendPerformative(attach);
+            final Interaction interaction = transport.newInteraction();
+            final Attach attachResponse = interaction.negotiateProtocol().consumeResponse()
+                                                     .open().consumeResponse(Open.class)
+                                                     .begin().consumeResponse(Begin.class)
+                                                     .attachRole(Role.SENDER)
+                                                     .attachTarget(target)
+                                                     .attach().consumeResponse()
+                                                     .getLatestResponse(Attach.class);
 
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Attach.class)));
-            final Attach attachResponse = (Attach) response.getBody();
             assertThat(attachResponse.getSource(), is(notNullValue()));
             assertThat(attachResponse.getTarget(), is(notNullValue()));
 
@@ -115,19 +106,11 @@ public class TemporaryDestinationTest extends ProtocolTestBase
 
             assertThat(Utils.doesNodeExist(_brokerAddress, newTemporaryNodeAddress), is(true));
 
-            final PerformativeResponse flowResponse = ((PerformativeResponse) transport.getNextResponse());
-            if (flowResponse != null)
-            {
-                assertThat(flowResponse.getBody(), is(instanceOf(Flow.class)));
-            }
+            interaction.consumeResponse().getLatestResponse(Flow.class);
 
             transport.doCloseConnection();
         }
 
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
-        {
-            transport.doBeginSession();
-            assertThat(Utils.doesNodeExist(_brokerAddress, newTemporaryNodeAddress), is(false));
-        }
+        assertThat(Utils.doesNodeExist(_brokerAddress, newTemporaryNodeAddress), is(false));
     }
 }

@@ -20,7 +20,6 @@
 
 package org.apache.qpid.tests.protocol.v1_0.messaging;
 
-import static org.apache.qpid.tests.protocol.v1_0.Matchers.protocolHeader;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,24 +28,17 @@ import static org.hamcrest.Matchers.is;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
@@ -58,11 +50,10 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
+import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.MessageEncoder;
-import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 import org.apache.qpid.tests.protocol.v1_0.Response;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
@@ -102,16 +93,17 @@ public class TransferTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
-            transport.doAttachSendingLink(linkHandle, BrokerAdmin.TEST_QUEUE_NAME);
-
-            Transfer transfer = new Transfer();
-            transport.sendPerformative(transfer, UnsignedShort.valueOf((short) 0));
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Close.class)));
-            Close responseClose = (Close) response.getBody();
+            Close responseClose = transport.newInteraction()
+                                           .negotiateProtocol().consumeResponse()
+                                           .open().consumeResponse(Open.class)
+                                           .begin().consumeResponse(Begin.class)
+                                           .attachRole(Role.SENDER)
+                                           .attach().consumeResponse(Attach.class)
+                                           .consumeResponse(Flow.class)
+                                           .transferHandle(null)
+                                           .transfer()
+                                           .consumeResponse()
+                                           .getLatestResponse(Close.class);
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
         }
@@ -126,23 +118,19 @@ public class TransferTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final UnsignedInteger linkHandle = UnsignedInteger.ONE;
-            transport.doAttachSendingLink(linkHandle, BrokerAdmin.TEST_QUEUE_NAME);
-
-            MessageEncoder messageEncoder = new MessageEncoder();
-            messageEncoder.addData("foo");
-
-            Transfer transfer = new Transfer();
-            transfer.setHandle(linkHandle);
-            transfer.setDeliveryId(UnsignedInteger.ZERO);
-            transfer.setPayload(messageEncoder.getPayload());
-
-            transport.sendPerformative(transfer);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Close.class)));
-            Close responseClose = (Close) response.getBody();
+            Close responseClose = transport.newInteraction()
+                                           .negotiateProtocol().consumeResponse()
+                                           .open().consumeResponse(Open.class)
+                                           .begin().consumeResponse(Begin.class)
+                                           .attachRole(Role.SENDER)
+                                           .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                           .attach().consumeResponse(Attach.class)
+                                           .consumeResponse(Flow.class)
+                                           .transferDeliveryTag(null)
+                                           .transferPayloadData("testData")
+                                           .transfer()
+                                           .consumeResponse()
+                                           .getLatestResponse(Close.class);
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.INVALID_FIELD));
         }
@@ -153,27 +141,23 @@ public class TransferTest extends ProtocolTestBase
             description = "Transferring A Message.")
     public void transferUnsettled() throws Exception
     {
-        String sentData = "foo";
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
-            transport.doAttachSendingLink(linkHandle, BrokerAdmin.TEST_QUEUE_NAME);
-
-            MessageEncoder messageEncoder = new MessageEncoder();
-            messageEncoder.addData(sentData);
-
-            Transfer transfer = new Transfer();
-            transfer.setHandle(linkHandle);
-            transfer.setDeliveryId(UnsignedInteger.ZERO);
-            transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
-            transfer.setPayload(messageEncoder.getPayload());
-
-            transport.sendPerformative(transfer);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Disposition.class)));
-            Disposition responseDisposition = (Disposition) response.getBody();
+            final UnsignedInteger linkHandle = UnsignedInteger.ONE;
+            Disposition responseDisposition = transport.newInteraction()
+                                                       .negotiateProtocol().consumeResponse()
+                                                       .open().consumeResponse(Open.class)
+                                                       .begin().consumeResponse(Begin.class)
+                                                       .attachRole(Role.SENDER)
+                                                       .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                                       .attachHandle(linkHandle)
+                                                       .attach().consumeResponse(Attach.class)
+                                                       .consumeResponse(Flow.class)
+                                                       .transferHandle(linkHandle)
+                                                       .transferPayloadData("testData")
+                                                       .transfer()
+                                                       .consumeResponse()
+                                                       .getLatestResponse(Disposition.class);
             assertThat(responseDisposition.getRole(), is(Role.RECEIVER));
             assertThat(responseDisposition.getSettled(), is(Boolean.TRUE));
             assertThat(responseDisposition.getState(), is(instanceOf(Accepted.class)));
@@ -185,40 +169,22 @@ public class TransferTest extends ProtocolTestBase
             description = "If first, this indicates that the receiver MUST settle the delivery once it has arrived without waiting for the sender to settle first")
     public void transferReceiverSettleModeFirst() throws Exception
     {
-        String sentData = "foo";
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
-            Attach attach = new Attach();
-            attach.setName("testSendingLink");
-            attach.setHandle(linkHandle);
-            attach.setRole(Role.SENDER);
-            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
-            attach.setRcvSettleMode(ReceiverSettleMode.SECOND);
-            Source source = new Source();
-            attach.setSource(source);
-            Target target = new Target();
-            target.setAddress(BrokerAdmin.TEST_QUEUE_NAME);
-            attach.setTarget(target);
-
-            transport.doAttachSendingLink(attach);
-
-            MessageEncoder messageEncoder = new MessageEncoder();
-            messageEncoder.addData(sentData);
-
-            Transfer transfer = new Transfer();
-            transfer.setHandle(linkHandle);
-            transfer.setDeliveryId(UnsignedInteger.ZERO);
-            transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
-            transfer.setPayload(messageEncoder.getPayload());
-            transfer.setRcvSettleMode(ReceiverSettleMode.FIRST);
-
-            transport.sendPerformative(transfer);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Disposition.class)));
-            Disposition responseDisposition = (Disposition) response.getBody();
+            Disposition responseDisposition = transport.newInteraction()
+                                                       .negotiateProtocol().consumeResponse()
+                                                       .open().consumeResponse(Open.class)
+                                                       .begin().consumeResponse(Begin.class)
+                                                       .attachRole(Role.SENDER)
+                                                       .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                                       .attachRcvSettleMode(ReceiverSettleMode.SECOND)
+                                                       .attach().consumeResponse(Attach.class)
+                                                       .consumeResponse(Flow.class)
+                                                       .transferPayloadData("testData")
+                                                       .transferRcvSettleMode(ReceiverSettleMode.FIRST)
+                                                       .transfer()
+                                                       .consumeResponse()
+                                                       .getLatestResponse(Disposition.class);
             assertThat(responseDisposition.getRole(), is(Role.RECEIVER));
             assertThat(responseDisposition.getSettled(), is(Boolean.TRUE));
             assertThat(responseDisposition.getState(), is(instanceOf(Accepted.class)));
@@ -230,40 +196,22 @@ public class TransferTest extends ProtocolTestBase
             description = "If the negotiated link value is first, then it is illegal to set this field to second.")
     public void transferReceiverSettleModeCannotBeSecondWhenLinkModeIsFirst() throws Exception
     {
-        String sentData = "foo";
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
-            Attach attach = new Attach();
-            attach.setName("testSendingLink");
-            attach.setHandle(linkHandle);
-            attach.setRole(Role.SENDER);
-            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
-            attach.setRcvSettleMode(ReceiverSettleMode.FIRST);
-            Source source = new Source();
-            attach.setSource(source);
-            Target target = new Target();
-            target.setAddress(BrokerAdmin.TEST_QUEUE_NAME);
-            attach.setTarget(target);
-
-            transport.doAttachSendingLink(attach);
-
-            MessageEncoder messageEncoder = new MessageEncoder();
-            messageEncoder.addData(sentData);
-
-            Transfer transfer = new Transfer();
-            transfer.setHandle(linkHandle);
-            transfer.setDeliveryId(UnsignedInteger.ZERO);
-            transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
-            transfer.setPayload(messageEncoder.getPayload());
-            transfer.setRcvSettleMode(ReceiverSettleMode.SECOND);
-
-            transport.sendPerformative(transfer);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Detach.class)));
-            Detach detach = (Detach) response.getBody();
+            Detach detach = transport.newInteraction()
+                                     .negotiateProtocol().consumeResponse()
+                                     .open().consumeResponse(Open.class)
+                                     .begin().consumeResponse(Begin.class)
+                                     .attachRole(Role.SENDER)
+                                     .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                     .attachRcvSettleMode(ReceiverSettleMode.FIRST)
+                                     .attach().consumeResponse(Attach.class)
+                                     .consumeResponse(Flow.class)
+                                     .transferPayloadData("testData")
+                                     .transferRcvSettleMode(ReceiverSettleMode.SECOND)
+                                     .transfer()
+                                     .consumeResponse()
+                                     .getLatestResponse(Detach.class);
             Error error = detach.getError();
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
@@ -276,75 +224,27 @@ public class TransferTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            byte[] protocolHeader = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
-            Open open = new Open();
-            open.setContainerId("testContainerId");
+            final Interaction interaction = transport.newInteraction();
+            interaction.negotiateProtocol()
+                       .open()
+                       .begin()
+                       .attachRole(Role.SENDER)
+                       .attach()
+                       .transferPayloadData("testData")
+                       .transferSettled(true)
+                       .transfer()
+                       .close()
+                       .sync();
 
-            Begin begin = new Begin();
-            begin.setNextOutgoingId(UnsignedInteger.ZERO);
-            begin.setIncomingWindow(UnsignedInteger.ZERO);
-            begin.setOutgoingWindow(UnsignedInteger.ZERO);
+            final byte[] protocolResponse = interaction.consumeResponse().getLatestResponse(byte[].class);
+            assertThat(protocolResponse, is(equalTo("AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8))));
 
-            Attach attach = new Attach();
-            attach.setName("testLink");
-            final UnsignedInteger linkHandle = new UnsignedInteger(0);
-            attach.setHandle(linkHandle);
-            attach.setRole(Role.SENDER);
-            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
-            Source source = new Source();
-            attach.setSource(source);
-            Target target = new Target();
-            attach.setTarget(target);
-
-            MessageEncoder messageEncoder = new MessageEncoder();
-            messageEncoder.addData("foo");
-            Transfer transfer = new Transfer();
-            transfer.setDeliveryId(UnsignedInteger.ONE);
-            transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
-            transfer.setHandle(linkHandle);
-            transfer.setPayload(messageEncoder.getPayload());
-            transfer.setSettled(Boolean.TRUE);
-
-            Close close = new Close();
-
-            final short channel = (short) 37;
-            final ListenableFuture<Void> future = transport.sendPipelined(protocolHeader,
-                                                                          new TransportFrame((short) 0, open),
-                                                                          new TransportFrame(channel, begin),
-                                                                          new TransportFrame(channel, attach),
-                                                                          new TransportFrame(channel, transfer, transfer.getPayload()),
-                                                                          new TransportFrame((short) 0, close));
-            future.get(FrameTransport.RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
-
-            final Response response = transport.getNextResponse();
-            assertThat(response, is(protocolHeader(protocolHeader)));
-
-            final PerformativeResponse openResponse = (PerformativeResponse) transport.getNextResponse();
-            assertThat(openResponse, is(notNullValue()));
-            assertThat(openResponse.getBody(), is(instanceOf(Open.class)));
-            final PerformativeResponse beginResponse = (PerformativeResponse) transport.getNextResponse();
-            assertThat(beginResponse, is(notNullValue()));
-            assertThat(beginResponse.getBody(), is(instanceOf(Begin.class)));
-            final PerformativeResponse attachResponse = (PerformativeResponse) transport.getNextResponse();
-            assertThat(attachResponse, is(notNullValue()));
-            assertThat(attachResponse.getBody(), is(instanceOf(Attach.class)));
-            final PerformativeResponse flowResponse = (PerformativeResponse) transport.getNextResponse();
-            assertThat(flowResponse, is(notNullValue()));
-            assertThat(flowResponse.getBody(), is(instanceOf(Flow.class)));
-/*
-            final PerformativeResponse dispositionResponse = (PerformativeResponse) transport.getNextResponse();
-            assertThat(dispositionResponse, is(notNullValue()));
-            assertThat(dispositionResponse.getFrameBody(), is(instanceOf(Disposition.class)));
-            final PerformativeResponse detachResponse = (PerformativeResponse) transport.getNextResponse();
-            assertThat(detachResponse, is(notNullValue()));
-            assertThat(detachResponse.getFrameBody(), is(instanceOf(Detach.class)));
-            final PerformativeResponse endResponse = (PerformativeResponse) transport.getNextResponse();
-            assertThat(endResponse, is(notNullValue()));
-            assertThat(endResponse.getFrameBody(), is(instanceOf(End.class)));
-*/
-            final PerformativeResponse closeResponse = (PerformativeResponse) transport.getNextResponse();
-            assertThat(closeResponse, is(notNullValue()));
-            assertThat(closeResponse.getBody(), is(instanceOf(Close.class)));
+            interaction.consumeResponse().getLatestResponse(Open.class);
+            interaction.consumeResponse().getLatestResponse(Begin.class);
+            interaction.consumeResponse().getLatestResponse(Attach.class);
+            interaction.consumeResponse().getLatestResponse(Flow.class);
+            //interaction.consumeResponse(null, Disposition.class, Detach.class, End.class);
+            interaction.consumeResponse().getLatestResponse(Close.class);
         }
     }
 
@@ -359,50 +259,36 @@ public class TransferTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final Attach attach = new Attach();
-            attach.setName("testLink");
-            attach.setRole(Role.SENDER);
-            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
-            attach.setHandle(linkHandle);
-            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
-            Target target = new Target();
-            target.setAddress(BrokerAdmin.TEST_QUEUE_NAME);
-            attach.setTarget(target);
-            final Source source = new Source();
-            source.setOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL);
-            attach.setSource(source);
-            transport.doAttachSendingLink(attach);
-
             MessageEncoder messageEncoder = new MessageEncoder();
             final Header header = new Header();
             header.setDurable(true);
             messageEncoder.setHeader(header);
-            messageEncoder.addData("test message data.");
-            Transfer transfer = new Transfer();
-            transfer.setDeliveryId(UnsignedInteger.ONE);
-            transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
-            transfer.setHandle(linkHandle);
-            transfer.setPayload(messageEncoder.getPayload());
+            messageEncoder.addData("foo");
+            final Disposition receivedDisposition = transport.newInteraction()
+                                                             .negotiateProtocol().consumeResponse()
+                                                             .open().consumeResponse(Open.class)
+                                                             .begin().consumeResponse(Begin.class)
+                                                             .attachRole(Role.SENDER)
+                                                             .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                                             .attachRcvSettleMode(ReceiverSettleMode.SECOND)
+                                                             .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL,
+                                                                                   Rejected.REJECTED_SYMBOL)
+                                                             .attach().consumeResponse(Attach.class)
+                                                             .consumeResponse(Flow.class)
+                                                             .transferPayload(messageEncoder.getPayload())
+                                                             .transferRcvSettleMode(ReceiverSettleMode.FIRST)
+                                                             .transfer()
+                                                             .consumeResponse()
+                                                             .getLatestResponse(Disposition.class);
 
-            transport.sendPerformative(transfer);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
+            assertThat(receivedDisposition.getSettled(), is(true));
+            assertThat(receivedDisposition.getState(), is(instanceOf(Outcome.class)));
             if (getBrokerAdmin().supportsRestart())
             {
-                assertThat(response, is(notNullValue()));
-                assertThat(response.getBody(), is(instanceOf(Disposition.class)));
-                final Disposition receivedDisposition = (Disposition) response.getBody();
-                assertThat(receivedDisposition.getSettled(), is(true));
-                assertThat(receivedDisposition.getState(), is(instanceOf(Outcome.class)));
                 assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Accepted.ACCEPTED_SYMBOL));
             }
             else
             {
-                assertThat(response, is(notNullValue()));
-                assertThat(response.getBody(), is(instanceOf(Disposition.class)));
-                final Disposition receivedDisposition = (Disposition) response.getBody();
-                assertThat(receivedDisposition.getSettled(), is(true));
-                assertThat(receivedDisposition.getState(), is(instanceOf(Outcome.class)));
                 assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Rejected.REJECTED_SYMBOL));
             }
         }
@@ -419,33 +305,26 @@ public class TransferTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final Attach attach = new Attach();
-            attach.setName("testLink");
-            attach.setRole(Role.SENDER);
-            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
-            attach.setHandle(linkHandle);
-            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
-            Target target = new Target();
-            target.setAddress(BrokerAdmin.TEST_QUEUE_NAME);
-            attach.setTarget(target);
-            final Source source = new Source();
-            source.setOutcomes(Accepted.ACCEPTED_SYMBOL);
-            attach.setSource(source);
-            transport.doAttachSendingLink(attach);
-
             MessageEncoder messageEncoder = new MessageEncoder();
             final Header header = new Header();
             header.setDurable(true);
             messageEncoder.setHeader(header);
-            messageEncoder.addData("test message data.");
-            Transfer transfer = new Transfer();
-            transfer.setDeliveryId(UnsignedInteger.ONE);
-            transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
-            transfer.setHandle(linkHandle);
-            transfer.setPayload(messageEncoder.getPayload());
-
-            transport.sendPerformative(transfer);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
+            messageEncoder.addData("foo");
+            final Response<?> response = transport.newInteraction()
+                                                  .negotiateProtocol().consumeResponse()
+                                                  .open().consumeResponse(Open.class)
+                                                  .begin().consumeResponse(Begin.class)
+                                                  .attachRole(Role.SENDER)
+                                                  .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                                  .attachRcvSettleMode(ReceiverSettleMode.SECOND)
+                                                  .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
+                                                  .attach().consumeResponse(Attach.class)
+                                                  .consumeResponse(Flow.class)
+                                                  .transferPayload(messageEncoder.getPayload())
+                                                  .transferRcvSettleMode(ReceiverSettleMode.FIRST)
+                                                  .transfer()
+                                                  .consumeResponse()
+                                                  .getLatestResponse();
 
             if (getBrokerAdmin().supportsRestart())
             {

@@ -46,10 +46,12 @@ public class ProtocolHeaderTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
-            byte[] bytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
-            transport.sendProtocolHeader(bytes);
-            HeaderResponse response = (HeaderResponse) transport.getNextResponse();
-            assertArrayEquals("Unexpected protocol header response", bytes, response.getBody());
+            byte[] protocolHeader = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
+            final byte[] response = transport.newInteraction()
+                                             .protocolHeader(protocolHeader)
+                                             .negotiateProtocol().consumeResponse()
+                                             .getLatestResponse(byte[].class);
+            assertArrayEquals("Unexpected protocol header response", protocolHeader, response);
         }
     }
 
@@ -63,12 +65,14 @@ public class ProtocolHeaderTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
-            byte[] rawHeaderBytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
-            byte[] expectedSaslHeaderBytes = "AMQP\3\1\0\0".getBytes(StandardCharsets.UTF_8);
-            transport.sendProtocolHeader(rawHeaderBytes);
-            HeaderResponse response = (HeaderResponse) transport.getNextResponse();
 
-            assertArrayEquals("Unexpected protocol header response", expectedSaslHeaderBytes, response.getBody());
+            byte[] rawHeaderBytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
+            final byte[] response = transport.newInteraction()
+                                             .protocolHeader(rawHeaderBytes)
+                                             .negotiateProtocol().consumeResponse()
+                                             .getLatestResponse(byte[].class);
+            byte[] expectedSaslHeaderBytes = "AMQP\3\1\0\0".getBytes(StandardCharsets.UTF_8);
+            assertArrayEquals("Unexpected protocol header response", expectedSaslHeaderBytes, response);
 
             transport.assertNoMoreResponses();
         }

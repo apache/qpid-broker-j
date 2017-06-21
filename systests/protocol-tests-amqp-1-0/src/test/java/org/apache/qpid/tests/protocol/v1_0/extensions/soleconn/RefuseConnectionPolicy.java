@@ -20,12 +20,11 @@
 
 package org.apache.qpid.tests.protocol.v1_0.extensions.soleconn;
 
-import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_DETECTION_POLICY;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_ENFORCEMENT_POLICY;
+import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy.REFUSE_CONNECTION;
 import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -49,7 +48,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
+import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 
 public class RefuseConnectionPolicy extends ProtocolTestBase
@@ -67,19 +66,16 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect();)
         {
-            transport.doProtocolNegotiation();
-            Open open = new Open();
-            open.setContainerId("testContainerId");
-            open.setDesiredCapabilities(new Symbol[]{SOLE_CONNECTION_FOR_CONTAINER});
-            open.setProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                        REFUSE_CONNECTION));
+            final Interaction interaction = transport.newInteraction();
+            final Open responseOpen = interaction.negotiateProtocol().consumeResponse()
+                                                 .openContainerId("testContainerId")
+                                                 .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                                                 .openProperties(Collections.singletonMap(
+                                                         SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                                         REFUSE_CONNECTION))
+                                                 .open().consumeResponse()
+                                                 .getLatestResponse(Open.class);
 
-            transport.sendPerformative(open);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Open.class)));
-            Open responseOpen = (Open) response.getBody();
             assertThat(Arrays.asList(responseOpen.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
             if (responseOpen.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
             {
@@ -95,45 +91,38 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
     {
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
-            transport1.doProtocolNegotiation();
-            Open open = new Open();
-            open.setContainerId("testContainerId");
-            open.setDesiredCapabilities(new Symbol[]{SOLE_CONNECTION_FOR_CONTAINER});
-            open.setProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                        REFUSE_CONNECTION));
-
-            transport1.sendPerformative(open);
-            PerformativeResponse response = (PerformativeResponse) transport1.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Open.class)));
+            final Interaction interaction1 = transport1.newInteraction();
+            interaction1.negotiateProtocol().consumeResponse()
+                        .openContainerId("testContainerId")
+                        .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                        .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                                                 REFUSE_CONNECTION))
+                        .open().consumeResponse(Open.class);
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
-                transport2.doProtocolNegotiation();
-                Open open2 = new Open();
-                open2.setContainerId("testContainerId");
-                open2.setDesiredCapabilities(new Symbol[]{SOLE_CONNECTION_FOR_CONTAINER});
-                open2.setProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                             REFUSE_CONNECTION));
+                final Interaction interaction2 = transport2.newInteraction();
+                final Open responseOpen2 = interaction2.negotiateProtocol().consumeResponse()
+                                                       .openContainerId("testContainerId")
+                                                       .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                                                       .openProperties(Collections.singletonMap(
+                                                               SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                                               REFUSE_CONNECTION))
+                                                       .open().consumeResponse()
+                                                       .getLatestResponse(Open.class);
+                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()),
+                           hasItem(SOLE_CONNECTION_FOR_CONTAINER));
+                assertThat(responseOpen2.getProperties(),
+                           hasKey(Symbol.valueOf("amqp:connection-establishment-failed")));
+                assertThat(responseOpen2.getProperties().get(Symbol.valueOf("amqp:connection-establishment-failed")),
+                           is(true));
 
-                transport2.sendPerformative(open2);
-
-                PerformativeResponse response2 = (PerformativeResponse) transport2.getNextResponse();
-                assertThat(response2, is(notNullValue()));
-                assertThat(response2.getBody(), is(instanceOf(Open.class)));
-                Open responseOpen2 = (Open) response2.getBody();
-                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
-                assertThat(responseOpen2.getProperties(), hasKey(Symbol.valueOf("amqp:connection-establishment-failed")));
-                assertThat(responseOpen2.getProperties().get(Symbol.valueOf("amqp:connection-establishment-failed")), is(true));
-
-                PerformativeResponse closeResponse2 = (PerformativeResponse) transport2.getNextResponse();
-                assertThat(closeResponse2, is(notNullValue()));
-                assertThat(closeResponse2.getBody(), is(instanceOf(Close.class)));
-                Close close2 = (Close) closeResponse2.getBody();
+                final Close close2 = interaction2.consumeResponse().getLatestResponse(Close.class);
                 assertThat(close2.getError(), is(notNullValue()));
                 assertThat(close2.getError().getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
-                assertThat(close2.getError().getInfo(), is(equalTo(Collections.singletonMap(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")))));
+                assertThat(close2.getError().getInfo(),
+                           is(equalTo(Collections.singletonMap(Symbol.valueOf("invalid-field"),
+                                                               Symbol.valueOf("container-id")))));
             }
         }
     }
@@ -144,43 +133,36 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
     {
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
-            transport1.doProtocolNegotiation();
-            Open open = new Open();
-            open.setContainerId("testContainerId");
+            final Interaction interaction1 = transport1.newInteraction();
             // Omit setting the desired capability to test weak detection
-
-            transport1.sendPerformative(open);
-            PerformativeResponse response = (PerformativeResponse) transport1.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Open.class)));
+            interaction1.negotiateProtocol().consumeResponse()
+                        .openContainerId("testContainerId")
+                        .open().consumeResponse(Open.class);
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
-                transport2.doProtocolNegotiation();
-                Open open2 = new Open();
-                open2.setContainerId("testContainerId");
-                open2.setDesiredCapabilities(new Symbol[]{SOLE_CONNECTION_FOR_CONTAINER});
-                open2.setProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                             REFUSE_CONNECTION));
+                final Interaction interaction2 = transport2.newInteraction();
+                final Open responseOpen2 = interaction2.negotiateProtocol().consumeResponse()
+                                                       .openContainerId("testContainerId")
+                                                       .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                                                       .openProperties(Collections.singletonMap(
+                                                               SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                                               REFUSE_CONNECTION))
+                                                       .open().consumeResponse()
+                                                       .getLatestResponse(Open.class);
+                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()),
+                           hasItem(SOLE_CONNECTION_FOR_CONTAINER));
+                assertThat(responseOpen2.getProperties(),
+                           hasKey(Symbol.valueOf("amqp:connection-establishment-failed")));
+                assertThat(responseOpen2.getProperties().get(Symbol.valueOf("amqp:connection-establishment-failed")),
+                           is(true));
 
-                transport2.sendPerformative(open2);
-
-                PerformativeResponse response2 = (PerformativeResponse) transport2.getNextResponse();
-                assertThat(response2, is(notNullValue()));
-                assertThat(response2.getBody(), is(instanceOf(Open.class)));
-                Open responseOpen2 = (Open) response2.getBody();
-                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
-                assertThat(responseOpen2.getProperties(), hasKey(Symbol.valueOf("amqp:connection-establishment-failed")));
-                assertThat(responseOpen2.getProperties().get(Symbol.valueOf("amqp:connection-establishment-failed")), is(true));
-
-                PerformativeResponse closeResponse2 = (PerformativeResponse) transport2.getNextResponse();
-                assertThat(closeResponse2, is(notNullValue()));
-                assertThat(closeResponse2.getBody(), is(instanceOf(Close.class)));
-                Close close2 = (Close) closeResponse2.getBody();
+                final Close close2 = interaction2.consumeResponse().getLatestResponse(Close.class);
                 assertThat(close2.getError(), is(notNullValue()));
                 assertThat(close2.getError().getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
-                assertThat(close2.getError().getInfo(), is(equalTo(Collections.singletonMap(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")))));
+                assertThat(close2.getError().getInfo(),
+                           is(equalTo(Collections.singletonMap(Symbol.valueOf("invalid-field"),
+                                                               Symbol.valueOf("container-id")))));
             }
         }
     }
@@ -190,19 +172,15 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
     {
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
-            transport1.doProtocolNegotiation();
-            Open open = new Open();
-            open.setContainerId("testContainerId");
-            open.setDesiredCapabilities(new Symbol[]{SOLE_CONNECTION_FOR_CONTAINER});
-            open.setProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                        REFUSE_CONNECTION));
-
-            transport1.sendPerformative(open);
-            PerformativeResponse response = (PerformativeResponse) transport1.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Open.class)));
-            Open responseOpen = (Open) response.getBody();
+            final Interaction interaction1 = transport1.newInteraction();
+            final Open responseOpen = interaction1.negotiateProtocol().consumeResponse()
+                                                  .openContainerId("testContainerId")
+                                                  .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                                                  .openProperties(Collections.singletonMap(
+                                                          SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                                          REFUSE_CONNECTION))
+                                                  .open().consumeResponse()
+                                                  .getLatestResponse(Open.class);
             assertThat(Arrays.asList(responseOpen.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
             if (responseOpen.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
             {
@@ -212,28 +190,26 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
-                transport2.doProtocolNegotiation();
-                Open open2 = new Open();
-                open2.setContainerId("testContainerId");
+                final Interaction interaction2 = transport2.newInteraction();
                 // Omit setting the desired capability to test strong detection
+                final Open responseOpen2 = interaction2.negotiateProtocol().consumeResponse()
+                                                       .openContainerId("testContainerId")
+                                                       .open().consumeResponse()
+                                                       .getLatestResponse(Open.class);
 
-                transport2.sendPerformative(open2);
+                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()),
+                           hasItem(SOLE_CONNECTION_FOR_CONTAINER));
+                assertThat(responseOpen2.getProperties(),
+                           hasKey(Symbol.valueOf("amqp:connection-establishment-failed")));
+                assertThat(responseOpen2.getProperties().get(Symbol.valueOf("amqp:connection-establishment-failed")),
+                           is(true));
 
-                PerformativeResponse response2 = (PerformativeResponse) transport2.getNextResponse();
-                assertThat(response2, is(notNullValue()));
-                assertThat(response2.getBody(), is(instanceOf(Open.class)));
-                Open responseOpen2 = (Open) response2.getBody();
-                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
-                assertThat(responseOpen2.getProperties(), hasKey(Symbol.valueOf("amqp:connection-establishment-failed")));
-                assertThat(responseOpen2.getProperties().get(Symbol.valueOf("amqp:connection-establishment-failed")), is(true));
-
-                PerformativeResponse closeResponse2 = (PerformativeResponse) transport2.getNextResponse();
-                assertThat(closeResponse2, is(notNullValue()));
-                assertThat(closeResponse2.getBody(), is(instanceOf(Close.class)));
-                Close close2 = (Close) closeResponse2.getBody();
+                final Close close2 = interaction2.consumeResponse().getLatestResponse(Close.class);
                 assertThat(close2.getError(), is(notNullValue()));
                 assertThat(close2.getError().getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
-                assertThat(close2.getError().getInfo(), is(equalTo(Collections.singletonMap(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")))));
+                assertThat(close2.getError().getInfo(),
+                           is(equalTo(Collections.singletonMap(Symbol.valueOf("invalid-field"),
+                                                               Symbol.valueOf("container-id")))));
             }
         }
     }
@@ -243,43 +219,36 @@ public class RefuseConnectionPolicy extends ProtocolTestBase
     {
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
-            transport1.doProtocolNegotiation();
-            Open open = new Open();
-            open.setContainerId("testContainerId");
-            open.setDesiredCapabilities(new Symbol[]{SOLE_CONNECTION_FOR_CONTAINER});
+            final Interaction interaction1 = transport1.newInteraction();
             // Omit setting the enforcement policy explicitly. The default is refuse.
-
-            transport1.sendPerformative(open);
-            PerformativeResponse response = (PerformativeResponse) transport1.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Open.class)));
+            interaction1.negotiateProtocol().consumeResponse()
+                        .openContainerId("testContainerId")
+                        .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                        .open().consumeResponse(Open.class);
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
-                transport2.doProtocolNegotiation();
-                Open open2 = new Open();
-                open2.setContainerId("testContainerId");
-                open2.setDesiredCapabilities(new Symbol[]{SOLE_CONNECTION_FOR_CONTAINER});
+                final Interaction interaction2 = transport2.newInteraction();
                 // Omit setting the enforcement policy explicitly. The default is refuse.
+                final Open responseOpen2 = interaction2.negotiateProtocol().consumeResponse()
+                                                       .openContainerId("testContainerId")
+                                                       .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                                                       .open().consumeResponse()
+                                                       .getLatestResponse(Open.class);
 
-                transport2.sendPerformative(open2);
+                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()),
+                           hasItem(SOLE_CONNECTION_FOR_CONTAINER));
+                assertThat(responseOpen2.getProperties(),
+                           hasKey(Symbol.valueOf("amqp:connection-establishment-failed")));
+                assertThat(responseOpen2.getProperties().get(Symbol.valueOf("amqp:connection-establishment-failed")),
+                           is(true));
 
-                PerformativeResponse response2 = (PerformativeResponse) transport2.getNextResponse();
-                assertThat(response2, is(notNullValue()));
-                assertThat(response2.getBody(), is(instanceOf(Open.class)));
-                Open responseOpen2 = (Open) response2.getBody();
-                assertThat(Arrays.asList(responseOpen2.getOfferedCapabilities()), hasItem(SOLE_CONNECTION_FOR_CONTAINER));
-                assertThat(responseOpen2.getProperties(), hasKey(Symbol.valueOf("amqp:connection-establishment-failed")));
-                assertThat(responseOpen2.getProperties().get(Symbol.valueOf("amqp:connection-establishment-failed")), is(true));
-
-                PerformativeResponse closeResponse2 = (PerformativeResponse) transport2.getNextResponse();
-                assertThat(closeResponse2, is(notNullValue()));
-                assertThat(closeResponse2.getBody(), is(instanceOf(Close.class)));
-                Close close2 = (Close) closeResponse2.getBody();
+                final Close close2 = interaction2.consumeResponse().getLatestResponse(Close.class);
                 assertThat(close2.getError(), is(notNullValue()));
                 assertThat(close2.getError().getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
-                assertThat(close2.getError().getInfo(), is(equalTo(Collections.singletonMap(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")))));
+                assertThat(close2.getError().getInfo(),
+                           is(equalTo(Collections.singletonMap(Symbol.valueOf("invalid-field"),
+                                                               Symbol.valueOf("container-id")))));
             }
         }
     }

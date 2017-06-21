@@ -43,14 +43,11 @@ import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslChallenge;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslCode;
-import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslMechanisms;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslOutcome;
-import org.apache.qpid.server.protocol.v1_0.type.security.SaslResponse;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.protocol.v1_0.HeaderResponse;
+import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 
@@ -78,26 +75,25 @@ public class SaslTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
-            transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
-            HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
+            final Interaction interaction = transport.newInteraction();
+            final byte[] saslHeaderResponse = interaction.protocolHeader(SASL_AMQP_HEADER_BYTES)
+                                                         .negotiateProtocol().consumeResponse()
+                                                         .getLatestResponse(byte[].class);
+            assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
-            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
-
-            SaslMechanisms saslMechanismsResponse = transport.getNextResponseBody(SaslMechanisms.class);
+            SaslMechanisms saslMechanismsResponse = interaction.consumeResponse().getLatestResponse(SaslMechanisms.class);
             assertThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
 
-
-            SaslInit saslInit = new SaslInit();
-            saslInit.setMechanism(PLAIN);
-            saslInit.setInitialResponse(new Binary("\0guest\0guest".getBytes(StandardCharsets.US_ASCII)));
-            transport.sendPerformative(saslInit);
-
-            SaslOutcome saslOutcome = transport.getNextResponseBody(SaslOutcome.class);
+            SaslOutcome saslOutcome = interaction.saslMechanism(PLAIN)
+                                                 .saslInitialResponse(new Binary("\0guest\0guest".getBytes(StandardCharsets.US_ASCII)))
+                                                 .saslInit().consumeResponse()
+                                                 .getLatestResponse(SaslOutcome.class);
             assertThat(saslOutcome.getCode(), equalTo(SaslCode.OK));
 
-            transport.sendProtocolHeader(AMQP_HEADER_BYTES);
-            HeaderResponse headerResponse = transport.getNextResponse(HeaderResponse.class);
-            assertThat(headerResponse.getBody(), is(equalTo(AMQP_HEADER_BYTES)));
+            final byte[] headerResponse = interaction.protocolHeader(AMQP_HEADER_BYTES)
+                                                     .negotiateProtocol().consumeResponse()
+                                                     .getLatestResponse(byte[].class);
+            assertThat(headerResponse, is(equalTo(AMQP_HEADER_BYTES)));
 
             transport.assertNoMoreResponses();
         }
@@ -111,33 +107,34 @@ public class SaslTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
-            transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
-            HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
+            final Interaction interaction = transport.newInteraction();
+            final byte[] saslHeaderResponse = interaction.protocolHeader(SASL_AMQP_HEADER_BYTES)
+                                                         .negotiateProtocol().consumeResponse()
+                                                         .getLatestResponse(byte[].class);
+            assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
-            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
-
-            SaslMechanisms saslMechanismsResponse = transport.getNextResponseBody(SaslMechanisms.class);
+            SaslMechanisms saslMechanismsResponse = interaction.consumeResponse().getLatestResponse(SaslMechanisms.class);
             assertThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(CRAM_MD5));
 
-            SaslInit saslInit = new SaslInit();
-            saslInit.setMechanism(CRAM_MD5);
-            transport.sendPerformative(saslInit);
+            SaslChallenge saslChallenge = interaction.saslMechanism(CRAM_MD5)
+                                                     .saslInit().consumeResponse()
+                                                     .getLatestResponse(SaslChallenge.class);
+            assertThat(saslChallenge.getChallenge(), is(notNullValue()));
 
-            SaslChallenge challenge = transport.getNextResponseBody(SaslChallenge.class);
-            assertThat(challenge.getChallenge(), is(notNullValue()));
+            byte[] response = generateCramMD5ClientResponse("guest", "guest",
+                                                            saslChallenge.getChallenge().getArray());
 
-            byte[] response = generateCramMD5ClientResponse("guest", "guest", challenge.getChallenge().getArray());
-
-            SaslResponse saslResponse = new SaslResponse();
-            saslResponse.setResponse(new Binary(response));
-            transport.sendPerformative(saslResponse);
-
-            SaslOutcome saslOutcome = transport.getNextResponseBody(SaslOutcome.class);
+            final SaslOutcome saslOutcome = interaction.saslResponseResponse(new Binary(response))
+                                                       .saslResponse()
+                                                       .consumeResponse()
+                                                       .getLatestResponse(SaslOutcome.class);
             assertThat(saslOutcome.getCode(), equalTo(SaslCode.OK));
 
-            transport.sendProtocolHeader(AMQP_HEADER_BYTES);
-            HeaderResponse headerResponse = transport.getNextResponse(HeaderResponse.class);
-            assertThat(headerResponse.getBody(), is(equalTo(AMQP_HEADER_BYTES)));
+            final byte[] headerResponse = interaction.protocolHeader(AMQP_HEADER_BYTES)
+                                                     .negotiateProtocol()
+                                                     .consumeResponse()
+                                                     .getLatestResponse(byte[].class);
+            assertThat(headerResponse, is(equalTo(AMQP_HEADER_BYTES)));
 
             transport.assertNoMoreResponses();
         }
@@ -150,20 +147,19 @@ public class SaslTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
-            transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
-            HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
+            final Interaction interaction = transport.newInteraction();
+            final byte[] saslHeaderResponse = interaction.protocolHeader(SASL_AMQP_HEADER_BYTES)
+                                                         .negotiateProtocol().consumeResponse()
+                                                         .getLatestResponse(byte[].class);
+            assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
-            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
-
-            SaslMechanisms saslMechanismsResponse = transport.getNextResponseBody(SaslMechanisms.class);
+            SaslMechanisms saslMechanismsResponse = interaction.consumeResponse().getLatestResponse(SaslMechanisms.class);
             assertThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
 
-            SaslInit saslInit = new SaslInit();
-            saslInit.setMechanism(PLAIN);
-            saslInit.setInitialResponse(new Binary("\0guest\0badpassword".getBytes(StandardCharsets.US_ASCII)));
-            transport.sendPerformative(saslInit);
-
-            SaslOutcome saslOutcome = transport.getNextResponseBody(SaslOutcome.class);
+            SaslOutcome saslOutcome = interaction.saslMechanism(PLAIN)
+                                                 .saslInitialResponse(new Binary("\0guest\0badpassword".getBytes(StandardCharsets.US_ASCII)))
+                                                 .saslInit().consumeResponse()
+                                                 .getLatestResponse(SaslOutcome.class);
             assertThat(saslOutcome.getCode(), equalTo(SaslCode.AUTH));
 
             transport.assertNoMoreResponsesAndChannelClosed();
@@ -180,18 +176,17 @@ public class SaslTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
-            transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
-            HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
+            final Interaction interaction = transport.newInteraction();
+            final byte[] saslHeaderResponse = interaction.protocolHeader(SASL_AMQP_HEADER_BYTES)
+                                                         .negotiateProtocol().consumeResponse()
+                                                         .getLatestResponse(byte[].class);
+            assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
-            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
+            interaction.consumeResponse(SaslMechanisms.class);
 
-            transport.getNextResponseBody(SaslMechanisms.class);
-
-            SaslInit saslInit = new SaslInit();
-            saslInit.setMechanism(Symbol.getSymbol("NOT-A-MECHANISM"));
-            transport.sendPerformative(saslInit);
-
-            SaslOutcome saslOutcome = transport.getNextResponseBody(SaslOutcome.class);
+            SaslOutcome saslOutcome = interaction.saslMechanism(Symbol.getSymbol("NOT-A-MECHANISM"))
+                                                 .saslInit().consumeResponse()
+                                                 .getLatestResponse(SaslOutcome.class);
             assertThat(saslOutcome.getCode(), equalTo(SaslCode.AUTH));
             assertThat(saslOutcome.getAdditionalData(), is(nullValue()));
 
@@ -206,15 +201,14 @@ public class SaslTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
-            transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
-            HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
-            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
+            final Interaction interaction = transport.newInteraction();
+            final byte[] saslHeaderResponse = interaction.protocolHeader(SASL_AMQP_HEADER_BYTES)
+                                                         .negotiateProtocol().consumeResponse()
+                                                         .getLatestResponse(byte[].class);
+            assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
-            transport.getNextResponseBody(SaslMechanisms.class);
-
-            Open open = new Open();
-            open.setContainerId("testContainerId");
-            transport.sendPerformative(open);
+            interaction.consumeResponse(SaslMechanisms.class);
+            interaction.open();
 
             transport.assertNoMoreResponsesAndChannelClosed();
         }
@@ -229,15 +223,14 @@ public class SaslTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
-            transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
-            HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
-            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
-
-            transport.getNextResponseBody(SaslMechanisms.class);
-
             SaslMechanisms clientMechs = new SaslMechanisms();
             clientMechs.setSaslServerMechanisms(new Symbol[] {Symbol.valueOf("CLIENT-MECH")});
-            transport.sendPerformative(clientMechs);
+            transport.newInteraction()
+                     .protocolHeader(SASL_AMQP_HEADER_BYTES)
+                     .negotiateProtocol().consumeResponse()
+                     .consumeResponse(SaslMechanisms.class)
+                     .sendPerformative(clientMechs)
+                     .sync();
 
             transport.assertNoMoreResponsesAndChannelClosed();
         }
@@ -250,15 +243,14 @@ public class SaslTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
-            transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
-            HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
-            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
-
-            transport.getNextResponseBody(SaslMechanisms.class);
-
             SaslChallenge saslChallenge = new SaslChallenge();
             saslChallenge.setChallenge(new Binary(new byte[] {}));
-            transport.sendPerformative(saslChallenge);
+            transport.newInteraction()
+                     .protocolHeader(SASL_AMQP_HEADER_BYTES)
+                     .negotiateProtocol().consumeResponse()
+                     .consumeResponse(SaslMechanisms.class)
+                     .sendPerformative(saslChallenge)
+                     .sync();
 
             transport.assertNoMoreResponsesAndChannelClosed();
         }
@@ -271,15 +263,14 @@ public class SaslTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
-            transport.sendProtocolHeader(SASL_AMQP_HEADER_BYTES);
-            HeaderResponse saslHeaderResponse = transport.getNextResponse(HeaderResponse.class);
-            assertThat(saslHeaderResponse.getBody(), is(equalTo(SASL_AMQP_HEADER_BYTES)));
-
-            transport.getNextResponseBody(SaslMechanisms.class);
-
             SaslOutcome saslOutcome = new SaslOutcome();
             saslOutcome.setCode(SaslCode.OK);
-            transport.sendPerformative(saslOutcome);
+            transport.newInteraction()
+                     .protocolHeader(SASL_AMQP_HEADER_BYTES)
+                     .negotiateProtocol().consumeResponse()
+                     .consumeResponse(SaslMechanisms.class)
+                     .sendPerformative(saslOutcome)
+                     .sync();
 
             transport.assertNoMoreResponsesAndChannelClosed();
         }

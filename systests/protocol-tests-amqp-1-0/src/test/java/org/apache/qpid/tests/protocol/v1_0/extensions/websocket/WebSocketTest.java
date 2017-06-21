@@ -55,9 +55,8 @@ public class WebSocketTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
         try (FrameTransport transport = new WebSocketFrameTransport(addr).connect())
         {
-            transport.sendProtocolHeader(AMQP_HEADER);
-            HeaderResponse response = transport.getNextResponse();
-            assertArrayEquals("Unexpected protocol header response", AMQP_HEADER, response.getBody());
+            final byte[] response = transport.newInteraction().negotiateProtocol().consumeResponse().getLatestResponse(byte[].class);
+            assertArrayEquals("Unexpected protocol header response", AMQP_HEADER, response);
         }
     }
 
@@ -68,14 +67,10 @@ public class WebSocketTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
         try (FrameTransport transport = new WebSocketFrameTransport(addr).splitAmqpFrames().connect())
         {
-            transport.sendProtocolHeader(AMQP_HEADER);
-            HeaderResponse response = transport.getNextResponse(HeaderResponse.class);
-            assertArrayEquals("Unexpected protocol header response", AMQP_HEADER, response.getBody());
-
-            Open open = new Open();
-            open.setContainerId("testContainerId");
-            transport.sendPerformative(open, UnsignedShort.ZERO);
-            Open responseOpen = transport.getNextResponseBody(Open.class);
+            final Open responseOpen = transport.newInteraction()
+                                               .negotiateProtocol().consumeResponse()
+                                               .open().consumeResponse()
+                                               .getLatestResponse(Open.class);
 
             assertThat(responseOpen.getContainerId(), is(notNullValue()));
             assertThat(responseOpen.getMaxFrameSize().longValue(),
@@ -94,12 +89,10 @@ public class WebSocketTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
         try (FrameTransport transport = new WebSocketFrameTransport(addr).connect())
         {
-            transport.doProtocolNegotiation();
-
-            Open open = new Open();
-            open.setContainerId("testContainerId");
-            transport.sendPerformative(open, UnsignedShort.ZERO);
-            Open responseOpen = transport.getNextResponseBody(Open.class);
+            final Open responseOpen = transport.newInteraction()
+                                               .negotiateProtocol().consumeResponse()
+                                               .open().consumeResponse()
+                                               .getLatestResponse(Open.class);
 
             assertThat(responseOpen.getContainerId(), is(notNullValue()));
             assertThat(responseOpen.getMaxFrameSize().longValue(),

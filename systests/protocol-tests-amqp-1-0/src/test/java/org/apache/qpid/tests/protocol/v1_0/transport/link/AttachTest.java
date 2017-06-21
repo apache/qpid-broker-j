@@ -23,7 +23,6 @@ import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
@@ -33,15 +32,14 @@ import java.net.InetSocketAddress;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 
@@ -55,15 +53,15 @@ public class AttachTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
-            transport.doBeginSession();
-            Attach attach = new Attach();
-
-            transport.sendPerformative(attach);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Close.class)));
-            Close responseClose = (Close) response.getBody();
+            Close responseClose = transport.newInteraction()
+                                           .negotiateProtocol().consumeResponse()
+                                           .open().consumeResponse(Open.class)
+                                           .begin().consumeResponse(Begin.class)
+                                           .attachRole(null)
+                                           .attachHandle(null)
+                                           .attachName(null)
+                                           .attach().consumeResponse()
+                                           .getLatestResponse(Close.class);
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
         }
@@ -78,23 +76,14 @@ public class AttachTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
-            transport.doBeginSession();
-            Attach attach = new Attach();
-            attach.setName("testLink");
-            attach.setHandle(new UnsignedInteger(0));
-            attach.setRole(Role.SENDER);
-            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
-            Source source = new Source();
-            attach.setSource(source);
-            Target target = new Target();
-            attach.setTarget(target);
-
-            transport.sendPerformative(attach);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Attach.class)));
-            Attach responseAttach = (Attach) response.getBody();
+            final Attach responseAttach = transport.newInteraction()
+                                                   .negotiateProtocol().consumeResponse()
+                                                   .open().consumeResponse(Open.class)
+                                                   .begin().consumeResponse(Begin.class)
+                                                   .attachRole(Role.SENDER)
+                                                   .attachInitialDeliveryCount(UnsignedInteger.ZERO)
+                                                   .attach().consumeResponse()
+                                                   .getLatestResponse(Attach.class);
             assertThat(responseAttach.getName(), is(notNullValue()));
             assertThat(responseAttach.getHandle().longValue(), is(both(greaterThanOrEqualTo(0L)).and(lessThan(UnsignedInteger.MAX_VALUE.longValue()))));
             assertThat(responseAttach.getRole(), is(Role.RECEIVER));
@@ -114,24 +103,14 @@ public class AttachTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
-            Role localRole = Role.RECEIVER;
-            transport.doBeginSession();
-            Attach attach = new Attach();
-            attach.setName("testLink");
-            attach.setHandle(new UnsignedInteger(0));
-            attach.setRole(localRole);
-            Source source = new Source();
-            source.setAddress(queueName);
-            attach.setSource(source);
-            Target target = new Target();
-            attach.setTarget(target);
-
-            transport.sendPerformative(attach);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Attach.class)));
-            Attach responseAttach = (Attach) response.getBody();
+            final Attach responseAttach = transport.newInteraction()
+                                                   .negotiateProtocol().consumeResponse()
+                                                   .open().consumeResponse(Open.class)
+                                                   .begin().consumeResponse(Begin.class)
+                                                   .attachRole(Role.RECEIVER)
+                                                   .attachSourceAddress(queueName)
+                                                   .attach().consumeResponse()
+                                                   .getLatestResponse(Attach.class);
             assertThat(responseAttach.getName(), is(notNullValue()));
             assertThat(responseAttach.getHandle().longValue(), is(both(greaterThanOrEqualTo(0L)).and(lessThan(UnsignedInteger.MAX_VALUE.longValue()))));
             assertThat(responseAttach.getRole(), is(Role.SENDER));

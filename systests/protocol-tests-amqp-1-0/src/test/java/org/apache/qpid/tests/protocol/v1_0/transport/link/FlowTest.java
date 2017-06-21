@@ -21,7 +21,6 @@
 package org.apache.qpid.tests.protocol.v1_0.transport.link;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -34,11 +33,14 @@ import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
@@ -54,15 +56,17 @@ public class FlowTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
-            transport.doAttachReceivingLink(BrokerAdmin.TEST_QUEUE_NAME);
-            Flow flow = new Flow();
-
-            transport.sendPerformative(flow);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Close.class)));
-            Close responseClose = (Close) response.getBody();
+            Close responseClose = transport.newInteraction()
+                                           .negotiateProtocol().consumeResponse()
+                                           .open().consumeResponse(Open.class)
+                                           .begin().consumeResponse(Begin.class)
+                                           .flowIncomingWindow(null)
+                                           .flowNextIncomingId(null)
+                                           .flowOutgoingWindow(null)
+                                           .flowNextOutgoingId(null)
+                                           .flow()
+                                           .consumeResponse()
+                                           .getLatestResponse(Close.class);
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), is(AmqpError.DECODE_ERROR));
         }
@@ -76,20 +80,15 @@ public class FlowTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
-            transport.doBeginSession();
-            Flow flow = new Flow();
-            flow.setIncomingWindow(UnsignedInteger.ZERO);
-            flow.setNextIncomingId(UnsignedInteger.ZERO);
-            flow.setOutgoingWindow(UnsignedInteger.ZERO);
-            flow.setNextOutgoingId(UnsignedInteger.ZERO);
-            flow.setEcho(Boolean.TRUE);
+            Flow responseFlow = transport.newInteraction()
+                                         .negotiateProtocol().consumeResponse()
+                                         .open().consumeResponse(Open.class)
+                                         .begin().consumeResponse(Begin.class)
+                                         .flowEcho(true)
+                                         .flow()
+                                         .consumeResponse()
+                                         .getLatestResponse(Flow.class);
 
-            transport.sendPerformative(flow);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Flow.class)));
-            Flow responseFlow = (Flow) response.getBody();
             assertThat(responseFlow.getEcho(), not(equalTo(Boolean.TRUE)));
             assertThat(responseFlow.getHandle(), is(nullValue()));
         }
@@ -104,25 +103,20 @@ public class FlowTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
-            final UnsignedInteger handle = UnsignedInteger.ONE;
-            transport.doAttachSendingLink(handle, BrokerAdmin.TEST_QUEUE_NAME);
-            Flow flow = new Flow();
-            flow.setIncomingWindow(UnsignedInteger.ZERO);
-            flow.setNextIncomingId(UnsignedInteger.ZERO);
-            flow.setOutgoingWindow(UnsignedInteger.ZERO);
-            flow.setNextOutgoingId(UnsignedInteger.ZERO);
-            flow.setEcho(Boolean.TRUE);
-            flow.setAvailable(UnsignedInteger.valueOf(10));
-            flow.setDeliveryCount(UnsignedInteger.ZERO);
-            flow.setLinkCredit(UnsignedInteger.ZERO);
-            flow.setHandle(handle);
-
-            transport.sendPerformative(flow);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Flow.class)));
-            Flow responseFlow = (Flow) response.getBody();
+            Flow responseFlow = transport.newInteraction()
+                                         .negotiateProtocol().consumeResponse()
+                                         .open().consumeResponse(Open.class)
+                                         .begin().consumeResponse(Begin.class)
+                                         .attachRole(Role.RECEIVER)
+                                         .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                         .attach().consumeResponse(Attach.class)
+                                         .flowEcho(true)
+                                         .flowHandleFromLinkHandle()
+                                         .flowAvailable(UnsignedInteger.valueOf(10))
+                                         .flowDeliveryCount(UnsignedInteger.ZERO)
+                                         .flowLinkCredit(UnsignedInteger.ZERO)
+                                         .flow().consumeResponse()
+                                         .getLatestResponse(Flow.class);
             assertThat(responseFlow.getEcho(), not(equalTo(Boolean.TRUE)));
             assertThat(responseFlow.getHandle(), is(notNullValue()));
         }
@@ -154,26 +148,24 @@ public class FlowTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
-            transport.doAttachReceivingLink(BrokerAdmin.TEST_QUEUE_NAME);
+            Flow responseFlow = transport.newInteraction()
+                                         .negotiateProtocol().consumeResponse()
+                                         .open().consumeResponse(Open.class)
+                                         .begin().consumeResponse(Begin.class)
+                                         .attachRole(Role.RECEIVER)
+                                         .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                         .attach().consumeResponse(Attach.class)
+                                         .flowIncomingWindow(UnsignedInteger.valueOf(2047))
+                                         .flowNextIncomingId(UnsignedInteger.ZERO)
+                                         .flowOutgoingWindow(UnsignedInteger.valueOf(2147483647))
+                                         .flowNextOutgoingId(UnsignedInteger.ONE)
+                                         .flowDeliveryCount(UnsignedInteger.ZERO)
+                                         .flowLinkCredit(UnsignedInteger.ONE)
+                                         .flowDrain(Boolean.TRUE)
+                                         .flowHandleFromLinkHandle()
+                                         .flow()
+                                         .consumeResponse().getLatestResponse(Flow.class);
 
-            // Flow{nextIncomingId=0,incomingWindow=2047,nextOutgoingId=1,outgoingWindow=2147483647,handle=1,deliveryCount=0,linkCredit=1,drain=true}
-
-            Flow flow = new Flow();
-            flow.setIncomingWindow(UnsignedInteger.valueOf(2047));
-            flow.setNextIncomingId(UnsignedInteger.ZERO);
-            flow.setOutgoingWindow(UnsignedInteger.valueOf(2147483647));
-            flow.setNextOutgoingId(UnsignedInteger.ONE);
-            flow.setDeliveryCount(UnsignedInteger.ZERO);
-            flow.setLinkCredit(UnsignedInteger.ONE);
-            flow.setDrain(Boolean.TRUE);
-            flow.setHandle(UnsignedInteger.ZERO);
-
-            transport.sendPerformative(flow);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Flow.class)));
-            Flow responseFlow = (Flow) response.getBody();
             assertThat(responseFlow.getHandle(), is(notNullValue()));
             assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
             assertThat(responseFlow.getDrain(), is(equalTo(Boolean.TRUE)));

@@ -20,21 +20,15 @@
 
 package org.apache.qpid.tests.protocol.v1_0;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.net.InetSocketAddress;
 
-import org.hamcrest.core.Is;
-
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
@@ -45,39 +39,25 @@ public class Utils
     {
         try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
         {
-            transport.doBeginSession();
-
+            final Interaction interaction = transport.newInteraction();
+            final Attach attachValidationResponse = interaction.negotiateProtocol().consumeResponse()
+                                                               .open().consumeResponse()
+                                                               .begin().consumeResponse()
+                                                               .attachName("validationAttach")
+                                                               .attachRole(Role.RECEIVER)
+                                                               .attachSourceAddress(nodeAddress)
+                                                               .attach().consumeResponse()
+                                                               .getLatestResponse(Attach.class);
             final boolean queueExists;
-            Attach validationAttach = new Attach();
-            validationAttach.setName("validationAttach");
-            validationAttach.setHandle(UnsignedInteger.ZERO);
-            validationAttach.setRole(Role.RECEIVER);
-            Source validationSource = new Source();
-            validationSource.setAddress(nodeAddress);
-            validationAttach.setSource(validationSource);
-            validationAttach.setTarget(new Target());
-            transport.sendPerformative(validationAttach);
-            PerformativeResponse validationResponse = (PerformativeResponse) transport.getNextResponse();
-            assertThat(validationResponse, is(notNullValue()));
-            assertThat(validationResponse.getBody(), is(instanceOf(Attach.class)));
-            final Attach attachValidationResponse = (Attach) validationResponse.getBody();
             if (attachValidationResponse.getSource() != null)
             {
                 queueExists = true;
-                Detach validationDetach = new Detach();
-                validationDetach.setHandle(validationAttach.getHandle());
-                validationDetach.setClosed(true);
-                transport.sendPerformative(validationDetach);
-                PerformativeResponse validationDetachResponse = (PerformativeResponse) transport.getNextResponse();
-                assertThat(validationDetachResponse, is(notNullValue()));
-                assertThat(validationDetachResponse.getBody(), is(instanceOf(Detach.class)));
+                interaction.detachClose(true).detach().consumeResponse().getLatestResponse(Detach.class);
             }
             else
             {
                 queueExists = false;
-                PerformativeResponse validationDetachResponse = (PerformativeResponse) transport.getNextResponse();
-                assertThat(validationDetachResponse, is(notNullValue()));
-                assertThat(validationDetachResponse.getBody(), is(instanceOf(Detach.class)));
+                interaction.consumeResponse().getLatestResponse(Detach.class);
             }
             return queueExists;
         }
@@ -88,25 +68,26 @@ public class Utils
     {
         try (FrameTransport transport = new FrameTransport(brokerAddress).connect())
         {
-            transport.doAttachReceivingLink(queueName);
-            Flow flow = new Flow();
-            flow.setIncomingWindow(UnsignedInteger.ONE);
-            flow.setNextIncomingId(UnsignedInteger.ZERO);
-            flow.setOutgoingWindow(UnsignedInteger.ZERO);
-            flow.setNextOutgoingId(UnsignedInteger.ZERO);
-            flow.setHandle(UnsignedInteger.ZERO);
-            flow.setLinkCredit(UnsignedInteger.ONE);
-
-            transport.sendPerformative(flow);
+            final Interaction interaction = transport.newInteraction()
+                                                     .negotiateProtocol().consumeResponse()
+                                                     .open().consumeResponse()
+                                                     .begin().consumeResponse()
+                                                     .attachRole(Role.RECEIVER)
+                                                     .attachSourceAddress(queueName)
+                                                     .attach().consumeResponse()
+                                                     .flowIncomingWindow(UnsignedInteger.ONE)
+                                                     .flowNextIncomingId(UnsignedInteger.ZERO)
+                                                     .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                                     .flowNextOutgoingId(UnsignedInteger.ZERO)
+                                                     .flowLinkCredit(UnsignedInteger.ONE)
+                                                     .flowHandleFromLinkHandle()
+                                                     .flow();
 
             MessageDecoder messageDecoder = new MessageDecoder();
             boolean hasMore;
             do
             {
-                PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-                assertThat(response, Is.is(notNullValue()));
-                assertThat(response.getBody(), Is.is(instanceOf(Transfer.class)));
-                Transfer responseTransfer = (Transfer) response.getBody();
+                Transfer responseTransfer = interaction.consumeResponse().getLatestResponse(Transfer.class);
                 messageDecoder.addTransfer(responseTransfer);
                 hasMore = Boolean.TRUE.equals(responseTransfer.getMore());
             }

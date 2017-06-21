@@ -28,34 +28,30 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 import java.net.InetSocketAddress;
-import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declare;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declared;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionErrors;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
+import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 
@@ -79,34 +75,32 @@ public class DischargeTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
-            final Attach attach = new Attach();
-            attach.setName("testSendingLink");
-            attach.setHandle(linkHandle);
-            attach.setRole(Role.SENDER);
-            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
-            Source source = new Source();
-            source.setOutcomes(Rejected.REJECTED_SYMBOL);
-            attach.setSource(source);
+            final Interaction interaction = transport.newInteraction();
+            final Disposition disposition = interaction.negotiateProtocol().consumeResponse()
+                                                       .open().consumeResponse(Open.class)
+                                                       .begin().consumeResponse(Begin.class)
+                                                       .attachRole(Role.SENDER)
+                                                       .attachSourceOutcomes(Rejected.REJECTED_SYMBOL)
+                                                       .attachTarget(new Coordinator())
+                                                       .attach().consumeResponse(Attach.class)
+                                                       .consumeResponse(Flow.class)
+                                                       .transferPayloadData(new Declare())
+                                                       .transfer().consumeResponse()
+                                                       .getLatestResponse(Disposition.class);
 
-            Coordinator target = new Coordinator();
-            attach.setTarget(target);
-            transport.doAttachSendingLink(attach);
+            assertThat(disposition.getSettled(), is(equalTo(true)));
+            assertThat(disposition.getState(), is(instanceOf(Declared.class)));
+            assertThat(((Declared) disposition.getState()).getTxnId(), is(notNullValue()));
 
-            final Binary txnId = declareTransaction(transport, linkHandle);
-            assertThat(txnId, is(notNullValue()));
+            interaction.consumeResponse(Flow.class);
 
-            PerformativeResponse flowResponse =  transport.getNextResponse();
-            assertThat(flowResponse, is(notNullValue()));
-            assertThat(flowResponse.getBody(), is(instanceOf(Flow.class)));
-
-            dischargeTransaction(transport, linkHandle, new Binary("nonExistingTransaction".getBytes(UTF_8)));
-
-            PerformativeResponse dischargeResponse =  transport.getNextResponse();
-
-            assertThat(dischargeResponse, is(notNullValue()));
-            assertThat(dischargeResponse.getBody(), is(instanceOf(Disposition.class)));
-            Disposition dischargeDisposition = (Disposition) dischargeResponse.getBody();
+            final Discharge discharge = new Discharge();
+            discharge.setTxnId(new Binary("nonExistingTransaction".getBytes(UTF_8)));
+            final Disposition dischargeDisposition = interaction.transferDeliveryId(UnsignedInteger.ONE)
+                                                                .transferDeliveryTag(new Binary("discharge".getBytes(UTF_8)))
+                                                                .transferPayloadData(discharge)
+                                                                .transfer().consumeResponse()
+                                                                .getLatestResponse(Disposition.class);
             assertThat(dischargeDisposition.getState(), is(instanceOf(Rejected.class)));
             final Error error = ((Rejected) dischargeDisposition.getState()).getError();
             assertThat(error, is(notNullValue()));
@@ -124,83 +118,36 @@ public class DischargeTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final UnsignedInteger linkHandle = UnsignedInteger.ZERO;
-            final Attach attach = new Attach();
-            attach.setName("testSendingLink");
-            attach.setHandle(linkHandle);
-            attach.setRole(Role.SENDER);
-            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
-            Source source = new Source();
-            source.setOutcomes(Accepted.ACCEPTED_SYMBOL);
-            attach.setSource(source);
+            final Interaction interaction = transport.newInteraction();
+            final Disposition disposition = interaction.negotiateProtocol().consumeResponse()
+                                                       .open().consumeResponse(Open.class)
+                                                       .begin().consumeResponse(Begin.class)
+                                                       .attachRole(Role.SENDER)
+                                                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
+                                                       .attachTarget(new Coordinator())
+                                                       .attach().consumeResponse(Attach.class)
+                                                       .consumeResponse(Flow.class)
+                                                       .transferPayloadData(new Declare())
+                                                       .transfer().consumeResponse()
+                                                       .getLatestResponse(Disposition.class);
 
-            Coordinator target = new Coordinator();
-            attach.setTarget(target);
-            transport.doAttachSendingLink(attach);
 
-            final Binary txnId = declareTransaction(transport, linkHandle);
-            assertThat(txnId, is(notNullValue()));
+            assertThat(disposition.getSettled(), is(equalTo(true)));
+            assertThat(disposition.getState(), is(instanceOf(Declared.class)));
+            assertThat(((Declared) disposition.getState()).getTxnId(), is(notNullValue()));
 
-            PerformativeResponse flowResponse =  transport.getNextResponse();
-            assertThat(flowResponse, is(notNullValue()));
-            assertThat(flowResponse.getBody(), is(instanceOf(Flow.class)));
+            interaction.consumeResponse(Flow.class);
 
-            dischargeTransaction(transport, linkHandle, new Binary("nonExistingTransaction".getBytes(UTF_8)));
-
-            PerformativeResponse detachResponse = transport.getNextResponse();
-
-            assertThat(detachResponse, is(notNullValue()));
-            assertThat(detachResponse.getBody(), is(instanceOf(Detach.class)));
-            Error error = ((Detach) detachResponse.getBody()).getError();
+            final Discharge discharge = new Discharge();
+            discharge.setTxnId(new Binary("nonExistingTransaction".getBytes(UTF_8)));
+            final Detach detachResponse = interaction.transferDeliveryId(UnsignedInteger.ONE)
+                                                                .transferDeliveryTag(new Binary("discharge".getBytes(UTF_8)))
+                                                                .transferPayloadData(discharge)
+                                                                .transfer().consumeResponse()
+                                                                .getLatestResponse(Detach.class);
+            Error error = detachResponse.getError();
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(equalTo(TransactionErrors.UNKNOWN_ID)));
-        }
-    }
-
-    private void dischargeTransaction(final FrameTransport transport,
-                                      final UnsignedInteger linkHandle,
-                                      final Binary txnId) throws Exception
-    {
-        Transfer dischargeTransactionTransfer = new Transfer();
-        dischargeTransactionTransfer.setDeliveryId(UnsignedInteger.ONE);
-        dischargeTransactionTransfer.setDeliveryTag(new Binary("discharge".getBytes(UTF_8)));
-        dischargeTransactionTransfer.setHandle(linkHandle);
-        final Discharge discharge = new Discharge();
-        discharge.setTxnId(txnId);
-        setPayload(discharge, dischargeTransactionTransfer);
-        transport.sendPerformative(dischargeTransactionTransfer);
-    }
-
-    private Binary declareTransaction(final FrameTransport transport, final UnsignedInteger linkHandle) throws Exception
-    {
-        Transfer declareTransactionTransfer = new Transfer();
-        declareTransactionTransfer.setDeliveryId(UnsignedInteger.ZERO);
-        declareTransactionTransfer.setDeliveryTag(new Binary("declare".getBytes(UTF_8)));
-        declareTransactionTransfer.setHandle(linkHandle);
-        setPayload(new Declare(), declareTransactionTransfer);
-        transport.sendPerformative(declareTransactionTransfer);
-
-        PerformativeResponse declareResponse =  transport.getNextResponse();
-
-        assertThat(declareResponse, is(notNullValue()));
-        assertThat(declareResponse.getBody(), is(instanceOf(Disposition.class)));
-        Disposition disposition = (Disposition) declareResponse.getBody();
-        assertThat(disposition.getState(), is(instanceOf(Declared.class)));
-        assertThat(disposition.getSettled(), is(equalTo(true)));
-        return ((Declared) disposition.getState()).getTxnId();
-    }
-
-    private void setPayload(final Object payload, final Transfer transfer)
-    {
-        AmqpValue amqpValue = new AmqpValue(payload);
-        final AmqpValueSection section = amqpValue.createEncodingRetainingSection();
-        final List<QpidByteBuffer> encodedForm = section.getEncodedForm();
-        transfer.setPayload(encodedForm);
-        section.dispose();
-
-        for (QpidByteBuffer qbb: encodedForm)
-        {
-            qbb.dispose();
         }
     }
 }

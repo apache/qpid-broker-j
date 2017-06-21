@@ -23,18 +23,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
@@ -53,30 +47,19 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.core.Is;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.framing.SASLFrame;
 import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
-import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public class FrameTransport implements AutoCloseable
 {
     public static final long RESPONSE_TIMEOUT = 6000;
-    private static final Set<Integer> AMQP_CONNECTION_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private static final Response CHANNEL_CLOSED_RESPONSE = new ChannelClosedResponse();
 
     private final BlockingQueue<Response<?>> _queue = new ArrayBlockingQueue<>(100);
@@ -87,8 +70,6 @@ public class FrameTransport implements AutoCloseable
 
     private Channel _channel;
     private volatile boolean _channelClosedSeen = false;
-    private int _amqpConnectionId;
-    private short _amqpChannelId;
 
     public FrameTransport(final InetSocketAddress brokerAddress)
     {
@@ -158,7 +139,6 @@ public class FrameTransport implements AutoCloseable
         }
         finally
         {
-            AMQP_CONNECTION_IDS.remove(_amqpConnectionId);
             _workerGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).sync();
         }
     }
@@ -166,21 +146,23 @@ public class FrameTransport implements AutoCloseable
     public ListenableFuture<Void> sendProtocolHeader(final byte[] bytes) throws Exception
     {
         Preconditions.checkState(_channel != null, "Not connected");
+        ChannelPromise promise = _channel.newPromise();
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         buffer.writeBytes(bytes);
-        ChannelFuture channelFuture = _channel.writeAndFlush(buffer);
-        channelFuture.sync();
-        return JdkFutureAdapters.listenInPoolThread(channelFuture);
+        _channel.write(buffer, promise);
+        _channel.flush();
+        return JdkFutureAdapters.listenInPoolThread(promise);
     }
 
     public ListenableFuture<Void> sendPerformative(final FrameBody frameBody, UnsignedShort channel) throws Exception
     {
         Preconditions.checkState(_channel != null, "Not connected");
+        ChannelPromise promise = _channel.newPromise();
         final List<QpidByteBuffer> payload = frameBody instanceof Transfer ? ((Transfer) frameBody).getPayload() : null;
         TransportFrame transportFrame = new TransportFrame(channel.shortValue(), frameBody, payload);
-        ChannelFuture channelFuture = _channel.writeAndFlush(transportFrame);
-        channelFuture.sync();
-        return JdkFutureAdapters.listenInPoolThread(channelFuture);
+        _channel.write(transportFrame, promise);
+        _channel.flush();
+        return JdkFutureAdapters.listenInPoolThread(promise);
     }
 
     public ListenableFuture<Void> sendPerformative(final SaslFrameBody frameBody) throws Exception
@@ -191,96 +173,9 @@ public class FrameTransport implements AutoCloseable
         return JdkFutureAdapters.listenInPoolThread(channelFuture);
     }
 
-    public ListenableFuture<Void> sendPerformative(final FrameBody frameBody) throws Exception
-    {
-        return sendPerformative(frameBody, UnsignedShort.valueOf(_amqpChannelId));
-    }
-
-    public ListenableFuture<Void> sendPipelined(final byte[] protocolHeader, final TransportFrame... frames)
-            throws InterruptedException
-    {
-        ChannelPromise promise = _channel.newPromise();
-        if (protocolHeader != null)
-        {
-            ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
-            buffer.writeBytes(protocolHeader);
-            _channel.write(buffer);
-        }
-        for (TransportFrame frame : frames)
-        {
-            _channel.write(frame, promise);
-        }
-        _channel.flush();
-        return JdkFutureAdapters.listenInPoolThread(promise);
-    }
-
-    public ListenableFuture<Void> sendPipelined(final TransportFrame... frames) throws InterruptedException
-    {
-        return sendPipelined(null, frames);
-    }
-
     public <T extends Response<?>> T getNextResponse() throws Exception
     {
         return (T)_queue.poll(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
-    }
-
-    public <R extends Response<?>> R getNextResponse(Class<R> expectedResponseClass) throws Exception
-    {
-        R actualResponse = getNextResponse();
-        if (actualResponse == null)
-        {
-            throw new IllegalStateException(String.format("No response received within timeout %d - expecting %s",
-                                                          RESPONSE_TIMEOUT, expectedResponseClass.getName()));
-        }
-        else if (!expectedResponseClass.isAssignableFrom(actualResponse.getClass()))
-        {
-            throw new IllegalStateException(String.format("Unexpected response - expecting %s - received - %s",
-                                                          expectedResponseClass.getName(),
-                                                          actualResponse.getClass().getName()));
-        }
-
-        return actualResponse;
-    }
-
-    public <T> T getNextResponseBody(Class<T> expectedFrameBodyClass) throws Exception
-    {
-        Response<T>  response = getNextResponse();
-        T actualFrameBody =  response.getBody();
-
-        if (!expectedFrameBodyClass.isAssignableFrom(actualFrameBody.getClass()))
-        {
-            throw new IllegalStateException(String.format("Unexpected response - expecting %s - received - %s",
-                                                          expectedFrameBodyClass.getName(),
-                                                          actualFrameBody.getClass().getName()));
-        }
-
-        return actualFrameBody;
-    }
-
-    public void doProtocolNegotiation() throws Exception
-    {
-        byte[] bytes = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
-        sendProtocolHeader(bytes);
-        HeaderResponse response = (HeaderResponse) getNextResponse();
-
-        if (!Arrays.equals(bytes, response.getBody()))
-        {
-            throw new IllegalStateException("Unexpected protocol header");
-        }
-    }
-
-    public void doOpenConnection() throws Exception
-    {
-        doProtocolNegotiation();
-        Open open = new Open();
-
-        open.setContainerId(String.format("testContainer-%d", getConnectionId()));
-        sendPerformative(open, UnsignedShort.valueOf((short) 0));
-        PerformativeResponse response = (PerformativeResponse) getNextResponse();
-        if (!(response.getBody() instanceof Open))
-        {
-            throw new IllegalStateException("Unexpected response to connection Open");
-        }
     }
 
     public void doCloseConnection() throws Exception
@@ -288,90 +183,12 @@ public class FrameTransport implements AutoCloseable
         Close close = new Close();
 
         sendPerformative(close, UnsignedShort.valueOf((short) 0));
-        PerformativeResponse response = (PerformativeResponse) getNextResponse();
+        PerformativeResponse response = getNextResponse();
         if (!(response.getBody() instanceof Close))
         {
             throw new IllegalStateException(String.format(
                     "Unexpected response to connection Close. Expected Close got '%s'", response.getBody()));
         }
-    }
-
-    public void doBeginSession() throws Exception
-    {
-        doOpenConnection();
-        Begin begin = new Begin();
-        begin.setNextOutgoingId(UnsignedInteger.ZERO);
-        begin.setIncomingWindow(UnsignedInteger.ZERO);
-        begin.setOutgoingWindow(UnsignedInteger.ZERO);
-        _amqpChannelId = (short) 1;
-        sendPerformative(begin, UnsignedShort.valueOf(_amqpChannelId));
-        PerformativeResponse response = (PerformativeResponse) getNextResponse();
-        if (!(response.getBody() instanceof Begin))
-        {
-            throw new IllegalStateException(String.format(
-                    "Unexpected response to connection Begin. Expected Begin got '%s'", response.getBody()));
-        }
-    }
-
-    public void doAttachReceivingLink(String queueName) throws Exception
-    {
-        doAttachReceivingLink(UnsignedInteger.ZERO, queueName);
-    }
-
-    public void doAttachReceivingLink(final UnsignedInteger handle, String queueName) throws Exception
-    {
-        doBeginSession();
-        Role localRole = Role.RECEIVER;
-        Attach attach = new Attach();
-        attach.setName("testReceivingLink");
-        attach.setHandle(handle);
-        attach.setRole(localRole);
-        Source source = new Source();
-        source.setAddress(queueName);
-        attach.setSource(source);
-        Target target = new Target();
-        attach.setTarget(target);
-
-        sendPerformative(attach);
-        PerformativeResponse response = (PerformativeResponse) getNextResponse();
-
-        assertThat(response, is(notNullValue()));
-        assertThat(response.getBody(), is(instanceOf(Attach.class)));
-        Attach responseAttach = (Attach) response.getBody();
-        assertThat(responseAttach.getSource(), is(notNullValue()));
-    }
-
-    public void doAttachSendingLink(final UnsignedInteger handle,
-                                    final String destination) throws Exception
-    {
-        Attach attach = new Attach();
-        attach.setName("testSendingLink");
-        attach.setHandle(handle);
-        attach.setRole(Role.SENDER);
-        attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
-        Source source = new Source();
-        attach.setSource(source);
-        Target target = new Target();
-        target.setAddress(destination);
-        attach.setTarget(target);
-        doAttachSendingLink(attach);
-    }
-
-    public void doAttachSendingLink(final Attach attach) throws Exception
-    {
-        doBeginSession();
-
-        sendPerformative(attach);
-        PerformativeResponse response = (PerformativeResponse) getNextResponse();
-
-        assertThat(response, is(notNullValue()));
-        assertThat(response.getBody(), is(instanceOf(Attach.class)));
-        Attach responseAttach = (Attach) response.getBody();
-        assertThat(responseAttach.getTarget(), is(notNullValue()));
-
-        PerformativeResponse flowResponse = (PerformativeResponse) getNextResponse();
-        assertThat(flowResponse, Is.is(CoreMatchers.notNullValue()));
-        assertThat(flowResponse.getBody(), Is.is(CoreMatchers.instanceOf(Flow.class)));
     }
 
     public void assertNoMoreResponses() throws Exception
@@ -384,19 +201,6 @@ public class FrameTransport implements AutoCloseable
     {
         assertNoMoreResponses();
         assertThat(_channelClosedSeen, is(true));
-    }
-
-    private int getConnectionId()
-    {
-        if (_amqpConnectionId == 0)
-        {
-            _amqpConnectionId = 1;
-            while (!AMQP_CONNECTION_IDS.add(_amqpConnectionId))
-            {
-                ++_amqpConnectionId;
-            }
-        }
-        return _amqpConnectionId;
     }
 
     private static class ChannelClosedResponse implements Response<Void>
@@ -412,5 +216,10 @@ public class FrameTransport implements AutoCloseable
         {
             return null;
         }
+    }
+
+    public Interaction newInteraction()
+    {
+        return new Interaction(this);
     }
 }

@@ -38,7 +38,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 
@@ -52,14 +51,14 @@ public class BeginTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try(FrameTransport transport = new FrameTransport(addr).connect())
         {
-            transport.doOpenConnection();
-            Begin begin = new Begin();
-            transport.sendPerformative(begin, UnsignedShort.valueOf((short) 37));
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Close.class)));
-            Close responseClose = (Close) response.getBody();
+            Close responseClose = transport.newInteraction()
+                                           .negotiateProtocol().consumeResponse()
+                                           .open().consumeResponse(Open.class)
+                                           .beginNextOutgoingId(null)
+                                           .beginIncomingWindow(null)
+                                           .beginOutgoingWindow(null)
+                                           .begin().consumeResponse()
+                                           .getLatestResponse(Close.class);
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(AmqpError.DECODE_ERROR));
         }
@@ -74,19 +73,13 @@ public class BeginTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
-            transport.doOpenConnection();
-            Begin begin = new Begin();
-            begin.setNextOutgoingId(UnsignedInteger.ZERO);
-            begin.setIncomingWindow(UnsignedInteger.ZERO);
-            begin.setOutgoingWindow(UnsignedInteger.ZERO);
-
-            UnsignedShort channel = UnsignedShort.valueOf((short) 37);
-            transport.sendPerformative(begin, channel);
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Begin.class)));
-            Begin responseBegin = (Begin) response.getBody();
+            final UnsignedShort channel = UnsignedShort.valueOf(37);
+            Begin responseBegin = transport.newInteraction()
+                                           .negotiateProtocol().consumeResponse()
+                                           .open().consumeResponse(Open.class)
+                                           .sessionChannel(channel)
+                                           .begin().consumeResponse()
+                                           .getLatestResponse(Begin.class);
             assertThat(responseBegin.getRemoteChannel(), equalTo(channel));
             assertThat(responseBegin.getIncomingWindow(), is(instanceOf(UnsignedInteger.class)));
             assertThat(responseBegin.getOutgoingWindow(), is(instanceOf(UnsignedInteger.class)));
@@ -105,30 +98,13 @@ public class BeginTest extends ProtocolTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
         try (FrameTransport transport = new FrameTransport(addr).connect())
         {
-            UnsignedShort channelMax = UnsignedShort.valueOf((short) 5);
-            transport.doProtocolNegotiation();
-            Open open = new Open();
-            open.setChannelMax(channelMax);
-            open.setContainerId("testContainer");
-
-
-            transport.sendPerformative(open, UnsignedShort.valueOf((short) 0));
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Open.class)));
-
-            Begin begin = new Begin();
-            begin.setNextOutgoingId(UnsignedInteger.ZERO);
-            begin.setIncomingWindow(UnsignedInteger.ZERO);
-            begin.setOutgoingWindow(UnsignedInteger.ZERO);
-
-            UnsignedShort invalidChannel = UnsignedShort.valueOf((short) (channelMax.intValue() + 1));
-            transport.sendPerformative(begin, invalidChannel);
-            response = (PerformativeResponse) transport.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Close.class)));
-            Close responseClose = (Close) response.getBody();
+            Close responseClose = transport.newInteraction()
+                                           .negotiateProtocol().consumeResponse()
+                                           .openChannelMax(UnsignedShort.valueOf(5))
+                                           .open().consumeResponse(Open.class)
+                                           .sessionChannel(UnsignedShort.valueOf(6))
+                                           .begin().consumeResponse()
+                                           .getLatestResponse(Close.class);
             assertThat(responseClose.getError(), is(notNullValue()));
             assertThat(responseClose.getError().getCondition(), equalTo(ConnectionError.FRAMING_ERROR));
         }

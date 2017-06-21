@@ -20,14 +20,10 @@
 
 package org.apache.qpid.tests.protocol.v1_0.extensions.soleconn;
 
-import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_ENFORCEMENT_POLICY;
+import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy.CLOSE_EXISTING;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy.REFUSE_CONNECTION;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -35,12 +31,11 @@ import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
+import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 
 public class MixedPolicy extends ProtocolTestBase
@@ -58,55 +53,39 @@ public class MixedPolicy extends ProtocolTestBase
     {
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
-            transport1.doProtocolNegotiation();
-            Open open = new Open();
-            open.setContainerId("testContainerId");
-            open.setDesiredCapabilities(new Symbol[]{SOLE_CONNECTION_FOR_CONTAINER});
-            open.setProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                        CLOSE_EXISTING));
-
-            transport1.sendPerformative(open);
-            PerformativeResponse response = (PerformativeResponse) transport1.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Open.class)));
+            final Interaction interaction1 = transport1.newInteraction();
+            interaction1.negotiateProtocol().consumeResponse()
+                        .openContainerId("testContainerId")
+                        .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                        .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                                                 CLOSE_EXISTING))
+                        .open().consumeResponse(Open.class);
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
-                transport2.doProtocolNegotiation();
-                Open open2 = new Open();
-                open2.setContainerId("testContainerId");
-                open2.setDesiredCapabilities(new Symbol[]{SOLE_CONNECTION_FOR_CONTAINER});
-                open2.setProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                             REFUSE_CONNECTION));
+                final Interaction interaction2 = transport2.newInteraction();
+                interaction2.negotiateProtocol().consumeResponse()
+                            .openContainerId("testContainerId")
+                            .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                            .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                                                     REFUSE_CONNECTION))
+                            .open().sync();
 
-                transport2.sendPerformative(open2);
+                interaction1.consumeResponse(Close.class);
 
-                final PerformativeResponse closeResponse1 = (PerformativeResponse) transport1.getNextResponse();
-                assertThat(closeResponse1, is(notNullValue()));
-                assertThat(closeResponse1.getBody(), is(instanceOf(Close.class)));
-
-                PerformativeResponse response2 = (PerformativeResponse) transport2.getNextResponse();
-                assertThat(response2, is(notNullValue()));
-                assertThat(response2.getBody(), is(instanceOf(Open.class)));
+                interaction2.consumeResponse(Open.class);
 
                 try (FrameTransport transport3 = new FrameTransport(_brokerAddress).connect())
                 {
-                    transport3.doProtocolNegotiation();
-                    Open open3 = new Open();
-                    open3.setContainerId("testContainerId");
-                    open3.setDesiredCapabilities(new Symbol[]{SOLE_CONNECTION_FOR_CONTAINER});
-                    open3.setProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                                 CLOSE_EXISTING));
-
-                    transport3.sendPerformative(open3);
-
-                    PerformativeResponse closeResponse3 = (PerformativeResponse) transport3.getNextResponse();
-                    assertThat(closeResponse3, is(notNullValue()));
-                    assertThat(closeResponse3.getBody(), is(instanceOf(Open.class)));
-                    PerformativeResponse closeResponse3b = (PerformativeResponse) transport3.getNextResponse();
-                    assertThat(closeResponse3b, is(notNullValue()));
-                    assertThat(closeResponse3b.getBody(), is(instanceOf(Close.class)));
+                    final Interaction interaction3 = transport3.newInteraction();
+                    interaction3.negotiateProtocol().consumeResponse()
+                                .openContainerId("testContainerId")
+                                .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                                .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                                                         CLOSE_EXISTING))
+                                .open()
+                                .consumeResponse(Open.class)
+                                .consumeResponse(Close.class);
                 }
             }
         }
@@ -117,36 +96,25 @@ public class MixedPolicy extends ProtocolTestBase
     {
         try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
         {
-            transport1.doProtocolNegotiation();
-            Open open = new Open();
-            open.setContainerId("testContainerId");
-            open.setDesiredCapabilities(new Symbol[]{SOLE_CONNECTION_FOR_CONTAINER});
-            open.setProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                        REFUSE_CONNECTION));
-
-            transport1.sendPerformative(open);
-            PerformativeResponse response = (PerformativeResponse) transport1.getNextResponse();
-
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Open.class)));
+            final Interaction interaction1 = transport1.newInteraction();
+            interaction1.negotiateProtocol().consumeResponse()
+                        .openContainerId("testContainerId")
+                        .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                        .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                                                 REFUSE_CONNECTION))
+                        .open().consumeResponse(Open.class);
 
             try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
             {
-                transport2.doProtocolNegotiation();
-                Open open2 = new Open();
-                open2.setContainerId("testContainerId");
-                open2.setDesiredCapabilities(new Symbol[]{SOLE_CONNECTION_FOR_CONTAINER});
-                open2.setProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                             CLOSE_EXISTING));
-
-                transport2.sendPerformative(open2);
-
-                final PerformativeResponse openResponse2 = (PerformativeResponse) transport2.getNextResponse();
-                assertThat(openResponse2, is(notNullValue()));
-                assertThat(openResponse2.getBody(), is(instanceOf(Open.class)));
-                final PerformativeResponse closeResponse2 = (PerformativeResponse) transport2.getNextResponse();
-                assertThat(closeResponse2, is(notNullValue()));
-                assertThat(closeResponse2.getBody(), is(instanceOf(Close.class)));
+                final Interaction interaction2 = transport2.newInteraction();
+                interaction2.negotiateProtocol().consumeResponse()
+                            .openContainerId("testContainerId")
+                            .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                            .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                                                     CLOSE_EXISTING))
+                            .open()
+                            .consumeResponse(Open.class)
+                            .consumeResponse(Close.class);
             }
         }
     }

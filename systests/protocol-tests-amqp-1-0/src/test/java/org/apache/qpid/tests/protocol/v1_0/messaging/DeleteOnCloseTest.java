@@ -20,7 +20,6 @@
 
 package org.apache.qpid.tests.protocol.v1_0.messaging;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -35,18 +34,19 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.Session_1_0;
-import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnClose;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.protocol.v1_0.PerformativeResponse;
+import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
@@ -69,39 +69,23 @@ public class DeleteOnCloseTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            transport.doBeginSession();
-
-            Attach attach = new Attach();
-            attach.setName("testSendingLink");
-            attach.setHandle(UnsignedInteger.ZERO);
-            attach.setRole(Role.RECEIVER);
-
             Source source = new Source();
             source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
             source.setDynamic(true);
-            attach.setSource(source);
-
-            Target target = new Target();
-            attach.setTarget(target);
-
-            transport.sendPerformative(attach);
-
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Attach.class)));
-            final Attach attachResponse = (Attach) response.getBody();
+            final Interaction interaction = transport.newInteraction();
+            final Attach attachResponse = interaction.negotiateProtocol().consumeResponse()
+                                                     .open().consumeResponse(Open.class)
+                                                     .begin().consumeResponse(Begin.class)
+                                                     .attachRole(Role.RECEIVER)
+                                                     .attachSource(source)
+                                                     .attach().consumeResponse()
+                                                     .getLatestResponse(Attach.class);
             assertThat(attachResponse.getSource(), is(notNullValue()));
             final String newTempQueueAddress = ((Source) attachResponse.getSource()).getAddress();
 
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
 
-            Detach detach = new Detach();
-            detach.setHandle(attach.getHandle());
-            detach.setClosed(true);
-            transport.sendPerformative(detach);
-            PerformativeResponse detachResponse = (PerformativeResponse) transport.getNextResponse();
-            assertThat(detachResponse, is(notNullValue()));
-            assertThat(detachResponse.getBody(), is(instanceOf(Detach.class)));
+            interaction.detachClose(true).detach().consumeResponse().getLatestResponse(Detach.class);
 
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(false));
         }
@@ -115,43 +99,24 @@ public class DeleteOnCloseTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            transport.doBeginSession();
-
-            Attach attach = new Attach();
-            attach.setName("testSendingLink");
-            attach.setHandle(UnsignedInteger.ZERO);
-            attach.setRole(Role.SENDER);
-            attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
-
-            attach.setSource(new Source());
-
             Target target = new Target();
             target.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
             target.setDynamic(true);
-            attach.setTarget(target);
-
-            transport.sendPerformative(attach);
-
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Attach.class)));
-            final Attach attachResponse = (Attach) response.getBody();
+            final Interaction interaction = transport.newInteraction();
+            final Attach attachResponse = interaction.negotiateProtocol().consumeResponse()
+                                                     .open().consumeResponse(Open.class)
+                                                     .begin().consumeResponse(Begin.class)
+                                                     .attachRole(Role.SENDER)
+                                                     .attachTarget(target)
+                                                     .attach().consumeResponse()
+                                                     .getLatestResponse(Attach.class);
             assertThat(attachResponse.getTarget(), is(notNullValue()));
             final String newTempQueueAddress = ((Target) attachResponse.getTarget()).getAddress();
 
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
 
-            PerformativeResponse flowResponse = (PerformativeResponse) transport.getNextResponse();
-            assertThat(flowResponse, is(notNullValue()));
-            assertThat(flowResponse.getBody(), is(instanceOf(Flow.class)));
-
-            Detach detach = new Detach();
-            detach.setHandle(attach.getHandle());
-            detach.setClosed(true);
-            transport.sendPerformative(detach);
-            PerformativeResponse detachResponse = (PerformativeResponse) transport.getNextResponse();
-            assertThat(detachResponse, is(notNullValue()));
-            assertThat(detachResponse.getBody(), is(instanceOf(Detach.class)));
+            interaction.consumeResponse().getLatestResponse(Flow.class);
+            interaction.detachClose(true).detach().consumeResponse().getLatestResponse(Detach.class);
 
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(false));
         }
@@ -165,38 +130,23 @@ public class DeleteOnCloseTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            transport.doBeginSession();
-
-            Attach attach = new Attach();
-            attach.setName("testSendingLink");
-            attach.setHandle(UnsignedInteger.ZERO);
-            attach.setRole(Role.RECEIVER);
-
             Source source = new Source();
             source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
             source.setDynamic(true);
-            attach.setSource(source);
-
-            Target target = new Target();
-            attach.setTarget(target);
-
-            transport.sendPerformative(attach);
-
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Attach.class)));
-            final Attach attachResponse = (Attach) response.getBody();
+            final Interaction interaction = transport.newInteraction();
+            final Attach attachResponse = interaction.negotiateProtocol().consumeResponse()
+                                                     .open().consumeResponse(Open.class)
+                                                     .begin().consumeResponse(Begin.class)
+                                                     .attachRole(Role.RECEIVER)
+                                                     .attachSource(source)
+                                                     .attach().consumeResponse()
+                                                     .getLatestResponse(Attach.class);
             assertThat(attachResponse.getSource(), is(notNullValue()));
             final String newTempQueueAddress = ((Source) attachResponse.getSource()).getAddress();
 
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
 
-            Detach detach = new Detach();
-            detach.setHandle(attach.getHandle());
-            transport.sendPerformative(detach);
-            PerformativeResponse detachResponse = (PerformativeResponse) transport.getNextResponse();
-            assertThat(detachResponse, is(notNullValue()));
-            assertThat(detachResponse.getBody(), is(instanceOf(Detach.class)));
+            interaction.detach().consumeResponse().getLatestResponse(Detach.class);
 
             assertThat(Utils.doesNodeExist(_brokerAddress, newTempQueueAddress), is(true));
         }
@@ -210,28 +160,18 @@ public class DeleteOnCloseTest extends ProtocolTestBase
         final String newTempQueueAddress;
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            transport.doBeginSession();
-
-            Attach attach = new Attach();
-            attach.setName("testSendingLink");
-            attach.setHandle(UnsignedInteger.ZERO);
-            attach.setRole(Role.RECEIVER);
-
             Source source = new Source();
             source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
             source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
             source.setDynamic(true);
-            attach.setSource(source);
-
-            Target target = new Target();
-            attach.setTarget(target);
-
-            transport.sendPerformative(attach);
-
-            PerformativeResponse response = (PerformativeResponse) transport.getNextResponse();
-            assertThat(response, is(notNullValue()));
-            assertThat(response.getBody(), is(instanceOf(Attach.class)));
-            final Attach attachResponse = (Attach) response.getBody();
+            final Interaction interaction = transport.newInteraction();
+            final Attach attachResponse = interaction.negotiateProtocol().consumeResponse()
+                                                     .open().consumeResponse(Open.class)
+                                                     .begin().consumeResponse(Begin.class)
+                                                     .attachRole(Role.RECEIVER)
+                                                     .attachSource(source)
+                                                     .attach().consumeResponse()
+                                                     .getLatestResponse(Attach.class);
             assertThat(attachResponse.getSource(), is(notNullValue()));
             newTempQueueAddress = ((Source) attachResponse.getSource()).getAddress();
 
