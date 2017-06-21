@@ -48,6 +48,9 @@ public interface BrokerAdmin extends Pluggable
     boolean isSASLSupported();
     boolean isSASLMechanismSupported(String mechanismName);
 
+    String getValidUsername();
+    String getValidPassword();
+
     enum PortType
     {
         ANONYMOUS_AMQP,

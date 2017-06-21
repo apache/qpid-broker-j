@@ -58,6 +58,8 @@ public class SaslTest extends ProtocolTestBase
 
     private static final byte[] SASL_AMQP_HEADER_BYTES = "AMQP\3\1\0\0".getBytes(StandardCharsets.UTF_8);
     private static final byte[] AMQP_HEADER_BYTES = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
+    private String _username;
+    private String _password;
 
     @Before
     public void setUp()
@@ -65,6 +67,8 @@ public class SaslTest extends ProtocolTestBase
         assumeThat(getBrokerAdmin().isSASLSupported(), is(true));
         assumeThat(getBrokerAdmin().isSASLMechanismSupported(PLAIN.toString()), is(true));
         assumeThat(getBrokerAdmin().isSASLMechanismSupported(CRAM_MD5.toString()), is(true));
+        _username = getBrokerAdmin().getValidUsername();
+        _password = getBrokerAdmin().getValidPassword();
     }
 
     @Test
@@ -84,8 +88,9 @@ public class SaslTest extends ProtocolTestBase
             SaslMechanisms saslMechanismsResponse = interaction.consumeResponse().getLatestResponse(SaslMechanisms.class);
             assertThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
 
+            final Binary initialResponse = new Binary(String.format("\0%s\0%s", _username, _password).getBytes(StandardCharsets.US_ASCII));
             SaslOutcome saslOutcome = interaction.saslMechanism(PLAIN)
-                                                 .saslInitialResponse(new Binary("\0guest\0guest".getBytes(StandardCharsets.US_ASCII)))
+                                                 .saslInitialResponse(initialResponse)
                                                  .saslInit().consumeResponse()
                                                  .getLatestResponse(SaslOutcome.class);
             assertThat(saslOutcome.getCode(), equalTo(SaslCode.OK));
@@ -121,7 +126,7 @@ public class SaslTest extends ProtocolTestBase
                                                      .getLatestResponse(SaslChallenge.class);
             assertThat(saslChallenge.getChallenge(), is(notNullValue()));
 
-            byte[] response = generateCramMD5ClientResponse("guest", "guest",
+            byte[] response = generateCramMD5ClientResponse(_username, _password,
                                                             saslChallenge.getChallenge().getArray());
 
             final SaslOutcome saslOutcome = interaction.saslResponseResponse(new Binary(response))
@@ -156,8 +161,10 @@ public class SaslTest extends ProtocolTestBase
             SaslMechanisms saslMechanismsResponse = interaction.consumeResponse().getLatestResponse(SaslMechanisms.class);
             assertThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
 
+            final Binary initialResponse =
+                    new Binary(String.format("\0%s\0badpassword", _username).getBytes(StandardCharsets.US_ASCII));
             SaslOutcome saslOutcome = interaction.saslMechanism(PLAIN)
-                                                 .saslInitialResponse(new Binary("\0guest\0badpassword".getBytes(StandardCharsets.US_ASCII)))
+                                                 .saslInitialResponse(initialResponse)
                                                  .saslInit().consumeResponse()
                                                  .getLatestResponse(SaslOutcome.class);
             assertThat(saslOutcome.getCode(), equalTo(SaslCode.AUTH));

@@ -119,6 +119,18 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public String getValidUsername()
+    {
+        return "guest";
+    }
+
+    @Override
+    public String getValidPassword()
+    {
+        return "guest";
+    }
+
+    @Override
     public String getType()
     {
         return "EXTERNAL_BROKER";

@@ -342,6 +342,18 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public String getValidUsername()
+    {
+        return "guest";
+    }
+
+    @Override
+    public String getValidPassword()
+    {
+        return "guest";
+    }
+
+    @Override
     public String getType()
     {
         return "EMBEDDED_BROKER_PER_CLASS";
