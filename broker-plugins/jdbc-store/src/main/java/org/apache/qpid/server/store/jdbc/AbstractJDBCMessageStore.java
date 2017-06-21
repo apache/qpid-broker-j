@@ -103,27 +103,17 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     protected void setMaximumMessageId()
     {
-
-        try
+        try (Connection conn = newAutoCommitConnection())
         {
-            Connection conn = newAutoCommitConnection();
-            try
-            {
-                setMaxMessageId(conn, "SELECT max(message_id) FROM " + getMessageContentTableName(), 1);
-                setMaxMessageId(conn, "SELECT max(message_id) FROM " + getMetaDataTableName(), 1);
-                setMaxMessageId(conn, "SELECT queue_id, max(message_id) FROM " + getQueueEntryTableName()
-                                      + " GROUP BY queue_id " , 2);
-            }
-            finally
-            {
-                conn.close();
-            }
+            setMaxMessageId(conn, "SELECT max(message_id) FROM " + getMessageContentTableName(), 1);
+            setMaxMessageId(conn, "SELECT max(message_id) FROM " + getMetaDataTableName(), 1);
+            setMaxMessageId(conn, "SELECT queue_id, max(message_id) FROM " + getQueueEntryTableName()
+                                  + " GROUP BY queue_id ", 2);
         }
         catch (SQLException e)
         {
             throw new StoreException("Failed to determine maximum ids", e);
         }
-
     }
 
     private void setMaxMessageId(final Connection conn, final String query, int col) throws SQLException
@@ -1865,35 +1855,22 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     public void onDelete(ConfiguredObject<?> parent)
     {
         // TODO should probably check we are closed
-        try
+        try (Connection conn = newAutoCommitConnection())
         {
-            Connection conn = newAutoCommitConnection();
-            try
-            {
 
-                for (String tableName : getTableNames())
+            for (String tableName : getTableNames())
+            {
+                try (Statement stmt = conn.createStatement())
                 {
-                    Statement stmt = conn.createStatement();
-                    try
-                    {
-                        stmt.execute("DROP TABLE " +  tableName);
-                    }
-                    catch(SQLException e)
-                    {
-                        getLogger().warn("Failed to drop table '{}'", tableName, e);
-                    }
-                    finally
-                    {
-                        stmt.close();
-                    }
+                    stmt.execute("DROP TABLE " + tableName);
+                }
+                catch (SQLException e)
+                {
+                    getLogger().warn("Failed to drop table '{}'", tableName, e);
                 }
             }
-            finally
-            {
-                conn.close();
-            }
         }
-        catch(SQLException e)
+        catch (SQLException e)
         {
             getLogger().error("Exception while deleting store tables", e);
         }
