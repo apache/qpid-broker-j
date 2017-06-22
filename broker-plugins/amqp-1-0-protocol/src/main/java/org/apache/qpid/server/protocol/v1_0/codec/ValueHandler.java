@@ -131,7 +131,7 @@ public class ValueHandler implements DescribedTypeConstructorRegistry.Source
                 {
                     position--;
                 }
-                originalPositions[i] = position;
+                originalPositions[i - firstBufferWithAvailable] = position;
             }
 
             Object descriptor = parse(in);

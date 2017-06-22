@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.SystemLauncher;
 import org.apache.qpid.server.SystemLauncherListener;
 import org.apache.qpid.server.logging.logback.LogbackLoggingSystemLauncherListener;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
@@ -306,6 +307,13 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public int getQueueDepthMessages(final String testQueueName)
+    {
+        Queue queue = _currentVirtualHostNode.getVirtualHost().getChildByName(Queue.class, testQueueName);
+        return queue.getQueueDepthMessages();
+    }
+
+    @Override
     public boolean supportsRestart()
     {
         return _isPersistentStore;
@@ -343,6 +351,12 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
 
     @Override
     public boolean isWebSocketSupported()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isQueueDepthSupported()
     {
         return true;
     }

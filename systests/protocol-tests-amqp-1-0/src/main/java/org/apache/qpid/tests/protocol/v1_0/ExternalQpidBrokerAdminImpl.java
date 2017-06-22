@@ -95,6 +95,12 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public int getQueueDepthMessages(final String testQueueName)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean supportsRestart()
     {
         return false;
@@ -116,6 +122,12 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     public boolean isWebSocketSupported()
     {
         return true;
+    }
+
+    @Override
+    public boolean isQueueDepthSupported()
+    {
+        return false;
     }
 
     @Override

@@ -38,7 +38,6 @@ import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
@@ -52,24 +51,22 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLinkEndpoint.class);
     private final Link_1_0<S, T> _link;
     private final Session_1_0 _session;
+
+    // todo: remove client specific part
     private Object _flowTransactionId;
-    private SenderSettleMode _sendingSettlementMode;
-    private ReceiverSettleMode _receivingSettlementMode;
-    private Map _initialUnsettledMap;
-    private UnsignedInteger _lastSentCreditLimit;
+    private volatile SenderSettleMode _sendingSettlementMode;
+    private volatile ReceiverSettleMode _receivingSettlementMode;
+    private volatile UnsignedInteger _lastSentCreditLimit;
     private volatile boolean _stopped;
     private volatile boolean _stoppedUpdated;
-    private Symbol[] _capabilities;
-    private SequenceNumber _deliveryCount;
-    private UnsignedInteger _linkCredit;
-    private UnsignedInteger _available;
-    private Boolean _drain;
-    private UnsignedInteger _localHandle;
-    private UnsignedLong _maxMessageSize;
-    private Map<Symbol, Object> _properties;
-
-    protected volatile State _state = State.ATTACH_RECVD;
-    protected Map _localUnsettled;
+    private volatile Symbol[] _capabilities;
+    private volatile SequenceNumber _deliveryCount;
+    private volatile UnsignedInteger _linkCredit;
+    private volatile UnsignedInteger _available;
+    private volatile Boolean _drain;
+    private volatile UnsignedInteger _localHandle;
+    private volatile Map<Symbol, Object> _properties;
+    private volatile State _state = State.ATTACH_RECVD;
 
     protected enum State
     {
@@ -88,12 +85,13 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         _link = link;
     }
 
-    protected abstract void handle(final Binary deliveryTag, final DeliveryState state, final Boolean settled);
+    protected abstract void handleDeliveryState(final Binary deliveryTag, final DeliveryState state, final Boolean settled);
 
     protected abstract void remoteDetachedPerformDetach(final Detach detach);
 
     protected abstract Map<Symbol,Object> initProperties(final Attach attach);
 
+    protected abstract Map<Binary, DeliveryState> getLocalUnsettled();
 
     @Override
     public void receiveAttach(final Attach attach) throws AmqpErrorException
@@ -131,9 +129,17 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
     {
         _sendingSettlementMode = attach.getSndSettleMode();
         _receivingSettlementMode = attach.getRcvSettleMode();
-        _initialUnsettledMap = attach.getUnsettled();
         _properties = initProperties(attach);
         _state = State.ATTACH_RECVD;
+
+        if (getRole() == Role.RECEIVER)
+        {
+            getSession().getIncomingDeliveryRegistry().removeDeliveriesForLinkEndpoint(this);
+        }
+        else
+        {
+            getSession().getOutgoingDeliveryRegistry().removeDeliveriesForLinkEndpoint(this);
+        }
     }
 
     public boolean isStopped()
@@ -229,20 +235,16 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         }
     }
 
-    public void addUnsettled(final Delivery unsettled)
-    {
-    }
-
     @Override
-    public void receiveDeliveryState(final Delivery unsettled,
+    public void receiveDeliveryState(final Binary deliveryTag,
                                      final DeliveryState state,
                                      final Boolean settled)
     {
-        handle(unsettled.getDeliveryTag(), state, settled);
+        handleDeliveryState(deliveryTag, state, settled);
 
         if (Boolean.TRUE.equals(settled))
         {
-            settle(unsettled.getDeliveryTag());
+            settle(deliveryTag);
         }
     }
 
@@ -297,7 +299,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         attachToSend.setTarget(getTarget());
         attachToSend.setSndSettleMode(getSendingSettlementMode());
         attachToSend.setRcvSettleMode(getReceivingSettlementMode());
-        attachToSend.setUnsettled(_localUnsettled);
+        attachToSend.setUnsettled(getLocalUnsettled());
         attachToSend.setProperties(_properties);
         attachToSend.setOfferedCapabilities(_capabilities);
 
@@ -496,13 +498,6 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         _capabilities = capabilities == null ? null : capabilities.toArray(new Symbol[capabilities.size()]);
     }
 
-    public Map getInitialUnsettledMap()
-    {
-        return _initialUnsettledMap;
-    }
-
-    public abstract void initialiseUnsettled();
-
     @Override public String toString()
     {
         return "LinkEndpoint{" +
@@ -517,7 +512,6 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
                ", _available=" + _available +
                ", _drain=" + _drain +
                ", _localHandle=" + _localHandle +
-               ", _maxMessageSize=" + _maxMessageSize +
                '}';
     }
 }

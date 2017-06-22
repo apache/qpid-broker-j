@@ -22,7 +22,6 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,20 +52,14 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint<Target>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardReceivingLinkEndpoint.class);
 
-    private ArrayList<Transfer> _incompleteMessage;
-    private boolean _resumedMessage;
-    private Binary _messageDeliveryTag;
-    private Map<Binary, Outcome> _unsettledMap = Collections.synchronizedMap(new HashMap<Binary, Outcome>());
     private ReceivingDestination _receivingDestination;
 
     public StandardReceivingLinkEndpoint(final Session_1_0 session,
@@ -89,107 +82,30 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
     }
 
     @Override
-    protected Error messageTransfer(Transfer xfr)
+    protected Error receiveDelivery(Delivery delivery)
     {
-        List<QpidByteBuffer> fragments = null;
+        ReceiverSettleMode transferReceiverSettleMode = delivery.getReceiverSettleMode();
 
-        org.apache.qpid.server.protocol.v1_0.type.DeliveryState xfrState = xfr.getState();
-        final Binary deliveryTag = xfr.getDeliveryTag();
-        UnsignedInteger messageFormat = null;
-        ReceiverSettleMode transferReceiverSettleMode = null;
-        Error error = null;
-        if(Boolean.TRUE.equals(xfr.getMore()) && _incompleteMessage == null)
+        if(delivery.getResume())
         {
-            _incompleteMessage = new ArrayList<>();
-            _incompleteMessage.add(xfr);
-            _resumedMessage = Boolean.TRUE.equals(xfr.getResume());
-            _messageDeliveryTag = deliveryTag;
-            return null;
-        }
-        else if(_incompleteMessage != null)
-        {
-            _incompleteMessage.add(xfr);
-            if(Boolean.TRUE.equals(xfr.getMore()))
+            DeliveryState deliveryState = _unsettled.get(delivery.getDeliveryTag());
+            if (deliveryState instanceof Outcome)
             {
-                return null;
-            }
-
-            fragments = new ArrayList<>(_incompleteMessage.size());
-
-            for (Transfer t : _incompleteMessage)
-            {
-                if (t.getMessageFormat() != null && messageFormat == null)
-                {
-                    messageFormat = t.getMessageFormat();
-                }
-
-                if (t.getRcvSettleMode() != null)
-                {
-                    if (transferReceiverSettleMode == null)
-                    {
-                        transferReceiverSettleMode = t.getRcvSettleMode();
-                    }
-                    else if (!transferReceiverSettleMode.equals(t.getRcvSettleMode()))
-                    {
-                        error = new Error(AmqpError.INVALID_FIELD,
-                                          "Transfer \"rcv-settle-mode\" is set to different value than on previous transfer.");
-                        break;
-                    }
-                }
-                fragments.addAll(t.getPayload());
-                t.dispose();
-            }
-            _incompleteMessage=null;
-
-        }
-        else
-        {
-            _resumedMessage = Boolean.TRUE.equals(xfr.getResume());
-            _messageDeliveryTag = deliveryTag;
-            fragments = xfr.getPayload();
-            messageFormat = xfr.getMessageFormat();
-            transferReceiverSettleMode = xfr.getRcvSettleMode();
-            xfr.dispose();
-        }
-
-        if (error == null && !ReceiverSettleMode.SECOND.equals(getReceivingSettlementMode())
-            && ReceiverSettleMode.SECOND.equals(transferReceiverSettleMode))
-        {
-            error = new Error(AmqpError.INVALID_FIELD,
-                              "Transfer \"rcv-settle-mode\" cannot be \"first\" when link \"rcv-settle-mode\" is set to \"second\".");
-
-        }
-
-        if (error != null)
-        {
-            for (QpidByteBuffer fragment : fragments)
-            {
-                fragment.dispose();
-            }
-            return error;
-        }
-
-        if(_resumedMessage)
-        {
-            if(_unsettledMap.containsKey(_messageDeliveryTag))
-            {
-                Outcome outcome = _unsettledMap.get(_messageDeliveryTag);
                 boolean settled = shouldReceiverSettleFirst(transferReceiverSettleMode);
-                updateDisposition(_messageDeliveryTag, (DeliveryState) outcome, settled);
-                if(settled)
-                {
-                    _unsettledMap.remove(_messageDeliveryTag);
-                }
+                updateDisposition(delivery.getDeliveryTag(), deliveryState, settled);
+                return null;
             }
             else
             {
-                throw new ConnectionScopedRuntimeException("Unexpected delivery Tag: " + _messageDeliveryTag + "_unsettledMap: " + _unsettledMap);
+                // TODO: create message ?
             }
         }
         else
         {
             ServerMessage<?> serverMessage;
-
+            UnsignedInteger messageFormat = delivery.getMessageFormat();
+            org.apache.qpid.server.protocol.v1_0.type.DeliveryState xfrState = delivery.getState();
+            List<QpidByteBuffer> fragments = delivery.getPayload();
             MessageFormat format = MessageFormatRegistry.getFormat(messageFormat == null ? 0 : messageFormat.intValue());
             if(format != null)
             {
@@ -279,7 +195,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     {
                         if (transactionId == null)
                         {
-                            resultantState = (DeliveryState) outcome;
+                            resultantState = outcome;
                         }
                         else
                         {
@@ -302,12 +218,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
                     boolean settled = shouldReceiverSettleFirst(transferReceiverSettleMode);
 
-                    if (!settled)
-                    {
-                        _unsettledMap.put(deliveryTag, outcome);
-                    }
-
-                    updateDisposition(deliveryTag, resultantState, settled);
+                    updateDisposition(delivery.getDeliveryTag(), resultantState, settled);
 
                     getSession().getAMQPConnection()
                                 .registerMessageReceived(serverMessage.getSize(), arrivalTime);
@@ -319,12 +230,12 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                         {
                             public void postCommit()
                             {
-                                updateDisposition(deliveryTag, null, true);
+                                updateDisposition(delivery.getDeliveryTag(), null, true);
                             }
 
                             public void onRollback()
                             {
-                                updateDisposition(deliveryTag, null, true);
+                                updateDisposition(delivery.getDeliveryTag(), null, true);
                             }
                         });
                     }
@@ -375,15 +286,12 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         }
     }
 
-
     @Override
-    protected void handle(Binary deliveryTag, DeliveryState state, Boolean settled)
+    protected Map<Binary, DeliveryState> getLocalUnsettled()
     {
-        if(Boolean.TRUE.equals(settled))
-        {
-            _unsettledMap.remove(deliveryTag);
-        }
+        return new HashMap<>(_unsettled);
     }
+
 
     @Override
     public void attachReceived(final Attach attach) throws AmqpErrorException
@@ -433,24 +341,18 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         setCapabilities(targetCapabilities);
         setDestination(destination);
 
-        Map initialUnsettledMap = getInitialUnsettledMap();
-        Map<Binary, Outcome> unsettledCopy = new HashMap<Binary, Outcome>(_unsettledMap);
-        for(Map.Entry<Binary, Outcome> entry : unsettledCopy.entrySet())
+        Map remoteUnsettled = attach.getUnsettled();
+        Map<Binary, DeliveryState> unsettledCopy = new HashMap<>(_unsettled);
+        for(Map.Entry<Binary, DeliveryState> entry : unsettledCopy.entrySet())
         {
             Binary deliveryTag = entry.getKey();
-            if(!initialUnsettledMap.containsKey(deliveryTag))
+            if(remoteUnsettled == null || !remoteUnsettled.containsKey(deliveryTag))
             {
-                _unsettledMap.remove(deliveryTag);
+                _unsettled.remove(deliveryTag); // todo: removal is based on assumption that remote unsettled map is complete
             }
         }
 
         getLink().setTermini(source, target);
-    }
-
-    @Override
-    public void initialiseUnsettled()
-    {
-        _localUnsettled = new HashMap(_unsettledMap);
     }
 
     public ReceivingDestination getReceivingDestination()
@@ -515,7 +417,6 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         }
 
         attachReceived(attach);
-        initialiseUnsettled();
     }
 
     @Override
@@ -527,22 +428,5 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         }
 
         attachReceived(attach);
-    }
-
-    @Override
-    protected void detach(Error error, boolean close)
-    {
-        super.detach(error, close);
-
-        if (_incompleteMessage != null)
-        {
-            for (Transfer t : _incompleteMessage)
-            {
-                t.dispose();
-            }
-            _incompleteMessage = null;
-        }
-        _messageDeliveryTag = null;
-        _resumedMessage = false;
     }
 }

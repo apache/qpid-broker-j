@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v1_0;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
@@ -144,6 +145,12 @@ public class ErrantLinkEndpoint<S extends BaseSource, T extends BaseTarget> impl
     }
 
     @Override
+    public void receiveDeliveryState(final Binary deliveryTag, final DeliveryState state, final Boolean settled)
+    {
+
+    }
+
+    @Override
     public void receiveFlow(final Flow flow)
     {
         throw new UnsupportedOperationException("This Link is errant");
@@ -173,9 +180,4 @@ public class ErrantLinkEndpoint<S extends BaseSource, T extends BaseTarget> impl
         throw new UnsupportedOperationException("This Link is errant");
     }
 
-    @Override
-    public void receiveDeliveryState(final Delivery unsettled, final DeliveryState state, final Boolean settled)
-    {
-        throw new UnsupportedOperationException("This Link is errant");
-    }
 }

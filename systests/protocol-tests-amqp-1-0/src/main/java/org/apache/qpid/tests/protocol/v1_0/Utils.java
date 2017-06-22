@@ -30,7 +30,6 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public class Utils
 {
@@ -81,19 +80,11 @@ public class Utils
                                                      .flowNextOutgoingId(UnsignedInteger.ZERO)
                                                      .flowLinkCredit(UnsignedInteger.ONE)
                                                      .flowHandleFromLinkHandle()
-                                                     .flow();
+                                                     .flow()
+                                                     .receiveDelivery()
+                                                     .decodeLatestDelivery();
 
-            MessageDecoder messageDecoder = new MessageDecoder();
-            boolean hasMore;
-            do
-            {
-                Transfer responseTransfer = interaction.consumeResponse().getLatestResponse(Transfer.class);
-                messageDecoder.addTransfer(responseTransfer);
-                hasMore = Boolean.TRUE.equals(responseTransfer.getMore());
-            }
-            while (hasMore);
-
-            return messageDecoder.getData();
+            return interaction.getDecodedLatestDelivery();
         }
     }
 }

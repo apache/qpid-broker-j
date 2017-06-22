@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
 public class Flow implements FrameBody
@@ -66,7 +67,7 @@ public class Flow implements FrameBody
     private Boolean _echo;
 
     @CompositeTypeField
-    private Map _properties;
+    private Map<Symbol, Object> _properties;
 
     public UnsignedInteger getNextIncomingId()
     {
@@ -168,12 +169,12 @@ public class Flow implements FrameBody
         _echo = echo;
     }
 
-    public Map getProperties()
+    public Map<Symbol, Object> getProperties()
     {
         return _properties;
     }
 
-    public void setProperties(Map properties)
+    public void setProperties(Map<Symbol, Object> properties)
     {
         _properties = properties;
     }

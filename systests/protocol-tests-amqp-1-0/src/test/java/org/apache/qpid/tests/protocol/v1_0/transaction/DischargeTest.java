@@ -143,7 +143,7 @@ public class DischargeTest extends ProtocolTestBase
             final Detach detachResponse = interaction.transferDeliveryId(UnsignedInteger.ONE)
                                                                 .transferDeliveryTag(new Binary("discharge".getBytes(UTF_8)))
                                                                 .transferPayloadData(discharge)
-                                                                .transfer().consumeResponse()
+                                                                .transfer().consumeResponse(Detach.class)
                                                                 .getLatestResponse(Detach.class);
             Error error = detachResponse.getError();
             assertThat(error, is(notNullValue()));

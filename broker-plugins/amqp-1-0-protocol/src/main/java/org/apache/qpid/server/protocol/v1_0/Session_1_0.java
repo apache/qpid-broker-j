@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -72,6 +71,9 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
+import org.apache.qpid.server.protocol.v1_0.delivery.DeliveryRegistry;
+import org.apache.qpid.server.protocol.v1_0.delivery.DeliveryRegistryImpl;
+import org.apache.qpid.server.protocol.v1_0.delivery.UnsettledDelivery;
 import org.apache.qpid.server.protocol.v1_0.framing.OversizeFrameException;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
@@ -155,9 +157,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private UnsignedInteger _remoteOutgoingWindow = UnsignedInteger.ZERO;
     private UnsignedInteger _lastSentIncomingLimit;
 
-    private LinkedHashMap<UnsignedInteger,Delivery> _outgoingUnsettled = new LinkedHashMap<>(DEFAULT_SESSION_BUFFER_SIZE);
-    private LinkedHashMap<UnsignedInteger,Delivery> _incomingUnsettled = new LinkedHashMap<>(DEFAULT_SESSION_BUFFER_SIZE);
-
+    private final DeliveryRegistry _outgoingDeliveryRegistry = new DeliveryRegistryImpl();
+    private final DeliveryRegistry _incomingDeliveryRegistry = new DeliveryRegistryImpl();
 
     private final Error _sessionEndedLinkError =
             new Error(LinkError.DETACH_FORCED,
@@ -231,7 +232,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
     }
 
-    public void updateDisposition(final Role role,
+    void updateDisposition(final Role role,
                                   final UnsignedInteger first,
                                   final UnsignedInteger last,
                                   final DeliveryState state, final boolean settled)
@@ -248,19 +249,34 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
         if (settled)
         {
-            final LinkedHashMap<UnsignedInteger, Delivery> unsettled =
-                    role == Role.RECEIVER ? _incomingUnsettled : _outgoingUnsettled;
+            final DeliveryRegistry deliveryRegistry = role == Role.RECEIVER ? _incomingDeliveryRegistry : _outgoingDeliveryRegistry;
+
             SequenceNumber pos = new SequenceNumber(first.intValue());
             SequenceNumber end = new SequenceNumber(last.intValue());
             while (pos.compareTo(end) <= 0)
             {
-                unsettled.remove(UnsignedInteger.valueOf(pos.intValue()));
+                deliveryRegistry.removeDelivery(UnsignedInteger.valueOf(pos.intValue()));
                 pos.incr();
             }
         }
 
         send(disposition);
         //TODO - check send flow
+    }
+
+    void updateDisposition(final Role role,
+                           final Binary deliveryTag,
+                           final DeliveryState state,
+                           final boolean settled)
+    {
+        final DeliveryRegistry deliveryRegistry = role == Role.RECEIVER ? _incomingDeliveryRegistry : _outgoingDeliveryRegistry;
+        UnsignedInteger deliveryId = deliveryRegistry.getDeliveryIdByTag(deliveryTag);
+        if (deliveryId == null)
+        {
+            throw new ConnectionScopedRuntimeException(String.format(
+                    "Delivery with tag '%s' is not found in unsettled deliveries", deliveryTag));
+        }
+        updateDisposition(role, deliveryId, deliveryId, state, settled);
     }
 
     public boolean hasCreditToSend()
@@ -283,32 +299,14 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         if (newDelivery)
         {
             deliveryId = UnsignedInteger.valueOf(_nextOutgoingDeliveryId++);
-            endpoint.setLastDeliveryId(deliveryId);
+            xfr.setDeliveryId(deliveryId);
             if (!settled)
             {
-                final Delivery delivery = new Delivery(xfr, endpoint);
-                _outgoingUnsettled.put(deliveryId, delivery);
-                endpoint.addUnsettled(delivery);
+                final UnsettledDelivery delivery = new UnsettledDelivery(xfr.getDeliveryTag(), endpoint);
+                _outgoingDeliveryRegistry.addDelivery(deliveryId, delivery);
             }
         }
-        else
-        {
-            deliveryId = endpoint.getLastDeliveryId();
-            final Delivery delivery = _outgoingUnsettled.get(deliveryId);
-            if (delivery != null)
-            {
-                if (!settled)
-                {
-                    delivery.addTransfer(xfr);
-                }
-                else
-                {
-                    endpoint.settle(delivery.getDeliveryTag());
-                    _outgoingUnsettled.remove(deliveryId);
-                }
-            }
-        }
-        xfr.setDeliveryId(deliveryId);
+
         _remoteIncomingWindow--;
         try
         {
@@ -461,42 +459,40 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     {
         Role dispositionRole = disposition.getRole();
 
-        LinkedHashMap<UnsignedInteger, Delivery> unsettledTransfers;
+        DeliveryRegistry unsettledDeliveries;
 
         if(dispositionRole == Role.RECEIVER)
         {
-            unsettledTransfers = _outgoingUnsettled;
+            unsettledDeliveries = _outgoingDeliveryRegistry;
         }
         else
         {
-            unsettledTransfers = _incomingUnsettled;
-
+            unsettledDeliveries = _incomingDeliveryRegistry;
         }
 
         SequenceNumber deliveryId = new SequenceNumber(disposition.getFirst().intValue());
         SequenceNumber last;
         if(disposition.getLast() == null)
         {
-            last = deliveryId;
+            last = new SequenceNumber(deliveryId.intValue());
         }
         else
         {
             last = new SequenceNumber(disposition.getLast().intValue());
         }
 
-
         while(deliveryId.compareTo(last)<=0)
         {
             UnsignedInteger deliveryIdUnsigned = UnsignedInteger.valueOf(deliveryId.intValue());
-            Delivery delivery = unsettledTransfers.get(deliveryIdUnsigned);
-            if(delivery != null)
+            UnsettledDelivery unsettledDelivery = unsettledDeliveries.getDelivery(deliveryIdUnsigned);
+
+            if(unsettledDelivery != null)
             {
-                delivery.getLinkEndpoint().receiveDeliveryState(delivery,
-                                                                disposition.getState(),
-                                                                disposition.getSettled());
+                LinkEndpoint<?,?> linkEndpoint  = unsettledDelivery.getLinkEndpoint();
+                linkEndpoint.receiveDeliveryState(unsettledDelivery.getDeliveryTag(), disposition.getState(), disposition.getSettled());
                 if (Boolean.TRUE.equals(disposition.getSettled()))
                 {
-                    unsettledTransfers.remove(deliveryIdUnsigned);
+                    unsettledDeliveries.removeDelivery(deliveryIdUnsigned);
                 }
             }
             deliveryId.incr();
@@ -607,62 +603,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         else
         {
             AbstractReceivingLinkEndpoint endpoint = ((AbstractReceivingLinkEndpoint) linkEndpoint);
-
-            UnsignedInteger deliveryId = transfer.getDeliveryId();
-            if (deliveryId == null)
-            {
-                deliveryId = endpoint.getLastDeliveryId();
-            }
-
-            Delivery delivery = _incomingUnsettled.get(deliveryId);
-            if (delivery == null)
-            {
-                delivery = new Delivery(transfer, endpoint);
-                _incomingUnsettled.put(deliveryId, delivery);
-
-                if (Boolean.TRUE.equals(transfer.getMore()))
-                {
-                    endpoint.setLastDeliveryId(transfer.getDeliveryId());
-                }
-            }
-            else
-            {
-                if (delivery.getDeliveryId().equals(deliveryId))
-                {
-                    delivery.addTransfer(transfer);
-
-                    if (!Boolean.TRUE.equals(transfer.getMore()))
-                    {
-                        endpoint.setLastDeliveryId(null);
-                    }
-                }
-                else
-                {
-                    End reply = new End();
-
-                    Error error = new Error();
-                    error.setCondition(AmqpError.ILLEGAL_STATE);
-                    error.setDescription("TRANSFER called on Session for link handle "
-                                         + inputHandle
-                                         + " with incorrect delivery id "
-                                         + transfer.getDeliveryId());
-                    reply.setError(error);
-                    _connection.sendEnd(_sendingChannel, reply, true);
-
-                    return;
-
-                }
-            }
-
-            Error error = endpoint.receiveTransfer(transfer, delivery);
-            if(error != null)
-            {
-                endpoint.close(error);
-            }
-            if ((delivery.isComplete() && delivery.isSettled() || Boolean.TRUE.equals(transfer.getAborted())))
-            {
-                _incomingUnsettled.remove(deliveryId);
-            }
+            endpoint.receiveTransfer(transfer);
         }
     }
 
@@ -1536,6 +1477,14 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
         _endpointToOutputHandle.remove(linkEndpoint);
         _associatedLinkEndpoints.remove(linkEndpoint);
+        if (linkEndpoint.getRole() == Role.RECEIVER)
+        {
+            getIncomingDeliveryRegistry().removeDeliveriesForLinkEndpoint(linkEndpoint);
+        }
+        else
+        {
+            getOutgoingDeliveryRegistry().removeDeliveriesForLinkEndpoint(linkEndpoint);
+        }
     }
 
     private void detach(UnsignedInteger handle, Detach detach)
@@ -1612,6 +1561,16 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             }
         }
         return primaryDomain;
+    }
+
+    DeliveryRegistry getOutgoingDeliveryRegistry()
+    {
+        return _outgoingDeliveryRegistry;
+    }
+
+    DeliveryRegistry getIncomingDeliveryRegistry()
+    {
+        return _incomingDeliveryRegistry;
     }
 
     private class EndpointCreationCallback<T extends LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> implements FutureCallback<T>

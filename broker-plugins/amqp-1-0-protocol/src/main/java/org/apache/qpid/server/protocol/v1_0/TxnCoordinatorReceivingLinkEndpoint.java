@@ -19,8 +19,8 @@
 
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +44,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -52,7 +51,6 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint<Coordinator>
 {
     private final LinkedHashMap<Integer, ServerTransaction> _createdTransactions = new LinkedHashMap<>();
-    private ArrayList<Transfer> _incompleteMessage;
 
     public TxnCoordinatorReceivingLinkEndpoint(final Session_1_0 session, final Link_1_0<Source, Coordinator> link)
     {
@@ -67,43 +65,11 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
     }
 
     @Override
-    protected Error messageTransfer(Transfer xfr)
+    protected Error receiveDelivery(Delivery delivery)
     {
-        List<QpidByteBuffer> payload = new ArrayList<>();
+        List<QpidByteBuffer> payload = delivery.getPayload();
 
-        final Binary deliveryTag = xfr.getDeliveryTag();
 
-        if(Boolean.TRUE.equals(xfr.getMore()) && _incompleteMessage == null)
-        {
-            _incompleteMessage = new ArrayList<Transfer>();
-            _incompleteMessage.add(xfr);
-            return null;
-        }
-        else if(_incompleteMessage != null)
-        {
-            _incompleteMessage.add(xfr);
-            if(Boolean.TRUE.equals(xfr.getMore()))
-            {
-                return null;
-            }
-
-            for(Transfer t : _incompleteMessage)
-            {
-                final List<QpidByteBuffer> bufs = t.getPayload();
-                if(bufs != null)
-                {
-                    payload.addAll(bufs);
-                }
-                t.dispose();
-            }
-            _incompleteMessage=null;
-
-        }
-        else
-        {
-            payload.addAll(xfr.getPayload());
-            xfr.dispose();
-        }
 
         // Only interested in the amqp-value section that holds the message to the coordinator
         try
@@ -132,7 +98,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
                         session.incrementStartedTransactions();
 
                         state.setTxnId(session.integerToBinary(txn.getId()));
-                        updateDisposition(deliveryTag, state, true);
+                        updateDisposition(delivery.getDeliveryTag(), state, true);
 
                     }
                     else if(command instanceof Discharge)
@@ -159,7 +125,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
 
                         if (error == null)
                         {
-                            updateDisposition(deliveryTag, outcome, true);
+                            updateDisposition(delivery.getDeliveryTag(), outcome, true);
                         }
                         return error;
                     }
@@ -250,6 +216,12 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
     }
 
     @Override
+    protected Map<Binary, DeliveryState> getLocalUnsettled()
+    {
+        return Collections.emptyMap();
+    }
+
+    @Override
     protected void reattachLink(final Attach attach) throws AmqpErrorException
     {
         throw new AmqpErrorException(new Error(AmqpError.NOT_IMPLEMENTED, "Cannot reattach a Coordinator Link."));
@@ -283,20 +255,10 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
     }
 
     @Override
-    protected void handle(final Binary deliveryTag, final DeliveryState state, final Boolean settled)
-    {
-
-    }
-
-    @Override
     public void attachReceived(final Attach attach) throws AmqpErrorException
     {
         super.attachReceived(attach);
         setDeliveryCount(new SequenceNumber(attach.getInitialDeliveryCount().intValue()));
     }
 
-    @Override
-    public void initialiseUnsettled()
-    {
-    }
 }

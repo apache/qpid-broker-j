@@ -41,6 +41,7 @@ public interface BrokerAdmin extends Pluggable
     void createQueue(String queueName);
     void deleteQueue(String queueName);
     void putMessageOnQueue(String queueName, String... messages);
+    int getQueueDepthMessages(String testQueueName);
 
     boolean supportsRestart();
     ListenableFuture<Void> restart();
@@ -48,9 +49,12 @@ public interface BrokerAdmin extends Pluggable
     boolean isSASLSupported();
     boolean isSASLMechanismSupported(String mechanismName);
     boolean isWebSocketSupported();
+    boolean isQueueDepthSupported();
 
     String getValidUsername();
     String getValidPassword();
+
+
 
     enum PortType
     {

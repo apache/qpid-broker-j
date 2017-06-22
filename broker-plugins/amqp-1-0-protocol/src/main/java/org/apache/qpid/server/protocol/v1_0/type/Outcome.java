@@ -21,7 +21,7 @@
 
 package org.apache.qpid.server.protocol.v1_0.type;
 
-public interface Outcome
+public interface Outcome extends DeliveryState
 {
     Symbol getSymbol();
 }

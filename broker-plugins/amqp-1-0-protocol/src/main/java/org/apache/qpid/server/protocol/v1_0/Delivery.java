@@ -19,61 +19,42 @@
 
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
+import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public class Delivery
 {
     private final UnsignedInteger _deliveryId;
     private final Binary _deliveryTag;
+    private final List<Transfer> _transfers = new CopyOnWriteArrayList<>();
     private final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> _linkEndpoint;
-    private boolean _complete;
-    private boolean _settled;
-    private int _numberOfTransfers = 0;
+    private final UnsignedInteger _messageFormat;
+    private volatile boolean _complete;
+    private volatile boolean _settled;
+    private volatile boolean _aborted;
+    private volatile DeliveryState _state;
+    private volatile ReceiverSettleMode _receiverSettleMode;
+    private volatile boolean _resume;
 
     public Delivery(Transfer transfer, final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> endpoint)
     {
-        _settled = Boolean.TRUE.equals(transfer.getSettled());
         _deliveryId = transfer.getDeliveryId();
         _deliveryTag = transfer.getDeliveryTag();
         _linkEndpoint = endpoint;
+        _messageFormat = transfer.getMessageFormat();
         addTransfer(transfer);
-    }
-
-    public boolean isComplete()
-    {
-        return _complete;
-    }
-
-    public void setComplete(final boolean complete)
-    {
-        _complete = complete;
-    }
-
-    public boolean isSettled()
-    {
-        return _settled;
-    }
-
-    public void setSettled(final boolean settled)
-    {
-        _settled = settled;
-    }
-
-    public final void addTransfer(Transfer transfer)
-    {
-        _numberOfTransfers++;
-        if(Boolean.TRUE.equals(transfer.getAborted()) || !Boolean.TRUE.equals(transfer.getMore()))
-        {
-            setComplete(true);
-        }
-        if(Boolean.TRUE.equals(transfer.getSettled()))
-        {
-            setSettled(true);
-        }
     }
 
     public UnsignedInteger getDeliveryId()
@@ -81,18 +62,135 @@ public class Delivery
         return _deliveryId;
     }
 
-    public LinkEndpoint<? extends BaseSource, ? extends BaseTarget> getLinkEndpoint()
-    {
-        return _linkEndpoint;
-    }
-
     public Binary getDeliveryTag()
     {
         return _deliveryTag;
     }
 
-    public int getNumberOfTransfers()
+    public boolean isComplete()
     {
-        return _numberOfTransfers;
+        return _complete;
     }
+
+    public boolean isSettled()
+    {
+        return _settled;
+    }
+
+    public boolean isAborted()
+    {
+        return _aborted;
+    }
+
+    public DeliveryState getState()
+    {
+        return _state;
+    }
+
+    public ReceiverSettleMode getReceiverSettleMode()
+    {
+        return _receiverSettleMode;
+    }
+
+    public UnsignedInteger getMessageFormat()
+    {
+        return _messageFormat;
+    }
+
+
+    public boolean getResume()
+    {
+        return _resume;
+    }
+
+    final void addTransfer(Transfer transfer)
+    {
+        if (_aborted)
+        {
+            throw new IllegalStateException(String.format("Delivery '%s/%d' is already aborted",
+                                                          _deliveryTag,
+                                                          _deliveryId.intValue()));
+        }
+
+        if (_complete)
+        {
+            throw new IllegalStateException(String.format("Delivery '%s/%d' is already completed",
+                                                          _deliveryTag,
+                                                          _deliveryId.intValue()));
+        }
+
+        _transfers.add(transfer);
+        if (Boolean.TRUE.equals(transfer.getAborted()))
+        {
+            _aborted = true;
+            discard();
+        }
+        if(!Boolean.TRUE.equals(transfer.getMore()))
+        {
+            _complete = true;
+        }
+        if(Boolean.TRUE.equals(transfer.getSettled()))
+        {
+            _settled = true;
+        }
+
+        if(Boolean.TRUE.equals(transfer.getResume()))
+        {
+            _resume = true;
+        }
+
+        if (transfer.getState() != null)
+        {
+            DeliveryState currentState;
+            if (_state instanceof TransactionalState)
+            {
+                currentState = ((TransactionalState) _state).getOutcome();
+            }
+            else
+            {
+                currentState = _state;
+            }
+            if (!(currentState instanceof Outcome))
+            {
+                _state = transfer.getState();
+            }
+        }
+
+        if (transfer.getRcvSettleMode() != null)
+        {
+            if (_receiverSettleMode == null)
+            {
+                _receiverSettleMode = transfer.getRcvSettleMode();
+            }
+
+        }
+    }
+
+    public LinkEndpoint<? extends BaseSource, ? extends BaseTarget> getLinkEndpoint()
+    {
+        return _linkEndpoint;
+    }
+
+
+    public List<QpidByteBuffer> getPayload()
+    {
+        List<QpidByteBuffer> fragments = new ArrayList<>(_transfers.size());
+        for (Transfer t : _transfers)
+        {
+            fragments.addAll(t.getPayload());
+            t.dispose();
+        }
+        _transfers.clear();
+        return fragments;
+    }
+
+    public void discard()
+    {
+        for (Transfer transfer: _transfers)
+        {
+            transfer.dispose();
+        }
+        _transfers.clear();
+    }
+
 }

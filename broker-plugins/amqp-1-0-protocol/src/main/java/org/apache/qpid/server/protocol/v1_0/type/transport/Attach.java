@@ -30,6 +30,8 @@ import java.util.Map;
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -62,7 +64,7 @@ public class Attach implements FrameBody
     private BaseTarget _target;
 
     @CompositeTypeField
-    private Map _unsettled;
+    private Map<Binary, DeliveryState> _unsettled;
 
     @CompositeTypeField
     private Boolean _incompleteUnsettled;
@@ -80,7 +82,7 @@ public class Attach implements FrameBody
     private Symbol[] _desiredCapabilities;
 
     @CompositeTypeField
-    private Map _properties;
+    private Map<Symbol, Object> _properties;
 
     public String getName()
     {
@@ -152,7 +154,7 @@ public class Attach implements FrameBody
         _target = target;
     }
 
-    public Map getUnsettled()
+    public Map<Binary, DeliveryState> getUnsettled()
     {
         return _unsettled;
     }
@@ -212,12 +214,12 @@ public class Attach implements FrameBody
         _desiredCapabilities = desiredCapabilities;
     }
 
-    public Map getProperties()
+    public Map<Symbol, Object> getProperties()
     {
         return _properties;
     }
 
-    public void setProperties(Map properties)
+    public void setProperties(Map<Symbol, Object> properties)
     {
         _properties = properties;
     }

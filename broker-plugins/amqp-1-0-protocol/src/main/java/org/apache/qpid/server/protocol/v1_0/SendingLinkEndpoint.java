@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +53,6 @@ import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnNoMessages;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Filter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.NoLocalFilter;
@@ -80,23 +78,20 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SendingLinkEndpoint.class);
+    private static final Symbol PRIORITY = Symbol.valueOf("priority");
 
-    public static final Symbol PRIORITY = Symbol.valueOf("priority");
-    private UnsignedInteger _lastDeliveryId;
-    private Binary _lastDeliveryTag;
-    private Map<Binary, UnsignedInteger> _unsettledMap = new HashMap<>();
-    private Map<Binary, MessageInstance> _unsettledMap2 = new HashMap<>();
-    private Binary _transactionId;
-    private Integer _priority;
     private final List<Binary> _resumeAcceptedTransfers = new ArrayList<>();
     private final List<MessageInstance> _resumeFullTransfers = new ArrayList<>();
+    private final Map<Binary, OutgoingDelivery> _unsettled = new ConcurrentHashMap<>();
+
+    private volatile Binary _transactionId;
+    private volatile Integer _priority;
     private volatile boolean _draining = false;
-    private final ConcurrentMap<Binary, UnsettledAction> _unsettledActionMap = new ConcurrentHashMap<>();
-    private SendingDestination _destination;
-    private EnumSet<ConsumerOption> _consumerOptions;
-    private FilterManager _consumerFilters;
-    private ConsumerTarget_1_0 _consumerTarget;
-    private MessageInstanceConsumer<ConsumerTarget_1_0> _consumer;
+    private volatile SendingDestination _destination;
+    private volatile EnumSet<ConsumerOption> _consumerOptions;
+    private volatile FilterManager _consumerFilters;
+    private volatile ConsumerTarget_1_0 _consumerTarget;
+    private volatile MessageInstanceConsumer<ConsumerTarget_1_0> _consumer;
 
     public SendingLinkEndpoint(final Session_1_0 session, final LinkImpl<Source, Target> link)
     {
@@ -111,7 +106,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     {
     }
 
-    public void prepareConsumerOptionsAndFilters(final SendingDestination destination) throws AmqpErrorException
+    private void prepareConsumerOptionsAndFilters(final SendingDestination destination) throws AmqpErrorException
     {
         // TODO FIXME: this method might modify the source. this is not good encapsulation. furthermore if it does so then it should inform the link/linkregistry about it!
         _destination = destination;
@@ -199,7 +194,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         _consumerFilters = filters;
     }
 
-    void createConsumerTarget() throws AmqpErrorException
+    private void createConsumerTarget() throws AmqpErrorException
     {
         final Source source = getSource();
         _consumerTarget = new ConsumerTarget_1_0(this,
@@ -338,7 +333,6 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         }
 
         attachReceived(attach);
-        initialiseUnsettled();
     }
 
     @Override
@@ -372,17 +366,12 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         return Role.SENDER;
     }
 
-    public Integer getPriority()
+    private Integer getPriority()
     {
         return _priority;
     }
 
-    public TerminusDurability getTerminusDurability()
-    {
-        return getSource().getDurable();
-    }
-
-    public boolean transfer(final Transfer xfr, final boolean decrementCredit)
+    void transfer(final Transfer xfr, final boolean decrementCredit)
     {
         Session_1_0 s = getSession();
         xfr.setMessageFormat(UnsignedInteger.ZERO);
@@ -395,27 +384,11 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 
         xfr.setHandle(getLocalHandle());
 
-        s.sendTransfer(xfr, this, !xfr.getDeliveryTag().equals(_lastDeliveryTag));
-
-        if(!Boolean.TRUE.equals(xfr.getSettled()))
-        {
-            _unsettledMap.put(xfr.getDeliveryTag(), xfr.getDeliveryId());
-        }
-
-        if(Boolean.TRUE.equals(xfr.getMore()))
-        {
-            _lastDeliveryTag = xfr.getDeliveryTag();
-        }
-        else
-        {
-            _lastDeliveryTag = null;
-        }
-
-        return true;
+        s.sendTransfer(xfr, this, true);
     }
 
 
-    public boolean drained()
+    boolean drained()
     {
         if (_draining)
         {
@@ -514,11 +487,15 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             Modified state = new Modified();
             state.setDeliveryFailed(true);
 
-            for (UnsettledAction action : _unsettledActionMap.values())
+            for (OutgoingDelivery delivery : _unsettled.values())
             {
-                action.process(state, Boolean.TRUE);
+                UnsettledAction action = delivery.getAction();
+                if (action != null)
+                {
+                    action.process(state, Boolean.TRUE);
+                    delivery.setAction(null);
+                }
             }
-            _unsettledActionMap.clear();
 
             Error closingError = null;
             if (getDestination() instanceof ExchangeDestination
@@ -558,20 +535,15 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         }
     }
 
-    public void addUnsettled(final Binary tag, final UnsettledAction unsettledAction, final MessageInstance queueEntry)
+    void addUnsettled(final Binary tag, final UnsettledAction unsettledAction, final MessageInstance messageInstance)
     {
-        _unsettledActionMap.put(tag, unsettledAction);
-        if(getTransactionId() == null)
-        {
-            _unsettledMap2.put(tag, queueEntry);
-        }
-
+        _unsettled.put(tag, new OutgoingDelivery(messageInstance, unsettledAction, null));
     }
 
     @Override
-    protected void handle(final Binary deliveryTag, final DeliveryState state, final Boolean settled)
+    protected void handleDeliveryState(final Binary deliveryTag, final DeliveryState state, final Boolean settled)
     {
-        UnsettledAction action = _unsettledActionMap.get(deliveryTag);
+        UnsettledAction action = _unsettled.get(deliveryTag).getAction();
         boolean localSettle = false;
         if(action != null)
         {
@@ -583,9 +555,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         }
         if(Boolean.TRUE.equals(settled) || localSettle)
         {
-            _unsettledActionMap.remove(deliveryTag);
-            _unsettledMap.remove(deliveryTag);
-            _unsettledMap2.remove(deliveryTag);
+            _unsettled.remove(deliveryTag);
         }
     }
 
@@ -602,23 +572,11 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                && getSession().hasCreditToSend();
     }
 
-    public UnsignedInteger getLastDeliveryId()
-    {
-        return _lastDeliveryId;
-    }
-
-    public void setLastDeliveryId(final UnsignedInteger deliveryId)
-    {
-        _lastDeliveryId = deliveryId;
-    }
-
     public void updateDisposition(final Binary deliveryTag, DeliveryState state, boolean settled)
     {
-        UnsignedInteger deliveryId;
-        if (settled && (deliveryId = _unsettledMap.remove(deliveryTag)) != null)
+        if (settled && (_unsettled.remove(deliveryTag) != null))
         {
-            _unsettledMap2.remove(deliveryTag);
-            getSession().updateDisposition(getRole(), deliveryId, deliveryId, state, settled);
+            getSession().updateDisposition(getRole(), deliveryTag, state, settled);
         }
     }
 
@@ -677,33 +635,34 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         getLink().setTarget(target);
 
 
-        final MessageInstanceConsumer consumer = getConsumer();
+        final MessageInstanceConsumer oldConsumer = getConsumer();
         createConsumerTarget();
         _resumeAcceptedTransfers.clear();
         _resumeFullTransfers.clear();
         final NamedAddressSpace addressSpace = getSession().getConnection().getAddressSpace();
-        Map<Binary, MessageInstance> unsettledCopy = new HashMap<>(_unsettledMap2);
-        Map initialUnsettledMap = getInitialUnsettledMap();
+        Map<Binary, OutgoingDelivery> unsettledCopy = new HashMap<>(_unsettled);
+        Map<Binary, DeliveryState> remoteUnsettled =
+                attach.getUnsettled() == null ? Collections.emptyMap() : new HashMap<>(attach.getUnsettled());
 
-        for (Map.Entry<Binary, MessageInstance> entry : unsettledCopy.entrySet())
+        for (Map.Entry<Binary, OutgoingDelivery> entry : unsettledCopy.entrySet())
         {
             Binary deliveryTag = entry.getKey();
-            final MessageInstance queueEntry = entry.getValue();
-            if (initialUnsettledMap == null || !initialUnsettledMap.containsKey(deliveryTag))
+            final MessageInstance queueEntry = entry.getValue().getMessageInstance();
+            if (remoteUnsettled == null || !remoteUnsettled.containsKey(deliveryTag))
             {
                 queueEntry.setRedelivered();
-                queueEntry.release(consumer);
-                _unsettledMap2.remove(deliveryTag);
+                queueEntry.release(oldConsumer);
+                _unsettled.remove(deliveryTag);
             }
-            else if (initialUnsettledMap.get(deliveryTag) instanceof Outcome)
+            else if (remoteUnsettled.get(deliveryTag) instanceof Outcome)
             {
-                Outcome outcome = (Outcome) initialUnsettledMap.get(deliveryTag);
+                Outcome outcome = (Outcome) remoteUnsettled.get(deliveryTag);
 
                 if (outcome instanceof Accepted)
                 {
-                    AutoCommitTransaction txn = new AutoCommitTransaction(addressSpace.getMessageStore());
-                    if (consumer.acquires())
+                    if (oldConsumer.acquires())
                     {
+                        AutoCommitTransaction txn = new AutoCommitTransaction(addressSpace.getMessageStore());
                         if (queueEntry.acquire() || queueEntry.isAcquired())
                         {
                             txn.dequeue(Collections.singleton(queueEntry),
@@ -723,15 +682,15 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                 }
                 else if (outcome instanceof Released)
                 {
-                    AutoCommitTransaction txn = new AutoCommitTransaction(addressSpace.getMessageStore());
-                    if (consumer.acquires())
+                    if (oldConsumer.acquires())
                     {
+                        AutoCommitTransaction txn = new AutoCommitTransaction(addressSpace.getMessageStore());
                         txn.dequeue(Collections.singleton(queueEntry),
                                     new ServerTransaction.Action()
                                     {
                                         public void postCommit()
                                         {
-                                            queueEntry.release(consumer);
+                                            queueEntry.release(oldConsumer);
                                         }
 
                                         public void onRollback()
@@ -740,14 +699,17 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                                     });
                     }
                 }
-                //_unsettledMap.remove(deliveryTag);
-                initialUnsettledMap.remove(deliveryTag);
+
+                // TODO: Handle rejected and modified outcome
+
+                remoteUnsettled.remove(deliveryTag);
                 _resumeAcceptedTransfers.add(deliveryTag);
             }
             else
             {
                 _resumeFullTransfers.add(queueEntry);
-                // exists in receivers map, but not yet got an outcome ... should resend with resume = true
+
+                // TODO: exists in receivers map, but not yet got an outcome ... should resend with resume = true
             }
         }
 
@@ -755,22 +717,22 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     }
 
     @Override
-    public void initialiseUnsettled()
+    protected Map<Binary, DeliveryState> getLocalUnsettled()
     {
-        Map<Binary, MessageInstance> _localUnsettled = new HashMap<>(_unsettledMap2);
-
-        for (Map.Entry<Binary, MessageInstance> entry : _localUnsettled.entrySet())
+        Map<Binary, DeliveryState> unsettled = new HashMap<>();
+        for (Map.Entry<Binary, OutgoingDelivery> entry : _unsettled.entrySet())
         {
-            entry.setValue(null);
+            unsettled.put(entry.getKey(), entry.getValue().getLocalState());
         }
+        return unsettled;
     }
 
-    public MessageInstanceConsumer<ConsumerTarget_1_0> getConsumer()
+    private MessageInstanceConsumer<ConsumerTarget_1_0> getConsumer()
     {
         return _consumer;
     }
 
-    public ConsumerTarget_1_0 getConsumerTarget()
+    ConsumerTarget_1_0 getConsumerTarget()
     {
         return _consumerTarget;
     }
@@ -783,5 +745,46 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     public void setDestination(final SendingDestination destination)
     {
         _destination = destination;
+    }
+
+    private static class OutgoingDelivery
+    {
+        private final MessageInstance _messageInstance;
+        private volatile UnsettledAction _action;
+        private volatile DeliveryState _localState;
+
+        public OutgoingDelivery(final MessageInstance messageInstance,
+                                final UnsettledAction action,
+                                final DeliveryState localState)
+        {
+            _messageInstance = messageInstance;
+            _action = action;
+            _localState = localState;
+        }
+
+        public MessageInstance getMessageInstance()
+        {
+            return _messageInstance;
+        }
+
+        public UnsettledAction getAction()
+        {
+            return _action;
+        }
+
+        public DeliveryState getLocalState()
+        {
+            return _localState;
+        }
+
+        public void setLocalState(final DeliveryState localState)
+        {
+            _localState = localState;
+        }
+
+        public void setAction(final UnsettledAction action)
+        {
+            _action = action;
+        }
     }
 }

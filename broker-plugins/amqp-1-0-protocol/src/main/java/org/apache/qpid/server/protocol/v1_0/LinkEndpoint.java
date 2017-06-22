@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v1_0;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
@@ -52,7 +53,7 @@ public interface LinkEndpoint<S extends BaseSource, T extends BaseTarget>
 
     void remoteDetached(Detach detach);
 
-    void receiveDeliveryState(Delivery unsettled,
+    void receiveDeliveryState(Binary deliveryTag,
                               DeliveryState state,
                               Boolean settled);
 

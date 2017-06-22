@@ -22,8 +22,14 @@ package org.apache.qpid.tests.protocol.v1_0;
 
 import static com.google.common.util.concurrent.Futures.allAsList;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -38,27 +44,39 @@ import java.util.concurrent.TimeoutException;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslResponse;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.Declare;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.Declared;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public class Interaction
@@ -71,6 +89,7 @@ public class Interaction
     private final Detach _detach;
     private final Flow _flow;
     private final Transfer _transfer;
+    private final Disposition _disposition;
     private final FrameTransport _transport;
     private final SaslInit _saslInit;
     private final SaslResponse _saslResponse;
@@ -79,6 +98,9 @@ public class Interaction
     private UnsignedShort _sessionChannel;
     private Response<?> _latestResponse;
     private ListenableFuture<?> _latestFuture;
+    private int _deliveryIdCounter;
+    private List<Transfer> _latestDelivery;
+    private Object _decodedLatestDelivery;
 
     Interaction(final FrameTransport frameTransport)
     {
@@ -120,7 +142,10 @@ public class Interaction
         _transfer = new Transfer();
         _transfer.setHandle(defaultLinkHandle);
         _transfer.setDeliveryTag(new Binary("testDeliveryTag".getBytes(StandardCharsets.UTF_8)));
-        _transfer.setDeliveryId(UnsignedInteger.ZERO);
+        _transfer.setDeliveryId(getNextDeliveryId());
+
+        _disposition = new Disposition();
+        _disposition.setFirst(UnsignedInteger.ZERO);
     }
 
     /////////////////////////
@@ -316,6 +341,12 @@ public class Interaction
         return this;
     }
 
+    public Interaction attachSndSettleMode(final SenderSettleMode senderSettleMode)
+    {
+        _attach.setSndSettleMode(senderSettleMode);
+        return this;
+    }
+
     public Interaction attachSource(Source source)
     {
         _attach.setSource(source);
@@ -340,6 +371,14 @@ public class Interaction
     {
         Source source = ((Source) _attach.getSource());
         source.setOutcomes(outcomes);
+        _attach.setSource(source);
+        return this;
+    }
+
+    public Interaction attachSourceDefaultOutcome(final Outcome defaultOutcome)
+    {
+        Source source = ((Source) _attach.getSource());
+        source.setDefaultOutcome(defaultOutcome);
         _attach.setSource(source);
         return this;
     }
@@ -434,6 +473,12 @@ public class Interaction
         return this;
     }
 
+    public Interaction flowProperties(Map<Symbol, Object> properties)
+    {
+        _flow.setProperties(properties);
+        return this;
+    }
+
     public Interaction flow() throws Exception
     {
         sendPerformativeAndChainFuture(_flow, _sessionChannel);
@@ -456,6 +501,19 @@ public class Interaction
         return this;
     }
 
+    public Interaction transferState(final DeliveryState state)
+    {
+        _transfer.setState(state);
+        return this;
+    }
+
+    public Interaction transferTransactionalState(final Binary transactionalId)
+    {
+        TransactionalState transactionalState = new TransactionalState();
+        transactionalState.setTxnId(transactionalId);
+        return transferState(transactionalState);
+    }
+
     public Interaction transferDeliveryId(final UnsignedInteger deliveryId)
     {
         _transfer.setDeliveryId(deliveryId);
@@ -474,13 +532,19 @@ public class Interaction
         return this;
     }
 
+    public Interaction transferAborted(final Boolean aborted)
+    {
+        _transfer.setAborted(aborted);
+        return this;
+    }
+
     public Interaction transferMessageFormat(final UnsignedInteger messageFormat)
     {
         _transfer.setMessageFormat(messageFormat);
         return this;
     }
 
-    public Interaction transferPayload(final List<QpidByteBuffer> payload)
+    public Interaction setPayloadOnTransfer(final List<QpidByteBuffer> payload)
     {
         _transfer.setPayload(payload);
         return this;
@@ -488,17 +552,21 @@ public class Interaction
 
     public Interaction transferPayloadData(final Object payload)
     {
+        setPayloadOnTransfer(_transfer, payload);
+        return this;
+    }
+
+    private void setPayloadOnTransfer(final Transfer transfer, final Object payload)
+    {
         AmqpValue amqpValue = new AmqpValue(payload);
         final AmqpValueSection section = amqpValue.createEncodingRetainingSection();
         final List<QpidByteBuffer> encodedForm = section.getEncodedForm();
-        _transfer.setPayload(encodedForm);
-
+        transfer.setPayload(encodedForm);
         section.dispose();
         for (QpidByteBuffer qbb : encodedForm)
         {
             qbb.dispose();
         }
-        return this;
     }
 
     public Interaction transferSettled(final Boolean settled)
@@ -511,6 +579,126 @@ public class Interaction
     {
         sendPerformativeAndChainFuture(_transfer, _sessionChannel);
         return this;
+    }
+
+    /////////////////
+    // disposition //
+    /////////////////
+
+    public Interaction dispositionSettled(final boolean settled)
+    {
+        _disposition.setSettled(settled);
+        return this;
+    }
+
+    public Interaction dispositionState(final DeliveryState state)
+    {
+        _disposition.setState(state);
+        return this;
+    }
+
+
+    public Interaction dispositionTransactionalState(final Binary transactionId, final Outcome outcome)
+    {
+        TransactionalState state = new TransactionalState();
+        state.setTxnId(transactionId);
+        state.setOutcome(outcome);
+        return dispositionState(state);
+    }
+
+    public Interaction dispositionRole(final Role role)
+    {
+        _disposition.setRole(role);
+        return this;
+    }
+
+    public Interaction disposition() throws Exception
+    {
+        sendPerformativeAndChainFuture(_disposition, _sessionChannel);
+        return this;
+    }
+
+    /////////////////
+    // transaction //
+    ////////////////
+
+    public Interaction txnAttachCoordinatorLink(InteractionTransactionalState transactionalState) throws Exception
+    {
+        Attach attach = new Attach();
+        attach.setName("testTransactionCoordinator-" + transactionalState.getHandle());
+        attach.setHandle(transactionalState.getHandle());
+        attach.setInitialDeliveryCount(UnsignedInteger.ZERO);
+        attach.setTarget(new Coordinator());
+        attach.setRole(Role.SENDER);
+        Source source = new Source();
+        attach.setSource(source);
+        source.setOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL);
+        sendPerformativeAndChainFuture(attach, _sessionChannel);
+        consumeResponse(Attach.class);
+        consumeResponse(Flow.class);
+        return this;
+    }
+
+    public Interaction txnDeclare(final InteractionTransactionalState txnState) throws Exception
+    {
+        Transfer transfer = createTransactionTransfer(txnState.getHandle());
+        setPayloadOnTransfer(transfer, new Declare());
+        sendPerformativeAndChainFuture(transfer, _sessionChannel);
+        consumeResponse(Disposition.class);
+        Disposition declareTransactionDisposition = getLatestResponse(Disposition.class);
+        assertThat(declareTransactionDisposition.getSettled(), is(equalTo(true)));
+        assertThat(declareTransactionDisposition.getState(), is(instanceOf(Declared.class)));
+        Binary transactionId = ((Declared) declareTransactionDisposition.getState()).getTxnId();
+        assertThat(transactionId, is(notNullValue()));
+        consumeResponse(Flow.class);
+        txnState.setLastTransactionId(transactionId);
+        return this;
+    }
+
+    public Interaction txnDischarge(final InteractionTransactionalState txnState, boolean failed) throws Exception
+    {
+        final Discharge discharge = new Discharge();
+        discharge.setTxnId(txnState.getCurrentTransactionId());
+        discharge.setFail(failed);
+
+        Transfer transfer = createTransactionTransfer(txnState.getHandle());
+        setPayloadOnTransfer(transfer, discharge);
+        sendPerformativeAndChainFuture(transfer, _sessionChannel);
+
+        Disposition declareTransactionDisposition = null;
+        Flow coordinatorFlow = null;
+        do
+        {
+            consumeResponse(Disposition.class, Flow.class);
+            Response<?> response = getLatestResponse();
+            if (response.getBody() instanceof Disposition)
+            {
+                declareTransactionDisposition = (Disposition) response.getBody();
+            }
+            if (response.getBody() instanceof Flow)
+            {
+                final Flow flowResponse = (Flow) response.getBody();
+                if (flowResponse.getHandle().equals(txnState.getHandle()))
+                {
+                    coordinatorFlow = flowResponse;
+                }
+            }
+        } while(declareTransactionDisposition == null || coordinatorFlow == null);
+
+        assertThat(declareTransactionDisposition.getSettled(), is(equalTo(true)));
+        assertThat(declareTransactionDisposition.getState(), is(instanceOf(Accepted.class)));
+
+        txnState.setLastTransactionId(null);
+        return this;
+    }
+
+    private Transfer createTransactionTransfer(final UnsignedInteger handle)
+    {
+        Transfer transfer = new Transfer();
+        transfer.setHandle(handle);
+        transfer.setDeliveryId(getNextDeliveryId());
+        transfer.setDeliveryTag(new Binary(("transaction-" + transfer.getDeliveryId()).getBytes(StandardCharsets.UTF_8)));
+        return transfer;
     }
 
     //////////
@@ -567,11 +755,14 @@ public class Interaction
             return this;
         }
         acceptableResponseClasses.remove(null);
-        for (Class<?> acceptableResponseClass : acceptableResponseClasses)
+        if (_latestResponse != null)
         {
-            if (acceptableResponseClass.isAssignableFrom(_latestResponse.getBody().getClass()))
+            for (Class<?> acceptableResponseClass : acceptableResponseClasses)
             {
-                return this;
+                if (acceptableResponseClass.isAssignableFrom(_latestResponse.getBody().getClass()))
+                {
+                    return this;
+                }
             }
         }
         throw new IllegalStateException(String.format("Unexpected response. Expected one of '%s' got '%s'.",
@@ -612,5 +803,59 @@ public class Interaction
     {
         _flow.setHandle(_attach.getHandle());
         return this;
+    }
+
+    private UnsignedInteger getNextDeliveryId()
+    {
+        return UnsignedInteger.valueOf(_deliveryIdCounter++);
+    }
+
+    public Interaction receiveDelivery() throws Exception
+    {
+        _latestDelivery = receiveAllTransfers();
+        return this;
+    }
+
+    public Interaction decodeLatestDelivery() throws AmqpErrorException
+    {
+        MessageDecoder messageDecoder = new MessageDecoder();
+        _latestDelivery.forEach(transfer ->
+                                {
+                                    messageDecoder.addTransfer(transfer);
+                                    transfer.dispose();
+                                });
+        _decodedLatestDelivery = messageDecoder.getData();
+        _latestDelivery = null;
+        return this;
+    }
+
+    public List<Transfer> getLatestDelivery()
+    {
+        return _latestDelivery;
+    }
+
+    public Object getDecodedLatestDelivery()
+    {
+        return _decodedLatestDelivery;
+    }
+
+    private List<Transfer> receiveAllTransfers() throws Exception
+    {
+        List<Transfer> transfers = new ArrayList<>();
+        boolean hasMore;
+        do
+        {
+            Transfer responseTransfer = consumeResponse().getLatestResponse(Transfer.class);
+            hasMore = Boolean.TRUE.equals(responseTransfer.getMore());
+            transfers.add(responseTransfer);
+        }
+        while (hasMore);
+
+        return transfers;
+    }
+
+    public InteractionTransactionalState createTransactionalState(final UnsignedInteger handle)
+    {
+        return new InteractionTransactionalState(handle);
     }
 }

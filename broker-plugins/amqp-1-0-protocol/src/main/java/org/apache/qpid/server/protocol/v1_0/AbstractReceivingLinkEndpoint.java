@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.v1_0.delivery.UnsettledDelivery;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
@@ -35,48 +36,21 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extends AbstractLinkEndpoint<Source, T>
 {
     private final SectionDecoder _sectionDecoder;
-    private UnsignedInteger _lastDeliveryId;
-    private Map<Binary, Object> _unsettledMap = new LinkedHashMap<>();
-    private Map<Binary, TransientState> _unsettledIds = new LinkedHashMap<>();
-    private boolean _creditWindow;
+    final Map<Binary, DeliveryState> _unsettled = Collections.synchronizedMap(new LinkedHashMap<>());
 
-
-    private static class TransientState
-    {
-
-        UnsignedInteger _deliveryId;
-        boolean _settled;
-
-        private TransientState(final UnsignedInteger transferId)
-        {
-            _deliveryId = transferId;
-        }
-
-        public UnsignedInteger getDeliveryId()
-        {
-            return _deliveryId;
-        }
-
-        public boolean isSettled()
-        {
-            return _settled;
-        }
-
-        public void setSettled(boolean settled)
-        {
-            _settled = settled;
-        }
-    }
-
+    private volatile boolean _creditWindow;
+    private volatile Delivery _currentDelivery;
 
     public AbstractReceivingLinkEndpoint(final Session_1_0 session, final Link_1_0<Source, T> link)
     {
@@ -98,73 +72,162 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
         return Role.RECEIVER;
     }
 
-    Error receiveTransfer(final Transfer transfer, final Delivery delivery)
+    void receiveTransfer(final Transfer transfer)
     {
         if(isAttached())
         {
-            TransientState transientState;
-            final Binary deliveryTag = delivery.getDeliveryTag();
-            boolean existingState = _unsettledMap.containsKey(deliveryTag);
-            if (!existingState || transfer.getState() != null)
+            if (!ReceiverSettleMode.SECOND.equals(getReceivingSettlementMode())
+                && ReceiverSettleMode.SECOND.equals(transfer.getRcvSettleMode()))
             {
-                _unsettledMap.put(deliveryTag, transfer.getState());
+                Error error = new Error(AmqpError.INVALID_FIELD,
+                                  "Transfer \"rcv-settle-mode\" cannot be \"first\" when link \"rcv-settle-mode\" is set to \"second\".");
+                close(error);
+                return;
             }
-            if (!existingState)
+
+            if (_currentDelivery == null)
             {
-                transientState = new TransientState(transfer.getDeliveryId());
-                if (delivery.isSettled())
+                Error error = validateNewTransfer(transfer);
+                if (error != null)
                 {
-                    transientState.setSettled(true);
+                    close(error);
+                    return;
                 }
-                _unsettledIds.put(deliveryTag, transientState);
+                _currentDelivery = new Delivery(transfer, this);
+
                 setLinkCredit(getLinkCredit().subtract(UnsignedInteger.ONE));
                 getDeliveryCount().incr();
+
+                getSession().getIncomingDeliveryRegistry()
+                            .addDelivery(transfer.getDeliveryId(),
+                                         new UnsettledDelivery(transfer.getDeliveryTag(), this));
             }
             else
             {
-                transientState = _unsettledIds.get(deliveryTag);
-                if (delivery.isSettled())
+                Error error = validateSubsequentTransfer(transfer);
+                if (error != null)
                 {
-                    transientState.setSettled(true);
+                    close(error);
+                    return;
                 }
+                _currentDelivery.addTransfer(transfer);
             }
 
-            if (transientState.isSettled() && delivery.isComplete())
+            if (!_currentDelivery.getResume())
             {
-                _unsettledMap.remove(deliveryTag);
+                _unsettled.put(_currentDelivery.getDeliveryTag(), _currentDelivery.getState());
             }
-            return messageTransfer(transfer);
+            else if (!_unsettled.containsKey(_currentDelivery.getDeliveryTag()))
+            {
+                final Error error = new Error(AmqpError.ILLEGAL_STATE,
+                                              String.format("Resumed transfer with delivery tag '%s' is not found.",
+                                                            _currentDelivery.getDeliveryTag()));
+                close(error);
+                return;
+            }
+
+            if (_currentDelivery.isAborted())
+            {
+                _unsettled.remove(_currentDelivery.getDeliveryTag());
+                getSession().getIncomingDeliveryRegistry().removeDelivery(_currentDelivery.getDeliveryId());
+                _currentDelivery = null;
+
+                setLinkCredit(getLinkCredit().add(UnsignedInteger.ONE));
+                getDeliveryCount().decr();
+            }
+            else if (_currentDelivery.isComplete())
+            {
+                try
+                {
+                    if (_currentDelivery.isSettled())
+                    {
+                        _unsettled.remove(_currentDelivery.getDeliveryTag());
+                        getSession().getIncomingDeliveryRegistry().removeDelivery(_currentDelivery.getDeliveryId());
+                    }
+                    Error error = receiveDelivery(_currentDelivery);
+                    if (error != null)
+                    {
+                        close(error);
+                    }
+                }
+                finally
+                {
+                    _currentDelivery = null;
+                }
+            }
         }
         else
         {
+            // TODO: it is wrong
             getSession().updateDisposition(Role.RECEIVER, transfer.getDeliveryId(), transfer.getDeliveryId(),null, true);
-            return null;
         }
     }
 
-    protected abstract Error messageTransfer(final Transfer transfer);
+    private Error validateNewTransfer(final Transfer transfer)
+    {
+        Error error = null;
+        if (transfer.getDeliveryId() == null)
+        {
+            error = new Error(AmqpError.INVALID_FIELD,
+                                    "Transfer \"delivery-id\" is required for a new delivery.");
+        }
+        else if (transfer.getDeliveryTag() == null)
+        {
+            error = new Error(AmqpError.INVALID_FIELD,
+                                    "Transfer \"delivery-tag\" is required for a new delivery.");
+        }
+        return error;
+    }
 
-    @Override public void receiveFlow(final Flow flow)
+    private Error validateSubsequentTransfer(final Transfer transfer)
+    {
+        Error error = null;
+        if (transfer.getDeliveryId() != null && !_currentDelivery.getDeliveryId()
+                                                                 .equals(transfer.getDeliveryId()))
+        {
+            error = new Error(AmqpError.INVALID_FIELD,
+                              String.format(
+                                      "Unexpected transfer \"delivery-id\" for multi-transfer delivery: found '%s', expected '%s'.",
+                                      transfer.getDeliveryId(),
+                                      _currentDelivery.getDeliveryId()));
+        }
+        else if (transfer.getDeliveryTag() != null && !_currentDelivery.getDeliveryTag()
+                                                                       .equals(transfer.getDeliveryTag()))
+        {
+            error = new Error(AmqpError.INVALID_FIELD,
+                              String.format(
+                                      "Unexpected transfer \"delivery-tag\" for multi-transfer delivery: found '%s', expected '%s'.",
+                                      transfer.getDeliveryTag(),
+                                      _currentDelivery.getDeliveryTag()));
+        }
+        else if (_currentDelivery.getReceiverSettleMode() != null && transfer.getRcvSettleMode() != null
+                 && !_currentDelivery.getReceiverSettleMode().equals(transfer.getRcvSettleMode()))
+        {
+            error = new Error(AmqpError.INVALID_FIELD,
+                              "Transfer \"rcv-settle-mode\" is set to different value than on previous transfer.");
+        }
+        return error;
+    }
+
+    protected abstract Error receiveDelivery(final Delivery delivery);
+
+    @Override
+    public void receiveFlow(final Flow flow)
     {
         setAvailable(flow.getAvailable());
         setDeliveryCount(new SequenceNumber(flow.getDeliveryCount().intValue()));
     }
 
-    public boolean settled(final Binary deliveryTag)
+    private boolean settled(final Binary deliveryTag)
     {
-        boolean deleted;
-        if (deleted = (_unsettledIds.remove(deliveryTag) != null))
-        {
-            _unsettledMap.remove(deliveryTag);
-
-        }
-
-        return deleted;
+        return _unsettled.remove(deliveryTag) != null;
     }
 
-    public void updateDisposition(final Binary deliveryTag, DeliveryState state, boolean settled)
+    public void updateDisposition(final Binary deliveryTag,
+                                  final DeliveryState state,
+                                  final boolean settled)
     {
-        if (_unsettledMap.containsKey(deliveryTag))
+        if (_unsettled.containsKey(deliveryTag))
         {
             boolean outcomeUpdate = false;
             Outcome outcome = null;
@@ -174,26 +237,22 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
             }
             else if (state instanceof TransactionalState)
             {
-                // TODO? Is this correct
                 outcome = ((TransactionalState) state).getOutcome();
             }
 
             if (outcome != null)
             {
-                Object oldOutcome = _unsettledMap.put(deliveryTag, outcome);
-                outcomeUpdate = !outcome.equals(oldOutcome);
+                if (!(_unsettled.get(deliveryTag) instanceof Outcome))
+                {
+                    Object oldOutcome = _unsettled.put(deliveryTag, outcome);
+                    outcomeUpdate = !outcome.equals(oldOutcome);
+                }
             }
 
-
-            TransientState transientState = _unsettledIds.get(deliveryTag);
             if (outcomeUpdate || settled)
             {
-
-                final UnsignedInteger transferId = transientState.getDeliveryId();
-
-                getSession().updateDisposition(getRole(), transferId, transferId, state, settled);
+                getSession().updateDisposition(getRole(), deliveryTag, state, settled);
             }
-
 
             if (settled)
             {
@@ -212,33 +271,28 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                 }
             }
         }
-        else
+        else if (_creditWindow)
         {
-            TransientState transientState = _unsettledIds.get(deliveryTag);
-            if (_creditWindow)
-            {
-                setLinkCredit(getLinkCredit().add(UnsignedInteger.ONE));
-                sendFlowConditional();
-            }
-
+            setLinkCredit(getLinkCredit().add(UnsignedInteger.ONE));
+            sendFlowConditional();
         }
     }
 
-    public void setCreditWindow()
+    void setCreditWindow()
     {
         setCreditWindow(true);
     }
 
-    public void setCreditWindow(boolean window)
+    private void setCreditWindow(boolean window)
     {
         _creditWindow = window;
         sendFlowConditional();
     }
 
     @Override
-    public void receiveDeliveryState(final Delivery unsettled, final DeliveryState state, final Boolean settled)
+    public void receiveDeliveryState(final Binary deliveryTag, final DeliveryState state, final Boolean settled)
     {
-        super.receiveDeliveryState(unsettled, state, settled);
+        super.receiveDeliveryState(deliveryTag, state, settled);
         if(_creditWindow)
         {
             if(Boolean.TRUE.equals(settled))
@@ -258,8 +312,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
     public void settle(Binary deliveryTag)
     {
         super.settle(deliveryTag);
-        _unsettledIds.remove(deliveryTag);
-        _unsettledMap.remove(deliveryTag);
+        _unsettled.remove(deliveryTag);
         if(_creditWindow)
         {
              sendFlowConditional();
@@ -271,15 +324,32 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
     {
     }
 
-    UnsignedInteger getLastDeliveryId()
+    @Override
+    protected void detach(final Error error, final boolean close)
     {
-        return _lastDeliveryId;
+        try
+        {
+            super.detach(error, close);
+        }
+        finally
+        {
+            if (close)
+            {
+                if (_currentDelivery != null)
+                {
+                    _currentDelivery.discard();
+                    _currentDelivery = null;
+                }
+            }
+        }
     }
 
-    void setLastDeliveryId(UnsignedInteger lastDeliveryId)
+    @Override
+    protected void handleDeliveryState(Binary deliveryTag, DeliveryState state, Boolean settled)
     {
-        _lastDeliveryId = lastDeliveryId;
+        if(Boolean.TRUE.equals(settled))
+        {
+            _unsettled.remove(deliveryTag);
+        }
     }
-
-
 }

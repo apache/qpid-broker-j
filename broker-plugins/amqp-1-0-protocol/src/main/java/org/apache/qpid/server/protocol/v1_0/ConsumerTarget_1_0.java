@@ -79,7 +79,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
     private Binary _transactionId;
     private final AMQPDescribedTypeRegistry _typeRegistry;
-    private SendingLinkEndpoint _linkEndpoint;
+    private final SendingLinkEndpoint _linkEndpoint;
     private final SectionEncoder _sectionEncoder;
 
     private final StateChangeListener<MessageInstance, MessageInstance.EntryState> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, MessageInstance.EntryState>()
@@ -356,7 +356,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     {
         updateNotifyWorkDesired();
 
-        if (isSuspended() && getEndpoint() != null)
+        if (_linkEndpoint != null)
         {
             _transactionId = _linkEndpoint.getTransactionId();
         }
@@ -454,7 +454,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                             }
                             else
                             {
-                                _linkEndpoint.updateDisposition(_deliveryTag, (DeliveryState) outcome, true);
+                                _linkEndpoint.updateDisposition(_deliveryTag, outcome, true);
                             }
                             _linkEndpoint.sendFlowConditional();
                         }
