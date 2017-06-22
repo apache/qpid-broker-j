@@ -36,6 +36,7 @@ import javax.security.auth.Subject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -93,6 +94,10 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
     public static final String SELECTOR_VALUE = "Test = 'MST'";
     public static final String LVQ_KEY = "MST-LVQ-KEY";
 
+    private static final int BUFFER_SIZE = 10;
+    private static final int POOL_SIZE = 20;
+    private static final double SPARSITY_FRACTION = 1.0;
+
     private String nonDurableExchangeName = "MST-NonDurableDirectExchange";
     private String directExchangeName = "MST-DirectExchange";
     private String topicExchangeName = "MST-TopicExchange";
@@ -119,9 +124,13 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
     private VirtualHostNode<?> _node;
     private TaskExecutor _taskExecutor;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
+
+        QpidByteBuffer.deinitialisePool();
+        QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
 
         String nodeName = "node" + getName();
         String hostName = "host" + getName();
@@ -174,6 +183,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         }
         finally
         {
+            QpidByteBuffer.deinitialisePool();
             _taskExecutor.stopImmediately();
             super.tearDown();
             FileUtils.delete(new File(_storePath), true);
