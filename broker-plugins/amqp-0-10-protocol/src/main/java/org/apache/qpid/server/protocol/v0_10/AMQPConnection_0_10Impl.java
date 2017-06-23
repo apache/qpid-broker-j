@@ -351,4 +351,23 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     {
         super.initialiseHeartbeating(writerDelay, readerDelay);
     }
+
+    @Override
+    protected boolean isOpeningInProgress()
+    {
+        ServerConnectionDelegate.ConnectionState state = _connection.getConnectionDelegate().getState();
+        switch (state)
+        {
+            case INIT:
+            case AWAIT_START_OK:
+            case AWAIT_SECURE_OK:
+            case AWAIT_TUNE_OK:
+            case AWAIT_OPEN:
+                return true;
+            case OPEN:
+                return false;
+            default:
+                throw new IllegalStateException("Unsupported state " + state);
+        }
+    }
 }

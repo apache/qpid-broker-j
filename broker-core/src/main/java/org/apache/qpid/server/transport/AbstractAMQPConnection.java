@@ -540,6 +540,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     protected abstract void addAsyncTask(final Action<? super T> action);
 
+    protected abstract boolean isOpeningInProgress();
 
     protected <T> T runAsSubject(PrivilegedAction<T> action)
     {
@@ -903,11 +904,12 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
             int nextTick = getTimeToNextTick(currentTime);
             if(nextTick <= 0)
             {
-                if (getAuthorizedPrincipal() == null)
+                if (isOpeningInProgress())
                 {
-                    _logger.warn("Connection has taken more than {} ms to establish identity.  Closing as possible DoS.",
+                    _logger.warn("Connection has taken more than {} ms to establish.  Closing as possible DoS.",
                                  _allowedTime);
-                    getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Protocol authentication not established within timeout period", true));
+                    getEventLogger().message(ConnectionMessages.IDLE_CLOSE(
+                            "Protocol connection is not established within timeout period", true));
                     _network.close();
                 }
                 else

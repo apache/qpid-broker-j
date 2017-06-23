@@ -1892,4 +1892,25 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         // TODO - bounds check
         _openTransactions[txnId] = null;
     }
+
+    @Override
+    protected boolean isOpeningInProgress()
+    {
+        switch (_connectionState)
+        {
+            case AWAIT_AMQP_OR_SASL_HEADER:
+            case AWAIT_SASL_INIT:
+            case AWAIT_SASL_RESPONSE:
+            case AWAIT_AMQP_HEADER:
+            case AWAIT_OPEN:
+                return true;
+            case OPENED:
+            case CLOSE_RECEIVED:
+            case CLOSE_SENT:
+            case CLOSED:
+                return false;
+            default:
+                throw new IllegalStateException("Unsupported state " + _connectionState);
+        }
+    }
 }

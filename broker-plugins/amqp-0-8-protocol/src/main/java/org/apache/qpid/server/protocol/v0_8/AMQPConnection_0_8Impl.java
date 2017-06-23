@@ -1404,6 +1404,24 @@ public class AMQPConnection_0_8Impl
         return new ProcessPendingIterator();
     }
 
+    @Override
+    protected boolean isOpeningInProgress()
+    {
+        switch (_state)
+        {
+            case INIT:
+            case AWAIT_START_OK:
+            case AWAIT_SECURE_OK:
+            case AWAIT_TUNE_OK:
+            case AWAIT_OPEN:
+                return true;
+            case OPEN:
+                return false;
+            default:
+                throw new IllegalStateException("Unsupported state " + _state);
+        }
+    }
+
     private class ProcessPendingIterator implements Iterator<Runnable>
     {
         private Iterator<? extends AMQPSession<?,?>> _sessionIterator;
