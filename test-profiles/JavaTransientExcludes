@@ -29,15 +29,6 @@ org.apache.qpid.test.unit.ct.DurableSubscriberTest#*
 
 org.apache.qpid.server.queue.QueueMessageDurabilityTest#*
 
-org.apache.qpid.server.store.VirtualHostMessageStoreTest#testMessagePersistence
-org.apache.qpid.server.store.VirtualHostMessageStoreTest#testMessageRemoval
-org.apache.qpid.server.store.VirtualHostMessageStoreTest#testBindingPersistence
-org.apache.qpid.server.store.VirtualHostMessageStoreTest#testDurableBindingRemoval
-org.apache.qpid.server.store.VirtualHostMessageStoreTest#testQueuePersistence
-org.apache.qpid.server.store.VirtualHostMessageStoreTest#testDurableQueueRemoval
-org.apache.qpid.server.store.VirtualHostMessageStoreTest#testExchangePersistence
-org.apache.qpid.server.store.VirtualHostMessageStoreTest#testDurableExchangeRemoval
-
 org.apache.qpid.server.store.berkeleydb.*
 org.apache.qpid.server.store.berkeleydb.replication.*
 org.apache.qpid.server.store.berkeleydb.upgrade.*
