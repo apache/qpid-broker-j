@@ -218,6 +218,174 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- Internal dependencies -->
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-bdbstore</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-bdbstore</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-core</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-codegen</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-access-control</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-jdbc-provider-bone</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-jdbc-store</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-amqp-msg-conv-0-8-to-0-10</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-amqp-msg-conv-0-8-to-1-0</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-amqp-msg-conv-0-10-to-1-0</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-amqp-0-8-protocol</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-amqp-0-10-protocol</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-amqp-1-0-protocol</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-amqp-1-0-protocol</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-derby-store</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-logging-logback</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-memory-store</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-amqp-1-0-protocol-jdbc-link-store</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-amqp-1-0-protocol-bdb-link-store</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-management-http</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-management-amqp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-websocket</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-perftests</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-systests</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-test-utils</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- External dependencies -->
       <dependency>
         <groupId>org.apache.qpid</groupId>
         <artifactId>qpid-client</artifactId>

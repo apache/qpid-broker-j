@@ -33,13 +33,11 @@
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-core</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-codegen</artifactId>
-      <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
 
@@ -47,15 +45,13 @@
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-test-utils</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-core</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
+      <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
 

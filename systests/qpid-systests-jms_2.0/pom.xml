@@ -44,7 +44,6 @@
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-systests</artifactId>
-      <version>${project.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.apache.geronimo.specs</groupId>
@@ -56,7 +55,6 @@
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-bdbstore</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
       <optional>true</optional>
     </dependency>
@@ -69,7 +67,6 @@
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-plugins-amqp-1-0-protocol-bdb-link-store</artifactId>
-      <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
 

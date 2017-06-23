@@ -40,7 +40,6 @@
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-codegen</artifactId>
-      <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
 
@@ -80,7 +79,6 @@
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-test-utils</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 

@@ -34,40 +34,33 @@
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-core</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-plugins-amqp-1-0-protocol</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-plugins-websocket</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-codegen</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-test-utils</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-plugins-logging-logback</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-plugins-derby-store</artifactId>
-            <version>${project.version}</version>
             <optional>true</optional>
             <scope>test</scope>
         </dependency>
@@ -75,13 +68,11 @@
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-plugins-memory-store</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-plugins-amqp-1-0-protocol-jdbc-link-store</artifactId>
-            <version>${project.version}</version>
             <optional>true</optional>
             <scope>test</scope>
         </dependency>
@@ -89,7 +80,6 @@
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-plugins-amqp-1-0-protocol-bdb-link-store</artifactId>
-            <version>${project.version}</version>
             <optional>true</optional>
             <scope>test</scope>
         </dependency>
@@ -97,7 +87,6 @@
         <dependency>
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-bdbstore</artifactId>
-            <version>${project.version}</version>
             <scope>test</scope>
             <optional>true</optional>
         </dependency>

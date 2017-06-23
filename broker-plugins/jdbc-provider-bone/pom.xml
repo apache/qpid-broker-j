@@ -33,13 +33,11 @@
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-plugins-jdbc-store</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-codegen</artifactId>
-      <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
 

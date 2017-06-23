@@ -33,27 +33,23 @@
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-core</artifactId>
-      <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-codegen</artifactId>
-      <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-plugins-amqp-0-8-protocol</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-plugins-amqp-0-10-protocol</artifactId>
-      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
