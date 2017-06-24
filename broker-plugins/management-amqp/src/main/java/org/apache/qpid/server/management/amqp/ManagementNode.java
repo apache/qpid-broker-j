@@ -37,7 +37,6 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,10 +47,13 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
 
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.connection.AmqpConnectionMetaData;
+import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -133,7 +135,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     public static final int STATUS_CODE_NOT_FOUND = 404;
     public static final int STATUS_CODE_CONFLICT = 409;
     public static final int STATUS_CODE_INTERNAL_ERROR = 500;
-    public static final int STATUS_CODE_NOT_IMPLEMENTED= 501;
+    public static final int STATUS_CODE_NOT_IMPLEMENTED = 501;
     private static final Comparator<? super ConfiguredObject<?>> OBJECT_COMPARATOR =
             new Comparator<ConfiguredObject<?>>()
             {
@@ -176,14 +178,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
 
     private final ManagementInputConverter _managementInputConverter;
 
-    private static final InstanceProperties CONSUMED_INSTANCE_PROPERTIES = new InstanceProperties()
-    {
-        @Override
-        public Object getProperty(final Property prop)
-        {
-            return null;
-        }
-    };
+    private static final InstanceProperties CONSUMED_INSTANCE_PROPERTIES = prop -> null;
 
     ManagementNode(final NamedAddressSpace addressSpace,
                    final ConfiguredObject<?> configuredObject)
@@ -401,12 +396,11 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     }
 
     private synchronized void enqueue(InternalMessage message,
-                                      InstanceProperties properties,
                                       Action<? super MessageInstance> postEnqueueAction)
     {
         if(postEnqueueAction != null)
         {
-            postEnqueueAction.performAction(new ConsumedMessageInstance(message, properties));
+            postEnqueueAction.performAction(new ConsumedMessageInstance(message));
         }
 
 
@@ -444,12 +438,13 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
                         final Action<? super MessageInstance> action,
                         final MessageEnqueueRecord record)
     {
+        @SuppressWarnings("unchecked")
         MessageConverter<ServerMessage, InternalMessage> converter =
                 (MessageConverter<ServerMessage, InternalMessage>) MessageConverterRegistry.getConverter((message.getClass()), InternalMessage.class);
 
         final InternalMessage msg = converter.convert(message, _addressSpace);
 
-        enqueue(msg, CONSUMED_INSTANCE_PROPERTIES, action);
+        enqueue(msg, action);
 
     }
 
@@ -539,30 +534,48 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
                 }
             };
 
+    private final Set<String> STANDARD_OPERATIONS = Sets.newHashSet(CREATE_OPERATION.getName(),
+                                                                    READ_OPERATION.getName(),
+                                                                    UPDATE_OPERATION.getName(),
+                                                                    DELETE_OPERATION.getName());
 
     private InternalMessage performOperation(final Class<? extends ConfiguredObject> clazz,
                                              final String operation,
                                              InternalMessage message)
     {
-        final Map<String, ConfiguredObjectOperation<?>> operations = _model.getTypeRegistry().getOperations(clazz);
-        @SuppressWarnings("unchecked")
-        final ConfiguredObjectOperation<ConfiguredObject<?>> method =
-                (ConfiguredObjectOperation<ConfiguredObject<?>>) operations.get(operation);
-        StandardOperation standardOperation;
         try
         {
-            if (method != null)
+            if (STANDARD_OPERATIONS.contains(operation))
             {
-                return performConfiguredObjectOperation(clazz, message, method);
-            }
-            else if ((standardOperation = _standardOperations.get(clazz).get(operation)) != null)
-            {
-                return standardOperation.performOperation(clazz, message);
+                StandardOperation standardOperation;
+                if ((standardOperation = _standardOperations.get(clazz).get(operation)) != null)
+                {
+                    return standardOperation.performOperation(clazz, message);
+                }
             }
             else
             {
-                return createFailureResponse(message, STATUS_CODE_NOT_IMPLEMENTED, "Not implemented");
+                final InternalMessageHeader requestHeader = message.getMessageHeader();
+                final Map<String, Object> headers = requestHeader.getHeaderMap();
+
+                ConfiguredObject<?> object = findObject(clazz, headers);
+                if (object == null)
+                {
+                    return createFailureResponse(message, STATUS_CODE_NOT_FOUND, "Not found");
+                }
+
+                final Map<String, ConfiguredObjectOperation<?>> operations =
+                        _model.getTypeRegistry().getOperations(object.getClass());
+                @SuppressWarnings("unchecked") final ConfiguredObjectOperation<ConfiguredObject<?>> method =
+                        (ConfiguredObjectOperation<ConfiguredObject<?>>) operations.get(operation);
+
+                if (method != null)
+                {
+                    return performConfiguredObjectOperation(object, message, method);
+                }
             }
+            return createFailureResponse(message, STATUS_CODE_NOT_IMPLEMENTED, "Not implemented");
+
         }
         catch (RuntimeException e)
         {
@@ -697,8 +710,6 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
             responseHeader.setMessageId(UUID.randomUUID().toString());
             responseHeader.setHeader(STATUS_CODE_HEADER, STATUS_CODE_OK);
 
-            // TODO - remove insecure on insecure channel
-
             return InternalMessage.createMapMessage(_addressSpace.getMessageStore(), responseHeader,
                                                     _managementOutputConverter.convertToOutput(object, actuals));
         }
@@ -826,20 +837,12 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         }
     }
 
-    private InternalMessage performConfiguredObjectOperation(final Class<? extends ConfiguredObject> clazz,
+    private InternalMessage performConfiguredObjectOperation(final ConfiguredObject<?> object,
                                                              final InternalMessage message,
                                                              final ConfiguredObjectOperation<ConfiguredObject<?>> method)
     {
-        InternalMessageHeader requestHeader = message.getMessageHeader();
-
+        final InternalMessageHeader requestHeader = message.getMessageHeader();
         final Map<String, Object> headers = requestHeader.getHeaderMap();
-
-        ConfiguredObject<?> object = findObject(clazz, headers);
-        if (object == null)
-        {
-            return createFailureResponse(message, STATUS_CODE_NOT_FOUND, "Not found");
-        }
-
 
         try
         {
@@ -852,6 +855,13 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
 
             parameters.keySet().removeIf(paramName -> paramName.startsWith("JMS_QPID"));
 
+            AmqpConnectionMetaData callerConnectionMetaData = getCallerConnectionMetaData();
+
+            if (method.isSecure(object, parameters) && !(callerConnectionMetaData.getTransport().isSecure() || callerConnectionMetaData.getPort().isAllowConfidentialOperationsOnInsecureChannels()))
+            {
+                return createFailureResponse(message, STATUS_CODE_FORBIDDEN, "Operation '" + method.getName() + "' can only be performed over a secure (AMQPS) connection");
+            }
+
             final MutableMessageHeader responseHeader = new MutableMessageHeader();
             responseHeader.setCorrelationId(requestHeader.getCorrelationId() == null
                                                     ? requestHeader.getMessageId()
@@ -859,13 +869,8 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
             responseHeader.setMessageId(UUID.randomUUID().toString());
             responseHeader.setHeader(STATUS_CODE_HEADER, STATUS_CODE_OK);
 
-            Serializable result = (Serializable) method.perform(object, parameters);
-            if(result == null)
-            {
-                result = new byte[0];
-            }
-            return InternalMessage.createMessage(_addressSpace.getMessageStore(), responseHeader,
-                                                 result, false);
+            final Object result = method.perform(object, parameters);
+            return createManagedOperationResponse(method, responseHeader, result);
         }
         catch (IllegalArgumentException | IllegalStateException | IllegalConfigurationException e)
         {
@@ -874,6 +879,33 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         catch (AccessControlException e)
         {
             return createFailureResponse(message, STATUS_CODE_FORBIDDEN, "Forbidden");
+        }
+    }
+
+    private InternalMessage createManagedOperationResponse(final ConfiguredObjectOperation<ConfiguredObject<?>> method,
+                                                           final MutableMessageHeader responseHeader,
+                                                           final Object result)
+    {
+        Object convertedValue = _managementOutputConverter.convertObjectToOutput(result);
+        if (convertedValue instanceof byte[])
+        {
+            return InternalMessage.createBytesMessage(_addressSpace.getMessageStore(), responseHeader,
+                                                      (byte[]) convertedValue, false);
+        }
+        else if (convertedValue instanceof Map)
+        {
+            return InternalMessage.createMapMessage(_addressSpace.getMessageStore(), responseHeader,
+                                                    ((Map<?,?>) convertedValue));
+        }
+        else if (convertedValue instanceof Serializable)
+        {
+            return InternalMessage.createMessage(_addressSpace.getMessageStore(), responseHeader,
+                                                 (Serializable) convertedValue, false);
+        }
+        else
+        {
+            return InternalMessage.createBytesMessage(_addressSpace.getMessageStore(), responseHeader,
+                                                      new byte[0], false);
         }
     }
 
@@ -1143,7 +1175,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         }
 
         List<ConfiguredObject<?>> objects = getObjects(entityType);
-        Collections.sort(objects, OBJECT_COMPARATOR);
+        objects.sort(OBJECT_COMPARATOR);
         if(headerMap.containsKey(OFFSET_HEADER))
         {
             int offset;
@@ -1331,7 +1363,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     private static <C extends ConfiguredObject<?>> Collection<ConfiguredObject<?>> getAssociatedChildren(final ConfiguredObjectOperation<C> op, final ConfiguredObject<?> managedObject)
     {
         @SuppressWarnings("unchecked")
-        final Collection<ConfiguredObject<?>> associated = (Collection<ConfiguredObject<?>>) op.perform((C)managedObject, Collections.<String, Object>emptyMap());
+        final Collection<ConfiguredObject<?>> associated = (Collection<ConfiguredObject<?>>) op.perform((C)managedObject, Collections.emptyMap());
         return associated;
     }
 
@@ -1434,37 +1466,26 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     private Map<String,List<String>> performGetTypes(final Map<String, Object> header)
     {
         return performManagementOperation(header,
-                                                 new TypeOperation<List<String>>()
-                                                 {
-                                                     @Override
-                                                     public List<String> evaluateType(final Class<? extends ConfiguredObject> clazz)
-                                                     {
-                                                         Class<? extends ConfiguredObject> category =
-                                                                 ConfiguredObjectTypeRegistry.getCategory(clazz);
-                                                         if(category == clazz)
-                                                         {
-                                                             return Collections.emptyList();
-                                                         }
-                                                         else
-                                                         {
-                                                             return Collections.singletonList(getAmqpName(category));
-                                                         }
-                                                     }
-                                                 }, Collections.<String>emptyList());
+                                          clazz ->
+                                          {
+                                              Class<? extends ConfiguredObject> category =
+                                                      ConfiguredObjectTypeRegistry.getCategory(clazz);
+                                              if(category == clazz)
+                                              {
+                                                  return Collections.emptyList();
+                                              }
+                                              else
+                                              {
+                                                  return Collections.singletonList(getAmqpName(category));
+                                              }
+                                          }, Collections.<String>emptyList());
 
     }
 
     private Map<String,List<String>> performGetAttributes(final Map<String, Object> headers)
     {
         return performManagementOperation(headers,
-                                                 new TypeOperation<List<String>>()
-                                                 {
-                                                     @Override
-                                                     public List<String> evaluateType(final Class<? extends ConfiguredObject> clazz)
-                                                     {
-                                                         return new ArrayList<>(_model.getTypeRegistry().getAttributeNames(clazz));
-                                                     }
-                                                 }, Collections.<String>emptyList());
+                                          clazz -> new ArrayList<>(_model.getTypeRegistry().getAttributeNames(clazz)), Collections.<String>emptyList());
 
     }
 
@@ -1475,27 +1496,23 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         final Map<String, List<String>> managementOperations = new HashMap<>();
 
         return performManagementOperation(headers,
-                                                 new TypeOperation<Map<String,List<String>>>()
-                                                 {
-                                                     @Override
-                                                     public Map<String,List<String>> evaluateType(final Class<? extends ConfiguredObject> clazz)
-                                                     {
-                                                         final Map<String, ConfiguredObjectOperation<?>> operations =
-                                                                 _model.getTypeRegistry().getOperations(clazz);
-                                                         Map<String,List<String>> result = new HashMap<>();
-                                                         for(Map.Entry<String, ConfiguredObjectOperation<?>> operation : operations.entrySet())
-                                                         {
+                                          clazz ->
+                                          {
+                                              final Map<String, ConfiguredObjectOperation<?>> operations =
+                                                      _model.getTypeRegistry().getOperations(clazz);
+                                              Map<String,List<String>> result = new HashMap<>();
+                                              for(Map.Entry<String, ConfiguredObjectOperation<?>> operation : operations.entrySet())
+                                              {
 
-                                                             List<String> arguments = new ArrayList<>();
-                                                             for(OperationParameter param : operation.getValue().getParameters())
-                                                             {
-                                                                 arguments.add(param.getName());
-                                                             }
-                                                             result.put(operation.getKey(), arguments);
-                                                         }
-                                                         return result;
-                                                     }
-                                                 }, managementOperations);
+                                                  List<String> arguments = new ArrayList<>();
+                                                  for(OperationParameter param : operation.getValue().getParameters())
+                                                  {
+                                                      arguments.add(param.getName());
+                                                  }
+                                                  result.put(operation.getKey(), arguments);
+                                              }
+                                              return result;
+                                          }, managementOperations);
 
     }
 
@@ -1564,13 +1581,25 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         _consumers.remove(managementNodeConsumer);
     }
 
+    private AmqpConnectionMetaData getCallerConnectionMetaData()
+    {
+        Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        Set<ConnectionPrincipal> connectionPrincipals = currentSubject.getPrincipals(ConnectionPrincipal.class);
+        if (connectionPrincipals.isEmpty())
+        {
+            throw new IllegalStateException("Cannot find connection principal on calling thread");
+        }
+
+        ConnectionPrincipal principal = connectionPrincipals.iterator().next();
+        return principal.getConnectionMetaData();
+    }
+
     private class ConsumedMessageInstance implements MessageInstance
     {
 
         private final ServerMessage _message;
 
-        ConsumedMessageInstance(final ServerMessage message,
-                                final InstanceProperties properties)
+        ConsumedMessageInstance(final ServerMessage message)
         {
             _message = message;
         }

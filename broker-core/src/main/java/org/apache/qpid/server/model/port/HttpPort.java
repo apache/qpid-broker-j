@@ -37,7 +37,6 @@ public interface HttpPort<X extends HttpPort<X>> extends Port<X>
     String DEFAULT_HTTP_WANT_CLIENT_AUTH = "false";
     String THREAD_POOL_MINIMUM = "threadPoolMinimum";
     String THREAD_POOL_MAXIMUM = "threadPoolMaximum";
-    String ALLOW_CONFIDENTIAL_OPERATIONS_ON_INSECURE_CHANNELS = "allowConfidentialOperationsOnInsecureChannels";
 
     String PORT_HTTP_NUMBER_OF_SELECTORS = "qpid.port.http.threadPool.numberOfSelectors";
     @SuppressWarnings("unused")
@@ -94,10 +93,6 @@ public interface HttpPort<X extends HttpPort<X>> extends Port<X>
 
     @ManagedAttribute( defaultValue = "${" + PORT_HTTP_THREAD_POOL_MINIMUM + "}")
     int getThreadPoolMinimum();
-
-    @ManagedAttribute( defaultValue = "false", description = "If true allow operations which may return confidential "
-                                                             + "information to be executed on insecure connections")
-    boolean isAllowConfidentialOperationsOnInsecureChannels();
 
     @ManagedAttribute( defaultValue = "true", description = "If true then this port will provide HTTP management "
                                                             + "services for the broker, if no virtualhostalaias "

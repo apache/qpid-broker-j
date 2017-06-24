@@ -44,7 +44,6 @@ import com.google.common.base.Strings;
 
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 public class PublishMessageRestTest extends QpidRestTestCase
@@ -79,7 +78,7 @@ public class PublishMessageRestTest extends QpidRestTestCase
     {
         super.customizeConfiguration();
         getDefaultBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT,
-                                                           HttpPort.ALLOW_CONFIDENTIAL_OPERATIONS_ON_INSECURE_CHANNELS,
+                                                           Port.ALLOW_CONFIDENTIAL_OPERATIONS_ON_INSECURE_CHANNELS,
                                                            true);
     }
 

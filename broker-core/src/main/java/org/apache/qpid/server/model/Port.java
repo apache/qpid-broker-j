@@ -59,12 +59,17 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
 
     @ManagedContextDefault(name = CONNECTION_MAXIMUM_AUTHENTICATION_DELAY)
     long DEFAULT_MAX_CONNECTION_AUTHENTICATION_DELAY = 10000l;
+    String ALLOW_CONFIDENTIAL_OPERATIONS_ON_INSECURE_CHANNELS = "allowConfidentialOperationsOnInsecureChannels";
 
     // Attributes
 
     @ManagedAttribute( mandatory = true, description = "Port used to accept incoming connections. A value of 0"
                                                        + " will cause a dynamically allocated port to be assigned.")
     int getPort();
+
+    @ManagedAttribute( defaultValue = "false", description = "If true allow operations which may return confidential "
+                                                             + "information to be executed on insecure connections")
+    boolean isAllowConfidentialOperationsOnInsecureChannels();
 
     @DerivedAttribute( description = "Actual port used to accept incoming connections. Will be -1 if the port"
                                      + " is not currently bound.")

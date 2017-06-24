@@ -21,11 +21,15 @@
 package org.apache.qpid.systest.management.amqp;
 
 import static org.apache.qpid.server.model.Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES;
+import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE;
+import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE_PASSWORD;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -41,9 +45,18 @@ import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.Session;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.apache.qpid.server.exchange.ExchangeDefaults;
+import org.apache.qpid.server.model.DefaultVirtualHostAlias;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.model.VirtualHostAlias;
+import org.apache.qpid.server.model.VirtualHostNameAlias;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.PriorityQueue;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 public class AmqpManagementTest extends QpidBrokerTestCase
 {
@@ -59,6 +72,32 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     @Override
     public void setUp() throws Exception
     {
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
+
+        Map<String, Object> ampqSslPort = new HashMap<>();
+        ampqSslPort.put(Port.TRANSPORTS, Collections.singletonList(Transport.SSL));
+        ampqSslPort.put(Port.PORT, DEFAULT_SSL_PORT);
+        ampqSslPort.put(Port.NAME, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT);
+        ampqSslPort.put(Port.KEY_STORE, TestBrokerConfiguration.ENTRY_NAME_SSL_KEYSTORE);
+        ampqSslPort.put(Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
+        ampqSslPort.put(Port.PROTOCOLS, System.getProperty(TEST_AMQP_PORT_PROTOCOLS_PROPERTY));
+
+        config.addObjectConfiguration(Port.class, ampqSslPort);
+
+        Map<String, Object> aliasAttributes = new HashMap<>();
+        aliasAttributes.put(VirtualHostAlias.NAME, "defaultAlias");
+        aliasAttributes.put(VirtualHostAlias.TYPE, DefaultVirtualHostAlias.TYPE_NAME);
+        getDefaultBrokerConfiguration().addObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT, VirtualHostAlias.class, aliasAttributes);
+
+        aliasAttributes = new HashMap<>();
+        aliasAttributes.put(VirtualHostAlias.NAME, "nameAlias");
+        aliasAttributes.put(VirtualHostAlias.TYPE, VirtualHostNameAlias.TYPE_NAME);
+        getDefaultBrokerConfiguration().addObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT, VirtualHostAlias.class, aliasAttributes);
+
+        // set the ssl system properties
+        setSystemProperty("javax.net.ssl.trustStore", TRUSTSTORE);
+        setSystemProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
+
         super.setUp();
 
         if (isBroker10())
@@ -73,6 +112,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
             _runTest =  !( metaData.getProviderMajorVersion() < 6 || (metaData.getProviderMajorVersion() == 6 && metaData.getProviderMinorVersion() <= 1));
             con.close();
         }
+        setSystemProperty("test.port.ssl", ""+getDefaultBroker().getAmqpTlsPort());
     }
 
     private void setupSession() throws Exception
@@ -88,7 +128,6 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         }
         else
         {
-            final ConnectionMetaData metaData = _connection.getMetaData();
             _queue = _session.createQueue("ADDR:$management");
             _replyAddress = _session.createQueue("ADDR:!response");
             _replyConsumer = _session.createQueue(
@@ -134,12 +173,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertEquals("The correlation id does not match the sent message's messageId", message.getJMSMessageID(), responseMessage.getJMSCorrelationID());
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate success", 200, responseMessage.getIntProperty("statusCode"));
-
+        assertResponseCode(responseMessage, 200);
         checkResponseIsMapType(responseMessage);
         assertNotNull("The response did not include the org.amqp.Management type", getValueFromMapResponse(responseMessage, "org.amqp.management"));
         assertNotNull("The response did not include the org.apache.qpid.Port type", getValueFromMapResponse(responseMessage, "org.apache.qpid.Port"));
@@ -150,7 +184,8 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     {
         if (isBroker10())
         {
-            assertTrue("The response was not an Object Message", responseMessage instanceof ObjectMessage);
+            assertTrue(String.format("The response was not an Object Message. It was a : %s ",
+                                     responseMessage.getClass()), responseMessage instanceof ObjectMessage);
             assertTrue("The Object Message did not contain a Map",
                        ((ObjectMessage) responseMessage).getObject() instanceof Map);
         }
@@ -160,7 +195,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         }
     }
 
-    Object getValueFromMapResponse(final Message responseMessage, String name) throws JMSException
+    private Object getValueFromMapResponse(final Message responseMessage, String name) throws JMSException
     {
         if (isBroker10())
         {
@@ -172,7 +207,8 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         }
     }
 
-    Collection getMapResponseKeys(final Message responseMessage) throws JMSException
+    @SuppressWarnings("unchecked")
+    private Collection<String> getMapResponseKeys(final Message responseMessage) throws JMSException
     {
         if (isBroker10())
         {
@@ -187,7 +223,6 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     // test get types on $management
     public void testQueryBrokerManagement() throws Exception
     {
-
         if (!_runTest)
         {
             return;
@@ -206,13 +241,10 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
+        assertResponseCode(responseMessage, 200);
         assertEquals("The correlation id does not match the sent message's messageId", message.getJMSMessageID(), responseMessage.getJMSCorrelationID());
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate success", 200, responseMessage.getIntProperty("statusCode"));
         checkResponseIsMapType(responseMessage);
-        ArrayList resultMessageKeys = new ArrayList(getMapResponseKeys(responseMessage));
+        List<String> resultMessageKeys = new ArrayList<>(getMapResponseKeys(responseMessage));
         assertEquals("The response map has two entries", 2, resultMessageKeys.size());
         assertTrue("The response map does not contain attribute names", resultMessageKeys.contains("attributeNames"));
         assertTrue("The response map does not contain results ", resultMessageKeys.contains("results"));
@@ -235,13 +267,11 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertEquals("The correlation id does not match the sent message's messageId", message.getJMSMessageID(), responseMessage.getJMSCorrelationID());
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate success", 200, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 200);
         checkResponseIsMapType(responseMessage);
-        resultMessageKeys = new ArrayList(getMapResponseKeys(responseMessage));
+
+        assertEquals("The correlation id does not match the sent message's messageId", message.getJMSMessageID(), responseMessage.getJMSCorrelationID());
+        resultMessageKeys = new ArrayList<>(getMapResponseKeys(responseMessage));
         assertEquals("The response map has two entries", 2, resultMessageKeys.size());
         assertTrue("The response map does not contain attribute names", resultMessageKeys.contains("attributeNames"));
         assertTrue("The response map does not contain results ", resultMessageKeys.contains("results"));
@@ -298,9 +328,8 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         assertNotNull("A response message was not sent", responseMessage);
         assertTrue("The correlation id does not match the sent message's correlationId", Arrays.equals(correlationID, responseMessage.getJMSCorrelationIDAsBytes()));
 
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate success", 200, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 200);
+
         assertTrue("The response was not a MapMessage", responseMessage instanceof MapMessage);
         assertNotNull("The response did not include the org.amqp.Management type",
                       ((MapMessage) responseMessage).getObject("org.amqp.management"));
@@ -333,10 +362,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate success", 201, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 201);
         checkResponseIsMapType(responseMessage);
         assertEquals("The created queue was not a standard queue", "org.apache.qpid.StandardQueue", getValueFromMapResponse(responseMessage, "type"));
         assertEquals("The created queue was not a standard queue", "standard", getValueFromMapResponse(responseMessage, "qpid-type"));
@@ -354,10 +380,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate success", 200, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 200);
         checkResponseIsMapType(responseMessage);
         assertEquals("the created queue did not have the correct alerting threshold", 250L, getValueFromMapResponse(responseMessage, ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES));
 
@@ -372,10 +395,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate success", 204, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 204);
 
         message = _session.createMapMessage();
 
@@ -387,12 +407,9 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate not found", 404, responseMessage.getIntProperty("statusCode"));
-
+        assertResponseCode(responseMessage, 404);
     }
+
     // create / update / read / delete a queue via vhost
 
     public void testCreateQueueOnVhostManagement() throws Exception
@@ -416,10 +433,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate success", 201, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 201);
         checkResponseIsMapType(responseMessage);
         assertEquals("The created queue was not a priority queue", "org.apache.qpid.PriorityQueue", getValueFromMapResponse(responseMessage, "type"));
         assertEquals("The created queue was not a standard queue", "priority", getValueFromMapResponse(responseMessage, "qpid-type"));
@@ -438,10 +452,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate conflict", 409, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 409);
 
         message.setStringProperty("type", "org.apache.qpid.Queue");
         message.setStringProperty("operation", "READ");
@@ -451,10 +462,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate success", 200, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 200);
         assertEquals("the queue did not have the correct number of priorities", 13, Integer.valueOf(getValueFromMapResponse(responseMessage, PriorityQueue.PRIORITIES).toString()).intValue());
         assertEquals("the queue did not have the expected path", getTestName(), getValueFromMapResponse(responseMessage, "object-path"));
 
@@ -470,10 +478,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate success", 200, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 200);
         checkResponseIsMapType(responseMessage);
         assertEquals("The updated queue did not have the correct alerting threshold", 250L, Long.valueOf(getValueFromMapResponse(responseMessage, ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES).toString()).longValue());
 
@@ -488,10 +493,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate success", 204, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 204);
 
         message = _session.createMapMessage();
         message.setStringProperty("type", "org.apache.qpid.Queue");
@@ -503,10 +505,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate not found", 404, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 404);
     }
 
     // read virtual host from virtual host management
@@ -528,19 +527,14 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("Incorrect response code", 200, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 200);
         checkResponseIsMapType(responseMessage);
         assertEquals("The name of the virtual host is not as expected", "test", getValueFromMapResponse(responseMessage, "name"));
 
         message.setBooleanProperty("actuals", false);
         _producer.send(message);
         responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
+        assertResponseCode(responseMessage, 200);
         checkResponseIsMapType(responseMessage);
         assertNotNull("Derived attribute (productVersion) should be available", getValueFromMapResponse(responseMessage, "productVersion"));
     }
@@ -563,10 +557,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("Incorrect response code", 404, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 404);
     }
 
     public void testInvokeOperation_ObjectNotFound() throws Exception
@@ -587,10 +578,98 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("Incorrect response code", 404, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 404);
+    }
+
+    public void testInvokeOperationReturningMap() throws Exception
+    {
+        if (!_runTest)
+        {
+            return;
+        }
+        setupBrokerManagementConnection();
+
+        MapMessage message = _session.createMapMessage();
+
+        message.setStringProperty("type", "org.apache.qpid.Broker");
+        message.setStringProperty("operation", "getStatistics");
+        message.setStringProperty("index", "object-path");
+        message.setStringProperty("key", "");
+        message.setJMSReplyTo(_replyAddress);
+        _producer.send(message);
+
+        Message responseMessage = _consumer.receive(getReceiveTimeout());
+        assertResponseCode(responseMessage, 200);
+        checkResponseIsMapType(responseMessage);
+        assertNotNull(getValueFromMapResponse(responseMessage, "numberOfLiveThreads"));
+    }
+
+    public void testInvokeOperationReturningManagedAttributeValue() throws Exception
+    {
+        if (!_runTest)
+        {
+            return;
+        }
+        setupBrokerManagementConnection();
+
+        MapMessage message = _session.createMapMessage();
+
+        message.setStringProperty("type", "org.apache.qpid.Broker");
+        message.setStringProperty("operation", "getConnectionMetaData");
+        message.setStringProperty("index", "object-path");
+        message.setStringProperty("key", "");
+        message.setJMSReplyTo(_replyAddress);
+        _producer.send(message);
+
+        Message responseMessage = _consumer.receive(getReceiveTimeout());
+        assertResponseCode(responseMessage, 200);
+        checkResponseIsMapType(responseMessage);
+        assertNotNull(getValueFromMapResponse(responseMessage, "port"));
+    }
+
+    public void testInvokeSecureOperation() throws Exception
+    {
+        if (!_runTest)
+        {
+            return;
+        }
+        String secureOperation = "publishMessage";  // // a secure operation
+        Map<String, String> operationArg = new HashMap<>();
+        operationArg.put("address", ExchangeDefaults.FANOUT_EXCHANGE_NAME);
+        operationArg.put("content", "Hello, world!");
+
+        setupVirtualHostManagementConnection();
+
+        MapMessage plainRequest = _session.createMapMessage();
+
+        plainRequest.setStringProperty("type", "org.apache.qpid.VirtualHost");
+        plainRequest.setStringProperty("operation", secureOperation);
+        plainRequest.setStringProperty("index", "object-path");
+        plainRequest.setStringProperty("key", "");
+        plainRequest.setStringProperty("message", new ObjectMapper().writeValueAsString(operationArg));
+        plainRequest.setJMSReplyTo(_replyAddress);
+        _producer.send(plainRequest);
+
+        Message responseMessage = _consumer.receive(getReceiveTimeout());
+        assertResponseCode(responseMessage, 403);
+
+        _connection.close();
+
+        _connection = getConnectionBuilder().setTls(true).build();
+        setupSession();
+        MapMessage secureRequest = _session.createMapMessage();
+
+        secureRequest.setStringProperty("type", "org.apache.qpid.VirtualHost");
+        secureRequest.setStringProperty("operation", secureOperation);
+        secureRequest.setStringProperty("index", "object-path");
+        secureRequest.setStringProperty("key", "");
+        secureRequest.setStringProperty("message", new ObjectMapper().writeValueAsString(operationArg));
+        secureRequest.setJMSReplyTo(_replyAddress);
+        _producer.send(secureRequest);
+
+        responseMessage = _consumer.receive(getReceiveTimeout());
+        assertResponseCode(responseMessage, 200);
+   //     responseMessage.get
     }
 
     // create a virtual host from $management
@@ -612,10 +691,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("Incorrect response code", 201, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 201);
         _connection.close();
         _connection = getConnectionForVHost(virtualHostName);
         setupSession();
@@ -630,10 +706,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("Incorrect response code", 200, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 200);
         checkResponseIsMapType(responseMessage);
         assertEquals("The name of the virtual host is not as expected", virtualHostName, getValueFromMapResponse(responseMessage, "name"));
         assertEquals("The type of the virtual host is not as expected", "Memory", getValueFromMapResponse(responseMessage, "qpid-type"));
@@ -658,10 +731,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("Incorrect response code", 501, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 501);
     }
 
     // create a queue with the qpid type
@@ -685,10 +755,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("Incorrect response code", 201, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 201);
         checkResponseIsMapType(responseMessage);
         assertEquals("The created queue did not have the correct type", "org.apache.qpid.LastValueQueue", getValueFromMapResponse(responseMessage, "type"));
     }
@@ -714,10 +781,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("Incorrect response code", 201, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 201);
         checkResponseIsMapType(responseMessage);
         assertEquals("The created queue did not have the correct type", "sorted", getValueFromMapResponse(responseMessage, "qpid-type"));
     }
@@ -742,10 +806,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("Incorrect response code", 400, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 400);
     }
 
 
@@ -770,10 +831,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
-        assertNotNull("A response message was not sent", responseMessage);
-        assertTrue("The response message does not have a status code",
-                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate not implemented", 501, responseMessage.getIntProperty("statusCode"));
+        assertResponseCode(responseMessage, 501);
     }
 
     public void testCreateConnectionOnBrokerManagement() throws Exception
@@ -795,10 +853,19 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         _producer.send(message);
 
         Message responseMessage = _consumer.receive(getReceiveTimeout());
+        assertResponseCode(responseMessage, 501);
+
+    }
+
+    @SuppressWarnings("unchecked")
+    private void assertResponseCode(final Message responseMessage, final int expectedResponseCode) throws JMSException
+    {
         assertNotNull("A response message was not sent", responseMessage);
         assertTrue("The response message does not have a status code",
                    Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
-        assertEquals("The response code did not indicate not implemented", 501, responseMessage.getIntProperty("statusCode"));
+        assertEquals("The response code did not indicate success",
+                     expectedResponseCode, responseMessage.getIntProperty("statusCode"));
     }
+
 
 }

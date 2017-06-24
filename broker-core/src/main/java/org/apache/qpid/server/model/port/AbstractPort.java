@@ -76,6 +76,8 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     @ManagedAttributeField
     private TrustStore<?> _clientCertRecorder;
 
+    @ManagedAttributeField
+    private boolean _allowConfidentialOperationsOnInsecureChannels;
 
     private List<String> _tlsProtocolBlackList;
     private List<String> _tlsProtocolWhiteList;
@@ -204,6 +206,11 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
         return _authenticationProvider;
     }
 
+    @Override
+    public boolean isAllowConfidentialOperationsOnInsecureChannels()
+    {
+        return _allowConfidentialOperationsOnInsecureChannels;
+    }
 
     private boolean isUsingTLSTransport()
     {

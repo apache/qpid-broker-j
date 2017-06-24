@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectCustomSerialization;
 
 class ManagementOutputConverter
@@ -40,37 +41,66 @@ class ManagementOutputConverter
         _managementNode = managementNode;
     }
 
-    private Map<Object, Object> convertMapToOutput(final Map<?, ?> attributes)
+    Map<?, ?> convertToOutput(final ConfiguredObject<?> object,
+                              final boolean actuals)
     {
-        Map<Object,Object> result = new LinkedHashMap<>();
-        for(Map.Entry<?,?> entry : attributes.entrySet())
+        Map<String, Object> attributes = new LinkedHashMap<>();
+        attributes.put(ManagementNode.IDENTITY_ATTRIBUTE, object.getId());
+        attributes.put(ManagementNode.OBJECT_PATH, _managementNode.generatePath(object));
+        attributes.put(ManagementNode.TYPE_ATTRIBUTE, _managementNode.getAmqpName(object.getTypeClass()));
+        attributes.put(ManagementNode.QPID_TYPE, object.getType());
+
+        if(object != _managementNode.getManagedObject() && !_managementNode.isSyntheticChildClass(object.getCategoryClass()))
         {
-            result.put(convertObjectToOutput(entry.getKey()), convertObjectToOutput(entry.getValue()));
+            Class<? extends ConfiguredObject> parentType = object.getModel().getParentType(object.getCategoryClass());
+
+            if (parentType != _managementNode.getManagedObject().getCategoryClass())
+            {
+                attributes.put(parentType.getSimpleName().toLowerCase(), object.getParent());
+            }
+
         }
-        return result;
+
+        for(String name : object.getAttributeNames())
+        {
+            if(!ID_AND_TYPE.contains(name))
+            {
+                ConfiguredObjectAttribute<?, ?> attribute = object.getModel()
+                                                                  .getTypeRegistry()
+                                                                  .getAttributeTypes(object.getClass())
+                                                                  .get(name);
+
+                Object value = actuals
+                        ? object.getActualAttributes().get(name)
+                        : object.getAttribute(name);
+
+                if (attribute.isSecureValue(value))
+                {
+                    value = object.getAttribute(name);
+                }
+
+                if (value != null)
+                {
+                    attributes.put(name, value);
+                }
+            }
+        }
+
+        return convertMapToOutput(attributes);
     }
 
-    private Collection<?> convertCollectionToOutput(final Collection<?> value)
-    {
-
-        List<Object> result = new ArrayList<>();
-        for(Object entry : value)
-        {
-            result.add(convertObjectToOutput(entry));
-        }
-        return result;
-    }
-
-    private Object convertObjectToOutput(final Object value)
+    Object convertObjectToOutput(final Object value)
     {
         if(value == null)
         {
             return null;
         }
         else if(value instanceof String
+                || value instanceof Short
                 || value instanceof Integer
                 || value instanceof Long
                 || value instanceof Byte
+                || value instanceof Boolean
                 || value instanceof Character
                 || value instanceof Float
                 || value instanceof Double
@@ -105,40 +135,24 @@ class ManagementOutputConverter
         }
     }
 
-    protected Map<?, ?> convertToOutput(final ConfiguredObject<?> object,
-                                        final boolean actuals)
+    private Map<Object, Object> convertMapToOutput(final Map<?, ?> attributes)
     {
-        Map<String, Object> attributes = new LinkedHashMap<>();
-        attributes.put(ManagementNode.IDENTITY_ATTRIBUTE, object.getId());
-        attributes.put(ManagementNode.OBJECT_PATH, _managementNode.generatePath(object));
-        attributes.put(ManagementNode.TYPE_ATTRIBUTE, _managementNode.getAmqpName(object.getTypeClass()));
-        attributes.put(ManagementNode.QPID_TYPE, object.getType());
-
-        if(object != _managementNode.getManagedObject() && !_managementNode.isSyntheticChildClass(object.getCategoryClass()))
+        Map<Object,Object> result = new LinkedHashMap<>();
+        for(Map.Entry<?,?> entry : attributes.entrySet())
         {
-            Class<? extends ConfiguredObject> parentType = object.getModel().getParentType(object.getCategoryClass());
-
-            if (parentType != _managementNode.getManagedObject().getCategoryClass())
-            {
-                attributes.put(parentType.getSimpleName().toLowerCase(), object.getParent());
-            }
-
+            result.put(convertObjectToOutput(entry.getKey()), convertObjectToOutput(entry.getValue()));
         }
+        return result;
+    }
 
-        for(String name : object.getAttributeNames())
+    private Collection<?> convertCollectionToOutput(final Collection<?> value)
+    {
+
+        List<Object> result = new ArrayList<>();
+        for(Object entry : value)
         {
-            if(!ID_AND_TYPE.contains(name))
-            {
-                Object value = actuals
-                        ? object.getActualAttributes().get(name)
-                        : object.getAttribute(name);
-                if (value != null)
-                {
-                    attributes.put(name, value);
-                }
-            }
+            result.add(convertObjectToOutput(entry));
         }
-
-        return convertMapToOutput(attributes);
+        return result;
     }
 }

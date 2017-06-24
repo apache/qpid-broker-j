@@ -20,12 +20,13 @@
  */
 package org.apache.qpid.server.security.auth;
 
+import org.apache.qpid.server.model.ManagedAttributeValue;
 import org.apache.qpid.server.model.ManagedAttributeValueType;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 
 @ManagedAttributeValueType(isAbstract = true)
-public interface SocketConnectionMetaData
+public interface SocketConnectionMetaData extends ManagedAttributeValue
 {
     String getLocalAddress();
     String getRemoteAddress();

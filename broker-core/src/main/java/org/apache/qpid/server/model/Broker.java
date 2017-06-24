@@ -35,7 +35,7 @@ import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.preferences.UserPreferencesCreator;
 
-@ManagedObject( defaultType = Broker.BROKER_TYPE)
+@ManagedObject( defaultType = Broker.BROKER_TYPE, amqpName = "org.apache.qpid.Broker")
 public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventLoggerProvider, StatisticsGatherer, Container<X>,
                                                      UserPreferencesCreator
 {

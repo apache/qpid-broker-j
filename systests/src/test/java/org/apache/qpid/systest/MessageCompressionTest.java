@@ -47,7 +47,6 @@ import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Port;
-import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -67,7 +66,7 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         TestBrokerConfiguration config = getDefaultBrokerConfiguration();
         config.addHttpManagementConfiguration();
         config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT,
-                                  HttpPort.ALLOW_CONFIDENTIAL_OPERATIONS_ON_INSECURE_CHANNELS,
+                                  Port.ALLOW_CONFIDENTIAL_OPERATIONS_ON_INSECURE_CHANNELS,
                                   true);
         super.startDefaultBroker();
 

@@ -45,9 +45,6 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
     private int _threadPoolMinimum;
 
     @ManagedAttributeField
-    private boolean _allowConfidentialOperationsOnInsecureChannels;
-
-    @ManagedAttributeField
     private boolean _manageBrokerOnNoAliasMatch;
     private int _numberOfAcceptors;
     private int _numberOfSelectors;
@@ -88,12 +85,6 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
     public int getThreadPoolMinimum()
     {
         return _threadPoolMinimum;
-    }
-
-    @Override
-    public boolean isAllowConfidentialOperationsOnInsecureChannels()
-    {
-        return _allowConfidentialOperationsOnInsecureChannels;
     }
 
     @Override

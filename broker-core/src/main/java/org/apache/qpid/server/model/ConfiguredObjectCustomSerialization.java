@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.model;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.Principal;
@@ -187,8 +189,13 @@ public class ConfiguredObjectCustomSerialization
                         String propertyName =
                                 methodName.startsWith("is") ? methodName.substring(2) : methodName.substring(3);
                         propertyName = Character.toLowerCase(propertyName.charAt(0)) + propertyName.substring(1);
+                        final boolean originalAccessible = method.isAccessible();
                         try
                         {
+                            if (!originalAccessible)
+                            {
+                                method.setAccessible(true);
+                            }
                             final Object attrValue = method.invoke(value);
                             if (attrValue != null)
                             {
@@ -197,7 +204,14 @@ public class ConfiguredObjectCustomSerialization
                         }
                         catch (IllegalAccessException | InvocationTargetException e)
                         {
-                            throw new ServerScopedRuntimeException(e);
+                            throw new ServerScopedRuntimeException(String.format("Failed to access %s", propertyName), e);
+                        }
+                        finally
+                        {
+                            if (!originalAccessible)
+                            {
+                                method.setAccessible(originalAccessible);
+                            }
                         }
                     }
                 }
@@ -256,6 +270,38 @@ public class ConfiguredObjectCustomSerialization
                 }
             }
             return false;
+        }
+    }
+
+    @SuppressWarnings("unused")
+    private static final Converter<Content> CONTENT_CONVERTER = new ContentConverter();
+
+    private static class ContentConverter extends AbstractConverter<Content>
+    {
+
+        public ContentConverter()
+        {
+            super(Content.class, true, false);
+        }
+
+        @Override
+        public Object convert(final Content content)
+        {
+            final byte[] resultBytes;
+            try(ByteArrayOutputStream baos = new ByteArrayOutputStream())
+            {
+                content.write(baos);
+                return baos.toByteArray();
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(String.format(
+                        "Unexpected failure whilst streaming operation content from content : %s", content));
+            }
+            finally
+            {
+                content.release();
+            }
         }
     }
 }
