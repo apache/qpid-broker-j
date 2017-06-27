@@ -50,6 +50,7 @@
     </receiver>
     <logger name="qpid.message" level="info" />
     <logger name="org.apache.qpid" level="debug" />
+    <logger name="org.apache.qpid.jms.provider.amqp.FRAMES" level="trace"/>
     <root level="warn">
         <appender-ref ref="RootSiftAppender"/>
     </root>

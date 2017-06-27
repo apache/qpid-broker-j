@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.client;
 
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -95,7 +96,7 @@ public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
         _numMessages = isBrokerStorePersistent() ? 300 : 1000;
 
         _logger.info("Create Connection");
-        con = getConnection();
+        con = getConnectionWithOptions(isBroker10()? Collections.singletonMap("amqp.traceFrames", "true") : Collections.emptyMap());
         _logger.info("Create Session");
         session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
         _logger.info("Create Q");
