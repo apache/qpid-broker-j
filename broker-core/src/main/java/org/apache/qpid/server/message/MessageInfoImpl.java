@@ -56,8 +56,8 @@ public class MessageInfoImpl implements MessageInfo
         final ServerMessage message = instance.getMessage();
         final AMQMessageHeader messageHeader = message.getMessageHeader();
 
-        _deliveredTo = instance.getAcquiringConsumer() == null ? null : String.valueOf(instance.getAcquiringConsumer()
-                                                                                                .getIdentifier());
+        MessageInstanceConsumer<?> acquiringConsumer = instance.getAcquiringConsumer();
+        _deliveredTo = acquiringConsumer == null ? null : String.valueOf(acquiringConsumer.getIdentifier());
         _arrivalTime = message.getArrivalTime() == 0L ? null : new Date(message.getArrivalTime());
         _messageType = message.getMessageType();
         _persistent = message.isPersistent();
