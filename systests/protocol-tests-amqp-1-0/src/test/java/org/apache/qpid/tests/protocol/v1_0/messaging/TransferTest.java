@@ -27,6 +27,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
@@ -34,6 +35,8 @@ import static org.junit.Assume.assumeThat;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.core.Is;
@@ -42,10 +45,12 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Received;
@@ -571,37 +576,62 @@ public class TransferTest extends ProtocolTestBase
     @Test
     @SpecificationTest(section = "2.6.12", description = "[...] the receiving application MAY wish to indicate"
                                                          + " non-terminal delivery states to the sender")
-    public void receiveTransferReceiverIndicateNonTerminalDeliveryState() throws Exception
+    public void receiveTransferReceiverIndicatesNonTerminalDeliveryState() throws Exception
     {
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);
 
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            final Interaction interaction = transport.newInteraction()
-                                                     .negotiateProtocol().consumeResponse()
-                                                     .open().consumeResponse()
-                                                     .begin().consumeResponse()
-                                                     .attachRole(Role.RECEIVER)
-                                                     .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                                                     .attachRcvSettleMode(ReceiverSettleMode.SECOND)
-                                                     .attach().consumeResponse()
-                                                     .flowIncomingWindow(UnsignedInteger.ONE)
-                                                     .flowNextIncomingId(UnsignedInteger.ZERO)
-                                                     .flowOutgoingWindow(UnsignedInteger.ZERO)
-                                                     .flowNextOutgoingId(UnsignedInteger.ZERO)
-                                                     .flowLinkCredit(UnsignedInteger.ONE)
-                                                     .flowHandleFromLinkHandle()
-                                                     .flow()
-                                                     .receiveDelivery()
-                                                     .decodeLatestDelivery();
+            final Interaction interaction = transport.newInteraction();
 
-            Object data = interaction.getDecodedLatestDelivery();
-            assertThat(data, Is.is(CoreMatchers.equalTo(TEST_MESSAGE_DATA)));
+            Open open = interaction.negotiateProtocol().consumeResponse()
+                                   .openMaxFrameSize(UnsignedInteger.valueOf(4096))
+                                   .open().consumeResponse()
+                                   .getLatestResponse(Open.class);
+
+            int negotiatedFrameSize = open.getMaxFrameSize().intValue();
+            String testMessageData = Stream.generate(() -> "*").limit(negotiatedFrameSize).collect(Collectors.joining());
+
+            getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, testMessageData);
+
+            interaction.begin().consumeResponse()
+                       .attachRole(Role.RECEIVER)
+                       .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                       .attachRcvSettleMode(ReceiverSettleMode.SECOND)
+                       .attach().consumeResponse()
+                       .flowIncomingWindow(UnsignedInteger.ONE)
+                       .flowNextIncomingId(UnsignedInteger.ZERO)
+                       .flowOutgoingWindow(UnsignedInteger.ZERO)
+                       .flowNextOutgoingId(UnsignedInteger.ZERO)
+                       .flowLinkCredit(UnsignedInteger.ONE)
+                       .flowHandleFromLinkHandle()
+                       .flow()
+                       .sync();
+
+            MessageDecoder messageDecoder = new MessageDecoder();
+
+            Transfer first = interaction.consumeResponse(Transfer.class)
+                                        .getLatestResponse(Transfer.class);
+            assertThat(first.getMore(), is(equalTo(true)));
+            messageDecoder.addTransfer(first);
+
+            final long firstRemaining = QpidByteBufferUtils.remaining(first.getPayload());
+
+            Received state = new Received();
+            state.setSectionNumber(UnsignedInteger.ZERO);
+            state.setSectionOffset(UnsignedLong.valueOf(firstRemaining + 1));
 
             interaction.dispositionSettled(false)
                        .dispositionRole(Role.RECEIVER)
-                       .dispositionState(new Received())
-                       .disposition();
+                       .dispositionState(state)
+                       .disposition()
+                       .sync();
+
+            Transfer second = interaction.consumeResponse(Transfer.class)
+                                         .getLatestResponse(Transfer.class);
+            assertThat(second.getMore(), isOneOf(false, null));
+            messageDecoder.addTransfer(second);
+
+            assertThat(messageDecoder.getData(), is(equalTo(testMessageData)));
 
             Disposition disposition = interaction.dispositionSettled(false)
                                                  .dispositionRole(Role.RECEIVER)
@@ -614,10 +644,9 @@ public class TransferTest extends ProtocolTestBase
         }
     }
 
-
     @Test
     @SpecificationTest(section = "2.7.3", description = "The sender SHOULD respect the receiver’s desired settlement mode if"
-                                                        + "the receiver initiates the attach exchange and the sender supports the desired mode.")
+                                                        + " the receiver initiates the attach exchange and the sender supports the desired mode.")
     public void receiveTransferSenderSettleModeSettled() throws Exception
     {
         getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA);

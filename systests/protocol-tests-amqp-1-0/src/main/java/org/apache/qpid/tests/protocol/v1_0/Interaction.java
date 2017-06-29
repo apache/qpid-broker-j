@@ -234,6 +234,12 @@ public class Interaction
         return this;
     }
 
+    public Interaction openMaxFrameSize(UnsignedInteger maxFrameSize)
+    {
+        _open.setMaxFrameSize(maxFrameSize);
+        return this;
+    }
+
     public Interaction openDesiredCapabilities(final Symbol... desiredCapabilities)
     {
         _open.setDesiredCapabilities(desiredCapabilities);

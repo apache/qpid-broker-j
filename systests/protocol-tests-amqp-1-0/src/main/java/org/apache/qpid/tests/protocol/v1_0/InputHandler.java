@@ -69,7 +69,7 @@ public class InputHandler extends ChannelInboundHandlerAdapter
     {
         HEADER,
         PERFORMATIVES
-    };
+    }
 
     private final MyConnectionHandler _connectionHandler;
     private final ValueHandler _valueHandler;
@@ -92,9 +92,11 @@ public class InputHandler extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception
     {
-        // TODO does Netty take care of saving the remaining bytes???
         ByteBuf buf = (ByteBuf) msg;
-        QpidByteBuffer qpidBuf = QpidByteBuffer.wrap(buf.nioBuffer());
+        QpidByteBuffer qpidBuf = QpidByteBuffer.allocate(buf.readableBytes());
+        qpidBuf.put(buf.nioBuffer());
+        qpidBuf.flip();
+        LOGGER.debug("Incoming {} byte(s)", qpidBuf.remaining());
 
         if (_inputBuffer.hasRemaining())
         {
@@ -114,9 +116,12 @@ public class InputHandler extends ChannelInboundHandlerAdapter
 
         doParsing();
 
+        LOGGER.debug("After parsing, {} byte(s) remained", _inputBuffer.remaining());
+
         if (_inputBuffer.hasRemaining())
         {
             _inputBuffer.compact();
+            _inputBuffer.flip();
         }
 
         ReferenceCountUtil.release(msg);
@@ -152,6 +157,8 @@ public class InputHandler extends ChannelInboundHandlerAdapter
 
     private class MyConnectionHandler implements ConnectionHandler
     {
+        private volatile int _frameSize = 512;
+
         @Override
         public void receiveOpen(final int channel, final Open close)
         {
@@ -208,7 +215,7 @@ public class InputHandler extends ChannelInboundHandlerAdapter
         @Override
         public int getMaxFrameSize()
         {
-            return 512;
+            return _frameSize;
         }
 
         @Override
@@ -240,6 +247,10 @@ public class InputHandler extends ChannelInboundHandlerAdapter
                 if (val instanceof FrameBody)
                 {
                     FrameBody frameBody = (FrameBody) val;
+                    if (frameBody instanceof Open && ((Open) frameBody).getMaxFrameSize() != null)
+                    {
+                        _frameSize = ((Open) frameBody).getMaxFrameSize().intValue();
+                    }
                     response = new PerformativeResponse((short) channel, frameBody);
                 }
                 else if (val instanceof SaslFrameBody)
