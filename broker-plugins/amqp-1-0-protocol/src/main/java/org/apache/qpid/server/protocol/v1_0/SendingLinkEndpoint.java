@@ -411,10 +411,10 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         UnsignedInteger receiverLinkCredit = flow.getLinkCredit();
         setDrain(flow.getDrain());
 
-        Map options;
-        if((options = flow.getProperties()) != null)
+        Map<Symbol, Object> properties = flow.getProperties();
+        if (properties != null)
         {
-             _transactionId = (Binary) options.get(Symbol.valueOf("txn-id"));
+             _transactionId = (Binary) properties.get(Symbol.valueOf("txn-id"));
         }
 
         if(receiverDeliveryCount == null)

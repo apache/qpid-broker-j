@@ -52,8 +52,6 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
     private final Link_1_0<S, T> _link;
     private final Session_1_0 _session;
 
-    // todo: remove client specific part
-    private Object _flowTransactionId;
     private volatile SenderSettleMode _sendingSettlementMode;
     private volatile ReceiverSettleMode _receivingSettlementMode;
     private volatile UnsignedInteger _lastSentCreditLimit;
@@ -388,18 +386,13 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         setLocalHandle(null);
     }
 
-    public void setTransactionId(final Object txnId)
-    {
-        _flowTransactionId = txnId;
-    }
-
     public void sendFlowConditional()
     {
         if(_lastSentCreditLimit != null)
         {
             if(_stoppedUpdated)
             {
-                sendFlow(_flowTransactionId != null);
+                sendFlow(false);
                 _stoppedUpdated = false;
             }
             else
@@ -410,7 +403,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
                 boolean sendFlow = _linkCredit.subtract(clientsCredit).compareTo(clientsCredit) >= 0;
                 if (sendFlow)
                 {
-                    sendFlow(_flowTransactionId != null);
+                    sendFlow(false);
                 }
                 else
                 {
@@ -420,7 +413,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         }
         else
         {
-            sendFlow(_flowTransactionId != null);
+            sendFlow(false);
         }
     }
 
@@ -428,21 +421,10 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
     @Override
     public void sendFlow()
     {
-        sendFlow(_flowTransactionId != null);
+        sendFlow(false);
     }
 
-    public void sendFlowWithEcho()
-    {
-        sendFlow(_flowTransactionId != null, true);
-    }
-
-
-    public void sendFlow(boolean setTransactionId)
-    {
-        sendFlow(setTransactionId, false);
-    }
-
-    public void sendFlow(boolean setTransactionId, boolean echo)
+    private void sendFlow(boolean echo)
     {
         if(_state == State.ATTACHED || _state == State.ATTACH_SENT)
         {
@@ -462,10 +444,6 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
                 flow.setDrain(_drain);
             }
             flow.setAvailable(_available);
-            if(setTransactionId)
-            {
-                flow.setProperties(Collections.singletonMap(Symbol.valueOf("txn-id"), _flowTransactionId));
-            }
             flow.setHandle(getLocalHandle());
             getSession().sendFlow(flow);
         }
@@ -498,7 +476,8 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         _capabilities = capabilities == null ? null : capabilities.toArray(new Symbol[capabilities.size()]);
     }
 
-    @Override public String toString()
+    @Override
+    public String toString()
     {
         return "LinkEndpoint{" +
                "_name='" + getLinkName() + '\'' +
