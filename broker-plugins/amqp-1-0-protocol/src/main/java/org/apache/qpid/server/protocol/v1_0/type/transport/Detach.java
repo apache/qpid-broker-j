@@ -25,10 +25,10 @@ package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
-import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-public class Detach implements FrameBody
+public class Detach implements ErrorCarryingFrameBody
 {
 
     @CompositeTypeField(mandatory = true)

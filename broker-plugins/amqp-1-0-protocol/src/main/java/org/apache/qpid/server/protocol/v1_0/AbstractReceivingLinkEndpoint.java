@@ -176,6 +176,14 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
             error = new Error(AmqpError.INVALID_FIELD,
                                     "Transfer \"delivery-tag\" is required for a new delivery.");
         }
+        else if (_unsettled.containsKey(transfer.getDeliveryTag()))
+        {
+            error = new Error(AmqpError.ILLEGAL_STATE,
+                              String.format("Delivery-tag '%s' is used by another unsettled delivery."
+                                            + " The delivery-tag MUST be unique amongst all deliveries that"
+                                            + " could be considered unsettled by either end of the link.",
+                                            transfer.getDeliveryTag()));
+        }
         return error;
     }
 

@@ -25,9 +25,9 @@ package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
-import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 
-public class End implements FrameBody
+public class End implements ErrorCarryingFrameBody
 {
 
     @CompositeTypeField

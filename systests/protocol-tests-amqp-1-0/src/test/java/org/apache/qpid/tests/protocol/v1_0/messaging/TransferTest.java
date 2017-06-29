@@ -25,7 +25,10 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
@@ -39,6 +42,8 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -70,7 +75,7 @@ import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 
 public class TransferTest extends ProtocolTestBase
 {
-    public static final String TEST_MESSAGE_DATA = "foo";
+    private static final String TEST_MESSAGE_DATA = "foo";
     private InetSocketAddress _brokerAddress;
     private String _originalMmsMessageStorePersistence;
 
@@ -648,6 +653,65 @@ public class TransferTest extends ProtocolTestBase
             // verify no unexpected performative received by closing the connection
            transport.doCloseConnection();
 
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "2.7.5",
+            description = "[delivery-tag] uniquely identifies the delivery attempt for a given message on this link.")
+    public void transfersWithDuplicateDeliveryTag() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Binary deliveryTag = new Binary("testDeliveryTag".getBytes(UTF_8));
+
+            Interaction interaction = transport.newInteraction();
+            interaction.negotiateProtocol().consumeResponse()
+                       .open().consumeResponse(Open.class)
+                       .begin().consumeResponse(Begin.class)
+                       .attachRole(Role.SENDER)
+                       .attachRcvSettleMode(ReceiverSettleMode.SECOND)
+                       .attach().consumeResponse(Attach.class)
+                       .consumeResponse(Flow.class);
+
+            Flow flow = interaction.getLatestResponse(Flow.class);
+            assertThat(flow.getLinkCredit().intValue(), is(greaterThan(1)));
+
+            interaction.transferDeliveryId(UnsignedInteger.ZERO)
+                       .transferDeliveryTag(deliveryTag)
+                       .transferPayloadData("test")
+                       .transfer()
+
+                       .transferDeliveryTag(deliveryTag)
+                       .transferDeliveryId(UnsignedInteger.ONE)
+                       .transferPayloadData("test2")
+                       .transfer();
+
+            do
+            {
+                interaction.consumeResponse();
+                Response<?> response = interaction.getLatestResponse();
+                assertThat(response, is(notNullValue()));
+
+                Object body =  response.getBody();
+                if (body instanceof ErrorCarryingFrameBody)
+                {
+                    Error error = ((ErrorCarryingFrameBody) body).getError();
+                    assertThat(error, is(notNullValue()));
+                    break;
+                }
+                else if (body instanceof Disposition)
+                {
+                    Disposition disposition = (Disposition)body;
+                    assertThat(disposition.getSettled(), is(equalTo(false)));
+                    assertThat(disposition.getFirst(), is(not(equalTo(UnsignedInteger.ONE))));
+                    assertThat(disposition.getLast(), is(not(equalTo(UnsignedInteger.ONE))));
+                }
+                else if (!(body instanceof Flow))
+                {
+                    fail("Unexpected response " + body);
+                }
+            } while (true);
         }
     }
 }
