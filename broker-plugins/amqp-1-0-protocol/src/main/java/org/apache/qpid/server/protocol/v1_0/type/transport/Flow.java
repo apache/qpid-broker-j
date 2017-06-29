@@ -23,7 +23,6 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
-import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
@@ -34,7 +33,6 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
 public class Flow implements FrameBody
 {
-    private ByteBuffer _payload;
 
     @CompositeTypeField
     private UnsignedInteger _nextIncomingId;
@@ -291,15 +289,5 @@ public class Flow implements FrameBody
     public void invoke(int channel, ConnectionHandler conn)
     {
         conn.receiveFlow(channel, this);
-    }
-
-    public ByteBuffer getPayload()
-    {
-        return _payload;
-    }
-
-    public void setPayload(ByteBuffer payload)
-    {
-        _payload = payload;
     }
 }

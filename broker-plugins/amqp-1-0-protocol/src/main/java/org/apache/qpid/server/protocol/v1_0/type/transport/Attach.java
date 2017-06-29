@@ -23,7 +23,6 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -31,16 +30,15 @@ import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 
 public class Attach implements FrameBody
 {
-    private ByteBuffer _payload;
 
     @CompositeTypeField(mandatory = true)
     private String _name;
@@ -363,15 +361,5 @@ public class Attach implements FrameBody
     public void invoke(int channel, ConnectionHandler conn)
     {
         conn.receiveAttach(channel, this);
-    }
-
-    public ByteBuffer getPayload()
-    {
-        return _payload;
-    }
-
-    public void setPayload(ByteBuffer payload)
-    {
-        _payload = payload;
     }
 }

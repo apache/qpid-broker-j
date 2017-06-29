@@ -23,20 +23,18 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 
 public class Begin implements FrameBody
 {
-    private ByteBuffer _payload;
 
     @CompositeTypeField
     private UnsignedShort _remoteChannel;
@@ -227,15 +225,5 @@ public class Begin implements FrameBody
     public void invoke(int channel, ConnectionHandler conn)
     {
         conn.receiveBegin(channel, this);
-    }
-
-    public ByteBuffer getPayload()
-    {
-        return _payload;
-    }
-
-    public void setPayload(ByteBuffer payload)
-    {
-        _payload = payload;
     }
 }

@@ -23,16 +23,13 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
-import java.nio.ByteBuffer;
-
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
 public class Detach implements FrameBody
 {
-    private ByteBuffer _payload;
 
     @CompositeTypeField(mandatory = true)
     private UnsignedInteger _handle;
@@ -113,15 +110,5 @@ public class Detach implements FrameBody
     public void invoke(int channel, ConnectionHandler conn)
     {
         conn.receiveDetach(channel, this);
-    }
-
-    public ByteBuffer getPayload()
-    {
-        return _payload;
-    }
-
-    public void setPayload(ByteBuffer payload)
-    {
-        _payload = payload;
     }
 }
