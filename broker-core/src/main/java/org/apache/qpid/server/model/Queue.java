@@ -223,11 +223,14 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     MessageDurability getMessageDurability();
 
     @SuppressWarnings("unused")
-    @ManagedAttribute
+    @ManagedAttribute(description = "Minimum message time to live (TTL) in ms. Messages arriving with smaller TTL"
+                                    + " values will be overridden by this value")
     long getMinimumMessageTtl();
 
     @SuppressWarnings("unused")
-    @ManagedAttribute
+    @ManagedAttribute(description = "Maximum message time to live (TTL) in ms. Messages arriving with larger TTL"
+                                    + " values (including those with no TTL, which are considered to have a TTL value of"
+                                    + " infinity) will be overridden by this value.")
     long getMaximumMessageTtl();
 
     @SuppressWarnings("unused")

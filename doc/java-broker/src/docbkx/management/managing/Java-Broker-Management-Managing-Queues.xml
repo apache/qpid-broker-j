@@ -60,10 +60,11 @@
             non durable queue do not survive a restart even if they are marked persistent.</para>
         </listitem>
         <listitem>
-          <para><emphasis>Maximum/Minimum TTL</emphasis>. Defines a maximum and minimum
-            time-to-live. Messages arriving with ttl larger than the maximum will be overridden by
-            the maximum. Similarly, messages arriving with tll less than the minimum (or no ttl at
-            all), will be overridden by the minimum.</para>
+            <para><emphasis>Maximum/Minimum TTL</emphasis>. Defines a maximum and minimum time-to-live (TTL). Messages
+                arriving with TTL larger than the maximum (including those with no TTL at all, which are considered to
+                have a TTL of infinity) will be overridden by the maximum. Similarly, messages arriving with TTL less
+                than the minimum, will be overridden by the minimum.
+            </para>
           <para>Changing these values affects only new arrivals, existing messages already on the
             queue are not affected.</para>
         </listitem>
