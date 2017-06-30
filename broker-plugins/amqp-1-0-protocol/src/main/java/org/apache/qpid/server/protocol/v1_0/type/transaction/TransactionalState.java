@@ -24,14 +24,13 @@
 package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
+import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class TransactionalState
-  implements DeliveryState
-  {
-
-
+public class TransactionalState implements DeliveryState
+{
     @CompositeTypeField(mandatory = true)
     private Binary _txnId;
 
@@ -64,18 +63,18 @@ public class TransactionalState
         StringBuilder builder = new StringBuilder("TransactionalState{");
         final int origLength = builder.length();
 
-        if(_txnId != null)
+        if (_txnId != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("txnId=").append(_txnId);
         }
 
-        if(_outcome != null)
+        if (_outcome != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -85,6 +84,4 @@ public class TransactionalState
         builder.append('}');
         return builder.toString();
     }
-
-
-  }
+}

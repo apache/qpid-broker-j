@@ -26,6 +26,7 @@ public class OversizeFrameException extends RuntimeException
 
     public OversizeFrameException(final AMQFrame frame, final int size)
     {
+        super("Tried to send frame of size: " + String.valueOf(size));
         _frame = frame;
         _size = size;
     }

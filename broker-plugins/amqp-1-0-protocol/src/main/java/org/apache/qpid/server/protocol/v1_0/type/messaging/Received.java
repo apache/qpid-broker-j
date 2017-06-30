@@ -24,13 +24,13 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class Received
-  implements org.apache.qpid.server.protocol.v1_0.type.DeliveryState
-  {
-
+public class Received implements DeliveryState
+{
     @CompositeTypeField(mandatory = true)
     private UnsignedInteger _sectionNumber;
 
@@ -63,18 +63,18 @@ public class Received
         StringBuilder builder = new StringBuilder("Received{");
         final int origLength = builder.length();
 
-        if(_sectionNumber != null)
+        if (_sectionNumber != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("sectionNumber=").append(_sectionNumber);
         }
 
-        if(_sectionOffset != null)
+        if (_sectionOffset != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -84,6 +84,4 @@ public class Received
         builder.append('}');
         return builder.toString();
     }
-
-
-  }
+}

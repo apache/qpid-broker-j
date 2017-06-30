@@ -311,7 +311,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         try
         {
             List<QpidByteBuffer> payload = xfr.getPayload();
-            final long remaining = QpidByteBufferUtils.remaining(payload);
+            final long remaining = payload == null ? 0 : QpidByteBufferUtils.remaining(payload);
             int payloadSent = _connection.sendFrame(_sendingChannel, xfr, payload);
 
             if(payload != null && payloadSent < remaining && payloadSent >= 0)
@@ -320,11 +320,9 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
                 Transfer secondTransfer = new Transfer();
 
-                secondTransfer.setDeliveryTag(xfr.getDeliveryTag());
                 secondTransfer.setHandle(xfr.getHandle());
-                secondTransfer.setSettled(xfr.getSettled());
+                secondTransfer.setRcvSettleMode(xfr.getRcvSettleMode());
                 secondTransfer.setState(xfr.getState());
-                secondTransfer.setMessageFormat(xfr.getMessageFormat());
                 secondTransfer.setPayload(payload);
 
                 sendTransfer(secondTransfer, endpoint, false);

@@ -63,7 +63,7 @@ public class ZeroPrefetchTest extends QpidBrokerTestCase
         producer.send(secondMessage);
 
 
-        Message receivedMessage = prefetch1consumer.receive(2000l);
+        final Message receivedMessage = prefetch1consumer.receive(2000l);
         assertNotNull("First message was not received", receivedMessage);
         assertEquals("Message property was not as expected", firstPropertyValue, receivedMessage.getStringProperty(TEST_PROPERTY_NAME));
 
@@ -73,9 +73,9 @@ public class ZeroPrefetchTest extends QpidBrokerTestCase
         final Session prefetch2session = prefetch2Connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageConsumer prefetch2consumer = prefetch2session.createConsumer(queue);
 
-        receivedMessage = prefetch2consumer.receive(2000l);
-        assertNotNull("Second message was not received", receivedMessage);
-        assertEquals("Message property was not as expected", secondPropertyValue, receivedMessage.getStringProperty(TEST_PROPERTY_NAME));
+        final Message receivedMessage2 = prefetch2consumer.receive(2000l);
+        assertNotNull("Second message was not received", receivedMessage2);
+        assertEquals("Message property was not as expected", secondPropertyValue, receivedMessage2.getStringProperty(TEST_PROPERTY_NAME));
 
     }
 }

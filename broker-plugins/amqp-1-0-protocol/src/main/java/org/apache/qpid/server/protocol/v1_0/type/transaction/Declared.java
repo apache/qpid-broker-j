@@ -24,22 +24,17 @@
 package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
 
-
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
-import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-public class Declared
-  implements DeliveryState, Outcome
-  {
+public class Declared implements Outcome
+{
+    public static final Symbol DECLARED_SYMBOL = Symbol.valueOf("amqp:declared:list");
 
-
-      public static final Symbol DECLARED_SYMBOL = Symbol.valueOf("amqp:declared:list");
-
-      @CompositeTypeField(mandatory = true)
-      private Binary _txnId;
+    @CompositeTypeField(mandatory = true)
+    private Binary _txnId;
 
     public Binary getTxnId()
     {
@@ -57,9 +52,9 @@ public class Declared
         StringBuilder builder = new StringBuilder("Declared{");
         final int origLength = builder.length();
 
-        if(_txnId != null)
+        if (_txnId != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -71,9 +66,9 @@ public class Declared
     }
 
 
-      @Override
-      public Symbol getSymbol()
-      {
-          return DECLARED_SYMBOL;
-      }
-  }
+    @Override
+    public Symbol getSymbol()
+    {
+        return DECLARED_SYMBOL;
+    }
+}

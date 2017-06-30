@@ -31,7 +31,6 @@ import static org.hamcrest.Matchers.isOneOf;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.After;
@@ -39,11 +38,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
@@ -57,10 +54,10 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.v1_0.MessageEncoder;
 import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
 import org.apache.qpid.tests.protocol.v1_0.Response;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
+import org.apache.qpid.tests.protocol.v1_0.Utils;
 
 public class MultiTransferTest extends ProtocolTestBase
 {
@@ -99,7 +96,7 @@ public class MultiTransferTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            QpidByteBuffer[] payloads = splitPayload("testData", 2);
+            QpidByteBuffer[] payloads = Utils.splitPayload("testData", 2);
 
             final UnsignedInteger deliveryId = UnsignedInteger.ZERO;
             final Binary deliveryTag = new Binary("testTransfer".getBytes(UTF_8));
@@ -114,14 +111,14 @@ public class MultiTransferTest extends ProtocolTestBase
                                                  .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                                                  .attach().consumeResponse(Attach.class)
                                                  .consumeResponse(Flow.class)
-                                                 .setPayloadOnTransfer(Collections.singletonList(payloads[0]))
+                                                 .transferPayload(Collections.singletonList(payloads[0]))
                                                  .transferDeliveryId(deliveryId)
                                                  .transferDeliveryTag(deliveryTag)
                                                  .transferMore(true)
                                                  .transfer()
                                                  .sync()
                                                  .transferMore(false)
-                                                 .setPayloadOnTransfer(Collections.singletonList(payloads[1]))
+                                                 .transferPayload(Collections.singletonList(payloads[1]))
                                                  .transfer()
                                                  .consumeResponse()
                                                  .getLatestResponse(Disposition.class);
@@ -141,7 +138,7 @@ public class MultiTransferTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            QpidByteBuffer[] payloads = splitPayload("testData", 4);
+            QpidByteBuffer[] payloads = Utils.splitPayload("testData", 4);
             final UnsignedInteger deliveryId = UnsignedInteger.ZERO;
             final Binary deliveryTag = new Binary("testTransfer".getBytes(UTF_8));
 
@@ -158,25 +155,25 @@ public class MultiTransferTest extends ProtocolTestBase
                        .transferDeliveryId(deliveryId)
                        .transferDeliveryTag(deliveryTag)
                        .transferMore(true)
-                       .setPayloadOnTransfer(Collections.singletonList(payloads[0]))
+                       .transferPayload(Collections.singletonList(payloads[0]))
                        .transfer()
                        .sync()
                        .transferDeliveryId(deliveryId)
                        .transferDeliveryTag(null)
                        .transferMore(true)
-                       .setPayloadOnTransfer(Collections.singletonList(payloads[1]))
+                       .transferPayload(Collections.singletonList(payloads[1]))
                        .transfer()
                        .sync()
                        .transferDeliveryId(null)
                        .transferDeliveryTag(deliveryTag)
                        .transferMore(true)
-                       .setPayloadOnTransfer(Collections.singletonList(payloads[2]))
+                       .transferPayload(Collections.singletonList(payloads[2]))
                        .transfer()
                        .sync()
                        .transferDeliveryId(null)
                        .transferDeliveryTag(null)
                        .transferMore(false)
-                       .setPayloadOnTransfer(Collections.singletonList(payloads[3]))
+                       .transferPayload(Collections.singletonList(payloads[3]))
                        .transfer()
                        .consumeResponse();
 
@@ -200,7 +197,7 @@ public class MultiTransferTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            QpidByteBuffer[] payloads = splitPayload("testData", 2);
+            QpidByteBuffer[] payloads = Utils.splitPayload("testData", 2);
 
             final UnsignedInteger deliveryId = UnsignedInteger.ZERO;
             final Binary deliveryTag = new Binary("testTransfer".getBytes(UTF_8));
@@ -215,13 +212,13 @@ public class MultiTransferTest extends ProtocolTestBase
                        .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
-                       .setPayloadOnTransfer(Collections.singletonList(payloads[0]))
+                       .transferPayload(Collections.singletonList(payloads[0]))
                        .transferDeliveryId(deliveryId)
                        .transferDeliveryTag(deliveryTag)
                        .transferMore(true)
                        .transfer()
                        .sync()
-                       .setPayloadOnTransfer(null)
+                       .transferPayload(null)
                        .transferMore(null)
                        .transferAborted(true)
                        .transfer();
@@ -237,8 +234,8 @@ public class MultiTransferTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            QpidByteBuffer[] messagePayload1 = splitPayload("testData1", 2);
-            QpidByteBuffer[] messagePayload2 = splitPayload("testData2", 2);
+            QpidByteBuffer[] messagePayload1 = Utils.splitPayload("testData1", 2);
+            QpidByteBuffer[] messagePayload2 = Utils.splitPayload("testData2", 2);
 
             UnsignedInteger linkHandle1 = UnsignedInteger.ZERO;
             UnsignedInteger linkHandle2 = UnsignedInteger.ONE;
@@ -275,7 +272,7 @@ public class MultiTransferTest extends ProtocolTestBase
                        .transferDeliveryId(deliverId1)
                        .transferDeliveryTag(deliveryTag1)
                        .transferMore(true)
-                       .setPayloadOnTransfer(Collections.singletonList(messagePayload1[0]))
+                       .transferPayload(Collections.singletonList(messagePayload1[0]))
                        .transfer()
                        .sync()
 
@@ -283,7 +280,7 @@ public class MultiTransferTest extends ProtocolTestBase
                        .transferDeliveryId(deliveryId2)
                        .transferDeliveryTag(deliveryTag2)
                        .transferMore(true)
-                       .setPayloadOnTransfer(Collections.singletonList(messagePayload2[0]))
+                       .transferPayload(Collections.singletonList(messagePayload2[0]))
                        .transfer()
                        .sync()
 
@@ -291,7 +288,7 @@ public class MultiTransferTest extends ProtocolTestBase
                        .transferDeliveryId(deliverId1)
                        .transferDeliveryTag(deliveryTag1)
                        .transferMore(false)
-                       .setPayloadOnTransfer(Collections.singletonList(messagePayload1[1]))
+                       .transferPayload(Collections.singletonList(messagePayload1[1]))
                        .transfer()
                        .sync()
 
@@ -299,7 +296,7 @@ public class MultiTransferTest extends ProtocolTestBase
                        .transferDeliveryId(deliveryId2)
                        .transferDeliveryTag(deliveryTag2)
                        .transferMore(false)
-                       .setPayloadOnTransfer(Collections.singletonList(messagePayload2[1]))
+                       .transferPayload(Collections.singletonList(messagePayload2[1]))
                        .transfer()
                        .sync();
 
@@ -328,8 +325,8 @@ public class MultiTransferTest extends ProtocolTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
-            QpidByteBuffer[] messagePayload1 = splitPayload("testData1", 2);
-            QpidByteBuffer[] messagePayload2 = splitPayload("testData2", 2);
+            QpidByteBuffer[] messagePayload1 = Utils.splitPayload("testData1", 2);
+            QpidByteBuffer[] messagePayload2 = Utils.splitPayload("testData2", 2);
 
             Binary deliveryTag1 = new Binary("testTransfer1".getBytes(UTF_8));
             Binary deliveryTag2 = new Binary("testTransfer2".getBytes(UTF_8));
@@ -352,62 +349,18 @@ public class MultiTransferTest extends ProtocolTestBase
                        .transferDeliveryId(deliverId1)
                        .transferDeliveryTag(deliveryTag1)
                        .transferMore(true)
-                       .setPayloadOnTransfer(Collections.singletonList(messagePayload1[0]))
+                       .transferPayload(Collections.singletonList(messagePayload1[0]))
                        .transfer()
                        .sync()
 
                        .transferDeliveryId(deliveryId2)
                        .transferDeliveryTag(deliveryTag2)
                        .transferMore(true)
-                       .setPayloadOnTransfer(Collections.singletonList(messagePayload2[0]))
+                       .transferPayload(Collections.singletonList(messagePayload2[0]))
                        .transfer()
                        .sync();
 
             interaction.consumeResponse(Detach.class, End.class, Close.class);
         }
-    }
-
-    private QpidByteBuffer[] splitPayload(final String messageContent, int numberOfParts)
-    {
-        MessageEncoder messageEncoder = new MessageEncoder();
-        final Header header = new Header();
-        messageEncoder.setHeader(header);
-        messageEncoder.addData(messageContent);
-        List<QpidByteBuffer> payload = messageEncoder.getPayload();
-        long size = QpidByteBufferUtils.remaining(payload);
-
-        QpidByteBuffer[] result = new QpidByteBuffer[numberOfParts];
-        int chunkSize = (int) size / numberOfParts;
-        int lastChunkSize = (int) size - chunkSize * (numberOfParts - 1);
-        for (int i = 0; i < numberOfParts; i++)
-        {
-            result[i] = QpidByteBuffer.allocate(false, i == numberOfParts - 1 ? lastChunkSize : chunkSize);
-        }
-
-        int currentBufferIndex = 0;
-        for (QpidByteBuffer p : payload)
-        {
-            final int limit = p.limit();
-
-            while (p.hasRemaining())
-            {
-                QpidByteBuffer currentBuffer = result[currentBufferIndex];
-                if (currentBuffer.hasRemaining())
-                {
-                    int length = Math.min(p.remaining(), currentBuffer.remaining());
-                    p.limit(p.position() + length);
-                    currentBuffer.put(p.slice());
-                    p.position(p.position() + length);
-                    p.limit(limit);
-                }
-
-                if (!currentBuffer.hasRemaining())
-                {
-                    currentBuffer.flip();
-                    currentBufferIndex++;
-                }
-            }
-        }
-        return result;
     }
 }

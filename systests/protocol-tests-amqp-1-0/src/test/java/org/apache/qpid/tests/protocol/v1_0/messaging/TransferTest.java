@@ -21,10 +21,8 @@
 package org.apache.qpid.tests.protocol.v1_0.messaging;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -294,7 +292,7 @@ public class TransferTest extends ProtocolTestBase
                                                                                    Rejected.REJECTED_SYMBOL)
                                                              .attach().consumeResponse(Attach.class)
                                                              .consumeResponse(Flow.class)
-                                                             .setPayloadOnTransfer(messageEncoder.getPayload())
+                                                             .transferPayload(messageEncoder.getPayload())
                                                              .transferRcvSettleMode(ReceiverSettleMode.FIRST)
                                                              .transfer()
                                                              .consumeResponse()
@@ -339,7 +337,7 @@ public class TransferTest extends ProtocolTestBase
                                                   .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                                                   .attach().consumeResponse(Attach.class)
                                                   .consumeResponse(Flow.class)
-                                                  .setPayloadOnTransfer(messageEncoder.getPayload())
+                                                  .transferPayload(messageEncoder.getPayload())
                                                   .transferRcvSettleMode(ReceiverSettleMode.FIRST)
                                                   .transfer()
                                                   .consumeResponse()
@@ -780,6 +778,7 @@ public class TransferTest extends ProtocolTestBase
             interaction.transferDeliveryId(UnsignedInteger.ZERO)
                        .transferDeliveryTag(deliveryTag)
                        .transferPayloadData("test")
+                       .transferSettled(true)
                        .transfer()
                        .sync()
 
@@ -788,41 +787,6 @@ public class TransferTest extends ProtocolTestBase
                        .transferPayloadData("test2")
                        .transfer()
                        .sync();
-
-            boolean firstSettled = false, secondSettled = false;
-            do
-            {
-                interaction.consumeResponse();
-                Response<?> response = interaction.getLatestResponse();
-                assertThat(response, is(notNullValue()));
-
-                Object body = response.getBody();
-
-                if (body instanceof Disposition)
-                {
-                    Disposition disposition = (Disposition) body;
-                    assertThat(disposition.getSettled(), is(equalTo(true)));
-                    assertThat(disposition.getFirst(),
-                               anyOf(equalTo(UnsignedInteger.ZERO), equalTo(UnsignedInteger.ONE)));
-                    assertThat(disposition.getLast(),
-                               anyOf(equalTo(UnsignedInteger.ZERO), equalTo(UnsignedInteger.ONE), nullValue()));
-
-                    if (UnsignedInteger.ZERO.equals(disposition.getFirst()))
-                    {
-                        firstSettled = true;
-                    }
-                    if (UnsignedInteger.ONE.equals(disposition.getFirst())
-                        || UnsignedInteger.ONE.equals(disposition.getLast()))
-                    {
-                        secondSettled = true;
-                    }
-                }
-                else if (!(body instanceof Flow))
-                {
-                    fail("Unexpected response " + body);
-                }
-            }
-            while (!firstSettled || !secondSettled);
 
             transport.doCloseConnection();
 

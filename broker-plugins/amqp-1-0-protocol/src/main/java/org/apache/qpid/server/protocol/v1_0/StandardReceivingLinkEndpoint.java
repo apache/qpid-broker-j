@@ -45,6 +45,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
@@ -270,8 +271,11 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
     @Override
     protected void remoteDetachedPerformDetach(Detach detach)
     {
-        if(!TerminusDurability.UNSETTLED_STATE.equals(getDurability()) ||
-           (detach != null && Boolean.TRUE.equals(detach.getClosed())))
+        final TerminusExpiryPolicy expiryPolicy = getTarget().getExpiryPolicy();
+        if((detach != null && Boolean.TRUE.equals(detach.getClosed()))
+           || TerminusExpiryPolicy.LINK_DETACH.equals(expiryPolicy)
+           || (TerminusExpiryPolicy.SESSION_END.equals(expiryPolicy) && getSession().isClosing())
+           || (TerminusExpiryPolicy.CONNECTION_CLOSE.equals(expiryPolicy) && getSession().getConnection().isClosing()))
         {
             close();
         }
@@ -332,6 +336,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
             }
             target.setCapabilities(targetCapabilities.toArray(new Symbol[targetCapabilities.size()]));
         }
+        target.setExpiryPolicy(attachTarget.getExpiryPolicy());
 
         final ReceivingDestination destination = getSession().getReceivingDestination(getLink(), target);
 
@@ -341,17 +346,19 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         setCapabilities(targetCapabilities);
         setDestination(destination);
 
-        Map remoteUnsettled = attach.getUnsettled();
-        Map<Binary, DeliveryState> unsettledCopy = new HashMap<>(_unsettled);
-        for(Map.Entry<Binary, DeliveryState> entry : unsettledCopy.entrySet())
+        if (!Boolean.TRUE.equals(attach.getIncompleteUnsettled()))
         {
-            Binary deliveryTag = entry.getKey();
-            if(remoteUnsettled == null || !remoteUnsettled.containsKey(deliveryTag))
+            Map remoteUnsettled = attach.getUnsettled();
+            Map<Binary, DeliveryState> unsettledCopy = new HashMap<>(_unsettled);
+            for (Map.Entry<Binary, DeliveryState> entry : unsettledCopy.entrySet())
             {
-                _unsettled.remove(deliveryTag); // todo: removal is based on assumption that remote unsettled map is complete
+                Binary deliveryTag = entry.getKey();
+                if (remoteUnsettled == null || !remoteUnsettled.containsKey(deliveryTag))
+                {
+                    _unsettled.remove(deliveryTag);
+                }
             }
         }
-
         getLink().setTermini(source, target);
     }
 

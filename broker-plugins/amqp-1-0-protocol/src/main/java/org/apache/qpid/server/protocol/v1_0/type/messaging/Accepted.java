@@ -23,31 +23,25 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
+import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
+public class Accepted implements Outcome
+{
+    public static final Symbol ACCEPTED_SYMBOL = Symbol.valueOf("amqp:accepted:list");
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
+    @Override
+    public Symbol getSymbol()
+    {
+        return ACCEPTED_SYMBOL;
+    }
 
-public class Accepted
-  implements org.apache.qpid.server.protocol.v1_0.type.DeliveryState, Outcome
-  {
-
-      public static final Symbol ACCEPTED_SYMBOL = Symbol.valueOf("amqp:accepted:list");
-
-      @Override
-      public Symbol getSymbol()
-      {
-          return ACCEPTED_SYMBOL;
-      }
-
-      @Override
+    @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder("Accepted{");
-        final int origLength = builder.length();
 
         builder.append('}');
         return builder.toString();
     }
-
-
-  }
+}

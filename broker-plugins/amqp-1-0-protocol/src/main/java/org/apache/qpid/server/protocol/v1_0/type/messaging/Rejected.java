@@ -24,21 +24,17 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
-
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 
+public class Rejected implements Outcome
+{
+    public static final Symbol REJECTED_SYMBOL = Symbol.valueOf("amqp:rejected:list");
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class Rejected
-  implements org.apache.qpid.server.protocol.v1_0.type.DeliveryState, Outcome
-  {
-
-
-      public static final Symbol REJECTED_SYMBOL = Symbol.valueOf("amqp:rejected:list");
-
-      @CompositeTypeField
-      private Error _error;
+    @CompositeTypeField
+    private Error _error;
 
     public Error getError()
     {
@@ -50,21 +46,21 @@ public class Rejected
         _error = error;
     }
 
-      @Override
-      public Symbol getSymbol()
-      {
-          return REJECTED_SYMBOL;
-      }
+    @Override
+    public Symbol getSymbol()
+    {
+        return REJECTED_SYMBOL;
+    }
 
-      @Override
+    @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder("Rejected{");
         final int origLength = builder.length();
 
-        if(_error != null)
+        if (_error != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -74,6 +70,4 @@ public class Rejected
         builder.append('}');
         return builder.toString();
     }
-
-
-  }
+}

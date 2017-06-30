@@ -24,21 +24,18 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
-
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
+public class Modified implements Outcome
+{
+    public static final Symbol MODIFIED_SYMBOL = Symbol.valueOf("amqp:modified:list");
 
-public class Modified
-  implements org.apache.qpid.server.protocol.v1_0.type.DeliveryState, Outcome
-  {
-
-
-      public static final Symbol MODIFIED_SYMBOL = Symbol.valueOf("amqp:modified:list");
-
-      @CompositeTypeField
-      private Boolean _deliveryFailed;
+    @CompositeTypeField
+    private Boolean _deliveryFailed;
 
     @CompositeTypeField
     private Boolean _undeliverableHere;
@@ -76,39 +73,39 @@ public class Modified
         _messageAnnotations = messageAnnotations;
     }
 
-      @Override
-      public Symbol getSymbol()
-      {
-          return MODIFIED_SYMBOL;
-      }
+    @Override
+    public Symbol getSymbol()
+    {
+        return MODIFIED_SYMBOL;
+    }
 
-      @Override
+    @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder("Modified{");
         final int origLength = builder.length();
 
-        if(_deliveryFailed != null)
+        if (_deliveryFailed != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("deliveryFailed=").append(_deliveryFailed);
         }
 
-        if(_undeliverableHere != null)
+        if (_undeliverableHere != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("undeliverableHere=").append(_undeliverableHere);
         }
 
-        if(_messageAnnotations != null)
+        if (_messageAnnotations != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -118,6 +115,4 @@ public class Modified
         builder.append('}');
         return builder.toString();
     }
-
-
-  }
+}

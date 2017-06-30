@@ -117,16 +117,8 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
             {
                 _unsettled.put(_currentDelivery.getDeliveryTag(), _currentDelivery.getState());
             }
-            else if (!_unsettled.containsKey(_currentDelivery.getDeliveryTag()))
-            {
-                final Error error = new Error(AmqpError.ILLEGAL_STATE,
-                                              String.format("Resumed transfer with delivery tag '%s' is not found.",
-                                                            _currentDelivery.getDeliveryTag()));
-                close(error);
-                return;
-            }
 
-            if (_currentDelivery.isAborted())
+            if (_currentDelivery.isAborted() || (_currentDelivery.getResume() && !_unsettled.containsKey(_currentDelivery.getDeliveryTag())))
             {
                 _unsettled.remove(_currentDelivery.getDeliveryTag());
                 getSession().getIncomingDeliveryRegistry().removeDelivery(_currentDelivery.getDeliveryId());
@@ -176,14 +168,23 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
             error = new Error(AmqpError.INVALID_FIELD,
                                     "Transfer \"delivery-tag\" is required for a new delivery.");
         }
-        else if (_unsettled.containsKey(transfer.getDeliveryTag()))
+        else if (!Boolean.TRUE.equals(transfer.getResume()))
         {
-            error = new Error(AmqpError.ILLEGAL_STATE,
-                              String.format("Delivery-tag '%s' is used by another unsettled delivery."
-                                            + " The delivery-tag MUST be unique amongst all deliveries that"
-                                            + " could be considered unsettled by either end of the link.",
-                                            transfer.getDeliveryTag()));
+            if (_unsettled.containsKey(transfer.getDeliveryTag()))
+            {
+                error = new Error(AmqpError.ILLEGAL_STATE,
+                                  String.format("Delivery-tag '%s' is used by another unsettled delivery."
+                                                + " The delivery-tag MUST be unique amongst all deliveries that"
+                                                + " could be considered unsettled by either end of the link.",
+                                                transfer.getDeliveryTag()));
+            }
+            else if (_localIncompleteUnsettled || _remoteIncompleteUnsettled)
+            {
+                error = new Error(AmqpError.ILLEGAL_STATE,
+                                  "Cannot accept new deliveries while incomplete-unsettled is true.");
+            }
         }
+
         return error;
     }
 
@@ -297,20 +298,6 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
         sendFlowConditional();
     }
 
-    @Override
-    public void receiveDeliveryState(final Binary deliveryTag, final DeliveryState state, final Boolean settled)
-    {
-        super.receiveDeliveryState(deliveryTag, state, settled);
-        if(_creditWindow)
-        {
-            if(Boolean.TRUE.equals(settled))
-            {
-                setLinkCredit(getLinkCredit().add(UnsignedInteger.ONE));
-                sendFlowConditional();
-            }
-        }
-    }
-
     SectionDecoder getSectionDecoder()
     {
         return _sectionDecoder;
@@ -321,11 +308,11 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
     {
         super.settle(deliveryTag);
         _unsettled.remove(deliveryTag);
-        if(_creditWindow)
+        if (_creditWindow)
         {
-             sendFlowConditional();
+            setLinkCredit(getLinkCredit().add(UnsignedInteger.ONE));
+            sendFlowConditional();
         }
-
     }
 
     public void flowStateChanged()
@@ -341,13 +328,10 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
         }
         finally
         {
-            if (close)
+            if (_currentDelivery != null)
             {
-                if (_currentDelivery != null)
-                {
-                    _currentDelivery.discard();
-                    _currentDelivery = null;
-                }
+                _currentDelivery.discard();
+                _currentDelivery = null;
             }
         }
     }

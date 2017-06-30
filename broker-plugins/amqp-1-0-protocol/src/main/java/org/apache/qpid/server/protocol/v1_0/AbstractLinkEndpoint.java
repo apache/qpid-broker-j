@@ -24,6 +24,8 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
@@ -38,8 +41,11 @@ import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
@@ -49,6 +55,8 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseTarget> implements LinkEndpoint<S, T>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLinkEndpoint.class);
+    private static final int FRAME_HEADER_SIZE = 8;
+
     private final Link_1_0<S, T> _link;
     private final Session_1_0 _session;
 
@@ -65,6 +73,9 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
     private volatile UnsignedInteger _localHandle;
     private volatile Map<Symbol, Object> _properties;
     private volatile State _state = State.ATTACH_RECVD;
+
+    protected boolean _remoteIncompleteUnsettled;
+    protected boolean _localIncompleteUnsettled;
 
     protected enum State
     {
@@ -129,7 +140,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         _receivingSettlementMode = attach.getRcvSettleMode();
         _properties = initProperties(attach);
         _state = State.ATTACH_RECVD;
-
+        _remoteIncompleteUnsettled = Boolean.TRUE.equals(attach.getIncompleteUnsettled());
         if (getRole() == Role.RECEIVER)
         {
             getSession().getIncomingDeliveryRegistry().removeDeliveriesForLinkEndpoint(this);
@@ -306,6 +317,8 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
             attachToSend.setInitialDeliveryCount(_deliveryCount.unsignedIntegerValue());
         }
 
+        attachToSend = handleOversizedUnsettledMapIfNecessary(attachToSend);
+
         switch (_state)
         {
             case DETACHED:
@@ -320,6 +333,73 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
 
         getSession().sendAttach(attachToSend);
 
+    }
+
+    private Attach handleOversizedUnsettledMapIfNecessary(final Attach attachToSend)
+    {
+        final AMQPDescribedTypeRegistry describedTypeRegistry = getSession().getConnection().getDescribedTypeRegistry();
+        final ValueWriter<Attach> valueWriter = describedTypeRegistry.getValueWriter(attachToSend);
+        if (valueWriter.getEncodedSize() + 8 > getSession().getConnection().getMaxFrameSize())
+        {
+            _localIncompleteUnsettled = true;
+            attachToSend.setIncompleteUnsettled(true);
+            final int targetSize = getSession().getConnection().getMaxFrameSize();
+            int lowIndex = 0;
+            Map<Binary, DeliveryState> localUnsettledMap = attachToSend.getUnsettled();
+            if (localUnsettledMap == null)
+            {
+                localUnsettledMap = Collections.emptyMap();
+            }
+            int highIndex = localUnsettledMap.size();
+            int currentIndex = (highIndex - lowIndex) / 2;
+            int oldIndex;
+            HashMap<Binary, DeliveryState> unsettledMap = null;
+            int totalSize;
+            do
+            {
+                HashMap<Binary, DeliveryState> partialUnsettledMap = new HashMap<>(currentIndex);
+                final Iterator<Map.Entry<Binary, DeliveryState>> iterator = localUnsettledMap.entrySet().iterator();
+                for (int i = 0; i < currentIndex; ++i)
+                {
+                    final Map.Entry<Binary, DeliveryState> entry = iterator.next();
+                    partialUnsettledMap.put(entry.getKey(), entry.getValue());
+                }
+                attachToSend.setUnsettled(partialUnsettledMap);
+                totalSize = describedTypeRegistry.getValueWriter(attachToSend).getEncodedSize() + FRAME_HEADER_SIZE;
+                if (totalSize > targetSize)
+                {
+                    highIndex = currentIndex;
+                }
+                else if (totalSize < targetSize)
+                {
+                    lowIndex = currentIndex;
+                    unsettledMap = partialUnsettledMap;
+                }
+                else
+                {
+                    lowIndex = highIndex = currentIndex;
+                    unsettledMap = partialUnsettledMap;
+                }
+
+                oldIndex = currentIndex;
+                currentIndex = lowIndex + (highIndex - lowIndex) / 2;
+            }
+            while (oldIndex != currentIndex);
+
+            if (unsettledMap == null || unsettledMap.isEmpty())
+            {
+                final End endWithError = new End();
+                endWithError.setError(new Error(AmqpError.FRAME_SIZE_TOO_SMALL, "Cannot fit a single unsettled delivery into Attach frame."));
+                getSession().end(endWithError);
+            }
+
+            attachToSend.setUnsettled(unsettledMap);
+        }
+        else
+        {
+            _localIncompleteUnsettled = false;
+        }
+        return attachToSend;
     }
 
     public void detach()

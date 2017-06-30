@@ -25,8 +25,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
@@ -86,5 +90,49 @@ public class Utils
 
             return interaction.getDecodedLatestDelivery();
         }
+    }
+
+    public static  QpidByteBuffer[] splitPayload(final String messageContent, int numberOfParts)
+    {
+        MessageEncoder messageEncoder = new MessageEncoder();
+        final Header header = new Header();
+        messageEncoder.setHeader(header);
+        messageEncoder.addData(messageContent);
+        List<QpidByteBuffer> payload = messageEncoder.getPayload();
+        long size = QpidByteBufferUtils.remaining(payload);
+
+        QpidByteBuffer[] result = new QpidByteBuffer[numberOfParts];
+        int chunkSize = (int) size / numberOfParts;
+        int lastChunkSize = (int) size - chunkSize * (numberOfParts - 1);
+        for (int i = 0; i < numberOfParts; i++)
+        {
+            result[i] = QpidByteBuffer.allocate(false, i == numberOfParts - 1 ? lastChunkSize : chunkSize);
+        }
+
+        int currentBufferIndex = 0;
+        for (QpidByteBuffer p : payload)
+        {
+            final int limit = p.limit();
+
+            while (p.hasRemaining())
+            {
+                QpidByteBuffer currentBuffer = result[currentBufferIndex];
+                if (currentBuffer.hasRemaining())
+                {
+                    int length = Math.min(p.remaining(), currentBuffer.remaining());
+                    p.limit(p.position() + length);
+                    currentBuffer.put(p.slice());
+                    p.position(p.position() + length);
+                    p.limit(limit);
+                }
+
+                if (!currentBuffer.hasRemaining())
+                {
+                    currentBuffer.flip();
+                    currentBufferIndex++;
+                }
+            }
+        }
+        return result;
     }
 }

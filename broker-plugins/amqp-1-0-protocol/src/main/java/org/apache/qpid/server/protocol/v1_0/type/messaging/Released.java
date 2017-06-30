@@ -24,23 +24,20 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
+public class Released implements Outcome
+{
+    public static final Symbol RELEASED_SYMBOL = Symbol.valueOf("amqp:released:list");
 
-public class Released
-  implements org.apache.qpid.server.protocol.v1_0.type.DeliveryState, Outcome
-  {
+    @Override
+    public Symbol getSymbol()
+    {
+        return RELEASED_SYMBOL;
+    }
 
-
-      public static final Symbol RELEASED_SYMBOL = Symbol.valueOf("amqp:released:list");
-
-      @Override
-      public Symbol getSymbol()
-      {
-          return RELEASED_SYMBOL;
-      }
-
-      @Override
+    @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder("Released{");
@@ -49,6 +46,4 @@ public class Released
         builder.append('}');
         return builder.toString();
     }
-
-
-  }
+}

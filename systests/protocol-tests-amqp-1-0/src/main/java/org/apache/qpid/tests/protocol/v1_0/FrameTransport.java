@@ -62,7 +62,7 @@ public class FrameTransport implements AutoCloseable
     public static final long RESPONSE_TIMEOUT = 6000;
     private static final Response CHANNEL_CLOSED_RESPONSE = new ChannelClosedResponse();
 
-    private final BlockingQueue<Response<?>> _queue = new ArrayBlockingQueue<>(100);
+    private final BlockingQueue<Response<?>> _queue = new ArrayBlockingQueue<>(1000);
 
     private final EventLoopGroup _workerGroup;
     private final InetSocketAddress _brokerAddress;

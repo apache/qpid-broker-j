@@ -228,15 +228,15 @@ public class Interaction
         return this;
     }
 
-    public Interaction openChannelMax(UnsignedShort channelMax)
+    public Interaction openMaxFrameSize(final UnsignedInteger maxFrameSize)
     {
-        _open.setChannelMax(channelMax);
+        _open.setMaxFrameSize(maxFrameSize);
         return this;
     }
 
-    public Interaction openMaxFrameSize(UnsignedInteger maxFrameSize)
+    public Interaction openChannelMax(UnsignedShort channelMax)
     {
-        _open.setMaxFrameSize(maxFrameSize);
+        _open.setChannelMax(channelMax);
         return this;
     }
 
@@ -397,6 +397,18 @@ public class Interaction
         return this;
     }
 
+    public Interaction attachUnsettled(final Map<Binary, DeliveryState> unsettled)
+    {
+        _attach.setUnsettled(unsettled);
+        return this;
+    }
+
+    public Interaction attachIncompleteUnsettled(final Boolean incompleteUnsettled)
+    {
+        _attach.setIncompleteUnsettled(incompleteUnsettled);
+        return this;
+    }
+
     public Interaction attach() throws Exception
     {
         sendPerformativeAndChainFuture(_attach, _sessionChannel);
@@ -501,9 +513,39 @@ public class Interaction
         return this;
     }
 
+    public Interaction transferDeliveryId(final UnsignedInteger deliveryId)
+    {
+        _transfer.setDeliveryId(deliveryId);
+        return this;
+    }
+
     public Interaction transferDeliveryTag(final Binary deliveryTag)
     {
         _transfer.setDeliveryTag(deliveryTag);
+        return this;
+    }
+
+    public Interaction transferMessageFormat(final UnsignedInteger messageFormat)
+    {
+        _transfer.setMessageFormat(messageFormat);
+        return this;
+    }
+
+    public Interaction transferSettled(final Boolean settled)
+    {
+        _transfer.setSettled(settled);
+        return this;
+    }
+
+    public Interaction transferMore(final Boolean more)
+    {
+        _transfer.setMore(more);
+        return this;
+    }
+
+    public Interaction transferRcvSettleMode(final ReceiverSettleMode receiverSettleMode)
+    {
+        _transfer.setRcvSettleMode(receiverSettleMode);
         return this;
     }
 
@@ -520,21 +562,9 @@ public class Interaction
         return transferState(transactionalState);
     }
 
-    public Interaction transferDeliveryId(final UnsignedInteger deliveryId)
+    public Interaction transferResume(final Boolean resume)
     {
-        _transfer.setDeliveryId(deliveryId);
-        return this;
-    }
-
-    public Interaction transferRcvSettleMode(final ReceiverSettleMode receiverSettleMode)
-    {
-        _transfer.setRcvSettleMode(receiverSettleMode);
-        return this;
-    }
-
-    public Interaction transferMore(final Boolean more)
-    {
-        _transfer.setMore(more);
+        _transfer.setResume(resume);
         return this;
     }
 
@@ -544,13 +574,7 @@ public class Interaction
         return this;
     }
 
-    public Interaction transferMessageFormat(final UnsignedInteger messageFormat)
-    {
-        _transfer.setMessageFormat(messageFormat);
-        return this;
-    }
-
-    public Interaction setPayloadOnTransfer(final List<QpidByteBuffer> payload)
+    public Interaction transferPayload(final List<QpidByteBuffer> payload)
     {
         _transfer.setPayload(payload);
         return this;
@@ -558,11 +582,11 @@ public class Interaction
 
     public Interaction transferPayloadData(final Object payload)
     {
-        setPayloadOnTransfer(_transfer, payload);
+        transferPayload(_transfer, payload);
         return this;
     }
 
-    private void setPayloadOnTransfer(final Transfer transfer, final Object payload)
+    private void transferPayload(final Transfer transfer, final Object payload)
     {
         AmqpValue amqpValue = new AmqpValue(payload);
         final AmqpValueSection section = amqpValue.createEncodingRetainingSection();
@@ -573,12 +597,6 @@ public class Interaction
         {
             qbb.dispose();
         }
-    }
-
-    public Interaction transferSettled(final Boolean settled)
-    {
-        _transfer.setSettled(settled);
-        return this;
     }
 
     public Interaction transfer() throws Exception
@@ -648,7 +666,7 @@ public class Interaction
     public Interaction txnDeclare(final InteractionTransactionalState txnState) throws Exception
     {
         Transfer transfer = createTransactionTransfer(txnState.getHandle());
-        setPayloadOnTransfer(transfer, new Declare());
+        transferPayload(transfer, new Declare());
         sendPerformativeAndChainFuture(transfer, _sessionChannel);
         consumeResponse(Disposition.class);
         Disposition declareTransactionDisposition = getLatestResponse(Disposition.class);
@@ -668,7 +686,7 @@ public class Interaction
         discharge.setFail(failed);
 
         Transfer transfer = createTransactionTransfer(txnState.getHandle());
-        setPayloadOnTransfer(transfer, discharge);
+        transferPayload(transfer, discharge);
         sendPerformativeAndChainFuture(transfer, _sessionChannel);
 
         Disposition declareTransactionDisposition = null;
@@ -818,6 +836,7 @@ public class Interaction
 
     public Interaction receiveDelivery() throws Exception
     {
+        sync();
         _latestDelivery = receiveAllTransfers();
         return this;
     }

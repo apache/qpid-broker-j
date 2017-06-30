@@ -644,11 +644,12 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         Map<Binary, DeliveryState> remoteUnsettled =
                 attach.getUnsettled() == null ? Collections.emptyMap() : new HashMap<>(attach.getUnsettled());
 
+        final boolean isUnsettledComplete = !Boolean.TRUE.equals(attach.getIncompleteUnsettled());
         for (Map.Entry<Binary, OutgoingDelivery> entry : unsettledCopy.entrySet())
         {
             Binary deliveryTag = entry.getKey();
             final MessageInstance queueEntry = entry.getValue().getMessageInstance();
-            if (remoteUnsettled == null || !remoteUnsettled.containsKey(deliveryTag))
+            if (!remoteUnsettled.containsKey(deliveryTag) && isUnsettledComplete)
             {
                 queueEntry.setRedelivered();
                 queueEntry.release(oldConsumer);

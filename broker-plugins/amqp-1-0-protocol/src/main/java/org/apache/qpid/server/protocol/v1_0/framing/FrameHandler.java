@@ -59,6 +59,7 @@ public class FrameHandler implements ProtocolHandler
     {
         try
         {
+            LOGGER.debug("RECV {} bytes", in.remaining());
             Error frameParsingError = null;
             int size;
 
