@@ -105,7 +105,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         {
             ServerMessage<?> serverMessage;
             UnsignedInteger messageFormat = delivery.getMessageFormat();
-            org.apache.qpid.server.protocol.v1_0.type.DeliveryState xfrState = delivery.getState();
+            DeliveryState xfrState = delivery.getState();
             List<QpidByteBuffer> fragments = delivery.getPayload();
             MessageFormat format = MessageFormatRegistry.getFormat(messageFormat == null ? 0 : messageFormat.intValue());
             if(format != null)
@@ -274,7 +274,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         final TerminusExpiryPolicy expiryPolicy = getTarget().getExpiryPolicy();
         if((detach != null && Boolean.TRUE.equals(detach.getClosed()))
            || TerminusExpiryPolicy.LINK_DETACH.equals(expiryPolicy)
-           || (TerminusExpiryPolicy.SESSION_END.equals(expiryPolicy) && getSession().isClosing())
+           || ((expiryPolicy == null || TerminusExpiryPolicy.SESSION_END.equals(expiryPolicy)) && getSession().isClosing())
            || (TerminusExpiryPolicy.CONNECTION_CLOSE.equals(expiryPolicy) && getSession().getConnection().isClosing()))
         {
             close();
@@ -287,6 +287,9 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         else
         {
             detach();
+
+            // TODO: QPID-7845: Resuming links is unsupported at the moment. Destroying link unconditionally.
+            destroy();
         }
     }
 

@@ -34,6 +34,7 @@ import static org.hamcrest.Matchers.typeCompatibleWith;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
+import static org.junit.Assume.assumeTrue;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -104,6 +105,7 @@ public class ResumeDeliveriesTest extends ProtocolTestBase
         }
     }
 
+    @Ignore("QPID-7845")
     @Test
     @SpecificationTest(section = "2.6.13",
             description = "When a suspended link having unsettled deliveries is resumed, the unsettled field from the"
@@ -162,6 +164,7 @@ public class ResumeDeliveriesTest extends ProtocolTestBase
         }
     }
 
+    @Ignore("QPID-7845")
     @Test
     @SpecificationTest(section = "2.7.3",
             description = "If the local unsettled map is too large to be encoded within a frame of the agreed maximum"
@@ -230,6 +233,7 @@ public class ResumeDeliveriesTest extends ProtocolTestBase
                 final Error error = responseEnd.getError();
                 assertThat(error, is(notNullValue()));
                 assertThat(error.getCondition().getValue(), is(equalTo(AmqpError.FRAME_SIZE_TOO_SMALL)));
+                assumeTrue("Broker does not support incomplete unsettled",  false);
             }
             else if (latestResponse.getBody() instanceof Attach)
             {
@@ -252,6 +256,7 @@ public class ResumeDeliveriesTest extends ProtocolTestBase
         }
     }
 
+    @Ignore("QPID-7845")
     @Test
     @SpecificationTest(section = "2.7.3", description =
             "If set to true [incomplete-unsettled] indicates that the unsettled map provided is not complete. "
@@ -505,6 +510,7 @@ public class ResumeDeliveriesTest extends ProtocolTestBase
         }
     }
 
+    @Ignore("QPID-7845")
     @Test
     @SpecificationTest(section = "2.6.13", description = "When a suspended link having unsettled deliveries is resumed,"
                                                          + " the unsettled field from the attach frame will carry"

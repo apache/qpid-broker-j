@@ -507,7 +507,7 @@ public class TransferTest extends ProtocolTestBase
                                                      .flow();
 
             Object data = interaction.receiveDelivery().decodeLatestDelivery().getDecodedLatestDelivery();
-            assertThat(data, Is.is(CoreMatchers.equalTo(TEST_MESSAGE_DATA)));
+            assertThat(data, is(equalTo(TEST_MESSAGE_DATA)));
 
             interaction.dispositionSettled(false)
                        .dispositionRole(Role.RECEIVER)

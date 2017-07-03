@@ -118,7 +118,15 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         }
         else if (attach.getUnsettled() != null)
         {
-            resumeLink(attach);
+            // TODO: QPID-7845 : Functionality for resuming links is not fully implemented
+            if (attach.getUnsettled().isEmpty())
+            {
+                resumeLink(attach);
+            }
+            else
+            {
+                throw new AmqpErrorException(new Error(AmqpError.NOT_IMPLEMENTED, "Resuming link is not implemented."));
+            }
         }
         else
         {

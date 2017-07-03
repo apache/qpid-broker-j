@@ -477,25 +477,16 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     {
         getConsumerTarget().close();
 
+        // TODO: QPID-7845 : Resuming links is unsupported at the moment. Thus, cleaning up unsettled deliveries unconditionally.
+        cleanUpUnsettledDeliveries();
+
         TerminusExpiryPolicy expiryPolicy = (getSource()).getExpiryPolicy();
         if (Boolean.TRUE.equals(detach.getClosed())
             || TerminusExpiryPolicy.LINK_DETACH.equals(expiryPolicy)
-            || (TerminusExpiryPolicy.SESSION_END.equals(expiryPolicy) && getSession().isClosing())
+            || ((expiryPolicy == null || TerminusExpiryPolicy.SESSION_END.equals(expiryPolicy)) && getSession().isClosing())
             || (TerminusExpiryPolicy.CONNECTION_CLOSE.equals(expiryPolicy) && getSession().getConnection().isClosing()))
         {
 
-            Modified state = new Modified();
-            state.setDeliveryFailed(true);
-
-            for (OutgoingDelivery delivery : _unsettled.values())
-            {
-                UnsettledAction action = delivery.getAction();
-                if (action != null)
-                {
-                    action.process(state, Boolean.TRUE);
-                    delivery.setAction(null);
-                }
-            }
 
             Error closingError = null;
             if (getDestination() instanceof ExchangeDestination
@@ -531,7 +522,27 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         else
         {
             detach();
+
+            // TODO: QPID-7845 : Resuming links is unsupported at the moment. Destroying link unconditionally.
+            destroy();
+
             getConsumerTarget().updateNotifyWorkDesired();
+        }
+    }
+
+    private void cleanUpUnsettledDeliveries()
+    {
+        Modified state = new Modified();
+        state.setDeliveryFailed(true);
+
+        for (OutgoingDelivery delivery : _unsettled.values())
+        {
+            UnsettledAction action = delivery.getAction();
+            if (action != null)
+            {
+                action.process(state, Boolean.TRUE);
+                delivery.setAction(null);
+            }
         }
     }
 
@@ -543,10 +554,11 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     @Override
     protected void handleDeliveryState(final Binary deliveryTag, final DeliveryState state, final Boolean settled)
     {
-        UnsettledAction action = _unsettled.get(deliveryTag).getAction();
+        OutgoingDelivery outgoingDelivery = _unsettled.get(deliveryTag);
         boolean localSettle = false;
-        if(action != null)
+        if(outgoingDelivery != null && outgoingDelivery.getAction() != null)
         {
+            UnsettledAction action = outgoingDelivery.getAction();
             localSettle = action.process(state, settled);
             if(localSettle && !Boolean.TRUE.equals(settled))
             {
