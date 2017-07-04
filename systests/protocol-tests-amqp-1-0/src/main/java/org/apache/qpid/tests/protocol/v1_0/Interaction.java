@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +46,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
@@ -72,6 +74,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
+import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
@@ -83,6 +86,7 @@ public class Interaction
 {
     private static final Set<String> CONTAINER_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Begin _begin;
+    private final End _end;
     private final Open _open;
     private final Close _close;
     private final Attach _attach;
@@ -121,6 +125,7 @@ public class Interaction
         _begin.setNextOutgoingId(UnsignedInteger.ZERO);
         _begin.setIncomingWindow(UnsignedInteger.ZERO);
         _begin.setOutgoingWindow(UnsignedInteger.ZERO);
+        _end = new End();
         _sessionChannel = UnsignedShort.valueOf(1);
 
         _attach = new Attach();
@@ -190,8 +195,17 @@ public class Interaction
 
     public Interaction saslInit() throws Exception
     {
-        sendPerformativeAndChainFuture(_saslInit);
+        sendPerformativeAndChainFuture(copySaslInit(_saslInit));
         return this;
+    }
+
+    private SaslInit copySaslInit(final SaslInit saslInit)
+    {
+        final SaslInit saslInitCopy = new SaslInit();
+        saslInitCopy.setMechanism(saslInit.getMechanism());
+        saslInitCopy.setInitialResponse(saslInit.getInitialResponse());
+        saslInitCopy.setHostname(saslInit.getHostname());
+        return saslInitCopy;
     }
 
     public Interaction saslResponseResponse(Binary response)
@@ -202,8 +216,15 @@ public class Interaction
 
     public Interaction saslResponse() throws Exception
     {
-        sendPerformativeAndChainFuture(_saslResponse);
+        sendPerformativeAndChainFuture(copySaslResponse(_saslResponse));
         return this;
+    }
+
+    private SaslResponse copySaslResponse(final SaslResponse saslResponse)
+    {
+        final SaslResponse saslResponseCopy = new SaslResponse();
+        saslResponseCopy.setResponse(saslResponse.getResponse());
+        return saslResponseCopy;
     }
 
     ////////////////
@@ -254,14 +275,40 @@ public class Interaction
 
     public Interaction open() throws Exception
     {
-        sendPerformativeAndChainFuture(_open, _connectionChannel);
+        sendPerformativeAndChainFuture(copyOpen(_open), _connectionChannel);
         return this;
+    }
+
+    private Open copyOpen(final Open open)
+    {
+        final Open openCopy = new Open();
+        openCopy.setContainerId(open.getContainerId());
+        openCopy.setHostname(open.getHostname());
+        openCopy.setMaxFrameSize(open.getMaxFrameSize());
+        openCopy.setChannelMax(open.getChannelMax());
+        openCopy.setIdleTimeOut(open.getIdleTimeOut());
+        openCopy.setOutgoingLocales(open.getOutgoingLocales());
+        openCopy.setIncomingLocales(open.getIncomingLocales());
+        openCopy.setOfferedCapabilities(open.getOfferedCapabilities());
+        openCopy.setDesiredCapabilities(open.getDesiredCapabilities());
+        if (open.getProperties() != null)
+        {
+            openCopy.setProperties(new LinkedHashMap<>(open.getProperties()));
+        }
+        return openCopy;
     }
 
     public Interaction close() throws Exception
     {
-        sendPerformativeAndChainFuture(_close, _connectionChannel);
+        sendPerformativeAndChainFuture(copyClose(_close), _connectionChannel);
         return this;
+    }
+
+    private Close copyClose(final Close close)
+    {
+        final Close closeCopy = new Close();
+        closeCopy.setError(close.getError());
+        return closeCopy;
     }
 
     private String getConnectionId()
@@ -307,8 +354,38 @@ public class Interaction
 
     public Interaction begin() throws Exception
     {
-        sendPerformativeAndChainFuture(_begin, _sessionChannel);
+        sendPerformativeAndChainFuture(copyBegin(_begin), _sessionChannel);
         return this;
+    }
+
+    private Begin copyBegin(final Begin begin)
+    {
+        final Begin beginCopy = new Begin();
+        beginCopy.setRemoteChannel(begin.getRemoteChannel());
+        beginCopy.setNextOutgoingId(begin.getNextOutgoingId());
+        beginCopy.setIncomingWindow(begin.getIncomingWindow());
+        beginCopy.setOutgoingWindow(begin.getOutgoingWindow());
+        beginCopy.setHandleMax(begin.getHandleMax());
+        beginCopy.setOfferedCapabilities(begin.getOfferedCapabilities());
+        beginCopy.setDesiredCapabilities(begin.getDesiredCapabilities());
+        if (begin.getProperties() != null)
+        {
+            beginCopy.setProperties(new LinkedHashMap<>(begin.getProperties()));
+        }
+        return beginCopy;
+    }
+
+    public Interaction end() throws Exception
+    {
+        sendPerformativeAndChainFuture(copyEnd(_end), _sessionChannel);
+        return this;
+    }
+
+    private End copyEnd(final End end)
+    {
+        final End endCopy = new End();
+        endCopy.setError(end.getError());
+        return endCopy;
     }
 
     //////////
@@ -411,8 +488,77 @@ public class Interaction
 
     public Interaction attach() throws Exception
     {
-        sendPerformativeAndChainFuture(_attach, _sessionChannel);
+        sendPerformativeAndChainFuture(copyAttach(_attach), _sessionChannel);
         return this;
+    }
+
+    private Attach copyAttach(final Attach attach)
+    {
+        final Attach attachCopy = new Attach();
+        attachCopy.setName(attach.getName());
+        attachCopy.setHandle(attach.getHandle());
+        attachCopy.setRole(attach.getRole());
+        attachCopy.setSndSettleMode(attach.getSndSettleMode());
+        attachCopy.setRcvSettleMode(attach.getRcvSettleMode());
+        final BaseSource baseSource = attach.getSource();
+        if (baseSource != null && baseSource instanceof Source)
+        {
+            final Source source = (Source) baseSource;
+            final Source sourceCopy = new Source();
+            sourceCopy.setAddress(source.getAddress());
+            sourceCopy.setDurable(source.getDurable());
+            sourceCopy.setExpiryPolicy(source.getExpiryPolicy());
+            sourceCopy.setTimeout(source.getTimeout());
+            sourceCopy.setDynamic(source.getDynamic());
+            if (source.getDynamicNodeProperties() != null)
+            {
+                sourceCopy.setDynamicNodeProperties(new LinkedHashMap<>(source.getDynamicNodeProperties()));
+            }
+            sourceCopy.setFilter(source.getFilter());
+            sourceCopy.setDefaultOutcome(source.getDefaultOutcome());
+            sourceCopy.setOutcomes(source.getOutcomes());
+            sourceCopy.setCapabilities(source.getCapabilities());
+            attachCopy.setSource(sourceCopy);
+        }
+        else
+        {
+            attachCopy.setSource(baseSource);
+        }
+        final BaseTarget baseTarget = attach.getTarget();
+        if (baseTarget != null && baseTarget instanceof Target)
+        {
+            final Target target = (Target) baseTarget;
+            final Target targetCopy = new Target();
+            targetCopy.setAddress(target.getAddress());
+            targetCopy.setDurable(target.getDurable());
+            targetCopy.setExpiryPolicy(target.getExpiryPolicy());
+            targetCopy.setTimeout(target.getTimeout());
+            targetCopy.setDynamic(target.getDynamic());
+            if (target.getDynamicNodeProperties() != null)
+            {
+                targetCopy.setDynamicNodeProperties(new LinkedHashMap<>(target.getDynamicNodeProperties()));
+            }
+            targetCopy.setCapabilities(target.getCapabilities());
+            attachCopy.setTarget(targetCopy);
+        }
+        else
+        {
+            attachCopy.setTarget(baseTarget);
+        }
+        if (attach.getUnsettled() != null)
+        {
+            attachCopy.setUnsettled(new LinkedHashMap<>(attach.getUnsettled()));
+        }
+        attachCopy.setIncompleteUnsettled(attach.getIncompleteUnsettled());
+        attachCopy.setInitialDeliveryCount(attach.getInitialDeliveryCount());
+        attachCopy.setMaxMessageSize(attach.getMaxMessageSize());
+        attachCopy.setOfferedCapabilities(attach.getOfferedCapabilities());
+        attachCopy.setDesiredCapabilities(attach.getDesiredCapabilities());
+        if (attach.getProperties() != null)
+        {
+            attachCopy.setProperties(new LinkedHashMap<>(attach.getProperties()));
+        }
+        return attachCopy;
     }
 
     public Interaction detachClose(Boolean close)
@@ -423,8 +569,17 @@ public class Interaction
 
     public Interaction detach() throws Exception
     {
-        sendPerformativeAndChainFuture(_detach, _sessionChannel);
+        sendPerformativeAndChainFuture(copyDetach(_detach), _sessionChannel);
         return this;
+    }
+
+    private Detach copyDetach(final Detach detach)
+    {
+        final Detach detachCopy = new Detach();
+        detachCopy.setHandle(detach.getHandle());
+        detachCopy.setClosed(detach.getClosed());
+        detachCopy.setError(detach.getError());
+        return detachCopy;
     }
 
     //////////
@@ -499,8 +654,28 @@ public class Interaction
 
     public Interaction flow() throws Exception
     {
-        sendPerformativeAndChainFuture(_flow, _sessionChannel);
+        sendPerformativeAndChainFuture(copyFlow(_flow), _sessionChannel);
         return this;
+    }
+
+    private Flow copyFlow(final Flow flow)
+    {
+        final Flow flowCopy = new Flow();
+        flowCopy.setNextIncomingId(flow.getNextIncomingId());
+        flowCopy.setIncomingWindow(flow.getIncomingWindow());
+        flowCopy.setNextOutgoingId(flow.getNextOutgoingId());
+        flowCopy.setOutgoingWindow(flow.getOutgoingWindow());
+        flowCopy.setHandle(flow.getHandle());
+        flowCopy.setDeliveryCount(flow.getDeliveryCount());
+        flowCopy.setLinkCredit(flow.getLinkCredit());
+        flowCopy.setAvailable(flow.getAvailable());
+        flowCopy.setDrain(flow.getDrain());
+        flowCopy.setEcho(flow.getEcho());
+        if (flow.getProperties() != null)
+        {
+            flowCopy.setProperties(new LinkedHashMap<>(flow.getProperties()));
+        }
+        return flowCopy;
     }
 
     //////////////
@@ -601,8 +776,35 @@ public class Interaction
 
     public Interaction transfer() throws Exception
     {
-        sendPerformativeAndChainFuture(_transfer, _sessionChannel);
+        sendPerformativeAndChainFuture(copyTransfer(_transfer), _sessionChannel);
         return this;
+    }
+
+    private Transfer copyTransfer(final Transfer transfer)
+    {
+        final Transfer transferCopy = new Transfer();
+        transferCopy.setHandle(transfer.getHandle());
+        transferCopy.setDeliveryId(transfer.getDeliveryId());
+        transferCopy.setDeliveryTag(transfer.getDeliveryTag());
+        transferCopy.setMessageFormat(transfer.getMessageFormat());
+        transferCopy.setSettled(transfer.getSettled());
+        transferCopy.setMore(transfer.getMore());
+        transferCopy.setRcvSettleMode(transfer.getRcvSettleMode());
+        transferCopy.setState(transfer.getState());
+        transferCopy.setResume(transfer.getResume());
+        transferCopy.setAborted(transfer.getAborted());
+        transferCopy.setBatchable(transfer.getBatchable());
+        final List<QpidByteBuffer> payload = transfer.getPayload();
+        if (payload != null)
+        {
+            final List<QpidByteBuffer> payloadCopy = new ArrayList<>(payload.size());
+            for (QpidByteBuffer qpidByteBuffer : payload)
+            {
+                payloadCopy.add(qpidByteBuffer.duplicate());
+            }
+            transferCopy.setPayload(payloadCopy);
+        }
+        return transferCopy;
     }
 
     /////////////////
@@ -638,8 +840,20 @@ public class Interaction
 
     public Interaction disposition() throws Exception
     {
-        sendPerformativeAndChainFuture(_disposition, _sessionChannel);
+        sendPerformativeAndChainFuture(copyDisposition(_disposition), _sessionChannel);
         return this;
+    }
+
+    private Disposition copyDisposition(final Disposition disposition)
+    {
+        final Disposition dispositionCopy = new Disposition();
+        dispositionCopy.setRole(disposition.getRole());
+        dispositionCopy.setFirst(disposition.getFirst());
+        dispositionCopy.setLast(disposition.getLast());
+        dispositionCopy.setSettled(disposition.getSettled());
+        dispositionCopy.setState(disposition.getState());
+        dispositionCopy.setBatchable(disposition.getBatchable());
+        return dispositionCopy;
     }
 
     /////////////////
