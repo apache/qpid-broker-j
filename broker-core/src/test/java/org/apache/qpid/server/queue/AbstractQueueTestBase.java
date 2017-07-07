@@ -1052,6 +1052,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         {
             //pass
         }
+        assertFalse(_queue.isDeleted());
     }
 
     private long getExpirationOnQueue(final Queue<?> queue, long arrivalTime, long expiration)

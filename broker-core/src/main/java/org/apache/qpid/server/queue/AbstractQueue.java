@@ -1745,13 +1745,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         // Check access
         authorise(Operation.DELETE);
 
+        if(hasReferrers())
+        {
+            throw new MessageDestinationIsAlternateException(getName());
+        }
+
         if (_deleted.compareAndSet(false, true))
         {
-            if(hasReferrers())
-            {
-                throw new MessageDestinationIsAlternateException(getName());
-            }
-
             final int queueDepthMessages = getQueueDepthMessages();
 
             for(MessageSender sender : _linkedSenders.keySet())
@@ -1761,7 +1761,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
             try
             {
-
                 Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getAllIterator();
 
                 while (consumerIterator.hasNext())
