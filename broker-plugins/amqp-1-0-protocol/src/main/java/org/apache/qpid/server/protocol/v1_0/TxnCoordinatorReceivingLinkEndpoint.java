@@ -212,7 +212,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
             getSession().incrementRolledBackTransactions();
             getSession().getConnection().removeTransaction(entry.getKey());
         }
-        detach();
+        close();
     }
 
     @Override
