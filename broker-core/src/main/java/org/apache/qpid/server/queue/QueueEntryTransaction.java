@@ -55,13 +55,14 @@ abstract class QueueEntryTransaction implements QueueManagingVirtualHost.Transac
                 public boolean visit(final QueueEntry entry)
                 {
                     final ServerMessage message = entry.getMessage();
+                    boolean stop = false;
                     if (message != null)
                     {
                         final long messageId = message.getMessageNumber();
                         if ((_messageIds == null || _messageIds.remove(messageId))
                             && (_filter == null || _filter.matches(entry.asFilterable())))
                         {
-                            updateEntry(entry, txn);
+                            stop = updateEntry(entry, txn);
                             _modifiedMessageIds.add(messageId);
                             if (_limit > 0)
                             {
@@ -69,15 +70,14 @@ abstract class QueueEntryTransaction implements QueueManagingVirtualHost.Transac
                             }
                         }
                     }
-                    return _limit == 0 || (_messageIds != null && _messageIds.isEmpty());
+                    return stop || _limit == 0 || (_messageIds != null && _messageIds.isEmpty());
                 }
             });
         }
 
     }
 
-
-    protected abstract void updateEntry(QueueEntry entry, QueueManagingVirtualHost.Transaction txn);
+    protected abstract boolean updateEntry(QueueEntry entry, QueueManagingVirtualHost.Transaction txn);
 
     @Override
     public final List<Long> getModifiedMessageIds()

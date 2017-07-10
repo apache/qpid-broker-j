@@ -18,10 +18,9 @@
  * under the License.
  *
  */
-
 package org.apache.qpid.server.queue;
 
 public interface OverflowPolicyHandler
 {
-    void checkOverflow(final QueueEntry newlyEnqueued);
+    void checkOverflow(QueueEntry newlyEnqueued);
 }

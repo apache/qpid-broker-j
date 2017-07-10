@@ -43,7 +43,7 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
     private final M _message;
 
     private final Set<BaseQueue> _queues = new HashSet<>();
-    private final Map<BaseQueue, CharSequence> _notAcceptingRoutableQueues = new HashMap<>();
+    private final Map<BaseQueue, RejectReason> _rejectingRoutableQueues = new HashMap<>();
 
     public RoutingResult(final M message)
     {
@@ -86,11 +86,11 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
     public void add(RoutingResult<M> result)
     {
         addQueues(result._queues);
-        for (Map.Entry<BaseQueue, CharSequence> e : result._notAcceptingRoutableQueues.entrySet())
+        for (Map.Entry<BaseQueue, RejectReason> e : result._rejectingRoutableQueues.entrySet())
         {
             if (!e.getKey().isDeleted())
             {
-                _notAcceptingRoutableQueues.put(e.getKey(), e.getValue());
+                _rejectingRoutableQueues.put(e.getKey(), e.getValue());
             }
         }
     }
@@ -98,31 +98,12 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
     public int send(ServerTransaction txn,
                     final Action<? super MessageInstance> postEnqueueAction)
     {
-        for(BaseQueue q : _queues)
+        if (containsReject(RejectType.LIMIT_EXCEEDED, RejectType.PRECONDITION_FAILED))
         {
-            if(!_message.isResourceAcceptable(q))
-            {
-                return 0;
-            }
+            return 0;
         }
-        final BaseQueue[] baseQueues;
 
-        if(_message.isReferenced())
-        {
-            ArrayList<BaseQueue> uniqueQueues = new ArrayList<>(_queues.size());
-            for(BaseQueue q : _queues)
-            {
-                if(!_message.isReferenced(q))
-                {
-                    uniqueQueues.add(q);
-                }
-            }
-            baseQueues = uniqueQueues.toArray(new BaseQueue[uniqueQueues.size()]);
-        }
-        else
-        {
-            baseQueues = _queues.toArray(new BaseQueue[_queues.size()]);
-        }
+        final BaseQueue[] queues = _queues.toArray(new BaseQueue[_queues.size()]);
         txn.enqueue(_queues, _message, new ServerTransaction.EnqueueAction()
         {
             MessageReference _reference = _message.newReference();
@@ -131,9 +112,9 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
             {
                 try
                 {
-                    for(int i = 0; i < baseQueues.length; i++)
+                    for(int i = 0; i < queues.length; i++)
                     {
-                        baseQueues[i].enqueue(_message, postEnqueueAction, records[i]);
+                        queues[i].enqueue(_message, postEnqueueAction, records[i]);
                     }
                 }
                 finally
@@ -155,27 +136,64 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
         return !_queues.isEmpty();
     }
 
-    public void addNotAcceptingRoutableQueue(BaseQueue q, CharSequence reason)
+    public void addRejectReason(BaseQueue q, final RejectType rejectType, String reason)
     {
-        _notAcceptingRoutableQueues.put(q, reason);
+        _rejectingRoutableQueues.put(q, new RejectReason(rejectType, reason));
     }
 
-    public boolean hasNotAcceptingRoutableQueue()
+    public boolean isRejected()
     {
-        return !_notAcceptingRoutableQueues.isEmpty();
+        return !_rejectingRoutableQueues.isEmpty();
     }
 
-    public String getUnacceptanceCause()
+    public boolean containsReject(RejectType... type)
+    {
+        for(RejectReason reason: _rejectingRoutableQueues.values())
+        {
+            for(RejectType t: type)
+            {
+                if (reason.getRejectType() == t)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public String getRejectReason()
     {
         StringBuilder refusalMessages = new StringBuilder();
-        for (CharSequence message : _notAcceptingRoutableQueues.values())
+        for (RejectReason reason : _rejectingRoutableQueues.values())
         {
             if (refusalMessages.length() > 0)
             {
                 refusalMessages.append(";");
             }
-            refusalMessages.append(message);
+            refusalMessages.append(reason.getReason());
         }
         return refusalMessages.toString();
+    }
+
+    private static class RejectReason
+    {
+        private final RejectType _rejectType;
+        private final String _reason;
+
+        private RejectReason(final RejectType rejectType, final String reason)
+        {
+            _rejectType = rejectType;
+            _reason = reason;
+        }
+
+        private RejectType getRejectType()
+        {
+            return _rejectType;
+        }
+
+        public String getReason()
+        {
+            return _reason;
+        }
     }
 }

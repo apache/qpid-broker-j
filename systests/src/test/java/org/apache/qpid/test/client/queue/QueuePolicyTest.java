@@ -20,100 +20,118 @@
 */
 package org.apache.qpid.test.client.queue;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.jms.Connection;
 import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.apache.qpid.AMQException;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.util.AMQExceptionTestUtil;
+import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class QueuePolicyTest extends QpidBrokerTestCase
 {
     private Connection _connection;
-    
+
     @Override
     public void setUp() throws Exception
     {
         super.setUp();
-        _connection = getConnection() ;
-        _connection.start();
+        _connection = getConnection();
     }
-    
-    @Override
-    public void tearDown() throws Exception
+
+    public void testRejectPolicyMessageDepth() throws Exception
     {
-        _connection.close();
-        super.tearDown();
-    }
-    
-    /**
-     * Test Goal : To create a ring queue programitcally with max queue count using the
-     *             address string and observe that it works as expected.
-     */
-    public void testRejectPolicy() throws Exception
-    {
-        String addr = "ADDR:queue; {create: always, " +
-        "node: {x-bindings: [{exchange : 'amq.direct', key : test}], " +
-        "x-declare:{ arguments : {'qpid.max_count':5} }}}";
-                
-        Session ssn = _connection.createSession(false,Session.AUTO_ACKNOWLEDGE);
-        
-        Destination dest = ssn.createQueue(addr);
-        MessageConsumer consumer = ssn.createConsumer(dest);
-        MessageProducer prod = ssn.createProducer(ssn.createQueue("ADDR:amq.direct/test"));
-        
-        for (int i=0; i<6; i++)
+        Session session = _connection.createSession(true, Session.SESSION_TRANSACTED);
+
+        Destination destination = createQueue(session, OverflowPolicy.REJECT, 5);
+        MessageProducer producer = session.createProducer(destination);
+
+        for (int i = 0; i < 5; i++)
         {
-            prod.send(ssn.createMessage());
+            producer.send(session.createMessage());
+            session.commit();
         }
-        
+
         try
-        {   
-            prod.send(ssn.createMessage());
-            ((AMQSession)ssn).sync();
+        {
+            producer.send(session.createMessage());
+            session.commit();
             fail("The client did not receive an exception after exceeding the queue limit");
         }
-        catch (AMQException e)
+        catch (JMSException e)
         {
-            AMQExceptionTestUtil.assertAMQException("The correct error code is not set", 506, e);
+            assertTrue("Unexpected exception: " + e.getMessage(),
+                       e.getMessage().contains("Maximum depth exceeded"));
         }
+
+        Connection secondConnection = getConnection();
+        secondConnection.start();
+
+        Session secondSession = secondConnection.createSession(true, Session.SESSION_TRANSACTED);
+        MessageConsumer consumer = secondSession.createConsumer(destination);
+        Message receivedMessage = consumer.receive(getReceiveTimeout());
+        assertNotNull("Message  is not received", receivedMessage);
+        secondSession.commit();
+
+        MessageProducer secondProducer = secondSession.createProducer(destination);
+        secondProducer.send(secondSession.createMessage());
+        secondSession.commit();
     }
-    
-    /**
-     * Test Goal : To create a ring queue programmatically using the address string and observe
-     *             that it works as expected.
-     */
+
     public void testRingPolicy() throws Exception
     {
-        Session ssn = _connection.createSession(false,Session.AUTO_ACKNOWLEDGE);
-        
-        String addr = "ADDR:my-ring-queue; {create: always, " +
-        "node: {x-bindings: [{exchange : 'amq.direct', key : test}], " +
-               "x-declare:{arguments : {'qpid.policy_type':ring, 'qpid.max_count':2} }}}";
-    
-        Destination dest = ssn.createQueue(addr);
-        MessageConsumer consumer = ssn.createConsumer(dest);
-        MessageProducer prod = ssn.createProducer(ssn.createQueue("ADDR:amq.direct/test"));
-        
-        _connection.stop();
+        Session session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-        prod.send(ssn.createTextMessage("Test1"));
-        prod.send(ssn.createTextMessage("Test2"));
-        prod.send(ssn.createTextMessage("Test3"));
+        Destination destination = createQueue(session, OverflowPolicy.RING, 2);
+        MessageProducer producer = session.createProducer(destination);
+        producer.send(session.createTextMessage("Test1"));
+        producer.send(session.createTextMessage("Test2"));
+        producer.send(session.createTextMessage("Test3"));
 
+        MessageConsumer consumer = session.createConsumer(destination);
         _connection.start();
-        
-        TextMessage msg = (TextMessage)consumer.receive(1000);
-        assertNotNull("The consumer should receive the msg with body='Test2'", msg);
-        assertEquals("Unexpected first message","Test2",msg.getText());
-        
-        msg = (TextMessage)consumer.receive(1000);
-        assertNotNull("The consumer should receive the msg with body='Test3'", msg);
-        assertEquals("Unexpected second message","Test3", msg.getText());
+
+        TextMessage receivedMessage = (TextMessage) consumer.receive(getReceiveTimeout());
+        assertNotNull("The consumer should receive the receivedMessage with body='Test2'", receivedMessage);
+        assertEquals("Unexpected first message", "Test2", receivedMessage.getText());
+
+        receivedMessage = (TextMessage) consumer.receive(getReceiveTimeout());
+        assertNotNull("The consumer should receive the receivedMessage with body='Test3'", receivedMessage);
+        assertEquals("Unexpected second message", "Test3", receivedMessage.getText());
+    }
+
+
+    private Destination createQueue(Session session, OverflowPolicy overflowPolicy, int msgLimit)
+            throws Exception
+    {
+        Destination destination;
+        String testQueueName = getTestQueueName();
+        if (isBroker10())
+        {
+            final Map<String, Object> arguments = new HashMap<>();
+            arguments.put(org.apache.qpid.server.model.Queue.OVERFLOW_POLICY, overflowPolicy.name());
+            arguments.put(org.apache.qpid.server.model.Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, msgLimit);
+            createEntityUsingAmqpManagement(testQueueName, session, "org.apache.qpid.Queue", arguments);
+            destination = getQueueFromName(session, testQueueName);
+        }
+        else
+        {
+            String address = String.format("ADDR: %s; {create: always, node: {"
+                                           + "x-bindings: [{exchange : 'amq.direct', key : %s}],"
+                                           + "x-declare:{arguments : {'qpid.policy_type': %s, 'qpid.max_count': %d}}"
+                                           + "}}",
+                                           testQueueName,
+                                           testQueueName, overflowPolicy.name(), msgLimit);
+            destination = session.createQueue(address);
+            session.createConsumer(destination).close();
+        }
+        return destination;
     }
 }

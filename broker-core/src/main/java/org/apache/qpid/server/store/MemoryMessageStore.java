@@ -22,6 +22,7 @@ package org.apache.qpid.server.store;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -53,6 +54,8 @@ public class MemoryMessageStore implements MessageStore
     private final Map<UUID, Set<Long>> _messageInstances = new HashMap<UUID, Set<Long>>();
     private final Map<Xid, DistributedTransactionRecords> _distributedTransactions = new HashMap<Xid, DistributedTransactionRecords>();
     private final AtomicLong _inMemorySize = new AtomicLong();
+    private final Set<MessageDeleteListener> _messageDeleteListeners = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
 
 
     private final class MemoryMessageStoreTransaction implements Transaction
@@ -282,6 +285,18 @@ public class MemoryMessageStore implements MessageStore
     }
 
     @Override
+    public void addMessageDeleteListener(final MessageDeleteListener listener)
+    {
+        _messageDeleteListeners.add(listener);
+    }
+
+    @Override
+    public void removeMessageDeleteListener(final MessageDeleteListener listener)
+    {
+        _messageDeleteListeners.remove(listener);
+    }
+
+    @Override
     public <T extends StorableMessageMetaData> MessageHandle<T> addMessage(final T metaData)
     {
         long id = getNextMessageId();
@@ -304,6 +319,13 @@ public class MemoryMessageStore implements MessageStore
                 int bytesCleared = metaData.getStorableSize() + metaData.getContentSize();
                 super.remove();
                 _inMemorySize.addAndGet(-bytesCleared);
+                if (!_messageDeleteListeners.isEmpty())
+                {
+                    for (final MessageDeleteListener messageDeleteListener : _messageDeleteListeners)
+                    {
+                        messageDeleteListener.messageDeleted(this);
+                    }
+                }
             }
         };
         _inMemorySize.addAndGet(metaData.getStorableSize());

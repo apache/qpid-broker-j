@@ -29,6 +29,7 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.message.RejectType;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
@@ -107,27 +108,41 @@ public class NodeReceivingDestination implements ReceivingDestination
                 }};
 
         RoutingResult result = _destination.route(message, routingAddress, instanceProperties);
-        int enqueues = result.send(txn, null);
+        final int enqueues = result.send(txn, null);
 
-        if(enqueues == 0)
+        if (enqueues == 0)
         {
-            _eventLogger.message(ExchangeMessages.DISCARDMSG(_destination.getName(), routingAddress));
-        }
-
-        if (enqueues == 0 && !_discardUnroutable)
-        {
-            if (result.hasNotAcceptingRoutableQueue())
+            if (!_discardUnroutable)
             {
-                return createdRejectedOutcome(AmqpError.PRECONDITION_FAILED,
-                                              result.getUnacceptanceCause());
+                if (result.isRejected())
+                {
+                    AmqpError error;
+                    if (result.containsReject(RejectType.LIMIT_EXCEEDED))
+                    {
+                        error = AmqpError.RESOURCE_LIMIT_EXCEEDED;
+                    }
+                    else if (result.containsReject(RejectType.PRECONDITION_FAILED))
+                    {
+                        error = AmqpError.PRECONDITION_FAILED;
+                    }
+                    else
+                    {
+                        error = AmqpError.ILLEGAL_STATE;
+                    }
+                    return createdRejectedOutcome(error, result.getRejectReason());
+                }
+                else
+                {
+                    return createdRejectedOutcome(AmqpError.NOT_FOUND,
+                                                  String.format("Unknown destination '%s'", routingAddress));
+                }
             }
-            return createdRejectedOutcome(AmqpError.NOT_FOUND,
-                                        "Unknown destination '" + routingAddress + '"');
+            else
+            {
+                _eventLogger.message(ExchangeMessages.DISCARDMSG(_destination.getName(), routingAddress));
+            }
         }
-        else
-        {
-            return ACCEPTED;
-        }
+        return ACCEPTED;
     }
 
     private Outcome createdRejectedOutcome(AmqpError errorCode, String errorMessage)

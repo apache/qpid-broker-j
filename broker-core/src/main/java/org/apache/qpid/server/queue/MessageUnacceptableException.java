@@ -20,26 +20,10 @@
  */
 package org.apache.qpid.server.queue;
 
-import java.util.List;
-
-import org.apache.qpid.server.filter.MessageFilter;
-import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-
-public class DeleteMessagesTransaction extends QueueEntryTransaction
+public class MessageUnacceptableException extends Exception
 {
-    public DeleteMessagesTransaction(Queue sourceQueue,
-                                     List<Long> messageIds,
-                                     final MessageFilter filter,
-                                     final int limit)
+    public MessageUnacceptableException(final String message)
     {
-        super(sourceQueue, messageIds, filter, limit);
-    }
-
-    @Override
-    protected boolean updateEntry(QueueEntry entry, QueueManagingVirtualHost.Transaction txn)
-    {
-        txn.dequeue(entry);
-        return false;
+        super(message);
     }
 }

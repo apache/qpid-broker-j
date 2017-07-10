@@ -275,17 +275,15 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     @ManagedAttribute(defaultValue = "${queue.defaultOverflowPolicy}",
             description = "Queue overflow policy."
-                          + " Current options are ProducerFlowControl, Ring, FlowToDisk, and None."
-                          + " ProducerFlowControl overflow policy - when queue message number or size of messages"
-                          + " in queue exceeds maximum, the producing sessions are blocked until queue depth falls"
-                          + " below the resume threshold."
-                          + " Ring overflow policy - when queue message number or size of messages in queue exceeds"
-                          + " maximum, oldest messages are discarded."
-                          + " FlowToDisk overflow policy - when queue message number or size of messages"
-                          + " in queue exceeds maximum, new incoming messages are written to disk and immediately"
-                          + " evicted from memory."
-                          + " None overflow policy - queue capacity is unbounded, the attributes defining the limits for"
-                          + " maximum message number and maximum number of bytes are not applied.",
+                          + " Options are ProducerFlowControl, Ring, FlowToDisk, Reject, and None."
+                          + " The policy comes into effect where queue limits described by maximumQueueDepthBytes"
+                          + " and/or maximumQueueDepthMessage are breached."
+                          + " ProducerFlowControl - the producing sessions are blocked until queue size"
+                          + " falls beneath resume threshold (see context variable queue.queueFlowResumeLimit)."
+                          + " Ring - oldest messages are discarded."
+                          + " Reject - incoming messages are rejected."
+                          + " FlowToDisk - new incoming messages are written to disk and immediately evicted from memory."
+                          + " None - queue capacity is unbounded.",
             mandatory = true)
     OverflowPolicy getOverflowPolicy();
 

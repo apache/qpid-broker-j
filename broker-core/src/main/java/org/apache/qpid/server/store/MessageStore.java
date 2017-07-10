@@ -81,6 +81,10 @@ public interface MessageStore
 
     void onDelete(ConfiguredObject<?> parent);
 
+    void addMessageDeleteListener(MessageDeleteListener listener);
+
+    void removeMessageDeleteListener(MessageDeleteListener listener);
+
     MessageStoreReader newMessageStoreReader();
 
     interface MessageStoreReader
@@ -94,6 +98,11 @@ public interface MessageStore
 
         StoredMessage<?> getMessage(long messageId);
         void close();
+    }
+
+    interface MessageDeleteListener
+    {
+        void messageDeleted(StoredMessage<?> m);
     }
 
 }

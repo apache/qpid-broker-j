@@ -52,6 +52,8 @@ import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.RejectType;
+import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
@@ -488,32 +490,50 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                         }
                     };
 
-                    int enqueues = serverSession.enqueue(message, instanceProperties, destination);
+                    RoutingResult<MessageTransferMessage> routingResult = serverSession.enqueue(message, instanceProperties, destination);
 
-                    if (enqueues == 0)
+                    boolean explictlyRejected = routingResult.containsReject(RejectType.LIMIT_EXCEEDED);
+                    if (!routingResult.hasRoutes() || explictlyRejected)
                     {
-                        if ((delvProps == null || !delvProps.getDiscardUnroutable())
-                            && xfr.getAcceptMode() == MessageAcceptMode.EXPLICIT)
+                        boolean closeWhenNoRoute = serverSession.getAMQPConnection().getBroker().getConnection_closeWhenNoRoute();
+                        boolean discardUnroutable = delvProps != null && delvProps.getDiscardUnroutable();
+                        if (!discardUnroutable && xfr.getAcceptMode() == MessageAcceptMode.EXPLICIT)
                         {
                             RangeSet rejects = RangeSetFactory.createRangeSet();
                             rejects.add(xfr.getId());
                             MessageReject reject = new MessageReject(rejects, MessageRejectCode.UNROUTABLE, "Unroutable");
                             ssn.invoke(reject);
                         }
+                        else if (!discardUnroutable && closeWhenNoRoute && explictlyRejected)
+                        {
+                            ExecutionErrorCode code = ExecutionErrorCode.RESOURCE_LIMIT_EXCEEDED;
+                            String errorMessage = String.format("No route for message with destination '%s' and routing key '%s' : %s",
+                                                                xfr.getDestination(),
+                                                                message.getInitialRoutingAddress(),
+                                                                routingResult.getRejectReason());
+
+                            ExecutionException ex = new ExecutionException();
+                            ex.setErrorCode(code);
+                            ex.setDescription(errorMessage);
+                            serverSession.invoke(ex);
+                            serverSession.close(ErrorCodes.RESOURCE_ERROR, errorMessage);
+                            return;
+                        }
                         else
                         {
                             getEventLogger(ssn).message(ExchangeMessages.DISCARDMSG(destination.getName(),
-                                                                                             messageMetaData.getRoutingKey()));
+                                                                                    messageMetaData.getRoutingKey()));
                         }
                     }
 
+                    // TODO: we currently do not send MessageAccept when AcceptMode is EXPLICIT
                     if (serverSession.isTransactional())
                     {
                         serverSession.processed(xfr);
                     }
                     else
                     {
-                        serverSession.recordFuture(Futures.<Void>immediateFuture(null),
+                        serverSession.recordFuture(Futures.immediateFuture(null),
                                                    new CommandProcessedAction(serverSession, xfr));
                     }
                 }

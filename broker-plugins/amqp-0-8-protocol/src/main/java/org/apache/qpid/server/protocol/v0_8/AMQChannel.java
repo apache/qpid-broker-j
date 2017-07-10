@@ -72,12 +72,12 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.RejectType;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
@@ -381,6 +381,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         {
             MessagePublishInfo info = _currentMessage.getMessagePublishInfo();
             String routingKey = AMQShortString.toString(info.getRoutingKey());
+            String exchangeName = AMQShortString.toString(info.getExchange());
 
             try
             {
@@ -395,7 +396,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 {
                     _confirmedMessageCounter++;
                 }
-                Runnable finallyAction = null;
 
                 long bodySize = _currentMessage.getSize();
                 long timestamp = contentHeader.getProperties().getTimestamp();
@@ -424,8 +424,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     final StoredMessage<MessageMetaData> storedMessage = handle.allContentAdded();
 
                     final AMQMessage amqMessage = createAMQMessage(storedMessage);
-                    MessageReference reference = amqMessage.newReference();
-                    try
+                    try (MessageReference reference = amqMessage.newReference())
                     {
 
                         _currentMessage = null;
@@ -464,7 +463,58 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                         int enqueues = result.send(_transaction, immediate ? _immediateAction : null);
                         if (enqueues == 0)
                         {
-                            finallyAction = handleUnroutableMessage(amqMessage);
+                            boolean mandatory = amqMessage.isMandatory();
+
+                            boolean closeOnNoRoute = _connection.isCloseWhenNoRoute();
+                            if (_logger.isDebugEnabled())
+                            {
+                                _logger.debug("Unroutable message exchange='{}', routing key='{}', mandatory={},"
+                                        + " transactionalSession={}, closeOnNoRoute={}, confirmOnPublish={}",
+                                        exchangeName,
+                                        routingKey,
+                                        mandatory,
+                                        isTransactional(),
+                                        closeOnNoRoute,
+                                        _confirmOnPublish);
+                            }
+
+                            int errorCode = ErrorCodes.NO_ROUTE;
+                            String errorMessage = String.format("No route for message with exchange '%s' and routing key '%s'",
+                                                                exchangeName,
+                                                                routingKey);
+                            if (result.containsReject(RejectType.LIMIT_EXCEEDED))
+                            {
+                                errorCode = ErrorCodes.RESOURCE_ERROR;
+                                errorMessage = errorMessage + ":" + result.getRejectReason();
+                            }
+
+                            if (mandatory
+                                && isTransactional()
+                                && !_confirmOnPublish
+                                && _connection.isCloseWhenNoRoute())
+                            {
+                                _connection.sendConnectionClose(errorCode, errorMessage, _channelId);
+                            }
+                            else
+                            {
+                                if (mandatory || amqMessage.isImmediate())
+                                {
+                                    if (_confirmOnPublish)
+                                    {
+                                        _connection.writeFrame(new AMQFrame(_channelId,
+                                                                            new BasicNackBody(_confirmedMessageCounter,
+                                                                                              false,
+                                                                                              false)));
+                                    }
+                                    _transaction.addPostTransactionAction(new WriteReturnAction(errorCode,
+                                                                                                errorMessage,
+                                                                                                amqMessage));
+                                }
+                                else
+                                {
+                                    message(ExchangeMessages.DISCARDMSG(exchangeName, routingKey));
+                                }
+                            }
                         }
                         else
                         {
@@ -476,17 +526,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                             }
                             incrementOutstandingTxnsIfNecessary();
                         }
-
                     }
-                    finally
-                    {
-                        reference.release();
-                        if (finallyAction != null)
-                        {
-                            finallyAction.run();
-                        }
-                    }
-
                 }
                 finally
                 {
@@ -501,70 +541,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
         }
 
-    }
-
-    /**
-     * Either throws a {@link AMQConnectionException} or returns the message
-     *
-     * Pre-requisite: the current message is judged to have no destination queues.
-     *
-     * @throws AMQConnectionException if the message is mandatory close-on-no-route
-     * @see AMQPConnection_0_8Impl#isCloseWhenNoRoute()
-     */
-    private Runnable handleUnroutableMessage(AMQMessage message)
-    {
-        boolean mandatory = message.isMandatory();
-
-        String exchangeName = AMQShortString.toString(message.getMessagePublishInfo().getExchange());
-        String routingKey = AMQShortString.toString(message.getMessagePublishInfo().getRoutingKey());
-
-        final String description = String.format(
-                "[Exchange: %s, Routing key: %s]",
-                exchangeName,
-                routingKey);
-
-        boolean closeOnNoRoute = _connection.isCloseWhenNoRoute();
-        Runnable returnVal = null;
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug(String.format(
-                    "Unroutable message %s, mandatory=%s, transactionalSession=%s, closeOnNoRoute=%s",
-                    description, mandatory, isTransactional(), closeOnNoRoute));
-        }
-
-        if (mandatory && isTransactional() && !_confirmOnPublish && _connection.isCloseWhenNoRoute())
-        {
-            returnVal = new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                _connection.sendConnectionClose(ErrorCodes.NO_ROUTE,
-                                        "No route for message " + description, _channelId);
-
-                            }
-                        };
-        }
-        else
-        {
-            if (mandatory || message.isImmediate())
-            {
-                if(_confirmOnPublish)
-                {
-                    _connection.writeFrame(new AMQFrame(_channelId, new BasicNackBody(_confirmedMessageCounter, false, false)));
-                }
-                _transaction.addPostTransactionAction(new WriteReturnAction(ErrorCodes.NO_ROUTE,
-                                                                            "No Route for message "
-                                                                            + description,
-                                                                            message));
-            }
-            else
-            {
-
-                message(ExchangeMessages.DISCARDMSG(exchangeName, routingKey));
-            }
-        }
-        return returnVal;
     }
 
     private void publishContentBody(ContentBody contentBody)

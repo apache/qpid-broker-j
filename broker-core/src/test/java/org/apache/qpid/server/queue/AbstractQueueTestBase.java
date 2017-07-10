@@ -47,11 +47,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.TestConsumerTarget;
 import org.apache.qpid.server.exchange.DirectExchange;
 import org.apache.qpid.server.exchange.DirectExchangeImpl;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageInstance;
@@ -64,9 +64,9 @@ import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
-import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.queue.AbstractQueue.QueueEntryFilter;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -952,7 +952,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         message = createMessage(new Long(27), 20, 10);
         result = queue.route(message, message.getInitialRoutingAddress(), null);
-        assertTrue("Result should include not accepting route", result.hasNotAcceptingRoutableQueue());
+        assertTrue("Result should include not accepting route", result.isRejected());
 
         int headerSize = 20;
         int payloadSize = 10;
@@ -965,7 +965,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         message = createMessage(new Long(id), headerSize, payloadSize);
         result = queue.route(message, message.getInitialRoutingAddress(), null);
-        assertTrue("Result should include not accepting route", result.hasNotAcceptingRoutableQueue());
+        assertTrue("Result should include not accepting route", result.isRejected());
     }
 
     public void testAlternateBindingValidationRejectsNonExistingDestination()
@@ -1053,6 +1053,63 @@ abstract class AbstractQueueTestBase extends QpidTestCase
             //pass
         }
         assertFalse(_queue.isDeleted());
+    }
+
+    public void testMoveMessages() throws Exception
+    {
+        doMoveOrCopyMessageTest(true);
+    }
+
+    public void testCopyMessages() throws Exception
+    {
+        doMoveOrCopyMessageTest(false);
+    }
+
+    private void doMoveOrCopyMessageTest(final boolean move)
+    {
+        Queue target = _virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_target"));
+
+        _queue.enqueue(createMessage(1L), null, null);
+        _queue.enqueue(createMessage(2L), null, null);
+        _queue.enqueue(createMessage(3L), null, null);
+
+        assertEquals("Unexpected number of messages on source queue", 3, _queue.getQueueDepthMessages());
+        assertEquals("Unexpected number of messages on target queue before test", 0, target.getQueueDepthMessages());
+
+        if (move)
+        {
+            _queue.moveMessages(target, null, "true = true", -1);
+        }
+        else
+        {
+            _queue.copyMessages(target, null, "true = true", -1);
+
+        }
+
+        assertEquals("Unexpected number of messages on source queue after test", move ? 0 : 3, _queue.getQueueDepthMessages());
+        assertEquals("Unexpected number of messages on target queue after test", 3, target.getQueueDepthMessages());
+    }
+
+    public void testCopyMessageRespectsQueueSizeLimits() throws Exception
+    {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(Queue.NAME, getTestName() + "_target");
+        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 2);
+
+        Queue target = _virtualHost.createChild(Queue.class, attributes);
+
+        _queue.enqueue(createMessage(1L), null, null);
+        _queue.enqueue(createMessage(2L), null, null);
+        _queue.enqueue(createMessage(3L), null, null);
+
+        assertEquals("Unexpected number of messages on source queue", 3, _queue.getQueueDepthMessages());
+        assertEquals("Unexpected number of messages on target queue before test", 0, target.getQueueDepthMessages());
+
+        _queue.copyMessages(target, null, "true = true", -1);
+
+        assertEquals("Unexpected number of messages on source queue after test", 3, _queue.getQueueDepthMessages());
+        assertEquals("Unexpected number of messages on target queue after test", 2, target.getQueueDepthMessages());
     }
 
     private long getExpirationOnQueue(final Queue<?> queue, long arrivalTime, long expiration)

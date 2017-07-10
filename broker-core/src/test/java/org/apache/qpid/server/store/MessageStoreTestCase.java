@@ -147,7 +147,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
 
     }
 
-    public void enqueueMessage(final StoredMessage<TestMessageMetaData> message, final String queueName)
+    private void enqueueMessage(final StoredMessage<TestMessageMetaData> message, final String queueName)
     {
         Transaction txn = _store.newTransaction();
         txn.enqueueMessage(new TransactionLogResource()
@@ -417,6 +417,19 @@ public abstract class MessageStoreTestCase extends QpidTestCase
         assertNull(retrievedMessageRef.get());
     }
 
+    public void testMessageDeleted() throws Exception
+    {
+        MessageStore.MessageDeleteListener listener = mock(MessageStore.MessageDeleteListener.class);
+        _store.addMessageDeleteListener(listener);
+
+        long messageId = 1;
+        int contentSize = 0;
+        final MessageHandle<TestMessageMetaData> messageHandle = _store.addMessage(new TestMessageMetaData(messageId, contentSize));
+        StoredMessage<TestMessageMetaData> message = messageHandle.allContentAdded();
+        message.remove();
+
+        verify(listener, times(1)).messageDeleted(message);
+    }
 
     private TransactionLogResource createTransactionLogResource(UUID queueId)
     {

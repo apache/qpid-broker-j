@@ -956,9 +956,9 @@ public class ServerSession extends SessionInvoker
         return isCommandsFull(id);
     }
 
-    public int enqueue(final MessageTransferMessage message,
-                       final InstanceProperties instanceProperties,
-                       final MessageDestination exchange)
+    RoutingResult<MessageTransferMessage> enqueue(final MessageTransferMessage message,
+                final InstanceProperties instanceProperties,
+                final MessageDestination exchange)
     {
         if(_outstandingCredit.get() != UNLIMITED_CREDIT
                 && _outstandingCredit.decrementAndGet() == (Integer.MAX_VALUE - PRODUCER_CREDIT_TOPUP_THRESHOLD))
@@ -970,10 +970,10 @@ public class ServerSession extends SessionInvoker
         final long arrivalTime = message.getArrivalTime();
         final RoutingResult<MessageTransferMessage> result =
                 exchange.route(message, message.getInitialRoutingAddress(), instanceProperties);
-        int enqueues = result.send(_transaction, null);
+        result.send(_transaction, null);
         getAMQPConnection().registerMessageReceived(message.getSize(), arrivalTime);
         incrementOutstandingTxnsIfNecessary();
-        return enqueues;
+        return result;
     }
 
     public void sendMessage(MessageTransfer xfr,

@@ -92,6 +92,7 @@ import org.apache.qpid.server.message.MessageInfoImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSender;
+import org.apache.qpid.server.message.RejectType;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
@@ -108,6 +109,7 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
+import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -240,7 +242,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @ManagedAttributeField
     private volatile boolean _holdOnPublishEnabled;
 
-    @ManagedAttributeField
+    @ManagedAttributeField(afterSet = "postSetOverflowPolicy")
     private OverflowPolicy _overflowPolicy;
     @ManagedAttributeField
     private long _maximumQueueDepthMessages;
@@ -264,7 +266,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
     private AdvanceConsumersTask _queueHouseKeepingTask;
     private volatile int _bindingCount;
-    private volatile OverflowPolicyHandler _overflowPolicyHandler;
+    private volatile RejectPolicyHandler _rejectPolicyHandler;
+    private volatile OverflowPolicyHandler _postEnqueueOverflowPolicyHandler;
     private long _flowToDiskThreshold;
     private volatile MessageDestination _alternateBindingDestination;
 
@@ -357,8 +360,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _arguments = Collections.synchronizedMap(arguments);
 
         _logSubject = new QueueLogSubject(this);
-
-        _overflowPolicyHandler = createOverflowPolicyHandler(getOverflowPolicy());
 
         _queueHouseKeepingTask = new AdvanceConsumersTask();
         Subject activeSubject = Subject.getSubject(AccessController.getContext());
@@ -574,6 +575,48 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         updateAlertChecks();
+    }
+
+    private void createOverflowPolicyHandler(final OverflowPolicy overflowPolicy)
+    {
+        MessageStore messageStore = getVirtualHost().getMessageStore();
+
+        if (overflowPolicy == OverflowPolicy.REJECT)
+        {
+            _postEnqueueOverflowPolicyHandler = new NoneOverflowPolicyHandler();
+            _rejectPolicyHandler = new RejectPolicyHandler(this);
+            messageStore.addMessageDeleteListener(_rejectPolicyHandler);
+        }
+        else
+        {
+            if (_rejectPolicyHandler != null)
+            {
+                messageStore.removeMessageDeleteListener(_rejectPolicyHandler);
+                _rejectPolicyHandler = null;
+            }
+
+            OverflowPolicyHandler overflowPolicyHandler;
+            switch (overflowPolicy)
+            {
+                case RING:
+                    overflowPolicyHandler = new RingOverflowPolicyHandler(this, getEventLogger());
+                    break;
+                case PRODUCER_FLOW_CONTROL:
+                    overflowPolicyHandler = new ProducerFlowControlOverflowPolicyHandler(this, getEventLogger());
+                    break;
+                case FLOW_TO_DISK:
+                    overflowPolicyHandler = new FlowToDiskOverflowPolicyHandler(this);
+                    break;
+                case NONE:
+                    overflowPolicyHandler = new NoneOverflowPolicyHandler();
+                    break;
+                default:
+                    throw new IllegalStateException(String.format("Overflow policy '%s' is not implemented",
+                                                                  overflowPolicy.name()));
+            }
+
+            _postEnqueueOverflowPolicyHandler = overflowPolicyHandler;
+        }
     }
 
     protected LogMessage getCreatedLogMessage()
@@ -1251,7 +1294,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 action.performAction(entry);
             }
-            _overflowPolicyHandler.checkOverflow(entry);
+
+            RejectPolicyHandler rejectPolicyHandler = _rejectPolicyHandler;
+            if (rejectPolicyHandler != null)
+            {
+                rejectPolicyHandler.postEnqueue(entry);
+            }
+            _postEnqueueOverflowPolicyHandler.checkOverflow(entry);
         }
 
     }
@@ -1841,7 +1890,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public void checkCapacity()
     {
-        _overflowPolicyHandler.checkOverflow(null);
+        _postEnqueueOverflowPolicyHandler.checkOverflow(null);
     }
 
     void notifyConsumers(QueueEntry entry)
@@ -2609,15 +2658,31 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         RoutingResult<M> result = new RoutingResult<>(message);
         if (!message.isResourceAcceptable(this))
         {
-            result.addNotAcceptingRoutableQueue(this, String.format("Not accepted by queue '%s'", getName()));
+            result.addRejectReason(this,
+                                   RejectType.PRECONDITION_FAILED,
+                                   String.format("Not accepted by queue '%s'", getName()));
         }
         else if (message.isReferenced(this))
         {
-            result.addNotAcceptingRoutableQueue(this, String.format("Already enqueued on queue '%s'", getName()));
+            result.addRejectReason(this,
+                                   RejectType.ALREADY_ENQUEUED,
+                                   String.format("Already enqueued on queue '%s'", getName()));
         }
         else
         {
-            result.addQueue(this);
+            try
+            {
+                RejectPolicyHandler rejectPolicyHandler = _rejectPolicyHandler;
+                if (rejectPolicyHandler != null)
+                {
+                    rejectPolicyHandler.checkReject(message);
+                }
+                result.addQueue(this);
+            }
+            catch (MessageUnacceptableException e)
+            {
+                result.addRejectReason(this, RejectType.LIMIT_EXCEEDED, e.getMessage());
+            }
         }
         return result;
     }
@@ -2946,9 +3011,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public boolean isQueueFlowStopped()
     {
-        if (_overflowPolicyHandler instanceof ProducerFlowControlOverflowPolicyHandler)
+        if (_postEnqueueOverflowPolicyHandler instanceof ProducerFlowControlOverflowPolicyHandler)
         {
-            return ((ProducerFlowControlOverflowPolicyHandler)_overflowPolicyHandler).isQueueFlowStopped();
+            return ((ProducerFlowControlOverflowPolicyHandler) _postEnqueueOverflowPolicyHandler).isQueueFlowStopped();
         }
         return false;
     }
@@ -2995,31 +3060,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     }
 
-    @Override
-    protected void changeAttributes(Map<String,Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException
+    @SuppressWarnings("ignore")
+    private void postSetOverflowPolicy()
     {
-        OverflowPolicy oldOverflowPolicy = getOverflowPolicy();
-        super.changeAttributes(attributes);
-
-        OverflowPolicy newOverflowPolicy = getOverflowPolicy();
-        if (oldOverflowPolicy != newOverflowPolicy)
-        {
-            _overflowPolicyHandler = createOverflowPolicyHandler(newOverflowPolicy);
-            _overflowPolicyHandler.checkOverflow(null);
-        }
-    }
-
-    private OverflowPolicyHandler createOverflowPolicyHandler(final OverflowPolicy overflowPolicy)
-    {
-        OverflowPolicyHandlerFactory factory =
-                new QpidServiceLoader().getInstancesByType(OverflowPolicyHandlerFactory.class)
-                                       .get(String.valueOf(overflowPolicy));
-        if (factory == null)
-        {
-            throw new IllegalStateException(String.format("Factory for overflow policy '%s' is not found",
-                                                          overflowPolicy.name()));
-        }
-        return factory.create(this, getEventLogger());
+        createOverflowPolicyHandler(getOverflowPolicy());
+        _postEnqueueOverflowPolicyHandler.checkOverflow(null);
     }
 
     private static final String[] NON_NEGATIVE_NUMBERS = {

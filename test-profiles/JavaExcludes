@@ -20,8 +20,5 @@
 // QPID-1823: this takes ages to run
 org.apache.qpid.client.SessionCreateTest#*
 
-//QPID-2845: The queue reject policy type used by the C++ broker is not currently supported by the Apache Qpid Broker for Java
-org.apache.qpid.test.client.queue.QueuePolicyTest#testRejectPolicy
-
 // Test runs for 2 minutes testing that subtraction works
 org.apache.qpid.server.util.SerialTest#testCorollary1

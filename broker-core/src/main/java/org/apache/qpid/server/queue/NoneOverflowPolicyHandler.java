@@ -21,10 +21,9 @@ package org.apache.qpid.server.queue;
 
 public class NoneOverflowPolicyHandler implements OverflowPolicyHandler
 {
+
     @Override
     public void checkOverflow(final QueueEntry newlyEnqueued)
     {
-        // noop
     }
-
 }

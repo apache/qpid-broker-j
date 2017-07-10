@@ -23,30 +23,25 @@ package org.apache.qpid.server.queue;
 import java.util.List;
 
 import org.apache.qpid.server.filter.MessageFilter;
-import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
-public class MoveMessagesTransaction extends QueueEntryTransaction
+public class MoveMessagesTransaction extends QueueSizeLimitRespectingTransaction
 {
-    private final Queue _destinationQueue;
-
-    public MoveMessagesTransaction(Queue sourceQueue,
-                                   List<Long> messageIds,
-                                   Queue destinationQueue,
-                                   final MessageFilter filter, final int limit)
+    MoveMessagesTransaction(Queue sourceQueue,
+                            List<Long> messageIds,
+                            Queue destinationQueue,
+                            final MessageFilter filter,
+                            final int limit)
     {
-        super(sourceQueue, messageIds, filter, limit);
-        _destinationQueue = destinationQueue;
+        super(sourceQueue, messageIds, destinationQueue, filter, limit);
     }
 
-    @Override
-    protected void updateEntry(QueueEntry entry, QueueManagingVirtualHost.Transaction txn)
+
+    void performOperation(final QueueEntry entry,
+                          final QueueManagingVirtualHost.Transaction txn,
+                          final Queue destinationQueue)
     {
-        ServerMessage msg = entry.getMessage();
-        if(msg != null && !msg.isReferenced(_destinationQueue))
-        {
-            txn.move(entry, _destinationQueue);
-        }
+        txn.move(entry, destinationQueue);
     }
 }

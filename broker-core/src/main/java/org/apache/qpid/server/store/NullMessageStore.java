@@ -198,4 +198,16 @@ public abstract class NullMessageStore implements MessageStore, DurableConfigura
     {
 
     }
+
+    @Override
+    public void addMessageDeleteListener(final MessageDeleteListener listener)
+    {
+
+    }
+
+    @Override
+    public void removeMessageDeleteListener(final MessageDeleteListener listener)
+    {
+
+    }
 }

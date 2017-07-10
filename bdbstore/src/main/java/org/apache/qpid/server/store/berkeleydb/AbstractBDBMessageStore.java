@@ -60,7 +60,6 @@ import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.txn.Xid;
 import org.apache.qpid.server.store.berkeleydb.entry.PreparedTransaction;
 import org.apache.qpid.server.store.berkeleydb.entry.QueueEntryKey;
 import org.apache.qpid.server.store.berkeleydb.tuple.ByteBufferBinding;
@@ -71,6 +70,7 @@ import org.apache.qpid.server.store.berkeleydb.tuple.XidBinding;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
+import org.apache.qpid.server.txn.Xid;
 import org.apache.qpid.server.util.CachingUUIDFactory;
 
 
@@ -107,6 +107,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     private final AtomicLong _inMemorySize = new AtomicLong();
     private final AtomicLong _bytesEvacuatedFromMemory = new AtomicLong();
     private final Set<StoredBDBMessage<?>> _messages = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<MessageDeleteListener> _messageDeleteListeners = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     @Override
     public void upgradeStoreStructure() throws StoreException
@@ -1229,6 +1230,13 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             }
             _messageDataRef = null;
             _inMemorySize.addAndGet(-bytesCleared);
+            if (!_messageDeleteListeners.isEmpty())
+            {
+                for (final MessageDeleteListener messageDeleteListener : _messageDeleteListeners)
+                {
+                    messageDeleteListener.messageDeleted(this);
+                }
+            }
         }
 
         @Override
@@ -1404,6 +1412,18 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             return new BDBStoredXidRecord(format, globalId, branchId);
         }
 
+    }
+
+    @Override
+    public void addMessageDeleteListener(final MessageDeleteListener listener)
+    {
+        _messageDeleteListeners.add(listener);
+    }
+
+    @Override
+    public void removeMessageDeleteListener(final MessageDeleteListener listener)
+    {
+        _messageDeleteListeners.remove(listener);
     }
 
     private static class BDBStoredXidRecord implements org.apache.qpid.server.store.Transaction.StoredXidRecord

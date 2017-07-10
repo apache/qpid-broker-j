@@ -91,6 +91,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private final AtomicLong _inMemorySize = new AtomicLong();
     private final AtomicLong _bytesEvacuatedFromMemory = new AtomicLong();
     private final Set<StoredJDBCMessage<?>> _messages = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<MessageDeleteListener> _messageDeleteListeners = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     protected abstract boolean isMessageStoreOpen();
 
@@ -1332,6 +1333,18 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
     }
 
+    @Override
+    public void addMessageDeleteListener(final MessageDeleteListener listener)
+    {
+        _messageDeleteListeners.add(listener);
+    }
+
+    @Override
+    public void removeMessageDeleteListener(final MessageDeleteListener listener)
+    {
+        _messageDeleteListeners.remove(listener);
+    }
+
     private class StoredJDBCMessage<T extends StorableMessageMetaData> implements StoredMessage<T>, MessageHandle<T>
     {
 
@@ -1568,6 +1581,13 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             }
             _messageDataRef = null;
             _inMemorySize.addAndGet(-bytesCleared);
+            if (!_messageDeleteListeners.isEmpty())
+            {
+                for (final MessageDeleteListener messageDeleteListener : _messageDeleteListeners)
+                {
+                    messageDeleteListener.messageDeleted(this);
+                }
+            }
         }
 
         @Override
