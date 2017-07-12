@@ -22,7 +22,7 @@ package org.apache.qpid.tck;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,15 +32,20 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,8 +63,6 @@ public class ManageQpidJMSResources
             };
     private static final String RESOURCES_JSON = "/resources.json";
 
-    private final String _managementUser;
-    private final String _managementPassword;
     private final String _virtualhostnode;
     private final String _virtualhost;
     private final HttpHost _management;
@@ -67,6 +70,8 @@ public class ManageQpidJMSResources
     private final String _queueApiClearQueueUrl;
     private final String _topicApiUrl;
     private final ObjectMapper _objectMapper;
+    private final CredentialsProvider _credentialsProvider;
+    private final HttpClientContext _httpClientContext;
 
     private enum NodeType
     {
@@ -93,8 +98,8 @@ public class ManageQpidJMSResources
         _objectMapper = new ObjectMapper();
         _objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
 
-        _managementUser = System.getProperty("tck.management-username");
-        _managementPassword = System.getProperty("tck.management-password");
+        final String managementUser = System.getProperty("tck.management-username");
+        final String managementPassword = System.getProperty("tck.management-password");
 
         _virtualhostnode = System.getProperty("tck.broker-virtualhostnode", "default");
         _virtualhost = System.getProperty("tck.broker-virtualhost", "default");
@@ -103,6 +108,9 @@ public class ManageQpidJMSResources
         _queueApiUrl = System.getProperty("tck.management-api-queue", "/api/latest/queue/%s/%s/%s");
         _queueApiClearQueueUrl = System.getProperty("tck.management-api-queue-clear", "/api/latest/queue/%s/%s/%s/clearQueue");
         _topicApiUrl = System.getProperty("tck.management-api-topic", "/api/latest/exchange/%s/%s/%s");
+
+        _credentialsProvider = getCredentialsProvider(managementUser, managementPassword);
+        _httpClientContext = getHttpClientContext(_management);
     }
 
     private void createResources() throws IOException
@@ -208,7 +216,7 @@ public class ManageQpidJMSResources
 
     private void management(final HttpEntityEnclosingRequestBase request, final Object obj) throws IOException
     {
-        StringEntity input = createStringEntity(_objectMapper.writeValueAsString(obj));
+        StringEntity input = new StringEntity(_objectMapper.writeValueAsString(obj), StandardCharsets.UTF_8);
         input.setContentType("application/json");
         request.setEntity(input);
 
@@ -219,37 +227,38 @@ public class ManageQpidJMSResources
         }
     }
 
-    private StringEntity createStringEntity(final String string)
-    {
-        try
-        {
-            return new StringEntity(string);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
     private int executeManagement(final HttpRequest httpRequest)
     {
-        try
+
+        try(CloseableHttpClient httpClient = HttpClients.custom()
+                                                        .setDefaultCredentialsProvider(_credentialsProvider)
+                                                        .build())
         {
-            final HttpClient httpClient = HttpClients.createDefault();
-
-            if (_managementUser != null && _managementPassword != null)
+            try (CloseableHttpResponse response = httpClient.execute(_management, httpRequest, _httpClientContext))
             {
-                UsernamePasswordCredentials
-                        credentials = new UsernamePasswordCredentials(_managementUser, _managementPassword);
-                httpRequest.addHeader(new BasicScheme().authenticate(credentials, httpRequest));
+                return response.getStatusLine().getStatusCode();
             }
-            final HttpResponse response = httpClient.execute(_management, httpRequest);
-
-            return response.getStatusLine().getStatusCode();
         }
-        catch (IOException | org.apache.http.auth.AuthenticationException e)
+        catch (IOException e)
         {
             throw new RuntimeException(e);
         }
     }
+
+    private HttpClientContext getHttpClientContext(final HttpHost management)
+    {
+        final BasicAuthCache authCache = new BasicAuthCache();
+        authCache.put(management, new BasicScheme());
+        HttpClientContext localContext = HttpClientContext.create();
+        localContext.setAuthCache(authCache);
+        return localContext;
+    }
+
+    private CredentialsProvider getCredentialsProvider(final String managementUser, final String managementPassword)
+    {
+        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(managementUser, managementPassword));
+        return credentialsProvider;
+    }
+
 }

@@ -1,4 +1,4 @@
-package org.apache.qpid.joramtests.admin;/*
+/*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -19,8 +19,10 @@ package org.apache.qpid.joramtests.admin;/*
  *
  */
 
+package org.apache.qpid.joramtests.admin;
+
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Hashtable;
 
 import javax.jms.ConnectionFactory;
@@ -34,13 +36,18 @@ import javax.naming.NamingException;
 
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.objectweb.jtests.jms.admin.Admin;
 
@@ -50,12 +57,11 @@ public class JavaBrokerAdmin implements Admin
     private final String _virtualhost;
 
     private final HttpHost _management;
-    private final String _managementUser;
-    private final String _managementPassword;
+    private final CredentialsProvider _credentialsProvider;
+    private final HttpClientContext _httpClientContext;
 
     private final InitialContext _context;
     private final String _queueApiUrl;
-
     private final String _topicApiUrl;
 
     public JavaBrokerAdmin() throws NamingException
@@ -63,8 +69,8 @@ public class JavaBrokerAdmin implements Admin
         final Hashtable<String, String> env = new Hashtable<>();
         _context = new InitialContext(env);
 
-        _managementUser = System.getProperty("joramtests.manangement-user", "guest");
-        _managementPassword = System.getProperty("joramtests.manangement-password", "guest");
+        final String managementUser = System.getProperty("joramtests.manangement-user", "guest");
+        final String managementPassword = System.getProperty("joramtests.manangement-password", "guest");
 
         _virtualhostnode = System.getProperty("joramtests.broker-virtualhostnode", "default");
         _virtualhost = System.getProperty("joramtests.broker-virtualhost", "default");
@@ -73,6 +79,8 @@ public class JavaBrokerAdmin implements Admin
         _queueApiUrl = System.getProperty("joramtests.manangement-api-queue", "/api/latest/queue/%s/%s/%s");
         _topicApiUrl = System.getProperty("joramtests.manangement-api-topic", "/api/latest/exchange/%s/%s/%s");
 
+        _credentialsProvider = getCredentialsProvider(managementUser, managementPassword);
+        _httpClientContext = getHttpClientContext(_management);
     }
 
 
@@ -85,7 +93,6 @@ public class JavaBrokerAdmin implements Admin
     @Override
     public Context createContext() throws NamingException
     {
-
         return _context;
     }
 
@@ -202,7 +209,7 @@ public class JavaBrokerAdmin implements Admin
     {
         HttpPut put = new HttpPut(String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name));
 
-        StringEntity input = createStringEntity("{}");
+        StringEntity input = new StringEntity("{}", StandardCharsets.UTF_8);
         input.setContentType("application/json");
         put.setEntity(input);
 
@@ -213,7 +220,7 @@ public class JavaBrokerAdmin implements Admin
     {
         HttpPut put = new HttpPut(String.format(_topicApiUrl, _virtualhostnode, _virtualhost, name));
 
-        StringEntity input = createStringEntity("{\"type\" : \"fanout\"}");
+        StringEntity input = new StringEntity("{\"type\" : \"fanout\"}", StandardCharsets.UTF_8);
         input.setContentType("application/json");
 
         put.setEntity(input);
@@ -233,44 +240,41 @@ public class JavaBrokerAdmin implements Admin
         executeManagement(delete);
     }
 
-    private StringEntity createStringEntity(final String string)
-    {
-        try
-        {
-            return new StringEntity(string);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-
     private void executeManagement(final HttpRequest httpRequest)
     {
-        try
+        try(CloseableHttpClient httpClient = HttpClients.custom().setDefaultCredentialsProvider(_credentialsProvider).build())
         {
-            UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(_managementUser, _managementPassword);
-
-            final HttpClient httpClient = HttpClients.createDefault();
-
-
-            httpRequest.addHeader(new BasicScheme().authenticate(credentials, httpRequest));
-            final HttpResponse response = httpClient.execute(_management, httpRequest);
-
-
-            int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode != 200 && statusCode != 201)
+            try (CloseableHttpResponse response = httpClient.execute(_management, httpRequest, _httpClientContext))
             {
-                throw new RuntimeException(String.format("Failed : HTTP error code : %d  status line : %s", statusCode,
-                                                         response.getStatusLine()));
-            }
 
+                int statusCode = response.getStatusLine().getStatusCode();
+                if (statusCode != 200 && statusCode != 201)
+                {
+                    throw new RuntimeException(String.format("Failed : HTTP error code : %d  status line : %s",
+                                                             statusCode,
+                                                             response.getStatusLine()));
+                }
+            }
         }
-        catch (IOException | org.apache.http.auth.AuthenticationException e)
+        catch (IOException e)
         {
             throw new RuntimeException(e);
         }
     }
 
+    private HttpClientContext getHttpClientContext(final HttpHost management)
+    {
+        final BasicAuthCache authCache = new BasicAuthCache();
+        authCache.put(management, new BasicScheme());
+        HttpClientContext localContext = HttpClientContext.create();
+        localContext.setAuthCache(authCache);
+        return localContext;
+    }
+
+    private CredentialsProvider getCredentialsProvider(final String managementUser, final String managementPassword)
+    {
+        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(managementUser, managementPassword));
+        return credentialsProvider;
+    }
 }

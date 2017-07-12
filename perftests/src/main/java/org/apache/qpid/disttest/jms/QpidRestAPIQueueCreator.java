@@ -21,9 +21,9 @@ package org.apache.qpid.disttest.jms;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,17 +40,20 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,17 +70,17 @@ public class QpidRestAPIQueueCreator implements QueueCreator
     private static final TypeReference<List<HashMap<String, Object>>> MAP_TYPE_REFERENCE = new TypeReference<List<HashMap<String,Object>>>(){};
 
     private final HttpHost _management;
-    private final String _managementUser;
-    private final String _managementPassword;
     private final String _virtualhostnode;
     private final String _virtualhost;
     private final String _queueApiUrl;
     private final String _brokerApiUrl;
 
+    private final CredentialsProvider _credentialsProvider;
+
     public QpidRestAPIQueueCreator()
     {
-        _managementUser = System.getProperty("perftests.manangement-user", "guest");
-        _managementPassword = System.getProperty("perftests.manangement-password", "guest");
+        final String managementUser = System.getProperty("perftests.manangement-user", "guest");
+        final String managementPassword = System.getProperty("perftests.manangement-password", "guest");
 
         _virtualhostnode = System.getProperty("perftests.broker-virtualhostnode", "default");
         _virtualhost = System.getProperty("perftests.broker-virtualhost", "default");
@@ -85,12 +88,14 @@ public class QpidRestAPIQueueCreator implements QueueCreator
         _management = HttpHost.create(System.getProperty("perftests.manangement-url", "http://localhost:8080"));
         _queueApiUrl = System.getProperty("perftests.manangement-api-queue", "/api/latest/queue/%s/%s/%s");
         _brokerApiUrl = System.getProperty("perftests.manangement-api-broker", "/api/latest/broker");
+
+        _credentialsProvider = getCredentialsProvider(managementUser, managementPassword);
     }
 
     @Override
     public void createQueues(Connection connection, Session session, List<QueueConfig> configs)
     {
-        HttpClientContext context = HttpClientContext.create();
+        HttpClientContext context = getHttpClientContext(_management);
 
         for (QueueConfig queueConfig : configs)
         {
@@ -102,7 +107,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
     @Override
     public void deleteQueues(Connection connection, Session session, List<QueueConfig> configs)
     {
-        HttpClientContext context = HttpClientContext.create();
+        HttpClientContext context = getHttpClientContext(_management);
 
         for (QueueConfig queueConfig : configs)
         {
@@ -147,7 +152,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
     @Override
     public String getProviderVersion(final Connection connection)
     {
-        HttpClientContext context = HttpClientContext.create();
+        HttpClientContext context = getHttpClientContext(_management);
 
         final Map<String, Object> stringObjectMap = managementQueryBroker(context);
         return stringObjectMap == null || stringObjectMap.get("productVersion") == null ? null : String.valueOf(stringObjectMap.get("productVersion"));
@@ -240,14 +245,14 @@ public class QpidRestAPIQueueCreator implements QueueCreator
     {
         HttpGet get = new HttpGet(_brokerApiUrl);
         final List<Map<String, Object>> maps = executeManagement(get, context);
-        return maps.isEmpty() ? Collections.<String, Object>emptyMap() : maps.get(0);
+        return maps.isEmpty() ? Collections.emptyMap() : maps.get(0);
     }
 
     private void managementCreateQueue(final String name, final HttpClientContext context)
     {
         HttpPut put = new HttpPut(String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name));
 
-        StringEntity input = createStringEntity("{}");
+        StringEntity input = new StringEntity("{}", StandardCharsets.UTF_8);
         input.setContentType("application/json");
         put.setEntity(input);
 
@@ -260,30 +265,13 @@ public class QpidRestAPIQueueCreator implements QueueCreator
         executeManagement(delete, context);
     }
 
-    private StringEntity createStringEntity(final String string)
-    {
-        try
-        {
-            return new StringEntity(string);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
     private List<Map<String, Object>> executeManagement(final HttpRequest httpRequest, final HttpClientContext context)
     {
-        try
+        try(CloseableHttpClient httpClient = HttpClients.custom()
+                                                        .setDefaultCredentialsProvider(_credentialsProvider)
+                                                        .build();
+            CloseableHttpResponse response = httpClient.execute(_management, httpRequest, context))
         {
-            UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(_managementUser, _managementPassword);
-
-            final HttpClient httpClient = HttpClients.createDefault();
-
-            httpRequest.addHeader(new BasicScheme().authenticate(credentials, httpRequest));
-            final HttpResponse response = httpClient.execute(_management, httpRequest, context);
-
-
             int statusCode = response.getStatusLine().getStatusCode();
             if (statusCode != 200 && statusCode != 201)
             {
@@ -305,9 +293,26 @@ public class QpidRestAPIQueueCreator implements QueueCreator
             return null;
 
         }
-        catch (IOException | org.apache.http.auth.AuthenticationException e)
+        catch (IOException e)
         {
             throw new RuntimeException(e);
         }
     }
+
+    private HttpClientContext getHttpClientContext(final HttpHost management)
+    {
+        final BasicAuthCache authCache = new BasicAuthCache();
+        authCache.put(management, new BasicScheme());
+        HttpClientContext localContext = HttpClientContext.create();
+        localContext.setAuthCache(authCache);
+        return localContext;
+    }
+
+    private CredentialsProvider getCredentialsProvider(final String managementUser, final String managementPassword)
+    {
+        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(managementUser, managementPassword));
+        return credentialsProvider;
+    }
+
 }
