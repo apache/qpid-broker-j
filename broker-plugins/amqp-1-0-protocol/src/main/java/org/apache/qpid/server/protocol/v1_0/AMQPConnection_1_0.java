@@ -49,6 +49,10 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
     @ManagedContextDefault(name = CONNECTION_SESSION_CREDIT_WINDOW_SIZE)
     int DEFAULT_CONNECTION_SESSION_CREDIT_WINDOW_SIZE = 8192;
 
+    String SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE = "connection.sendSaslFinalResponseAsChallenge";
+    @ManagedContextDefault(name = SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE)
+    boolean DEFAULT_SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE = true;
+
     Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
     Symbol SHARED_SUBSCRIPTIONS = Symbol.valueOf("SHARED-SUBS");
 
@@ -85,4 +89,7 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
     IdentifiedTransaction createIdentifiedTransaction();
     ServerTransaction getTransaction(int txnId);
     void removeTransaction(int txnId);
+
+    @DerivedAttribute(description = "If true send a final SASL challenge using a SaslChallenge performative, rather than SaslOutcome.")
+    boolean getSendSaslFinalChallengeAsChallenge();
 }

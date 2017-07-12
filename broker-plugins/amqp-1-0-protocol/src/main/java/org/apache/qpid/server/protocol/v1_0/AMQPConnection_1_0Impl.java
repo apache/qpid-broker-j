@@ -238,6 +238,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     // Multi session transactions
     private volatile ServerTransaction[] _openTransactions = new ServerTransaction[16];
+    private volatile boolean _sendSaslFinalChallengeAsChallenge;
 
     AMQPConnection_1_0Impl(final Broker<?> broker,
                            final ServerNetworkConnection network,
@@ -266,6 +267,13 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         _incomingIdleTimeout = 1000L * port.getHeartbeatDelay();
 
         _frameWriter = new FrameWriter(getDescribedTypeRegistry(), getSender());
+    }
+
+    @Override
+    protected void onOpen()
+    {
+        super.onOpen();
+        _sendSaslFinalChallengeAsChallenge = getContextValue(Boolean.class, AMQPConnection_1_0.SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE);
     }
 
     @Override
@@ -340,20 +348,25 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
         if (authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.SUCCESS)
         {
-            _successfulAuthenticationResult = authenticationResult;
-            if (challenge == null || challenge.length == 0)
+            final boolean finalChallenge = challenge != null && challenge.length != 0;
+            if (_sendSaslFinalChallengeAsChallenge && finalChallenge)
             {
+                continueSaslNegotiation(challenge);
+            }
+            else
+            {
+                _successfulAuthenticationResult = authenticationResult;
                 setSubject(_successfulAuthenticationResult.getSubject());
                 SaslOutcome outcome = new SaslOutcome();
                 outcome.setCode(SaslCode.OK);
+                if (finalChallenge)
+                {
+                    outcome.setAdditionalData(new Binary(challenge));
+                }
                 send(new SASLFrame(outcome), null);
                 _saslComplete = true;
                 _connectionState = ConnectionState.AWAIT_AMQP_HEADER;
                 disposeSaslNegotiator();
-            }
-            else
-            {
-                continueSaslNegotiation(challenge);
             }
         }
         else if(authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.CONTINUE)
@@ -1650,6 +1663,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
+    public boolean getSendSaslFinalChallengeAsChallenge()
+    {
+        return _sendSaslFinalChallengeAsChallenge;
+    }
+
+    @Override
     protected void addAsyncTask(final Action<? super ConnectionHandler> action)
     {
         _asyncTaskList.add(action);
@@ -1726,7 +1745,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     _connectionState));
         }
     }
-
 
     private class ProcessPendingIterator implements Iterator<Runnable>
     {
