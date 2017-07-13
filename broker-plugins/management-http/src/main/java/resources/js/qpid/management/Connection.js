@@ -135,6 +135,7 @@ define(["dojo/parser",
                         "protocol",
                         "remoteProcessPid",
                         "createdTime",
+                        "sessionCountLimit",
                         "lastIoTime",
                         "msgInRate",
                         "bytesInRate",
@@ -263,6 +264,9 @@ define(["dojo/parser",
             this.protocol.innerHTML = entities.encode(String(this.connectionData["protocol"]));
             var remoteProcessPid = this.connectionData["remoteProcessPid"];
             this.remoteProcessPid.innerHTML = entities.encode(String(remoteProcessPid ? remoteProcessPid : "N/A"));
+
+            this.sessionCountLimit.innerHTML = entities.encode(String(this.connectionData["sessionCountLimit"]));
+
             var userPreferences = this.management.userPreferences;
             this.createdTime.innerHTML = userPreferences.formatDateTime(this.connectionData["createdTime"], {
                 addOffset: true,

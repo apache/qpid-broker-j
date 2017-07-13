@@ -90,7 +90,7 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     @DerivedAttribute
     String getRemoteProcessPid();
 
-    @DerivedAttribute
+    @DerivedAttribute(description = "The actual negotiated value of session count limit")
     int getSessionCountLimit();
 
     @DerivedAttribute

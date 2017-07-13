@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQDataBlock;
 import org.apache.qpid.server.protocol.v0_8.transport.MethodRegistry;
 import org.apache.qpid.server.protocol.ProtocolVersion;
@@ -49,6 +50,9 @@ public interface AMQPConnection_0_8<C extends AMQPConnection_0_8<C>> extends AMQ
     @SuppressWarnings("unused")
     @ManagedContextDefault(name= BATCH_LIMIT)
     long DEFAULT_BATCH_LIMIT = 10L;
+
+    @DerivedAttribute(description = "The actual negotiated value of heartbeat delay.")
+    int getHeartbeatDelay();
 
     MethodRegistry getMethodRegistry();
 

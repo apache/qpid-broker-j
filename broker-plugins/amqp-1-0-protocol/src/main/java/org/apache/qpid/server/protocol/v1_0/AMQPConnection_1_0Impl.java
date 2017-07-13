@@ -182,10 +182,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     private SoleConnectionEnforcementPolicy _soleConnectionEnforcementPolicy;
 
     private static final int CONNECTION_CONTROL_CHANNEL = 0;
-
-    private static final int DEFAULT_CHANNEL_MAX = Math.min(Integer.getInteger("amqp.channel_max", 255), 0xFFFF);
-
-    private AmqpPort<?> _port;
     private SubjectCreator _subjectCreator;
 
     private int _channelMax = 0;
@@ -201,7 +197,9 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     private Session_1_0[] _receivingSessions;
     private volatile boolean _closedForOutput;
 
-    private long _idleTimeout;
+    private final long _incomingIdleTimeout;
+
+    private volatile long _outgoingIdleTimeout;
 
     private volatile ConnectionState _connectionState = ConnectionState.AWAIT_AMQP_OR_SASL_HEADER;
 
@@ -217,7 +215,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     private volatile SaslNegotiator _saslNegotiator;
     private String _localHostname;
-    private long _desiredIdleTimeout;
 
     private static final long MINIMUM_SUPPORTED_IDLE_TIMEOUT = 1000L;
 
@@ -252,9 +249,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         super(broker, network, port, transport, Protocol.AMQP_1_0, id, aggregateTicker);
 
         _subjectCreator = port.getSubjectCreator(transport.isSecure(), network.getSelectedHost());
-
-        _port = port;
-
         _properties.put(Symbol.valueOf(ServerPropertyNames.PRODUCT), CommonProperties.getProductName());
         _properties.put(Symbol.valueOf(ServerPropertyNames.VERSION), CommonProperties.getReleaseVersion());
         _properties.put(Symbol.valueOf(ServerPropertyNames.QPID_BUILD), CommonProperties.getBuildVersion());
@@ -269,7 +263,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
         setRemoteAddress(network.getRemoteAddress());
 
-        setDesiredIdleTimeout(1000L * broker.getConnection_heartBeatDelay());
+        _incomingIdleTimeout = 1000L * port.getHeartbeatDelay();
 
         _frameWriter = new FrameWriter(getDescribedTypeRegistry(), getSender());
     }
@@ -412,10 +406,18 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         setSubject(_subjectCreator.createSubjectWithGroups(user));
     }
 
-    private long getDesiredIdleTimeout()
+    @Override
+    public long getIncomingIdleTimeout()
     {
-        return _desiredIdleTimeout;
+        return _incomingIdleTimeout;
     }
+
+    @Override
+    public long getOutgoingIdleTimeout()
+    {
+        return _outgoingIdleTimeout;
+    }
+
 
     @Override
     public void receiveAttach(final int channel, final Attach attach)
@@ -612,11 +614,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         return _remoteContainerId;
     }
 
-    private void setDesiredIdleTimeout(final long desiredIdleTimeout)
-    {
-        _desiredIdleTimeout = desiredIdleTimeout;
-    }
-
     public boolean isOpen()
     {
         return _connectionState == ConnectionState.OPENED;
@@ -794,10 +791,11 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         assertState(ConnectionState.AWAIT_OPEN);
 
-        _channelMax = open.getChannelMax() == null ? DEFAULT_CHANNEL_MAX
-                : open.getChannelMax().intValue() < DEFAULT_CHANNEL_MAX
+        int channelMax = getPort().getSessionCountLimit() - 1;
+        _channelMax = open.getChannelMax() == null ? channelMax
+                : open.getChannelMax().intValue() < channelMax
                         ? open.getChannelMax().intValue()
-                        : DEFAULT_CHANNEL_MAX;
+                        : channelMax;
         if (_receivingSessions == null)
         {
             _receivingSessions = new Session_1_0[_channelMax + 1];
@@ -820,7 +818,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
         if (open.getIdleTimeOut() != null)
         {
-            _idleTimeout = open.getIdleTimeOut().longValue();
+            _outgoingIdleTimeout = open.getIdleTimeOut().longValue();
         }
         _remoteProperties = open.getProperties() == null ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(open.getProperties()));
         _remoteDesiredCapabilities = open.getDesiredCapabilities() == null ? Collections.emptySet() : Sets.newHashSet(open.getDesiredCapabilities());
@@ -845,19 +843,18 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             }
         }
 
-        if (_idleTimeout != 0L && _idleTimeout < MINIMUM_SUPPORTED_IDLE_TIMEOUT)
+        if (_outgoingIdleTimeout != 0L && _outgoingIdleTimeout < MINIMUM_SUPPORTED_IDLE_TIMEOUT)
         {
             closeConnection(ConnectionError.CONNECTION_FORCED,
                             "Requested idle timeout of "
-                            + _idleTimeout
+                            + _outgoingIdleTimeout
                             + " is too low. The minimum supported timeout is"
                             + MINIMUM_SUPPORTED_IDLE_TIMEOUT);
         }
         else
         {
-            long desiredIdleTimeout = getDesiredIdleTimeout();
-            initialiseHeartbeating(_idleTimeout / 2L, desiredIdleTimeout);
-            final NamedAddressSpace addressSpace = _port.getAddressSpace(_localHostname);
+            initialiseHeartbeating(_outgoingIdleTimeout / 2L, _incomingIdleTimeout);
+            final NamedAddressSpace addressSpace = getPort().getAddressSpace(_localHostname);
             if (addressSpace == null)
             {
                 closeConnection(AmqpError.NOT_FOUND, "Unknown hostname in connection open: '" + _localHostname + "'");
@@ -981,7 +978,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     private void populateConnectionRedirect(final NamedAddressSpace addressSpace, final Error err)
     {
-        final String redirectHost = addressSpace.getRedirectHost(_port);
+        final String redirectHost = addressSpace.getRedirectHost(getPort());
 
         if(redirectHost == null)
         {
@@ -1470,6 +1467,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         return _transportBlockedForWriting;
     }
+
     @Override
     public void setTransportBlockedForWriting(final boolean blocked)
     {
@@ -1677,7 +1675,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         open.setMaxFrameSize(UnsignedInteger.valueOf(maxFrameSize));
         // TODO - should we try to set the hostname based on the connection information?
         // open.setHostname();
-        open.setIdleTimeOut(UnsignedInteger.valueOf(_desiredIdleTimeout));
+        open.setIdleTimeOut(UnsignedInteger.valueOf(_incomingIdleTimeout));
 
         // set the offered capabilities
         if(_offeredCapabilities != null && !_offeredCapabilities.isEmpty())
@@ -1795,12 +1793,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         {
             throw new UnsupportedOperationException();
         }
-    }
-
-    @Override
-    public void initialiseHeartbeating(final long writerDelay, final long readerDelay)
-    {
-        super.initialiseHeartbeating(writerDelay, readerDelay);
     }
 
     @Override

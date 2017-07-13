@@ -84,9 +84,7 @@ define(["dojo/parser",
                                     "modelVersion",
                                     "statisticsReportingPeriod",
                                     "statisticsReportingResetEnabled",
-                                    "confidentialConfigurationEncryptionProvider",
-                                    "connection.sessionCountLimit",
-                                    "connection.heartBeatDelay"];
+                                    "confidentialConfigurationEncryptionProvider"];
 
         function Broker(kwArgs)
         {

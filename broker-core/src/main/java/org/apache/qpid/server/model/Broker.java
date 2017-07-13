@@ -53,11 +53,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String PREFERENCE_STORE_ATTRIBUTES   = "preferenceStoreAttributes";
 
     String CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT = "channel.flowControlEnforcementTimeout";
-
-    String CONNECTION_SESSION_COUNT_LIMIT = "connection.sessionCountLimit";
-    String CONNECTION_HEART_BEAT_DELAY = "connection.heartBeatDelay";
-    String CONNECTION_CLOSE_WHEN_NO_ROUTE = "connection.closeWhenNoRoute";
-
     String BROKER_FLOW_TO_DISK_THRESHOLD = "broker.flowToDiskThreshold";
     String BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD = "broker.failStartupWithErroredChild";
 
@@ -141,17 +136,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @DerivedAttribute
     int getNumberOfCores();
-
-    @ManagedAttribute( defaultValue = "256" )
-    int getConnection_sessionCountLimit();
-
-    @ManagedAttribute( defaultValue = "0", description = "The default frequency with which Broker and client will exchange heartbeat messages (in seconds). "
-                                                         + "Clients may negotiate a different heartbeat frequency or disable it altogether. "
-                                                         + "A value of 0 disables heart beating.")
-    int getConnection_heartBeatDelay();
-
-    @ManagedAttribute( defaultValue = "true" )
-    boolean getConnection_closeWhenNoRoute();
 
     @ManagedAttribute( defaultValue = "0", description = "Period (in seconds) of the statistic report.")
     int getStatisticsReportingPeriod();

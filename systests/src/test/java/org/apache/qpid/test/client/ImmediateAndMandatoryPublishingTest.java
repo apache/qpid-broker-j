@@ -18,6 +18,8 @@
  */
 package org.apache.qpid.test.client;
 
+import java.util.Collections;
+
 import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.JMSException;
@@ -28,8 +30,10 @@ import javax.jms.Session;
 import javax.jms.Topic;
 
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 /**
  * @see CloseOnNoRouteForMandatoryMessageTest for related tests
@@ -37,12 +41,17 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 public class ImmediateAndMandatoryPublishingTest extends QpidBrokerTestCase
 {
     private Connection _connection;
-    private UnroutableMessageTestExceptionListener _testExceptionListener = new UnroutableMessageTestExceptionListener();
+    private UnroutableMessageTestExceptionListener _testExceptionListener =
+            new UnroutableMessageTestExceptionListener();
 
     @Override
     public void setUp() throws Exception
     {
-        getDefaultBrokerConfiguration().setBrokerAttribute(Broker.CONNECTION_CLOSE_WHEN_NO_ROUTE, false);
+        getDefaultBrokerConfiguration().setObjectAttribute(Port.class,
+                                                           TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT,
+                                                           AmqpPort.CONTEXT,
+                                                           Collections.singletonMap(AmqpPort.CLOSE_WHEN_NO_ROUTE, "false"));
+
         super.setUp();
         _connection = getConnection();
         _connection.setExceptionListener(_testExceptionListener);
@@ -213,7 +222,7 @@ public class ImmediateAndMandatoryPublishingTest extends QpidBrokerTestCase
 
     public void testMandatoryAndImmediateSystemProperties() throws Exception
     {
-        setTestClientSystemProperty("qpid.default_mandatory","true");
+        setTestClientSystemProperty("qpid.default_mandatory", "true");
         Session session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
         // publish to non-existent topic - should get mandatory failure
@@ -225,7 +234,7 @@ public class ImmediateAndMandatoryPublishingTest extends QpidBrokerTestCase
         _testExceptionListener.assertReceivedNoRouteWithReturnedMessage(message, getTestQueueName());
 
         // now set topic specific system property to false - should no longer get mandatory failure on new producer
-        setTestClientSystemProperty("qpid.default_mandatory_topic","false");
+        setTestClientSystemProperty("qpid.default_mandatory_topic", "false");
         producer = session.createProducer(null);
         message = session.createMessage();
         producer.send(session.createTopic(getTestQueueName()), message);

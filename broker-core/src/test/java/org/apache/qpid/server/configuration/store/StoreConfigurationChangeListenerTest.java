@@ -88,8 +88,8 @@ public class StoreConfigurationChangeListenerTest extends QpidTestCase
         Broker broker = mock(Broker.class);
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.isDurable()).thenReturn(true);
-        _listener.attributeSet(broker, Broker.CONNECTION_SESSION_COUNT_LIMIT, null, 1);
-        verify(_store).update(eq(false),any(ConfiguredObjectRecord.class));
+        _listener.attributeSet(broker, Broker.DESCRIPTION, null, "test description");
+        verify(_store).update(eq(false), any(ConfiguredObjectRecord.class));
     }
 
     public void testChildAddedWhereParentManagesChildStorage()

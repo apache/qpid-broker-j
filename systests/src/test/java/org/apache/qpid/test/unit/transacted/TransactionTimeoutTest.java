@@ -20,14 +20,19 @@
  */
 package org.apache.qpid.test.unit.transacted;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.jms.DeliveryMode;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
 import javax.jms.Topic;
 
-import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Session;
+import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 /**
  * This tests the behaviour of transactional sessions when the {@code transactionTimeout} configuration
@@ -43,8 +48,15 @@ public class TransactionTimeoutTest extends TransactionTimeoutTestCase
     protected void configure() throws Exception
     {
         // switch off connection close in order to test timeout on publishing of unroutable messages
-        getDefaultBrokerConfiguration().setBrokerAttribute(Broker.CONNECTION_CLOSE_WHEN_NO_ROUTE, false);
-        setTestSystemProperty(Session.TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD, "100");
+        Map<String, String> context = new HashMap<>();
+        context.put(AmqpPort.CLOSE_WHEN_NO_ROUTE, "false");
+        context.put(Session.TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD, "100");
+
+        getDefaultBrokerConfiguration().setObjectAttribute(Port.class,
+                                                           TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT,
+                                                           AmqpPort.CONTEXT,
+                                                           context);
+
 
         if (getName().contains("ProducerIdle"))
         {

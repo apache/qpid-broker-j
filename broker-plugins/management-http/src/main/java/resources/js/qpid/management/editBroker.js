@@ -59,9 +59,7 @@ define(["dojox/html/entities",
               util,
               template)
     {
-        var numericFieldNames = ["statisticsReportingPeriod",
-                                 "connection.sessionCountLimit",
-                                 "connection.heartBeatDelay"];
+        var numericFieldNames = ["statisticsReportingPeriod"];
 
         var brokerEditor = {
             init: function ()

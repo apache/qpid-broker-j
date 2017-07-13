@@ -26,6 +26,7 @@ import javax.security.auth.Subject;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.ContextProvider;
+import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -57,4 +58,8 @@ public interface AMQPConnection_0_10<C extends AMQPConnection_0_10<C>> extends A
     AccessControlContext getAccessControllerContext();
 
     void performDeleteTasks();
+
+    @DerivedAttribute(description = "The actual negotiated value of heartbeat delay.")
+    int getHeartbeatDelay();
+
 }

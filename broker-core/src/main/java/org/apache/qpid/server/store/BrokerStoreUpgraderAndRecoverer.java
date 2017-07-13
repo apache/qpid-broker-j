@@ -552,6 +552,13 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
     private class Upgrader_6_1_to_7_0 extends StoreUpgraderPhase
     {
 
+        private Map<String,String> BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT = new HashMap<>();
+        {
+            BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT.put("connection.sessionCountLimit", "qpid.port.sessionCountLimit");
+            BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT.put("connection.heartBeatDelay", "qpid.port.heartbeatDelay");
+            BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT.put("connection.closeWhenNoRoute", "qpid.port.closeWhenNoRoute");
+        };
+
         public Upgrader_6_1_to_7_0()
         {
             super("modelVersion", "6.1", "7.0");
@@ -562,6 +569,34 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         {
             if (record.getType().equals("Broker"))
             {
+                Map<String, Object> attributes = new HashMap<>(record.getAttributes());
+                Map<String, String> additionalContext = new HashMap<>();
+                for (String attributeName : BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT.keySet())
+                {
+                    Object value = attributes.remove(attributeName);
+                    if (value != null)
+                    {
+                        additionalContext.put(BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT.get(attributeName),
+                                              String.valueOf(value));
+                    }
+                }
+
+                if (!additionalContext.isEmpty())
+                {
+                    Map<String, String> newContext = new HashMap<>();
+                    if (attributes.containsKey("context"))
+                    {
+                        newContext.putAll((Map<String, String>) attributes.get("context"));
+                    }
+                    newContext.putAll(additionalContext);
+                    attributes.put("context", newContext);
+
+                    record = new ConfiguredObjectRecordImpl(record.getId(),
+                                                            record.getType(),
+                                                            attributes,
+                                                            record.getParents());
+                }
+
                 upgradeRootRecord(record);
             }
             else if (record.getType().equals("Port"))

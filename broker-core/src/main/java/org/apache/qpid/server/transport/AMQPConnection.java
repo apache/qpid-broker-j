@@ -32,9 +32,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.txn.LocalTransaction;
-import org.apache.qpid.server.txn.TransactionObserver;
 import org.apache.qpid.server.util.Deletable;
 
 public interface AMQPConnection<C extends AMQPConnection<C>>
@@ -117,5 +117,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
     boolean isTransportBlockedForWriting();
 
     long getMaxMessageSize();
+
+    AmqpPort<?> getPort();
 
 }

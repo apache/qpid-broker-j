@@ -100,9 +100,10 @@ public class ServerConnection extends ConnectionInvoker
     private ServerConnectionDelegate delegate;
     private ProtocolEventSender sender;
     private State state = NEW;
-    private int channelMax = 1;
+    private int _channelMax = 1;
     private String locale;
     private SocketAddress _remoteAddress;
+    private int _heartBeatDelay;
 
     public ServerConnection(final long connectionId,
                             Broker<?> broker,
@@ -544,12 +545,12 @@ public class ServerConnection extends ConnectionInvoker
 
     public int getChannelMax()
     {
-        return channelMax;
+        return _channelMax;
     }
 
     protected void setChannelMax(int max)
     {
-        channelMax = max;
+        _channelMax = max;
     }
 
     private int map(ServerSession ssn)
@@ -742,6 +743,16 @@ public class ServerConnection extends ConnectionInvoker
                                        final List<Object> locales, final Option... options)
     {
         super.connectionStart(clientProperties, mechanisms, locales, options);
+    }
+
+    public void setHeartBeatDelay(final int heartBeatDelay)
+    {
+        _heartBeatDelay = heartBeatDelay;
+    }
+
+    public int getHeartBeatDelay()
+    {
+        return _heartBeatDelay;
     }
 
     public enum State { NEW, CLOSED, OPENING, OPEN, CLOSING, CLOSE_RCVD, RESUMING }

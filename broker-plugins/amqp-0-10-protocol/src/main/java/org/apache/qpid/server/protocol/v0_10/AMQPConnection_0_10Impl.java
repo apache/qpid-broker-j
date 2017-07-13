@@ -219,6 +219,12 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     }
 
     @Override
+    public int getHeartbeatDelay()
+    {
+        return _connection.getHeartBeatDelay();
+    }
+
+    @Override
     public void setTransportBlockedForWriting(final boolean blocked)
     {
         if(_transportBlockedForWriting != blocked)

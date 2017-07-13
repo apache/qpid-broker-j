@@ -24,7 +24,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -57,6 +56,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
     private UUID _hostId;
     private UUID _brokerId;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -817,6 +817,35 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
                     upgradedContext.containsKey("port.http.maximumQueuedRequests"));
         assertEquals("Context variable \"port.http.maximumQueuedRequests\" is not renamed",
                      "1000", upgradedContext.get("qpid.port.http.acceptBacklog"));
+    }
+
+    public void testBrokerConnectionAttributesRemoval() throws Exception
+    {
+        _brokerRecord.getAttributes().put("modelVersion", "6.1");
+        _brokerRecord.getAttributes().put("connection.sessionCountLimit", "512");
+        _brokerRecord.getAttributes().put("connection.heartBeatDelay", "300");
+        _brokerRecord.getAttributes().put("connection.closeWhenNoRoute", "false");
+
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord);
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
+
+        ConfiguredObjectRecord upgradedBroker = findRecordById(_brokerRecord.getId(), records);
+        assertNotNull("Upgraded broker record is not found", upgradedBroker);
+        Map<String, Object> upgradedAttributes = upgradedBroker.getAttributes();
+
+        final Map<String, String> expectedContext = new HashMap<>();
+        expectedContext.put("qpid.port.sessionCountLimit", "512");
+        expectedContext.put("qpid.port.heartbeatDelay", "300");
+        expectedContext.put("qpid.port.closeWhenNoRoute", "false");
+
+        Object upgradedContext = upgradedAttributes.get("context");
+        assertTrue("Unpexcted context", upgradedContext instanceof Map);
+        assertEquals("Unexpected context", expectedContext, new HashMap<>(((Map<String, String>) upgradedContext)));
+
+        assertFalse("Session count limit is not removed", upgradedAttributes.containsKey("connection.sessionCountLimit"));
+        assertFalse("Heart beat delay is not removed", upgradedAttributes.containsKey("connection.heartBeatDelay"));
+        assertFalse("Close when no route is not removed", upgradedAttributes.containsKey("conection.closeWhenNoRoute"));
     }
 
     private void assertModelVersionUpgraded(final List<ConfiguredObjectRecord> records)

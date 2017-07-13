@@ -116,8 +116,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private final BrokerPrincipal _principal;
 
-    private String[] POSITIVE_NUMERIC_ATTRIBUTES = { CONNECTION_SESSION_COUNT_LIMIT,
-            CONNECTION_HEART_BEAT_DELAY, STATISTICS_REPORTING_PERIOD };
+    private String[] POSITIVE_NUMERIC_ATTRIBUTES = { STATISTICS_REPORTING_PERIOD };
 
 
     private AuthenticationProvider<?> _managementModeAuthenticationProvider;
@@ -125,12 +124,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private Timer _reportingTimer;
     private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
 
-    @ManagedAttributeField
-    private int _connection_sessionCountLimit;
-    @ManagedAttributeField
-    private int _connection_heartBeatDelay;
-    @ManagedAttributeField
-    private boolean _connection_closeWhenNoRoute;
     @ManagedAttributeField
     private int _statisticsReportingPeriod;
     @ManagedAttributeField
@@ -505,24 +498,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             StatisticsReportingTask task = new StatisticsReportingTask(reset, _eventLogger);
             _reportingTimer.scheduleAtFixedRate(task, report / 2, report);
         }
-    }
-
-    @Override
-    public int getConnection_sessionCountLimit()
-    {
-        return _connection_sessionCountLimit;
-    }
-
-    @Override
-    public int getConnection_heartBeatDelay()
-    {
-        return _connection_heartBeatDelay;
-    }
-
-    @Override
-    public boolean getConnection_closeWhenNoRoute()
-    {
-        return _connection_closeWhenNoRoute;
     }
 
     @Override

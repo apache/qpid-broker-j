@@ -222,7 +222,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         int channelCount = conn.getSessionModels().size();
         assertEquals("Initial channel count wrong", 0, channelCount);
 
-        assertEquals("Number of channels not correctly set.", maxChannels, conn.getMaximumNumberOfChannels());
+        assertEquals("Number of channels not correctly set.", maxChannels, conn.getSessionCountLimit());
 
         assertFalse("Connection should not be closed after opening " + maxChannels + " channels",
                     conn.isClosing());

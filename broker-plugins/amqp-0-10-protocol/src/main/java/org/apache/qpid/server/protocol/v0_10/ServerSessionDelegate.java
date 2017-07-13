@@ -495,7 +495,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                     boolean explictlyRejected = routingResult.containsReject(RejectType.LIMIT_EXCEEDED);
                     if (!routingResult.hasRoutes() || explictlyRejected)
                     {
-                        boolean closeWhenNoRoute = serverSession.getAMQPConnection().getBroker().getConnection_closeWhenNoRoute();
+                        boolean closeWhenNoRoute = serverSession.getAMQPConnection().getPort().getCloseWhenNoRoute();
                         boolean discardUnroutable = delvProps != null && delvProps.getDiscardUnroutable();
                         if (!discardUnroutable && xfr.getAcceptMode() == MessageAcceptMode.EXPLICIT)
                         {

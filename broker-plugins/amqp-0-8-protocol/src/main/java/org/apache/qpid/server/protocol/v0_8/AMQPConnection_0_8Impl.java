@@ -160,6 +160,7 @@ public class AMQPConnection_0_8Impl
     private final Set<AMQPSession<?,?>> _sessionsWithWork =
             Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?,?>, Boolean>());
 
+    private volatile int _heartBeatDelay;
 
     public AMQPConnection_0_8Impl(Broker<?> broker,
                                   ServerNetworkConnection network,
@@ -172,7 +173,7 @@ public class AMQPConnection_0_8Impl
         super(broker, network, port, transport, protocol, connectionId, aggregateTicker);
 
 
-        _maxNoOfChannels = broker.getConnection_sessionCountLimit();
+        _maxNoOfChannels = port.getSessionCountLimit();
         _decoder = new BrokerDecoder(this);
         _binaryDataLimit = getBroker().getContextKeys(false).contains(BROKER_DEBUG_BINARY_DATA_LENGTH)
                 ? getBroker().getContextValue(Integer.class, BROKER_DEBUG_BINARY_DATA_LENGTH)
@@ -182,7 +183,7 @@ public class AMQPConnection_0_8Impl
         _sendQueueDeleteOkRegardlessClientVerRegexp = Pattern.compile(sendQueueDeleteOkRegardlessRegexp);
 
         _sender = network.getSender();
-        _closeWhenNoRoute = getBroker().getConnection_closeWhenNoRoute();
+        _closeWhenNoRoute = port.getCloseWhenNoRoute();
     }
 
     @Override
@@ -427,16 +428,6 @@ public class AMQPConnection_0_8Impl
             session = _channelMap.remove(channelId);
         }
         session.dispose();
-    }
-
-    public int getMaximumNumberOfChannels()
-    {
-        return _maxNoOfChannels;
-    }
-
-    private void setMaximumNumberOfChannels(int value)
-    {
-        _maxNoOfChannels = value;
     }
 
 
@@ -746,7 +737,13 @@ public class AMQPConnection_0_8Impl
     @Override
     public int getSessionCountLimit()
     {
-        return getMaximumNumberOfChannels();
+        return _maxNoOfChannels;
+    }
+
+    @Override
+    public int getHeartbeatDelay()
+    {
+        return _heartBeatDelay;
     }
 
     public String getAddress()
@@ -905,11 +902,11 @@ public class AMQPConnection_0_8Impl
         {
             sendConnectionClose(ErrorCodes.CHANNEL_ERROR, "Channel " + channelId + " already exists", channelId);
         }
-        else if(channelId > getMaximumNumberOfChannels())
+        else if(channelId > getSessionCountLimit())
         {
             sendConnectionClose(ErrorCodes.CHANNEL_ERROR,
-                    "Channel " + channelId + " cannot be created as the max allowed channel id is "
-                            + getMaximumNumberOfChannels(),
+                                "Channel " + channelId + " cannot be created as the max allowed channel id is "
+                                + getSessionCountLimit(),
                                 channelId);
         }
         else
@@ -1154,12 +1151,10 @@ public class AMQPConnection_0_8Impl
                         frameMax = Integer.MAX_VALUE;
                     }
 
-                    Broker<?> broker = getBroker();
-
                     ConnectionTuneBody tuneBody =
-                            methodRegistry.createConnectionTuneBody(broker.getConnection_sessionCountLimit(),
+                            methodRegistry.createConnectionTuneBody(getPort().getSessionCountLimit(),
                                                                     frameMax,
-                                                                    broker.getConnection_heartBeatDelay());
+                                                                    getPort().getHeartbeatDelay());
                     writeFrame(tuneBody.generateFrame(0));
                     _state = ConnectionState.AWAIT_TUNE_OK;
                     disposeSaslNegotiator();
@@ -1195,6 +1190,7 @@ public class AMQPConnection_0_8Impl
 
         if (heartbeat > 0)
         {
+            _heartBeatDelay = heartbeat;
             long writerDelay = 1000L * heartbeat;
             long readerDelay = 1000L * getContextValue(Integer.class, AMQPConnection_0_8.PROPERTY_HEARTBEAT_TIMEOUT_FACTOR) * heartbeat;
             initialiseHeartbeating(writerDelay, readerDelay);
@@ -1226,10 +1222,10 @@ public class AMQPConnection_0_8Impl
             setMaxFrameSize(calculatedFrameMax);
 
             //0 means no implied limit, except that forced by protocol limitations (0xFFFF)
-            setMaximumNumberOfChannels( ((channelMax == 0) || (channelMax > 0xFFFF))
+            int value = ((channelMax == 0) || (channelMax > 0xFFFF))
                                                ? 0xFFFF
-                                               : channelMax);
-
+                                               : channelMax;
+            _maxNoOfChannels = value;
         }
         _state = ConnectionState.AWAIT_OPEN;
 

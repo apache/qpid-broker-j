@@ -39,7 +39,6 @@ import org.apache.qpid.server.common.ServerPropertyNames;
 import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.properties.ConnectionStartProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.*;
@@ -55,6 +54,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> implements ProtocolDelegate<ServerConnection>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnectionDelegate.class);
+    private final AmqpPort<?> _port;
 
     private List<Object> _locales;
     private List<Object> _mechanisms;
@@ -82,13 +82,14 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
 
 
-    public ServerConnectionDelegate(Port<?> port, boolean secure, final String selectedHost)
+    public ServerConnectionDelegate(AmqpPort<?> port, boolean secure, final String selectedHost)
     {
+        _port = port;
         _broker = (Broker<?>) port.getParent();
         _clientProperties = createConnectionProperties((Broker<?>) port.getParent());
         _mechanisms = new ArrayList<>(port.getAuthenticationProvider().getAvailableMechanisms(secure));
 
-        _maxNoOfChannels = _broker.getConnection_sessionCountLimit();
+        _maxNoOfChannels = port.getSessionCountLimit();
         _subjectCreator = port.getSubjectCreator(secure, selectedHost);
         _maximumFrameSize = Math.min(0xffff, _broker.getNetworkBufferSize());
     }
@@ -368,6 +369,7 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
         if(ok.hasHeartbeat() && ok.getHeartbeat() > 0)
         {
             int heartbeat = ok.getHeartbeat();
+            sconn.setHeartBeatDelay(heartbeat);
             long readerIdle = 2000L * heartbeat;
             long writerIdle = 1000L * heartbeat;
             sconn.getAmqpConnection().initialiseHeartbeating(writerIdle, readerIdle);
@@ -515,7 +517,7 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
 
     protected int getHeartbeatMax()
     {
-        int delay = (Integer)_broker.getAttribute(Broker.CONNECTION_HEART_BEAT_DELAY);
+        int delay = _port.getHeartbeatDelay();
         return delay == 0 ? 0xFFFF : delay;
     }
 

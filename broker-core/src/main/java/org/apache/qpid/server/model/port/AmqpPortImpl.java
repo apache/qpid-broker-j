@@ -103,6 +103,10 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     private volatile int _connectionWarnCount;
     private volatile long _protocolHandshakeTimeout;
     private volatile int _boundPort = -1;
+    private volatile boolean _closeWhenNoRoute;
+    private volatile int _sessionCountLimit;
+    private volatile int _heartBeatDelay;
+
 
     @ManagedObjectFactoryConstructor
     public AmqpPortImpl(Map<String, Object> attributes, Container<?> container)
@@ -188,6 +192,9 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
         super.onOpen();
         _protocolHandshakeTimeout = getContextValue(Long.class, AmqpPort.PROTOCOL_HANDSHAKE_TIMEOUT);
         _connectionWarnCount = getContextValue(Integer.class, OPEN_CONNECTIONS_WARN_PERCENT);
+        _closeWhenNoRoute = getContextValue(Boolean.class, AmqpPort.CLOSE_WHEN_NO_ROUTE);
+        _sessionCountLimit = getContextValue(Integer.class, AmqpPort.SESSION_COUNT_LIMIT);
+        _heartBeatDelay = getContextValue(Integer.class, AmqpPort.HEART_BEAT_DELAY);
     }
 
     @Override
@@ -552,5 +559,23 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     public long getProtocolHandshakeTimeout()
     {
         return _protocolHandshakeTimeout;
+    }
+
+    @Override
+    public boolean getCloseWhenNoRoute()
+    {
+        return _closeWhenNoRoute;
+    }
+
+    @Override
+    public int getSessionCountLimit()
+    {
+        return _sessionCountLimit;
+    }
+
+    @Override
+    public int getHeartbeatDelay()
+    {
+        return _heartBeatDelay;
     }
 }

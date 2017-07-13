@@ -71,38 +71,7 @@
                               promptMessage: 'If encryption is enabled, configurations items such as passwords<br/>will be encrypted before being written to the configuration store.'" />
                     </div>
               </div>
-
-              <div class="clear formBox">
-                  <fieldset>
-                      <legend>Global Connection Defaults</legend>
-                      <div class="clear">
-                          <div class="formLabel-labelCell tableContainer-labelCell">Maximum number of sessions:</div>
-                          <div class="tableContainer-valueCell formLabel-controlCell">
-                              <input data-dojo-type="dijit/form/ValidationTextBox"
-                                     id="editBroker.connection.sessionCountLimit"
-                                     data-dojo-props="
-                                     name: 'connection.sessionCountLimit',
-                                     placeHolder: 'Number of sessions',
-                                     trim: true,
-                                     promptMessage: 'Maximum number of sessions per connection' "/>
-                          </div>
-                      </div>
-                      <div class="clear">
-                          <div class="formLabel-labelCell tableContainer-labelCell">Heart beat delay (s):</div>
-                          <div class="tableContainer-valueCell formLabel-controlCell">
-                              <input data-dojo-type="dijit/form/ValidationTextBox"
-                                     id="editBroker.connection.heartBeatDelay"
-                                     data-dojo-props="
-                                     name: 'connection.heartBeatDelay',
-                                     trim: true,
-                                     invalidMessage: 'Invalid value',
-                                     placeHolder: 'Time in seconds',
-                                     promptMessage: 'Interval between heart beat messages exchanged between broker and clients'"/>
-                          </div>
-                      </div>
-                  </fieldset>
-              </div>
-
+              <div class="clear"></div>
               <div data-dojo-type="dijit/TitlePane" data-dojo-props="title: 'Context variables',  open: false">
                   <div id="editBroker.context"
                        data-dojo-type="qpid/common/ContextVariablesEditor"

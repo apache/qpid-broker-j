@@ -103,13 +103,14 @@ public class ServerSessionTest extends QpidTestCase
         when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
         when(modelConnection.getAddressSpace()).thenReturn(_virtualHost);
         when(modelConnection.getContextProvider()).thenReturn(_virtualHost);
-        when(modelConnection.getBroker()).thenReturn((Broker)broker);
+        when(modelConnection.getBroker()).thenReturn(broker);
         when(modelConnection.getEventLogger()).thenReturn(mock(EventLogger.class));
         when(modelConnection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
         when(modelConnection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
         when(modelConnection.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE)).thenReturn(Connection.DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE);
         when(modelConnection.getChildExecutor()).thenReturn(_taskExecutor);
         when(modelConnection.getModel()).thenReturn(BrokerModel.getInstance());
+        when(modelConnection.getPort()).thenReturn(port);
 
         Subject subject = new Subject();
         when(modelConnection.getSubject()).thenReturn(subject);

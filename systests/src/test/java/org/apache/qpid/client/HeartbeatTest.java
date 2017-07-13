@@ -22,6 +22,8 @@ import static org.apache.qpid.configuration.ClientProperties.QPID_HEARTBEAT_INTE
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,8 +40,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TCPTunneler;
+import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 public class HeartbeatTest extends QpidBrokerTestCase
 {
@@ -54,7 +59,10 @@ public class HeartbeatTest extends QpidBrokerTestCase
     {
         if (getName().equals("testHeartbeatsEnabledBrokerSide"))
         {
-            getDefaultBrokerConfiguration().setBrokerAttribute(Broker.CONNECTION_HEART_BEAT_DELAY, "1");
+            getDefaultBrokerConfiguration().setObjectAttribute(Port.class,
+                                                               TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT,
+                                                               AmqpPort.CONTEXT,
+                                                               Collections.singletonMap(AmqpPort.HEART_BEAT_DELAY, "1"));
         }
         super.setUp();
     }

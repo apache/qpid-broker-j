@@ -96,6 +96,24 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
 
     String PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY = "qpid.broker_default_supported_protocol_version_reply";
 
+    String CLOSE_WHEN_NO_ROUTE = "qpid.port.closeWhenNoRoute";
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = CLOSE_WHEN_NO_ROUTE)
+    boolean DEFAULT_CONNECTION_CLOSE_WHEN_NO_ROUTE = true;
+
+    String SESSION_COUNT_LIMIT = "qpid.port.sessionCountLimit";
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = SESSION_COUNT_LIMIT)
+    int DEFAULT_SESSION_COUNT_LIMIT = 256;
+
+    String HEART_BEAT_DELAY = "qpid.port.heartbeatDelay";
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = HEART_BEAT_DELAY)
+    int DEFAULT_HEART_BEAT_DELAY = 0;
+
     SSLContext getSSLContext();
 
     @ManagedAttribute(defaultValue = "*")
@@ -137,6 +155,25 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
                                     + " If the connection does not send a protocol header within this time,"
                                     + " the connection will be aborted.")
     long getProtocolHandshakeTimeout();
+
+    @DerivedAttribute(description = "Controls behaviour when the Broker receives a message for which no destination exists"
+                                    + " or is otherwise rejected by the destination. For AMQP 0-8..0-91 the connection will"
+                                    + " be closed only if transactionally publishing a message with the mandatory flag"
+                                    + " set and the Publisher Confirms extension is disabled."
+                                    + " For 0-10, the session will be closed if publishing a message (without the discard"
+                                    + " unroutable flag).  In all other cases, this flag has no effect.")
+    boolean getCloseWhenNoRoute();
+
+
+    @DerivedAttribute(description = "The maximum number of sessions which can exist concurrently on a connection." )
+    int getSessionCountLimit();
+
+    @DerivedAttribute(description = "For AMQP 0-8..0-10 the default period with which Broker and client will exchange"
+                                    + " heartbeat messages (in seconds). Clients may negotiate a different heartbeat"
+                                    + " frequency or disable it altogether."
+                                    + " For AMQP 1.0 this setting controls the incoming idle timeout only.  A value of"
+                                    + " 0 disables.")
+    int getHeartbeatDelay();
 
     boolean canAcceptNewConnection(final SocketAddress remoteSocketAddress);
 

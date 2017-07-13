@@ -152,8 +152,6 @@ public class BrokerRestTest extends QpidRestTestCase
     public void testPutToUpdateWithInvalidAttributeValues() throws Exception
     {
         Map<String, Object> invalidAttributes = new HashMap<String, Object>();
-        invalidAttributes.put(Broker.CONNECTION_SESSION_COUNT_LIMIT, -10);
-        invalidAttributes.put(Broker.CONNECTION_HEART_BEAT_DELAY, -11000);
         invalidAttributes.put(Broker.STATISTICS_REPORTING_PERIOD, -12000);
 
         for (Map.Entry<String, Object> entry : invalidAttributes.entrySet())
@@ -242,8 +240,6 @@ public class BrokerRestTest extends QpidRestTestCase
     private Map<String, Object> getValidBrokerAttributes()
     {
         Map<String, Object> brokerAttributes = new HashMap<String, Object>();
-        brokerAttributes.put(Broker.CONNECTION_SESSION_COUNT_LIMIT, 10);
-        brokerAttributes.put(Broker.CONNECTION_HEART_BEAT_DELAY, 11000);
         brokerAttributes.put(Broker.STATISTICS_REPORTING_PERIOD, 12000);
         brokerAttributes.put(Broker.STATISTICS_REPORTING_RESET_ENABLED, true);
         return brokerAttributes;

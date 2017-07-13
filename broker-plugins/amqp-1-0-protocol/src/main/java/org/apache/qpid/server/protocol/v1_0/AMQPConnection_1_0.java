@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
@@ -50,6 +51,13 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
 
     Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
     Symbol SHARED_SUBSCRIPTIONS = Symbol.valueOf("SHARED-SUBS");
+
+    @DerivedAttribute(description = "The idle timeout (in milliseconds) for incoming traffic.")
+    long getIncomingIdleTimeout();
+
+    @DerivedAttribute(description = "The period (in milliseconds) with which the Broker will generate heartbeat"
+                                    + " traffic if the wire would otherwise be idle.")
+    long getOutgoingIdleTimeout();
 
     Object getReference();
 

@@ -134,8 +134,6 @@ public class BrokerTestHelper
         when(systemConfig.getCategoryClass()).thenReturn(SystemConfig.class);
 
         Broker broker = mockWithSystemPrincipalAndAccessControl(Broker.class, SYSTEM_PRINCIPAL, accessControl);
-        when(broker.getConnection_sessionCountLimit()).thenReturn(1);
-        when(broker.getConnection_closeWhenNoRoute()).thenReturn(false);
         when(broker.getId()).thenReturn(UUID.randomUUID());
         when(broker.getObjectFactory()).thenReturn(objectFactory);
         when(broker.getModel()).thenReturn(objectFactory.getModel());
