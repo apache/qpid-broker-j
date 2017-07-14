@@ -67,8 +67,11 @@ public class QueuePolicyTest extends QpidBrokerTestCase
         }
         catch (JMSException e)
         {
-            assertTrue("Unexpected exception: " + e.getMessage(),
-                       e.getMessage().contains("Maximum depth exceeded"));
+            if (isJavaBroker())
+            {
+                assertTrue("Unexpected exception: " + e.getMessage(),
+                           e.getMessage().contains("Maximum depth exceeded"));
+            }
         }
 
         Connection secondConnection = getConnection();
@@ -128,7 +131,7 @@ public class QueuePolicyTest extends QpidBrokerTestCase
                                            + "x-declare:{arguments : {'qpid.policy_type': %s, 'qpid.max_count': %d}}"
                                            + "}}",
                                            testQueueName,
-                                           testQueueName, overflowPolicy.name(), msgLimit);
+                                           testQueueName, overflowPolicy.name().toLowerCase(), msgLimit);
             destination = session.createQueue(address);
             session.createConsumer(destination).close();
         }
