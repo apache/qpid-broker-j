@@ -32,7 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 
-public class MessageSourceDestination implements SendingDestination
+public class StandardSendingDestination implements SendingDestination
 {
     private static final Accepted ACCEPTED = new Accepted();
     private static final Outcome[] OUTCOMES = new Outcome[] { ACCEPTED };
@@ -41,7 +41,7 @@ public class MessageSourceDestination implements SendingDestination
     private final MessageSource _messageSource;
     private final Symbol[] _capabilities;
 
-    public MessageSourceDestination(MessageSource messageSource)
+    public StandardSendingDestination(MessageSource messageSource)
     {
         _messageSource = messageSource;
         List<Symbol> capabilities = new ArrayList<>();
@@ -63,12 +63,6 @@ public class MessageSourceDestination implements SendingDestination
     public Outcome[] getOutcomes()
     {
         return OUTCOMES;
-    }
-
-    public int getCredit()
-    {
-        // TODO - fix
-        return 100;
     }
 
     @Override

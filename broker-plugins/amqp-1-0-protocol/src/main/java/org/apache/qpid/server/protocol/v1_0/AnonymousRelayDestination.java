@@ -22,7 +22,6 @@ package org.apache.qpid.server.protocol.v1_0;/*
 import static org.apache.qpid.server.protocol.v1_0.Session_1_0.DELAYED_DELIVERY;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
@@ -83,14 +82,12 @@ public class AnonymousRelayDestination implements ReceivingDestination
             MessageDestination exchangeDestination = _addressSpace.getAttainedMessageDestination(parts[0]);
             if (exchangeDestination instanceof Exchange)
             {
-                Symbol[] capabilities = _target.getCapabilities();
-                destination = new ExchangeDestination(((Exchange<?>) exchangeDestination),
-                                                      null,
-                                                      _target.getDurable(),
-                                                      _target.getExpiryPolicy(),
-                                                      parts[0],
-                                                      parts[1],
-                                                      capabilities != null ? Arrays.asList(capabilities) : Collections.emptyList());
+                destination = new NodeReceivingDestination(exchangeDestination,
+                                                           _target.getDurable(),
+                                                           _target.getExpiryPolicy(),
+                                                           parts[0],
+                                                           _target.getCapabilities(),
+                                                           _eventLogger);
             }
             else
             {
@@ -100,6 +97,19 @@ public class AnonymousRelayDestination implements ReceivingDestination
         else
         {
             MessageDestination messageDestination = _addressSpace.getAttainedMessageDestination(routingAddress);
+            if(messageDestination == null)
+            {
+                // TODO - should we do this... if the queue is not being advertised as a destination, shouldn't we
+                //        respect that?
+
+                // Covers the unlikely case where there is no attained destination with the given address, but there is
+                // a queue with that address
+                MessageSource source = _addressSpace.getAttainedMessageSource(routingAddress);
+                if (source instanceof Queue)
+                {
+                    messageDestination = (Queue<?>) source;
+                }
+            }
             if (messageDestination != null)
             {
                 destination = new NodeReceivingDestination(messageDestination,
@@ -111,15 +121,7 @@ public class AnonymousRelayDestination implements ReceivingDestination
             }
             else
             {
-                MessageSource source = _addressSpace.getAttainedMessageSource(routingAddress);
-                if (source instanceof Queue)
-                {
-                    destination = new QueueDestination((Queue<?>) source, routingAddress);
-                }
-                else
-                {
-                    destination = null;
-                }
+                destination = null;
             }
         }
 

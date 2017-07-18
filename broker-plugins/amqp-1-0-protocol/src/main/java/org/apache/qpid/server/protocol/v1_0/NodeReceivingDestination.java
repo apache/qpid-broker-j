@@ -56,6 +56,7 @@ public class NodeReceivingDestination implements ReceivingDestination
     private TerminusDurability _durability;
     private TerminusExpiryPolicy _expiryPolicy;
     private final String _address;
+    private String _routingAddress;
 
     public NodeReceivingDestination(MessageDestination destination,
                                     TerminusDurability durable,
@@ -83,7 +84,9 @@ public class NodeReceivingDestination implements ReceivingDestination
     @Override
     public Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken)
     {
-        final String routingAddress = ReceivingDestination.getRoutingAddress(message, _address);
+        final String routingAddress = _routingAddress == null
+                ? ReceivingDestination.getRoutingAddress(message, _address)
+                : _routingAddress;
         _destination.authorisePublish(securityToken, Collections.singletonMap("routingKey", routingAddress));
 
         final InstanceProperties instanceProperties =
@@ -196,5 +199,10 @@ public class NodeReceivingDestination implements ReceivingDestination
         capabilities[0] = _discardUnroutable ? DISCARD_UNROUTABLE : REJECT_UNROUTABLE;
         capabilities[1] = DELAYED_DELIVERY;
         return capabilities;
+    }
+
+    public void setRoutingAddress(final String routingAddress)
+    {
+        _routingAddress = routingAddress;
     }
 }

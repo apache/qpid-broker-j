@@ -117,12 +117,12 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         boolean noLocal = false;
         JMSSelectorFilter messageFilter = null;
 
-        if(destination instanceof ExchangeDestination)
+        if(destination instanceof ExchangeSendingDestination)
         {
             options.add(ConsumerOption.ACQUIRES);
             options.add(ConsumerOption.SEES_REQUEUES);
         }
-        else if(destination instanceof MessageSourceDestination)
+        else if(destination instanceof StandardSendingDestination)
         {
             MessageSource messageSource = _destination.getMessageSource();
 
@@ -198,7 +198,8 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     {
         final Source source = getSource();
         _consumerTarget = new ConsumerTarget_1_0(this,
-                                         _destination instanceof ExchangeDestination ? true : source.getDistributionMode() != StdDistMode.COPY);
+                                         _destination instanceof ExchangeSendingDestination
+                                                 ? true : source.getDistributionMode() != StdDistMode.COPY);
         try
         {
             final String name = getTarget().getAddress() == null ? getLinkName() : getTarget().getAddress();
@@ -291,7 +292,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         final SendingDestination destination = getSession().getSendingDestination(getLink(), oldSource);
         prepareConsumerOptionsAndFilters(destination);
 
-        if (getDestination() instanceof ExchangeDestination && !Boolean.TRUE.equals(newSource.getDynamic()))
+        if (getDestination() instanceof ExchangeSendingDestination && !Boolean.TRUE.equals(newSource.getDynamic()))
         {
             final SendingDestination newDestination =
                     getSession().getSendingDestination(getLink(), newSource);
@@ -322,7 +323,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         final SendingDestination destination = getSession().getSendingDestination(getLink(), oldSource);
         prepareConsumerOptionsAndFilters(destination);
 
-        if (getDestination() instanceof ExchangeDestination && !Boolean.TRUE.equals(newSource.getDynamic()))
+        if (getDestination() instanceof ExchangeSendingDestination && !Boolean.TRUE.equals(newSource.getDynamic()))
         {
             final SendingDestination newDestination =
                     getSession().getSendingDestination(getLink(), newSource);
@@ -489,13 +490,13 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 
 
             Error closingError = null;
-            if (getDestination() instanceof ExchangeDestination
+            if (getDestination() instanceof ExchangeSendingDestination
                 && getSession().getConnection().getAddressSpace() instanceof QueueManagingVirtualHost)
             {
                 try
                 {
                     ((QueueManagingVirtualHost) getSession().getConnection().getAddressSpace()).removeSubscriptionQueue(
-                            ((ExchangeDestination) getDestination()).getQueue().getName());
+                            ((ExchangeSendingDestination) getDestination()).getQueue().getName());
                 }
                 catch (AccessControlException e)
                 {
@@ -633,9 +634,9 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             source.setCapabilities(attachSource.getCapabilities());
             final SendingDestination destination = getSession().getSendingDestination(getLink(), source);
             source.setCapabilities(destination.getCapabilities());
-            if (destination instanceof ExchangeDestination)
+            if (destination instanceof ExchangeSendingDestination)
             {
-                ExchangeDestination exchangeDestination = (ExchangeDestination) destination;
+                ExchangeSendingDestination exchangeDestination = (ExchangeSendingDestination) destination;
                 exchangeDestination.getQueue()
                                    .setAttributes(Collections.<String, Object>singletonMap(Queue.DESIRED_STATE,
                                                                                            org.apache.qpid.server.model.State.ACTIVE));
