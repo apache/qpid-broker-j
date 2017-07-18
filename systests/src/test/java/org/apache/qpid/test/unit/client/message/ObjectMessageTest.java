@@ -51,6 +51,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
     private int received;
     private final ArrayList items = new ArrayList();
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
@@ -76,6 +77,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
         data = new Serializable[] { a1, a2, b, c, "Hello World!", new Integer(1001) };
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         close();
@@ -219,6 +221,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
         waiting = false;
     }
 
+    @Override
     public void onMessage(Message message)
     {
 
@@ -258,11 +261,13 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
             iValue = i;
         }
 
+        @Override
         public int hashCode()
         {
             return iValue;
         }
 
+        @Override
         public boolean equals(Object o)
         {
             return (o instanceof A) && equals((A) o);
@@ -284,6 +289,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
             time = System.currentTimeMillis();
         }
 
+        @Override
         protected boolean equals(A a)
         {
             return super.equals(a) && (a instanceof B) && (time == ((B) a).time);

@@ -75,6 +75,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
             super(left);
         }
 
+        @Override
         public boolean matches(E message)
         {
             Object object = evaluate(message);
@@ -147,6 +148,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
     /**
      * @see java.lang.Object#toString()
      */
+    @Override
     public String toString()
     {
         return "(" + getExpressionSymbol() + " " + right.toString() + ")";
@@ -157,6 +159,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
      *
      * @see java.lang.Object#hashCode()
      */
+    @Override
     public int hashCode()
     {
         return toString().hashCode();
@@ -167,6 +170,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
      *
      * @see java.lang.Object#equals(java.lang.Object)
      */
+    @Override
     public boolean equals(Object o)
     {
         return ((o != null) && this.getClass().equals(o.getClass())) && toString().equals(o.toString());
@@ -187,6 +191,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
             super(left);
         }
 
+        @Override
         public Object evaluate(E message)
         {
             Object rvalue = getRight().evaluate(message);
@@ -203,6 +208,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
             return null;
         }
 
+        @Override
         public String getExpressionSymbol()
         {
             return "-";
@@ -226,6 +232,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
             _allowNonJms = allowNonJms;
         }
 
+        @Override
         public Object evaluate(E expression)
         {
 
@@ -316,6 +323,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
             return answer.toString();
         }
 
+        @Override
         public String getExpressionSymbol()
         {
             if (_not)
@@ -336,6 +344,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
             super(left);
         }
 
+        @Override
         public Object evaluate(E message)
         {
             Boolean lvalue = (Boolean) getRight().evaluate(message);
@@ -347,6 +356,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
             return lvalue ? Boolean.FALSE : Boolean.TRUE;
         }
 
+        @Override
         public String getExpressionSymbol()
         {
             return "NOT";
@@ -360,6 +370,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
             super(left);
         }
 
+        @Override
         public Object evaluate(E message)
         {
             Object rvalue = getRight().evaluate(message);
@@ -376,11 +387,13 @@ public abstract class UnaryExpression<T> implements Expression<T>
             return ((Boolean) rvalue) ? Boolean.TRUE : Boolean.FALSE;
         }
 
+        @Override
         public String toString()
         {
             return getRight().toString();
         }
 
+        @Override
         public String getExpressionSymbol()
         {
             return "";

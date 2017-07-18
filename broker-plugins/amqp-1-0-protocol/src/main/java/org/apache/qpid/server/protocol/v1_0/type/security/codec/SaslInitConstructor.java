@@ -48,6 +48,7 @@ public class SaslInitConstructor extends AbstractDescribedTypeConstructor<SaslIn
         }
     }
 
+    @Override
     public SaslInit construct(Object underlying)
     {
         if(underlying instanceof List)

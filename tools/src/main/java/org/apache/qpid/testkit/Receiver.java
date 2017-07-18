@@ -90,6 +90,7 @@ public class Receiver extends Client implements MessageListener
     	System.out.println("Receiving messages from : " + addr);
     }
 
+    @Override
     public void onMessage(Message msg)
     {    	
     	handleMessage(msg);

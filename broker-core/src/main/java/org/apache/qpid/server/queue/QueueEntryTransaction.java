@@ -52,6 +52,7 @@ abstract class QueueEntryTransaction implements QueueManagingVirtualHost.Transac
             _sourceQueue.visit(new QueueEntryVisitor()
             {
 
+                @Override
                 public boolean visit(final QueueEntry entry)
                 {
                     final ServerMessage message = entry.getMessage();

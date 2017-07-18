@@ -79,12 +79,14 @@ public abstract class OrderedQueueEntryList extends AbstractQueueEntryList
     }
 
 
+    @Override
     public Queue<?> getQueue()
     {
         return _queue;
     }
 
 
+    @Override
     public QueueEntry add(ServerMessage message, final MessageEnqueueRecord enqueueRecord)
     {
         final OrderedQueueEntry node = createQueueEntry(message, enqueueRecord);
@@ -136,16 +138,19 @@ public abstract class OrderedQueueEntryList extends AbstractQueueEntryList
             _lastNode = startNode;
         }
 
+        @Override
         public boolean atTail()
         {
             return _lastNode.getNextValidEntry() == null;
         }
 
+        @Override
         public QueueEntry getNode()
         {
             return _lastNode;
         }
 
+        @Override
         public boolean advance()
         {
             QueueEntry nextValidNode = _lastNode.getNextValidEntry();
@@ -159,12 +164,14 @@ public abstract class OrderedQueueEntryList extends AbstractQueueEntryList
         }
     }
 
+    @Override
     public QueueEntryIterator iterator()
     {
         return new QueueEntryIteratorImpl(_head);
     }
 
 
+    @Override
     public QueueEntry getHead()
     {
         return _head;
@@ -176,6 +183,7 @@ public abstract class OrderedQueueEntryList extends AbstractQueueEntryList
         return _tail;
     }
 
+    @Override
     public void entryDeleted(QueueEntry queueEntry)
     {
         QueueEntry next = _head.getNextNode();
@@ -206,6 +214,7 @@ public abstract class OrderedQueueEntryList extends AbstractQueueEntryList
         }
     }
 
+    @Override
     public int getPriorities()
     {
         return 0;

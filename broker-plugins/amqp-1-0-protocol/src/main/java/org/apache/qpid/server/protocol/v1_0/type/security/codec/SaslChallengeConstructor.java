@@ -48,6 +48,7 @@ public class SaslChallengeConstructor extends AbstractDescribedTypeConstructor<S
         }
     }
 
+    @Override
     public SaslChallenge construct(Object underlying)
     {
         if(underlying instanceof List)

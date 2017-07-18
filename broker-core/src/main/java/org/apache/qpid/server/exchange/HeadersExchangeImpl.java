@@ -154,6 +154,7 @@ public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> i
 
     }
 
+    @Override
     protected void onUnbind(final BindingIdentifier binding)
     {
         assert binding != null;

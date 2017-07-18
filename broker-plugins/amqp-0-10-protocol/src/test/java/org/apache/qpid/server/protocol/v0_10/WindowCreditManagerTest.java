@@ -31,6 +31,7 @@ public class WindowCreditManagerTest extends QpidTestCase
     private WindowCreditManager _creditManager;
     private ProtocolEngine _protocolEngine;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();

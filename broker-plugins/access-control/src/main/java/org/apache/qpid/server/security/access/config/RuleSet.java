@@ -268,6 +268,7 @@ public class RuleSet implements EventLoggerProvider
         return objects;
     }
 
+    @Override
     public EventLogger getEventLogger()
     {
         return _eventLogger.getEventLogger();

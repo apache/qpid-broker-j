@@ -75,6 +75,7 @@ abstract class AbstractCommonRuleBasedAccessControlProvider<X extends AbstractCo
         }
     }
 
+    @Override
     protected RuleBasedAccessControl createRuleBasedAccessController()
     {
         List<Rule> rules = new ArrayList<>();

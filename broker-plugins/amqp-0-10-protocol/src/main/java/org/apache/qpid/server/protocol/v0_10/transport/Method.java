@@ -72,11 +72,13 @@ public abstract class Method extends Struct implements ProtocolEvent
         return idSet;
     }
 
+    @Override
     public final int getChannel()
     {
         return channel;
     }
 
+    @Override
     public final void setChannel(int channel)
     {
         this.channel = channel;
@@ -140,10 +142,12 @@ public abstract class Method extends Struct implements ProtocolEvent
 
     }
 
+    @Override
     public abstract byte getEncodedTrack();
 
     public abstract <C> void dispatch(C context, MethodDelegate<C> delegate);
 
+    @Override
     public <C> void delegate(C context, ProtocolDelegate<C> delegate)
     {
         if (getEncodedTrack() == Frame.L4)
@@ -182,6 +186,7 @@ public abstract class Method extends Struct implements ProtocolEvent
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public String toString()
     {
         StringBuilder str = new StringBuilder();

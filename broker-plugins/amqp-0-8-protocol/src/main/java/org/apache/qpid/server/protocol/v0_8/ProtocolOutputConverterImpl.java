@@ -60,6 +60,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
     }
 
 
+    @Override
     public long writeDeliver(final ServerMessage m,
                              final InstanceProperties props, int channelId,
                              long deliveryTag,
@@ -262,11 +263,13 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             _length = length;
         }
 
+        @Override
         public byte getFrameType()
         {
             return TYPE;
         }
 
+        @Override
         public int getSize()
         {
             return _length;
@@ -286,6 +289,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             return size;
         }
 
+        @Override
         public void handle(int channelId, AMQVersionAwareProtocolSession amqProtocolSession) throws QpidException
         {
             throw new UnsupportedOperationException();
@@ -299,6 +303,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
     }
 
+    @Override
     public long writeGetOk(final ServerMessage msg,
                            final InstanceProperties props,
                            int channelId,
@@ -369,11 +374,13 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
                                                                                _routingKey);
         }
 
+        @Override
         public byte getFrameType()
         {
             return AMQMethodBody.TYPE;
         }
 
+        @Override
         public int getSize()
         {
             if(_underlyingBody == null)
@@ -383,6 +390,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             return _underlyingBody.getSize();
         }
 
+        @Override
         public long writePayload(ByteBufferSender sender)
         {
             if(_underlyingBody == null)
@@ -392,6 +400,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             return _underlyingBody.writePayload(sender);
         }
 
+        @Override
         public void handle(final int channelId, final AMQVersionAwareProtocolSession amqProtocolSession)
             throws QpidException
         {
@@ -435,6 +444,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
                                                              messagePublishInfo.getRoutingKey());
     }
 
+    @Override
     public void writeReturn(MessagePublishInfo messagePublishInfo, ContentHeaderBody header, MessageContentSource message, int channelId, int replyCode, AMQShortString replyText)
     {
 
@@ -444,12 +454,14 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
     }
 
 
+    @Override
     public void writeFrame(AMQDataBlock block)
     {
         _connection.writeFrame(block);
     }
 
 
+    @Override
     public void confirmConsumerAutoClose(int channelId, AMQShortString consumerTag)
     {
 
@@ -477,6 +489,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             _contentBody = contentBody;
         }
 
+        @Override
         public long getSize()
         {
             return OVERHEAD + (long)_methodBody.getSize() + (long)_headerBody.getSize() + (long)_contentBody.getSize();
@@ -525,6 +538,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
         }
 
+        @Override
         public long getSize()
         {
             return OVERHEAD + (long)_methodBody.getSize() + (long)_headerBody.getSize() ;

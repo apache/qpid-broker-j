@@ -969,6 +969,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         return brokerRecord;
     }
 
+    @Override
     public Broker<?> upgradeAndRecover(List<ConfiguredObjectRecord> records)
     {
         final DurableConfigurationStore store = _systemConfig.getConfigurationStore();

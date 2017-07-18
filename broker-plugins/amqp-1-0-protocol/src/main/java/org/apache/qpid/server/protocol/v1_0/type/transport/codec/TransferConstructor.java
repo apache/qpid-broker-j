@@ -48,6 +48,7 @@ public class TransferConstructor extends AbstractDescribedTypeConstructor<Transf
         }
     }
 
+    @Override
     public Transfer construct(Object underlying)
     {
         if(underlying instanceof List)

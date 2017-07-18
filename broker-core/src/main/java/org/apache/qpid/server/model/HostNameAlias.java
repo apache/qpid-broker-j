@@ -26,6 +26,7 @@ public interface HostNameAlias<X extends HostNameAlias<X>> extends FixedVirtualH
 
     String TYPE_NAME = "hostnameAlias";
 
+    @Override
     @ManagedAttribute( defaultValue = "750" )
     int getPriority();
 

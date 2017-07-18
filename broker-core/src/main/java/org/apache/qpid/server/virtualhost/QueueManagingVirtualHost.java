@@ -173,6 +173,7 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     @ManagedAttribute( defaultValue = "${virtualhost.disabledConnectionValidators}")
     List<String> getDisabledConnectionValidators();
 
+    @Override
     @ManagedAttribute( defaultValue = "[]")
     List<String> getGlobalAddressDomains();
 
@@ -243,6 +244,7 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
             changesConfiguredObjectState = false)
     void importMessageStore(@Param(name="source", description = "Extract file", mandatory = true)String source);
 
+    @Override
     @ManagedOperation(description = "Resets statistics on this object and all child objects", changesConfiguredObjectState = false, nonModifying = true)
     void resetStatistics();
 

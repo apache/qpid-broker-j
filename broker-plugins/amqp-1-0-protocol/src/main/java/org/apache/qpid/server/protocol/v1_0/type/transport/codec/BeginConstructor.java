@@ -49,6 +49,7 @@ public class BeginConstructor extends AbstractDescribedTypeConstructor<Begin>
         }
     }
 
+    @Override
     public Begin construct(Object underlying)
     {
         if(underlying instanceof List)

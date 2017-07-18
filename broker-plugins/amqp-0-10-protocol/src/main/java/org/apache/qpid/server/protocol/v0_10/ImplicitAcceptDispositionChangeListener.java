@@ -44,22 +44,26 @@ class ImplicitAcceptDispositionChangeListener implements ServerSession.MessageDi
         _consumer = consumer;
     }
 
+    @Override
     public void onAccept()
     {
         _logger.warn("MessageAccept received for message which is using NONE as the accept mode (likely client error)");
     }
 
+    @Override
     public void onRelease(boolean setRedelivered)
     {
         _target.release(_consumer, _entry, setRedelivered);
 
     }
 
+    @Override
     public void onReject()
     {
         _target.reject(_consumer, _entry);
     }
 
+    @Override
     public boolean acquire()
     {
         boolean acquired = _entry.acquire(_consumer);

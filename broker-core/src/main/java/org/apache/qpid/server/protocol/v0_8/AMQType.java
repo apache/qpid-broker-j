@@ -34,11 +34,13 @@ public enum AMQType
 {
     LONG_STRING('S')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.encodedLongStringLength((String) value);
         }
 
+        @Override
         public String toNativeValue(Object value)
         {
             if (value != null)
@@ -51,11 +53,13 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             EncodingUtils.writeLongStringBytes(buffer, (String) value);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return EncodingUtils.readLongString(buffer);
@@ -64,11 +68,13 @@ public enum AMQType
 
     INTEGER('i')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.unsignedIntegerLength();
         }
 
+        @Override
         public Long toNativeValue(Object value)
         {
             if (value instanceof Long)
@@ -98,11 +104,13 @@ public enum AMQType
         }
 
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             buffer.putLong( (Long) value);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.getUnsignedInt();
@@ -111,11 +119,13 @@ public enum AMQType
 
     DECIMAL('D')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.encodedByteLength() + EncodingUtils.encodedIntegerLength();
         }
 
+        @Override
         public Object toNativeValue(Object value)
         {
             if (value instanceof BigDecimal)
@@ -130,6 +140,7 @@ public enum AMQType
         }
 
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             BigDecimal bd = (BigDecimal) value;
@@ -143,6 +154,7 @@ public enum AMQType
             buffer.putInt(unscaled);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             byte places = buffer.get();
@@ -157,11 +169,13 @@ public enum AMQType
 
     TIMESTAMP('T')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.encodedLongLength();
         }
 
+        @Override
         public Object toNativeValue(Object value)
         {
             if (value instanceof Long)
@@ -175,11 +189,13 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             buffer.putLong ((Long) value);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.getLong();
@@ -199,6 +215,7 @@ public enum AMQType
          *
          * @return The size of the instance of the type in bytes.
          */
+        @Override
         public int getEncodingSize(Object value)
         {
             // Ensure that the value is a FieldTable.
@@ -222,6 +239,7 @@ public enum AMQType
          *
          * @return An equivalent Java native representation.
          */
+        @Override
         public Object toNativeValue(Object value)
         {
             // Ensure that the value is a FieldTable.
@@ -233,6 +251,7 @@ public enum AMQType
             return (FieldTable) value;
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             // Ensure that the value is a FieldTable.
@@ -253,6 +272,7 @@ public enum AMQType
          *
          * @return An instance of the type.
          */
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             try
@@ -272,6 +292,7 @@ public enum AMQType
      */
     FIELD_ARRAY('A')
             {
+                @Override
                 public int getEncodingSize(Object value)
                 {
                     if (!(value instanceof Collection))
@@ -284,6 +305,7 @@ public enum AMQType
                     return 4 + fieldArrayValue.getEncodingSize();
                 }
 
+                @Override
                 public Object toNativeValue(Object value)
                 {
                     // Ensure that the value is a FieldTable.
@@ -295,6 +317,7 @@ public enum AMQType
                     return FieldArray.asFieldArray((Collection)value);
                 }
 
+                @Override
                 public void writeValueImpl(Object value, QpidByteBuffer buffer)
                 {
 
@@ -316,6 +339,7 @@ public enum AMQType
                  *
                  * @return An instance of the type.
                  */
+                @Override
                 public Object readValueFromBuffer(QpidByteBuffer buffer)
                 {
                     // Read size of field table then all name/value pairs.
@@ -325,11 +349,13 @@ public enum AMQType
             },
     VOID('V')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return 0;
         }
 
+        @Override
         public Object toNativeValue(Object value)
         {
             if (value == null)
@@ -343,9 +369,11 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         { }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return null;
@@ -354,11 +382,13 @@ public enum AMQType
 
     BINARY('x')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.encodedLongstrLength((byte[]) value);
         }
 
+        @Override
         public Object toNativeValue(Object value)
         {
             if ((value instanceof byte[]) || (value == null))
@@ -372,11 +402,13 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             EncodingUtils.writeLongstr(buffer, (byte[]) value);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return EncodingUtils.readLongstr(buffer);
@@ -385,11 +417,13 @@ public enum AMQType
 
     ASCII_STRING('c')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.encodedLongStringLength((String) value);
         }
 
+        @Override
         public String toNativeValue(Object value)
         {
             if (value != null)
@@ -402,11 +436,13 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             EncodingUtils.writeLongStringBytes(buffer, (String) value);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return EncodingUtils.readLongString(buffer);
@@ -415,12 +451,14 @@ public enum AMQType
 
     WIDE_STRING('C')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             // FIXME: use proper charset encoder
             return EncodingUtils.encodedLongStringLength((String) value);
         }
 
+        @Override
         public String toNativeValue(Object value)
         {
             if (value != null)
@@ -433,11 +471,13 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             EncodingUtils.writeLongStringBytes(buffer, (String) value);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return EncodingUtils.readLongString(buffer);
@@ -446,11 +486,13 @@ public enum AMQType
 
     BOOLEAN('t')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.encodedBooleanLength();
         }
 
+        @Override
         public Object toNativeValue(Object value)
         {
             if (value instanceof Boolean)
@@ -468,11 +510,13 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             EncodingUtils.writeBoolean(buffer, (Boolean) value);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.get() == 1;
@@ -481,11 +525,13 @@ public enum AMQType
 
     ASCII_CHARACTER('k')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.encodedCharLength();
         }
 
+        @Override
         public Character toNativeValue(Object value)
         {
             if (value instanceof Character)
@@ -503,12 +549,14 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             char charVal = (Character) value;
             buffer.put((byte) charVal);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return (char) buffer.get();
@@ -517,11 +565,13 @@ public enum AMQType
 
     BYTE('b')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.encodedByteLength();
         }
 
+        @Override
         public Byte toNativeValue(Object value)
         {
             if (value instanceof Byte)
@@ -539,11 +589,13 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             buffer.put((Byte) value);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.get();
@@ -599,11 +651,13 @@ public enum AMQType
 
     SHORT('s')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.encodedShortLength();
         }
 
+        @Override
         public Short toNativeValue(Object value)
         {
             if (value instanceof Short)
@@ -625,11 +679,13 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             buffer.putShort((Short) value);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.getShort();
@@ -685,11 +741,13 @@ public enum AMQType
 
     INT('I')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.encodedIntegerLength();
         }
 
+        @Override
         public Integer toNativeValue(Object value)
         {
             if (value instanceof Integer)
@@ -714,10 +772,12 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             buffer.putInt((Integer) value);
         }
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.getInt();
@@ -726,11 +786,13 @@ public enum AMQType
 
     LONG('l')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.encodedLongLength();
         }
 
+        @Override
         public Object toNativeValue(Object value)
         {
             if (value instanceof Long)
@@ -760,11 +822,13 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             buffer.putLong ((Long) value);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.getLong();
@@ -773,11 +837,13 @@ public enum AMQType
 
     FLOAT('f')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.encodedFloatLength();
         }
 
+        @Override
         public Float toNativeValue(Object value)
         {
             if (value instanceof Float)
@@ -795,11 +861,13 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             buffer.putFloat ((Float) value);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.getFloat();
@@ -808,11 +876,13 @@ public enum AMQType
 
     DOUBLE('d')
     {
+        @Override
         public int getEncodingSize(Object value)
         {
             return EncodingUtils.encodedDoubleLength();
         }
 
+        @Override
         public Double toNativeValue(Object value)
         {
             if (value instanceof Double)
@@ -834,11 +904,13 @@ public enum AMQType
             }
         }
 
+        @Override
         public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             buffer.putDouble((Double) value);
         }
 
+        @Override
         public Object readValueFromBuffer(QpidByteBuffer buffer)
         {
             return buffer.getDouble();

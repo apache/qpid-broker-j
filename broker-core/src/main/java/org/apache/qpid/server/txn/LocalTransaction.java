@@ -92,12 +92,14 @@ public class LocalTransaction implements ServerTransaction
         return _txnUpdateTime;
     }
 
+    @Override
     public void addPostTransactionAction(Action postTransactionAction)
     {
         sync();
         _postTransactionActions.add(postTransactionAction);
     }
 
+    @Override
     public void dequeue(MessageEnqueueRecord record, Action postTransactionAction)
     {
         sync();
@@ -123,6 +125,7 @@ public class LocalTransaction implements ServerTransaction
         }
     }
 
+    @Override
     public void dequeue(Collection<MessageInstance> queueEntries, Action postTransactionAction)
     {
         sync();
@@ -185,6 +188,7 @@ public class LocalTransaction implements ServerTransaction
         }
     }
 
+    @Override
     public void enqueue(TransactionLogResource queue, EnqueueableMessage message, EnqueueAction postTransactionAction)
     {
         sync();
@@ -268,6 +272,7 @@ public class LocalTransaction implements ServerTransaction
         }
     }
 
+    @Override
     public void enqueue(Collection<? extends BaseQueue> queues, EnqueueableMessage message, EnqueueAction postTransactionAction)
     {
         sync();
@@ -338,11 +343,13 @@ public class LocalTransaction implements ServerTransaction
         }
     }
 
+    @Override
     public void commit()
     {
         commit(null);
     }
 
+    @Override
     public void commit(Runnable immediateAction)
     {
         if(_isRollbackOnly)
@@ -437,6 +444,7 @@ public class LocalTransaction implements ServerTransaction
 
     }
 
+    @Override
     public void rollback()
     {
         sync();
@@ -526,6 +534,7 @@ public class LocalTransaction implements ServerTransaction
         _isRollbackOnly = false;
     }
 
+    @Override
     public boolean isTransactional()
     {
         return true;

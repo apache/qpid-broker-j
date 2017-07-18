@@ -47,6 +47,7 @@ public class NoLocalFilterConstructor extends AbstractDescribedTypeConstructor<N
     }
 
 
+    @Override
     public NoLocalFilter construct(Object underlying)
     {
         return NoLocalFilter.INSTANCE;

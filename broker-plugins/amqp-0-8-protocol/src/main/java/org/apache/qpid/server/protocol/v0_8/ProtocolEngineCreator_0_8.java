@@ -49,16 +49,19 @@ public class ProtocolEngineCreator_0_8 implements ProtocolEngineCreator
     {
     }
 
+    @Override
     public Protocol getVersion()
     {
         return Protocol.AMQP_0_8;
     }
 
+    @Override
     public byte[] getHeaderIdentifier()
     {
         return AMQP_0_8_HEADER;
     }
 
+    @Override
     public ProtocolEngine newProtocolEngine(Broker<?> broker,
                                             ServerNetworkConnection network,
                                             AmqpPort<?> port,

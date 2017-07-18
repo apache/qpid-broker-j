@@ -70,6 +70,7 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
         super(storedMessage, connectionReference);
     }
 
+    @Override
     public String getInitialRoutingAddress()
     {
         MessageMetaData_1_0.MessageHeader_1_0 messageHeader = getMessageHeader();
@@ -105,6 +106,7 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
         return metaData == null ? DELETED_MESSAGE_METADATA : metaData;
     }
 
+    @Override
     public MessageMetaData_1_0.MessageHeader_1_0 getMessageHeader()
     {
         return getMessageMetaData().getMessageHeader();
@@ -122,6 +124,7 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
         return AMQP_1_0;
     }
 
+    @Override
     public long getArrivalTime()
     {
         return getMessageMetaData().getArrivalTime();

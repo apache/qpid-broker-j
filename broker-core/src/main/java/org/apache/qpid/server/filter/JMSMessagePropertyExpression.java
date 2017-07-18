@@ -55,6 +55,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
     {
         JMS_PROPERTY_EXPRESSIONS.put("JMSDestination", new Expression<FilterableMessage>()
                                      {
+                                         @Override
                                          public Object evaluate(FilterableMessage message)
                                          {
                                              //TODO
@@ -81,6 +82,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
 
         JMS_PROPERTY_EXPRESSIONS.put("JMSRedelivered", new Expression<FilterableMessage>()
                                      {
+                                         @Override
                                          public Object evaluate(FilterableMessage message)
                                          {
                                              return message.isRedelivered();
@@ -103,6 +105,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
         jmsPropertyExpression = JMS_PROPERTY_EXPRESSIONS.get(name);
     }
 
+    @Override
     public Object evaluate(FilterableMessage message)
     {
 
@@ -124,6 +127,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
     /**
      * @see Object#toString()
      */
+    @Override
     public String toString()
     {
         return name;
@@ -132,6 +136,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
     /**
      * @see Object#hashCode()
      */
+    @Override
     public int hashCode()
     {
         return name.hashCode();
@@ -140,6 +145,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
     /**
      * @see Object#equals(Object)
      */
+    @Override
     public boolean equals(Object o)
     {
 
@@ -154,6 +160,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
 
     private static class ReplyToExpression implements Expression<FilterableMessage>
     {
+        @Override
         public Object evaluate(FilterableMessage message)
         {
             String replyTo = message.getReplyTo();
@@ -164,6 +171,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
 
     private static class TypeExpression implements Expression<FilterableMessage>
     {
+        @Override
         public Object evaluate(FilterableMessage message)
         {
 
@@ -175,6 +183,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
 
     private static class DeliveryModeExpression implements Expression<FilterableMessage>
     {
+        @Override
         public Object evaluate(FilterableMessage message)
         {
                 JMSDeliveryMode mode = message.isPersistent() ? JMSDeliveryMode.PERSISTENT :
@@ -190,6 +199,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
 
     private static class PriorityExpression implements Expression<FilterableMessage>
     {
+        @Override
         public Object evaluate(FilterableMessage message)
         {
             byte priority = message.getPriority();
@@ -199,6 +209,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
 
     private static class MessageIDExpression implements Expression<FilterableMessage>
     {
+        @Override
         public Object evaluate(FilterableMessage message)
         {
 
@@ -211,6 +222,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
 
     private static class TimestampExpression implements Expression<FilterableMessage>
     {
+        @Override
         public Object evaluate(FilterableMessage message)
         {
             long timestamp = message.getTimestamp();
@@ -220,6 +232,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
 
     private static class CorrelationIdExpression implements Expression<FilterableMessage>
     {
+        @Override
         public Object evaluate(FilterableMessage message)
         {
 
@@ -231,6 +244,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
 
     private static class ExpirationExpression implements Expression<FilterableMessage>
     {
+        @Override
         public Object evaluate(FilterableMessage message)
         {
             long expiration = message.getExpiration();

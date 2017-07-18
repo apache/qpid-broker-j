@@ -310,6 +310,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     void purgeUser(@Param(name="origin", description="The AuthenticationProvider the username is associated with")AuthenticationProvider<?> origin,
                    @Param(name="username", description="The unqualified username that should be purged from the broker", mandatory = true)String username);
 
+    @Override
     @ManagedOperation(description = "Resets statistics on this object and all child objects", changesConfiguredObjectState = false, nonModifying = true)
     void resetStatistics();
 
@@ -336,16 +337,20 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     boolean isManagementMode();
 
+    @Override
     EventLogger getEventLogger();
 
+    @Override
     void setEventLogger(EventLogger eventLogger);
 
     boolean isVirtualHostPropertiesNodeEnabled();
 
+    @Override
     AuthenticationProvider<?> getManagementModeAuthenticationProvider();
 
     void assignTargetSizes();
 
+    @Override
     int getNetworkBufferSize();
 
     ScheduledFuture<?> scheduleHouseKeepingTask(long period, final TimeUnit unit, Runnable task);

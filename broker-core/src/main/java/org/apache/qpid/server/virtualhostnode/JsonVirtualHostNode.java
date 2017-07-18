@@ -31,9 +31,11 @@ public interface JsonVirtualHostNode<X extends JsonVirtualHostNode<X>> extends o
 
     String STORE_PATH = "storePath";
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "${qpid.work_dir}${file.separator}${this:name}${file.separator}config${file.separator}")
     String getStorePath();
 
+    @Override
     @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
             defaultValue = "{\"type\": \"JSON\", \"attributes\":{\"path\": \"${json:qpid.work_dir}${json:file.separator}${this:name}${json:file.separator}preferences.json\"}}")
     PreferenceStoreAttributes getPreferenceStoreAttributes();

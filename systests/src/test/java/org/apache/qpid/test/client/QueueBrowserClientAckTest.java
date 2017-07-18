@@ -26,6 +26,7 @@ public class QueueBrowserClientAckTest extends QueueBrowserAutoAckTest
 {
 
 
+    @Override
     protected void setupSession() throws Exception
     {
          _clientSession = _clientConnection.createSession(false, Session.CLIENT_ACKNOWLEDGE);

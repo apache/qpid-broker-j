@@ -39,6 +39,7 @@ public class CompositeAMQDataBlock extends AMQDataBlock implements EncodableAMQD
     }
 
 
+    @Override
     public long getSize()
     {
         long frameSize = 0;
@@ -60,6 +61,7 @@ public class CompositeAMQDataBlock extends AMQDataBlock implements EncodableAMQD
         return size;
     }
 
+    @Override
     public String toString()
     {
         if (_blocks == null)

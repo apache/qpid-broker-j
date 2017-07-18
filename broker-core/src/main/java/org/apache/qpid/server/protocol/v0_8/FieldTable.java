@@ -763,6 +763,7 @@ public class FieldTable
         return itemExists(AMQShortString.valueOf(string));
     }
 
+    @Override
     public String toString()
     {
         initMapIfNecessary();
@@ -898,6 +899,7 @@ public class FieldTable
                     new FieldTableElementProcessor()
                     {
 
+                        @Override
                         public boolean processElement(String propertyName, AMQTypedValue value)
                         {
                             Object val = value.getValue();
@@ -913,6 +915,7 @@ public class FieldTable
                             return true;
                         }
 
+                        @Override
                         public Object getResult()
                         {
                             return map;

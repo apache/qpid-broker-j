@@ -24,6 +24,7 @@ import javax.jms.Session;
 
 public class QueueBrowserDupsOkTest extends QueueBrowserAutoAckTest
 {
+    @Override
     protected void setupSession() throws Exception
     {
           _clientSession = _clientConnection.createSession(false, Session.DUPS_OK_ACKNOWLEDGE);

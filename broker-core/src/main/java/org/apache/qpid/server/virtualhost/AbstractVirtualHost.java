@@ -351,6 +351,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _createDefaultExchanges = firstOpening;
     }
 
+    @Override
     public void onValidate()
     {
         super.onValidate();
@@ -1196,12 +1197,14 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
      * @param period How often this task should run, in ms.
      * @param task The task to run.
      */
+    @Override
     public void scheduleHouseKeepingTask(long period, HouseKeepingTask task)
     {
         task.setFuture(_houseKeepingTaskExecutor.scheduleAtFixedRate(task, period / 2, period, TimeUnit.MILLISECONDS));
     }
 
 
+    @Override
     public ScheduledFuture<?> scheduleTask(long delay, Runnable task)
     {
         return _houseKeepingTaskExecutor.schedule(task, delay, TimeUnit.MILLISECONDS);
@@ -1600,6 +1603,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
+    @Override
     public void registerMessageDelivered(long messageSize)
     {
         _messagesDelivered.registerEvent(1L);
@@ -1607,6 +1611,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _broker.registerMessageDelivered(messageSize);
     }
 
+    @Override
     public void registerMessageReceived(long messageSize, long timestamp)
     {
         _messagesReceived.registerEvent(1L, timestamp);
@@ -1614,21 +1619,25 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _broker.registerMessageReceived(messageSize, timestamp);
     }
 
+    @Override
     public StatisticsCounter getMessageReceiptStatistics()
     {
         return _messagesReceived;
     }
 
+    @Override
     public StatisticsCounter getDataReceiptStatistics()
     {
         return _dataReceived;
     }
 
+    @Override
     public StatisticsCounter getMessageDeliveryStatistics()
     {
         return _messagesDelivered;
     }
 
+    @Override
     public StatisticsCounter getDataDeliveryStatistics()
     {
         return _dataDelivered;
@@ -1664,6 +1673,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _linkRegistry.getReceivingLink(remoteContainerId, linkName);
     }
 
+    @Override
     public DtxRegistry getDtxRegistry()
     {
         return _dtxRegistry;
@@ -1701,6 +1711,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
+    @Override
     public void event(final Event event)
     {
         switch(event)
@@ -1861,6 +1872,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             super("Housekeeping["+AbstractVirtualHost.this.getName()+"]",AbstractVirtualHost.this,_housekeepingJobContext);
         }
 
+        @Override
         public void execute()
         {
             for (Queue<?> q : getChildren(Queue.class))
@@ -1991,6 +2003,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
 
+    @Override
     public void executeTransaction(TransactionalOperation op)
     {
         final MessageStore store = getMessageStore();
@@ -1998,15 +2011,18 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         op.withinTransaction(new Transaction()
         {
+            @Override
             public void dequeue(final QueueEntry messageInstance)
             {
                 final ServerTransaction.Action deleteAction = new ServerTransaction.Action()
                 {
+                    @Override
                     public void postCommit()
                     {
                         messageInstance.delete();
                     }
 
+                    @Override
                     public void onRollback()
                     {
                     }
@@ -2027,17 +2043,20 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
             }
 
+            @Override
             public void copy(QueueEntry entry, final Queue<?> queue)
             {
                 final ServerMessage message = entry.getMessage();
 
                 txn.enqueue(queue, message, new ServerTransaction.EnqueueAction()
                 {
+                    @Override
                     public void postCommit(MessageEnqueueRecord... records)
                     {
                         queue.enqueue(message, null, records[0]);
                     }
 
+                    @Override
                     public void onRollback()
                     {
                     }
@@ -2045,6 +2064,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
             }
 
+            @Override
             public void move(final QueueEntry entry, final Queue<?> queue)
             {
                 final ServerMessage message = entry.getMessage();
@@ -2054,11 +2074,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                 new ServerTransaction.EnqueueAction()
                                 {
 
+                                    @Override
                                     public void postCommit(MessageEnqueueRecord... records)
                                     {
                                         queue.enqueue(message, null, records[0]);
                                     }
 
+                                    @Override
                                     public void onRollback()
                                     {
                                         entry.release();
@@ -2068,11 +2090,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                 new ServerTransaction.Action()
                                 {
 
+                                    @Override
                                     public void postCommit()
                                     {
                                         entry.delete();
                                     }
 
+                                    @Override
                                     public void onRollback()
                                     {
 
@@ -2314,6 +2338,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _targetSize.set(targetSize);
     }
 
+    @Override
     public long getTargetSize()
     {
         return _targetSize.get();

@@ -121,7 +121,8 @@ public class QpidReceive implements MessageListener
 		report.clear();
 	}
 
-	public void onMessage(Message msg)
+	@Override
+    public void onMessage(Message msg)
 	{
 		try
 		{

@@ -265,6 +265,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
         return _priority;
     }
 
+    @Override
     public void flushBatched()
     {
         _target.flushBatched();
@@ -288,21 +289,25 @@ class QueueConsumerImpl<T extends ConsumerTarget>
         return _queueConsumerNode;
     }
 
+    @Override
     public void queueDeleted()
     {
         _target.consumerRemoved(this);
     }
 
+    @Override
     public boolean allocateCredit(final QueueEntry msg)
     {
         return _target.allocateCredit(msg.getMessage());
     }
 
+    @Override
     public void restoreCredit(final QueueEntry queueEntry)
     {
         _target.restoreCredit(queueEntry.getMessage());
     }
 
+    @Override
     public void queueEmpty()
     {
         _target.queueEmpty();
@@ -351,11 +356,13 @@ class QueueConsumerImpl<T extends ConsumerTarget>
         _queue.setNotifyWorkDesired(this, desired);
     }
 
+    @Override
     public final long getConsumerNumber()
     {
         return _consumerNumber;
     }
 
+    @Override
     public final QueueContext getQueueContext()
     {
         return _queueContext;
@@ -366,16 +373,19 @@ class QueueConsumerImpl<T extends ConsumerTarget>
         _queueContext = queueContext;
     }
 
+    @Override
     public final boolean isActive()
     {
         return _target.getState() == ConsumerTarget.State.OPEN;
     }
 
+    @Override
     public final boolean isClosed()
     {
         return _target.getState() == ConsumerTarget.State.CLOSED;
     }
 
+    @Override
     public final boolean hasInterest(QueueEntry entry)
     {
        //check that the message hasn't been rejected
@@ -470,16 +480,19 @@ class QueueConsumerImpl<T extends ConsumerTarget>
         return _createTime;
     }
 
+    @Override
     public final MessageInstance.StealableConsumerAcquiredState<QueueConsumerImpl<T>> getOwningState()
     {
         return _owningState;
     }
 
+    @Override
     public final boolean acquires()
     {
         return _acquires;
     }
 
+    @Override
     public final boolean seesRequeues()
     {
         return _seesRequeues;
@@ -490,11 +503,13 @@ class QueueConsumerImpl<T extends ConsumerTarget>
         return _isTransient;
     }
 
+    @Override
     public final long getBytesOut()
     {
         return _deliveredBytes.longValue();
     }
 
+    @Override
     public final long getMessagesOut()
     {
         return _deliveredCount.longValue();

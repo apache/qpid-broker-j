@@ -75,11 +75,13 @@ public abstract class AbstractTestLogSubject extends QpidTestCase
 
         eventLogger.message(_subject, new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return "<Log Message>";
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return "test.hierarchy";

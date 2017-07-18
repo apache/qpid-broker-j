@@ -51,6 +51,7 @@ public class ConnectionVersionValidatorTest extends QpidTestCase
     private EventLogger _eventLoggerMock;
     private ConnectionVersionValidator _connectionValidator;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

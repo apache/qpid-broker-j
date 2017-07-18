@@ -48,6 +48,7 @@ public class CloseConstructor extends AbstractDescribedTypeConstructor<Close>
         }
     }
 
+    @Override
     public Close construct(Object underlying)
     {
         if(underlying instanceof List)

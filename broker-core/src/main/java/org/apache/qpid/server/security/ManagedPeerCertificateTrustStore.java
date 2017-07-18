@@ -38,6 +38,7 @@ public interface ManagedPeerCertificateTrustStore<X extends ManagedPeerCertifica
     String TYPE_NAME = "ManagedCertificateStore";
 
 
+    @Override
     @ManagedAttribute(defaultValue = "true")
     boolean isExposedAsMessageSource();
 

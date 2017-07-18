@@ -73,11 +73,13 @@ public class ConnectionError implements ErrorCondition, RestrictedType<Symbol>
         return null;
     }
 
+    @Override
     public Symbol getValue()
     {
         return _val;
     }
 
+    @Override
     public String toString()
     {
 

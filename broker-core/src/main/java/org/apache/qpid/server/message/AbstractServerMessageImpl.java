@@ -68,6 +68,7 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
         return _handle.getContentSize() + _handle.getMetadataSize();
     }
 
+    @Override
     public StoredMessage<T> getStoredMessage()
     {
         return _handle;
@@ -192,11 +193,13 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
         }
     }
 
+    @Override
     final public Object getConnectionReference()
     {
         return _connectionReference;
     }
 
+    @Override
     public String toString()
     {
         return "Message[" + debugIdentity() + "]";
@@ -258,11 +261,13 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
 
         }
 
+        @Override
         public X getMessage()
         {
             return (X) _message;
         }
 
+        @Override
         public synchronized void release()
         {
             if(_releasedUpdater.compareAndSet(this,0,1))

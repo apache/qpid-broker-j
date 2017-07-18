@@ -65,6 +65,7 @@ class MockStoreTransaction implements Transaction
         return _state;
     }
 
+    @Override
     public MessageEnqueueRecord enqueueMessage(TransactionLogResource queue, EnqueueableMessage message)
     {
         if (_throwExceptionOnQueueOp)
@@ -98,16 +99,19 @@ class MockStoreTransaction implements Transaction
         _numberOfDequeuedMessages++;
     }
 
+    @Override
     public void commitTran()
     {
         _state = TransactionState.COMMITTED;
     }
 
+    @Override
     public <X> ListenableFuture<X> commitTranAsync(final X val)
     {
         return Futures.immediateFuture(val);
     }
 
+    @Override
     public void abortTran()
     {
         _state = TransactionState.ABORTED;
@@ -123,6 +127,7 @@ class MockStoreTransaction implements Transaction
 
     }
 
+    @Override
     public StoredXidRecord recordXid(long format,
                                      byte[] globalId,
                                      byte[] branchId,
@@ -157,11 +162,13 @@ class MockStoreTransaction implements Transaction
             _messageNumber = messageNumber;
         }
 
+        @Override
         public UUID getQueueId()
         {
             return _queueId;
         }
 
+        @Override
         public long getMessageNumber()
         {
             return _messageNumber;

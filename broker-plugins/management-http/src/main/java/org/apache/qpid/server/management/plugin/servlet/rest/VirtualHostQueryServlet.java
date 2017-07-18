@@ -67,6 +67,7 @@ public class VirtualHostQueryServlet extends QueryServlet<VirtualHost<?>>
         return null;
     }
 
+    @Override
     protected Class<? extends ConfiguredObject> getSupportedCategory(final String categoryName,
                                                                      final Model brokerModel)
     {
@@ -94,6 +95,7 @@ public class VirtualHostQueryServlet extends QueryServlet<VirtualHost<?>>
         }
     }
 
+    @Override
     protected String getRequestedCategory(final HttpServletRequest request, final ConfiguredObject<?> managedObject)
     {
         List<String> pathInfoElements =
@@ -109,6 +111,7 @@ public class VirtualHostQueryServlet extends QueryServlet<VirtualHost<?>>
         return null;
     }
 
+    @Override
     protected List<ConfiguredObject<?>> getAllObjects(final VirtualHost<?> virtualHost,
                                                       final Class<? extends ConfiguredObject> category,
                                                       final HttpServletRequest request)

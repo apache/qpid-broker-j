@@ -62,11 +62,13 @@ public class QueueUnbindBody extends AMQMethodBodyImpl implements EncodableAMQDa
         _arguments = arguments;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -93,6 +95,7 @@ public class QueueUnbindBody extends AMQMethodBodyImpl implements EncodableAMQDa
         return _arguments;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 2;
@@ -103,6 +106,7 @@ public class QueueUnbindBody extends AMQMethodBodyImpl implements EncodableAMQDa
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeUnsignedShort( buffer, _ticket );
@@ -112,11 +116,13 @@ public class QueueUnbindBody extends AMQMethodBodyImpl implements EncodableAMQDa
         writeFieldTable( buffer, _arguments );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchQueueUnbind(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[QueueUnbindBodyImpl: ");

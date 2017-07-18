@@ -42,6 +42,7 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         _testProperties = new BasicContentHeaderProperties();
     }
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

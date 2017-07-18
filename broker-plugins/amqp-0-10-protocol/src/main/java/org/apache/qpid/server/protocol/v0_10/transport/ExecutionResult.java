@@ -30,26 +30,32 @@ public final class ExecutionResult extends Method {
 
     public static final int TYPE = 770;
 
+    @Override
     public final int getStructType() {
         return TYPE;
     }
 
+    @Override
     public final int getSizeWidth() {
         return 0;
     }
 
+    @Override
     public final int getPackWidth() {
         return 2;
     }
 
+    @Override
     public final boolean hasPayload() {
         return false;
     }
 
+    @Override
     public final byte getEncodedTrack() {
         return Frame.L4;
     }
 
+    @Override
     public final boolean isConnectionControl()
     {
         return false;
@@ -81,6 +87,7 @@ public final class ExecutionResult extends Method {
 
     }
 
+    @Override
     public <C> void dispatch(C context, MethodDelegate<C> delegate) {
         delegate.executionResult(context, this);
     }
@@ -141,6 +148,7 @@ public final class ExecutionResult extends Method {
 
 
 
+    @Override
     public void write(Encoder enc)
     {
         enc.writeUint16(packing_flags);
@@ -155,6 +163,7 @@ public final class ExecutionResult extends Method {
 
     }
 
+    @Override
     public void read(Decoder dec)
     {
         packing_flags = (short) dec.readUint16();
@@ -169,6 +178,7 @@ public final class ExecutionResult extends Method {
 
     }
 
+    @Override
     public Map<String,Object> getFields()
     {
         Map<String,Object> result = new LinkedHashMap<String,Object>();

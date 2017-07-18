@@ -53,6 +53,7 @@ public class DurableQueueLoggingTest extends AbstractTestLogging
     private static final String QUEUE_PREFIX = "QUE-";
     private static int PRIORITIES = 6;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

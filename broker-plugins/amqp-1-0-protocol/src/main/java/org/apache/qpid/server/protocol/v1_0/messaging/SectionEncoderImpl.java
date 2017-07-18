@@ -33,6 +33,7 @@ public class SectionEncoderImpl implements SectionEncoder
         _registry = describedTypeRegistry;
     }
 
+    @Override
     public QpidByteBuffer encodeObject(Object obj)
     {
         final ValueWriter<Object> valueWriter = _registry.getValueWriter(obj);

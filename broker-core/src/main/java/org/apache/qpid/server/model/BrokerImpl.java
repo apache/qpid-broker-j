@@ -525,12 +525,14 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         return children;
     }
 
+    @Override
     public Collection<Port<?>> getPorts()
     {
         Collection children = getChildren(Port.class);
         return children;
     }
 
+    @Override
     public Collection<AuthenticationProvider<?>> getAuthenticationProviders()
     {
         Collection children = getChildren(AuthenticationProvider.class);
@@ -778,6 +780,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         }
     }
 
+    @Override
     public AccessControl getAccessControl()
     {
         return _accessControl;
@@ -852,12 +855,14 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         getEventLogger().message(BrokerMessages.OPERATION(operation));
     }
 
+    @Override
     public void registerMessageDelivered(long messageSize)
     {
         _messagesDelivered.registerEvent(1L);
         _dataDelivered.registerEvent(messageSize);
     }
 
+    @Override
     public void registerMessageReceived(long messageSize, long timestamp)
     {
         _messagesReceived.registerEvent(1L, timestamp);
@@ -882,21 +887,25 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         return QpidByteBuffer.getNumberOfPooledBuffers();
     }
 
+    @Override
     public StatisticsCounter getMessageReceiptStatistics()
     {
         return _messagesReceived;
     }
 
+    @Override
     public StatisticsCounter getDataReceiptStatistics()
     {
         return _dataReceived;
     }
 
+    @Override
     public StatisticsCounter getMessageDeliveryStatistics()
     {
         return _messagesDelivered;
     }
 
+    @Override
     public StatisticsCounter getDataDeliveryStatistics()
     {
         return _dataDelivered;
@@ -936,6 +945,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             _subject = getSystemTaskSubject("Statistics");
         }
 
+        @Override
         public void run()
         {
             Subject.doAs(_subject, new PrivilegedAction<Object>()
@@ -1010,6 +1020,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         return _virtualHostPropertiesNodeEnabled;
     }
 
+    @Override
     public AuthenticationProvider<?> getManagementModeAuthenticationProvider()
     {
         return _managementModeAuthenticationProvider;
@@ -1021,6 +1032,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         return _networkBufferSize;
     }
 
+    @Override
     public String getDocumentationUrl()
     {
         return _documentationUrl;

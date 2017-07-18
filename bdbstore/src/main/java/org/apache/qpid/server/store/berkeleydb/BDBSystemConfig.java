@@ -30,15 +30,19 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreProvider;
 public interface BDBSystemConfig<X extends BDBSystemConfig<X>> extends SystemConfig<X>, FileBasedSettings,
                                                                        SizeMonitoringSettings, PreferenceStoreProvider
 {
+    @Override
     @ManagedAttribute(defaultValue = "${qpid.work_dir}${file.separator}config")
     String getStorePath();
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreUnderfullSize();
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreOverfullSize();
 
+    @Override
     @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
             defaultValue = "{\"type\": \"Provided\"}")
     PreferenceStoreAttributes getPreferenceStoreAttributes();

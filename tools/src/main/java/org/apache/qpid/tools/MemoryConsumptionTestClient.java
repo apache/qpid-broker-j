@@ -229,6 +229,7 @@ public class MemoryConsumptionTestClient
             Connection connection = conFac.createConnection();
             connection.setExceptionListener(new ExceptionListener()
             {
+                @Override
                 public void onException(JMSException jmse)
                 {
                     LOGGER.error("The sample received an exception through the ExceptionListener", jmse);

@@ -84,6 +84,7 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
         super.setUp();
     }
 
+    @Override
     public QueueEntryImpl getQueueEntryImpl(int msgId)
     {
         final ServerMessage message = mock(ServerMessage.class);
@@ -100,6 +101,7 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
         return _queueEntryList.add(message, null);
     }
 
+    @Override
     public void testCompareTo()
     {
         assertTrue(_queueEntry.compareTo(_queueEntry2) > 0);
@@ -116,6 +118,7 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
         assertTrue(_queueEntry3.compareTo(_queueEntry3) == 0);
     }
 
+    @Override
     public void testTraverseWithNoDeletedEntries()
     {
         QueueEntry current = _queueEntry2;
@@ -131,6 +134,7 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
 
     }
 
+    @Override
     public void testTraverseWithDeletedEntries()
     {
         // Delete 2nd queue entry

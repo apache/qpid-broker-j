@@ -49,6 +49,7 @@ public class MessageAnnotationsConstructor extends AbstractDescribedTypeConstruc
     }
 
 
+    @Override
     public MessageAnnotations construct(Object underlying)
     {
 

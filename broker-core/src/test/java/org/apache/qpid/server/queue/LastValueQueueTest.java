@@ -40,6 +40,7 @@ public class LastValueQueueTest extends AbstractQueueTestBase
     }
 
 
+    @Override
     public void testOldestMessage()
     {
         Queue<?> queue = getQueue();

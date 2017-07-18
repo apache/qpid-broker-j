@@ -44,6 +44,7 @@ public class ConsumerPriorityTest extends QpidBrokerTestCase
     private Connection _producingConnection;
     private Session _producingSession;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();

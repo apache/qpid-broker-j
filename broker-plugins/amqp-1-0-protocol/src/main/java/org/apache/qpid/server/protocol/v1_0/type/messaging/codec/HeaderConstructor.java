@@ -50,6 +50,7 @@ public class HeaderConstructor extends AbstractDescribedTypeConstructor<Header>
         }
     }
 
+    @Override
     public Header construct(Object underlying)
     {
         if(underlying instanceof List)

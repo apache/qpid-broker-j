@@ -49,6 +49,7 @@ public class FlowConstructor extends AbstractDescribedTypeConstructor<Flow>
         }
     }
 
+    @Override
     public Flow construct(Object underlying)
     {
         if(underlying instanceof List)

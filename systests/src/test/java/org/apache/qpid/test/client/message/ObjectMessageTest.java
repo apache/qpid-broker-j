@@ -39,6 +39,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase
     private MessageConsumer _consumer;
     private MessageProducer _producer;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -62,6 +63,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase
         _connection.start();
     }
 
+    @Override
     public void tearDown() throws Exception
     {
         //clean up

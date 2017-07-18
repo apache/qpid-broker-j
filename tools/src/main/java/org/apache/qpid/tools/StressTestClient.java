@@ -221,6 +221,7 @@ public class StressTestClient
                     Connection conn = conFac.createConnection();
                     conn.setExceptionListener(new ExceptionListener()
                     {
+                        @Override
                         public void onException(JMSException jmse)
                         {
                             System.err.println(CLASS + ": The sample received an exception through the ExceptionListener");

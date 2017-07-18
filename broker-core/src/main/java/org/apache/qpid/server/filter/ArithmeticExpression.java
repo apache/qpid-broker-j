@@ -39,6 +39,7 @@ public abstract class ArithmeticExpression<T> extends BinaryExpression<T>
     {
         return new ArithmeticExpression<E>(left, right)
             {
+                @Override
                 protected Object evaluate(Object lvalue, Object rvalue)
                 {
                     if (lvalue instanceof String)
@@ -56,6 +57,7 @@ public abstract class ArithmeticExpression<T> extends BinaryExpression<T>
                     throw new SelectorParsingException("Cannot call plus operation on: " + lvalue + " and: " + rvalue);
                 }
 
+                @Override
                 public String getExpressionSymbol()
                 {
                     return "+";
@@ -67,6 +69,7 @@ public abstract class ArithmeticExpression<T> extends BinaryExpression<T>
     {
         return new ArithmeticExpression<E>(left, right)
             {
+                @Override
                 protected Object evaluate(Object lvalue, Object rvalue)
                 {
                     if (lvalue instanceof Number)
@@ -77,6 +80,7 @@ public abstract class ArithmeticExpression<T> extends BinaryExpression<T>
                     throw new SelectorParsingException("Cannot call minus operation on: " + lvalue + " and: " + rvalue);
                 }
 
+                @Override
                 public String getExpressionSymbol()
                 {
                     return "-";
@@ -89,6 +93,7 @@ public abstract class ArithmeticExpression<T> extends BinaryExpression<T>
         return new ArithmeticExpression<E>(left, right)
             {
 
+                @Override
                 protected Object evaluate(Object lvalue, Object rvalue)
                 {
                     if (lvalue instanceof Number)
@@ -99,6 +104,7 @@ public abstract class ArithmeticExpression<T> extends BinaryExpression<T>
                     throw new SelectorParsingException("Cannot call multiply operation on: " + lvalue + " and: " + rvalue);
                 }
 
+                @Override
                 public String getExpressionSymbol()
                 {
                     return "*";
@@ -111,6 +117,7 @@ public abstract class ArithmeticExpression<T> extends BinaryExpression<T>
         return new ArithmeticExpression<E>(left, right)
             {
 
+                @Override
                 protected Object evaluate(Object lvalue, Object rvalue)
                 {
                     if (lvalue instanceof Number)
@@ -121,6 +128,7 @@ public abstract class ArithmeticExpression<T> extends BinaryExpression<T>
                     throw new SelectorParsingException("Cannot call divide operation on: " + lvalue + " and: " + rvalue);
                 }
 
+                @Override
                 public String getExpressionSymbol()
                 {
                     return "/";
@@ -133,6 +141,7 @@ public abstract class ArithmeticExpression<T> extends BinaryExpression<T>
         return new ArithmeticExpression<E>(left, right)
             {
 
+                @Override
                 protected Object evaluate(Object lvalue, Object rvalue)
                 {
                     if (lvalue instanceof Number)
@@ -143,6 +152,7 @@ public abstract class ArithmeticExpression<T> extends BinaryExpression<T>
                     throw new SelectorParsingException("Cannot call mod operation on: " + lvalue + " and: " + rvalue);
                 }
 
+                @Override
                 public String getExpressionSymbol()
                 {
                     return "%";
@@ -241,6 +251,7 @@ public abstract class ArithmeticExpression<T> extends BinaryExpression<T>
         }
     }
 
+    @Override
     public Object evaluate(T message)
     {
         Object lvalue = getLeft().evaluate(message);

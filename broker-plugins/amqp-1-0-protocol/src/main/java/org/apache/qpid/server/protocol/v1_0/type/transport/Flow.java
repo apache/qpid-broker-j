@@ -286,6 +286,7 @@ public class Flow implements FrameBody
         return builder.toString();
     }
 
+    @Override
     public void invoke(int channel, ConnectionHandler conn)
     {
         conn.receiveFlow(channel, this);

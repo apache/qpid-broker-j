@@ -94,19 +94,25 @@ public class MercuryReporter extends BasicReporter
             rate = 0;
         }
 
+        @Override
         public double getRate()
         {
             return rate;
         }
 
+        @Override
         public int getSampleSize()
         {
             return messages;
         }
 
+        @Override
         public long getMinLatency() { return 0; }
+        @Override
         public long getMaxLatency() { return 0; }
+        @Override
         public double getAvgLatency(){ return 0; }
+        @Override
         public double getStdDev(){ return 0; }
 
     }
@@ -133,31 +139,37 @@ public class MercuryReporter extends BasicReporter
             avgLatency = 0;
         }
 
+        @Override
         public double getRate()
         {
             return rate;
         }
 
+        @Override
         public long getMinLatency()
         { 
             return minLatency; 
         }
 
-        public long getMaxLatency() 
+        @Override
+        public long getMaxLatency()
         { 
             return maxLatency; 
         }
 
+        @Override
         public double getAvgLatency()
         { 
             return avgLatency; 
         }
 
+        @Override
         public double getStdDev()
         { 
             return stdDev; 
         }
 
+        @Override
         public int getSampleSize()
         {
             return messages;

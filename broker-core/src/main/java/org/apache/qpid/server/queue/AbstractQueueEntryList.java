@@ -56,6 +56,7 @@ abstract class AbstractQueueEntryList implements QueueEntryList
         }
     }
 
+    @Override
     public void updateStatsOnStateChange(QueueEntry entry, QueueEntry.EntryState fromState, QueueEntry.EntryState toState)
     {
         final QueueStatistics queueStatistics = _queueStatistics;

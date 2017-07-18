@@ -34,21 +34,25 @@ public final class Symbol implements Comparable<Symbol>, CharSequence
         _underlying = underlying;
     }
 
+    @Override
     public int length()
     {
         return _underlying.length();
     }
 
+    @Override
     public int compareTo(Symbol o)
     {
         return _underlying.compareTo(o._underlying);
     }
 
+    @Override
     public char charAt(int index)
     {
         return _underlying.charAt(index);
     }
 
+    @Override
     public CharSequence subSequence(int beginIndex, int endIndex)
     {
         return _underlying.subSequence(beginIndex, endIndex);

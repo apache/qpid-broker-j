@@ -49,6 +49,7 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
 {
 
 
+    @Override
     public Class<InternalMessage> getInputClass()
     {
         return InternalMessage.class;
@@ -101,6 +102,7 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
 
     }
 
+    @Override
     protected EncodingRetainingSection<?> getBodySection(final InternalMessage serverMessage,
                                                          final SectionEncoder encoder)
     {

@@ -44,11 +44,13 @@ public class JsonSystemConfigImpl extends AbstractSystemConfig<JsonSystemConfigI
         super(taskExecutor, eventLogger, systemPrincipal, attributes);
     }
 
+    @Override
     public String getStorePath()
     {
         return _storePath;
     }
 
+    @Override
     protected JsonFileConfigStore createStoreObject()
     {
         return new JsonFileConfigStore(null);

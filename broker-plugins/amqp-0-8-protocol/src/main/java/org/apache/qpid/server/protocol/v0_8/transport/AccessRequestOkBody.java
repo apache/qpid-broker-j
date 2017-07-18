@@ -46,11 +46,13 @@ public class AccessRequestOkBody extends AMQMethodBodyImpl implements EncodableA
         _ticket = ticket;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -61,22 +63,26 @@ public class AccessRequestOkBody extends AMQMethodBodyImpl implements EncodableA
         return _ticket;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 2;
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeUnsignedShort( buffer, _ticket );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchAccessRequestOk(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[AccessRequestOkBodyImpl: ");

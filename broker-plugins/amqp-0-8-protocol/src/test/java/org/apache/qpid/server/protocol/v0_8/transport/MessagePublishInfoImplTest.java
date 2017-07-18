@@ -29,6 +29,7 @@ public class MessagePublishInfoImplTest extends QpidTestCase
     private final AMQShortString _exchange = new AMQShortString("exchange");
     private final AMQShortString _routingKey = new AMQShortString("routingKey");
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

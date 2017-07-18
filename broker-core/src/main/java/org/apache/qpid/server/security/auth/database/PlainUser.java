@@ -53,21 +53,25 @@ public class PlainUser implements PasswordPrincipal
         _modified = true;
     }
 
+    @Override
     public String getName()
     {
         return _name;
     }
 
+    @Override
     public String toString()
     {
         return _name;
     }
 
+    @Override
     public char[] getPassword()
     {
         return _password;
     }
     
+    @Override
     public byte[] getEncodedPassword()
     {
         byte[] byteArray = new byte[_password.length];
@@ -81,32 +85,38 @@ public class PlainUser implements PasswordPrincipal
 
 
 
+    @Override
     public void restorePassword(char[] password)
     {
         setPassword(password);
     }
 
+    @Override
     public void setPassword(char[] password)
     {
         _password = password;
         _modified = true;
     }
 
+    @Override
     public boolean isModified()
     {
         return _modified;
     }
 
+    @Override
     public boolean isDeleted()
     {
         return _deleted;
     }
 
+    @Override
     public void delete()
     {
         _deleted = true;
     }
 
+    @Override
     public void saved()
     {
         _modified = false;

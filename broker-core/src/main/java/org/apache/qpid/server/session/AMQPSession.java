@@ -38,6 +38,7 @@ public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSessio
 {
     Object getConnectionReference();
 
+    @Override
     int getChannelId();
 
     AMQPConnection<?> getAMQPConnection();
@@ -64,6 +65,7 @@ public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSessio
 
     long getTxnRejects();
 
+    @Override
     long getConsumerCount();
 
     void incConsumerCount();
@@ -94,6 +96,7 @@ public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSessio
 
     void notifyWork(X target);
 
+    @Override
     void close();
 
     ListenableFuture<Void> doOnIOThreadAsync(final Runnable task);

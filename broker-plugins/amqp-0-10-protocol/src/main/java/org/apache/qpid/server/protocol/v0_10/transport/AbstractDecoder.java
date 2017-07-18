@@ -72,11 +72,13 @@ public abstract class AbstractDecoder implements Decoder
         return (short) (0xFF & get());
     }
 
+    @Override
     public short readUint8()
     {
         return uget();
     }
 
+    @Override
     public int readUint16()
     {
         int i = uget() << 8;
@@ -84,6 +86,7 @@ public abstract class AbstractDecoder implements Decoder
         return i;
     }
 
+    @Override
     public long readUint32()
     {
         long l = uget() << 24;
@@ -93,11 +96,13 @@ public abstract class AbstractDecoder implements Decoder
         return l;
     }
 
+    @Override
     public int readSequenceNo()
     {
         return (int) readUint32();
     }
 
+    @Override
     public long readUint64()
     {
         long l = 0;
@@ -108,11 +113,13 @@ public abstract class AbstractDecoder implements Decoder
         return l;
     }
 
+    @Override
     public long readDatetime()
     {
         return readUint64();
     }
 
+    @Override
     public String readStr8()
     {
         short size = readUint8();
@@ -134,6 +141,7 @@ public abstract class AbstractDecoder implements Decoder
         return str;
     }
 
+    @Override
     public String readStr16()
     {
         int size = readUint16();
@@ -142,6 +150,7 @@ public abstract class AbstractDecoder implements Decoder
         return new String(bytes, StandardCharsets.UTF_8);
     }
 
+    @Override
     public byte[] readVbin8()
     {
         int size = readUint8();
@@ -150,6 +159,7 @@ public abstract class AbstractDecoder implements Decoder
         return bytes;
     }
 
+    @Override
     public byte[] readVbin16()
     {
         int size = readUint16();
@@ -158,6 +168,7 @@ public abstract class AbstractDecoder implements Decoder
         return bytes;
     }
 
+    @Override
     public byte[] readVbin32()
     {
         int size = (int) readUint32();
@@ -166,6 +177,7 @@ public abstract class AbstractDecoder implements Decoder
         return bytes;
     }
 
+    @Override
     public RangeSet readSequenceSet()
     {
         int count = readUint16()/8;
@@ -185,11 +197,13 @@ public abstract class AbstractDecoder implements Decoder
         }
     }
 
+    @Override
     public RangeSet readByteRanges()
     {
         throw new Error("not implemented");
     }
 
+    @Override
     public UUID readUuid()
     {
         long msb = readUint64();
@@ -197,6 +211,7 @@ public abstract class AbstractDecoder implements Decoder
         return new UUID(msb, lsb);
     }
 
+    @Override
     public Struct readStruct(int type)
     {
         Struct st = Struct.create(type);
@@ -218,6 +233,7 @@ public abstract class AbstractDecoder implements Decoder
         return st;
     }
 
+    @Override
     public Struct readStruct32()
     {
         long size = readUint32();
@@ -234,6 +250,7 @@ public abstract class AbstractDecoder implements Decoder
         }
     }
 
+    @Override
     public Map<String,Object> readMap()
     {
         long size = readUint32();
@@ -263,6 +280,7 @@ public abstract class AbstractDecoder implements Decoder
         return result;
     }
 
+    @Override
     public List<Object> readList()
     {
         long size = readUint32();
@@ -290,6 +308,7 @@ public abstract class AbstractDecoder implements Decoder
         return result;
     }
 
+    @Override
     public List<Object> readArray()
     {
         long size = readUint32();

@@ -1461,6 +1461,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             _reference.release();
         }
 
+        @Override
         public void onRollback()
         {
             _reference.release();
@@ -3405,6 +3406,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         Runnable task = new Runnable()
         {
 
+            @Override
             public void run()
             {
                 _connection.writeFrame(responseBody.generateFrame(_channelId));
@@ -3479,6 +3481,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
     }
 
+    @Override
     protected void updateBlockedStateIfNecessary()
     {
         boolean desiredBlockingState = _blocking.get();

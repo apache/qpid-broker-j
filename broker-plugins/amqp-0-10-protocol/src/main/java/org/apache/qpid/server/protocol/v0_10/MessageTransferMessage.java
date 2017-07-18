@@ -48,12 +48,14 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
         return metaData == null ? DELETED_MESSAGE_METADATA : metaData;
     }
 
+    @Override
     public String getInitialRoutingAddress()
     {
         final String routingKey = getMetaData().getRoutingKey();
         return routingKey == null ? "" : routingKey;
     }
 
+    @Override
     public AMQMessageHeader getMessageHeader()
     {
         return getMetaData().getMessageHeader();
@@ -65,6 +67,7 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
         return getMetaData().isImmediate();
     }
 
+    @Override
     public long getExpiration()
     {
         return getMetaData().getExpiration();
@@ -76,6 +79,7 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
         return AMQP_0_10;
     }
 
+    @Override
     public long getArrivalTime()
     {
         return getMetaData().getArrivalTime();

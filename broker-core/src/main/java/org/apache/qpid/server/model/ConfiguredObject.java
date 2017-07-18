@@ -78,6 +78,7 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
      *
      * @return the name of the object
      */
+    @Override
     @ManagedAttribute( mandatory = true )
     String getName();
 
@@ -244,6 +245,7 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
     ListenableFuture<Void> setAttributesAsync(Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException;
 
 
+    @Override
     Class<? extends ConfiguredObject> getCategoryClass();
     Class<? extends ConfiguredObject> getTypeClass();
 

@@ -94,5 +94,6 @@ public interface BindingURL
 
     String[] getBindingKeys();
 
+    @Override
     String toString();
 }

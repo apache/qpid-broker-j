@@ -52,6 +52,7 @@ public abstract class AbstractLogSubject implements LogSubject
      *
      * @return String representing this LogSubject
      */
+    @Override
     public String toLogString()
     {
         return _logString;

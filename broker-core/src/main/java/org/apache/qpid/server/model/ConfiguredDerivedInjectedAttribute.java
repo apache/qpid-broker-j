@@ -106,16 +106,19 @@ public class ConfiguredDerivedInjectedAttribute<C extends ConfiguredObject, T>
         return false;
     }
 
+    @Override
     public boolean isDerived()
     {
         return true;
     }
 
+    @Override
     public boolean isSecure()
     {
         return _secure;
     }
 
+    @Override
     public boolean isPersisted()
     {
         return _persisted;
@@ -139,11 +142,13 @@ public class ConfiguredDerivedInjectedAttribute<C extends ConfiguredObject, T>
         return _oversizedAltText;
     }
 
+    @Override
     public String getDescription()
     {
         return _description;
     }
 
+    @Override
     public Pattern getSecureValueFilter()
     {
         return _secureValuePattern;

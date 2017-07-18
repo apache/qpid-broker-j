@@ -48,6 +48,7 @@ public class CoordinatorConstructor extends AbstractDescribedTypeConstructor<Coo
         }
     }
 
+    @Override
     public Coordinator construct(Object underlying)
     {
         if(underlying instanceof List)

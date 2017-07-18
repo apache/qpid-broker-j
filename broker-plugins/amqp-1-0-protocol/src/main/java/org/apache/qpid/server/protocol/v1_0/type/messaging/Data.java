@@ -33,6 +33,7 @@ public class Data implements NonEncodingRetainingSection<Binary>
         _value = value;
     }
 
+    @Override
     public Binary getValue()
     {
         return _value;

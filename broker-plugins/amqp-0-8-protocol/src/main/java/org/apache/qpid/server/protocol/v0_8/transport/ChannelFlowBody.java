@@ -44,11 +44,13 @@ public class ChannelFlowBody extends AMQMethodBodyImpl implements EncodableAMQDa
         _active = active;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -59,21 +61,25 @@ public class ChannelFlowBody extends AMQMethodBodyImpl implements EncodableAMQDa
         return _active;
     }
 
+    @Override
     protected int getBodySize()
     {
         return 1;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeBitfield( buffer, _active ? (byte)1 : (byte)0);
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchChannelFlow(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[ChannelFlowBodyImpl: ");

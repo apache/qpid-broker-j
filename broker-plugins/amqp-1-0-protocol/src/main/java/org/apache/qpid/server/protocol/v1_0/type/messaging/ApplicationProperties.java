@@ -35,6 +35,7 @@ public class ApplicationProperties implements NonEncodingRetainingSection<Map<St
         _value = value;
     }
 
+    @Override
     public Map<String,Object> getValue()
     {
         return _value;

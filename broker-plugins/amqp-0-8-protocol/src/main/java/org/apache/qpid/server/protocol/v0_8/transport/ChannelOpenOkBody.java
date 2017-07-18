@@ -63,22 +63,26 @@ public class ChannelOpenOkBody extends AMQMethodBodyImpl implements EncodableAMQ
         _isAMQP08 = isAMQP08;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
     }
 
 
+    @Override
     protected int getBodySize()
     {
         return _isAMQP08 ? 0 : 4;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         if(!_isAMQP08)
@@ -87,11 +91,13 @@ public class ChannelOpenOkBody extends AMQMethodBodyImpl implements EncodableAMQ
         }
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchChannelOpenOk(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         return "[ChannelOpenOkBody]";

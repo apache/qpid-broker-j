@@ -48,6 +48,7 @@ public class SaslOutcomeConstructor extends AbstractDescribedTypeConstructor<Sas
         }
     }
 
+    @Override
     public SaslOutcome construct(Object underlying)
     {
         if(underlying instanceof List)

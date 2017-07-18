@@ -130,11 +130,13 @@ public class TransactionLogMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return RECOVERY_START_LOG_HIERARCHY;
@@ -188,11 +190,13 @@ public class TransactionLogMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return XA_INCOMPLETE_MESSAGE_LOG_HIERARCHY;
@@ -241,11 +245,13 @@ public class TransactionLogMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CREATED_LOG_HIERARCHY;
@@ -299,11 +305,13 @@ public class TransactionLogMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return STORE_LOCATION_LOG_HIERARCHY;
@@ -380,11 +388,13 @@ public class TransactionLogMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return RECOVERY_COMPLETE_LOG_HIERARCHY;
@@ -433,11 +443,13 @@ public class TransactionLogMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CLOSED_LOG_HIERARCHY;
@@ -491,11 +503,13 @@ public class TransactionLogMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return XA_INCOMPLETE_QUEUE_LOG_HIERARCHY;
@@ -549,11 +563,13 @@ public class TransactionLogMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return RECOVERED_LOG_HIERARCHY;

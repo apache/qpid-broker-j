@@ -68,6 +68,7 @@ public class ServerSessionDelegateTest extends QpidTestCase
 
         verify(_session).invoke(argThat(new ArgumentMatcher<ExecutionException>()
         {
+            @Override
             public boolean matches(Object object)
             {
                 ExecutionException exception = (ExecutionException)object;

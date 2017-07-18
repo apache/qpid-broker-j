@@ -30,14 +30,17 @@ public final class ExchangeBoundResult extends Struct {
 
     public static final int TYPE = 1794;
 
+    @Override
     public final int getStructType() {
         return TYPE;
     }
 
+    @Override
     public final int getSizeWidth() {
         return 4;
     }
 
+    @Override
     public final int getPackWidth() {
         return 2;
     }
@@ -253,18 +256,21 @@ public final class ExchangeBoundResult extends Struct {
 
 
 
+    @Override
     public void write(Encoder enc)
     {
         enc.writeUint16(packing_flags);
 
     }
 
+    @Override
     public void read(Decoder dec)
     {
         packing_flags = (short) dec.readUint16();
 
     }
 
+    @Override
     public Map<String,Object> getFields()
     {
         Map<String,Object> result = new LinkedHashMap<String,Object>();

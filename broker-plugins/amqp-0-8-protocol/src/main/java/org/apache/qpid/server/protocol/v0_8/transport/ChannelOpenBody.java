@@ -43,31 +43,37 @@ public class ChannelOpenBody extends AMQMethodBodyImpl implements EncodableAMQDa
 
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
     }
 
+    @Override
     protected int getBodySize()
     {
         return 1;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeAMQShortString( buffer, null );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchChannelOpen(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         return "[ChannelOpenBody] ";

@@ -45,31 +45,37 @@ public class TxCommitBody extends AMQMethodBodyImpl implements EncodableAMQDataB
     {
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
     }
 
 
+    @Override
     protected int getBodySize()
     {
         return 0;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchTxCommit(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         return "[TxCommitBody]";

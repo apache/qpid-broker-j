@@ -51,6 +51,7 @@ public class ErrorConstructor extends AbstractDescribedTypeConstructor<Error>
         }
     }
 
+    @Override
     public org.apache.qpid.server.protocol.v1_0.type.transport.Error construct(Object underlying)
     {
         if(underlying instanceof List)
@@ -180,6 +181,7 @@ public class ErrorConstructor extends AbstractDescribedTypeConstructor<Error>
             _value = value;
         }
 
+        @Override
         public Symbol getValue()
         {
             return _value;

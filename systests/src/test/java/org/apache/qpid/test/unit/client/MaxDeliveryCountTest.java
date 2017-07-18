@@ -335,6 +335,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
             private int _totalNumDeliveries = 0;
             private int _expectedMessage = 1;
 
+            @Override
             public void onMessage(Message message)
             {
                 if(_failed || _awaitCompletion.getCount() == 0L)

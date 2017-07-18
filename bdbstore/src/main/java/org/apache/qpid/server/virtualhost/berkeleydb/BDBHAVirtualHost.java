@@ -49,9 +49,11 @@ public interface BDBHAVirtualHost<X extends BDBHAVirtualHost<X>>
     @DerivedAttribute
     String getDurability();
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreUnderfullSize();
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreOverfullSize();
 

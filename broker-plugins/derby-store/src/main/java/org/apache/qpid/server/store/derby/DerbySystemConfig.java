@@ -29,15 +29,19 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 public interface DerbySystemConfig<X extends DerbySystemConfig<X>> extends SystemConfig<X>, FileBasedSettings,
                                                                            SizeMonitoringSettings
 {
+    @Override
     @ManagedAttribute(defaultValue = "${qpid.work_dir}${file.separator}config.json")
     String getStorePath();
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreUnderfullSize();
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreOverfullSize();
 
+    @Override
     @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
             defaultValue = "{\"type\": \"Provided\"}")
     PreferenceStoreAttributes getPreferenceStoreAttributes();

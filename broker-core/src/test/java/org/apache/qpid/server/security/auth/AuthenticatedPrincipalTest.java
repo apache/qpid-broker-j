@@ -89,6 +89,7 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
     {
         final Principal other = new Principal()
         {
+            @Override
             public String getName()
             {
                 return "otherprincipal";

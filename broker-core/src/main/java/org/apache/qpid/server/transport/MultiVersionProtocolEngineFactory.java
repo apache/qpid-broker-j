@@ -80,6 +80,7 @@ public class MultiVersionProtocolEngineFactory implements ProtocolEngineFactory
         _transport = transport;
     }
 
+    @Override
     public MultiVersionProtocolEngine newProtocolEngine(final SocketAddress remoteSocketAddress)
     {
         if(_port.canAcceptNewConnection(remoteSocketAddress))

@@ -48,6 +48,7 @@ public class DispositionConstructor extends AbstractDescribedTypeConstructor<Dis
         }
     }
 
+    @Override
     public Disposition construct(Object underlying)
     {
         if(underlying instanceof List)

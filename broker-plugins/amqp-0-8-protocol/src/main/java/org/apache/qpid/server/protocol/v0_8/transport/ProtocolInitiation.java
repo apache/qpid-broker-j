@@ -73,6 +73,7 @@ public class ProtocolInitiation extends AMQDataBlock implements EncodableAMQData
     }
 
 
+    @Override
     public long getSize()
     {
         return 4 + 1 + 1 + 1 + 1;
@@ -94,6 +95,7 @@ public class ProtocolInitiation extends AMQDataBlock implements EncodableAMQData
         return 8l;
     }
 
+    @Override
     public boolean equals(Object o)
     {
         if (this == o)

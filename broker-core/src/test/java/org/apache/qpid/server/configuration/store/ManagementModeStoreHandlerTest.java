@@ -73,6 +73,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     private SystemConfig _systemConfig;
     private TaskExecutor _taskExecutor;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
@@ -147,6 +148,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
                 return Futures.immediateFuture(null);
             }
 
+            @Override
             @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
             protected ListenableFuture<Void> startQuiesced()
             {

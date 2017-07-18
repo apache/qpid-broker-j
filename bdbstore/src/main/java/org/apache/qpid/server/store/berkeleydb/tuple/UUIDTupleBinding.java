@@ -30,11 +30,13 @@ public class UUIDTupleBinding extends TupleBinding<UUID>
 {
     private static final UUIDTupleBinding INSTANCE = new UUIDTupleBinding();
 
+    @Override
     public UUID entryToObject(final TupleInput tupleInput)
     {
         return new UUID(tupleInput.readLong(), tupleInput.readLong());
     }
 
+    @Override
     public void objectToEntry(final UUID uuid, final TupleOutput tupleOutput)
     {
         tupleOutput.writeLong(uuid.getMostSignificantBits());

@@ -61,6 +61,7 @@ public class ConnectionLogSubjectTest extends AbstractTestLogSubject
      *
      * @param message the message whose format needs validation
      */
+    @Override
     protected void validateLogStatement(String message)
     {
         verifyConnection(CONNECTION_ID, USER, IP_STRING, VHOST, message);

@@ -51,6 +51,7 @@ public class AMQDecoderTest extends QpidTestCase
     private FrameCreatingMethodProcessor _methodProcessor;
 
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

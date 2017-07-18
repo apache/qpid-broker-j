@@ -96,11 +96,13 @@ public class ConfigStoreMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return RECOVERY_START_LOG_HIERARCHY;
@@ -149,11 +151,13 @@ public class ConfigStoreMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CREATED_LOG_HIERARCHY;
@@ -207,11 +211,13 @@ public class ConfigStoreMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return STORE_LOCATION_LOG_HIERARCHY;
@@ -260,11 +266,13 @@ public class ConfigStoreMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CLOSE_LOG_HIERARCHY;
@@ -313,11 +321,13 @@ public class ConfigStoreMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return RECOVERY_COMPLETE_LOG_HIERARCHY;

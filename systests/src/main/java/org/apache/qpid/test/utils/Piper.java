@@ -74,6 +74,7 @@ public final class Piper extends Thread
         }
     }
 
+    @Override
     public void run()
     {
         try

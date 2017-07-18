@@ -47,6 +47,7 @@ public class RejectedConstructor extends AbstractDescribedTypeConstructor<Reject
         }
     }
 
+    @Override
     public Rejected construct(Object underlying)
     {
         if(underlying instanceof List)

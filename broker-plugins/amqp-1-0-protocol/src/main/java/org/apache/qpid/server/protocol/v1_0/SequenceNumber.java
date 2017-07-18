@@ -78,6 +78,7 @@ public class SequenceNumber implements Comparable<SequenceNumber>
         return _seqNo;
     }
 
+    @Override
     public int compareTo(SequenceNumber o)
     {
         return _seqNo - o._seqNo;

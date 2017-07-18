@@ -45,6 +45,7 @@ public class ServerDecoder extends AMQDecoder<ServerMethodProcessor<? extends Se
     }
 
 
+    @Override
     void processMethod(int channelId,
                        QpidByteBuffer in)
             throws AMQFrameDecodingException

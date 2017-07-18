@@ -225,6 +225,7 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
         _password = password;
     }
 
+    @Override
     public KeyManager[] getKeyManagers() throws GeneralSecurityException
     {
 
@@ -287,6 +288,7 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
         }
     }
 
+    @Override
     protected void checkCertificateExpiry()
     {
         int expiryWarning = getCertificateExpiryWarnPeriod();

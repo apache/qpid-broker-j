@@ -54,11 +54,13 @@ public class BasicRecoverSyncBody extends AMQMethodBodyImpl implements Encodable
         _bitfield0 = bitfield0;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return _methodId;
@@ -69,22 +71,26 @@ public class BasicRecoverSyncBody extends AMQMethodBodyImpl implements Encodable
         return (((int)(_bitfield0)) & ( 1 << 0)) != 0;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 1;
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeBitfield( buffer, _bitfield0 );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchBasicRecoverSync(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[BasicRecoverSyncBodyImpl: ");

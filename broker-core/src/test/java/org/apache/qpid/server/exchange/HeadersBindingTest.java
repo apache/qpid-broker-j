@@ -50,46 +50,55 @@ public class HeadersBindingTest extends QpidTestCase
 
         private final Map<String, Object> _headers = new HashMap<String, Object>();
 
+        @Override
         public String getCorrelationId()
         {
             return null;
         }
 
+        @Override
         public long getExpiration()
         {
             return 0;
         }
 
+        @Override
         public String getUserId()
         {
             return null;
         }
 
+        @Override
         public String getAppId()
         {
             return null;
         }
 
+        @Override
         public String getMessageId()
         {
             return null;
         }
 
+        @Override
         public String getMimeType()
         {
             return null;
         }
 
+        @Override
         public String getEncoding()
         {
             return null;
         }
 
+        @Override
         public byte getPriority()
         {
             return 0;
         }
 
+        @Override
         public long getTimestamp()
         {
             return 0;
@@ -101,21 +110,25 @@ public class HeadersBindingTest extends QpidTestCase
             return 0;
         }
 
+        @Override
         public String getType()
         {
             return null;
         }
 
+        @Override
         public String getReplyTo()
         {
             return null;
         }
 
+        @Override
         public Object getHeader(String name)
         {
             return _headers.get(name);
         }
 
+        @Override
         public boolean containsHeaders(Set<String> names)
         {
             return _headers.keySet().containsAll(names);
@@ -127,6 +140,7 @@ public class HeadersBindingTest extends QpidTestCase
             return _headers.keySet();
         }
 
+        @Override
         public boolean containsHeader(String name)
         {
             return _headers.containsKey(name);
@@ -149,6 +163,7 @@ public class HeadersBindingTest extends QpidTestCase
     private Queue<?> _queue;
     private Exchange<?> _exchange;
 
+    @Override
     protected void setUp()
     {
         _count++;

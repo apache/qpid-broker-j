@@ -111,88 +111,104 @@ final class ServerDecoder extends AbstractDecoder
         return _underlying.get(_bufferIndex);
     }
 
+    @Override
     protected byte doGet()
     {
         return getBuffer(1).get();
     }
 
+    @Override
     protected void doGet(byte[] bytes)
     {
         getBuffer(bytes.length).get(bytes);
     }
 
+    @Override
     public boolean hasRemaining()
     {
         return available() != 0;
     }
 
+    @Override
     public short readUint8()
     {
         return (short) (0xFF & getBuffer(1).get());
     }
 
+    @Override
     public int readUint16()
     {
         return 0xFFFF & getBuffer(2).getShort();
     }
 
+    @Override
     public long readUint32()
     {
         return 0xFFFFFFFFL & getBuffer(4).getInt();
     }
 
+    @Override
     public long readUint64()
     {
         return getBuffer(8).getLong();
     }
 
-	public byte[] readBin128()
+	@Override
+    public byte[] readBin128()
 	{
 		byte[] result = new byte[16];
 		get(result);
 		return result;
 	}
 	
-	public byte[] readBytes(int howManyBytes)
+	@Override
+    public byte[] readBytes(int howManyBytes)
 	{
 		byte[] result = new byte[howManyBytes];
 		get(result);
 		return result;
 	}
 	
-	public double readDouble()
+	@Override
+    public double readDouble()
 	{
 		return getBuffer(8).getDouble();
 	}
 
-	public float readFloat()
+	@Override
+    public float readFloat()
 	{
 		return getBuffer(4).getFloat();
 	}
 
-	public short readInt16()
+	@Override
+    public short readInt16()
 	{
 		return getBuffer(2).getShort();
 	}
 
-	public int readInt32()
+	@Override
+    public int readInt32()
 	{
 		return getBuffer(4).getInt();
 	}
 
-	public byte readInt8()
+	@Override
+    public byte readInt8()
 	{
 		return getBuffer(1).get();
 	}
 
-	public byte[] readRemainingBytes()
+	@Override
+    public byte[] readRemainingBytes()
 	{
       byte[] result = new byte[available()];
       get(result);
       return result;		
 	}
 
-	public long readInt64()
+	@Override
+    public long readInt64()
 	{
 		return getBuffer(8).getLong();
 	}

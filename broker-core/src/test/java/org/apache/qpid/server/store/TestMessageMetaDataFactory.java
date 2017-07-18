@@ -28,6 +28,7 @@ import org.apache.qpid.server.plugin.MessageMetaDataType;
 
 public class TestMessageMetaDataFactory implements MessageMetaDataType.Factory<TestMessageMetaData>
 {
+    @Override
     public TestMessageMetaData createMetaData(List<QpidByteBuffer> bufs)
     {
         long id = QpidByteBufferUtils.getLong(bufs);

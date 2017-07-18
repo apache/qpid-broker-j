@@ -51,6 +51,7 @@ public final class Strings
 
     private static final ThreadLocal<char[]> charbuf = new ThreadLocal<char[]>()
     {
+        @Override
         public char[] initialValue()
         {
             return new char[4096];
@@ -163,6 +164,7 @@ public final class Strings
             this.map = map;
         }
 
+        @Override
         public String resolve(String variable, final Resolver resolver)
         {
             return map.get(variable);
@@ -179,6 +181,7 @@ public final class Strings
             this.properties = properties;
         }
 
+        @Override
         public String resolve(String variable, final Resolver resolver)
         {
             return properties.getProperty(variable);
@@ -196,6 +199,7 @@ public final class Strings
             this.secondary = secondary;
         }
 
+        @Override
         public String resolve(String variable, final Resolver resolver)
         {
             String result = primary.resolve(variable, resolver);

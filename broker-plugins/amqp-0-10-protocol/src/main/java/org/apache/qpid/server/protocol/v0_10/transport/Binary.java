@@ -98,6 +98,7 @@ public final class Binary
         return new Binary(bytes, offset + low, sz);
     }
 
+    @Override
     public final int hashCode()
     {
         if (hash == 0)
@@ -113,6 +114,7 @@ public final class Binary
         return hash;
     }
 
+    @Override
     public final boolean equals(Object o)
     {
         if (!(o instanceof Binary))
@@ -137,6 +139,7 @@ public final class Binary
         return true;
     }
 
+    @Override
     public String toString()
     {
         return str(ByteBuffer.wrap(bytes, offset, size));

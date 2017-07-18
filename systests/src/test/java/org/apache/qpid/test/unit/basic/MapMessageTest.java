@@ -1226,6 +1226,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         }
     }
 
+    @Override
     public void onMessage(Message message)
     {
         synchronized (received)

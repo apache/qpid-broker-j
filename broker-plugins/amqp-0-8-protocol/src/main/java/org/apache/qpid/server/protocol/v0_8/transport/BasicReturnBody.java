@@ -56,11 +56,13 @@ public class BasicReturnBody extends AMQMethodBodyImpl implements EncodableAMQDa
         _routingKey = routingKey;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -83,6 +85,7 @@ public class BasicReturnBody extends AMQMethodBodyImpl implements EncodableAMQDa
         return _routingKey;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 2;
@@ -92,6 +95,7 @@ public class BasicReturnBody extends AMQMethodBodyImpl implements EncodableAMQDa
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeUnsignedShort( buffer, _replyCode );
@@ -100,11 +104,13 @@ public class BasicReturnBody extends AMQMethodBodyImpl implements EncodableAMQDa
         writeAMQShortString( buffer, _routingKey );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchBasicReturn(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[BasicReturnBodyImpl: ");

@@ -109,11 +109,13 @@ public class ConnectionMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OPERATION_LOG_HIERARCHY;
@@ -167,11 +169,13 @@ public class ConnectionMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CLIENT_VERSION_LOG_LOG_HIERARCHY;
@@ -225,11 +229,13 @@ public class ConnectionMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CLIENT_VERSION_REJECT_LOG_HIERARCHY;
@@ -278,11 +284,13 @@ public class ConnectionMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return DROPPED_CONNECTION_LOG_HIERARCHY;
@@ -331,11 +339,13 @@ public class ConnectionMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return MODEL_DELETE_LOG_HIERARCHY;
@@ -412,11 +422,13 @@ public class ConnectionMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return IDLE_CLOSE_LOG_HIERARCHY;
@@ -465,11 +477,13 @@ public class ConnectionMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CLOSE_LOG_HIERARCHY;
@@ -523,11 +537,13 @@ public class ConnectionMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return LARGE_TRANSACTION_WARN_LOG_HIERARCHY;
@@ -634,11 +650,13 @@ public class ConnectionMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OPEN_LOG_HIERARCHY;

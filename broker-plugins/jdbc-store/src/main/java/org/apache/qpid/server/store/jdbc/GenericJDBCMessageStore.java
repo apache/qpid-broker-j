@@ -123,6 +123,7 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
         return _connectionProvider.getConnection();
     }
 
+    @Override
     protected void doClose()
     {
         try

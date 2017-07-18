@@ -75,6 +75,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
 
     }
 
+    @Override
     public void setUp() throws Exception
     {
         // restrict broker to support only single protocol

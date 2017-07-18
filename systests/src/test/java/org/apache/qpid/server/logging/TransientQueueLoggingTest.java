@@ -22,6 +22,7 @@ package org.apache.qpid.server.logging;
 
 public class TransientQueueLoggingTest extends DurableQueueLoggingTest
 {
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

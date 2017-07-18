@@ -111,11 +111,13 @@ public class PortMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return DELETE_LOG_HIERARCHY;
@@ -169,11 +171,13 @@ public class PortMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CREATE_LOG_HIERARCHY;
@@ -227,11 +231,13 @@ public class PortMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return UNSUPPORTED_PROTOCOL_HEADER_LOG_HIERARCHY;
@@ -285,11 +291,13 @@ public class PortMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CONNECTION_REJECTED_CLOSED_LOG_HIERARCHY;
@@ -343,11 +351,13 @@ public class PortMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CONNECTION_COUNT_WARN_LOG_HIERARCHY;
@@ -401,11 +411,13 @@ public class PortMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OPERATION_LOG_HIERARCHY;
@@ -459,11 +471,13 @@ public class PortMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return BIND_FAILED_LOG_HIERARCHY;
@@ -512,11 +526,13 @@ public class PortMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CLOSE_LOG_HIERARCHY;
@@ -570,11 +586,13 @@ public class PortMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CONNECTION_REJECTED_TOO_MANY_LOG_HIERARCHY;
@@ -623,11 +641,13 @@ public class PortMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OPEN_LOG_HIERARCHY;

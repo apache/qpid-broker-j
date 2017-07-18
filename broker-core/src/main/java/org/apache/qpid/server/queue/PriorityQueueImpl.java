@@ -62,6 +62,7 @@ public class PriorityQueueImpl extends OutOfOrderQueue<PriorityQueueImpl> implem
         return _entries;
     }
 
+    @Override
     protected LogMessage getCreatedLogMessage()
     {
         String ownerString = getOwner();

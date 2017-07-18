@@ -119,11 +119,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return LEFT_LOG_HIERARCHY;
@@ -177,11 +179,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return PRIORITY_CHANGED_LOG_HIERARCHY;
@@ -235,11 +239,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return ROLE_CHANGED_LOG_HIERARCHY;
@@ -293,11 +299,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return JOINED_LOG_HIERARCHY;
@@ -346,11 +354,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return NODE_ROLLEDBACK_LOG_HIERARCHY;
@@ -399,11 +409,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return DELETED_LOG_HIERARCHY;
@@ -457,11 +469,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return INTRUDER_DETECTED_LOG_HIERARCHY;
@@ -515,11 +529,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return DESIGNATED_PRIMARY_CHANGED_LOG_HIERARCHY;
@@ -573,11 +589,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return QUORUM_OVERRIDE_CHANGED_LOG_HIERARCHY;
@@ -626,11 +644,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CREATED_LOG_HIERARCHY;
@@ -684,11 +704,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return ADDED_LOG_HIERARCHY;
@@ -737,11 +759,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return QUORUM_LOST_LOG_HIERARCHY;
@@ -795,11 +819,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return TRANSFER_MASTER_LOG_HIERARCHY;
@@ -853,11 +879,13 @@ public class HighAvailabilityMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return REMOVED_LOG_HIERARCHY;

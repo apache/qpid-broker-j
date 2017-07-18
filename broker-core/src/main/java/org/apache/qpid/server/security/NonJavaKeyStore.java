@@ -30,6 +30,7 @@ import org.apache.qpid.server.model.ManagedObject;
 @ManagedObject( category = false, type = "NonJavaKeyStore" )
 public interface NonJavaKeyStore<X extends NonJavaKeyStore<X>> extends KeyStore<X>
 {
+    @Override
     @ManagedAttribute(defaultValue = "${this:subjectName}")
     String getDescription();
 

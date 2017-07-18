@@ -48,6 +48,7 @@ public class DeleteOnNoLinksOrMessagesConstructor extends AbstractDescribedTypeC
         }
     }
 
+    @Override
     public DeleteOnNoLinksOrMessages construct(Object underlying)
     {
         if(underlying instanceof List)

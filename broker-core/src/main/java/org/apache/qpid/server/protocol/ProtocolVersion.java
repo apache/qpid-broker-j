@@ -69,11 +69,13 @@ public class ProtocolVersion  implements Comparable
         return _minorVersion > 90 ? (byte) (_minorVersion % 10) : (byte) 0;
     }
 
+    @Override
     public String toString()
     {
         return _stringFormat;
     }
 
+    @Override
     public int compareTo(Object o)
     {
         ProtocolVersion pv = (ProtocolVersion) o;
@@ -118,11 +120,13 @@ public class ProtocolVersion  implements Comparable
 
     }
 
+    @Override
     public boolean equals(Object o)
     {
         return o != null && (o == this || (compareTo(o) == 0));
     }
 
+    @Override
     public int hashCode()
     {
         return (0xFF & (int)_minorVersion) | ((0xFF & (int)_majorVersion) << 8);

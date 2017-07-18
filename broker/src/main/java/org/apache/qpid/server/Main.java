@@ -404,6 +404,7 @@ public class Main
             handler =
                 new Thread.UncaughtExceptionHandler()
                 {
+                    @Override
                     public void uncaughtException(final Thread t, final Throwable e)
                     {
                         boolean continueOnError = Boolean.getBoolean("qpid.broker.exceptionHandler.continue");

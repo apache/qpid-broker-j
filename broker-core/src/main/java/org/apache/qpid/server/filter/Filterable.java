@@ -29,8 +29,10 @@ public interface Filterable extends FilterableMessage
 {
     AMQMessageHeader getMessageHeader();
 
+    @Override
     boolean isPersistent();
 
+    @Override
     boolean isRedelivered();
 
     Object getConnectionReference();

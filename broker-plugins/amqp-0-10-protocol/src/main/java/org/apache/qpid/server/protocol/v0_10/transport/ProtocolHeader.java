@@ -69,21 +69,25 @@ public final class ProtocolHeader implements NetworkEvent, ProtocolEvent
         return minor;
     }
 
+    @Override
     public int getChannel()
     {
         return channel;
     }
 
+    @Override
     public void setChannel(int channel)
     {
         this.channel = channel;
     }
 
+    @Override
     public byte getEncodedTrack()
     {
         return Frame.L1;
     }
 
+    @Override
     public boolean isConnectionControl()
     {
         return false;
@@ -101,16 +105,19 @@ public final class ProtocolHeader implements NetworkEvent, ProtocolEvent
         return buf;
     }
 
+    @Override
     public <C> void delegate(C context, ProtocolDelegate<C> delegate)
     {
         delegate.init(context, this);
     }
 
+    @Override
     public void delegate(NetworkDelegate delegate)
     {
         delegate.init(this);
     }
 
+    @Override
     public String toString()
     {
         return String.format("AMQP.%d %d-%d", instance, major, minor);

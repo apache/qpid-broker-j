@@ -54,11 +54,13 @@ public class SaslCode
         _val = val;
     }
 
+    @Override
     public UnsignedByte getValue()
     {
         return _val;
     }
 
+    @Override
     public String toString()
     {
         

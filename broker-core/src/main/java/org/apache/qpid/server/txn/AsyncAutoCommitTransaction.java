@@ -83,12 +83,14 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
      * Since AutoCommitTransaction have no concept of a long lived transaction, any Actions registered
      * by the caller are executed immediately.
      */
+    @Override
     public void addPostTransactionAction(final Action immediateAction)
     {
         addFuture(Futures.<Void>immediateFuture(null), immediateAction);
 
     }
 
+    @Override
     public void dequeue(MessageEnqueueRecord record, Action postTransactionAction)
     {
         Transaction txn = null;
@@ -152,6 +154,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
         }
     }
 
+    @Override
     public void dequeue(Collection<MessageInstance> queueEntries, Action postTransactionAction)
     {
         Transaction txn = null;
@@ -195,6 +198,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
     }
 
 
+    @Override
     public void enqueue(TransactionLogResource queue, EnqueueableMessage message, EnqueueAction postTransactionAction)
     {
         Transaction txn = null;
@@ -259,6 +263,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
 
     }
 
+    @Override
     public void enqueue(Collection<? extends BaseQueue> queues, EnqueueableMessage message, EnqueueAction postTransactionAction)
     {
         Transaction txn = null;
@@ -341,17 +346,20 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
     }
 
 
+    @Override
     public void commit(final Runnable immediatePostTransactionAction)
     {
         if(immediatePostTransactionAction != null)
         {
             addFuture(Futures.<Void>immediateFuture(null), new Action()
             {
+                @Override
                 public void postCommit()
                 {
                     immediatePostTransactionAction.run();
                 }
 
+                @Override
                 public void onRollback()
                 {
                 }
@@ -359,14 +367,17 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
         }
     }
 
+    @Override
     public void commit()
     {
     }
 
+    @Override
     public void rollback()
     {
     }
 
+    @Override
     public boolean isTransactional()
     {
         return false;

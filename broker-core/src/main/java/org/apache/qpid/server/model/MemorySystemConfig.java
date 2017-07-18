@@ -23,6 +23,7 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 
 public interface MemorySystemConfig<X extends MemorySystemConfig<X>> extends SystemConfig<X>
 {
+    @Override
     @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
             defaultValue = "{\"type\": \"Noop\"}")
     PreferenceStoreAttributes getPreferenceStoreAttributes();

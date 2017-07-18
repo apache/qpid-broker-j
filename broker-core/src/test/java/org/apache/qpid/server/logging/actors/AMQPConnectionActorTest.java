@@ -109,6 +109,7 @@ public class AMQPConnectionActorTest extends BaseConnectionActorTestCase
             {
                 getEventLogger().message(new LogSubject()
                                   {
+                                      @Override
                                       public String toLogString()
                                       {
                                           return "[AMQPActorTest]";
@@ -116,11 +117,13 @@ public class AMQPConnectionActorTest extends BaseConnectionActorTestCase
 
                                   }, new LogMessage()
                                   {
+                                      @Override
                                       public String toString()
                                       {
                                           return message;
                                       }
 
+                                      @Override
                                       public String getLogHierarchy()
                                       {
                                           return "test.hierarchy";

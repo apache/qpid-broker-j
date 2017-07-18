@@ -37,6 +37,7 @@ public enum LegacyOperation
     ACCESS_LOGS,
     SHUTDOWN;
 
+    @Override
     public String toString()
     {
         String name = name();

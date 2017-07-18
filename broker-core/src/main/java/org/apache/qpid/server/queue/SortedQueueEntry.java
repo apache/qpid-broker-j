@@ -78,6 +78,7 @@ public class SortedQueueEntry extends QueueEntryImpl
         return _left;
     }
 
+    @Override
     public SortedQueueEntry getNextNode()
     {
         return _next;

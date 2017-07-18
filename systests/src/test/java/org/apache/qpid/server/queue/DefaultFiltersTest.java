@@ -46,6 +46,7 @@ public class DefaultFiltersTest extends QpidBrokerTestCase
     private Session _session;
     private Queue _queue;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();

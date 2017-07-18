@@ -270,6 +270,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         _deleteTaskList.clear();
     }
 
+    @Override
     public boolean isAutoDelete()
     {
         return getLifetimePolicy() != LifetimePolicy.PERMANENT;

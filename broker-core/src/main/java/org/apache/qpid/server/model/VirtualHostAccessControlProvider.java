@@ -23,6 +23,7 @@ package org.apache.qpid.server.model;
 @ManagedObject( amqpName = "org.apache.qpid.VirtualHostAccessControlProvider")
 public interface VirtualHostAccessControlProvider<X extends VirtualHostAccessControlProvider<X>>  extends ConfiguredObject<X>, CommonAccessControlProvider<VirtualHostAccessControlProvider<?>>
 {
+    @Override
     @ManagedAttribute(defaultValue = "10", description = "The priority of this access control provider - the lower the number the higher the priority")
     int getPriority();
 }

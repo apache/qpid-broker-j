@@ -178,6 +178,7 @@ public class AcknowledgeOnMessageTest extends AcknowledgeTest implements Message
      *
      * @param message
      */
+    @Override
     public void onMessage(Message message)
     {
         // Log received Message for debugging

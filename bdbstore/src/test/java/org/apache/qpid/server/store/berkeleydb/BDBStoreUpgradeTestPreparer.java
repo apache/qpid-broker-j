@@ -131,6 +131,7 @@ public class BDBStoreUpgradeTestPreparer
         connection.start();
         connection.setExceptionListener(new ExceptionListener()
         {
+            @Override
             public void onException(JMSException e)
             {
                 _logger.error("Error setting exception listener for connection", e);
@@ -252,6 +253,7 @@ public class BDBStoreUpgradeTestPreparer
         connection.start();
         connection.setExceptionListener(new ExceptionListener()
         {
+            @Override
             public void onException(JMSException e)
             {
                 _logger.error("Error setting exception listener for connection", e);
@@ -297,6 +299,7 @@ public class BDBStoreUpgradeTestPreparer
         connection.start();
         connection.setExceptionListener(new ExceptionListener()
         {
+            @Override
             public void onException(JMSException e)
             {
                 _logger.error("Error setting exception listener for connection", e);

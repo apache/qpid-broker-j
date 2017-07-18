@@ -50,6 +50,7 @@ public class SourceConstructor extends AbstractDescribedTypeConstructor<Source>
         }
     }
 
+    @Override
     public Source construct(Object underlying)
     {
         if(underlying instanceof List)

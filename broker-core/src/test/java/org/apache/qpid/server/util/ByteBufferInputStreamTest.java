@@ -31,6 +31,7 @@ public class ByteBufferInputStreamTest extends QpidTestCase
     private byte[] _data = {2, 1, 5, 3, 4};
     private ByteBufferInputStream _inputStream;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

@@ -41,11 +41,13 @@ public class UsernamePrincipal implements QpidPrincipal
         _authenticationProvider = authenticationProvider;
     }
 
+    @Override
     public String getName()
     {
         return _name;
     }
 
+    @Override
     public String toString()
     {
         return _name;

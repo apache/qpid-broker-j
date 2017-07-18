@@ -41,6 +41,7 @@ public class RolloverWatcherTest extends QpidTestCase
     private File _baseFolder;
     private File _activeFile;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

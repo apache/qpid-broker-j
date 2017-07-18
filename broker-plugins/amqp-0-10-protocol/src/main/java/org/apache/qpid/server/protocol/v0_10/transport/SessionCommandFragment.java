@@ -30,14 +30,17 @@ public final class SessionCommandFragment extends Struct {
 
     public static final int TYPE = -2;
 
+    @Override
     public final int getStructType() {
         return TYPE;
     }
 
+    @Override
     public final int getSizeWidth() {
         return 0;
     }
 
+    @Override
     public final int getPackWidth() {
         return 0;
     }
@@ -106,6 +109,7 @@ public final class SessionCommandFragment extends Struct {
 
 
 
+    @Override
     public void write(Encoder enc)
     {
         enc.writeSequenceNo(this.commandId);
@@ -113,6 +117,7 @@ public final class SessionCommandFragment extends Struct {
 
     }
 
+    @Override
     public void read(Decoder dec)
     {
         this.commandId = dec.readSequenceNo();
@@ -120,6 +125,7 @@ public final class SessionCommandFragment extends Struct {
 
     }
 
+    @Override
     public Map<String,Object> getFields()
     {
         Map<String,Object> result = new LinkedHashMap<String,Object>();

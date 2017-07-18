@@ -57,6 +57,7 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         when(_sessionModel.getAMQPConnection()).thenReturn(mock(AMQPConnection.class));
     }
 
+    @Override
     public boolean close()
     {
         _closed = true;
@@ -70,11 +71,13 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         return tag;
     }
 
+    @Override
     public long getUnacknowledgedBytes()
     {
         return 0;
     }
 
+    @Override
     public long getUnacknowledgedMessages()
     {
         return 0;
@@ -85,6 +88,7 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         return queue;
     }
 
+    @Override
     public AMQPSession getSession()
     {
         return _sessionModel;
@@ -103,15 +107,18 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
     }
 
 
+    @Override
     public boolean isSuspended()
     {
         return false;
     }
 
+    @Override
     public void restoreCredit(ServerMessage message)
     {
     }
 
+    @Override
     public void send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
     {
         if (_messages.contains(entry))
@@ -127,6 +134,7 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         return false;
     }
 
+    @Override
     public void flushBatched()
     {
 
@@ -138,6 +146,7 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
 
     }
 
+    @Override
     public State getState()
     {
         return _state;
@@ -187,6 +196,7 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
     }
 
 
+    @Override
     public void queueEmpty()
     {
     }

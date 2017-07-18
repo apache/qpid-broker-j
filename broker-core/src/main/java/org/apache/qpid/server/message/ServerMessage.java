@@ -32,10 +32,13 @@ public interface ServerMessage<T extends StorableMessageMetaData> extends Enqueu
 
     AMQMessageHeader getMessageHeader();
 
+    @Override
     StoredMessage<T> getStoredMessage();
 
+    @Override
     boolean isPersistent();
 
+    @Override
     long getSize();
 
     long getSizeIncludingHeader();

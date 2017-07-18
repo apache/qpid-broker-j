@@ -29,6 +29,7 @@ public class MapJsonSerializerTest extends QpidTestCase
 {
     private MapJsonSerializer _serializer;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();

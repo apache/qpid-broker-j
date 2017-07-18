@@ -48,6 +48,7 @@ public class AcceptedConstructor extends AbstractDescribedTypeConstructor<Accept
         }
     }
 
+    @Override
     public Accepted construct(Object underlying)
     {
         if(underlying instanceof List)

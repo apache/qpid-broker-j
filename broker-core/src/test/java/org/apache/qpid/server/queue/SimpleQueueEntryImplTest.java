@@ -62,6 +62,7 @@ public class SimpleQueueEntryImplTest extends QueueEntryImplTestBase
     }
 
 
+    @Override
     public QueueEntryImpl getQueueEntryImpl(int msgId)
     {
         ServerMessage message = mock(ServerMessage.class);
@@ -73,6 +74,7 @@ public class SimpleQueueEntryImplTest extends QueueEntryImplTestBase
         return (QueueEntryImpl) queueEntryList.add(message, null);
     }
 
+    @Override
     public void testCompareTo()
     {
         assertTrue(_queueEntry.compareTo(_queueEntry2) < 0);
@@ -88,6 +90,7 @@ public class SimpleQueueEntryImplTest extends QueueEntryImplTestBase
         assertTrue(_queueEntry3.compareTo(_queueEntry3) == 0);
     }
 
+    @Override
     public void testTraverseWithNoDeletedEntries()
     {
         QueueEntry current = _queueEntry;
@@ -103,6 +106,7 @@ public class SimpleQueueEntryImplTest extends QueueEntryImplTestBase
 
     }
 
+    @Override
     public void testTraverseWithDeletedEntries()
     {
         // Delete 2nd queue entry

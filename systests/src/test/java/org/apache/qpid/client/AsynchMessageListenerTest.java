@@ -50,6 +50,7 @@ public class AsynchMessageListenerTest extends QpidBrokerTestCase
     private MessageConsumer _consumer;
     private Queue _queue;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();

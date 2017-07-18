@@ -139,6 +139,7 @@ public class JMSDestinationTest extends QpidBrokerTestCase
 
         consumer.setMessageListener(new MessageListener()
         {
+            @Override
             public void onMessage(Message message)
             {
                 _message = message;

@@ -49,6 +49,7 @@ public class DeliveryAnnotationsConstructor extends AbstractDescribedTypeConstru
     }
 
 
+    @Override
     public DeliveryAnnotations construct(Object underlying)
     {
 

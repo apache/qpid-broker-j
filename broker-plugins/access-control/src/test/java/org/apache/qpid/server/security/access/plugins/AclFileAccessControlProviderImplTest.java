@@ -45,6 +45,7 @@ public class AclFileAccessControlProviderImplTest extends QpidTestCase
     private Model _model;
     private Broker _broker;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

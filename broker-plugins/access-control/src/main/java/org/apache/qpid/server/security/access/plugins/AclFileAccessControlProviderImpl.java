@@ -126,6 +126,7 @@ public class AclFileAccessControlProviderImpl
         return _path;
     }
 
+    @Override
     public int compareTo(final AccessControlProvider<?> o)
     {
         return ACCESS_CONTROL_PROVIDER_COMPARATOR.compare(this, o);

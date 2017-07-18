@@ -132,26 +132,31 @@ public class PreparedTransactionBinding
             _queueId = queueId;
         }
 
+        @Override
         public TransactionLogResource getResource()
         {
             return this;
         }
 
+        @Override
         public EnqueueableMessage getMessage()
         {
             return this;
         }
 
+        @Override
         public long getMessageNumber()
         {
             return _messageNumber;
         }
 
+        @Override
         public boolean isPersistent()
         {
             return true;
         }
 
+        @Override
         public StoredMessage<?> getStoredMessage()
         {
             throw new UnsupportedOperationException();

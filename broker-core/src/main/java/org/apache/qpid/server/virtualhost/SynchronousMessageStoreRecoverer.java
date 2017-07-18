@@ -336,11 +336,13 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                             branch.addPostTransactionAction(new ServerTransaction.Action()
                             {
 
+                                @Override
                                 public void postCommit()
                                 {
                                     entry.delete();
                                 }
 
+                                @Override
                                 public void onRollback()
                                 {
                                     entry.release();

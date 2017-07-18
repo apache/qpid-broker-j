@@ -146,16 +146,19 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         }
     }
 
+    @Override
     public int getExpectedListLength()
     {
         return keys.length;
     }
 
+    @Override
     public long getExpectedFirstMsgId()
     {
         return 67L;
     }
 
+    @Override
     public ServerMessage getTestMessageToAdd()
     {
         return generateTestMessage(1, "test value");
@@ -184,6 +187,7 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
         return message;
     }
 
+    @Override
     public void testIterator() throws Exception
     {
         super.testIterator();

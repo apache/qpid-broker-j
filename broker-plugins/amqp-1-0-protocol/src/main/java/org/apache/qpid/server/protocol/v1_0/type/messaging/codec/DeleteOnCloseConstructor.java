@@ -48,6 +48,7 @@ public class DeleteOnCloseConstructor extends AbstractDescribedTypeConstructor<D
         }
     }
 
+    @Override
     public DeleteOnClose construct(Object underlying)
     {
         if(underlying instanceof List)

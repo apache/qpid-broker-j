@@ -292,6 +292,7 @@ public class QpidJmsClient0xProvider implements JmsProvider
         }
     }
 
+    @Override
     public String getBrokerDetailsFromDefaultConnectionUrl()
     {
         try

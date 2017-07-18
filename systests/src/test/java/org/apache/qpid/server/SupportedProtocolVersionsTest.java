@@ -45,6 +45,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
  */
 public class SupportedProtocolVersionsTest extends QpidBrokerTestCase
 {
+    @Override
     public void startDefaultBroker() throws Exception
     {
         // No-op, we call super.startDefaultBroker() from test methods after appropriate config overrides

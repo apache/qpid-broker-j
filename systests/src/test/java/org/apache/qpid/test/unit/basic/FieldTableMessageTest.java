@@ -55,6 +55,7 @@ public class FieldTableMessageTest extends QpidBrokerTestCase implements Message
     private int _count = 10;
     private CountDownLatch _waitForCompletion;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
@@ -69,6 +70,7 @@ public class FieldTableMessageTest extends QpidBrokerTestCase implements Message
         _expected = load();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         super.tearDown();
@@ -125,6 +127,7 @@ public class FieldTableMessageTest extends QpidBrokerTestCase implements Message
         }
     }
 
+    @Override
     public void onMessage(Message message)
     {
         synchronized (received)

@@ -92,6 +92,7 @@ public final class UnsignedInteger extends Number implements Comparable<Unsigned
         return true;
     }
 
+    @Override
     public int compareTo(UnsignedInteger o)
     {
         return Long.signum(longValue() - o.longValue());

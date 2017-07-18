@@ -69,6 +69,7 @@ public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
             this.end = end;
         }
 
+        @Override
         public Exception call()
         {
             try
@@ -89,6 +90,7 @@ public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
         }
     }
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
@@ -137,6 +139,7 @@ public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
         assertNull("Publishing second batch failed: " + publisherException, publisherException);
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         try

@@ -28,16 +28,20 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 public interface JDBCVirtualHost<X extends JDBCVirtualHost<X>> extends QueueManagingVirtualHost<X>,
                                                                        JDBCSettings
 {
+    @Override
     @ManagedAttribute(mandatory=true)
     String getConnectionUrl();
 
+    @Override
     @ManagedAttribute(defaultValue=DefaultConnectionProviderFactory.TYPE,
             validValues = {"org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory#getAllAvailableConnectionProviderTypes()"} )
     String getConnectionPoolType();
 
+    @Override
     @ManagedAttribute
     String getUsername();
 
+    @Override
     @ManagedAttribute(secure=true)
     String getPassword();
 
@@ -45,6 +49,7 @@ public interface JDBCVirtualHost<X extends JDBCVirtualHost<X>> extends QueueMana
             description = "Default value for optional database table prefix")
     String DEFAULT_JDBC_VIRTUALHOST_TABLE_NAME_PREFIX = "";
 
+    @Override
     @ManagedAttribute(
             description = "Optional database table prefix so multiple VirtualHosts can share the same database",
             defaultValue = "${jdbcvirtualhost.tableNamePrefix}",

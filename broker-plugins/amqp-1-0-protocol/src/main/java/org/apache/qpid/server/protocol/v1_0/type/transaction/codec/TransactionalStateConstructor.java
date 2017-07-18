@@ -48,6 +48,7 @@ public class TransactionalStateConstructor extends AbstractDescribedTypeConstruc
         }
     }
 
+    @Override
     public TransactionalState construct(Object underlying)
     {
         if(underlying instanceof List)

@@ -41,12 +41,14 @@ public class StandardEnvironmentFacadeTest extends QpidTestCase
     protected File _storePath;
     protected EnvironmentFacade _environmentFacade;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
         _storePath = new File(TMP_FOLDER + File.separator + "bdb" + File.separator + getTestName());
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         try

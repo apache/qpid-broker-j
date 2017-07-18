@@ -58,11 +58,13 @@ public class ConnectionCloseBody extends AMQMethodBodyImpl implements EncodableA
         _methodId = methodId;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return _ownMethodId;
@@ -85,6 +87,7 @@ public class ConnectionCloseBody extends AMQMethodBodyImpl implements EncodableA
         return _methodId;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 6;
@@ -92,6 +95,7 @@ public class ConnectionCloseBody extends AMQMethodBodyImpl implements EncodableA
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeUnsignedShort( buffer, _replyCode );
@@ -100,11 +104,13 @@ public class ConnectionCloseBody extends AMQMethodBodyImpl implements EncodableA
         writeUnsignedShort( buffer, _methodId );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
     return dispatcher.dispatchConnectionClose(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[ConnectionCloseBodyImpl: ");

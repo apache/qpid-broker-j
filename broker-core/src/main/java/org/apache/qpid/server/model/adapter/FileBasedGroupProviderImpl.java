@@ -75,6 +75,7 @@ public class FileBasedGroupProviderImpl
         _container = container;
     }
 
+    @Override
     public void onValidate()
     {
         Collection<GroupProvider> groupProviders = _container.getChildren(GroupProvider.class);

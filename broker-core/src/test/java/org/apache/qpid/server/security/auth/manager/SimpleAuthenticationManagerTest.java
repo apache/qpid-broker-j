@@ -45,6 +45,7 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
     private static final String TEST_PASSWORD = "testPassword";
     private SimpleAuthenticationManager _authenticationManager;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

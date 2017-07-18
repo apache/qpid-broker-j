@@ -46,21 +46,25 @@ public class ConfiguredDerivedMethodAttribute<C extends ConfiguredObject, T>  ex
         }
     }
 
+    @Override
     public boolean isAutomated()
     {
         return false;
     }
 
+    @Override
     public boolean isDerived()
     {
         return true;
     }
 
+    @Override
     public boolean isSecure()
     {
         return _annotation.secure();
     }
 
+    @Override
     public boolean isPersisted()
     {
         return _annotation.persist();
@@ -85,6 +89,7 @@ public class ConfiguredDerivedMethodAttribute<C extends ConfiguredObject, T>  ex
     }
 
 
+    @Override
     public String getDescription()
     {
         return _annotation.description();

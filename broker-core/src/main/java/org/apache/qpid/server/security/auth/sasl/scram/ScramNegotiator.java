@@ -37,6 +37,7 @@ public class ScramNegotiator extends AbstractSaslServerNegotiator implements Sas
         _saslServer = new ScramSaslServer(scramSaslServerSource, mechanism);
     }
 
+    @Override
     protected AuthenticationProvider<?> getAuthenticationProvider()
     {
         return _authenticationProvider;
@@ -48,6 +49,7 @@ public class ScramNegotiator extends AbstractSaslServerNegotiator implements Sas
         return null;
     }
 
+    @Override
     protected ScramSaslServer getSaslServer()
     {
         return _saslServer;

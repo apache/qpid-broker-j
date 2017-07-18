@@ -626,6 +626,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
             _count = new CountDownLatch(numMessages);
         }
 
+        @Override
         public void onMessage(Message message)
         {
             try

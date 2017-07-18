@@ -53,6 +53,7 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
         return val;
     }
 
+    @Override
     public boolean mightAssign(final QueueEntry entry, QueueConsumer sub)
     {
         Object groupVal = entry.getMessage().getMessageHeader().getHeader(_groupId);
@@ -68,6 +69,7 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
         }
     }
 
+    @Override
     public boolean acceptMessage(QueueConsumer<?,?> sub, QueueEntry entry)
     {
         return assignMessage(sub, entry) && entry.acquire(sub);
@@ -104,6 +106,7 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
         }
     }
     
+    @Override
     public QueueEntry findEarliestAssignedAvailableEntry(QueueConsumer<?,?> sub)
     {
         EntryFinder visitor = new EntryFinder(sub);
@@ -121,6 +124,7 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
             _sub = sub;
         }
 
+        @Override
         public boolean visit(final QueueEntry entry)
         {
             if(!entry.isAvailable())
@@ -153,6 +157,7 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
         }
     }
 
+    @Override
     public void clearAssignments(QueueConsumer<?,?> sub)
     {
         Iterator<QueueConsumer<?,?>> subIter = _groupMap.values().iterator();

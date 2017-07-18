@@ -30,14 +30,17 @@ public final class MessageProperties extends Struct {
 
     public static final int TYPE = 1027;
 
+    @Override
     public final int getStructType() {
         return TYPE;
     }
 
+    @Override
     public final int getSizeWidth() {
         return 4;
     }
 
+    @Override
     public final int getPackWidth() {
         return 2;
     }
@@ -347,6 +350,7 @@ public final class MessageProperties extends Struct {
 
 
 
+    @Override
     public void write(Encoder enc)
     {
         enc.writeUint16(packing_flags);
@@ -435,6 +439,7 @@ public final class MessageProperties extends Struct {
         return len;
     }
 
+    @Override
     public void read(Decoder dec)
     {
         packing_flags = (short) dec.readUint16();
@@ -477,6 +482,7 @@ public final class MessageProperties extends Struct {
 
     }
 
+    @Override
     public Map<String,Object> getFields()
     {
         Map<String,Object> result = new LinkedHashMap<String,Object>();

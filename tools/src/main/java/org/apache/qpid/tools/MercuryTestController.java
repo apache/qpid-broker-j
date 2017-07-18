@@ -125,6 +125,7 @@ public class MercuryTestController extends MercuryBase implements MessageListene
         testMode = (duration == -1) ? TestMode.SINGLE_RUN : TestMode.TIME_BASED;
     }
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -299,6 +300,7 @@ public class MercuryTestController extends MercuryBase implements MessageListene
         }
     }
 
+    @Override
     public void onMessage(Message msg)
     {
         try

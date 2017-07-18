@@ -174,6 +174,7 @@ public class Disposition implements FrameBody
         return builder.toString();
     }
 
+    @Override
     public void invoke(int channel, ConnectionHandler conn)
     {
         conn.receiveDisposition(channel, this);

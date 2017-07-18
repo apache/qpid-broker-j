@@ -44,11 +44,13 @@ public class ConfirmSelectBody extends AMQMethodBodyImpl implements EncodableAMQ
         _nowait = nowait;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -59,21 +61,25 @@ public class ConfirmSelectBody extends AMQMethodBodyImpl implements EncodableAMQ
         return _nowait;
     }
 
+    @Override
     protected int getBodySize()
     {
         return 1;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeBitfield( buffer, _nowait ? (byte)1 : (byte)0 );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchConfirmSelect(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[ConfirmSelectBody: ");

@@ -31,6 +31,7 @@ import java.util.UUID;
 public final class RandomUUIDGen implements UUIDGen
 {
 
+    @Override
     public UUID generate()
     {
         return UUID.randomUUID();

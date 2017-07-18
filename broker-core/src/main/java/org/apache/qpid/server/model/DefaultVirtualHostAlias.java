@@ -26,6 +26,7 @@ public interface DefaultVirtualHostAlias<X extends VirtualHostAlias<X>> extends 
 
     String TYPE_NAME = "defaultAlias";
 
+    @Override
     @ManagedAttribute( defaultValue = "500" )
     int getPriority();
 }

@@ -326,11 +326,13 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
         return _targetAddress;
     }
 
+    @Override
     public AMQChannel getSession()
     {
         return _channel;
     }
 
+    @Override
     public String toString()
     {
 
@@ -362,6 +364,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
         return _creditManager;
     }
 
+    @Override
     public boolean allocateCredit(ServerMessage msg)
     {
         boolean hasCredit = _creditManager.hasCredit();
@@ -388,6 +391,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
         return _channel.getConnection();
     }
 
+    @Override
     public void restoreCredit(final ServerMessage message)
     {
         // This method is only called when the queue is restoring credit it allocated and then could not use
@@ -410,6 +414,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
         converter.confirmConsumerAutoClose(getChannel().getChannelId(), getConsumerTag());
     }
 
+    @Override
     public void queueEmpty()
     {
         if(isAutoClose() && getState() != State.CLOSED)
@@ -419,6 +424,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
         }
     }
 
+    @Override
     public void flushBatched()
     {
         _channel.getConnection().setDeferFlush(false);
@@ -442,11 +448,13 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
     {
     }
 
+    @Override
     public long getUnacknowledgedBytes()
     {
         return _unacknowledgedBytes.longValue();
     }
 
+    @Override
     public long getUnacknowledgedMessages()
     {
         return _unacknowledgedCount.longValue();

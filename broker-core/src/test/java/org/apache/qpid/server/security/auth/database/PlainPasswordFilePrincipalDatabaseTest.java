@@ -50,6 +50,7 @@ public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFile
     private PlainPasswordFilePrincipalDatabase _database;
     private List<File> _testPwdFiles = new ArrayList<File>();
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -79,6 +80,7 @@ public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFile
 
         Principal principal = new Principal()
         {
+            @Override
             public String getName()
             {
                 return CREATED_USERNAME;
@@ -105,6 +107,7 @@ public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFile
 
         Principal principal = new Principal()
         {
+            @Override
             public String getName()
             {
                 return TEST_USERNAME;

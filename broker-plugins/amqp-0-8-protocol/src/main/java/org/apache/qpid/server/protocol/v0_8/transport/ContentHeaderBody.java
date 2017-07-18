@@ -58,6 +58,7 @@ public class ContentHeaderBody implements AMQBody
         _bodySize = bodySize;
     }
 
+    @Override
     public byte getFrameType()
     {
         return TYPE;
@@ -80,6 +81,7 @@ public class ContentHeaderBody implements AMQBody
         return body;
     }
 
+    @Override
     public int getSize()
     {
         return 2 + 2 + 8 + 2 + _properties.getPropertyListSize();
@@ -108,6 +110,7 @@ public class ContentHeaderBody implements AMQBody
         return HEADER_SIZE + _properties.writePropertyListPayload(buf);
     }
 
+    @Override
     public void handle(final int channelId, final AMQVersionAwareProtocolSession session)
             throws QpidException
     {

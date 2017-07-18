@@ -52,6 +52,7 @@ public class StandardEnvironmentFacadeFactoryTest extends QpidTestCase
         // make mock object implementing FileBasedSettings
         _parent = mock(ConfiguredObject.class, withSettings().extraInterfaces(FileBasedSettings.class).defaultAnswer(new Answer()
         {
+            @Override
             public Object answer(InvocationOnMock invocation)
             {
                 if (invocation.getMethod().getName().equals("getStorePath"))

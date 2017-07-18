@@ -60,16 +60,19 @@ public abstract class AbstractMessageLogger implements MessageLogger
         _enabled = statusUpdatesEnabled;
     }
     
+    @Override
     public boolean isEnabled()
     {
         return _enabled;
     }
 
+    @Override
     public boolean isMessageEnabled(String logHierarchy)
     {
         return _enabled;
     }
 
+    @Override
     public void message(LogMessage message)
     {
         if (isMessageEnabled(message.getLogHierarchy()))
@@ -78,6 +81,7 @@ public abstract class AbstractMessageLogger implements MessageLogger
         }
     }
 
+    @Override
     public void message(LogSubject subject, LogMessage message)
     {
         if (isMessageEnabled(message.getLogHierarchy()))

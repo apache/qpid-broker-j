@@ -681,11 +681,13 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                             txn.dequeue(Collections.singleton(queueEntry),
                                         new ServerTransaction.Action()
                                         {
+                                            @Override
                                             public void postCommit()
                                             {
                                                 queueEntry.delete();
                                             }
 
+                                            @Override
                                             public void onRollback()
                                             {
                                             }
@@ -701,11 +703,13 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                         txn.dequeue(Collections.singleton(queueEntry),
                                     new ServerTransaction.Action()
                                     {
+                                        @Override
                                         public void postCommit()
                                         {
                                             queueEntry.release(oldConsumer);
                                         }
 
+                                        @Override
                                         public void onRollback()
                                         {
                                         }

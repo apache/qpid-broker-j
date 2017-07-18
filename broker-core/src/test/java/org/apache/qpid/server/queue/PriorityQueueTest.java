@@ -106,6 +106,7 @@ public class PriorityQueueTest extends AbstractQueueTestBase
         return msg;
     }
 
+    @Override
     protected ServerMessage createMessage(Long id)
     {
         return createMessage(id, (byte) 0);

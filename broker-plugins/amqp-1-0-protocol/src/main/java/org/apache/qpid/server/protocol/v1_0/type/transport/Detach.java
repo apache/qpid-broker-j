@@ -60,6 +60,7 @@ public class Detach implements ErrorCarryingFrameBody
         _closed = closed;
     }
 
+    @Override
     public Error getError()
     {
         return _error;
@@ -107,6 +108,7 @@ public class Detach implements ErrorCarryingFrameBody
         return builder.toString();
     }
 
+    @Override
     public void invoke(int channel, ConnectionHandler conn)
     {
         conn.receiveDetach(channel, this);

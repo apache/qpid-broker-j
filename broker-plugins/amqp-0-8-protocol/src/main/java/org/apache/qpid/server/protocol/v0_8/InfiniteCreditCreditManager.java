@@ -28,15 +28,18 @@ public class InfiniteCreditCreditManager implements FlowCreditManager_0_8
     {
     }
 
+    @Override
     public void restoreCredit(long messageCredit, long bytesCredit)
     {
     }
 
+    @Override
     public boolean hasCredit()
     {
         return true;
     }
 
+    @Override
     public boolean useCreditForMessage(long msgSize)
     {
         return true;

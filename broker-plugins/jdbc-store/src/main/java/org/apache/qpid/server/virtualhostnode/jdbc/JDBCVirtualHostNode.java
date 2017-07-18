@@ -31,19 +31,24 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreProvider;
 public interface JDBCVirtualHostNode<X extends JDBCVirtualHostNode<X>> extends VirtualHostNode<X>, JDBCSettings,
                                                                                PreferenceStoreProvider
 {
+    @Override
     @ManagedAttribute(mandatory=true)
     String getConnectionUrl();
 
+    @Override
     @ManagedAttribute(defaultValue=DefaultConnectionProviderFactory.TYPE,
             validValues = {"org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory#getAllAvailableConnectionProviderTypes()"} )
     String getConnectionPoolType();
 
+    @Override
     @ManagedAttribute
     String getUsername();
 
+    @Override
     @ManagedAttribute(secure=true)
     String getPassword();
 
+    @Override
     @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
             defaultValue = "{\"type\": \"Provided\"}")
     PreferenceStoreAttributes getPreferenceStoreAttributes();
@@ -52,6 +57,7 @@ public interface JDBCVirtualHostNode<X extends JDBCVirtualHostNode<X>> extends V
             description = "Default value for optional database table prefix")
     String DEFAULT_JDBC_VIRTUALHOSTNODE_TABLE_NAME_PREFIX = "";
 
+    @Override
     @ManagedAttribute(
             description = "Optional database table prefix so multiple VirtualHostNodes can share the same database",
             defaultValue = "${jdbcvirtualhostnode.tableNamePrefix}",

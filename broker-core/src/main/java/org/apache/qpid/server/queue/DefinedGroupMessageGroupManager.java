@@ -140,6 +140,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
         _resetHelper = resetHelper;
     }
     
+    @Override
     public synchronized boolean mightAssign(final QueueEntry entry, final QueueConsumer sub)
     {
         Object groupId = getKey(entry);
@@ -153,6 +154,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
         return possibleAssignment;
     }
 
+    @Override
     public synchronized boolean acceptMessage(final QueueConsumer<?,?> sub, final QueueEntry entry)
     {
         return assignMessage(sub, entry) && entry.acquire(sub);
@@ -192,6 +194,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
         }
     }
 
+    @Override
     public synchronized QueueEntry findEarliestAssignedAvailableEntry(final QueueConsumer<?,?> sub)
     {
         EntryFinder visitor = new EntryFinder(sub);
@@ -209,6 +212,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
             _sub = sub;
         }
 
+        @Override
         public boolean visit(final QueueEntry entry)
         {
             if(!entry.isAvailable())
@@ -237,6 +241,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
     }
 
     
+    @Override
     public void clearAssignments(final QueueConsumer<?,?> sub)
     {
     }

@@ -120,6 +120,7 @@ public class PortFactoryTest extends QpidTestCase
         _attributes.put(Port.BINDING_ADDRESS, "127.0.0.1");
     }
 
+    @Override
     public void tearDown() throws Exception
     {
         try

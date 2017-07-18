@@ -123,6 +123,7 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
         /**
          *  org.apache.activemq.filter.UnaryExpression#getExpressionSymbol()
          */
+        @Override
         public String getExpressionSymbol()
         {
             return "LIKE";
@@ -131,6 +132,7 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
         /**
          *  org.apache.activemq.filter.Expression#evaluate(MessageEvaluationContext)
          */
+        @Override
         public Object evaluate(E message)
         {
 
@@ -150,6 +152,7 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
             return likePattern.matcher((String) rv).matches() ? Boolean.TRUE : Boolean.FALSE;
         }
 
+        @Override
         public boolean matches(E message)
         {
             Object object = evaluate(message);
@@ -240,11 +243,13 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
 
         return new ComparisonExpression<E>(left, right)
             {
+                @Override
                 protected boolean asBoolean(int answer)
                 {
                     return answer > 0;
                 }
 
+                @Override
                 public String getExpressionSymbol()
                 {
                     return ">";
@@ -259,11 +264,13 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
 
         return new ComparisonExpression<E>(left, right)
             {
+                @Override
                 protected boolean asBoolean(int answer)
                 {
                     return answer >= 0;
                 }
 
+                @Override
                 public String getExpressionSymbol()
                 {
                     return ">=";
@@ -279,11 +286,13 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
         return new ComparisonExpression<E>(left, right)
             {
 
+                @Override
                 protected boolean asBoolean(int answer)
                 {
                     return answer < 0;
                 }
 
+                @Override
                 public String getExpressionSymbol()
                 {
                     return "<";
@@ -300,11 +309,13 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
         return new ComparisonExpression<E>(left, right)
             {
 
+                @Override
                 protected boolean asBoolean(int answer)
                 {
                     return answer <= 0;
                 }
 
+                @Override
                 public String getExpressionSymbol()
                 {
                     return "<=";
@@ -371,6 +382,7 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
         super(left, right);
     }
 
+    @Override
     public Object evaluate(T message)
     {
         Comparable lv = (Comparable) getLeft().evaluate(message);
@@ -562,6 +574,7 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
 
     protected abstract boolean asBoolean(int answer);
 
+    @Override
     public boolean matches(T message)
     {
         Object object = evaluate(message);
@@ -576,6 +589,7 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
             super(left, right);
         }
 
+        @Override
         public Object evaluate(E message)
         {
             Object lv = getLeft().evaluate(message);
@@ -600,11 +614,13 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
             return Boolean.FALSE;
         }
 
+        @Override
         protected boolean asBoolean(int answer)
         {
             return answer == 0;
         }
 
+        @Override
         public String getExpressionSymbol()
         {
             return "=";

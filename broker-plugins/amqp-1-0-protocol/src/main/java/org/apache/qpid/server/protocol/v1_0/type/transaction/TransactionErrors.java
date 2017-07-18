@@ -50,11 +50,13 @@ public class TransactionErrors
         _val = val;
     }
 
+    @Override
     public Symbol getValue()
     {
         return _val;
     }
 
+    @Override
     public String toString()
     {
         

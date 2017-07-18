@@ -52,8 +52,10 @@ public abstract class Range implements RangeSet
 
     public abstract int getUpper();
 
+    @Override
     public abstract boolean includes(int value);
 
+    @Override
     public abstract boolean includes(Range range);
 
     public abstract boolean intersects(Range range);
@@ -81,51 +83,61 @@ public abstract class Range implements RangeSet
 
 
 
+    @Override
     public int size()
     {
         return 1;
     }
 
+    @Override
     public Iterator<Range> iterator()
     {
         return new RangeIterator();
     }
 
+    @Override
     public Range getFirst()
     {
         return this;
     }
 
+    @Override
     public Range getLast()
     {
         return this;
     }
 
+    @Override
     public void add(Range range)
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public void add(int lower, int upper)
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public void add(int value)
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public void clear()
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public void subtract(RangeSet rangeSet)
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public RangeSet copy()
     {
         RangeSet rangeSet = RangeSetFactory.createRangeSet();
@@ -142,32 +154,38 @@ public abstract class Range implements RangeSet
             this.point = point;
         }
 
+        @Override
         public int getLower()
         {
             return point;
         }
 
+        @Override
         public int getUpper()
         {
             return point;
         }
 
+        @Override
         public boolean includes(int value)
         {
             return value == point;
         }
 
 
+        @Override
         public boolean includes(Range range)
         {
             return range.getLower() == point && range.getUpper() == point;
         }
 
+        @Override
         public boolean intersects(Range range)
         {
             return range.includes(point);
         }
 
+        @Override
         public boolean touches(Range range)
         {
             return intersects(range) ||
@@ -175,11 +193,13 @@ public abstract class Range implements RangeSet
                     range.includes(point + 1) || range.includes(point - 1);
         }
 
+        @Override
         public Range span(Range range)
         {
             return newInstance(min(point, range.getLower()), max(point, range.getUpper()));
         }
 
+        @Override
         public List<Range> subtract(Range range)
         {
             if(range.includes(point))
@@ -192,6 +212,7 @@ public abstract class Range implements RangeSet
             }
         }
 
+        @Override
         public String toString()
         {
             return "[" + point + ", " + point + "]";
@@ -211,32 +232,38 @@ public abstract class Range implements RangeSet
             this.upper = upper;
         }
 
+        @Override
         public int getLower()
         {
             return lower;
         }
 
+        @Override
         public int getUpper()
         {
             return upper;
         }
 
+        @Override
         public boolean includes(int value)
         {
             return le(lower, value) && le(value, upper);
         }
 
+        @Override
         public boolean includes(Range range)
         {
             return includes(range.getLower()) && includes(range.getUpper());
         }
 
+        @Override
         public boolean intersects(Range range)
         {
             return (includes(range.getLower()) || includes(range.getUpper()) ||
                     range.includes(lower) || range.includes(upper));
         }
 
+        @Override
         public boolean touches(Range range)
         {
             return (intersects(range) ||
@@ -244,11 +271,13 @@ public abstract class Range implements RangeSet
                     range.includes(upper + 1) || range.includes(lower - 1));
         }
 
+        @Override
         public Range span(Range range)
         {
             return newInstance(min(lower, range.getLower()), max(upper, range.getUpper()));
         }
 
+        @Override
         public List<Range> subtract(Range range)
         {
             List<Range> result = new ArrayList<Range>();
@@ -272,6 +301,7 @@ public abstract class Range implements RangeSet
         }
 
 
+        @Override
         public String toString()
         {
             return "[" + lower + ", " + upper + "]";
@@ -283,11 +313,13 @@ public abstract class Range implements RangeSet
     {
         private boolean atFirst = true;
 
+        @Override
         public boolean hasNext()
         {
             return atFirst;
         }
 
+        @Override
         public Range next()
         {
 
@@ -297,6 +329,7 @@ public abstract class Range implements RangeSet
         }
 
 
+        @Override
         public void remove()
         {
             throw new UnsupportedOperationException();

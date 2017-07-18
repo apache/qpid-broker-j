@@ -43,6 +43,7 @@ public class HttpManagementActorTest extends BaseActorTestCase
             return "";
         }
 
+        @Override
         public String toString()
         {
             return "";
@@ -104,6 +105,7 @@ public class HttpManagementActorTest extends BaseActorTestCase
 
         final String message = Subject.doAs(subject, new PrivilegedAction<String>()
         {
+            @Override
             public String run()
             {
                 return sendTestLogMessage();
@@ -165,6 +167,7 @@ public class HttpManagementActorTest extends BaseActorTestCase
         subject.getPrincipals().add(_connectionPrincipal);
         final String message = Subject.doAs(subject, new PrivilegedAction<String>()
         {
+            @Override
             public String run()
             {
                 getEventLogger().message(EMPTY_MESSAGE);

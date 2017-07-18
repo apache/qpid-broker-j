@@ -248,6 +248,7 @@ public class TopicMatcherDFAState
     }
 
 
+    @Override
     public String toString()
     {
         StringBuilder transitions = new StringBuilder();
@@ -272,6 +273,7 @@ public class TopicMatcherDFAState
         SortedSet<TopicMatcherDFAState> reachableStates =
                 new TreeSet<TopicMatcherDFAState>(new Comparator<TopicMatcherDFAState>()
                                                         {
+                                                            @Override
                                                             public int compare(final TopicMatcherDFAState o1, final TopicMatcherDFAState o2)
                                                             {
                                                                 return o1.getId() - o2.getId();

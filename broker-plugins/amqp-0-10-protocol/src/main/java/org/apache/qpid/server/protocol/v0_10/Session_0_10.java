@@ -173,6 +173,7 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
         return _taskList;
     }
 
+    @Override
     public boolean isClosing()
     {
         return _serverSession.isClosing();

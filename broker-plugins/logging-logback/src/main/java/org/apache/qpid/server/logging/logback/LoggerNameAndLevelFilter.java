@@ -99,6 +99,7 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
         }
     }
 
+    @Override
     public Level getEffectiveLevel(final Logger logger)
     {
         if((_loggerName == null || "".equals(_loggerName) || Logger.ROOT_LOGGER_NAME.equals(_loggerName))

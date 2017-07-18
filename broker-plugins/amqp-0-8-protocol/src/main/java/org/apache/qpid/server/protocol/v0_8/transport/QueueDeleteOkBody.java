@@ -46,11 +46,13 @@ public class QueueDeleteOkBody extends AMQMethodBodyImpl implements EncodableAMQ
         _messageCount = messageCount;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -61,22 +63,26 @@ public class QueueDeleteOkBody extends AMQMethodBodyImpl implements EncodableAMQ
         return _messageCount;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 4;
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeUnsignedInteger( buffer, _messageCount );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchQueueDeleteOk(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[QueueDeleteOkBodyImpl: ");

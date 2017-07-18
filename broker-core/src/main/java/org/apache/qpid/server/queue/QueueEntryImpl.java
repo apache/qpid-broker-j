@@ -162,11 +162,13 @@ public abstract class QueueEntryImpl implements QueueEntry
         }
     }
 
+    @Override
     public void setExpiration(long expiration)
     {
         _expiration = expiration;
     }
 
+    @Override
     public InstanceProperties getInstanceProperties()
     {
         return new EntryInstanceProperties();
@@ -182,31 +184,37 @@ public abstract class QueueEntryImpl implements QueueEntry
         return _entryId;
     }
 
+    @Override
     public Queue<?> getQueue()
     {
         return _queueEntryList.getQueue();
     }
 
+    @Override
     public ServerMessage getMessage()
     {
         return  _message == null ? null : _message.getMessage();
     }
 
+    @Override
     public long getSize()
     {
         return getMessage() == null ? 0 : getMessage().getSize();
     }
 
+    @Override
     public long getSizeWithHeader()
     {
         return getMessage() == null ? 0 : getMessage().getSizeIncludingHeader();
     }
 
+    @Override
     public boolean getDeliveredToConsumer()
     {
         return _deliveryCountUpdater.get(this) != -1;
     }
 
+    @Override
     public boolean expired()
     {
         long expiration = _expiration;
@@ -220,16 +228,19 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     }
 
+    @Override
     public boolean isAvailable()
     {
         return _state.getState() == State.AVAILABLE;
     }
 
+    @Override
     public boolean isAcquired()
     {
         return _state.getState() == State.ACQUIRED;
     }
 
+    @Override
     public boolean acquire()
     {
         return acquire(NON_CONSUMER_ACQUIRED_STATE);
@@ -314,6 +325,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         return acquired;
     }
 
+    @Override
     public boolean acquire(MessageInstanceConsumer sub)
     {
         final boolean acquired = acquire(((QueueConsumer<?,?>) sub).getOwningState().getUnstealableState());
@@ -360,6 +372,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         return false;
     }
 
+    @Override
     public boolean acquiredByConsumer()
     {
         return _state instanceof ConsumerAcquiredState;
@@ -479,6 +492,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         return false;
     }
 
+    @Override
     public void reject()
     {
         QueueConsumer<?,?> consumer = getAcquiringConsumer();
@@ -559,6 +573,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         }
     }
 
+    @Override
     public void delete()
     {
         if(dequeue())
@@ -567,6 +582,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         }
     }
 
+    @Override
     public int routeToAlternate(final Action<? super MessageInstance> action, ServerTransaction txn)
     {
         if (!isAcquired())
@@ -595,11 +611,13 @@ public abstract class QueueEntryImpl implements QueueEntry
         }
         txn.addPostTransactionAction(new ServerTransaction.Action()
         {
+            @Override
             public void postCommit()
             {
                 delete();
             }
 
+            @Override
             public void onRollback()
             {
 
@@ -614,11 +632,13 @@ public abstract class QueueEntryImpl implements QueueEntry
         return  enqueues;
     }
 
+    @Override
     public boolean isQueueDeleted()
     {
         return getQueue().isDeleted();
     }
 
+    @Override
     public void addStateChangeListener(StateChangeListener<? super MessageInstance, EntryState> listener)
     {
         StateChangeListenerEntry<? super QueueEntry, EntryState> entry = new StateChangeListenerEntry<>(listener);
@@ -628,6 +648,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         }
     }
 
+    @Override
     public boolean removeStateChangeListener(StateChangeListener<? super MessageInstance, EntryState> listener)
     {
         StateChangeListenerEntry entry = _listenersUpdater.get(this);
@@ -650,6 +671,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         return _queueEntryList;
     }
 
+    @Override
     public boolean isDeleted()
     {
         return _state.isDispensed();
@@ -661,6 +683,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         return checkHeld(System.currentTimeMillis());
     }
 
+    @Override
     public int getDeliveryCount()
     {
         return _deliveryCount == -1 ? 0 : _deliveryCount;
@@ -672,12 +695,14 @@ public abstract class QueueEntryImpl implements QueueEntry
         return getQueue().getMaximumDeliveryAttempts();
     }
 
+    @Override
     public void incrementDeliveryCount()
     {
         _deliveryCountUpdater.compareAndSet(this,-1,0);
         _deliveryCountUpdater.incrementAndGet(this);
     }
 
+    @Override
     public void decrementDeliveryCount()
     {
         _deliveryCountUpdater.decrementAndGet(this);
@@ -689,6 +714,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         return Filterable.Factory.newInstance(getMessage(), getInstanceProperties());
     }
 
+    @Override
     public String toString()
     {
         return "QueueEntryImpl{" +
@@ -703,6 +729,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         return getQueue();
     }
 
+    @Override
     public void setRedelivered()
     {
         _flags |= REDELIVERED_FLAG;

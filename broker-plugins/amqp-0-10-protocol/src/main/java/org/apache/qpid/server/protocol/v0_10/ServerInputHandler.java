@@ -65,6 +65,7 @@ public class ServerInputHandler implements FrameSizeObserver
         _state = PROTO_HDR;
     }
 
+    @Override
     public void setMaxFrameSize(final int maxFrameSize)
     {
         _maxFrameSize = maxFrameSize;

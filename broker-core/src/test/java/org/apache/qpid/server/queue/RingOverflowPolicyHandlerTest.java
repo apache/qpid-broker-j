@@ -46,6 +46,7 @@ public class RingOverflowPolicyHandlerTest extends QpidTestCase
     private EventLogger _eventLogger;
     private LogSubject _subject;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

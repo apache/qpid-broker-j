@@ -88,6 +88,7 @@ public class SaslOutcome
         return builder.toString();
     }
 
+    @Override
     public void invoke(final int channel, SASLEndpoint conn)
     {
         conn.receiveSaslOutcome(this);

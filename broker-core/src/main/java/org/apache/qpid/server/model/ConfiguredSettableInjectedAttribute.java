@@ -148,16 +148,19 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
         return null;
     }
 
+    @Override
     public boolean isAutomated()
     {
         return false;
     }
 
+    @Override
     public boolean isDerived()
     {
         return false;
     }
 
+    @Override
     public String defaultValue()
     {
         return _defaultValue;
@@ -169,21 +172,25 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
         return _initialization;
     }
 
+    @Override
     public boolean isSecure()
     {
         return _secure;
     }
 
+    @Override
     public boolean isMandatory()
     {
         return false;
     }
 
+    @Override
     public boolean isImmutable()
     {
         return _immutable;
     }
 
+    @Override
     public boolean isPersisted()
     {
         return _persisted;
@@ -207,11 +214,13 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
         return _oversizedAltText;
     }
 
+    @Override
     public String getDescription()
     {
         return _description;
     }
 
+    @Override
     public Pattern getSecureValueFilter()
     {
         return _secureValuePattern;
@@ -225,6 +234,7 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
                ((filter = getSecureValueFilter()) == null || filter.matcher(String.valueOf(value)).matches());
     }
 
+    @Override
     public Collection<String> validValues()
     {
         if(_validValuesMethod != null)
@@ -256,6 +266,7 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
     }
 
     /** Returns true iff this attribute has valid values defined */
+    @Override
     public boolean hasValidValues()
     {
         return validValues() != null && validValues().size() > 0;
@@ -272,6 +283,7 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
         return convert(value, configuredObject);
     }
 
+    @Override
     public final T convert(final Object value, final C object)
     {
         final AttributeValueConverter<T> converter = getConverter();

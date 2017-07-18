@@ -42,6 +42,7 @@ class MessageTransferHeader implements AMQMessageHeader
         _messageProps = messageProps;
     }
 
+    @Override
     public String getCorrelationId()
     {
         if (_messageProps != null && _messageProps.getCorrelationId() != null)
@@ -54,23 +55,27 @@ class MessageTransferHeader implements AMQMessageHeader
         }
     }
 
+    @Override
     public long getExpiration()
     {
         return _deliveryProps == null ? 0L : _deliveryProps.getExpiration();
     }
 
+    @Override
     public String getUserId()
     {
         byte[] userIdBytes = _messageProps == null ? null : _messageProps.getUserId();
         return userIdBytes == null ? null : new String(userIdBytes);
     }
 
+    @Override
     public String getAppId()
     {
         byte[] appIdBytes = _messageProps == null ? null : _messageProps.getAppId();
         return appIdBytes == null ? null : new String(appIdBytes);
     }
 
+    @Override
     public String getMessageId()
     {
         UUID id = _messageProps == null ? null : _messageProps.getMessageId();
@@ -78,16 +83,19 @@ class MessageTransferHeader implements AMQMessageHeader
         return id == null ? null : "ID:"+String.valueOf(id);
     }
 
+    @Override
     public String getMimeType()
     {
         return _messageProps == null ? null : _messageProps.getContentType();
     }
 
+    @Override
     public String getEncoding()
     {
         return _messageProps == null ? null : _messageProps.getContentEncoding();
     }
 
+    @Override
     public byte getPriority()
     {
         MessageDeliveryPriority priority = _deliveryProps == null || !_deliveryProps.hasPriority()
@@ -96,6 +104,7 @@ class MessageTransferHeader implements AMQMessageHeader
         return (byte) priority.getValue();
     }
 
+    @Override
     public long getTimestamp()
     {
         return _deliveryProps == null ? 0L : _deliveryProps.getTimestamp();
@@ -109,12 +118,14 @@ class MessageTransferHeader implements AMQMessageHeader
         return header instanceof Number ? ((Number)header).longValue() : 0L;
     }
 
+    @Override
     public String getType()
     {
         Object type = getHeader(JMS_TYPE);
         return type instanceof String ? (String) type : null;
     }
 
+    @Override
     public String getReplyTo()
     {
         if (_messageProps != null && _messageProps.getReplyTo() != null)
@@ -151,12 +162,14 @@ class MessageTransferHeader implements AMQMessageHeader
         }
     }
 
+    @Override
     public Object getHeader(String name)
     {
         Map<String, Object> appHeaders = _messageProps == null ? null : _messageProps.getApplicationHeaders();
         return appHeaders == null ? null : appHeaders.get(name);
     }
 
+    @Override
     public boolean containsHeaders(Set<String> names)
     {
         Map<String, Object> appHeaders = _messageProps == null ? null : _messageProps.getApplicationHeaders();
@@ -172,6 +185,7 @@ class MessageTransferHeader implements AMQMessageHeader
 
     }
 
+    @Override
     public boolean containsHeader(String name)
     {
         Map<String, Object> appHeaders = _messageProps == null ? null : _messageProps.getApplicationHeaders();

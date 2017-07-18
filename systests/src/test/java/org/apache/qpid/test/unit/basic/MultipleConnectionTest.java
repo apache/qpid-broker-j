@@ -114,6 +114,7 @@ public class MultipleConnectionTest extends QpidBrokerTestCase
             _name = name;
         }
 
+        @Override
         public synchronized void onMessage(Message message)
         {
             _count++;
@@ -142,6 +143,7 @@ public class MultipleConnectionTest extends QpidBrokerTestCase
             return System.currentTimeMillis() - start;
         }
 
+        @Override
         public synchronized String toString()
         {
             return _name + ": " + _count;

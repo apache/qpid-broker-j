@@ -55,6 +55,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
     private Connection _consumerConnection;
     private long _receiveInterval;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
@@ -66,6 +67,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
         _receiveInterval = isBrokerStorePersistent() ? 3000l : 1500l;
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         _producerSession.close();
@@ -380,6 +382,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
             _queue = queue;
         }
 
+        @Override
         public void run()
         {
             try

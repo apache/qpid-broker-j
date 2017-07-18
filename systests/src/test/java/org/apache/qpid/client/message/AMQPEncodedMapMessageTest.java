@@ -46,6 +46,7 @@ public class AMQPEncodedMapMessageTest extends QpidBrokerTestCase
     private MessageProducer _producer;
     private UUID myUUID = UUID.randomUUID();
     
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -265,6 +266,7 @@ public class AMQPEncodedMapMessageTest extends QpidBrokerTestCase
         return myMap;
     }
     
+    @Override
     public void tearDown() throws Exception
     {
         //clean up

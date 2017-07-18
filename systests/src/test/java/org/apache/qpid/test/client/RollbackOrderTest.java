@@ -139,6 +139,7 @@ public class RollbackOrderTest extends QpidBrokerTestCase
         _consumer.setMessageListener(new MessageListener()
         {
 
+            @Override
             public void onMessage(Message message)
             {
 

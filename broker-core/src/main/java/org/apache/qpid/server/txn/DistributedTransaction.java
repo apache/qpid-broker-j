@@ -59,6 +59,7 @@ public class DistributedTransaction implements ServerTransaction
         return 0;
     }
 
+    @Override
     public void addPostTransactionAction(Action postTransactionAction)
     {
         if(_branch != null)
@@ -71,6 +72,7 @@ public class DistributedTransaction implements ServerTransaction
         }
     }
 
+    @Override
     public void dequeue(MessageEnqueueRecord record, Action postTransactionAction)
     {
         if(_branch != null)
@@ -85,6 +87,7 @@ public class DistributedTransaction implements ServerTransaction
     }
 
 
+    @Override
     public void dequeue(Collection<MessageInstance> messages, Action postTransactionAction)
     {
         if(_branch != null)
@@ -101,6 +104,7 @@ public class DistributedTransaction implements ServerTransaction
         }
     }
 
+    @Override
     public void enqueue(TransactionLogResource queue, EnqueueableMessage message, final EnqueueAction postTransactionAction)
     {
         if(_branch != null)
@@ -135,6 +139,7 @@ public class DistributedTransaction implements ServerTransaction
         }
     }
 
+    @Override
     public void enqueue(Collection<? extends BaseQueue> queues, EnqueueableMessage message,
                         final EnqueueAction postTransactionAction)
     {
@@ -176,21 +181,25 @@ public class DistributedTransaction implements ServerTransaction
         }
     }
 
+    @Override
     public void commit()
     {
         throw new IllegalStateException("Cannot call tx.commit() on a distributed transaction");
     }
 
+    @Override
     public void commit(Runnable immediatePostTransactionAction)
     {
         throw new IllegalStateException("Cannot call tx.commit() on a distributed transaction");
     }
 
+    @Override
     public void rollback()
     {
         throw new IllegalStateException("Cannot call tx.rollback() on a distributed transaction");
     }
 
+    @Override
     public boolean isTransactional()
     {
         return _branch != null;

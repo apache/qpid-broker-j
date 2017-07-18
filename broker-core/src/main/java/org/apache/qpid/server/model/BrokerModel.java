@@ -120,6 +120,7 @@ public final class BrokerModel extends Model
                                                          _objectFactory);
     }
 
+    @Override
     public final ConfiguredObjectTypeRegistry getTypeRegistry()
     {
         return _typeRegistry;
@@ -161,6 +162,7 @@ public final class BrokerModel extends Model
         return _objectFactory;
     }
 
+    @Override
     public Collection<Class<? extends ConfiguredObject>> getChildTypes(Class<? extends ConfiguredObject> parent)
     {
         Collection<Class<? extends ConfiguredObject>> childTypes = _children.get(parent);

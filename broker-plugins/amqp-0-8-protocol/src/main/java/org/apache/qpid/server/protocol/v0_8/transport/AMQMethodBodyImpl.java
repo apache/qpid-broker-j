@@ -39,6 +39,7 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
     {
     }
 
+    @Override
     public byte getFrameType()
     {
         return TYPE;
@@ -51,6 +52,7 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
     abstract protected int getBodySize();
 
 
+    @Override
     public AMQFrame generateFrame(int channelId)
     {
         return new AMQFrame(channelId, this);
@@ -61,11 +63,13 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
      * method ids of the body it resulted from).
      */
 
+    @Override
     public void handle(final int channelId, final AMQVersionAwareProtocolSession session) throws QpidException
     {
         session.methodFrameReceived(channelId, this);
     }
 
+    @Override
     public int getSize()
     {
         return 2 + 2 + getBodySize();

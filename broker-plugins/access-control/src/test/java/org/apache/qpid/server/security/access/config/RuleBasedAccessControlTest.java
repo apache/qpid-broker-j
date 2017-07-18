@@ -56,6 +56,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
     private UnitTestMessageLogger _messageLogger;
     private EventLogger _eventLogger;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

@@ -117,6 +117,7 @@ public final class ServerFrame
         return flag(LAST_FRAME);
     }
 
+    @Override
     public String toString()
     {
         StringBuilder str = new StringBuilder();

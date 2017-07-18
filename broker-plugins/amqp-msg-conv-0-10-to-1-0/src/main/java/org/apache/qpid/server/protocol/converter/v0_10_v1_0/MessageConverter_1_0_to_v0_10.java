@@ -48,6 +48,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.ReplyTo;
 public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1_0, MessageTransferMessage>
 {
 
+    @Override
     public Class<Message_1_0> getInputClass()
     {
         return Message_1_0.class;

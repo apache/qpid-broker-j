@@ -59,11 +59,13 @@ public class ConnectionStartOkBody extends AMQMethodBodyImpl implements Encodabl
         _locale = locale;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -86,6 +88,7 @@ public class ConnectionStartOkBody extends AMQMethodBodyImpl implements Encodabl
         return _locale;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 0;
@@ -96,6 +99,7 @@ public class ConnectionStartOkBody extends AMQMethodBodyImpl implements Encodabl
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeFieldTable( buffer, _clientProperties );
@@ -104,11 +108,13 @@ public class ConnectionStartOkBody extends AMQMethodBodyImpl implements Encodabl
         writeAMQShortString( buffer, _locale );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchConnectionStartOk(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[ConnectionStartOkBodyImpl: ");

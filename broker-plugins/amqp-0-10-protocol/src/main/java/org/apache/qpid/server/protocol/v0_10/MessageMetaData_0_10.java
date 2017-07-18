@@ -78,6 +78,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
 
 
 
+    @Override
     public MessageMetaDataType getType()
     {
         return TYPE;
@@ -163,6 +164,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
         return buf;
     }
 
+    @Override
     public synchronized void writeToBuffer(QpidByteBuffer dest)
     {
         if (_encoded == null)
@@ -175,11 +177,13 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
         clearEncodedForm();
     }
 
+    @Override
     public int getContentSize()
     {
         return _bodySize;
     }
 
+    @Override
     public boolean isPersistent()
     {
         return _deliveryProps != null && _deliveryProps.getDeliveryMode() == MessageDeliveryMode.PERSISTENT;
@@ -245,6 +249,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
 
     private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData_0_10>
     {
+        @Override
         public MessageMetaData_0_10 createMetaData(List<QpidByteBuffer> buf)
         {
             ServerDecoder decoder = new ServerDecoder(buf);

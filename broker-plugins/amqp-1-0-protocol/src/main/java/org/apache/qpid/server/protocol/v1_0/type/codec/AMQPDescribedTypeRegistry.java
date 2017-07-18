@@ -76,11 +76,13 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
 
 
 
+    @Override
     public void register(Object descriptor, DescribedTypeConstructor constructor)
     {
         _constructorRegistry.put(descriptor, constructor);
     }
 
+    @Override
     public DescribedTypeConstructor getConstructor(Object descriptor)
     {
         return _constructorRegistry.get(descriptor);
@@ -321,6 +323,7 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
     private final Map<Class, ValueWriter.Factory> _writerMap = new HashMap<Class, ValueWriter.Factory>();
 
 
+    @Override
     public <V extends Object> ValueWriter<V> getValueWriter(V value)
     {
         ValueWriter writer;
@@ -378,6 +381,7 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
 
     }
 
+    @Override
     public <V extends Object> ValueWriter<V> register(Class<V> clazz, ValueWriter.Factory<V> writer)
     {
         return (ValueWriter<V>) _writerMap.put(clazz, writer);

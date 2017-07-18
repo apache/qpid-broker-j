@@ -114,11 +114,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CREATE_LOG_HIERARCHY;
@@ -167,11 +169,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return FLOW_CONTROL_IGNORED_LOG_HIERARCHY;
@@ -220,11 +224,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CLOSE_LOG_HIERARCHY;
@@ -278,11 +284,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return DISCARDMSG_NOROUTE_LOG_HIERARCHY;
@@ -336,11 +344,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return DEADLETTERMSG_LOG_HIERARCHY;
@@ -394,11 +404,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return FLOW_LOG_HIERARCHY;
@@ -452,11 +464,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return PREFETCH_SIZE_LOG_HIERARCHY;
@@ -510,11 +524,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OPEN_TXN_LOG_HIERARCHY;
@@ -568,11 +584,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CLOSE_FORCED_LOG_HIERARCHY;
@@ -626,11 +644,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OPERATION_LOG_HIERARCHY;
@@ -684,11 +704,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return IDLE_TXN_LOG_HIERARCHY;
@@ -742,11 +764,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return FLOW_ENFORCED_LOG_HIERARCHY;
@@ -795,11 +819,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return FLOW_REMOVED_LOG_HIERARCHY;
@@ -853,11 +879,13 @@ public class ChannelMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return DISCARDMSG_NOALTEXCH_LOG_HIERARCHY;

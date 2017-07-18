@@ -271,11 +271,13 @@ public abstract class AbstractContainer<X extends AbstractContainer<X>> extends 
         return BrokerModel.MODEL_VERSION;
     }
 
+    @Override
     public EventLogger getEventLogger()
     {
         return _eventLogger;
     }
 
+    @Override
     public void setEventLogger(final EventLogger eventLogger)
     {
         _eventLogger = eventLogger;

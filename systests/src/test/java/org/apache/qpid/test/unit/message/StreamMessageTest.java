@@ -105,6 +105,7 @@ public class StreamMessageTest extends QpidBrokerTestCase
         consumer.setMessageListener(new MessageListener()
             {
 
+                @Override
                 public void onMessage(Message message)
                 {
                     final StreamMessage sm = (StreamMessage) message;

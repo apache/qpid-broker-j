@@ -41,6 +41,7 @@ public class StandardQueueEntryList extends OrderedQueueEntryList
     }
 
 
+    @Override
     protected StandardQueueEntry createQueueEntry(ServerMessage<?> message,
                                                   final MessageEnqueueRecord enqueueRecord)
     {

@@ -195,6 +195,7 @@ public class TestLauncher implements ErrorHandler
     {
     	Runnable r = new Runnable()
         {
+            @Override
             public void run()
             {
                try 
@@ -228,6 +229,7 @@ public class TestLauncher implements ErrorHandler
     {
     	Runnable r = new Runnable()
         {
+            @Override
             public void run()
             {
                try 
@@ -257,7 +259,8 @@ public class TestLauncher implements ErrorHandler
         t.start();
     }
 
-    public synchronized void handleError(String msg,Exception e)
+    @Override
+    public synchronized void handleError(String msg, Exception e)
     {
     	// In case sending the message fails
         StringBuilder sb = new StringBuilder();
@@ -335,7 +338,8 @@ public class TestLauncher implements ErrorHandler
         System.out.println("args [0] " + args [0]);
     	test.start(args.length > 0 ? args [0] : null);
     	Runtime.getRuntime().addShutdownHook(new Thread() {
-    	    public void run() { test.cleanup(); }
+    	    @Override
+            public void run() { test.cleanup(); }
     	});
 
     }

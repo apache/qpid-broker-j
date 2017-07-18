@@ -178,6 +178,7 @@ public class ValueHandler implements DescribedTypeConstructorRegistry.Source
     }
 
 
+    @Override
     public DescribedTypeConstructorRegistry getDescribedTypeRegistry()
     {
         return _describedTypeConstructorRegistry;

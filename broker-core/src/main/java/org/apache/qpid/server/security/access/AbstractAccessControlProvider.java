@@ -62,11 +62,13 @@ public abstract class AbstractAccessControlProvider<X extends AbstractAccessCont
         return _eventLogger;
     }
 
+    @Override
     public final int getPriority()
     {
         return _priority;
     }
 
+    @Override
     public abstract AccessControl getAccessControl();
 
     @Override

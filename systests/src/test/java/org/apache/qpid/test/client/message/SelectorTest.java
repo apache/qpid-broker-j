@@ -54,6 +54,7 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
 
     private static final String BAD_MATHS_SELECTOR = " 1 % 5";
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
@@ -65,6 +66,7 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
         _connection.start();
     }
 
+    @Override
     public void onMessage(Message message)
     {
         count++;

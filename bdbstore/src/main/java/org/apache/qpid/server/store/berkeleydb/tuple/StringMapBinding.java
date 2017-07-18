@@ -31,6 +31,7 @@ public class StringMapBinding extends TupleBinding<Map<String,String>>
 {
     private static final StringMapBinding INSTANCE = new StringMapBinding();
 
+    @Override
     public Map<String, String> entryToObject(final TupleInput tupleInput)
     {
         int entries = tupleInput.readInt();
@@ -42,6 +43,7 @@ public class StringMapBinding extends TupleBinding<Map<String,String>>
         return map;
     }
 
+    @Override
     public void objectToEntry(final Map<String, String> stringStringMap, final TupleOutput tupleOutput)
     {
         tupleOutput.writeInt(stringStringMap.size());

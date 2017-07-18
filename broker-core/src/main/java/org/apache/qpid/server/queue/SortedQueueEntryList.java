@@ -48,11 +48,13 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
         _propertyName = queue.getSortKey();
     }
 
+    @Override
     public SortedQueueImpl getQueue()
     {
         return _queue;
     }
 
+    @Override
     public SortedQueueEntry add(final ServerMessage message, final MessageEnqueueRecord enqueueRecord)
     {
         synchronized(_lock)
@@ -283,6 +285,7 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
         return (node == null ? Colour.BLACK : node.getColour()) == colour;
     }
 
+    @Override
     public SortedQueueEntry next(final QueueEntry entry)
     {
         SortedQueueEntry node = (SortedQueueEntry)entry;
@@ -313,17 +316,20 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
         }
     }
 
+    @Override
     public QueueEntryIterator iterator()
     {
         return new QueueEntryIteratorImpl(_head);
     }
 
+    @Override
     public SortedQueueEntry getHead()
     {
         return _head;
     }
 
 
+    @Override
     public SortedQueueEntry getTail()
     {
         SortedQueueEntry current = _head;
@@ -361,6 +367,7 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
         return _root;
     }
 
+    @Override
     public void entryDeleted(final QueueEntry e)
     {
         SortedQueueEntry entry = (SortedQueueEntry)e;
@@ -459,6 +466,7 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
         }
     }
 
+    @Override
     public int getPriorities()
     {
         return 0;
@@ -672,16 +680,19 @@ public class SortedQueueEntryList extends AbstractQueueEntryList
             _lastNode = startNode;
         }
 
+        @Override
         public boolean atTail()
         {
             return next(_lastNode) == null;
         }
 
+        @Override
         public SortedQueueEntry getNode()
         {
             return _lastNode;
         }
 
+        @Override
         public boolean advance()
         {
             if(!atTail())

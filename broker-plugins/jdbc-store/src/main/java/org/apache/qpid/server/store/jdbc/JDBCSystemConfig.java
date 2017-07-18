@@ -27,18 +27,23 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 
 public interface JDBCSystemConfig<X extends JDBCSystemConfig<X>> extends SystemConfig<X>, JDBCSettings
 {
+    @Override
     @ManagedAttribute(mandatory=true, defaultValue = "${systemConfig.connectionUrl}")
     String getConnectionUrl();
 
+    @Override
     @ManagedAttribute(defaultValue=DefaultConnectionProviderFactory.TYPE)
     String getConnectionPoolType();
 
+    @Override
     @ManagedAttribute(defaultValue = "${systemConfig.username}")
     String getUsername();
 
+    @Override
     @ManagedAttribute(secure=true, defaultValue = "${systemConfig.password}")
     String getPassword();
 
+    @Override
     @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
             defaultValue = "{\"type\": \"Provided\"}")
     PreferenceStoreAttributes getPreferenceStoreAttributes();
@@ -46,6 +51,7 @@ public interface JDBCSystemConfig<X extends JDBCSystemConfig<X>> extends SystemC
     @ManagedContextDefault(name = "systemConfig.tableNamePrefix")
     String DEFAULT_SYSTEM_CONFIG_TABLE_NAME_PREFIX = "";
 
+    @Override
     @ManagedAttribute(secure = true,
             description = "Optional database table prefix so multiple SystemConfigs can share the same database",
             defaultValue = "${systemConfig.tableNamePrefix}",

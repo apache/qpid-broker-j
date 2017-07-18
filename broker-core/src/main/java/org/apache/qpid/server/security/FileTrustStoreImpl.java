@@ -252,10 +252,12 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
         return _password;
     }
 
+    @Override
     public void setPassword(String password)
     {
         _password = password;
     }
+    @Override
     public TrustManager[] getTrustManagers() throws GeneralSecurityException
     {
         String trustStorePassword = getPassword();
@@ -313,6 +315,7 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
         }
     }
 
+    @Override
     public Certificate[] getCertificates() throws GeneralSecurityException
     {
         String trustStorePassword = getPassword();

@@ -38,11 +38,13 @@ public class UnitTestMessageLogger extends AbstractMessageLogger
         super(statusUpdatesEnabled);
     }
 
+    @Override
     public void rawMessage(String message, String logHierarchy)
     {
         _log.add(message);
     }
 
+    @Override
     public void rawMessage(String message, Throwable throwable, String logHierarchy)
     {
         _log.add(message);

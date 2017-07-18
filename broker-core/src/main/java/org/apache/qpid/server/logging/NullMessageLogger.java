@@ -29,11 +29,13 @@ public class NullMessageLogger extends AbstractMessageLogger
         return false;
     }
 
+    @Override
     public void rawMessage(String message, String logHierarchy)
     {
         // drop message
     }
 
+    @Override
     public void rawMessage(String message, Throwable throwable, String logHierarchy)
     {
         // drop message

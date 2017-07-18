@@ -37,6 +37,7 @@ public class MockMessageInstance implements MessageInstance
 
     private ServerMessage _message;
 
+    @Override
     public boolean acquire()
     {
         return false;
@@ -55,6 +56,7 @@ public class MockMessageInstance implements MessageInstance
         return 0;
     }
 
+    @Override
     public boolean acquiredByConsumer()
     {
         return false;
@@ -84,11 +86,13 @@ public class MockMessageInstance implements MessageInstance
         return false;
     }
 
+    @Override
     public void delete()
     {
 
     }
 
+    @Override
     public boolean expired()
     {
         return false;
@@ -112,16 +116,19 @@ public class MockMessageInstance implements MessageInstance
         return false;
     }
 
+    @Override
     public boolean isAvailable()
     {
         return false;
     }
 
+    @Override
     public boolean getDeliveredToConsumer()
     {
         return false;
     }
 
+    @Override
     public ServerMessage getMessage()
     {
         return _message;
@@ -132,11 +139,13 @@ public class MockMessageInstance implements MessageInstance
         return 0;
     }
 
+    @Override
     public boolean isAcquired()
     {
         return false;
     }
 
+    @Override
     public void reject()
     {
     }
@@ -148,6 +157,7 @@ public class MockMessageInstance implements MessageInstance
     }
 
 
+    @Override
     public void release()
     {
     }
@@ -158,6 +168,7 @@ public class MockMessageInstance implements MessageInstance
     }
 
 
+    @Override
     public void setRedelivered()
     {
     }
@@ -173,6 +184,7 @@ public class MockMessageInstance implements MessageInstance
         return false;
     }
 
+    @Override
     public boolean isRedelivered()
     {
         return false;
@@ -183,6 +195,7 @@ public class MockMessageInstance implements MessageInstance
         _message = msg;
     }
 
+    @Override
     public boolean isDeleted()
     {
         return false;

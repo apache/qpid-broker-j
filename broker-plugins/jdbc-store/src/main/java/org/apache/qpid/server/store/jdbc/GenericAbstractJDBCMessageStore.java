@@ -87,6 +87,7 @@ public abstract class GenericAbstractJDBCMessageStore extends AbstractJDBCMessag
 
     protected abstract void doClose();
 
+    @Override
     protected boolean isMessageStoreOpen()
     {
         return _messageStoreOpen.get();

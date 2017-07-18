@@ -99,11 +99,13 @@ public class SubscriptionMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return STATE_LOG_HIERARCHY;
@@ -152,11 +154,13 @@ public class SubscriptionMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CLOSE_LOG_HIERARCHY;
@@ -243,11 +247,13 @@ public class SubscriptionMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CREATE_LOG_HIERARCHY;
@@ -301,11 +307,13 @@ public class SubscriptionMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OPERATION_LOG_HIERARCHY;

@@ -44,21 +44,27 @@ public interface BDBHAVirtualHostNode<X extends BDBHAVirtualHostNode<X>> extends
     public static final String HELPER_NODE_NAME = "helperNodeName";
     public static final String PERMITTED_NODES = "permittedNodes";
 
+    @Override
     @ManagedAttribute(mandatory=true)
     String getGroupName();
 
+    @Override
     @ManagedAttribute(mandatory=true)
     String getAddress();
 
+    @Override
     @ManagedAttribute(mandatory=true)
     String getHelperAddress();
 
+    @Override
     @ManagedAttribute(defaultValue = "false")
     boolean isDesignatedPrimary();
 
+    @Override
     @ManagedAttribute(defaultValue = "1")
     int getPriority();
 
+    @Override
     @ManagedAttribute(defaultValue = "0")
     int getQuorumOverride();
 
@@ -71,6 +77,7 @@ public interface BDBHAVirtualHostNode<X extends BDBHAVirtualHostNode<X>> extends
     @DerivedAttribute
     Long getJoinTime();
 
+    @Override
     @ManagedAttribute(persist = false)
     String getHelperNodeName();
 

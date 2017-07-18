@@ -83,6 +83,7 @@ final public class ConfiguredObjectInjectedStatistic<C extends ConfiguredObject,
 
     }
 
+    @Override
     public String getDescription()
     {
         return _description;

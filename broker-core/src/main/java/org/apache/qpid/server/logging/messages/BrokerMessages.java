@@ -116,11 +116,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return READY_LOG_HIERARCHY;
@@ -174,11 +176,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return FAILED_CHILDREN_LOG_HIERARCHY;
@@ -232,11 +236,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return LISTENING_LOG_HIERARCHY;
@@ -290,11 +296,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return STARTUP_LOG_HIERARCHY;
@@ -348,11 +356,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return MANAGEMENT_MODE_LOG_HIERARCHY;
@@ -406,11 +416,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return STATS_MSGS_LOG_HIERARCHY;
@@ -464,11 +476,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return PLATFORM_LOG_HIERARCHY;
@@ -522,11 +536,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CONFIG_LOG_HIERARCHY;
@@ -580,11 +596,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return SHUTTING_DOWN_LOG_HIERARCHY;
@@ -638,11 +656,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return STATS_DATA_LOG_HIERARCHY;
@@ -696,11 +716,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return FATAL_ERROR_LOG_HIERARCHY;
@@ -754,11 +776,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OPERATION_LOG_HIERARCHY;
@@ -807,11 +831,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return STOPPED_LOG_HIERARCHY;
@@ -865,11 +891,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return PROCESS_LOG_HIERARCHY;
@@ -923,11 +951,13 @@ public class BrokerMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return MAX_MEMORY_LOG_HIERARCHY;

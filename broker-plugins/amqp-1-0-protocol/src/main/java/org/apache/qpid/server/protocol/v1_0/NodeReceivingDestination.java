@@ -74,11 +74,13 @@ public class NodeReceivingDestination implements ReceivingDestination
 
     }
 
+    @Override
     public Outcome[] getOutcomes()
     {
         return OUTCOMES;
     }
 
+    @Override
     public Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken)
     {
         final String routingAddress = ReceivingDestination.getRoutingAddress(message, _address);
@@ -175,6 +177,7 @@ public class NodeReceivingDestination implements ReceivingDestination
         return _expiryPolicy;
     }
 
+    @Override
     public int getCredit()
     {
         // TODO - fix

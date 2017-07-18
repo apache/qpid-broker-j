@@ -52,11 +52,13 @@ public class ConnectionTuneOkBody extends AMQMethodBodyImpl implements Encodable
         _heartbeat = heartbeat;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -75,12 +77,14 @@ public class ConnectionTuneOkBody extends AMQMethodBodyImpl implements Encodable
         return _heartbeat;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 8;
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeUnsignedShort( buffer, _channelMax );
@@ -88,11 +92,13 @@ public class ConnectionTuneOkBody extends AMQMethodBodyImpl implements Encodable
         writeUnsignedShort( buffer, _heartbeat );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchConnectionTuneOk(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[ConnectionTuneOkBodyImpl: ");

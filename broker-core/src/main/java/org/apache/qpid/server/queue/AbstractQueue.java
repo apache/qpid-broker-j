@@ -691,6 +691,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    @Override
     public boolean isExclusive()
     {
         return _exclusive != ExclusivityPolicy.NONE;
@@ -789,6 +790,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return new ArrayList<String>(_arguments.keySet());
     }
 
+    @Override
     public String getOwner()
     {
         if(_exclusiveOwner != null)
@@ -810,6 +812,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _creatingLinkInfo;
     }
 
+    @Override
     public QueueManagingVirtualHost<?> getVirtualHost()
     {
         return _virtualHost;
@@ -1168,6 +1171,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
 
+    @Override
     public Collection<PublishingLink> getPublishingLinks()
     {
         List<PublishingLink> links = new ArrayList<>();
@@ -1185,6 +1189,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _bindingCount;
     }
 
+    @Override
     public LogSubject getLogSubject()
     {
         return _logSubject;
@@ -1192,6 +1197,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     // ------ Enqueue / Dequeue
 
+    @Override
     public final void enqueue(ServerMessage message, Action<? super MessageInstance> action, MessageEnqueueRecord enqueueRecord)
     {
 
@@ -1235,6 +1241,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    @Override
     public final void recover(ServerMessage message, final MessageEnqueueRecord enqueueRecord)
     {
         doEnqueue(message, null, enqueueRecord);
@@ -1364,11 +1371,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         // Simple Queues don't :-)
     }
 
+    @Override
     public long getTotalDequeuedMessages()
     {
         return _queueStatistics.getDequeueCount();
     }
 
+    @Override
     public long getTotalEnqueuedMessages()
     {
         return _queueStatistics.getEnqueueCount();
@@ -1436,21 +1445,25 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    @Override
     public int getConsumerCount()
     {
         return _queueConsumerManager.getAllSize();
     }
 
+    @Override
     public int getConsumerCountWithCredit()
     {
         return _activeSubscriberCount.get();
     }
 
+    @Override
     public boolean isUnused()
     {
         return getConsumerCount() == 0;
     }
 
+    @Override
     public boolean isEmpty()
     {
         return getQueueDepthMessages() == 0;
@@ -1550,11 +1563,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return oldestMessageArrivalTime == 0 ? 0 : System.currentTimeMillis() - oldestMessageArrivalTime;
     }
 
+    @Override
     public boolean isDeleted()
     {
         return _deleted.get();
     }
 
+    @Override
     public List<QueueEntry> getMessagesOnTheQueue()
     {
         ArrayList<QueueEntry> entryList = new ArrayList<QueueEntry>();
@@ -1577,6 +1592,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return getEntries().iterator();
     }
 
+    @Override
     public int compareTo(final X o)
     {
         return getName().compareTo(o.getName());
@@ -1618,18 +1634,21 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
 
+    @Override
     public QueueEntry getMessageOnTheQueue(final long messageId)
     {
         List<QueueEntry> entries = getMessagesOnTheQueue(new QueueEntryFilter()
         {
             private boolean _complete;
 
+            @Override
             public boolean accept(QueueEntry entry)
             {
                 _complete = entry.getMessage().getMessageNumber() == messageId;
                 return _complete;
             }
 
+            @Override
             public boolean filterComplete()
             {
                 return _complete;
@@ -1666,6 +1685,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     }
 
+    @Override
     public void visit(final QueueEntryVisitor visitor)
     {
         QueueEntryIterator queueListIterator = getEntries().iterator();
@@ -1739,11 +1759,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     new ServerTransaction.Action()
                     {
 
+                        @Override
                         public void postCommit()
                         {
                             node.delete();
                         }
 
+                        @Override
                         public void onRollback()
                         {
 
@@ -2134,6 +2156,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    @Override
     public boolean isEntryAheadOfConsumer(QueueEntry entry, QueueConsumer<?,?> sub)
     {
         QueueContext context = sub.getQueueContext();
@@ -2149,6 +2172,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
 
+    @Override
     public void checkMessageStatus()
     {
         QueueEntryIterator queueListIterator = getEntries().iterator();
@@ -2294,16 +2318,19 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    @Override
     public long getAlertRepeatGap()
     {
         return _alertRepeatGap;
     }
 
+    @Override
     public long getAlertThresholdMessageAge()
     {
         return _alertThresholdMessageAge;
     }
 
+    @Override
     public long getAlertThresholdQueueDepthMessages()
     {
         return _alertThresholdQueueDepthMessages;
@@ -2329,16 +2356,19 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    @Override
     public long getAlertThresholdQueueDepthBytes()
     {
         return _alertThresholdQueueDepthBytes;
     }
 
+    @Override
     public long getAlertThresholdMessageSize()
     {
         return _alertThresholdMessageSize;
     }
 
+    @Override
     public Set<NotificationCheck> getNotificationChecks()
     {
         return _notificationChecks;
@@ -2507,42 +2537,50 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private static class AcquireAllQueueEntryFilter implements QueueEntryFilter
     {
+        @Override
         public boolean accept(QueueEntry entry)
         {
             return entry.acquire();
         }
 
+        @Override
         public boolean filterComplete()
         {
             return false;
         }
     }
 
+    @Override
     public long getTotalEnqueuedBytes()
     {
         return _queueStatistics.getEnqueueSize();
     }
 
+    @Override
     public long getTotalDequeuedBytes()
     {
         return _queueStatistics.getDequeueSize();
     }
 
+    @Override
     public long getPersistentEnqueuedBytes()
     {
         return _queueStatistics.getPersistentEnqueueSize();
     }
 
+    @Override
     public long getPersistentDequeuedBytes()
     {
         return _queueStatistics.getPersistentDequeueSize();
     }
 
+    @Override
     public long getPersistentEnqueuedMessages()
     {
         return _queueStatistics.getPersistentEnqueueCount();
     }
 
+    @Override
     public long getPersistentDequeuedMessages()
     {
         return _queueStatistics.getPersistentDequeueCount();
@@ -2591,11 +2629,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return getName();
     }
 
+    @Override
     public long getUnacknowledgedMessages()
     {
         return _queueStatistics.getUnackedCount();
     }
 
+    @Override
     public long getUnacknowledgedBytes()
     {
         return _queueStatistics.getUnackedSize();
@@ -2641,6 +2681,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    @Override
     public void setNotificationListener(QueueNotificationListener  listener)
     {
         _notificationListener = listener == null ? NULL_NOTIFICATION_LISTENER : listener;
@@ -3350,6 +3391,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
 
+        @Override
         public boolean visit(QueueEntry entry)
         {
             ServerMessage message = entry.getMessage();
@@ -3414,6 +3456,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
 
+        @Override
         public boolean visit(QueueEntry entry)
         {
 

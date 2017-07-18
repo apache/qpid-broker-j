@@ -49,6 +49,7 @@ public class ApplicationPropertiesConstructor extends AbstractDescribedTypeConst
     }
 
 
+    @Override
     public ApplicationProperties construct(Object underlying)
     {
 

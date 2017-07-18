@@ -45,6 +45,7 @@ public class SenderException extends TransportException
         super(cause);
     }
 
+    @Override
     public void rethrow()
     {
         throw new SenderException(getMessage(), this);

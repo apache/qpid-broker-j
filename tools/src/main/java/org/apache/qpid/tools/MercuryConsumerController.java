@@ -88,6 +88,7 @@ public class MercuryConsumerController extends MercuryBase
         }
     }
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -207,6 +208,7 @@ public class MercuryConsumerController extends MercuryBase
             final MercuryConsumerController cons = new MercuryConsumerController(config, reporter, scriptId + i);
             Runnable r = new Runnable()
             {
+                @Override
                 public void run()
                 {
                     cons.run();

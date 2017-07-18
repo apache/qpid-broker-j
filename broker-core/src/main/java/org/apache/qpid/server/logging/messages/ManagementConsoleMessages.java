@@ -105,11 +105,13 @@ public class ManagementConsoleMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return READY_LOG_HIERARCHY;
@@ -163,11 +165,13 @@ public class ManagementConsoleMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return SHUTTING_DOWN_LOG_HIERARCHY;
@@ -221,11 +225,13 @@ public class ManagementConsoleMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return STOPPED_LOG_HIERARCHY;
@@ -279,11 +285,13 @@ public class ManagementConsoleMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return LISTENING_LOG_HIERARCHY;
@@ -337,11 +345,13 @@ public class ManagementConsoleMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return STARTUP_LOG_HIERARCHY;
@@ -395,11 +405,13 @@ public class ManagementConsoleMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CLOSE_LOG_HIERARCHY;
@@ -453,11 +465,13 @@ public class ManagementConsoleMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OPEN_LOG_HIERARCHY;

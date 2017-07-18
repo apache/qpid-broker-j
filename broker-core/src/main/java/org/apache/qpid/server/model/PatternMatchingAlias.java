@@ -28,6 +28,7 @@ public interface PatternMatchingAlias<X extends PatternMatchingAlias<X>> extends
 
     String PATTERN = "pattern";
 
+    @Override
     @ManagedAttribute( defaultValue = "200" )
     int getPriority();
 

@@ -67,6 +67,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         _maxPayload = maxFrame - HEADER_SIZE;
     }
 
+    @Override
     public void send(ProtocolEvent event)
     {
         synchronized (_sendLock)
@@ -75,6 +76,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         }
     }
 
+    @Override
     public void flush()
     {
         synchronized (_sendLock)
@@ -83,6 +85,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         }
     }
 
+    @Override
     public void close()
     {
         synchronized (_sendLock)
@@ -169,17 +172,20 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         }
     }
 
+    @Override
     public void init(Void v, ProtocolHeader header)
     {
         _sender.send(header.toByteBuffer());
         _sender.flush();
 }
 
+    @Override
     public void control(Void v, Method method)
     {
         method(method, SegmentType.CONTROL);
     }
 
+    @Override
     public void command(Void v, Method method)
     {
         method(method, SegmentType.COMMAND);
@@ -278,6 +284,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         }
     }
 
+    @Override
     public void error(Void v, ProtocolError error)
     {
         throw new IllegalArgumentException(String.valueOf(error));

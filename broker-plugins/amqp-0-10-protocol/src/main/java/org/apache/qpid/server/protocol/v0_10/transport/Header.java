@@ -99,6 +99,7 @@ public class Header
         return _nonStandardProps;
     }
 
+    @Override
     public String toString()
     {
         StringBuilder str = new StringBuilder();

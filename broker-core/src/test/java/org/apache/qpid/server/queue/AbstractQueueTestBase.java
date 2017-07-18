@@ -676,11 +676,13 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         // get messages on the queue with filter accepting all available messages
         List<? extends QueueEntry> entries = ((AbstractQueue)_queue).getMessagesOnTheQueue(new QueueEntryFilter()
         {
+            @Override
             public boolean accept(QueueEntry entry)
             {
                 return true;
             }
 
+            @Override
             public boolean filterComplete()
             {
                 return false;
@@ -1325,6 +1327,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
             _queueEntries = queueEntries;
         }
 
+        @Override
         public void performAction(MessageInstance entry)
         {
             _queueEntries.add((QueueEntry) entry);

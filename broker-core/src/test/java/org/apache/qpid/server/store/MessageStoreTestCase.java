@@ -481,6 +481,7 @@ public abstract class MessageStoreTestCase extends QpidTestCase
             _messageNumber = messageNumber;
         }
 
+        @Override
         public boolean matches(Object obj)
         {
             return obj instanceof StoredMessage && ((StoredMessage<?>)obj).getMessageNumber() == _messageNumber;

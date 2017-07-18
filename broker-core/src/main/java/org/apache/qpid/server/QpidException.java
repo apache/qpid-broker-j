@@ -70,6 +70,7 @@ public class QpidException extends Exception
         return newAMQE;
     }
 
+    @Override
     public QpidException clone()
     {
         return null;

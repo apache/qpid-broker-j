@@ -74,6 +74,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
 
     private static final Logger _logger = LoggerFactory.getLogger(UpgradeFrom4To5.class);
 
+    @Override
     public void performUpgrade(final Environment environment, final UpgradeInteractionHandler handler, ConfiguredObject<?> parent)
     {
         Transaction transaction = null;
@@ -719,6 +720,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
     static final class MessageContentKeyBinding extends TupleBinding<MessageContentKey>
     {
 
+        @Override
         public MessageContentKey entryToObject(TupleInput tupleInput)
         {
             long messageId = tupleInput.readLong();
@@ -726,6 +728,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             return new MessageContentKey(messageId, chunk);
         }
 
+        @Override
         public void objectToEntry(MessageContentKey object, TupleOutput tupleOutput)
         {
             final MessageContentKey mk = object;
@@ -737,6 +740,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
 
     static final class ContentBinding extends TupleBinding<ByteBuffer>
     {
+        @Override
         public ByteBuffer entryToObject(TupleInput tupleInput)
         {
             final int size = tupleInput.readInt();
@@ -745,6 +749,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             return ByteBuffer.wrap(underlying);
         }
 
+        @Override
         public void objectToEntry(ByteBuffer src, TupleOutput tupleOutput)
         {
             src = src.slice();
@@ -782,6 +787,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
 
     static final class QueueEntryKeyBinding extends TupleBinding<QueueEntryKey>
     {
+        @Override
         public QueueEntryKey entryToObject(TupleInput tupleInput)
         {
             AMQShortString queueName = AMQShortStringEncoding.readShortString(tupleInput);
@@ -789,6 +795,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             return new QueueEntryKey(queueName, messageId);
         }
 
+        @Override
         public void objectToEntry(QueueEntryKey mk, TupleOutput tupleOutput)
         {
             AMQShortStringEncoding.writeShortString(mk.getQueueName(), tupleOutput);
@@ -836,6 +843,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
 
     static final class BindingTuple extends TupleBinding<BindingRecord>
     {
+        @Override
         public BindingRecord entryToObject(TupleInput tupleInput)
         {
             AMQShortString exchangeName = AMQShortStringEncoding.readShortString(tupleInput);
@@ -847,6 +855,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             return new BindingRecord(exchangeName, queueName, routingKey, arguments);
         }
 
+        @Override
         public void objectToEntry(BindingRecord binding, TupleOutput tupleOutput)
         {
             AMQShortStringEncoding.writeShortString(binding.getExchangeName(), tupleOutput);

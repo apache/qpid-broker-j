@@ -49,6 +49,7 @@ public class AnonymousAuthenticationManagerTest extends QpidTestCase
 
     }
 
+    @Override
     public void tearDown() throws Exception
     {
         if(_manager != null)

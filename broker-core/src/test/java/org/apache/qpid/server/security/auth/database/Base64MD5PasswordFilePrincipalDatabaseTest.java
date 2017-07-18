@@ -59,6 +59,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends AbstractPassword
     }
     
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -68,6 +69,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends AbstractPassword
         _database.open(_pwdFile);
     }
 
+    @Override
     public void tearDown() throws Exception
     {
         try
@@ -104,6 +106,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends AbstractPassword
 
         Principal principal = new Principal()
         {
+            @Override
             public String getName()
             {
                 return TEST_USERNAME;
@@ -154,6 +157,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends AbstractPassword
 
         Principal principal = new Principal()
         {
+            @Override
             public String getName()
             {
                 return CREATED_USERNAME;

@@ -76,6 +76,7 @@ public enum ObjectType
         return _operations.contains(operation);
     }
     
+    @Override
     public String toString()
     {
         String name = name();

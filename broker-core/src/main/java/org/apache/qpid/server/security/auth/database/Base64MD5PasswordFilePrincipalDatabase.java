@@ -67,6 +67,7 @@ public class Base64MD5PasswordFilePrincipalDatabase extends AbstractPasswordFile
      *
      * @throws AccountNotFoundException if the principal cannot be found
      */
+    @Override
     public boolean verifyPassword(String principal, char[] password) throws AccountNotFoundException
     {
         char[] pwd = lookupPassword(principal);
@@ -105,17 +106,20 @@ public class Base64MD5PasswordFilePrincipalDatabase extends AbstractPasswordFile
         return compareCharArray(pwd, hashedPassword);
     }
 
+    @Override
     protected HashedUser createUserFromPassword(Principal principal, char[] passwd)
     {
         return new HashedUser(principal.getName(), passwd, getAuthenticationProvider());
     }
 
 
+    @Override
     protected HashedUser createUserFromFileData(String[] result)
     {
         return new HashedUser(result, getAuthenticationProvider());
     }
 
+    @Override
     protected Logger getLogger()
     {
         return _logger;

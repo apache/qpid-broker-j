@@ -29,6 +29,7 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 
 public interface JDBCConnectionProviderFactory extends Pluggable
 {
+    @Override
     String getType();
 
     ConnectionProvider getConnectionProvider(String connectionUrl, String username, String password, Map<String, String> providerAttributes)

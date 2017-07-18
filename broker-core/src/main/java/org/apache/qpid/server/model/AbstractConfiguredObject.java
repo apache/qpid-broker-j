@@ -569,6 +569,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     }
 
 
+    @Override
     public final ListenableFuture<Void> openAsync()
     {
         return doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
@@ -1607,16 +1608,19 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
     }
 
+    @Override
     public final UUID getId()
     {
         return _id;
     }
 
+    @Override
     public final String getName()
     {
         return _name;
     }
 
+    @Override
     public final boolean isDurable()
     {
         return _durable;
@@ -1652,11 +1656,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return _managesChildStorage;
     }
 
+    @Override
     public Map<String,String> getContext()
     {
         return _context == null ? Collections.<String,String>emptyMap() : Collections.unmodifiableMap(_context);
     }
 
+    @Override
     public State getDesiredState()
     {
         return _desiredState;
@@ -1801,6 +1807,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
+    @Override
     public void addChangeListener(final ConfigurationChangeListener listener)
     {
         if(listener == null)
@@ -1816,6 +1823,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
+    @Override
     public boolean removeChangeListener(final ConfigurationChangeListener listener)
     {
         if(listener == null)
@@ -1963,6 +1971,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return getModel().getAncestor(clazz, this);
     }
 
+    @Override
     public final Collection<String> getAttributeNames()
     {
         return getTypeRegistry().getAttributeNames(getClass());
@@ -1974,6 +1983,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return getCategoryClass().getSimpleName() + "[id=" + _id + ", name=" + getName() + ", type=" + getType() + "]";
     }
 
+    @Override
     public final ConfiguredObjectRecord asObjectRecord()
     {
         return new ConfiguredObjectRecord()
@@ -2165,6 +2175,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         doSync(setDesiredState(State.STOPPED));
     }
 
+    @Override
     public final void delete()
     {
         doSync(deleteAsync());
@@ -2236,6 +2247,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
+    @Override
     public final ListenableFuture<Void> deleteAsync()
     {
         return setDesiredState(State.DELETED);
@@ -3019,6 +3031,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return AccessController.doPrivileged
                 (new PrivilegedAction<AccessControlContext>()
                 {
+                    @Override
                     public AccessControlContext run()
                     {
                         return new AccessControlContext
@@ -3162,6 +3175,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     }
 
 
+    @Override
     public <Y extends ConfiguredObject<Y>> Y findConfiguredObject(Class<Y> clazz, String name)
     {
         Collection<Y> reachable = getModel().getReachableObjects(this, clazz);

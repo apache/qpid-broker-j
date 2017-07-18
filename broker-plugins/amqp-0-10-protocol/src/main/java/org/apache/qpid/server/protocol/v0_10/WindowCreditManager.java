@@ -60,6 +60,7 @@ public class WindowCreditManager implements FlowCreditManager_0_10
                     : _bytesUsed < _bytesCreditLimit ? _bytesCreditLimit - _bytesUsed : 0L;
     }
 
+    @Override
     public synchronized void restoreCredit(final long messageCredit, final long bytesCredit)
     {
         _messageUsed -= messageCredit;
@@ -77,12 +78,14 @@ public class WindowCreditManager implements FlowCreditManager_0_10
         }
     }
 
+    @Override
     public synchronized boolean hasCredit()
     {
         return (_bytesCreditLimit < 0L || _bytesCreditLimit > _bytesUsed)
                 && (_messageCreditLimit < 0L || _messageCreditLimit > _messageUsed);
     }
 
+    @Override
     public synchronized boolean useCreditForMessage(final long msgSize)
     {
         if(_messageCreditLimit >= 0L)
@@ -134,6 +137,7 @@ public class WindowCreditManager implements FlowCreditManager_0_10
     }
 
 
+    @Override
     public synchronized void addCredit(long count, long bytes)
     {
         if(bytes > 0)
@@ -156,6 +160,7 @@ public class WindowCreditManager implements FlowCreditManager_0_10
         }
     }
 
+    @Override
     public synchronized void clearCredit()
     {
         _bytesCreditLimit = 0l;

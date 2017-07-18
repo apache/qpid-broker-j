@@ -37,6 +37,7 @@ public class AMQFrame extends AMQDataBlock implements EncodableAMQDataBlock
         _bodyFrame = bodyFrame;
     }
 
+    @Override
     public long getSize()
     {
         return 1 + 2 + 4 + _bodyFrame.getSize() + 1;
@@ -84,6 +85,7 @@ public class AMQFrame extends AMQDataBlock implements EncodableAMQDataBlock
         return _bodyFrame;
     }
 
+    @Override
     public String toString()
     {
         return "Frame channelId: " + _channel + ", bodyFrame: " + String.valueOf(_bodyFrame);

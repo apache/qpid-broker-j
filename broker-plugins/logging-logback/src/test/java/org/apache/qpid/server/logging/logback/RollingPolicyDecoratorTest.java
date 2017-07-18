@@ -94,12 +94,14 @@ public class RollingPolicyDecoratorTest extends QpidTestCase
     {
         ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
         doAnswer(new Answer() {
+            @Override
             public Object answer(InvocationOnMock invocation) {
                 Object[] args = invocation.getArguments();
                 ((Runnable)args[0]).run();
                 return null;
             }}).when(executorService).schedule(any(Runnable.class), any(long.class), any(TimeUnit.class));
         doAnswer(new Answer() {
+            @Override
             public Object answer(InvocationOnMock invocation) {
                 Object[] args = invocation.getArguments();
                 ((Runnable)args[0]).run();

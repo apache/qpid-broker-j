@@ -205,6 +205,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
     }
 
 
+    @Override
     public boolean equals(Object o)
     {
 
@@ -280,6 +281,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
 
     }
 
+    @Override
     public int hashCode()
     {
         int hash = _hashCode;
@@ -308,6 +310,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
         return _asString;
     }
 
+    @Override
     public int compareTo(AMQShortString name)
     {
         if(name == this)

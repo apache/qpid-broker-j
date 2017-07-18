@@ -33,6 +33,7 @@ public enum NotificationCheck
 
     MESSAGE_COUNT_ALERT
     {
+        @Override
         public boolean notifyIfNecessary(ServerMessage<?> msg, Queue<?> queue, QueueNotificationListener listener)
         {
             int msgCount;
@@ -50,6 +51,7 @@ public enum NotificationCheck
     },
     MESSAGE_SIZE_ALERT(true, true)
     {
+        @Override
         public boolean notifyIfNecessary(ServerMessage<?> msg, Queue<?> queue, QueueNotificationListener  listener)
         {
             final long maximumMessageSize = queue.getAlertThresholdMessageSize();
@@ -74,6 +76,7 @@ public enum NotificationCheck
     },
     QUEUE_DEPTH_ALERT
     {
+        @Override
         public boolean notifyIfNecessary(ServerMessage<?> msg, Queue<?> queue, QueueNotificationListener  listener)
         {
             // Check for threshold queue depth in bytes
@@ -98,6 +101,7 @@ public enum NotificationCheck
     },
     MESSAGE_AGE_ALERT(false, false)
     {
+        @Override
         public boolean notifyIfNecessary(ServerMessage<?> msg, Queue<?> queue, QueueNotificationListener  listener)
         {
 

@@ -78,6 +78,7 @@ public class SessionStartTest extends QpidBrokerTestCase implements MessageListe
         }
     }
 
+    @Override
     public void onMessage(Message message)
     {
         _countdownLatch.countDown();

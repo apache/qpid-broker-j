@@ -50,6 +50,7 @@ public class TargetConstructor extends AbstractDescribedTypeConstructor<Target>
         }
     }
 
+    @Override
     public Target construct(Object underlying)
     {
         if(underlying instanceof List)

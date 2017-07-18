@@ -508,6 +508,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         {
             _cd = cd;
         }
+        @Override
         public void onMessage(Message message)
         {
             try

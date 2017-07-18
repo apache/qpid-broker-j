@@ -58,6 +58,7 @@ public class ExceptionListenerTest extends QpidBrokerTestCase
         final AtomicInteger exceptionCounter = new AtomicInteger(0);
         final ExceptionListener listener = new ExceptionListener()
         {
+            @Override
             public void onException(JMSException exception)
             {
                 exceptionCounter.incrementAndGet();
@@ -94,6 +95,7 @@ public class ExceptionListenerTest extends QpidBrokerTestCase
         final Connection connection = getConnection();
         final ExceptionListener listener = new ExceptionListener()
         {
+            @Override
             public void onException(JMSException exception)
             {
                 try
@@ -132,6 +134,7 @@ public class ExceptionListenerTest extends QpidBrokerTestCase
         final Connection connection = getConnection();
         final ExceptionListener listener = new ExceptionListener()
         {
+            @Override
             public void onException(JMSException exception)
             {
                 try
@@ -197,6 +200,7 @@ public class ExceptionListenerTest extends QpidBrokerTestCase
         final AtomicReference<Exception> connectionCloseException = new AtomicReference<>();
         final ExceptionListener listener = new ExceptionListener()
         {
+            @Override
             public void onException(JMSException exception)
             {
                 exceptionReceivedLatch.countDown();

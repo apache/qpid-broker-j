@@ -45,11 +45,13 @@ public class Binary
         return ByteBuffer.wrap(_data);
     }
 
+    @Override
     public final int hashCode()
     {
         return _hashCode;
     }
 
+    @Override
     public final boolean equals(Object o)
     {
         if(o instanceof Binary)
@@ -69,6 +71,7 @@ public class Binary
     }
 
 
+    @Override
     public String toString()
     {
         StringBuilder str = new StringBuilder();

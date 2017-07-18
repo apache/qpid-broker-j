@@ -195,6 +195,7 @@ public class LogMonitorTest extends QpidTestCase
         new Thread(new Runnable()
         {
 
+            @Override
             public void run()
             {
                 try

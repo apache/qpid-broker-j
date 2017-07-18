@@ -42,21 +42,25 @@ public final class ProtocolError implements NetworkEvent, ProtocolEvent
         this.args = args;
     }
 
+    @Override
     public int getChannel()
     {
         return channel;
     }
 
+    @Override
     public void setChannel(int channel)
     {
         this.channel = channel;
     }
 
+    @Override
     public byte getEncodedTrack()
     {
         return track;
     }
 
+    @Override
     public boolean isConnectionControl()
     {
         return false;
@@ -67,16 +71,19 @@ public final class ProtocolError implements NetworkEvent, ProtocolEvent
         return String.format(format, args);
     }
 
+    @Override
     public <C> void delegate(C context, ProtocolDelegate<C> delegate)
     {
         delegate.error(context, this);
     }
 
+    @Override
     public void delegate(NetworkDelegate delegate)
     {
         delegate.error(this);
     }
 
+    @Override
     public String toString()
     {
         return String.format("protocol error: %s", getMessage());

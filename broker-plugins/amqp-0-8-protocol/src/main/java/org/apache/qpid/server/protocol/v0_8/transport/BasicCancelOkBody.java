@@ -47,11 +47,13 @@ public class BasicCancelOkBody extends AMQMethodBodyImpl implements EncodableAMQ
         _consumerTag = consumerTag;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -62,6 +64,7 @@ public class BasicCancelOkBody extends AMQMethodBodyImpl implements EncodableAMQ
         return _consumerTag;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 0;
@@ -69,16 +72,19 @@ public class BasicCancelOkBody extends AMQMethodBodyImpl implements EncodableAMQ
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeAMQShortString( buffer, _consumerTag );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchBasicCancelOk(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[BasicCancelOkBodyImpl: ");

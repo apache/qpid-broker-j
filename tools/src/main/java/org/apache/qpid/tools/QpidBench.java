@@ -379,6 +379,7 @@ public class QpidBench
             }
         }
 
+        @Override
         public String toString()
         {
             Class klass = getClass();
@@ -436,6 +437,7 @@ public class QpidBench
         case BOTH:
             Runnable r = new Runnable()
             {
+                @Override
                 public void run()
                 {
                     try
@@ -476,6 +478,7 @@ public class QpidBench
         case BOTH:
             Runnable r = new Runnable()
             {
+                @Override
                 public void run()
                 {
                     try
@@ -637,6 +640,7 @@ public class QpidBench
             private long lastTime = 0;
             private long start;
 
+            @Override
             public void onMessage(Message m)
             {
                 if (count == 0)
@@ -696,16 +700,20 @@ public class QpidBench
     private static abstract class NativeListener implements SessionListener
     {
 
+        @Override
         public void opened(org.apache.qpid.transport.Session ssn) {}
 
+        @Override
         public void resumed(org.apache.qpid.transport.Session ssn) {}
 
+        @Override
         public void exception(org.apache.qpid.transport.Session ssn,
                               SessionException exc)
         {
             exc.printStackTrace();
         }
 
+        @Override
         public void closed(org.apache.qpid.transport.Session ssn) {}
 
     }
@@ -717,6 +725,7 @@ public class QpidBench
         org.apache.qpid.transport.Session ssn = conn.createSession();
         ssn.setSessionListener(new NativeListener()
         {
+            @Override
             public void message(org.apache.qpid.transport.Session ssn,
                                 MessageTransfer xfr)
             {
@@ -837,6 +846,7 @@ public class QpidBench
             private long lastTime = 0;
             private long start;
 
+            @Override
             public void message(org.apache.qpid.transport.Session ssn,
                                 MessageTransfer xfr)
             {

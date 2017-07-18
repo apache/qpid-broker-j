@@ -43,6 +43,7 @@ public final class UnsignedShort extends Number implements Comparable<UnsignedSh
         _underlying = underlying;
     }
 
+    @Override
     public short shortValue()
     {
         return _underlying;
@@ -94,6 +95,7 @@ public final class UnsignedShort extends Number implements Comparable<UnsignedSh
         return true;
     }
 
+    @Override
     public int compareTo(UnsignedShort o)
     {
         return Integer.signum(intValue() - o.intValue());

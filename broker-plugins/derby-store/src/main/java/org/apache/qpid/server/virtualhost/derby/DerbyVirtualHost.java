@@ -32,12 +32,15 @@ public interface DerbyVirtualHost<X extends DerbyVirtualHost<X>> extends QueueMa
 {
     String STORE_PATH = "storePath";
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "${qpid.work_dir}${file.separator}${this:name}${file.separator}messages")
     String getStorePath();
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreUnderfullSize();
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreOverfullSize();
 

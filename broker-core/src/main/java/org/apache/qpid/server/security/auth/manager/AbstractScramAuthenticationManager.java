@@ -74,6 +74,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
         super(attributes, broker);
     }
 
+    @Override
     @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.QUIESCED }, desiredState = State.ACTIVE )
     protected ListenableFuture<Void> activate()
     {

@@ -103,11 +103,13 @@ public class AuthenticationProviderMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return DELETE_LOG_HIERARCHY;
@@ -161,11 +163,13 @@ public class AuthenticationProviderMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CREATE_LOG_HIERARCHY;
@@ -219,11 +223,13 @@ public class AuthenticationProviderMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OPERATION_LOG_HIERARCHY;
@@ -300,11 +306,13 @@ public class AuthenticationProviderMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return AUTHENTICATION_FAILED_LOG_HIERARCHY;
@@ -353,11 +361,13 @@ public class AuthenticationProviderMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CLOSE_LOG_HIERARCHY;
@@ -406,11 +416,13 @@ public class AuthenticationProviderMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OPEN_LOG_HIERARCHY;

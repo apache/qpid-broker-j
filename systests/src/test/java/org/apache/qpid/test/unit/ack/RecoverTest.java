@@ -226,6 +226,7 @@ public class RecoverTest extends QpidBrokerTestCase
         consumer.setMessageListener(new MessageListener()
         {
 
+            @Override
             public void onMessage(Message message)
             {
                 try
@@ -379,6 +380,7 @@ public class RecoverTest extends QpidBrokerTestCase
             private int messageSeen = 0;
             private int expectedIndex = 0;
 
+            @Override
             public void onMessage(Message message)
             {
                 try

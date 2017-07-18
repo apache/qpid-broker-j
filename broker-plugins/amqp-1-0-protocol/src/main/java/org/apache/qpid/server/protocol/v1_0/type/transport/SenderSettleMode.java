@@ -63,11 +63,13 @@ public class SenderSettleMode implements RestrictedType<UnsignedByte>
         return null;
     }
 
+    @Override
     public UnsignedByte getValue()
     {
         return _val;
     }
 
+    @Override
     public String toString()
     {
 

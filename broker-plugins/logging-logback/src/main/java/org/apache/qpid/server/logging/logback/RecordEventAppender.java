@@ -39,12 +39,14 @@ public class RecordEventAppender extends AppenderBase<ILoggingEvent>
         _recordId = new AtomicLong();
     }
 
+    @Override
     public void start()
     {
         _buffer = new CyclicBuffer<>(_size);
         super.start();
     }
 
+    @Override
     public void stop()
     {
         _buffer = null;

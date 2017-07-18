@@ -376,6 +376,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         return Futures.immediateFuture(null);
     }
 
+    @Override
     @StateTransition( currentState = { State.UNINITIALIZED, State.ACTIVE, State.ERRORED }, desiredState = State.STOPPED )
     protected ListenableFuture<Void> doStop()
     {
@@ -433,6 +434,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         }
     }
 
+    @Override
     @StateTransition( currentState = { State.ACTIVE, State.STOPPED, State.ERRORED}, desiredState = State.DELETED )
     protected ListenableFuture<Void> doDelete()
     {

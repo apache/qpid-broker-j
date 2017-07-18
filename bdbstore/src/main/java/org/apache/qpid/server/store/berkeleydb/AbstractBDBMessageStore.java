@@ -143,6 +143,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         return message;
     }
 
+    @Override
     public long getNextMessageId()
     {
         long newMessageId;
@@ -1498,11 +1499,13 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             _messageNumber = messageNumber;
         }
 
+        @Override
         public long getMessageNumber()
         {
             return _messageNumber;
         }
 
+        @Override
         public UUID getQueueId()
         {
             return _queueId;

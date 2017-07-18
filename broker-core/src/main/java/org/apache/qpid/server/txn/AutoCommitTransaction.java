@@ -68,11 +68,13 @@ public class AutoCommitTransaction implements ServerTransaction
      * Since AutoCommitTransaction have no concept of a long lived transaction, any Actions registered
      * by the caller are executed immediately.
      */
+    @Override
     public void addPostTransactionAction(final Action immediateAction)
     {
         immediateAction.postCommit();
     }
 
+    @Override
     public void dequeue(MessageEnqueueRecord record, Action postTransactionAction)
     {
         Transaction txn = null;
@@ -98,6 +100,7 @@ public class AutoCommitTransaction implements ServerTransaction
     }
 
 
+    @Override
     public void dequeue(Collection<MessageInstance> queueEntries, Action postTransactionAction)
     {
         Transaction txn = null;
@@ -135,6 +138,7 @@ public class AutoCommitTransaction implements ServerTransaction
     }
 
 
+    @Override
     public void enqueue(TransactionLogResource queue, EnqueueableMessage message, EnqueueAction postTransactionAction)
     {
         Transaction txn = null;
@@ -185,6 +189,7 @@ public class AutoCommitTransaction implements ServerTransaction
 
     }
 
+    @Override
     public void enqueue(Collection<? extends BaseQueue> queues, EnqueueableMessage message, EnqueueAction postTransactionAction)
     {
         Transaction txn = null;
@@ -247,19 +252,23 @@ public class AutoCommitTransaction implements ServerTransaction
     }
 
 
+    @Override
     public void commit(final Runnable immediatePostTransactionAction)
     {
         immediatePostTransactionAction.run();
     }
 
+    @Override
     public void commit()
     {
     }
 
+    @Override
     public void rollback()
     {
     }
 
+    @Override
     public boolean isTransactional()
     {
         return false;

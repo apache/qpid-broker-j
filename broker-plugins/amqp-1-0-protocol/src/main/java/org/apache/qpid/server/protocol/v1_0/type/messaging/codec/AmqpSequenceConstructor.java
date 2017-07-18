@@ -49,6 +49,7 @@ public class AmqpSequenceConstructor extends AbstractDescribedTypeConstructor<Am
     }
 
 
+    @Override
     public AmqpSequence construct(Object underlying)
     {
 

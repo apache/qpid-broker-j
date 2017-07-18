@@ -108,6 +108,7 @@ public class HeadersExchangeTest extends QpidTestCase
 
     }
 
+    @Override
     public void tearDown() throws Exception
     {
         super.tearDown();

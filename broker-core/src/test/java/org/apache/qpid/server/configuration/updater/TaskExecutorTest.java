@@ -40,12 +40,14 @@ public class TaskExecutorTest extends QpidTestCase
 {
     private TaskExecutorImpl _executor;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
         _executor = new TaskExecutorImpl();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         try

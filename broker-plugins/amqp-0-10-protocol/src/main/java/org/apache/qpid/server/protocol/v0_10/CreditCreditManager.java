@@ -32,11 +32,13 @@ public class CreditCreditManager implements FlowCreditManager_0_10
         _messageCredit = messageCredit;
     }
 
+    @Override
     public synchronized void restoreCredit(final long messageCredit, final long bytesCredit)
     {
     }
 
 
+    @Override
     public synchronized void addCredit(final long messageCredit, final long bytesCredit)
     {
         if(_messageCredit >= 0L && messageCredit > 0L)
@@ -50,6 +52,7 @@ public class CreditCreditManager implements FlowCreditManager_0_10
         }
     }
 
+    @Override
     public synchronized void clearCredit()
     {
         _bytesCredit = 0l;
@@ -57,12 +60,14 @@ public class CreditCreditManager implements FlowCreditManager_0_10
     }
 
 
+    @Override
     public synchronized boolean hasCredit()
     {
         // Note !=, if credit is < 0 that indicates infinite credit
         return (_bytesCredit != 0L  && _messageCredit != 0L);
     }
 
+    @Override
     public synchronized boolean useCreditForMessage(long msgSize)
     {
         if(_messageCredit >= 0L)

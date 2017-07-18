@@ -248,6 +248,7 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
         }
     }
 
+    @Override
     protected void checkCertificateExpiry()
     {
         try

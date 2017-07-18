@@ -50,11 +50,13 @@ public class ConnectionRedirectBody extends AMQMethodBodyImpl implements Encodab
         _knownHosts = knownHosts;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return _ownMethodId;
@@ -69,6 +71,7 @@ public class ConnectionRedirectBody extends AMQMethodBodyImpl implements Encodab
         return _knownHosts;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 0;
@@ -77,17 +80,20 @@ public class ConnectionRedirectBody extends AMQMethodBodyImpl implements Encodab
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeAMQShortString( buffer, _host );
         writeAMQShortString( buffer, _knownHosts );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchConnectionRedirect(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[ConnectionRedirectBodyImpl: ");

@@ -49,6 +49,7 @@ public class FooterConstructor extends AbstractDescribedTypeConstructor<Footer>
     }
 
 
+    @Override
     public Footer construct(Object underlying)
     {
 

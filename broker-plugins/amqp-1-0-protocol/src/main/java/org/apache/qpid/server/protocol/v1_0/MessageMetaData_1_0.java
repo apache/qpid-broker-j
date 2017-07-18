@@ -187,12 +187,14 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     }
 
 
+    @Override
     public MessageMetaDataType getType()
     {
         return TYPE;
     }
 
 
+    @Override
     public int getStorableSize()
     {
 
@@ -225,6 +227,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         return (int) size;
     }
 
+    @Override
     public void writeToBuffer(QpidByteBuffer dest)
     {
         dest.put(VERSION_BYTE);
@@ -256,11 +259,13 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         }
     }
 
+    @Override
     public int getContentSize()
     {
         return (int) _contentSize;
     }
 
+    @Override
     public boolean isPersistent()
     {
         return _headerSection != null && Boolean.TRUE.equals(_headerSection.getValue().getDurable());
@@ -411,6 +416,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             _typeRegistry.registerSecurityLayer();
         }
 
+        @Override
         public MessageMetaData_1_0 createMetaData(List<QpidByteBuffer> bufs)
         {
             try
@@ -486,6 +492,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         private final AtomicReference<String> _decodedUserId = new AtomicReference<>();
 
+        @Override
         public String getCorrelationId()
         {
             if (_propertiesSection == null || _propertiesSection.getValue().getCorrelationId() == null)
@@ -516,6 +523,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
         }
 
+        @Override
         public String getMessageId()
         {
             if (_propertiesSection == null || _propertiesSection.getValue().getMessageId() == null)
@@ -528,6 +536,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
         }
 
+        @Override
         public String getMimeType()
         {
             if (_propertiesSection == null || _propertiesSection.getValue().getContentType() == null)
@@ -540,6 +549,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
         }
 
+        @Override
         public String getEncoding()
         {
             if (_propertiesSection == null || _propertiesSection.getValue().getContentEncoding() == null)
@@ -552,6 +562,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
         }
 
+        @Override
         public byte getPriority()
         {
             if (_headerSection == null || _headerSection.getValue().getPriority() == null)
@@ -564,6 +575,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
         }
 
+        @Override
         public long getTimestamp()
         {
             if (_propertiesSection == null || _propertiesSection.getValue().getCreationTime() == null)
@@ -600,6 +612,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             return notValidBefore;
         }
 
+        @Override
         public String getType()
         {
             String subject = getSubject();
@@ -619,6 +632,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
         }
 
+        @Override
         public String getReplyTo()
         {
             if (_propertiesSection == null || _propertiesSection.getValue().getReplyTo() == null)
@@ -631,12 +645,14 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
         }
 
+        @Override
         public String getAppId()
         {
             //TODO
             return null;
         }
 
+        @Override
         public String getUserId()
         {
             if (_propertiesSection == null || _propertiesSection.getValue().getUserId() == null)
@@ -656,11 +672,13 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
         }
 
+        @Override
         public Object getHeader(final String name)
         {
             return _applicationPropertiesSection == null ? null : _applicationPropertiesSection.getValue().get(name);
         }
 
+        @Override
         public boolean containsHeaders(final Set<String> names)
         {
             if (_applicationPropertiesSection == null)
@@ -688,6 +706,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             return Collections.unmodifiableCollection(_applicationPropertiesSection.getValue().keySet());
         }
 
+        @Override
         public boolean containsHeader(final String name)
         {
             return _applicationPropertiesSection != null && _applicationPropertiesSection.getValue().containsKey(name);

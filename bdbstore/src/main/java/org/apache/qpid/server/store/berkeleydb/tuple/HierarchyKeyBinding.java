@@ -40,6 +40,7 @@ public class HierarchyKeyBinding extends TupleBinding<HierarchyKey>
     /** private constructor forces getInstance instead */
     private HierarchyKeyBinding() { }
 
+    @Override
     public HierarchyKey entryToObject(TupleInput tupleInput)
     {
         UUID childId = new UUID(tupleInput.readLong(), tupleInput.readLong());
@@ -48,6 +49,7 @@ public class HierarchyKeyBinding extends TupleBinding<HierarchyKey>
         return new HierarchyKey(childId, parentType);
     }
 
+    @Override
     public void objectToEntry(HierarchyKey hk, TupleOutput tupleOutput)
     {
         UUID uuid = hk.getChildId();

@@ -80,6 +80,7 @@ public interface ServerChannelMethodProcessor extends ChannelMethodProcessor
 
     void receiveBasicGet(AMQShortString queue, boolean noAck);
 
+    @Override
     void receiveBasicAck(long deliveryTag, boolean multiple);
 
     void receiveBasicReject(long deliveryTag, boolean requeue);

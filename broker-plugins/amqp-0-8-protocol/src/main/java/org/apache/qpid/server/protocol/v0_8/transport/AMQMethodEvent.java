@@ -78,6 +78,7 @@ public class AMQMethodEvent<M extends AMQMethodBody>
      *
      * @return The method call as a string, mainly for debugging purposes.
      */
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("Method event: ");

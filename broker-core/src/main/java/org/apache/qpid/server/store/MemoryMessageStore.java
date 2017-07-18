@@ -421,11 +421,13 @@ public class MemoryMessageStore implements MessageStore
             _messageNumber = messageNumber;
         }
 
+        @Override
         public UUID getQueueId()
         {
             return _queueId;
         }
 
+        @Override
         public long getMessageNumber()
         {
             return _messageNumber;

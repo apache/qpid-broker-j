@@ -101,26 +101,31 @@ public class HashedUser implements PasswordPrincipal
         return md.digest();
     }
 
+    @Override
     public String getName()
     {
         return _name;
     }
 
+    @Override
     public String toString()
     {
         return _name;
     }
 
+    @Override
     public char[] getPassword()
     {
         return _password;
     }
 
+    @Override
     public void setPassword(char[] password)
     {
         setPassword(password, false);
     }
 
+    @Override
     public void restorePassword(char[] password)
     {
         setPassword(password, true);
@@ -156,6 +161,7 @@ public class HashedUser implements PasswordPrincipal
         _encodedPassword = null;
     }
 
+    @Override
     public byte[] getEncodedPassword()
     {
         if (_encodedPassword == null)
@@ -176,21 +182,25 @@ public class HashedUser implements PasswordPrincipal
         _encodedPassword = DatatypeConverter.printBase64Binary(byteArray).getBytes(StandardCharsets.UTF_8);
     }
 
+    @Override
     public boolean isModified()
     {
         return _modified;
     }
 
+    @Override
     public boolean isDeleted()
     {
         return _deleted;
     }
 
+    @Override
     public void delete()
     {
         _deleted = true;
     }
 
+    @Override
     public void saved()
     {
         _modified = false;

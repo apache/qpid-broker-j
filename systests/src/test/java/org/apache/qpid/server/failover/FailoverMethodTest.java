@@ -187,6 +187,7 @@ public class FailoverMethodTest extends QpidBrokerTestCase implements ExceptionL
             //Create a thread to start the broker asynchronously
             brokerStart = new Thread(new Runnable()
             {
+                @Override
                 public void run()
                 {
                     try

@@ -52,6 +52,7 @@ public class MessageAcceptCompletionListener implements Method.CompletionListene
         }
     }
 
+    @Override
     public void onComplete(Method method)
     {
         if(_restoreCredit)

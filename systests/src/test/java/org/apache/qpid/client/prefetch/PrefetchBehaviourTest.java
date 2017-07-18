@@ -49,6 +49,7 @@ public class PrefetchBehaviourTest extends QpidBrokerTestCase
     private CountDownLatch _processingStarted;
     private CountDownLatch _processingCompleted;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
@@ -80,6 +81,7 @@ public class PrefetchBehaviourTest extends QpidBrokerTestCase
         MessageConsumer prefetch1consumer = prefetch1session.createConsumer(queue);
         prefetch1consumer.setMessageListener(new MessageListener()
         {
+            @Override
             public void onMessage(Message message)
             {
                 try

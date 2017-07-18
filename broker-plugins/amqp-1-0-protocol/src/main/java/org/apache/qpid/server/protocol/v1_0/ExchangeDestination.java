@@ -91,11 +91,13 @@ public class ExchangeDestination extends QueueDestination
         _capabilities = destinationCapabilities.toArray(new Symbol[destinationCapabilities.size()]);
     }
 
+    @Override
     public Outcome[] getOutcomes()
     {
         return OUTCOMES;
     }
 
+    @Override
     public Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken)
     {
         final String routingAddress = getRoutingAddress(message);
@@ -209,6 +211,7 @@ public class ExchangeDestination extends QueueDestination
         return _expiryPolicy;
     }
 
+    @Override
     public int getCredit()
     {
         // TODO - fix

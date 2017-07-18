@@ -29,6 +29,7 @@ public class DefaultDescribedTypeConstructor extends AbstractDescribedTypeConstr
         _descriptor = descriptor;
     }
 
+    @Override
     public Object construct(final Object underlying)
     {
         return new DescribedType(_descriptor, underlying);

@@ -153,6 +153,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         }
     }
 
+    @Override
     public List<String> getMechanisms()
     {
         return _principalDatabase.getMechanisms();
@@ -169,6 +170,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     /**
      * @see org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticationProvider#authenticate(String, String)
      */
+    @Override
     public AuthenticationResult authenticate(final String username, final String password)
     {
         try
@@ -193,6 +195,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         return _principalDatabase;
     }
 
+    @Override
     @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)
     public ListenableFuture<Void> activate()
     {
@@ -230,6 +233,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         }
     }
 
+    @Override
     @StateTransition( currentState = { State.ACTIVE, State.QUIESCED, State.ERRORED, State.UNINITIALIZED}, desiredState = State.DELETED)
     public ListenableFuture<Void> doDelete()
     {
@@ -301,6 +305,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         return users;
     }
 
+    @Override
     public void reload() throws IOException
     {
         getPrincipalDatabase().reload();

@@ -47,6 +47,7 @@ public class AmqpValueConstructor extends AbstractDescribedTypeConstructor<AmqpV
     }
 
 
+    @Override
     public AmqpValue construct(Object underlying)
     {
         return new AmqpValue(underlying);

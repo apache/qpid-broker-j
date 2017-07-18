@@ -239,6 +239,7 @@ public class BDBBackup
             // List all .jdb files in the directory.
             fileSet = fromDirFile.listFiles(new FilenameFilter()
                     {
+                        @Override
                         public boolean accept(File dir, String name)
                         {
                             return name.endsWith(LOG_FILE_SUFFIX);

@@ -1814,11 +1814,13 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         closed(session);
     }
 
+    @Override
     public void init(ServerSession ssn, ProtocolHeader hdr)
     {
         LOGGER.warn("INIT: [{}] {}", ssn, hdr);
     }
 
+    @Override
     public void control(ServerSession ssn, Method method)
     {
         method.dispatch(ssn, this);
@@ -1834,11 +1836,13 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         }
     }
 
+    @Override
     public void error(ServerSession ssn, ProtocolError error)
     {
         LOGGER.warn("ERROR: [{}] {}", ssn, error);
     }
 
+    @Override
     public void handle(ServerSession ssn, Method method)
     {
         LOGGER.warn("UNHANDLED: [{}] {}", ssn, method);
@@ -1964,11 +1968,13 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
             _method = xfr;
         }
 
+        @Override
         public void postCommit()
         {
             _serverSession.processed(_method);
         }
 
+        @Override
         public void onRollback()
         {
         }

@@ -51,6 +51,7 @@ public class PropertiesConstructor extends AbstractDescribedTypeConstructor<Prop
         }
     }
 
+    @Override
     public Properties construct(Object underlying)
     {
         if(underlying instanceof List)

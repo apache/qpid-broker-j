@@ -159,16 +159,19 @@ public abstract class MessageStoreQuotaEventsTestBase extends QpidTestCase imple
             _handle = handle;
         }
 
+        @Override
         public long getMessageNumber()
         {
             return _messageId;
         }
 
+        @Override
         public boolean isPersistent()
         {
             return true;
         }
 
+        @Override
         public StoredMessage<?> getStoredMessage()
         {
             return _handle;

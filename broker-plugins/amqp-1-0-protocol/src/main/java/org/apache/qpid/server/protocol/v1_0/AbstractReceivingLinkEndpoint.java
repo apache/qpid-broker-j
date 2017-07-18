@@ -315,6 +315,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
         }
     }
 
+    @Override
     public void flowStateChanged()
     {
     }

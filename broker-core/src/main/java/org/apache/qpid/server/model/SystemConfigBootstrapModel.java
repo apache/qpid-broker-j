@@ -51,6 +51,7 @@ public final class SystemConfigBootstrapModel extends Model
                                                          _objectFactory);
     }
 
+    @Override
     public final ConfiguredObjectTypeRegistry getTypeRegistry()
     {
         return _typeRegistry;
@@ -92,6 +93,7 @@ public final class SystemConfigBootstrapModel extends Model
         return _objectFactory;
     }
 
+    @Override
     public Collection<Class<? extends ConfiguredObject>> getChildTypes(Class<? extends ConfiguredObject> parent)
     {
         return Collections.<Class<? extends ConfiguredObject>>emptyList();

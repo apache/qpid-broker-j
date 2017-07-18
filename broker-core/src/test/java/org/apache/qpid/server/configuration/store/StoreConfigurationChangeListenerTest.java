@@ -45,6 +45,7 @@ public class StoreConfigurationChangeListenerTest extends QpidTestCase
     private DurableConfigurationStore _store;
     private StoreConfigurationChangeListener _listener;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();

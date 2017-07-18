@@ -65,6 +65,7 @@ class Pre0_10CreditManager implements FlowCreditManager_0_8
         _messageCreditLimit = messageCreditLimit;
     }
 
+    @Override
     public void restoreCredit(final long messageCredit, final long bytesCredit)
     {
         _messageCredit += messageCredit;
@@ -86,12 +87,14 @@ class Pre0_10CreditManager implements FlowCreditManager_0_8
         }
     }
 
+    @Override
     public boolean hasCredit()
     {
         return (_bytesCreditLimit == 0L || _bytesCredit > 0)
                && (_messageCreditLimit == 0L || _messageCredit > 0);
     }
 
+    @Override
     public boolean useCreditForMessage(final long msgSize)
     {
         if (_messageCreditLimit != 0)

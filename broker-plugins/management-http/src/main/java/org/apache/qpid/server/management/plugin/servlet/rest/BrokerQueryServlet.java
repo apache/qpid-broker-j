@@ -37,12 +37,14 @@ public class BrokerQueryServlet extends QueryServlet<Broker<?>>
 {
     private static final long serialVersionUID = 1L;
 
+    @Override
     protected Broker<?> getParent(final HttpServletRequest request, final ConfiguredObject<?> managedObject)
     {
         return managedObject instanceof Broker ? HttpManagementUtil.getBroker(request.getServletContext()) : null;
     }
 
 
+    @Override
     protected Class<? extends ConfiguredObject> getSupportedCategory(final String categoryName,
                                                                      final Model brokerModel)
     {
@@ -59,6 +61,7 @@ public class BrokerQueryServlet extends QueryServlet<Broker<?>>
         return category;
     }
 
+    @Override
     protected String getRequestedCategory(final HttpServletRequest request, final ConfiguredObject<?> managedObject)
     {
         List<String> pathInfoElements =
@@ -70,6 +73,7 @@ public class BrokerQueryServlet extends QueryServlet<Broker<?>>
         return null;
     }
 
+    @Override
     protected List<ConfiguredObject<?>> getAllObjects(final Broker<?> broker,
                                                       final Class<? extends ConfiguredObject> category,
                                                       final HttpServletRequest request)

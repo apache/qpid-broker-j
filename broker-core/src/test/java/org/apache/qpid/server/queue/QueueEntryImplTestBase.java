@@ -70,6 +70,7 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
 
     public abstract void testTraverseWithDeletedEntries();
 
+    @Override
     public void setUp() throws Exception
     {
         _queueEntry = getQueueEntryImpl(1);

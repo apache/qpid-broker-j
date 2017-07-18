@@ -1786,6 +1786,7 @@ public class ServerSession extends SessionInvoker
             }
         }
 
+        @Override
         public T get(long timeout)
         {
             synchronized (this)
@@ -1819,6 +1820,7 @@ public class ServerSession extends SessionInvoker
             }
         }
 
+        @Override
         public boolean isDone()
         {
             return result != null;

@@ -26,6 +26,7 @@ import org.apache.qpid.client.AMQSession;
 public class QueueBrowserNoAckTest extends QueueBrowserAutoAckTest
 {
 
+    @Override
     protected void setupSession() throws Exception
     {
          _clientSession = _clientConnection.createSession(false, AMQSession.NO_ACKNOWLEDGE);

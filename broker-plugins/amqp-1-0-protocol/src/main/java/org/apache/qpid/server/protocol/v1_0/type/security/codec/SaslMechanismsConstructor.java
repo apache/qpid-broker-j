@@ -48,6 +48,7 @@ public class SaslMechanismsConstructor extends AbstractDescribedTypeConstructor<
         }
     }
 
+    @Override
     public SaslMechanisms construct(Object underlying)
     {
         if(underlying instanceof List)

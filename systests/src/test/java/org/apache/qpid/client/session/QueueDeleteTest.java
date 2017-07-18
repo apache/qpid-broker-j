@@ -36,6 +36,7 @@ public class QueueDeleteTest extends QpidBrokerTestCase
 {
     private Connection _connection;
     private AMQSession<?, ?> _session;
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();

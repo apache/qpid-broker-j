@@ -72,6 +72,7 @@ public class SuppressingInheritedAccessControlContextThreadFactoryTest extends Q
                 factory.newThread(new Runnable()
                 {
 
+                    @Override
                     public void run()
                     {
                         threadAccessControlContextCapturer.set(AccessController.getContext());

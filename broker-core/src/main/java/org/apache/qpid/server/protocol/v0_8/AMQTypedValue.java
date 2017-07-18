@@ -71,33 +71,39 @@ public abstract class AMQTypedValue
         }
 
 
+        @Override
         public AMQType getType()
         {
             return _type;
         }
 
+        @Override
         public Object getValue()
         {
             return _value;
         }
 
+        @Override
         public void writeToBuffer(QpidByteBuffer buffer)
         {
             _type.writeToBuffer(_value, buffer);
         }
 
+        @Override
         public int getEncodingSize()
         {
             return _type.getEncodingSize(_value);
         }
 
 
+        @Override
         public String toString()
         {
             return "[" + getType() + ": " + getValue() + "]";
         }
 
 
+        @Override
         public boolean equals(Object o)
         {
             if(o instanceof GenericTypedValue)
@@ -111,6 +117,7 @@ public abstract class AMQTypedValue
             }
         }
 
+        @Override
         public int hashCode()
         {
             return _type.hashCode() ^ (_value == null ? 0 : _value.hashCode());
@@ -133,17 +140,20 @@ public abstract class AMQTypedValue
             _value = buffer.getLong();
         }
 
+        @Override
         public AMQType getType()
         {
             return AMQType.LONG;
         }
 
 
+        @Override
         public Object getValue()
         {
             return _value;
         }
 
+        @Override
         public void writeToBuffer(QpidByteBuffer buffer)
         {
             buffer.put(AMQType.LONG.identifier());
@@ -151,6 +161,7 @@ public abstract class AMQTypedValue
         }
 
 
+        @Override
         public int getEncodingSize()
         {
             return EncodingUtils.encodedLongLength();
@@ -172,23 +183,27 @@ public abstract class AMQTypedValue
             _value = value;
         }
 
+        @Override
         public AMQType getType()
         {
             return AMQType.INT;
         }
 
 
+        @Override
         public Object getValue()
         {
             return _value;
         }
 
+        @Override
         public void writeToBuffer(QpidByteBuffer buffer)
         {
             buffer.put(AMQType.INT.identifier());
             buffer.putInt(_value);
         }
 
+        @Override
         public int getEncodingSize()
         {
             return EncodingUtils.encodedIntegerLength();

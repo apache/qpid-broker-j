@@ -107,11 +107,13 @@ public class VirtualHostMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CREATED_LOG_HIERARCHY;
@@ -165,11 +167,13 @@ public class VirtualHostMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return STATS_DATA_LOG_HIERARCHY;
@@ -223,11 +227,13 @@ public class VirtualHostMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return ERRORED_LOG_HIERARCHY;
@@ -281,11 +287,13 @@ public class VirtualHostMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CLOSED_LOG_HIERARCHY;
@@ -339,11 +347,13 @@ public class VirtualHostMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OPERATION_LOG_HIERARCHY;
@@ -397,11 +407,13 @@ public class VirtualHostMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return FILESYSTEM_FULL_LOG_HIERARCHY;
@@ -455,11 +467,13 @@ public class VirtualHostMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return FILESYSTEM_NOTFULL_LOG_HIERARCHY;
@@ -513,11 +527,13 @@ public class VirtualHostMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return STATS_MSGS_LOG_HIERARCHY;

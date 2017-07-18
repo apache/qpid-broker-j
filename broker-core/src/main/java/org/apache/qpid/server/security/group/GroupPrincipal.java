@@ -50,6 +50,7 @@ public class GroupPrincipal implements QpidPrincipal
         _origin = origin;
     }
 
+    @Override
     public String getName()
     {
         return _groupName;

@@ -38,6 +38,7 @@ public class ConstantExpression<T> implements Expression<T>
             super(value);
         }
 
+        @Override
         public boolean matches(E message)
         {
             Object object = evaluate(message);
@@ -134,6 +135,7 @@ public class ConstantExpression<T> implements Expression<T>
         this._value = value;
     }
 
+    @Override
     public Object evaluate(T message)
     {
         return _value;
@@ -147,6 +149,7 @@ public class ConstantExpression<T> implements Expression<T>
     /**
      * @see java.lang.Object#toString()
      */
+    @Override
     public String toString()
     {
         if (_value == null)
@@ -172,6 +175,7 @@ public class ConstantExpression<T> implements Expression<T>
      *
      * @see java.lang.Object#hashCode()
      */
+    @Override
     public int hashCode()
     {
         return toString().hashCode();
@@ -182,6 +186,7 @@ public class ConstantExpression<T> implements Expression<T>
      *
      * @see java.lang.Object#equals(java.lang.Object)
      */
+    @Override
     public boolean equals(Object o)
     {
 

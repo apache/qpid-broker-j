@@ -76,6 +76,7 @@ public abstract class AbstractEncoder implements Encoder
     protected abstract int beginSize32();
     protected abstract void endSize32(int pos);
 
+    @Override
     public void writeUint8(short b)
     {
         assert b < 0x100;
@@ -83,6 +84,7 @@ public abstract class AbstractEncoder implements Encoder
         put((byte) b);
     }
 
+    @Override
     public void writeUint16(int s)
     {
         assert s < 0x10000;
@@ -91,6 +93,7 @@ public abstract class AbstractEncoder implements Encoder
         put(lsb(s));
     }
 
+    @Override
     public void writeUint32(long i)
     {
         assert i < 0x100000000L;
@@ -101,11 +104,13 @@ public abstract class AbstractEncoder implements Encoder
         put(lsb(i));
     }
 
+    @Override
     public void writeSequenceNo(int i)
     {
         writeUint32(i);
     }
 
+    @Override
     public void writeUint64(long l)
     {
         for (int i = 0; i < 8; i++)
@@ -115,11 +120,13 @@ public abstract class AbstractEncoder implements Encoder
     }
 
 
+    @Override
     public void writeDatetime(long l)
     {
         writeUint64(l);
     }
 
+    @Override
     public void writeStr8(String s)
     {
         if (s == null)
@@ -141,6 +148,7 @@ public abstract class AbstractEncoder implements Encoder
         put(bytes);
     }
 
+    @Override
     public void writeStr16(String s)
     {
         if (s == null)
@@ -158,6 +166,7 @@ public abstract class AbstractEncoder implements Encoder
         put(bytes);
     }
 
+    @Override
     public void writeVbin8(byte[] bytes)
     {
         if (bytes == null) { bytes = new byte[0]; }
@@ -169,6 +178,7 @@ public abstract class AbstractEncoder implements Encoder
         put(ByteBuffer.wrap(bytes));
     }
 
+    @Override
     public void writeVbin16(byte[] bytes)
     {
         if (bytes == null) { bytes = new byte[0]; }
@@ -176,6 +186,7 @@ public abstract class AbstractEncoder implements Encoder
         put(ByteBuffer.wrap(bytes));
     }
 
+    @Override
     public void writeVbin32(byte[] bytes)
     {
         if (bytes == null) { bytes = new byte[0]; }
@@ -183,6 +194,7 @@ public abstract class AbstractEncoder implements Encoder
         put(ByteBuffer.wrap(bytes));
     }
 
+    @Override
     public void writeSequenceSet(RangeSet ranges)
     {
         if (ranges == null)
@@ -200,11 +212,13 @@ public abstract class AbstractEncoder implements Encoder
         }
     }
 
+    @Override
     public void writeByteRanges(RangeSet ranges)
     {
         throw new Error("not implemented");
     }
 
+    @Override
     public void writeUuid(UUID uuid)
     {
         long msb = 0;
@@ -218,6 +232,7 @@ public abstract class AbstractEncoder implements Encoder
         writeUint64(lsb);
     }
 
+    @Override
     public void writeStruct(int type, Struct s)
     {
         boolean empty = false;
@@ -247,6 +262,7 @@ public abstract class AbstractEncoder implements Encoder
         }
     }
 
+    @Override
     public void writeStruct32(Struct s)
     {
         if (s == null)
@@ -262,6 +278,7 @@ public abstract class AbstractEncoder implements Encoder
         }
     }
 
+    @Override
     public void writeMap(Map<String,Object> map)
     {
         int pos = beginSize32();
@@ -286,6 +303,7 @@ public abstract class AbstractEncoder implements Encoder
         }
     }
 
+    @Override
     public void writeList(List<Object> list)
     {
         int pos = beginSize32();
@@ -307,6 +325,7 @@ public abstract class AbstractEncoder implements Encoder
         }
     }
 
+    @Override
     public void writeArray(List<Object> array)
     {
         int pos = beginSize32();

@@ -30,14 +30,17 @@ public final class SessionHeader extends Struct {
 
     public static final int TYPE = -1;
 
+    @Override
     public final int getStructType() {
         return TYPE;
     }
 
+    @Override
     public final int getSizeWidth() {
         return 1;
     }
 
+    @Override
     public final int getPackWidth() {
         return 1;
     }
@@ -113,18 +116,21 @@ public final class SessionHeader extends Struct {
 
 
 
+    @Override
     public void write(Encoder enc)
     {
         enc.writeUint8(packing_flags);
 
     }
 
+    @Override
     public void read(Decoder dec)
     {
         packing_flags = (byte) dec.readUint8();
 
     }
 
+    @Override
     public Map<String,Object> getFields()
     {
         Map<String,Object> result = new LinkedHashMap<String,Object>();

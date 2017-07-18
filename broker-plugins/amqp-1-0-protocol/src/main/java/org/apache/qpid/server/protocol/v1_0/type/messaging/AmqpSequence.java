@@ -35,6 +35,7 @@ public class AmqpSequence implements NonEncodingRetainingSection<List>
         _value = value;
     }
 
+    @Override
     public List getValue()
     {
         return _value;

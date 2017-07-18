@@ -101,6 +101,7 @@ public class ConnectionStartTest extends QpidBrokerTestCase
         {
             _consumer.setMessageListener(new MessageListener()
             {
+                @Override
                 public void onMessage(Message message)
                 {
                     try

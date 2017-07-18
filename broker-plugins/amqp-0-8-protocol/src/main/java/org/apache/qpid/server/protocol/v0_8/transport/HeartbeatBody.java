@@ -47,11 +47,13 @@ public class HeartbeatBody implements AMQBody
         }
     }
 
+    @Override
     public byte getFrameType()
     {
         return TYPE;
     }
 
+    @Override
     public int getSize()
     {
         return 0;//heartbeats we generate have no payload
@@ -63,6 +65,7 @@ public class HeartbeatBody implements AMQBody
         return 0l;
     }
 
+    @Override
     public void handle(final int channelId, final AMQVersionAwareProtocolSession session)
             throws QpidException
     {

@@ -67,6 +67,7 @@ abstract public class PriorityQueueList extends OrderedQueueEntryList
             }
         }
 
+        @Override
         public int getPriorities()
         {
             return _priorities;

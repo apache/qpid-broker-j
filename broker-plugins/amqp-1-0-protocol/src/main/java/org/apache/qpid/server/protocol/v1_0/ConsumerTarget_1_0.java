@@ -132,6 +132,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
     }
 
+    @Override
     public void doSend(final MessageInstanceConsumer consumer, final MessageInstance entry, boolean batch)
     {
         ServerMessage serverMessage = entry.getMessage();
@@ -301,6 +302,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         }
     }
 
+    @Override
     public void flushBatched()
     {
         // TODO
@@ -322,6 +324,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         linkReg.unregisterSendingLink(getEndpoint().getName());
     }
       */
+    @Override
     public boolean allocateCredit(final ServerMessage msg)
     {
         ProtocolEngine protocolEngine = getSession().getConnection();
@@ -338,12 +341,14 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     }
 
 
+    @Override
     public void restoreCredit(final ServerMessage message)
     {
         _linkEndpoint.setLinkCredit(_linkEndpoint.getLinkCredit().add(UnsignedInteger.ONE));
         updateNotifyWorkDesired();
     }
 
+    @Override
     public void queueEmpty()
     {
         if(_linkEndpoint.drained())
@@ -392,6 +397,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
             return _consumer;
         }
 
+        @Override
         public boolean process(DeliveryState state, final Boolean settled)
         {
 
@@ -641,6 +647,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         {
         }
 
+        @Override
         public boolean process(final DeliveryState state, final Boolean settled)
         {
             return true;

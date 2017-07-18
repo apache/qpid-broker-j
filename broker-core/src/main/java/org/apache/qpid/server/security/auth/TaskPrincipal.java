@@ -34,6 +34,7 @@ public class TaskPrincipal implements Principal, Serializable
         _name = name;
     }
 
+    @Override
     public String getName()
     {
         return _name;

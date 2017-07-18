@@ -57,11 +57,13 @@ public class ExchangeBoundOkBody extends AMQMethodBodyImpl implements EncodableA
         _replyText = replyText;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -76,6 +78,7 @@ public class ExchangeBoundOkBody extends AMQMethodBodyImpl implements EncodableA
         return _replyText;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 2;
@@ -83,17 +86,20 @@ public class ExchangeBoundOkBody extends AMQMethodBodyImpl implements EncodableA
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeUnsignedShort( buffer, _replyCode );
         writeAMQShortString( buffer, _replyText );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchExchangeBoundOk(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[ExchangeBoundOkBodyImpl: ");

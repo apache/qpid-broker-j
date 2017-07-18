@@ -256,6 +256,7 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
 
     }
 
+    @Override
     public <T> T doAsSystem(PrivilegedAction<T> action)
     {
         return Subject.doAs(SYSTEM_SUBJECT, action);

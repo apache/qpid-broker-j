@@ -61,12 +61,14 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
     private Map<String, Destination> _replyToDestinations;
     private int _count = 1;
 
+    @Override
     protected void setUp() throws Exception
     {
         _replyToDestinations = new HashMap<String, Destination>();
         super.setUp();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         super.tearDown();
@@ -495,6 +497,7 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
         }
     }
 
+    @Override
     public void onMessage(Message message)
     {
         synchronized (received)

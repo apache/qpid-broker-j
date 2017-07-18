@@ -56,6 +56,7 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
     private CountDownLatch _waitForCompletion;
     private MessageConsumer _consumer;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
@@ -69,6 +70,7 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
         }
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         super.tearDown();
@@ -220,6 +222,7 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
         }
     }
 
+    @Override
     public void onMessage(Message message)
     {
         synchronized (received)

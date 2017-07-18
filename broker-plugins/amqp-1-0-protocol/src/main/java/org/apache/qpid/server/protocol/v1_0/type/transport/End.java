@@ -33,6 +33,7 @@ public class End implements ErrorCarryingFrameBody
     @CompositeTypeField
     private Error _error;
 
+    @Override
     public Error getError()
     {
         return _error;
@@ -62,6 +63,7 @@ public class End implements ErrorCarryingFrameBody
         return builder.toString();
     }
 
+    @Override
     public void invoke(int channel, ConnectionHandler conn)
     {
         conn.receiveEnd(channel, this);

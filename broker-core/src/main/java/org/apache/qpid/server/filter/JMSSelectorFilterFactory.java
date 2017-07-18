@@ -30,6 +30,7 @@ import org.apache.qpid.server.plugin.PluggableService;
 @PluggableService
 public final class JMSSelectorFilterFactory implements MessageFilterFactory
 {
+    @Override
     public String getType()
     {
         return AMQPFilterTypes.JMS_SELECTOR.toString();

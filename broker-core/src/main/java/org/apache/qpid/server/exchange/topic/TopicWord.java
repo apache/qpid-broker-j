@@ -32,6 +32,7 @@ public final class TopicWord
         _word = s;
     }
 
+    @Override
     public String toString()
     {
         return _word;

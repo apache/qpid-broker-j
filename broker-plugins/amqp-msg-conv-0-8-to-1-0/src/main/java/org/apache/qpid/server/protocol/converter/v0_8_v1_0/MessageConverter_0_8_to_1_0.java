@@ -53,6 +53,7 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
         return AMQMessage.class;
     }
 
+    @Override
     protected MessageMetaData_1_0 convertMetaData(final AMQMessage serverMessage,
                                                   final EncodingRetainingSection<?> bodySection,
                                                   SectionEncoder sectionEncoder)

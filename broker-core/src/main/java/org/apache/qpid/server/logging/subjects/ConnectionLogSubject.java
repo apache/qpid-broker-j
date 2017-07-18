@@ -99,6 +99,7 @@ public class ConnectionLogSubject extends AbstractLogSubject
         }
     }
 
+    @Override
     public String toLogString()
     {
         updateLogString();

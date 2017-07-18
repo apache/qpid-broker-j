@@ -139,6 +139,7 @@ public abstract class AbstractUnresolvedObject<C extends ConfiguredObject<C>> im
         return _record;
     }
 
+    @Override
     public ConfiguredObject<?> getParent()
     {
         return _parent;

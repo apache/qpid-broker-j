@@ -48,6 +48,7 @@ public class JMSSelectorFilterConstructor extends AbstractDescribedTypeConstruct
     }
 
 
+    @Override
     public JMSSelectorFilter construct(Object underlying)
     {
 

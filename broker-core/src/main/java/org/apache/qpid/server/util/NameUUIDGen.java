@@ -50,6 +50,7 @@ public final class NameUUIDGen implements UUIDGen
         this.counter = 0;
     }
 
+    @Override
     public UUID generate()
     {
         seedBuf.putLong(0, counter++);

@@ -58,6 +58,7 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
     private Session _session;
 
 
+    @Override
     public String getTestProfileVirtualHostNodeBlueprint()
     {
         String blueprint = super.getTestProfileVirtualHostNodeBlueprint();
@@ -210,6 +211,7 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
     }
 
 
+    @Override
     protected void setUp() throws Exception
     {
         getDefaultBrokerConfiguration().removeObjectConfiguration(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST);

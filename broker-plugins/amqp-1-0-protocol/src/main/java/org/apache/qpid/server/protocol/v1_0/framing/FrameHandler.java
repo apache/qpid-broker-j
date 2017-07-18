@@ -55,6 +55,7 @@ public class FrameHandler implements ProtocolHandler
         _isSasl = isSasl;
     }
 
+    @Override
     public ProtocolHandler parse(QpidByteBuffer in)
     {
         try
@@ -228,6 +229,7 @@ public class FrameHandler implements ProtocolHandler
         return error;
     }
 
+    @Override
     public boolean isDone()
     {
         return _errored || _connectionHandler.closedForInput();

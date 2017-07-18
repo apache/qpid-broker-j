@@ -166,11 +166,13 @@ public class QueueMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CREATED_LOG_HIERARCHY;
@@ -224,11 +226,13 @@ public class QueueMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return DROPPED_LOG_HIERARCHY;
@@ -282,11 +286,13 @@ public class QueueMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OVERFULL_LOG_HIERARCHY;
@@ -340,11 +346,13 @@ public class QueueMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OPERATION_LOG_HIERARCHY;
@@ -398,11 +406,13 @@ public class QueueMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return UNDERFULL_LOG_HIERARCHY;
@@ -456,11 +466,13 @@ public class QueueMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return DELETED_LOG_HIERARCHY;

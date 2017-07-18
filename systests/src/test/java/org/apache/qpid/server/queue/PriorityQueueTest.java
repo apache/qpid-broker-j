@@ -61,6 +61,7 @@ public class PriorityQueueTest extends QpidBrokerTestCase
 
     private MessageConsumer consumer;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
@@ -75,6 +76,7 @@ public class PriorityQueueTest extends QpidBrokerTestCase
 
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         producerConnection.close();

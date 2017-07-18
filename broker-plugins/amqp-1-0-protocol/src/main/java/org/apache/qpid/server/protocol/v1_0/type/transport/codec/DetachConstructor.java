@@ -48,6 +48,7 @@ public class DetachConstructor extends AbstractDescribedTypeConstructor<Detach>
         }
     }
 
+    @Override
     public Detach construct(Object underlying)
     {
         if(underlying instanceof List)

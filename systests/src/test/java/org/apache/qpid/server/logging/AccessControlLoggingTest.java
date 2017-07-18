@@ -51,6 +51,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
     private Connection _connection;
     private Session _session;
 
+    @Override
     public void setUp() throws Exception
     {
         // Write out ACL for this test

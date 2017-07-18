@@ -120,6 +120,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
      * Queue, Exchange, Bindings entries are stored now as configurable objects
      * in "CONFIGURED_OBJECTS" table.
      */
+    @Override
     public void performUpgrade(final Environment environment, final UpgradeInteractionHandler handler, ConfiguredObject<?> parent)
     {
         reportStarting(environment, 5);
@@ -782,6 +783,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
 
     static class UpgradeQueueBinding extends TupleBinding<OldQueueRecord>
     {
+        @Override
         public OldQueueRecord entryToObject(TupleInput tupleInput)
         {
             AMQShortString name = AMQShortStringEncoding.readShortString(tupleInput);
@@ -791,6 +793,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             return new OldQueueRecord(name, owner, exclusive, arguments);
         }
 
+        @Override
         public void objectToEntry(OldQueueRecord queue, TupleOutput tupleOutput)
         {
             AMQShortStringEncoding.writeShortString(queue.getNameShortString(), tupleOutput);
@@ -802,11 +805,13 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
 
     static class UpgradeUUIDBinding extends TupleBinding<UUID>
     {
+        @Override
         public UUID entryToObject(final TupleInput tupleInput)
         {
             return new UUID(tupleInput.readLong(), tupleInput.readLong());
         }
 
+        @Override
         public void objectToEntry(final UUID uuid, final TupleOutput tupleOutput)
         {
             tupleOutput.writeLong(uuid.getMostSignificantBits());
@@ -817,6 +822,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     static class ConfiguredObjectBinding extends TupleBinding<UpgradeConfiguredObjectRecord>
     {
 
+        @Override
         public UpgradeConfiguredObjectRecord entryToObject(TupleInput tupleInput)
         {
             String type = tupleInput.readString();
@@ -825,6 +831,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             return configuredObject;
         }
 
+        @Override
         public void objectToEntry(UpgradeConfiguredObjectRecord object, TupleOutput tupleOutput)
         {
             tupleOutput.writeString(object.getType());
@@ -866,6 +873,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     static class ExchangeBinding extends TupleBinding<ExchangeRecord>
     {
 
+        @Override
         public ExchangeRecord entryToObject(TupleInput tupleInput)
         {
             AMQShortString name = AMQShortStringEncoding.readShortString(tupleInput);
@@ -876,6 +884,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             return new ExchangeRecord(name, typeName, autoDelete);
         }
 
+        @Override
         public void objectToEntry(ExchangeRecord exchange, TupleOutput tupleOutput)
         {
             AMQShortStringEncoding.writeShortString(exchange.getNameShortString(), tupleOutput);
@@ -926,6 +935,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     static class QueueBindingBinding extends TupleBinding<BindingRecord>
     {
 
+        @Override
         public BindingRecord entryToObject(TupleInput tupleInput)
         {
             AMQShortString exchangeName = AMQShortStringEncoding.readShortString(tupleInput);
@@ -937,6 +947,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             return new BindingRecord(exchangeName, queueName, routingKey, arguments);
         }
 
+        @Override
         public void objectToEntry(BindingRecord binding, TupleOutput tupleOutput)
         {
             AMQShortStringEncoding.writeShortString(binding.getExchangeName(), tupleOutput);
@@ -972,6 +983,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     static class OldQueueEntryBinding extends TupleBinding<OldQueueEntryKey>
     {
 
+        @Override
         public OldQueueEntryKey entryToObject(TupleInput tupleInput)
         {
             AMQShortString queueName = AMQShortStringEncoding.readShortString(tupleInput);
@@ -980,6 +992,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             return new OldQueueEntryKey(queueName, messageId);
         }
 
+        @Override
         public void objectToEntry(OldQueueEntryKey mk, TupleOutput tupleOutput)
         {
             AMQShortStringEncoding.writeShortString(mk.getQueueName(), tupleOutput);
@@ -1012,6 +1025,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     static class NewQueueEntryBinding extends TupleBinding<NewQueueEntryKey>
     {
 
+        @Override
         public NewQueueEntryKey entryToObject(TupleInput tupleInput)
         {
             UUID queueId = new UUID(tupleInput.readLong(), tupleInput.readLong());
@@ -1020,6 +1034,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             return new NewQueueEntryKey(queueId, messageId);
         }
 
+        @Override
         public void objectToEntry(NewQueueEntryKey mk, TupleOutput tupleOutput)
         {
             UUID uuid = mk.getQueueId();

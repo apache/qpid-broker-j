@@ -57,11 +57,13 @@ public class BasicQosBody extends AMQMethodBodyImpl implements EncodableAMQDataB
         _bitfield0 = bitfield0;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -80,12 +82,14 @@ public class BasicQosBody extends AMQMethodBodyImpl implements EncodableAMQDataB
         return (((int)(_bitfield0)) & ( 1 << 0)) != 0;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 7;
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeUnsignedInteger( buffer, _prefetchSize );
@@ -93,11 +97,13 @@ public class BasicQosBody extends AMQMethodBodyImpl implements EncodableAMQDataB
         writeBitfield( buffer, _bitfield0 );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchBasicQos(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[BasicQosBodyImpl: ");

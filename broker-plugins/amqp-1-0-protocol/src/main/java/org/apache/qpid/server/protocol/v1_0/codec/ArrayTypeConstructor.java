@@ -31,6 +31,7 @@ public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
 {
 
 
+    @Override
     public Object[] construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
     {
         int size = read(in);

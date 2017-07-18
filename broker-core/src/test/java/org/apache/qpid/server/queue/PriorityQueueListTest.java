@@ -57,6 +57,7 @@ public class PriorityQueueListTest extends QpidTestCase
     private QueueEntry _priority5message1;
     private QueueEntry _priority5message2;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();

@@ -82,11 +82,13 @@ public class MessageMetaData implements StorableMessageMetaData
         return _arrivalTime;
     }
 
+    @Override
     public MessageMetaDataType getType()
     {
         return TYPE;
     }
 
+    @Override
     public int getStorableSize()
     {
         int size = _contentHeaderBody.getSize();
@@ -100,6 +102,7 @@ public class MessageMetaData implements StorableMessageMetaData
     }
 
 
+    @Override
     public void writeToBuffer(final QpidByteBuffer dest)
     {
         dest.putInt(_contentHeaderBody.getSize());
@@ -121,11 +124,13 @@ public class MessageMetaData implements StorableMessageMetaData
 
     }
 
+    @Override
     public int getContentSize()
     {
         return (int) _contentHeaderBody.getBodySize();
     }
 
+    @Override
     public boolean isPersistent()
     {
         return _contentHeaderBody.getProperties().getDeliveryMode() ==  BasicContentHeaderProperties.PERSISTENT;
@@ -137,6 +142,7 @@ public class MessageMetaData implements StorableMessageMetaData
         _contentHeaderBody.dispose();
     }
 
+    @Override
     public synchronized void clearEncodedForm()
     {
         _contentHeaderBody.clearEncodedForm();
@@ -222,56 +228,67 @@ public class MessageMetaData implements StorableMessageMetaData
             return getContentHeaderBody().getProperties();
         }
 
+        @Override
         public String getUserId()
         {
             return getProperties().getUserIdAsString();
         }
 
+        @Override
         public String getAppId()
         {
             return getProperties().getAppIdAsString();
         }
 
+        @Override
         public String getCorrelationId()
         {
             return getProperties().getCorrelationIdAsString();
         }
 
+        @Override
         public long getExpiration()
         {
             return getProperties().getExpiration();
         }
 
+        @Override
         public String getMessageId()
         {
             return getProperties().getMessageIdAsString();
         }
 
+        @Override
         public String getMimeType()
         {
             return getProperties().getContentTypeAsString();
         }
 
+        @Override
         public String getEncoding()
         {
             return getProperties().getEncodingAsString();
         }
 
+        @Override
         public byte getPriority()
         {
             return getProperties().getPriority();
         }
 
+        @Override
         public long getTimestamp()
         {
             return getProperties().getTimestamp();
         }
 
+        @Override
         public String getType()
         {
             return getProperties().getTypeAsString();
         }
 
+        @Override
         public String getReplyTo()
         {
             return getProperties().getReplyToAsString();
@@ -284,12 +301,14 @@ public class MessageMetaData implements StorableMessageMetaData
             return header instanceof Number ? ((Number)header).longValue() : 0L;
         }
 
+        @Override
         public Object getHeader(String name)
         {
             FieldTable ft = getProperties().getHeaders();
             return ft.get(name);
         }
 
+        @Override
         public boolean containsHeaders(Set<String> names)
         {
             FieldTable ft = getProperties().getHeaders();
@@ -309,6 +328,7 @@ public class MessageMetaData implements StorableMessageMetaData
             return getProperties().getHeaders().keys();
         }
 
+        @Override
         public boolean containsHeader(String name)
         {
             FieldTable ft = getProperties().getHeaders();

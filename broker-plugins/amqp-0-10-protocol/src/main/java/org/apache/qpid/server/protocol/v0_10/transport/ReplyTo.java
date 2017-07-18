@@ -30,14 +30,17 @@ public final class ReplyTo extends Struct {
 
     public static final int TYPE = -3;
 
+    @Override
     public final int getStructType() {
         return TYPE;
     }
 
+    @Override
     public final int getSizeWidth() {
         return 2;
     }
 
+    @Override
     public final int getPackWidth() {
         return 2;
     }
@@ -131,6 +134,7 @@ public final class ReplyTo extends Struct {
 
 
 
+    @Override
     public void write(Encoder enc)
     {
         enc.writeUint16(packing_flags);
@@ -164,6 +168,7 @@ public final class ReplyTo extends Struct {
     }
 
 
+    @Override
     public void read(Decoder dec)
     {
         packing_flags = (short) dec.readUint16();
@@ -178,6 +183,7 @@ public final class ReplyTo extends Struct {
 
     }
 
+    @Override
     public Map<String,Object> getFields()
     {
         Map<String,Object> result = new LinkedHashMap<String,Object>();
@@ -195,6 +201,7 @@ public final class ReplyTo extends Struct {
         return result;
     }
 
+    @Override
     public boolean equals(final Object obj){
         if (this == obj){
             return true;
@@ -209,6 +216,7 @@ public final class ReplyTo extends Struct {
             && (exchange == null ? reply.getExchange() == null : exchange.equals(reply.getExchange()));
     }
 
+    @Override
     public int hashCode(){
         int result = routingKey == null ? 1 : routingKey.hashCode();
         return 31 * result + (exchange == null ? 5 : exchange.hashCode());

@@ -28,6 +28,7 @@ import org.apache.qpid.server.model.Param;
 @ManagedObject(category = false)
 public interface TestKitCar<X extends TestKitCar<X>> extends TestCar<X>
 {
+    @Override
     @ManagedOperation(changesConfiguredObjectState = false)
     Door openDoor(@Param(name = "door", defaultValue = "PASSENGER") Door door);
 

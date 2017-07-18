@@ -36,6 +36,7 @@ public class Serial
 
     public static final Comparator<Integer> COMPARATOR = new Comparator<Integer>()
     {
+        @Override
         public int compare(Integer s1, Integer s2)
         {
             return Serial.compare(s1, s2);

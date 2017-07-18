@@ -48,6 +48,7 @@ public class ModifiedConstructor extends AbstractDescribedTypeConstructor<Modifi
         }
     }
 
+    @Override
     public Modified construct(Object underlying)
     {
         if(underlying instanceof List)

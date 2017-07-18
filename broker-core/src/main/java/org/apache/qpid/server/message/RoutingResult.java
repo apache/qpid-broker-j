@@ -108,6 +108,7 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
         {
             MessageReference _reference = _message.newReference();
 
+            @Override
             public void postCommit(MessageEnqueueRecord... records)
             {
                 try
@@ -123,6 +124,7 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
                 }
             }
 
+            @Override
             public void onRollback()
             {
                 _reference.release();

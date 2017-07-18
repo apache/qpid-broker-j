@@ -229,11 +229,13 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                         ServerTransaction.Action a;
                         transaction.addPostTransactionAction(new ServerTransaction.Action()
                         {
+                            @Override
                             public void postCommit()
                             {
                                 updateDisposition(delivery.getDeliveryTag(), null, true);
                             }
 
+                            @Override
                             public void onRollback()
                             {
                                 updateDisposition(delivery.getDeliveryTag(), null, true);

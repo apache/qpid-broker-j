@@ -130,6 +130,7 @@ public class FilterSupport
             return AMQPFilterTypes.NO_LOCAL.toString();
         }
 
+        @Override
         public boolean matches(Filterable message)
         {
 

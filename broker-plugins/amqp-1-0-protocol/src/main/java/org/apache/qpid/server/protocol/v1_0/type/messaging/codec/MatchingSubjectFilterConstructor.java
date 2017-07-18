@@ -47,6 +47,7 @@ public class MatchingSubjectFilterConstructor extends AbstractDescribedTypeConst
     }
 
 
+    @Override
     public MatchingSubjectFilter construct(Object underlying)
     {
 

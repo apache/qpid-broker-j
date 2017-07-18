@@ -41,16 +41,19 @@ public class BDBConfiguredObjectRecord implements ConfiguredObjectRecord
         _attributes = Collections.unmodifiableMap(attributes);
     }
 
+    @Override
     public UUID getId()
     {
         return _id;
     }
 
+    @Override
     public String getType()
     {
         return _type;
     }
 
+    @Override
     public Map<String, Object> getAttributes()
     {
         return _attributes;

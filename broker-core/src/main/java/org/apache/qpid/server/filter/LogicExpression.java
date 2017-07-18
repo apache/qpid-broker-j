@@ -41,8 +41,10 @@ public abstract class LogicExpression<T> extends BinaryExpression<T> implements 
         super(left, right);
     }
 
+    @Override
     public abstract Object evaluate(T message);
 
+    @Override
     public boolean matches(T message)
     {
         Object object = evaluate(message);
@@ -57,6 +59,7 @@ public abstract class LogicExpression<T> extends BinaryExpression<T> implements 
             super(lvalue, rvalue);
         }
 
+        @Override
         public Object evaluate(E message)
         {
 
@@ -72,6 +75,7 @@ public abstract class LogicExpression<T> extends BinaryExpression<T> implements 
             return (rv == null) ? null : rv;
         }
 
+        @Override
         public String getExpressionSymbol()
         {
             return "OR";
@@ -85,6 +89,7 @@ public abstract class LogicExpression<T> extends BinaryExpression<T> implements 
             super(lvalue, rvalue);
         }
 
+        @Override
         public Object evaluate(E message)
         {
 
@@ -106,6 +111,7 @@ public abstract class LogicExpression<T> extends BinaryExpression<T> implements 
             return (rv == null) ? null : rv;
         }
 
+        @Override
         public String getExpressionSymbol()
         {
             return "AND";

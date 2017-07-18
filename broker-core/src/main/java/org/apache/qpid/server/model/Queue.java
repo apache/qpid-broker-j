@@ -219,6 +219,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
 
 
+    @Override
     @ManagedAttribute( defaultValue = "${queue.defaultMessageDurability}" )
     MessageDurability getMessageDurability();
 
@@ -291,6 +292,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     Collection<PublishingLink> getPublishingLinks();
 
 
+    @Override
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Collection<QueueConsumer<?,?>> getConsumers();
 

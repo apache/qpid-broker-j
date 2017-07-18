@@ -48,6 +48,7 @@ public class ReceivedConstructor extends AbstractDescribedTypeConstructor<Receiv
         }
     }
 
+    @Override
     public Received construct(Object underlying)
     {
         if(underlying instanceof List)

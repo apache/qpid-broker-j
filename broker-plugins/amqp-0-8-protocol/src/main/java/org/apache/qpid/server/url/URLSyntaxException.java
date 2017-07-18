@@ -54,6 +54,7 @@ public class URLSyntaxException extends URISyntaxException
     }
 
 
+    @Override
     public String toString()
     {
         StringBuffer sb = new StringBuffer();

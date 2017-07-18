@@ -72,6 +72,7 @@ public abstract class Client implements ExceptionListener
     	}
     }
     
+    @Override
     public void onException(JMSException e)
     {
         handleError("Connection error",e);

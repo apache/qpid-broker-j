@@ -89,6 +89,7 @@ public class PlainPasswordFilePrincipalDatabase extends AbstractPasswordFilePrin
      *
      * @throws AccountNotFoundException if the principal cannot be found
      */
+    @Override
     public boolean verifyPassword(String principal, char[] password) throws AccountNotFoundException
     {
 
@@ -103,6 +104,7 @@ public class PlainPasswordFilePrincipalDatabase extends AbstractPasswordFilePrin
 
     }
 
+    @Override
     protected PlainUser createUserFromPassword(Principal principal, char[] passwd)
     {
         return new PlainUser(principal.getName(), passwd, getAuthenticationProvider());
@@ -116,6 +118,7 @@ public class PlainPasswordFilePrincipalDatabase extends AbstractPasswordFilePrin
     }
 
 
+    @Override
     protected Logger getLogger()
     {
         return _logger;

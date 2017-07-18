@@ -48,6 +48,7 @@ public class EndConstructor extends AbstractDescribedTypeConstructor<End>
         }
     }
 
+    @Override
     public End construct(Object underlying)
     {
         if(underlying instanceof List)

@@ -105,14 +105,17 @@ public abstract class Struct implements Encodable
         return getFlagCount() - getFields().size();
     }
 
+    @Override
     public abstract void read(Decoder dec);
 
+    @Override
     public abstract void write(Encoder enc);
 
     public abstract Map<String,Object> getFields();
 
     public abstract int getEncodedLength();
 
+    @Override
     public String toString()
     {
         StringBuilder str = new StringBuilder();

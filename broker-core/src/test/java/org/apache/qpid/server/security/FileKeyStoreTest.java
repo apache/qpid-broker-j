@@ -53,6 +53,7 @@ public class FileKeyStoreTest extends QpidTestCase
     private final ConfiguredObjectFactory _factory = _model.getObjectFactory();
 
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

@@ -56,11 +56,13 @@ public class Role implements RestrictedType<Boolean>
         return null;
     }
 
+    @Override
     public Boolean getValue()
     {
         return _val;
     }
 
+    @Override
     public String toString()
     {
 

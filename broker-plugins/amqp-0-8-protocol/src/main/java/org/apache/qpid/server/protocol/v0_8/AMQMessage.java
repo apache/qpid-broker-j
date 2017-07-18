@@ -58,6 +58,7 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
         return getMessageMetaData().getContentHeaderBody();
     }
 
+    @Override
     public String getInitialRoutingAddress()
     {
         MessageMetaData messageMetaData = getMessageMetaData();
@@ -72,6 +73,7 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
         return "";
     }
 
+    @Override
     public AMQMessageHeader getMessageHeader()
     {
         return getMessageMetaData().getMessageHeader();
@@ -82,6 +84,7 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
         return getMessageMetaData().getMessagePublishInfo();
     }
 
+    @Override
     public long getArrivalTime()
     {
         return getMessageMetaData().getArrivalTime();
@@ -103,6 +106,7 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
         return getMessagePublishInfo().isMandatory();
     }
 
+    @Override
     public long getExpiration()
     {
         return getMessageHeader().getExpiration();

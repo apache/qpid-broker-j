@@ -22,5 +22,6 @@ package org.apache.qpid.server.util;
 
 public interface Action<T> extends BaseAction<T, RuntimeException>
 {
+    @Override
     void performAction(T object);
 }

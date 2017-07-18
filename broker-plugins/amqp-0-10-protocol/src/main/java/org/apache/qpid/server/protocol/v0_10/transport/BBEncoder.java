@@ -43,6 +43,7 @@ public final class BBEncoder extends AbstractEncoder
         segment = 0;
     }
 
+    @Override
     public void init()
     {
         out.clear();
@@ -70,6 +71,7 @@ public final class BBEncoder extends AbstractEncoder
         return slice;
     }
 
+    @Override
     public int position()
     {
         return out.position();
@@ -90,6 +92,7 @@ public final class BBEncoder extends AbstractEncoder
         out.put(old);
     }
 
+    @Override
     protected void doPut(byte b)
     {
         try
@@ -103,6 +106,7 @@ public final class BBEncoder extends AbstractEncoder
         }
     }
 
+    @Override
     protected void doPut(ByteBuffer src)
     {
         try
@@ -116,6 +120,7 @@ public final class BBEncoder extends AbstractEncoder
         }
     }
 
+    @Override
     protected void put(byte[] bytes)
     {
         try
@@ -129,6 +134,7 @@ public final class BBEncoder extends AbstractEncoder
         }
     }
 
+    @Override
     public void writeUint8(short b)
     {
         assert b < 0x100;
@@ -144,6 +150,7 @@ public final class BBEncoder extends AbstractEncoder
         }
     }
 
+    @Override
     public void writeUint16(int s)
     {
         assert s < 0x10000;
@@ -159,6 +166,7 @@ public final class BBEncoder extends AbstractEncoder
         }
     }
 
+    @Override
     public void writeUint32(long i)
     {
         assert i < 0x100000000L;
@@ -174,6 +182,7 @@ public final class BBEncoder extends AbstractEncoder
         }
     }
 
+    @Override
     public void writeUint64(long l)
     {
         try
@@ -187,6 +196,7 @@ public final class BBEncoder extends AbstractEncoder
         }
     }
 
+    @Override
     public int beginSize8()
     {
         int pos = out.position();
@@ -202,12 +212,14 @@ public final class BBEncoder extends AbstractEncoder
         return pos;
     }
 
+    @Override
     public void endSize8(int pos)
     {
         int cur = out.position();
         out.put(pos, (byte) (cur - pos - 1));
     }
 
+    @Override
     public int beginSize16()
     {
         int pos = out.position();
@@ -223,12 +235,14 @@ public final class BBEncoder extends AbstractEncoder
         return pos;
     }
 
+    @Override
     public void endSize16(int pos)
     {
         int cur = out.position();
         out.putShort(pos, (short) (cur - pos - 2));
     }
 
+    @Override
     public int beginSize32()
     {
         int pos = out.position();
@@ -244,13 +258,15 @@ public final class BBEncoder extends AbstractEncoder
         return pos;
     }
 
+    @Override
     public void endSize32(int pos)
     {
         int cur = out.position();
         out.putInt(pos, (cur - pos - 4));
     }
 
-	public void writeDouble(double aDouble)
+	@Override
+    public void writeDouble(double aDouble)
 	{
 		try 
 		{
@@ -262,7 +278,8 @@ public final class BBEncoder extends AbstractEncoder
 		}
 	}
 
-	public void writeInt16(short aShort)
+	@Override
+    public void writeInt16(short aShort)
 	{
 		try 
 		{
@@ -274,7 +291,8 @@ public final class BBEncoder extends AbstractEncoder
 		}
 	}
 
-	public void writeInt32(int anInt)
+	@Override
+    public void writeInt32(int anInt)
 	{
 		try
 		{
@@ -286,7 +304,8 @@ public final class BBEncoder extends AbstractEncoder
 		}
 	}
 
-	public void writeInt64(long aLong)
+	@Override
+    public void writeInt64(long aLong)
 	{
 		try
 		{
@@ -298,7 +317,8 @@ public final class BBEncoder extends AbstractEncoder
 		}
 	}
       
-	public void writeInt8(byte aByte)
+	@Override
+    public void writeInt8(byte aByte)
 	{
 		try 
 		{
@@ -310,7 +330,8 @@ public final class BBEncoder extends AbstractEncoder
 		}
 	}	
 	
-	public void writeBin128(byte[] byteArray)
+	@Override
+    public void writeBin128(byte[] byteArray)
 	{
 		byteArray = (byteArray != null) ? byteArray : new byte [16];
 		
@@ -348,7 +369,8 @@ public final class BBEncoder extends AbstractEncoder
         writeBin128(data);
     }
 
-	public void writeFloat(float aFloat)
+	@Override
+    public void writeFloat(float aFloat)
 	{
 		try 
 		{

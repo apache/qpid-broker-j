@@ -56,11 +56,13 @@ public class ChannelAlertBody extends AMQMethodBodyImpl implements EncodableAMQD
         _details = details;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -79,6 +81,7 @@ public class ChannelAlertBody extends AMQMethodBodyImpl implements EncodableAMQD
         return _details;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 2;
@@ -87,6 +90,7 @@ public class ChannelAlertBody extends AMQMethodBodyImpl implements EncodableAMQD
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeUnsignedShort( buffer, _replyCode );
@@ -94,11 +98,13 @@ public class ChannelAlertBody extends AMQMethodBodyImpl implements EncodableAMQD
         writeFieldTable( buffer, _details );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
     return dispatcher.dispatchChannelAlert(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[ChannelAlertBodyImpl: ");

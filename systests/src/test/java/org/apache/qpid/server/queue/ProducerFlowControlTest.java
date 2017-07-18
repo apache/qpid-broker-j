@@ -74,6 +74,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         super.setUp();
     }
 
+    @Override
     public void startDefaultBroker()
     {
         // broker start-up is delegated to the tests

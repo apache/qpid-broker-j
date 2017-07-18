@@ -46,6 +46,7 @@ public class ExactSubjectFilterConstructor extends AbstractDescribedTypeConstruc
     }
 
 
+    @Override
     public ExactSubjectFilter construct(Object underlying)
     {
 

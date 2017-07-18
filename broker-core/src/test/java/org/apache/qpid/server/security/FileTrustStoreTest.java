@@ -56,6 +56,7 @@ public class FileTrustStoreTest extends QpidTestCase
     private final Model _model = BrokerModel.getInstance();
     private final ConfiguredObjectFactory _factory = _model.getObjectFactory();
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

@@ -176,6 +176,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
             _action = action;
         }
 
+        @Override
         public void run()
         {
             if(_action != null)
@@ -187,6 +188,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
 
     private final AddMessageDispositionListenerAction _postIdSettingAction;
 
+    @Override
     public void doSend(final MessageInstanceConsumer consumer, final MessageInstance entry, boolean batch)
     {
         ServerMessage serverMsg = entry.getMessage();
@@ -309,6 +311,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
             final long messageSize = entry.getMessage().getSize();
             xfr.setCompletionListener(new Method.CompletionListener()
                                         {
+                                            @Override
                                             public void onComplete(Method method)
                                             {
                                                 deferredAddCredit(1, messageSize);
@@ -396,6 +399,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         dequeueTxn.dequeue(entry.getEnqueueRecord(),
                            new ServerTransaction.Action()
                            {
+                               @Override
                                public void postCommit()
                                {
                                    if (restoreCredit)
@@ -405,6 +409,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
                                    entry.delete();
                                }
 
+                               @Override
                                public void onRollback()
                                {
 
@@ -502,6 +507,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         return (maxDeliveryLimit > 0 && entry.getDeliveryCount() >= maxDeliveryLimit);
     }
 
+    @Override
     public boolean allocateCredit(ServerMessage message)
     {
         boolean creditAllocated = _creditManager.useCreditForMessage(message.getSize());
@@ -509,6 +515,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         return creditAllocated;
     }
 
+    @Override
     public void restoreCredit(ServerMessage message)
     {
         restoreCredit(1, message.getSize());
@@ -579,6 +586,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         stop();
     }
 
+    @Override
     public Session_0_10 getSession()
     {
         return _session.getModelObject();
@@ -589,10 +597,12 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         return false;
     }
 
+    @Override
     public void queueEmpty()
     {
     }
 
+    @Override
     public void flushBatched()
     {
     }
@@ -603,11 +613,13 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         return _targetAddress;
     }
 
+    @Override
     public long getUnacknowledgedBytes()
     {
         return _unacknowledgedBytes.longValue();
     }
 
+    @Override
     public long getUnacknowledgedMessages()
     {
         return _unacknowledgedCount.longValue();

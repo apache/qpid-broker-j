@@ -32,6 +32,7 @@ class MockAction implements ServerTransaction.EnqueueAction, ServerTransaction.A
     private boolean _rollbackFired = false;
     private boolean _postCommitFired = false;
 
+    @Override
     public void postCommit(MessageEnqueueRecord... records)
     {
         _postCommitFired = true;
@@ -43,6 +44,7 @@ class MockAction implements ServerTransaction.EnqueueAction, ServerTransaction.A
         _postCommitFired = true;
     }
 
+    @Override
     public void onRollback()
     {
         _rollbackFired = true;

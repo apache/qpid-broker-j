@@ -30,26 +30,32 @@ public final class ConnectionTune extends Method {
 
     public static final int TYPE = 261;
 
+    @Override
     public final int getStructType() {
         return TYPE;
     }
 
+    @Override
     public final int getSizeWidth() {
         return 0;
     }
 
+    @Override
     public final int getPackWidth() {
         return 2;
     }
 
+    @Override
     public final boolean hasPayload() {
         return false;
     }
 
+    @Override
     public final byte getEncodedTrack() {
         return Frame.L1;
     }
 
+    @Override
     public final boolean isConnectionControl()
     {
         return true;
@@ -83,6 +89,7 @@ public final class ConnectionTune extends Method {
 
     }
 
+    @Override
     public <C> void dispatch(C context, MethodDelegate<C> delegate) {
         delegate.connectionTune(context, this);
     }
@@ -195,6 +202,7 @@ public final class ConnectionTune extends Method {
 
 
 
+    @Override
     public void write(Encoder enc)
     {
         enc.writeUint16(packing_flags);
@@ -217,6 +225,7 @@ public final class ConnectionTune extends Method {
 
     }
 
+    @Override
     public void read(Decoder dec)
     {
         packing_flags = (short) dec.readUint16();
@@ -239,6 +248,7 @@ public final class ConnectionTune extends Method {
 
     }
 
+    @Override
     public Map<String,Object> getFields()
     {
         Map<String,Object> result = new LinkedHashMap<String,Object>();

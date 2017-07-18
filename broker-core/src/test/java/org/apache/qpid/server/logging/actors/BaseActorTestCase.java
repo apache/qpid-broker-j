@@ -62,6 +62,7 @@ public abstract class BaseActorTestCase extends QpidTestCase
     {
         getEventLogger().message(new LogSubject()
                           {
+                              @Override
                               public String toLogString()
                               {
                                   return message;
@@ -69,11 +70,13 @@ public abstract class BaseActorTestCase extends QpidTestCase
 
                           }, new LogMessage()
                           {
+                              @Override
                               public String toString()
                               {
                                   return message;
                               }
 
+                              @Override
                               public String getLogHierarchy()
                               {
                                   return "test.hierarchy";

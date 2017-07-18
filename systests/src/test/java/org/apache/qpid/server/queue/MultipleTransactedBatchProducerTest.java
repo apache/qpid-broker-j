@@ -170,6 +170,7 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
             _desc = desc;
         }
 
+        @Override
         public void onMessage(Message message)
         {
             _receivedLatch.countDown();
@@ -213,6 +214,7 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
             _desc = desc;
         }
 
+        @Override
         public void run()
         {
             try
@@ -237,6 +239,7 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
             _desc = description;
         }
 
+        @Override
         public void onException(JMSException e)
         {
             _logger.error(_desc + " received exception: " + e.getMessage(), e);

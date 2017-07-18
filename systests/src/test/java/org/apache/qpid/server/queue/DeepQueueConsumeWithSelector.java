@@ -136,6 +136,7 @@ public class DeepQueueConsumeWithSelector extends QpidBrokerTestCase implements 
         return message;
     }
 
+    @Override
     public void onMessage(Message message)
     {
         _receviedLatch.countDown();

@@ -22,6 +22,7 @@ package org.apache.qpid.server.model;
 @ManagedObject
 public interface AccessControlProvider<X extends AccessControlProvider<X>> extends ConfiguredObject<X>, CommonAccessControlProvider<AccessControlProvider<?>>
 {
+    @Override
     @ManagedAttribute(defaultValue = "10", description = "The priority of this access control provider - the lower the number the higher the priority")
     int getPriority();
 

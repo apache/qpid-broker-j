@@ -51,6 +51,7 @@ public class OpenConstructor extends AbstractDescribedTypeConstructor<Open>
         }
     }
 
+    @Override
     public Open construct(Object underlying)
     {
         if(underlying instanceof List)

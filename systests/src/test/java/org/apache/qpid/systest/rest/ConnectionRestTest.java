@@ -53,6 +53,7 @@ public class ConnectionRestTest extends QpidRestTestCase
     private javax.jms.Connection _connection;
     private javax.jms.Session _session;
 
+    @Override
     public void setUp() throws Exception
     {
         // disable the virtualhostPropertiesNode as it messes with the statistics counts since causes the client to

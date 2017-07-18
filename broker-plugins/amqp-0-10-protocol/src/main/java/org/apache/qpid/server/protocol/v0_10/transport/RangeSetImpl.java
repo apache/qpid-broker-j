@@ -48,26 +48,31 @@ public class RangeSetImpl implements RangeSet
         ranges = new ArrayList<Range>(copy.ranges);
     }
 
+    @Override
     public int size()
     {
         return ranges.size();
     }
 
+    @Override
     public Iterator<Range> iterator()
     {
         return ranges.iterator();
     }
 
+    @Override
     public Range getFirst()
     {
         return ranges.get(0);
     }
 
+    @Override
     public Range getLast()
     {
         return ranges.get(ranges.size() - 1);
     }
 
+    @Override
     public boolean includes(Range range)
     {
         for (Range r : this)
@@ -81,6 +86,7 @@ public class RangeSetImpl implements RangeSet
         return false;
     }
 
+    @Override
     public boolean includes(int n)
     {
         for (Range r : this)
@@ -94,6 +100,7 @@ public class RangeSetImpl implements RangeSet
         return false;
     }
 
+    @Override
     public void add(Range range)
     {
         ListIterator<Range> it = ranges.listIterator();
@@ -117,6 +124,7 @@ public class RangeSetImpl implements RangeSet
         it.add(range);
     }
 
+    @Override
     public void add(int lower, int upper)
     {
         switch(ranges.size())
@@ -140,16 +148,19 @@ public class RangeSetImpl implements RangeSet
 
     }
 
+    @Override
     public void add(int value)
     {
         add(value, value);
     }
 
+    @Override
     public void clear()
     {
         ranges.clear();
     }
 
+    @Override
     public void subtract(final RangeSet other)
     {
         final Iterator<Range> otherIter = other.iterator() ;
@@ -212,11 +223,13 @@ public class RangeSetImpl implements RangeSet
         return (iter.hasNext() ? iter.next() : null) ;
     }
 
+    @Override
     public RangeSet copy()
     {
         return new RangeSetImpl(this);
     }
 
+    @Override
     public String toString()
     {
         StringBuffer str = new StringBuffer();

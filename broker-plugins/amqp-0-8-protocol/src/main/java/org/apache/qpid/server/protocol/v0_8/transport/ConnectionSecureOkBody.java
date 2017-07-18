@@ -47,11 +47,13 @@ public class ConnectionSecureOkBody extends AMQMethodBodyImpl implements Encodab
         _response = response;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -62,6 +64,7 @@ public class ConnectionSecureOkBody extends AMQMethodBodyImpl implements Encodab
         return _response;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 0;
@@ -69,16 +72,19 @@ public class ConnectionSecureOkBody extends AMQMethodBodyImpl implements Encodab
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeBytes( buffer, _response );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchConnectionSecureOk(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[ConnectionSecureOkBodyImpl: ");

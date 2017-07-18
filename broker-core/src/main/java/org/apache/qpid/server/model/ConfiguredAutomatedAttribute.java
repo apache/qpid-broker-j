@@ -119,11 +119,13 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
         return null;
     }
 
+    @Override
     public boolean isAutomated()
     {
         return true;
     }
 
+    @Override
     public boolean isDerived()
     {
         return false;
@@ -135,6 +137,7 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
         return _annotation.defaultValue();
     }
 
+    @Override
     public boolean isSecure()
     {
         return _annotation.secure();
@@ -152,6 +155,7 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
         return _annotation.immutable();
     }
 
+    @Override
     public boolean isPersisted()
     {
         return _annotation.persist();
@@ -181,11 +185,13 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
         return _annotation.initialization();
     }
 
+    @Override
     public String getDescription()
     {
         return _annotation.description();
     }
 
+    @Override
     public Pattern getSecureValueFilter()
     {
         return _secureValuePattern;

@@ -104,6 +104,7 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
             defaultValue = "${qpid.broker.defaultPreferenceStoreAttributes}")
     PreferenceStoreAttributes getPreferenceStoreAttributes();
 
+    @Override
     EventLogger getEventLogger();
 
     Container<?> getContainer();

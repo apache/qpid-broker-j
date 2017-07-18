@@ -52,6 +52,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
         _adapter = new LegacyAccessControlAdapter(this, model);
     }
 
+    @Override
     public Result getDefault()
     {
         return _ruleSet.getDefault();
@@ -74,6 +75,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
      * control rules granted to the current thread's {@link Subject}. If there is no current
      * user the plugin will abstain.
      */
+    @Override
     public Result authorise(LegacyOperation operation, ObjectType objectType, ObjectProperties properties)
     {
         InetAddress addressOfClient = null;

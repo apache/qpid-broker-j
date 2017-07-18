@@ -69,6 +69,7 @@ public class MercuryProducerController extends MercuryBase
         System.out.println("Producer ID : " + id);
     }
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -154,6 +155,7 @@ public class MercuryProducerController extends MercuryBase
             final MercuryTestController controller = new MercuryTestController(config);
             Runnable r = new Runnable()
             {
+                @Override
                 public void run()
                 {
                     controller.run();
@@ -186,6 +188,7 @@ public class MercuryProducerController extends MercuryBase
             prod.startControllerIfNeeded();
             Runnable r = new Runnable()
             {
+                @Override
                 public void run()
                 {
                     prod.run();

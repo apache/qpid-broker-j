@@ -43,6 +43,7 @@ public interface FileKeyStore<X extends FileKeyStore<X>> extends KeyStore<X>
     @ManagedContextDefault(name = "keyStoreFile.keyManagerFactoryAlgorithm")
     String DEFAULT_KEY_MANAGER_FACTORY_ALGORITHM = KeyManagerFactory.getDefaultAlgorithm();
 
+    @Override
     @ManagedAttribute(defaultValue = "${this:path}")
     String getDescription();
 

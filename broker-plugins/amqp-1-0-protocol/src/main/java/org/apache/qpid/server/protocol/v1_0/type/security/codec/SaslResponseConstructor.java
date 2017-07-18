@@ -48,6 +48,7 @@ public class SaslResponseConstructor extends AbstractDescribedTypeConstructor<Sa
         }
     }
 
+    @Override
     public SaslResponse construct(Object underlying)
     {
         if(underlying instanceof List)

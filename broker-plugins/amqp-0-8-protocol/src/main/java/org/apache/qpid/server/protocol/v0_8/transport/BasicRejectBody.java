@@ -54,11 +54,13 @@ public class BasicRejectBody extends AMQMethodBodyImpl implements EncodableAMQDa
         _bitfield0 = bitfield0;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -73,23 +75,27 @@ public class BasicRejectBody extends AMQMethodBodyImpl implements EncodableAMQDa
         return (((int)(_bitfield0)) & ( 1 << 0)) != 0;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 9;
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeLong( buffer, _deliveryTag );
         writeBitfield( buffer, _bitfield0 );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchBasicReject(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[BasicRejectBodyImpl: ");

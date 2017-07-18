@@ -118,6 +118,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
 
     long getMaxMessageSize();
 
+    @Override
     AmqpPort<?> getPort();
 
 }

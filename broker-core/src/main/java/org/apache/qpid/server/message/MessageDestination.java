@@ -32,6 +32,7 @@ import org.apache.qpid.server.store.StorableMessageMetaData;
 public interface MessageDestination extends MessageNode
 {
 
+    @Override
     String getName();
 
     NamedAddressSpace getAddressSpace();
@@ -43,7 +44,7 @@ public interface MessageDestination extends MessageNode
      *
      *
      * @param message the message to be routed
-     * @param routingAddress
+     * @param routingAddress the routing address
      * @param instanceProperties the instance properties
     */
     <M extends ServerMessage<? extends StorableMessageMetaData>> RoutingResult<M> route(M message,

@@ -32,10 +32,12 @@ public interface AMQMethodBody extends AMQBody
     /** @return unsigned short */
     int getMethod();
 
+    @Override
     int getSize();
 
     AMQFrame generateFrame(int channelId);
 
+    @Override
     String toString();
 
     boolean execute(MethodDispatcher methodDispatcher, int channelId) throws QpidException;

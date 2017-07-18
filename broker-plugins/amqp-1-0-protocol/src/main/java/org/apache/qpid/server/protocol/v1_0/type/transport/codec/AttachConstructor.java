@@ -49,6 +49,7 @@ public class AttachConstructor extends AbstractDescribedTypeConstructor<Attach>
         }
     }
 
+    @Override
     public Attach construct(Object underlying)
     {
         if(underlying instanceof List)

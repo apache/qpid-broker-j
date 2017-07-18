@@ -84,6 +84,7 @@ class BrokerUserOrConnectionLogInclusionRuleImpl
         return _connectionName;
     }
 
+    @Override
     @SuppressWarnings("unused")
     public String getRemoteContainerId()
     {

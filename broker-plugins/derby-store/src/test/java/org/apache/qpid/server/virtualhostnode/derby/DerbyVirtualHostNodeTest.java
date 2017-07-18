@@ -62,6 +62,7 @@ public class DerbyVirtualHostNodeTest extends QpidTestCase
         _broker = createBroker();
     }
 
+    @Override
     public void tearDown() throws Exception
     {
         try

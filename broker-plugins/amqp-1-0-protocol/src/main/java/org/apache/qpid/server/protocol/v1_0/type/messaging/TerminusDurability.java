@@ -50,11 +50,13 @@ public class TerminusDurability
         _val = val;
     }
 
+    @Override
     public UnsignedInteger getValue()
     {
         return _val;
     }
 
+    @Override
     public String toString()
     {
         

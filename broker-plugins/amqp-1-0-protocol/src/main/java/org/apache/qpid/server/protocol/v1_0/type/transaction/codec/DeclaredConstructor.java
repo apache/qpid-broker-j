@@ -48,6 +48,7 @@ public class DeclaredConstructor extends AbstractDescribedTypeConstructor<Declar
         }
     }
 
+    @Override
     public Declared construct(Object underlying)
     {
         if(underlying instanceof List)

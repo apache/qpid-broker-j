@@ -32,6 +32,7 @@ public interface RangeSet extends Iterable<Range>
 
     int size();
 
+    @Override
     Iterator<Range> iterator();
 
     Range getFirst();

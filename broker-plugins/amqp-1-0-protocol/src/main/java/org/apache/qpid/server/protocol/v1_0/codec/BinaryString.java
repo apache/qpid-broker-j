@@ -59,11 +59,13 @@ final class BinaryString
     }
 
 
+    @Override
     public final int hashCode()
     {
         return _hashCode;
     }
 
+    @Override
     public final boolean equals(Object o)
     {
         if(!(o instanceof BinaryString))

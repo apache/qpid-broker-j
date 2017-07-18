@@ -43,6 +43,7 @@ public class VirtualHostLogEventExcludingFilterTest extends QpidTestCase
     private ILoggingEvent _loggingEvent;
     private VirtualHostLogEventExcludingFilter _filter;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

@@ -139,6 +139,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
              * @param entry
              * @param batch
              */
+            @Override
             public void send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
             {
                 super.send(consumer, entry, batch);
@@ -233,6 +234,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
          * Entries with even message id are considered
          * dequeued!
          */
+        @Override
         protected DequeuedQueueEntry createQueueEntry(final ServerMessage message,
                                                       final MessageEnqueueRecord enqueueRecord)
         {
@@ -264,11 +266,13 @@ public class StandardQueueTest extends AbstractQueueTestBase
             _message = message;
         }
 
+        @Override
         public boolean isDeleted()
         {
             return (_message.getMessageNumber() % 2 == 0);
         }
 
+        @Override
         public boolean isAvailable()
         {
             return !(_message.getMessageNumber() % 2 == 0);

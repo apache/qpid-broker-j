@@ -124,6 +124,7 @@ public class AbstractCramMd5Negotiator extends AbstractSaslServerNegotiator impl
             _passwordSource = passwordSource;
         }
 
+        @Override
         public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
         {
             List<Callback> callbackList = new ArrayList<>(Arrays.asList(callbacks));

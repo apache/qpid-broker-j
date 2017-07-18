@@ -65,7 +65,8 @@ public interface Statistics
 			out.println("tp(m/s)");
 		}
 
-		public void clear()
+		@Override
+        public void clear()
 		{
 			messages = 0;
 			start = 0;
@@ -132,7 +133,8 @@ public interface Statistics
 			out.flush();
 		}
 
-		public void clear()
+		@Override
+        public void clear()
 		{
 			super.clear();
 			minLatency = 0;

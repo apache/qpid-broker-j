@@ -103,11 +103,13 @@ public class CoalescingCommiter implements Committer
             _future = future;
         }
 
+        @Override
         public void complete()
         {
             _future.set(_value);
         }
 
+        @Override
         public void abort(RuntimeException databaseException)
         {
             _future.setException(databaseException);
@@ -155,6 +157,7 @@ public class CoalescingCommiter implements Committer
             }
         }
 
+        @Override
         public void run()
         {
             while (!_stopped.get())

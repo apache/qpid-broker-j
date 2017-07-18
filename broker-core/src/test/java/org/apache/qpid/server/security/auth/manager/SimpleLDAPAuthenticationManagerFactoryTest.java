@@ -45,6 +45,7 @@ public class SimpleLDAPAuthenticationManagerFactoryTest extends QpidTestCase
 
     private TrustStore _trustStore = mock(TrustStore.class);
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

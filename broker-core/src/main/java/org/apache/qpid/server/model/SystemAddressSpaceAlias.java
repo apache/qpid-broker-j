@@ -29,6 +29,7 @@ public interface SystemAddressSpaceAlias<X extends SystemAddressSpaceAlias<X>> e
     String PATTERN = "pattern";
     String SYSTEM_ADDRESS_SPACE = "systemAddressSpace";
 
+    @Override
     @ManagedAttribute( defaultValue = "200" )
     int getPriority();
 

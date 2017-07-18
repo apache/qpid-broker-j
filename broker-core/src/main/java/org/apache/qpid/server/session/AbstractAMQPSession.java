@@ -157,6 +157,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         return _sessionId;
     }
 
+    @Override
     public AMQPConnection<?> getAMQPConnection()
     {
         return _connection;
@@ -181,6 +182,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         return getTxnStart();
     }
 
+    @Override
     public long getLocalTransactionRollbacks()
     {
         return getTxnRejects();
@@ -356,6 +358,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         _connection.getAggregateTicker().removeTicker(ticker);
     }
 
+    @Override
     public LogSubject getLogSubject()
     {
         return _logSubject;
@@ -398,6 +401,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         return !_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting();
     }
 
+    @Override
     public void notifyWork(final X target)
     {
         if(_consumersWithPendingWork.add((AbstractConsumerTarget) target))

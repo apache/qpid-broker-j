@@ -27,9 +27,11 @@ public interface ProvidedStoreVirtualHost<X extends ProvidedStoreVirtualHost<X>>
                 SizeMonitoringSettings,
                 NonStandardVirtualHost<X>
 {
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreUnderfullSize();
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreOverfullSize();
 }

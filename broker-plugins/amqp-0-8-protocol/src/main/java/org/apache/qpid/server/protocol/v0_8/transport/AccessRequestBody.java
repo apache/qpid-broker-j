@@ -79,11 +79,13 @@ public class AccessRequestBody extends AMQMethodBodyImpl implements EncodableAMQ
         _bitfield0 = bitfield0;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -114,6 +116,7 @@ public class AccessRequestBody extends AMQMethodBodyImpl implements EncodableAMQ
         return (((int)(_bitfield0)) & ( 1 << 4)) != 0;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 1;
@@ -121,17 +124,20 @@ public class AccessRequestBody extends AMQMethodBodyImpl implements EncodableAMQ
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeAMQShortString( buffer, _realm );
         writeBitfield( buffer, _bitfield0 );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchAccessRequest(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[AccessRequestBodyImpl: ");

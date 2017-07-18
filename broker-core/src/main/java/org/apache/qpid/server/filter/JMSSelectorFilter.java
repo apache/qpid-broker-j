@@ -51,6 +51,7 @@ public class JMSSelectorFilter implements MessageFilter
         return AMQPFilterTypes.JMS_SELECTOR.toString();
     }
 
+    @Override
     public boolean matches(Filterable message)
     {
 

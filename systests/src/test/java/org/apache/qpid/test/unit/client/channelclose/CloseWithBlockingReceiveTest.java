@@ -45,6 +45,7 @@ public class CloseWithBlockingReceiveTest extends QpidBrokerTestCase
         Runnable r = new Runnable()
         {
 
+            @Override
             public void run()
             {
                 try

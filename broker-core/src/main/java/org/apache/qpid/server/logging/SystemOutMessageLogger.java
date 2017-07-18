@@ -30,11 +30,13 @@ public class SystemOutMessageLogger extends AbstractMessageLogger
         return true;
     }
 
+    @Override
     public void rawMessage(String message, String logHierarchy)
     {
         rawMessage(message, null, logHierarchy);
     }
 
+    @Override
     public void rawMessage(String message, Throwable throwable, String logHierarchy)
     {
         System.out.println(message);

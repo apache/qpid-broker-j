@@ -42,6 +42,7 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
 {
 
 
+    @Override
     public Class<InternalMessage> getInputClass()
     {
         return InternalMessage.class;

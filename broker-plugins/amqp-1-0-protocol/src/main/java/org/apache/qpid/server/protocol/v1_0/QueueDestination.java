@@ -44,11 +44,13 @@ public class QueueDestination extends MessageSourceDestination implements Receiv
         _address = address;
     }
 
+    @Override
     public Outcome[] getOutcomes()
     {
         return OUTCOMES;
     }
 
+    @Override
     public Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken)
     {
         getQueue().authorisePublish(securityToken, Collections.emptyMap());
@@ -58,6 +60,7 @@ public class QueueDestination extends MessageSourceDestination implements Receiv
             MessageReference _reference = message.newReference();
 
 
+            @Override
             public void postCommit(MessageEnqueueRecord... records)
             {
                 try
@@ -70,6 +73,7 @@ public class QueueDestination extends MessageSourceDestination implements Receiv
                 }
             }
 
+            @Override
             public void onRollback()
             {
                 _reference.release();
@@ -80,6 +84,7 @@ public class QueueDestination extends MessageSourceDestination implements Receiv
         return ACCEPTED;
     }
 
+    @Override
     public int getCredit()
     {
         // TODO - fix

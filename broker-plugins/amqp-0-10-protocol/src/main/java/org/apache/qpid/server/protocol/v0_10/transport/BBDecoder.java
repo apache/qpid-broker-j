@@ -44,16 +44,19 @@ public final class BBDecoder extends AbstractDecoder
         in = null;
     }
 
+    @Override
     protected byte doGet()
     {
         return in.get();
     }
 
+    @Override
     protected void doGet(byte[] bytes)
     {
         in.get(bytes);
     }
 
+    @Override
     protected Binary get(int size)
     {
         if (in.hasArray())
@@ -69,78 +72,92 @@ public final class BBDecoder extends AbstractDecoder
         }
     }
 
+    @Override
     public boolean hasRemaining()
     {
         return in.hasRemaining();
     }
 
+    @Override
     public short readUint8()
     {
         return (short) (0xFF & in.get());
     }
 
+    @Override
     public int readUint16()
     {
         return 0xFFFF & in.getShort();
     }
 
+    @Override
     public long readUint32()
     {
         return 0xFFFFFFFFL & in.getInt();
     }
 
+    @Override
     public long readUint64()
     {
         return in.getLong();
     }
 
-	public byte[] readBin128()
+	@Override
+    public byte[] readBin128()
 	{
 		byte[] result = new byte[16];
 		get(result);
 		return result;
 	}
 	
-	public byte[] readBytes(int howManyBytes)
+	@Override
+    public byte[] readBytes(int howManyBytes)
 	{
 		byte[] result = new byte[howManyBytes];
 		get(result);
 		return result;
 	}
 	
-	public double readDouble()
+	@Override
+    public double readDouble()
 	{
 		return in.getDouble();
 	}
 
-	public float readFloat()
+	@Override
+    public float readFloat()
 	{
 		return in.getFloat();
 	}
 
-	public short readInt16()
+	@Override
+    public short readInt16()
 	{
 		return in.getShort();
 	}
 
-	public int readInt32()
+	@Override
+    public int readInt32()
 	{
 		return in.getInt();
 	}
 
-	public byte readInt8()
+	@Override
+    public byte readInt8()
 	{
 		return in.get();
 	}
 
-	public byte[] readRemainingBytes()
+	@Override
+    public byte[] readRemainingBytes()
 	{
-      byte[] result = new byte[in.limit() - in.position()];
-      get(result);
-      return result;		
+        byte[] result = new byte[in.limit() - in.position()];
+        get(result);
+        return result;
 	}
 
-	public long readInt64()
+	@Override
+    public long readInt64()
 	{
 		return in.getLong();
 	}

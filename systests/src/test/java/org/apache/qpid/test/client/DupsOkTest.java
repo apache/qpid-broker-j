@@ -104,6 +104,7 @@ public class DupsOkTest extends QpidBrokerTestCase
         {
             private int _msgCount = 0;
 
+            @Override
             public void onMessage(Message message)
             {
                 _msgCount++;

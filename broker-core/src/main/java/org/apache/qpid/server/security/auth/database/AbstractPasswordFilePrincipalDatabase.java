@@ -67,6 +67,7 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
         return _authenticationProvider;
     }
 
+    @Override
     public final void open(File passwordFile) throws IOException
     {
         getLogger().debug("PasswordFile using file : {}", passwordFile.getAbsolutePath());
@@ -92,6 +93,7 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
      *
      * @throws javax.security.auth.login.AccountNotFoundException If the Principal cannot be found in this Database
      */
+    @Override
     public final void setPassword(Principal principal, PasswordCallback callback) throws AccountNotFoundException
     {
         if (_passwordFile == null)
@@ -157,6 +159,7 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
      * @param principal to change the password for
      * @param password plaintext password to set the password too
      */
+    @Override
     public boolean updatePassword(Principal principal, char[] password) throws AccountNotFoundException
     {
         U user = _userMap.get(principal.getName());
@@ -340,16 +343,19 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
     protected abstract U createUserFromPassword(Principal principal, char[] passwd);
 
 
+    @Override
     public void reload() throws IOException
     {
         loadPasswordFile();
     }
 
+    @Override
     public List<Principal> getUsers()
     {
         return new LinkedList<Principal>(_userMap.values());
     }
 
+    @Override
     public Principal getUser(String username)
     {
         if (_userMap.containsKey(username))
@@ -359,6 +365,7 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
         return null;
     }
 
+    @Override
     public boolean deletePrincipal(Principal principal) throws AccountNotFoundException
     {
         U user = _userMap.get(principal.getName());
@@ -393,6 +400,7 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
         return true;
     }
 
+    @Override
     public boolean createPrincipal(Principal principal, char[] password)
     {
         if (_userMap.get(principal.getName()) != null)

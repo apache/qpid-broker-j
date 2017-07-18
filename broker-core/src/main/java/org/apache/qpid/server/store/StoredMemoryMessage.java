@@ -46,11 +46,13 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         _metadataSize = _metaData.getStorableSize();
     }
 
+    @Override
     public long getMessageNumber()
     {
         return _messageNumber;
     }
 
+    @Override
     public synchronized void addContent(QpidByteBuffer src)
     {
         _content.add(src.slice());
@@ -118,11 +120,13 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         return _metadataSize;
     }
 
+    @Override
     public T getMetaData()
     {
         return _metaData;
     }
 
+    @Override
     public synchronized void remove()
     {
         _metaData.dispose();

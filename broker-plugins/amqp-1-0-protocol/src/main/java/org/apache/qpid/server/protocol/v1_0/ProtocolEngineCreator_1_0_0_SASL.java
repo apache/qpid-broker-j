@@ -48,17 +48,20 @@ public class ProtocolEngineCreator_1_0_0_SASL implements ProtocolEngineCreator
     {
     }
 
+    @Override
     public Protocol getVersion()
     {
         return Protocol.AMQP_1_0;
     }
 
 
+    @Override
     public byte[] getHeaderIdentifier()
     {
         return AMQP_SASL_1_0_0_HEADER;
     }
 
+    @Override
     public ProtocolEngine newProtocolEngine(Broker<?> broker,
                                             ServerNetworkConnection network,
                                             AmqpPort<?> port,

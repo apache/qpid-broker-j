@@ -54,6 +54,7 @@ public class QueueRestTest extends QpidRestTestCase
 
     private Connection _connection;
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();

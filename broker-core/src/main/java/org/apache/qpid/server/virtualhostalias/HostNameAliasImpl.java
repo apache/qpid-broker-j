@@ -62,6 +62,7 @@ public class HostNameAliasImpl
         super(attributes, port);
     }
 
+    @Override
     protected void onOpen()
     {
         super.onOpen();
@@ -113,6 +114,7 @@ public class HostNameAliasImpl
 
     private class NetworkAddressResolver implements Runnable
     {
+        @Override
         public void run()
         {
             _addressesComputed.set(false);

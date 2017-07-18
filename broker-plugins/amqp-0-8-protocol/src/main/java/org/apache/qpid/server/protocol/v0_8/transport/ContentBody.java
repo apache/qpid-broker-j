@@ -44,16 +44,19 @@ public class ContentBody implements AMQBody
     }
 
 
+    @Override
     public byte getFrameType()
     {
         return TYPE;
     }
 
+    @Override
     public int getSize()
     {
         return _payload == null ? 0 : _payload.remaining();
     }
 
+    @Override
     public void handle(final int channelId, final AMQVersionAwareProtocolSession session)
             throws QpidException
     {

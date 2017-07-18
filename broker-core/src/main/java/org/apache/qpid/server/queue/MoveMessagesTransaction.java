@@ -38,6 +38,7 @@ public class MoveMessagesTransaction extends QueueSizeLimitRespectingTransaction
     }
 
 
+    @Override
     void performOperation(final QueueEntry entry,
                           final QueueManagingVirtualHost.Transaction txn,
                           final Queue destinationQueue)

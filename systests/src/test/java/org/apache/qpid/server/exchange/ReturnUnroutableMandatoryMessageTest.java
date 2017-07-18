@@ -277,6 +277,7 @@ public class ReturnUnroutableMandatoryMessageTest extends QpidBrokerTestCase imp
         return new junit.framework.TestSuite(ReturnUnroutableMandatoryMessageTest.class);
     }
 
+    @Override
     public void onException(JMSException jmsException)
     {
 

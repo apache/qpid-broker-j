@@ -24,6 +24,7 @@ import javax.jms.Session;
 
 public class QueueBrowserTransactedTest extends QueueBrowserAutoAckTest
 {   
+    @Override
     protected void setupSession() throws Exception
     {
         _clientSession = _clientConnection.createSession(true, Session.SESSION_TRANSACTED);

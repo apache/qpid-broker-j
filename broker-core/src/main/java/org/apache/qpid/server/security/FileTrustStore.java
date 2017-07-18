@@ -42,6 +42,7 @@ public interface FileTrustStore<X extends FileTrustStore<X>> extends TrustStore<
     @ManagedContextDefault(name = "trustStoreFile.trustManagerFactoryAlgorithm")
     String DEFAULT_TRUST_MANAGER_FACTORY_ALGORITHM = KeyManagerFactory.getDefaultAlgorithm();
 
+    @Override
     @ManagedAttribute(defaultValue = "${this:storeUrl}")
     String getDescription();
 

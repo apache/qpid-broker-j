@@ -50,17 +50,20 @@ public class ProtocolEngineCreator_0_10 implements ProtocolEngineCreator
     {
     }
 
+    @Override
     public Protocol getVersion()
     {
         return Protocol.AMQP_0_10;
     }
 
 
+    @Override
     public byte[] getHeaderIdentifier()
     {
         return AMQP_0_10_HEADER;
     }
 
+    @Override
     public ProtocolEngine newProtocolEngine(Broker<?> broker,
                                             ServerNetworkConnection network,
                                             AmqpPort<?> port,

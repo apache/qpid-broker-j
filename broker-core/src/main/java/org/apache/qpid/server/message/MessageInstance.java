@@ -114,11 +114,13 @@ public interface MessageInstance
     final class AvailableState extends EntryState
     {
 
+        @Override
         public State getState()
         {
             return State.AVAILABLE;
         }
 
+        @Override
         public String toString()
         {
             return getState().name();
@@ -129,11 +131,13 @@ public interface MessageInstance
     final class DequeuedState extends EntryState
     {
 
+        @Override
         public State getState()
         {
             return State.DEQUEUED;
         }
 
+        @Override
         public String toString()
         {
             return getState().name();
@@ -144,11 +148,13 @@ public interface MessageInstance
     final class DeletedState extends EntryState
     {
 
+        @Override
         public State getState()
         {
             return State.DELETED;
         }
 
+        @Override
         public String toString()
         {
             return getState().name();
@@ -157,11 +163,13 @@ public interface MessageInstance
 
     final class NonConsumerAcquiredState extends EntryState
     {
+        @Override
         public State getState()
         {
             return State.ACQUIRED;
         }
 
+        @Override
         public String toString()
         {
             return getState().name();

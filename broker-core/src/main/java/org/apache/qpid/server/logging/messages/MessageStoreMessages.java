@@ -102,11 +102,13 @@ public class MessageStoreMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return RECOVERY_START_LOG_HIERARCHY;
@@ -155,11 +157,13 @@ public class MessageStoreMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CREATED_LOG_HIERARCHY;
@@ -213,11 +217,13 @@ public class MessageStoreMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return STORE_LOCATION_LOG_HIERARCHY;
@@ -266,11 +272,13 @@ public class MessageStoreMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return RECOVERY_COMPLETE_LOG_HIERARCHY;
@@ -319,11 +327,13 @@ public class MessageStoreMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return OVERFULL_LOG_HIERARCHY;
@@ -372,11 +382,13 @@ public class MessageStoreMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return CLOSED_LOG_HIERARCHY;
@@ -425,11 +437,13 @@ public class MessageStoreMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return UNDERFULL_LOG_HIERARCHY;
@@ -483,11 +497,13 @@ public class MessageStoreMessages
 
         return new LogMessage()
         {
+            @Override
             public String toString()
             {
                 return message;
             }
 
+            @Override
             public String getLogHierarchy()
             {
                 return RECOVERED_LOG_HIERARCHY;

@@ -93,6 +93,7 @@ public class HostnameFirewallRule implements FirewallRule
     {
         FutureTask<String> lookup = new FutureTask<String>(new Callable<String>()
         {
+            @Override
             public String call()
             {
                 return remote.getCanonicalHostName();

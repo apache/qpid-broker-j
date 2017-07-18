@@ -48,6 +48,7 @@ public class ChannelLogSubjectTest extends ConnectionLogSubjectTest
      *
      * @param message the message whose format needs validation
      */
+    @Override
     protected void validateLogStatement(String message)
     {
         // Use the ConnectionLogSubjectTest to validate that the connection

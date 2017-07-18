@@ -199,6 +199,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
         }
     }
 
+    @Override
     public void onMessage(Message message)
     {
         synchronized (received)
@@ -217,16 +218,19 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
             this.data = data;
         }
 
+        @Override
         public int hashCode()
         {
             return data.hashCode();
         }
 
+        @Override
         public boolean equals(Object o)
         {
             return (o instanceof Payload) && ((Payload) o).data.equals(data);
         }
 
+        @Override
         public String toString()
         {
             return "Payload[" + data + "]";

@@ -121,11 +121,13 @@ public final class Frame implements NetworkEvent
         return flag(LAST_FRAME);
     }
 
+    @Override
     public void delegate(NetworkDelegate delegate)
     {
         delegate.frame(this);
     }
 
+    @Override
     public String toString()
     {
         StringBuilder str = new StringBuilder();

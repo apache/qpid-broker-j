@@ -71,6 +71,7 @@ public class FileServlet extends HttpServlet
         _usePathInfo = usePathInfo;
     }
 
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         String filename = null;

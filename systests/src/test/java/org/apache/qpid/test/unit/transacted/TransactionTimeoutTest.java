@@ -45,6 +45,7 @@ import org.apache.qpid.test.utils.TestBrokerConfiguration;
 public class TransactionTimeoutTest extends TransactionTimeoutTestCase
 {
 
+    @Override
     protected void configure() throws Exception
     {
         // switch off connection close in order to test timeout on publishing of unroutable messages

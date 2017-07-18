@@ -53,6 +53,7 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
     private final List<byte[]> messages = new ArrayList<byte[]>();
     private int _count = 100;
 
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
@@ -65,6 +66,7 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
         _connection.start();
     }
 
+    @Override
     protected void tearDown() throws Exception
     {
         super.tearDown();
@@ -228,6 +230,7 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
         }
     }
 
+    @Override
     public void onMessage(Message message)
     {
         synchronized (received)

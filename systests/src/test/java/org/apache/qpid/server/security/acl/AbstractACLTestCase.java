@@ -130,6 +130,7 @@ public abstract class AbstractACLTestCase extends QpidBrokerTestCase implements 
 
         connection.setExceptionListener(new ExceptionListener()
         {
+            @Override
             public void onException(JMSException e)
             {
                 _exceptionReceived.countDown();
@@ -141,25 +142,30 @@ public abstract class AbstractACLTestCase extends QpidBrokerTestCase implements 
 
     // Connection Listener Interface - Used here to block failover
 
+    @Override
     public void bytesSent(long count)
     {
     }
 
+    @Override
     public void bytesReceived(long count)
     {
     }
 
+    @Override
     public boolean preFailover(boolean redirect)
     {
         //Prevent failover.
         return false;
     }
 
+    @Override
     public boolean preResubscribe()
     {
         return false;
     }
 
+    @Override
     public void failoverComplete()
     {
     }

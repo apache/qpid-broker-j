@@ -72,45 +72,53 @@ public class QpidClientX509KeyManager extends X509ExtendedKeyManager
     }
 
 
+    @Override
     public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket)
     {
         LOGGER.debug("chooseClientAlias:Returning alias {}", alias);
         return alias;
     }
 
+    @Override
     public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
     {
         return delegate.chooseServerAlias(keyType, issuers, socket);
     }
 
+    @Override
     public X509Certificate[] getCertificateChain(String alias)
     {
         return delegate.getCertificateChain(alias);
     }
 
+    @Override
     public String[] getClientAliases(String keyType, Principal[] issuers)
     {
         LOGGER.debug("getClientAliases:Returning alias {}", alias);
         return new String[]{alias};
     }
 
+    @Override
     public PrivateKey getPrivateKey(String alias)
     {
         return delegate.getPrivateKey(alias);
     }
 
+    @Override
     public String[] getServerAliases(String keyType, Principal[] issuers)
     {
         return delegate.getServerAliases(keyType, issuers);
     }
 
+    @Override
     public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine)
     {
         LOGGER.debug("chooseEngineClientAlias:Returning alias {}", alias);
         return alias;
     }
 
-    public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine) 
+    @Override
+    public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine)
     {
         return delegate.chooseEngineServerAlias(keyType, issuers, engine);
     }

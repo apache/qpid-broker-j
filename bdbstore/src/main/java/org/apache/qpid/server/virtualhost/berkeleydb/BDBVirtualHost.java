@@ -42,12 +42,15 @@ public interface BDBVirtualHost<X extends BDBVirtualHost<X>> extends QueueManagi
     @ManagedContextDefault(name= QPID_BROKER_BDB_TOTAL_CACHE_SIZE)
     long DEFAULT_JE_CACHE_SIZE = Math.max(BDB_MIN_CACHE_SIZE, Runtime.getRuntime().maxMemory()/20l);
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "${qpid.work_dir}${file.separator}${this:name}${file.separator}messages")
     String getStorePath();
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreUnderfullSize();
 
+    @Override
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreOverfullSize();
 

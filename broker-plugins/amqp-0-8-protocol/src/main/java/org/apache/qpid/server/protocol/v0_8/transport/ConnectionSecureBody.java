@@ -49,11 +49,13 @@ public class ConnectionSecureBody extends AMQMethodBodyImpl implements Encodable
         _challenge = challenge;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -64,6 +66,7 @@ public class ConnectionSecureBody extends AMQMethodBodyImpl implements Encodable
         return _challenge;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 0;
@@ -71,16 +74,19 @@ public class ConnectionSecureBody extends AMQMethodBodyImpl implements Encodable
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeBytes( buffer, _challenge );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchConnectionSecure(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[ConnectionSecureBodyImpl: ");

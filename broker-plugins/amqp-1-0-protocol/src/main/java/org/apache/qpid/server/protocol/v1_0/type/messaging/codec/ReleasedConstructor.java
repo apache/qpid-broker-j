@@ -47,6 +47,7 @@ public class ReleasedConstructor extends AbstractDescribedTypeConstructor<Releas
         }
     }
 
+    @Override
     public Released construct(Object underlying)
     {
         if(underlying instanceof List)

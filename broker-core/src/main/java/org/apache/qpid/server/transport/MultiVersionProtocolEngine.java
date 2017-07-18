@@ -91,6 +91,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         _onCloseTask = onCloseTask;
     }
 
+    @Override
     public void closed()
     {
         _logger.debug("Closed");
@@ -108,11 +109,13 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         }
     }
 
+    @Override
     public void writerIdle()
     {
         _delegate.writerIdle();
     }
 
+    @Override
     public void readerIdle()
     {
         _delegate.readerIdle();
@@ -125,6 +128,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
     }
 
 
+    @Override
     public void received(QpidByteBuffer msg)
     {
         _delegate.received(msg);

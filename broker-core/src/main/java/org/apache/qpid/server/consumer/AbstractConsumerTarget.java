@@ -86,6 +86,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
         }
     }
 
+    @Override
     public boolean isMultiQueue()
     {
         return _isMultiQueue;
@@ -125,6 +126,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
         }
     }
 
+    @Override
     public final boolean isNotifyWorkDesired()
     {
         return _notifyWorkDesired;
@@ -195,6 +197,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
         return !isNotifyWorkDesired();
     }
 
+    @Override
     public final State getState()
     {
         return _state.get();
@@ -263,6 +266,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
 
     }
 
+    @Override
     final public boolean close()
     {
         if (_state.compareAndSet(State.OPEN, State.CLOSED))

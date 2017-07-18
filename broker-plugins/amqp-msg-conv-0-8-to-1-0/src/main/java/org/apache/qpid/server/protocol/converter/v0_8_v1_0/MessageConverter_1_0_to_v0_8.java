@@ -49,6 +49,7 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
     private static final int BASIC_CLASS_ID = 60;
 
 
+    @Override
     public Class<Message_1_0> getInputClass()
     {
         return Message_1_0.class;

@@ -68,6 +68,7 @@ public class SystemLauncherTest extends QpidTestCase
         setTestSystemProperty("QPID_WORK", _brokerWork.getAbsolutePath());
     }
 
+    @Override
     public void tearDown() throws Exception
     {
         try

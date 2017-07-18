@@ -48,6 +48,7 @@ public class DischargeConstructor extends AbstractDescribedTypeConstructor<Disch
         }
     }
 
+    @Override
     public Discharge construct(Object underlying)
     {
         if(underlying instanceof List)

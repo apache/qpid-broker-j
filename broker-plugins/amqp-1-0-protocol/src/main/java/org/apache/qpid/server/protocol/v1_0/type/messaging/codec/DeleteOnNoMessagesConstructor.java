@@ -48,6 +48,7 @@ public class DeleteOnNoMessagesConstructor extends AbstractDescribedTypeConstruc
         }
     }
 
+    @Override
     public DeleteOnNoMessages construct(Object underlying)
     {
         if(underlying instanceof List)

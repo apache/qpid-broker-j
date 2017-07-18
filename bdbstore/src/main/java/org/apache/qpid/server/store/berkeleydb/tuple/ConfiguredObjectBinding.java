@@ -51,6 +51,7 @@ public class ConfiguredObjectBinding extends TupleBinding<ConfiguredObjectRecord
         _uuid = uuid;
     }
 
+    @Override
     public BDBConfiguredObjectRecord entryToObject(TupleInput tupleInput)
     {
         String type = tupleInput.readString();
@@ -70,6 +71,7 @@ public class ConfiguredObjectBinding extends TupleBinding<ConfiguredObjectRecord
 
     }
 
+    @Override
     public void objectToEntry(ConfiguredObjectRecord object, TupleOutput tupleOutput)
     {
         try

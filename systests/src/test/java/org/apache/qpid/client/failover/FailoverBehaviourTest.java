@@ -1457,6 +1457,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Exception
             _delay = delay;
         }
 
+        @Override
         public void attainedConnection()
         {
             try

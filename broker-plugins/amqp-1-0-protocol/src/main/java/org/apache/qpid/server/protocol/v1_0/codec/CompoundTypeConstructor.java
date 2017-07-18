@@ -40,6 +40,7 @@ public class CompoundTypeConstructor<T> extends VariableWidthTypeConstructor<T>
             new CompoundTypeAssembler.Factory()
             {
 
+                @Override
                 public CompoundTypeAssembler newInstance()
                 {
                     return new ListAssembler();
@@ -52,16 +53,19 @@ public class CompoundTypeConstructor<T> extends VariableWidthTypeConstructor<T>
     {
         private List _list;
 
+        @Override
         public void init(final int count) throws AmqpErrorException
         {
             _list = new ArrayList(count);
         }
 
+        @Override
         public void addItem(final Object obj) throws AmqpErrorException
         {
             _list.add(obj);
         }
 
+        @Override
         public List complete() throws AmqpErrorException
         {
             return _list;
@@ -81,6 +85,7 @@ public class CompoundTypeConstructor<T> extends VariableWidthTypeConstructor<T>
             new CompoundTypeAssembler.Factory<Map>()
             {
 
+                @Override
                 public CompoundTypeAssembler<Map> newInstance()
                 {
                     return new MapAssembler();
@@ -94,6 +99,7 @@ public class CompoundTypeConstructor<T> extends VariableWidthTypeConstructor<T>
         private static final Object NOT_A_KEY = new Object();
 
 
+        @Override
         public void init(final int count) throws AmqpErrorException
         {
             // Can't have an odd number of elements in a map
@@ -110,6 +116,7 @@ public class CompoundTypeConstructor<T> extends VariableWidthTypeConstructor<T>
             _lastKey = NOT_A_KEY;
         }
 
+        @Override
         public void addItem(final Object obj) throws AmqpErrorException
         {
             if(_lastKey != NOT_A_KEY)
@@ -133,6 +140,7 @@ public class CompoundTypeConstructor<T> extends VariableWidthTypeConstructor<T>
 
         }
 
+        @Override
         public Map complete() throws AmqpErrorException
         {
             return _map;

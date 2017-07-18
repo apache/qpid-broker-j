@@ -65,11 +65,13 @@ public class BasicGetOkBody extends AMQMethodBodyImpl implements EncodableAMQDat
         _messageCount = messageCount;
     }
 
+    @Override
     public int getClazz()
     {
         return CLASS_ID;
     }
 
+    @Override
     public int getMethod()
     {
         return METHOD_ID;
@@ -96,6 +98,7 @@ public class BasicGetOkBody extends AMQMethodBodyImpl implements EncodableAMQDat
         return _messageCount;
     }
 
+    @Override
     protected int getBodySize()
     {
         int size = 13;
@@ -104,6 +107,7 @@ public class BasicGetOkBody extends AMQMethodBodyImpl implements EncodableAMQDat
         return size;
     }
 
+    @Override
     public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeLong( buffer, _deliveryTag );
@@ -113,11 +117,13 @@ public class BasicGetOkBody extends AMQMethodBodyImpl implements EncodableAMQDat
         writeUnsignedInteger( buffer, _messageCount );
     }
 
+    @Override
     public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchBasicGetOk(this, channelId);
 	}
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder("[BasicGetOkBodyImpl: ");

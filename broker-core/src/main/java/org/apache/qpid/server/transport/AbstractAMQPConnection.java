@@ -191,6 +191,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         return AccessController.doPrivileged(
                 new PrivilegedAction<AccessControlContext>()
                 {
+                    @Override
                     public AccessControlContext run()
                     {
                         if (subject == null)
@@ -603,6 +604,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         return null;
     }
 
+    @Override
     public Collection<Session> getSessions()
     {
         return getChildren(Session.class);
@@ -854,6 +856,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         return getNetwork().getRemoteAddress() + "(" + ((getAuthorizedPrincipal() == null ? "?" : getAuthorizedPrincipal().getName()) + ")");
     }
 
+    @Override
     public Principal getAuthorizedPrincipal()
     {
         return AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(getSubject());
