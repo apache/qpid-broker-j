@@ -1,0 +1,47 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+<div>
+    <div data-dojo-type="dijit.TitlePane" data-dojo-props="title:'Login', toggleable: false">
+        <div data-dojo-type="dijit.form.Form" method="POST" data-dojo-attach-point="formWidget">
+            <div class="dijitDialogPaneContentArea">
+                <div class="errorDialogErrorPrimary">
+                    <span data-dojo-attach-point="statusCodeNode"></span> <span
+                        data-dojo-attach-point="errorMessageNode"></span>
+                </div>
+                <div data-dojo-type="dojox.layout.TableContainer"
+                     data-dojo-props="cols:1,labelWidth:'100',showLabels:true,orientation:'horiz',customClass:'formLabel'">
+                    <div data-dojo-type="dijit.form.ValidationTextBox"
+                         data-dojo-attach-point="usernameWidget"
+                         data-dojo-props="label:'User name:',required:true, intermediateChanges:true"></div>
+                    <div data-dojo-type="dijit.form.ValidationTextBox"
+                         type="password"
+                         data-dojo-attach-point="passwordWidget"
+                         data-dojo-props="label:'Password:',required:true, intermediateChanges:true"></div>
+                </div>
+            </div>
+            <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
+                <button data-dojo-type="dijit.form.Button"
+                        type="submit"
+                        data-dojo-attach-point="loginButtonWidget"
+                        data-dojo-props="disabled:true">Login
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

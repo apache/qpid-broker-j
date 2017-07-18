@@ -26,7 +26,9 @@ define(["dojo/query",
         "qpid/management/Management",
         "qpid/common/util",
         "dijit/Dialog",
-        "dojo/domReady!"], function (query, registry, entities, Structure, updater, Management, util, Dialog)
+        "dojo/dom-class",
+        "dojo/dom",
+        "dojo/domReady!"], function (query, registry, entities, Structure, updater, Management, util, Dialog, domClass, dom)
 {
 
     var documentationUrl = null;
@@ -177,42 +179,64 @@ define(["dojo/query",
             this.management = new Management("", util.xhrErrorHandler);
             this.structure = new Structure();
 
-            var that = this;
             var management = this.management;
             var structure = this.structure;
 
-            var authenticationSuccessCallback = function (data)
+            var authenticationSuccessCallback = function ()
             {
+                domClass.add(dom.byId("loginLayout"), "dijitHidden");
+
+                var pageLagoutContainer = registry.byId("pageLayout");
+                domClass.remove(pageLagoutContainer.domNode, "dijitHidden")
+                pageLagoutContainer.resize();
+
+                var controlButton = registry.byId("authenticatedUserControls");
+                registry.byId("login").domNode.style.display = "inline";
+                management.init(function ()
+                {
+                    updater.registerUpdateIntervalListener(management.userPreferences);
+                    var treeView = new TreeView(management, query('div[qpid-type="treeView"]')[0]);
+                    controller.init(management, structure, treeView);
+                    dijit.Tooltip.defaultPosition =
+                        ["after-centered",
+                         "below-centered"];
+                    if (controlButton)
+                    {
+                        var userName = management.getAuthenticatedUser();
+                        controlButton.set("label", util.toFriendlyUserName(userName));
+                        controlButton.set("title", userName);
+                        controlButton.domNode.style.display = '';
+                    }
+                });
+            };
+
+            this.management.getSaslStatus().then(function (data)
+            {
+                domClass.add(dom.byId("loadingLayout"), "dijitHidden");
                 if (data.user)
                 {
-                    var controlButton = registry.byId("authenticatedUserControls");
-                    registry.byId("login").domNode.style.display = "inline";
-                    management.init(function ()
-                    {
-                        updater.registerUpdateIntervalListener(management.userPreferences);
-                        var treeView = new TreeView(management, query('div[qpid-type="treeView"]')[0]);
-                        controller.init(management, structure, treeView);
-                        dijit.Tooltip.defaultPosition =
-                            ["after-centered",
-                             "below-centered"];
-                        if (controlButton)
-                        {
-                            var userName = management.getAuthenticatedUser();
-                            controlButton.set("label", util.toFriendlyUserName(userName));
-                            controlButton.set("title", userName);
-                            controlButton.domNode.style.display = '';
-                        }
-                    });
+                    authenticationSuccessCallback();
                 }
                 else
                 {
-                    alert("User identifier is not found! Re-authenticate!");
-                    that.logout();
+                    domClass.remove(dom.byId("loginLayout"), "dijitHidden");
+                    var loginForm = registry.byId("loginForm");
+                    loginForm.on("submit", function (credentials)
+                    {
+                        management.authenticate(data.mechanisms, credentials)
+                            .then(function ()
+                                {
+                                    loginForm.hide();
+                                    authenticationSuccessCallback();
+                                },
+                                function (error)
+                                {
+                                    loginForm.onError(error);
+                                });
+                    });
+                    loginForm.show();
                 }
-            };
-
-            management.authenticate()
-                .then(authenticationSuccessCallback);
+            }, util.xhrErrorHandler);
         },
         logout: function ()
         {

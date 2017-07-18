@@ -67,7 +67,6 @@ import java.util.regex.PatternSyntaxException;
 import javax.security.auth.Subject;
 
 import com.google.common.base.Function;
-import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.JdkFutureAdapters;
@@ -2643,14 +2642,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         });
 
         ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(childOpenFutures);
-        return Futures.transform(combinedFuture, new AsyncFunction<List<Void>, Void>()
-        {
-            @Override
-            public ListenableFuture<Void> apply(final List<Void> input) throws Exception
-            {
-                return onActivate();
-            }
-        });
+        return Futures.transformAsync(combinedFuture, input -> onActivate());
     }
 
     private class FileSystemSpaceChecker extends HouseKeepingTask

@@ -256,7 +256,7 @@ public class SaslServlet extends AbstractServlet
                 HttpManagementUtil.saveAuthorisedSubject(request, subject);
                 if(challenge != null && challenge.length != 0)
                 {
-                    outputObject.put("challenge", DatatypeConverter.printBase64Binary(challenge));
+                    outputObject.put("additionalData", DatatypeConverter.printBase64Binary(challenge));
                 }
                 responseStatus = HttpServletResponse.SC_OK;
             }
