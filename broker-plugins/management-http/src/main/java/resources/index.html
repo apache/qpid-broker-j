@@ -91,6 +91,7 @@
                     "qpid/common/ConsoleHelper",
                     "qpid/management/treeView",
                     "qpid/management/controller",
+                    "qpid/common/LoginForm",
                     "dijit/layout/BorderContainer",
                     "dijit/layout/TabContainer",
                     "dijit/layout/ContentPane",
@@ -114,80 +115,102 @@
 </head>
 <body class="claro qpid">
 
-<div id="pageLayout" data-dojo-type="dijit.layout.BorderContainer"
-     data-dojo-props="design: 'headline', gutters: false, isLayoutContainer:false">
-    <div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:'top', isLayoutContainer:false">
-        <div id="header"></div>
-        <div class="alignRight">
-            <div id="login" class="hidden" data-dojo-type="dijit/Toolbar">
-                <div data-dojo-type="dijit/form/DropDownButton" data-dojo-props="iconClass: 'dijitIconChart'">
-                    <span>Dashboard</span>
-                    <div data-dojo-type="dijit/Menu">
-                        <div data-dojo-type="dijit/MenuItem"
-                             data-dojo-props="onClick: function(e){qpidManagementHelper.showDashboardCreateDialog(e);}">
-                            Create
-                        </div>
-                        <div data-dojo-type="dijit/MenuItem"
-                             data-dojo-props="onClick: function(e){qpidManagementHelper.showDashboardBrowser(e);}">
-                            Browse
-                        </div>
-                    </div>
-                </div>
-                <div data-dojo-type="dijit/form/DropDownButton" data-dojo-props="iconClass: 'dijitIconApplication'">
-                    <span>Query</span>
-                    <div data-dojo-type="dijit/Menu">
-                        <div data-dojo-type="dijit/MenuItem"
-                             data-dojo-props="onClick: function(e){qpidManagementHelper.showQueryCreateDialog(e);}">
-                            Create
-                        </div>
-                        <div data-dojo-type="dijit/MenuItem"
-                             data-dojo-props="onClick: function(e){qpidManagementHelper.showQueryBrowser(e);}">
-                            Browse
-                        </div>
-                    </div>
-                </div>
-                <div data-dojo-type="dijit/form/DropDownButton"
-                     data-dojo-props="iconClass: 'dijitIconDocuments'">
-                    <span>Documentation</span>
-                    <div data-dojo-type="dijit/Menu">
-                        <div data-dojo-type="dijit/MenuItem"
-                             data-dojo-props="onClick: function(){qpidManagementHelper.showAPI();}">API documentation
-                        </div>
-                        <div data-dojo-type="dijit/MenuItem"
-                             data-dojo-props="onClick: function(){qpidManagementHelper.showDocumentation();}">
-                            Broker Manual
+    <div id="loadingLayout">
+        <div class="header"></div>
+        <div class="clear"></div>
+        <div class="loadingBar">
+            <div>Please wait.... <span class="loading">&nbsp;&nbsp;&nbsp;&nbsp;</span> </div>
+        </div>
+
+    </div>
+
+    <div id="loginLayout" class="dijitHidden">
+        <div class="header"></div>
+        <div class="clear"></div>
+        <div style="width:350px; margin-left: auto; margin-right: auto;" id="loginForm"
+             data-dojo-type="qpid.common.LoginForm"></div>
+        <div qpid-type="footer"></div>
+    </div>
+
+    <div id="pageLayout" class="dijitHidden"
+         data-dojo-type="dijit.layout.BorderContainer"
+         data-dojo-props="design: 'headline', gutters: false, isLayoutContainer:false">
+        <div data-dojo-type="dijit.layout.ContentPane" data-dojo-props="region:'top', isLayoutContainer:false">
+            <div class="header"></div>
+            <div class="alignRight">
+                <div id="login" class="hidden" data-dojo-type="dijit/Toolbar">
+                    <div data-dojo-type="dijit/form/DropDownButton" data-dojo-props="iconClass: 'dijitIconChart'">
+                        <span>Dashboard</span>
+                        <div data-dojo-type="dijit/Menu">
+                            <div data-dojo-type="dijit/MenuItem"
+                                 data-dojo-props="onClick: function(e){qpidManagementHelper.showDashboardCreateDialog(e);}">
+                                Create
+                            </div>
+                            <div data-dojo-type="dijit/MenuItem"
+                                 data-dojo-props="onClick: function(e){qpidManagementHelper.showDashboardBrowser(e);}">
+                                Browse
+                            </div>
                         </div>
                     </div>
-                </div>
-                <span data-dojo-type="dijit/ToolbarSeparator"></span>
-                <div id="authenticatedUserControls" data-dojo-type="dijit/form/DropDownButton"
-                     data-dojo-props="iconClass: 'userIcon ui-icon'">
-                    <div data-dojo-type="dijit/Menu">
-                        <div data-dojo-type="dijit/MenuItem"
-                             data-dojo-props="onClick: function(){qpidManagementHelper.logout();}">Log out
+                    <div data-dojo-type="dijit/form/DropDownButton"
+                         data-dojo-props="iconClass: 'dijitIconApplication'">
+                        <span>Query</span>
+                        <div data-dojo-type="dijit/Menu">
+                            <div data-dojo-type="dijit/MenuItem"
+                                 data-dojo-props="onClick: function(e){qpidManagementHelper.showQueryCreateDialog(e);}">
+                                Create
+                            </div>
+                            <div data-dojo-type="dijit/MenuItem"
+                                 data-dojo-props="onClick: function(e){qpidManagementHelper.showQueryBrowser(e);}">
+                                Browse
+                            </div>
                         </div>
-                        <div data-dojo-type="dijit/MenuItem"
-                             data-dojo-props="onClick: function(){qpidManagementHelper.showPreferencesDialog();}">
-                            Preferences
+                    </div>
+                    <div data-dojo-type="dijit/form/DropDownButton"
+                         data-dojo-props="iconClass: 'dijitIconDocuments'">
+                        <span>Documentation</span>
+                        <div data-dojo-type="dijit/Menu">
+                            <div data-dojo-type="dijit/MenuItem"
+                                 data-dojo-props="onClick: function(){qpidManagementHelper.showAPI();}">API
+                                documentation
+                            </div>
+                            <div data-dojo-type="dijit/MenuItem"
+                                 data-dojo-props="onClick: function(){qpidManagementHelper.showDocumentation();}">
+                                Broker Manual
+                            </div>
+                        </div>
+                    </div>
+                    <span data-dojo-type="dijit/ToolbarSeparator"></span>
+                    <div id="authenticatedUserControls" data-dojo-type="dijit/form/DropDownButton"
+                         data-dojo-props="iconClass: 'userIcon ui-icon'">
+                        <div data-dojo-type="dijit/Menu">
+                            <div data-dojo-type="dijit/MenuItem"
+                                 data-dojo-props="onClick: function(){qpidManagementHelper.logout();}">Log out
+                            </div>
+                            <div data-dojo-type="dijit/MenuItem"
+                                 data-dojo-props="onClick: function(){qpidManagementHelper.showPreferencesDialog();}">
+                                Preferences
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div id="tree" data-dojo-type="dijit.layout.ContentPane"
-         data-dojo-props="region:'leading', splitter: true, isLayoutContainer:false">
-        <div qpid-type="treeView"></div>
-    </div>
-    <div id="main" data-dojo-type="dijit.layout.ContentPane"
-         data-dojo-props="region:'center', gutters: true, isLayoutContainer:false">
-        <div id="managedViews" data-dojo-type="dijit.layout.TabContainer"
-             data-dojo-props="tabPosition: 'top', doLayout:false, isLayoutContainer:false">
+        <div id="tree" data-dojo-type="dijit.layout.ContentPane"
+             data-dojo-props="region:'leading', splitter: true, isLayoutContainer:false">
+            <div qpid-type="treeView"></div>
         </div>
-        <div>
-            <div qpid-type="footer"></div>
+        <div id="main" data-dojo-type="dijit.layout.ContentPane"
+             data-dojo-props="region:'center', gutters: true, isLayoutContainer:false">
+            <div id="managedViews" data-dojo-type="dijit.layout.TabContainer"
+                 data-dojo-props="tabPosition: 'top', doLayout:false, isLayoutContainer:false">
+            </div>
+            <div>
+                <div qpid-type="footer"></div>
+            </div>
         </div>
     </div>
+
     <div class="dijitHidden">
         <div data-dojo-type="dijit.Dialog" data-dojo-props="title: 'Error'" id="errorDialog">
             <div>
@@ -215,7 +238,6 @@
             </div>
         </div>
     </div>
-</div>
 
 </body>
 </html>

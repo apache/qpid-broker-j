@@ -30,7 +30,7 @@ define(["dojo/_base/lang",
         "qpid/common/metadata",
         "qpid/common/timezone",
         "qpid/management/UserPreferences"],
-    function (lang, all, array, xhr, ioQuery, json, Promise, Deferred, saslAuthenticator, Metadata, Timezone, UserPreferences)
+    function (lang, all, array, xhr, ioQuery, json, Promise, Deferred, SaslAuthenticator, Metadata, Timezone, UserPreferences)
     {
 
         function shallowCopy(source, target, excludes)
@@ -571,45 +571,9 @@ define(["dojo/_base/lang",
             });
         };
 
-        Management.prototype.authenticate = function (forceAuthentication)
+        Management.prototype.authenticate = function (mechanisms, credentials)
         {
-            var that = this;
-            var deferred = new Deferred();
-            var successCallback = function (data)
-            {
-                that.getSaslStatus()
-                    .then(function (saslData)
-                    {
-                        if (saslData.user)
-                        {
-                            deferred.resolve(saslData);
-                        }
-                        else
-                        {
-                            deferred.reject({
-                                message: "User identifier is not found!" + " Authentication failed!"
-                            });
-                        }
-                    }, failureCallback);
-            };
-            var failureCallback = function (data)
-            {
-                deferred.reject(data);
-            };
-            this.getSaslStatus()
-                .then(function (data)
-                {
-                    if (data.user && !forceAuthentication)
-                    {
-                        deferred.resolve(data);
-                    }
-                    else
-                    {
-                        saslAuthenticator.authenticate(data.mechanisms, that)
-                            .then(successCallback, failureCallback);
-                    }
-                }, failureCallback);
-            return deferred.promise;
+            return new SaslAuthenticator(this).authenticate(mechanisms, credentials);
         };
 
         // summary:

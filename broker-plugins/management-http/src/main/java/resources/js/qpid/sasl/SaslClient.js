@@ -36,15 +36,40 @@ define(["dojo/_base/lang"], function (lang)
             // returns: string
             throw new TypeError("abstract");
         },
-        authenticate: function (management)
+        init: function(data)
         {
             // summary:
-            //        Authenticates and invokes callback function
-            //                                  on successful authentication
+            //        Initialises client with intial data including credentials.
             // description:
-            //        Performs SASL authentication as required by algorithm
-            //        and returns promise
+            //        Initialises client with intial data including credentials.
             // returns: promise
+            throw new TypeError("abstract");
+        },
+        getInitialResponse: function()
+        {
+            // summary:
+            //        Returns initial response or null if no initial response
+            // description:
+            //        Returns initial response or null if no initial response
+            // returns: string
+            throw new TypeError("abstract");
+        },
+        getResponse: function (challenge)
+        {
+            // summary:
+            //        Generates response for given challenge
+            // description:
+            //        Generates response for given challenge
+            // returns: string
+            throw new TypeError("abstract");
+        },
+        isComplete: function ()
+        {
+            // summary:
+            //        Returns true if SASL negotiation is complete
+            // description:
+            //        Returns true if SASL negotiation is complete
+            // returns: boolean
             throw new TypeError("abstract");
         },
         getPriority: function ()

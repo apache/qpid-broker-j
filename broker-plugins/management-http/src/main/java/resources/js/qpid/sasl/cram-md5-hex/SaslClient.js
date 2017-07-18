@@ -33,14 +33,13 @@ define(["dojo/_base/declare",
         {
             return 2;
         },
-        initialize: function (username, password)
-        {
-            var hashedPassword = MD5(password, digestsBase.outputTypes.Hex);
-            this.inherited(arguments, [username, hashedPassword]);
-        },
         toString: function ()
         {
             return "[SaslClientCramMD5Hex]";
+        },
+        getPassword: function ()
+        {
+            return MD5(this.password, digestsBase.outputTypes.Hex);
         }
     });
 });

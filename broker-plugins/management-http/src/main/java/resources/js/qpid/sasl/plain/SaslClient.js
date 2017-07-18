@@ -20,8 +20,7 @@
 define(["dojo/_base/declare",
         "dojo/_base/lang",
         "dojox/encoding/base64",
-        "qpid/sasl/CredentialBasedSaslClient",
-        "qpid/sasl/UsernamePasswordProvider"], function (declare, lang, base64, SaslClient, UsernamePasswordProvider)
+        "qpid/sasl/CredentialBasedSaslClient"], function (declare, lang, base64, SaslClient)
 {
     return declare("qpid.sasl.SaslClientPlain", [SaslClient], {
         _state: "initial",
@@ -37,34 +36,28 @@ define(["dojo/_base/declare",
         {
             return 1;
         },
-        getResponse: function (challenge)
+        getInitialResponse: function ()
         {
             if (this._state == "initial")
             {
-                var responseArray = [0].concat(this._encodeUTF8(challenge.username))
+                var responseArray = [0].concat(this._encodeUTF8(this.username))
                     .concat([0])
-                    .concat(this._encodeUTF8(challenge.password));
-                var plainResponse = base64.encode(responseArray);
-                this._state = "completed"
-                return {
-                    mechanism: this.getMechanismName(),
-                    response: plainResponse
-                };
+                    .concat(this._encodeUTF8(this.password));
+                this._state = "completed";
+                return base64.encode(responseArray);
             }
             else
             {
-                throw {
-                    message: "Unexpected state '" + this._state + ". Cannot handle challenge!"
-                };
+                throw new Error("Unexpected state '" + this._state);
             }
+        },
+        getResponse : function ()
+        {
+            throw new Error("Unexpected state");
         },
         toString: function ()
         {
             return "[SaslClientPlain]";
-        },
-        getCredentials: function ()
-        {
-            return UsernamePasswordProvider.get();
         },
         _encodeUTF8: function (str)
         {

@@ -17,9 +17,9 @@
  * under the License.
  */
 
-define(["dojo/_base/declare", "qpid/sasl/ShaSaslClient"], function (declare, ShaSaslClient)
+define(["dojo/_base/declare", "qpid/sasl/ScramShaSaslClient"], function (declare, ScramShaSaslClient)
 {
-    return declare("qpid.sasl.SaslClientScramSha1", [ShaSaslClient], {
+    return declare("qpid.sasl.SaslClientScramSha1", [ScramShaSaslClient], {
         constructor: function ()
         {
             this.inherited(arguments, ["SCRAM-SHA-1"]);

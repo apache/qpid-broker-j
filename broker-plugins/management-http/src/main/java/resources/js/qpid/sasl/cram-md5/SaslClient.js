@@ -22,12 +22,11 @@ define(["dojo/_base/declare",
         "dojox/encoding/base64",
         "dojox/encoding/digests/_base",
         "dojox/encoding/digests/MD5",
-        "qpid/sasl/CredentialBasedSaslClient",
-        "qpid/sasl/UsernamePasswordProvider"],
-    function (declare, lang, base64, digestsBase, MD5, SaslClient, UsernamePasswordProvider)
+        "qpid/sasl/CredentialBasedSaslClient"],
+    function (declare, lang, base64, digestsBase, MD5, SaslClient)
     {
         return declare("qpid.sasl.SaslClientCramMD5", [SaslClient], {
-            _state: "initial",
+            _state: "initiated",
             getMechanismName: function ()
             {
                 return "CRAM-MD5";
@@ -40,19 +39,19 @@ define(["dojo/_base/declare",
             {
                 return 3;
             },
-            getResponse: function (data)
+            getInitialResponse: function()
             {
-                if (this._state == "initial")
+                return null;
+            },
+            getPassword: function ()
+            {
+                return this.password;
+            },
+            getResponse: function (challenge)
+            {
+                if (this._state == "initiated")
                 {
-                    this.initialize(data.username, data.password);
-                    this._state = "initiated";
-                    return {
-                        mechanism: this.getMechanismName()
-                    };
-                }
-                else if (this._state == "initiated")
-                {
-                    var challengeBytes = base64.decode(data.challenge);
+                    var challengeBytes = base64.decode(challenge);
                     var wa = [];
                     var bitLength = challengeBytes.length * 8;
                     for (var i = 0; i < bitLength; i += 8)
@@ -62,37 +61,23 @@ define(["dojo/_base/declare",
                     var challengeStr = digestsBase.wordToString(wa)
                         .substring(0, challengeBytes.length);
 
-                    var digest = this._username + " " + MD5._hmac(challengeStr,
-                            this._password,
+                    var digest = this.username + " " + MD5._hmac(challengeStr,
+                            this.getPassword(),
                             digestsBase.outputTypes.Hex);
-                    var id = data.id;
+                    var id = challenge.id;
 
                     var response = base64.encode(this._encodeUTF8(digest));
                     this._state = "completed";
-                    return {
-                        id: id,
-                        response: response
-                    };
+                    return response;
                 }
                 else
                 {
-                    throw {
-                        message: "Unexpected state '" + this._state + ". Cannot handle challenge!"
-                    };
+                    throw new Error("Unexpected state '" + this._state + ". Cannot handle challenge!");
                 }
             },
             toString: function ()
             {
                 return "[SaslClientCramMD5]";
-            },
-            getCredentials: function ()
-            {
-                return UsernamePasswordProvider.get();
-            },
-            initialize: function (username, password)
-            {
-                this._password = password;
-                this._username = username;
             },
             _encodeUTF8: function (str)
             {
