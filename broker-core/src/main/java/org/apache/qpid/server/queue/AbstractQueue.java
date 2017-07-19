@@ -3512,7 +3512,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             _linkedSenders.put(sender, oldValue+1);
         }
-        _bindingCount++;
+        if(Binding.TYPE.equals(link.getType()))
+        {
+            _bindingCount++;
+        }
     }
 
     @Override
@@ -3523,7 +3526,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             _linkedSenders.put(sender, oldValue-1);
         }
-        _bindingCount--;
+        if(Binding.TYPE.equals(link.getType()))
+        {
+            _bindingCount--;
+        }
     }
 
     private void validateOrCreateAlternateBinding(final Queue<?> queue, final boolean mayCreate)

@@ -22,6 +22,8 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,8 +32,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageReference;
+import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.protocol.MessageFormatRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -60,8 +65,48 @@ import org.apache.qpid.server.txn.ServerTransaction;
 public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint<Target>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardReceivingLinkEndpoint.class);
+    private static final String LINK = "link";
 
     private ReceivingDestination _receivingDestination;
+
+    private final PublishingLink _publishingLink = new PublishingLink()
+    {
+        @Override
+        public String getName()
+        {
+            return getLinkName();
+        }
+
+        @Override
+        public String getType()
+        {
+            return LINK;
+        }
+
+        @Override
+        public String getDestination()
+        {
+            final ReceivingDestination receivingDestination = _receivingDestination;
+            return receivingDestination == null ? "" : _receivingDestination.getAddress();
+        }
+    };
+
+    private final MessageSender _messageSender = new MessageSender()
+    {
+        @Override
+        public void destinationRemoved(final MessageDestination destination)
+        {
+            // TODO - we should probably schedule a link closure here!
+        }
+
+        @Override
+        public Collection<? extends PublishingLink> getPublishingLinks(final MessageDestination destination)
+        {
+            final ReceivingDestination receivingDestination = _receivingDestination;
+            MessageDestination actualDestination = receivingDestination == null ? null : receivingDestination.getMessageDestination();
+            return actualDestination != null && actualDestination.equals(destination) ? Collections.singleton(_publishingLink) : Collections.emptyList();
+        }
+    };
 
     public StandardReceivingLinkEndpoint(final Session_1_0 session,
                                          final Link_1_0<Source, Target> link)
@@ -374,7 +419,30 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
     public void setDestination(final ReceivingDestination receivingDestination)
     {
-        _receivingDestination = receivingDestination;
+        if(_receivingDestination != receivingDestination)
+        {
+            if (_receivingDestination != null && _receivingDestination.getMessageDestination() != null)
+            {
+                _receivingDestination.getMessageDestination().linkRemoved(_messageSender, _publishingLink);
+            }
+            _receivingDestination = receivingDestination;
+            if(receivingDestination != null && receivingDestination.getMessageDestination() != null)
+            {
+                receivingDestination.getMessageDestination().linkAdded(_messageSender, _publishingLink);
+            }
+
+        }
+    }
+
+    @Override
+    public void destroy()
+    {
+        super.destroy();
+        if(_receivingDestination != null && _receivingDestination.getMessageDestination() != null)
+        {
+            _receivingDestination.getMessageDestination().linkRemoved(_messageSender, _publishingLink);
+            _receivingDestination = null;
+        }
     }
 
     @Override
