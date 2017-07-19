@@ -109,7 +109,6 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
-import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -574,49 +573,43 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
 
+        if (_rejectPolicyHandler != null)
+        {
+            _rejectPolicyHandler.onQueueOpen();
+        }
+
         updateAlertChecks();
     }
 
     private void createOverflowPolicyHandler(final OverflowPolicy overflowPolicy)
     {
-        MessageStore messageStore = getVirtualHost().getMessageStore();
-
-        if (overflowPolicy == OverflowPolicy.REJECT)
+        RejectPolicyHandler rejectPolicyHandler = null;
+        OverflowPolicyHandler overflowPolicyHandler;
+        switch (overflowPolicy)
         {
-            _postEnqueueOverflowPolicyHandler = new NoneOverflowPolicyHandler();
-            _rejectPolicyHandler = new RejectPolicyHandler(this);
-            messageStore.addMessageDeleteListener(_rejectPolicyHandler);
+            case RING:
+                overflowPolicyHandler = new RingOverflowPolicyHandler(this, getEventLogger());
+                break;
+            case PRODUCER_FLOW_CONTROL:
+                overflowPolicyHandler = new ProducerFlowControlOverflowPolicyHandler(this, getEventLogger());
+                break;
+            case FLOW_TO_DISK:
+                overflowPolicyHandler = new FlowToDiskOverflowPolicyHandler(this);
+                break;
+            case NONE:
+                overflowPolicyHandler = new NoneOverflowPolicyHandler();
+                break;
+            case REJECT:
+                overflowPolicyHandler = new NoneOverflowPolicyHandler();
+                rejectPolicyHandler = new RejectPolicyHandler(this);
+                break;
+            default:
+                throw new IllegalStateException(String.format("Overflow policy '%s' is not implemented",
+                                                              overflowPolicy.name()));
         }
-        else
-        {
-            if (_rejectPolicyHandler != null)
-            {
-                messageStore.removeMessageDeleteListener(_rejectPolicyHandler);
-                _rejectPolicyHandler = null;
-            }
 
-            OverflowPolicyHandler overflowPolicyHandler;
-            switch (overflowPolicy)
-            {
-                case RING:
-                    overflowPolicyHandler = new RingOverflowPolicyHandler(this, getEventLogger());
-                    break;
-                case PRODUCER_FLOW_CONTROL:
-                    overflowPolicyHandler = new ProducerFlowControlOverflowPolicyHandler(this, getEventLogger());
-                    break;
-                case FLOW_TO_DISK:
-                    overflowPolicyHandler = new FlowToDiskOverflowPolicyHandler(this);
-                    break;
-                case NONE:
-                    overflowPolicyHandler = new NoneOverflowPolicyHandler();
-                    break;
-                default:
-                    throw new IllegalStateException(String.format("Overflow policy '%s' is not implemented",
-                                                                  overflowPolicy.name()));
-            }
-
-            _postEnqueueOverflowPolicyHandler = overflowPolicyHandler;
-        }
+        _rejectPolicyHandler = rejectPolicyHandler;
+        _postEnqueueOverflowPolicyHandler = overflowPolicyHandler;
     }
 
     protected LogMessage getCreatedLogMessage()
@@ -3105,7 +3098,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private void postSetOverflowPolicy()
     {
         createOverflowPolicyHandler(getOverflowPolicy());
-        _postEnqueueOverflowPolicyHandler.checkOverflow(null);
+        if (getState() == State.ACTIVE)
+        {
+            _postEnqueueOverflowPolicyHandler.checkOverflow(null);
+        }
     }
 
     private static final String[] NON_NEGATIVE_NUMBERS = {

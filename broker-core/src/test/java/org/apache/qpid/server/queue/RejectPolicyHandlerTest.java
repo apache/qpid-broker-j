@@ -28,6 +28,7 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.StoredMessage;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class RejectPolicyHandlerTest extends QpidTestCase
@@ -46,6 +47,7 @@ public class RejectPolicyHandlerTest extends QpidTestCase
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(-1L);
         when(_queue.getOverflowPolicy()).thenReturn(OverflowPolicy.REJECT);
         when(_queue.getQueueDepthMessages()).thenReturn(0);
+        when(_queue.getVirtualHost()).thenReturn(mock(QueueManagingVirtualHost.class));
 
         _rejectOverflowPolicyHandler = new RejectPolicyHandler(_queue);
     }
