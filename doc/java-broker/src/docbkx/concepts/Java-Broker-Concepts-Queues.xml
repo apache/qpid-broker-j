@@ -425,6 +425,12 @@ amqp://guest:guest@client1/development?maxprefetch='1'&amp;brokerlist='tcp://loc
                         operates completely independent of this Queue Overflow Policy.
                     </para>
                 </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>Reject</emphasis>
+                        -A newly arriving message is rejected when queue limit is breached.
+                    </para>
+                </listitem>
             </itemizedlist>
         </para>
         <para>
