@@ -40,7 +40,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator;
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 

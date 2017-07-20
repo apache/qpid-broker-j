@@ -22,6 +22,7 @@ package org.apache.qpid.server.management.plugin.auth;
 
 import java.io.IOException;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -34,20 +35,7 @@ import org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticati
 @PluggableService
 public class UsernamePasswordInteractiveLogin implements HttpRequestInteractiveAuthenticator
 {
-    // TODO: When we refactor web management and adopt web fragments, move logout.html
-    // to WEB-INF/ and dispatch (forward) to them, rather than using a client side redirect.
-    // This would keep the login/logout pages private and inaccessible to the user when using auth providers
-    // such as Ouath2.
     private static final String DEFAULT_LOGIN_URL = "/index.html";
-
-    private static final AuthenticationHandler REDIRECT_HANDLER = new AuthenticationHandler()
-    {
-        @Override
-        public void handleAuthentication(final HttpServletResponse response) throws IOException
-        {
-            response.sendRedirect(DEFAULT_LOGIN_URL);
-        }
-    };
 
     private static  final LogoutHandler LOGOUT_HANDLER = new LogoutHandler()
     {
@@ -64,7 +52,7 @@ public class UsernamePasswordInteractiveLogin implements HttpRequestInteractiveA
     {
         if(configuration.getAuthenticationProvider(request) instanceof UsernamePasswordAuthenticationProvider)
         {
-            return REDIRECT_HANDLER;
+            return response -> request.getRequestDispatcher(DEFAULT_LOGIN_URL).forward(request, response);
         }
         else
         {

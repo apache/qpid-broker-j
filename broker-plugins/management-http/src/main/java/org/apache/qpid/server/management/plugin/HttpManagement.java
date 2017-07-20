@@ -347,6 +347,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addFilter(restAuthorizationFilter, "/apidocs/*", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(restAuthorizationFilter, "/service/*", EnumSet.of(DispatcherType.REQUEST));
 
+        root.addFilter(new FilterHolder(new RedirectingFilter()), "/index.html", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(new FilterHolder(new RedirectingFilter()), "/", EnumSet.of(DispatcherType.REQUEST));
         if (_serveUncompressedDojo)
         {
