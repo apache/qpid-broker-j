@@ -66,7 +66,6 @@ public class SaslServlet extends AbstractServlet
     private static final String ATTR_ID = "SaslServlet.ID";
     private static final String ATTR_SASL_NEGOTIATOR = "SaslServlet.SaslNegotiator";
     private static final String ATTR_EXPIRY = "SaslServlet.Expiry";
-    private static final long SASL_EXCHANGE_EXPIRY = 3000L;
 
     public SaslServlet()
     {
@@ -275,8 +274,9 @@ public class SaslServlet extends AbstractServlet
             String id = String.valueOf(rand.nextLong());
             HttpManagementUtil.setSessionAttribute(ATTR_ID, id, session, request);
             HttpManagementUtil.setSessionAttribute(ATTR_SASL_NEGOTIATOR, saslNegotiator, session, request);
+            long saslExchangeExpiry = getManagementConfiguration().getSaslExchangeExpiry();
             HttpManagementUtil.setSessionAttribute(ATTR_EXPIRY,
-                                                   System.currentTimeMillis() + SASL_EXCHANGE_EXPIRY,
+                                                   System.currentTimeMillis() + saslExchangeExpiry,
                                                    session, request);
 
             outputObject.put("id", id);

@@ -18,7 +18,7 @@
  */
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
-import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.DEFAULT_PREFERENCE_OPERTAION_TIMEOUT;
+import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.DEFAULT_PREFERENCE_OPERATION_TIMEOUT;
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.awaitPreferenceFuture;
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.createPreferenceAttributes;
 import static org.mockito.Mockito.mock;
@@ -61,7 +61,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     private static final String MYUSER = "myuser";
     private static final String MYUSER_SERIALIZATION = TestPrincipalUtils.getTestPrincipalSerialization(MYUSER);
 
-    private RestUserPreferenceHandler _handler = new RestUserPreferenceHandler(DEFAULT_PREFERENCE_OPERTAION_TIMEOUT);
+    private RestUserPreferenceHandler _handler = new RestUserPreferenceHandler(DEFAULT_PREFERENCE_OPERATION_TIMEOUT);
     private ConfiguredObject<?> _configuredObject;
     private UserPreferences _userPreferences;
     private Subject _subject;

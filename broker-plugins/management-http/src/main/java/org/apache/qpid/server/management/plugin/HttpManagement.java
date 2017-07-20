@@ -176,6 +176,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private Map<HttpPort<?>, ServerConnector> _portConnectorMap = new HashMap<>();
 
     private volatile boolean _serveUncompressedDojo;
+    private volatile Long _saslExchangeExpiry;
     private volatile ExecutorService _jettyServerExecutor;
 
     @ManagedObjectFactoryConstructor
@@ -188,7 +189,8 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     protected void onOpen()
     {
         super.onOpen();
-        _serveUncompressedDojo =   Boolean.TRUE.equals(getContextValue(Boolean.class, "qpid.httpManagement.serveUncompressedDojo"));
+        _serveUncompressedDojo = Boolean.TRUE.equals(getContextValue(Boolean.class, "qpid.httpManagement.serveUncompressedDojo"));
+        _saslExchangeExpiry = getContextValue(Long.class, SASL_EXCHANGE_EXPIRY_CONTEXT_NAME);
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)
@@ -833,6 +835,12 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                 throw new IllegalConfigurationException("Only positive integer value can be specified for the session time out attribute");
             }
         }
+    }
+
+    @Override
+    public long getSaslExchangeExpiry()
+    {
+        return _saslExchangeExpiry;
     }
 
     private static class QBBTrackingThreadPool extends QueuedThreadPool

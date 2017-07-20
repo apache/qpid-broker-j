@@ -25,6 +25,7 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.Plugin;
@@ -46,35 +47,43 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
     boolean isHttpBasicAuthenticationEnabled();
 
     @ManagedAttribute( defaultValue = "600", description = "The maximum time interval, in seconds, that Web Management will keep the session open between client accesses.")
-    public int getSessionTimeout();
+    int getSessionTimeout();
 
     @ManagedAttribute( defaultValue = "" )
-    public String getCorsAllowOrigins();
+    String getCorsAllowOrigins();
 
     @ManagedAttribute( defaultValue = "[\"HEAD\",\"GET\",\"POST\"]", validValues = {"org.apache.qpid.server.management.plugin.HttpManagement#getAllAvailableCorsMethodCombinations()"} )
-    public Set<String> getCorsAllowMethods();
+    Set<String> getCorsAllowMethods();
 
     @ManagedAttribute( defaultValue = "Content-Type,Accept,Origin,X-Requested-With,X-Range" )
-    public String getCorsAllowHeaders();
+    String getCorsAllowHeaders();
 
     @ManagedAttribute( defaultValue = "true" )
-    public boolean getCorsAllowCredentials();
+    boolean getCorsAllowCredentials();
 
     String HTTP_MANAGEMENT_COMPRESS_RESPONSES = "httpManagement.compressResponses";
     @ManagedContextDefault(name = HTTP_MANAGEMENT_COMPRESS_RESPONSES)
     boolean DEFAULT_COMPRESS_RESPONSES = true;
 
     @ManagedAttribute( defaultValue = "${"+HTTP_MANAGEMENT_COMPRESS_RESPONSES+"}" )
-    public boolean isCompressResponses();
+    boolean isCompressResponses();
+
+    @DerivedAttribute(description = "Length of time permitted for the SASL authentication exchange.")
+    long getSaslExchangeExpiry();
 
     String MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME = "maxHttpFileUploadSize";
     @ManagedContextDefault( name = MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME)
-    static final long DEFAULT_MAX_UPLOAD_SIZE = 100 * 1024;
+    long DEFAULT_MAX_UPLOAD_SIZE = 100 * 1024;
 
     String PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME = "qpid.httpManagement.preferenceOperationTimeout";
     @SuppressWarnings("unused")
     @ManagedContextDefault( name = PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME)
-    long DEFAULT_PREFERENCE_OPERTAION_TIMEOUT = 10000L;
+    long DEFAULT_PREFERENCE_OPERATION_TIMEOUT = 10000L;
+
+    String SASL_EXCHANGE_EXPIRY_CONTEXT_NAME = "qpid.httpManagement.saslExchangeExpiry";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = SASL_EXCHANGE_EXPIRY_CONTEXT_NAME)
+    long DEFAULT_SASL_EXCHANGE_EXPIRY = 3000L;
 
     AuthenticationProvider getAuthenticationProvider(HttpServletRequest request);
     Port<?> getPort(HttpServletRequest request);

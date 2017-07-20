@@ -16,7 +16,7 @@
  */
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
-import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.DEFAULT_PREFERENCE_OPERTAION_TIMEOUT;
+import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.DEFAULT_PREFERENCE_OPERATION_TIMEOUT;
 import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME;
 import static org.apache.qpid.server.management.plugin.HttpManagementUtil.ensureFilenameIsRfc2183;
 
@@ -117,7 +117,7 @@ public class RestServlet extends AbstractServlet
         Handler.register();
         Long preferenceOperationTimeout = getManagementConfiguration().getContextValue(Long.class, PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME);
         _userPreferenceHandler = new RestUserPreferenceHandler(preferenceOperationTimeout == null
-                                                                       ? DEFAULT_PREFERENCE_OPERTAION_TIMEOUT
+                                                                       ? DEFAULT_PREFERENCE_OPERATION_TIMEOUT
                                                                        : preferenceOperationTimeout);
     }
 
