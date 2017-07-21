@@ -66,8 +66,6 @@ public interface AMQPConnection_0_8<C extends AMQPConnection_0_8<C>> extends AMQ
 
     ContextProvider getContextProvider();
 
-    boolean isClosing();
-
     void closeChannelOk(int channelId);
 
     int getBinaryDataLimit();

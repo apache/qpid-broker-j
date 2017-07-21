@@ -1262,7 +1262,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     @Override
     public boolean isClosing()
     {
-        return END_STATES.contains(getSessionState());
+        return END_STATES.contains(getSessionState()) || getConnection().isClosing();
     }
 
     @Override

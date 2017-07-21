@@ -821,7 +821,7 @@ public class ServerSession extends SessionInvoker
 
     public boolean isClosing()
     {
-        return state == CLOSED || state == CLOSING;
+        return state == CLOSED || state == CLOSING || connection.isClosing();
     }
 
     @Override

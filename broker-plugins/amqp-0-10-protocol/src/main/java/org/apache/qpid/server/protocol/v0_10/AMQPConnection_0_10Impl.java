@@ -219,6 +219,12 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     }
 
     @Override
+    public boolean isClosing()
+    {
+        return _connection.isClosing() || _connection.isConnectionLost();
+    }
+
+    @Override
     public int getHeartbeatDelay()
     {
         return _connection.getHeartBeatDelay();

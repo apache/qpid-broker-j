@@ -1197,7 +1197,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public boolean isClosing()
     {
-        return _closing.get();
+        return _closing.get() || getConnection().isClosing();
     }
 
     public AMQPConnection_0_8<?> getConnection()

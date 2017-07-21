@@ -116,6 +116,8 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
 
     boolean isTransportBlockedForWriting();
 
+    boolean isClosing();
+
     long getMaxMessageSize();
 
     @Override
