@@ -66,11 +66,11 @@ import java.util.regex.PatternSyntaxException;
 
 import javax.security.auth.Subject;
 
-import com.google.common.base.Function;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.JdkFutureAdapters;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1566,14 +1566,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
         }
         ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(connectionCloseFutures);
-        return Futures.transform(combinedFuture, new Function<List<Void>, Void>()
-               {
-                   @Override
-                   public Void apply(List<Void> voids)
-                   {
-                       return null;
-                   }
-               });
+        return Futures.transform(combinedFuture, voids -> null, MoreExecutors.directExecutor());
     }
 
     private void closeMessageStore()
@@ -2642,7 +2635,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         });
 
         ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(childOpenFutures);
-        return Futures.transformAsync(combinedFuture, input -> onActivate());
+        return Futures.transformAsync(combinedFuture, input -> onActivate(), MoreExecutors.directExecutor());
     }
 
     private class FileSystemSpaceChecker extends HouseKeepingTask

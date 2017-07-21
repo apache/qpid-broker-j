@@ -138,14 +138,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                     queueRecoveryFutures.add(result);
                 }
                 ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(queueRecoveryFutures);
-                return Futures.transform(combinedFuture, new Function<List<?>, Void>()
-                {
-                    @Override
-                    public Void apply(List<?> voids)
-                    {
-                        return null;
-                    }
-                });
+                return Futures.transform(combinedFuture, voids -> null, MoreExecutors.directExecutor());
             }
         }
 
