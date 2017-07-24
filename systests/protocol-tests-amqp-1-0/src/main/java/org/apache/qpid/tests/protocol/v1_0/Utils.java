@@ -20,10 +20,6 @@
 
 package org.apache.qpid.tests.protocol.v1_0;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.net.InetSocketAddress;
 import java.util.List;
 

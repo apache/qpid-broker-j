@@ -59,7 +59,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public class FrameTransport implements AutoCloseable
 {
-    public static final long RESPONSE_TIMEOUT = 6000;
+    public static final long RESPONSE_TIMEOUT = Long.getLong("qpid.tests.protocol.frameTransport.responseTimeout",6000);
     private static final Response CHANNEL_CLOSED_RESPONSE = new ChannelClosedResponse();
 
     private final BlockingQueue<Response<?>> _queue = new ArrayBlockingQueue<>(1000);
