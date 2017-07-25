@@ -43,10 +43,7 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v1_0.MessageMetaData_1_0;
 import org.apache.qpid.server.protocol.v1_0.Message_1_0;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
@@ -58,13 +55,6 @@ import org.apache.qpid.test.utils.QpidTestCase;
 public class MessageConverter_1_0_to_v0_8Test extends QpidTestCase
 {
     private final MessageConverter_1_0_to_v0_8 _converter = new MessageConverter_1_0_to_v0_8();
-    private final AMQPDescribedTypeRegistry _typeRegistry = AMQPDescribedTypeRegistry.newInstance()
-                                                                                     .registerTransportLayer()
-                                                                                     .registerMessagingLayer()
-                                                                                     .registerTransactionLayer()
-                                                                                     .registerSecurityLayer();
-
-    private final SectionEncoder _encoder = new SectionEncoderImpl(_typeRegistry);
     private final StoredMessage<MessageMetaData_1_0> _handle = mock(StoredMessage.class);
 
     private final MessageMetaData_1_0 _metaData = mock(MessageMetaData_1_0.class);
@@ -83,7 +73,7 @@ public class MessageConverter_1_0_to_v0_8Test extends QpidTestCase
         final String expected = "helloworld";
 
         final AmqpValue value = new AmqpValue(expected);
-        configureMessageContent(value.createEncodingRetainingSection(_encoder));
+        configureMessageContent(value.createEncodingRetainingSection());
         final Message_1_0 sourceMessage = new Message_1_0(_handle);
 
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
@@ -98,7 +88,7 @@ public class MessageConverter_1_0_to_v0_8Test extends QpidTestCase
         final List<Object> expected = Lists.<Object>newArrayList("helloworld", 43, 1L);
 
         final AmqpValue value = new AmqpValue(expected);
-        configureMessageContent(value.createEncodingRetainingSection(_encoder));
+        configureMessageContent(value.createEncodingRetainingSection());
         final Message_1_0 sourceMessage = new Message_1_0(_handle);
 
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
@@ -127,7 +117,7 @@ public class MessageConverter_1_0_to_v0_8Test extends QpidTestCase
         final Map<String, String> expected = Collections.singletonMap("key", "value");
 
         final AmqpValue value = new AmqpValue(expected);
-        configureMessageContent(value.createEncodingRetainingSection(_encoder));
+        configureMessageContent(value.createEncodingRetainingSection());
         final Message_1_0 sourceMessage = new Message_1_0(_handle);
 
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
@@ -155,7 +145,7 @@ public class MessageConverter_1_0_to_v0_8Test extends QpidTestCase
         final String expected = "helloworld";
 
         final Data value = new Data(new Binary(expected.getBytes()));
-        configureMessageContent(value.createEncodingRetainingSection(_encoder));
+        configureMessageContent(value.createEncodingRetainingSection());
         final Message_1_0 sourceMessage = new Message_1_0(_handle);
 
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
