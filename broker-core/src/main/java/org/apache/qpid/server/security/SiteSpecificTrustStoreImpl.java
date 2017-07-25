@@ -33,7 +33,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -74,7 +74,6 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
-import org.apache.qpid.server.transport.util.Functions;
 import org.apache.qpid.server.util.Strings;
 
 @ManagedObject( category = false )
@@ -405,42 +404,10 @@ public class SiteSpecificTrustStoreImpl
     }
 
     @Override
-    public String getCertificateIssuer()
+    public List<CertificateDetails> getCertificateDetails()
     {
-        return _x509Certificate == null ? null : _x509Certificate.getIssuerX500Principal().toString();
+        return Collections.singletonList(new CertificateDetailsImpl(_x509Certificate));
     }
-
-    @Override
-    public String getCertificateSubject()
-    {
-        return _x509Certificate == null ? null : _x509Certificate.getSubjectX500Principal().toString();
-    }
-
-
-    @Override
-    public String getCertificateSerialNumber()
-    {
-        return _x509Certificate == null ? null : _x509Certificate.getSerialNumber().toString();
-    }
-
-    @Override
-    public String getCertificateSignature()
-    {
-        return _x509Certificate == null ? null : Functions.hex(_x509Certificate.getSignature(),4096, " ");
-    }
-
-    @Override
-    public Date getCertificateValidFromDate()
-    {
-        return _x509Certificate == null ? null : _x509Certificate.getNotBefore();
-    }
-
-    @Override
-    public Date getCertificateValidUntilDate()
-    {
-        return _x509Certificate == null ? null :_x509Certificate.getNotAfter();
-    }
-
     @Override
     public void refreshCertificate()
     {
@@ -490,20 +457,16 @@ public class SiteSpecificTrustStoreImpl
 
     private ThreadFactory getThreadFactory(final String name)
     {
-        return new ThreadFactory()
+        return runnable ->
         {
-            @Override
-            public Thread newThread(final Runnable r)
-            {
 
-                final Thread thread = Executors.defaultThreadFactory().newThread(r);
-                if (!thread.isDaemon())
-                {
-                    thread.setDaemon(true);
-                }
-                thread.setName(name);
-                return thread;
+            final Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+            if (!thread.isDaemon())
+            {
+                thread.setDaemon(true);
             }
+            thread.setName(name);
+            return thread;
         };
     }
 }

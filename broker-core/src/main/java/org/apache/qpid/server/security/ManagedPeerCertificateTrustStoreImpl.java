@@ -24,12 +24,10 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -56,7 +54,6 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.ManagedAttributeValue;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Port;
@@ -322,86 +319,6 @@ public class ManagedPeerCertificateTrustStoreImpl
         if (updated)
         {
             setAttributes(Collections.<String, Object>singletonMap("storedCertificates", currentCerts));
-        }
-    }
-
-    public static class CertificateDetailsImpl implements CertificateDetails, ManagedAttributeValue
-    {
-        private final X509Certificate _x509cert;
-
-        public CertificateDetailsImpl(final X509Certificate x509cert)
-        {
-            _x509cert = x509cert;
-        }
-
-        @Override
-        public String getSerialNumber()
-        {
-            return _x509cert.getSerialNumber().toString();
-        }
-
-        @Override
-        public int getVersion()
-        {
-            return _x509cert.getVersion();
-        }
-
-        @Override
-        public String getSignatureAlgorithm()
-        {
-            return _x509cert.getSigAlgName();
-        }
-
-        @Override
-        public String getIssuerName()
-        {
-            return _x509cert.getIssuerX500Principal().getName();
-        }
-
-        @Override
-        public String getSubjectName()
-        {
-            return _x509cert.getSubjectX500Principal().getName();
-        }
-
-        @Override
-        public List<String> getSubjectAltNames()
-        {
-            try
-            {
-                List<String> altNames = new ArrayList<String>();
-                final Collection<List<?>> altNameObjects = _x509cert.getSubjectAlternativeNames();
-                if(altNameObjects != null)
-                {
-                    for (List<?> entry : altNameObjects)
-                    {
-                        final int type = (Integer) entry.get(0);
-                        if (type == 1 || type == 2)
-                        {
-                            altNames.add(entry.get(1).toString().trim());
-                        }
-
-                    }
-                }
-                return altNames;
-            }
-            catch (CertificateParsingException e)
-            {
-
-                return Collections.emptyList();
-            }
-        }
-
-        @Override
-        public Date getValidFrom()
-        {
-            return _x509cert.getNotBefore();
-        }
-
-        @Override
-        public Date getValidUntil()
-        {
-            return _x509cert.getNotAfter();
         }
     }
 

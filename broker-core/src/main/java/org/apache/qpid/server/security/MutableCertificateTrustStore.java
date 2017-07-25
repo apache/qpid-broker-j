@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,24 +17,13 @@
  * under the License.
  *
  */
+
 package org.apache.qpid.server.security;
 
-import java.util.List;
-import java.util.Map;
+import org.apache.qpid.server.model.ManagedAnnotation;
+import org.apache.qpid.server.model.ManagedInterface;
 
-import org.apache.qpid.server.model.DerivedAttribute;
-import org.apache.qpid.server.model.ManagedAttribute;
-import org.apache.qpid.server.model.ManagedObject;
-import org.apache.qpid.server.model.TrustStore;
-
-@ManagedObject( category = false, type = "NonJavaTrustStore" )
-public interface NonJavaTrustStore<X extends NonJavaTrustStore<X>> extends TrustStore<X>
+@ManagedAnnotation
+public interface MutableCertificateTrustStore extends ManagedInterface
 {
-    @Override
-    @ManagedAttribute(defaultValue = "${this:certificateDetails}")
-    String getDescription();
-
-    @ManagedAttribute( mandatory = true, oversize = true, oversizedAltText = OVER_SIZED_ATTRIBUTE_ALTERNATIVE_TEXT )
-    String getCertificatesUrl();
-
 }

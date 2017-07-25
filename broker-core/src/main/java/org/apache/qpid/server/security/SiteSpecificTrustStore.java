@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.security;
 
-import java.util.Date;
-
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
@@ -48,24 +46,6 @@ public interface SiteSpecificTrustStore<X extends SiteSpecificTrustStore<X>> ext
 
     @DerivedAttribute(persist = true, description = "The X.509 certificate obtained from the given URL as base64 encoded representation of the ASN.1 DER encoding")
     String getCertificate();
-
-    @DerivedAttribute(description = "The distinguished name of the issuer of the certificate or null if no issuer information is present")
-    String getCertificateIssuer();
-
-    @DerivedAttribute(description = "The distinguished name of the subject of the certificate or null if no subject information is present")
-    String getCertificateSubject();
-
-    @DerivedAttribute(description = "The serial number of the certificate assigned by the CA or null if no serial number is present")
-    String getCertificateSerialNumber();
-
-    @DerivedAttribute(description = "A (possibly truncated) hex encoded representation of the signature. The bytes are separated by spaces. null if no signature information is present")
-    String getCertificateSignature();
-
-    @DerivedAttribute(description = "The start date of the validity of the certificate")
-    Date getCertificateValidFromDate();
-
-    @DerivedAttribute(description = "The end date of the validity of the certificate")
-    Date getCertificateValidUntilDate();
 
     @ManagedOperation(description = "Re-download the certificate from the URL",
             changesConfiguredObjectState = false /* This should really be true but pragmatically it is set to false because we do not want to block the config thread while getting the certificate from the remote host */)

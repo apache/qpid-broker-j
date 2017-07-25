@@ -1,4 +1,5 @@
 <!--
+  ~
   ~ Licensed to the Apache Software Foundation (ASF) under one
   ~ or more contributor license agreements.  See the NOTICE file
   ~ distributed with this work for additional information
@@ -15,13 +16,19 @@
   ~ KIND, either express or implied.  See the License for the
   ~ specific language governing permissions and limitations
   ~ under the License.
+  ~
   -->
-
 <div>
-    <div class="clear certificatesUrlContainer">
-        <div class="formLabel-labelCell">Certificate:</div>
-        <div><span class="certificatesUrl" ></span></div>
+    <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Certificates'" class="clear">
+        <div data-dojo-attach-point="certificatesGridContainer"></div>
+        <div class="clear dijitHidden" data-dojo-attach-point="certificateControls">
+            <button data-dojo-attach-point="removeCertificateButton" data-dojo-type="dijit.form.Button"
+                    class="removeCertificates">Remove Certificates
+            </button>
+            <input name="addCertificate" type="file" class="addCertificate"
+                   data-dojo-attach-point="certificateUploader"
+                   data-dojo-type="dojox/form/Uploader"
+                   data-dojo-props="label: 'Add Certificate'"/>
+        </div>
     </div>
-    <div class="clear"></div>
 </div>
-

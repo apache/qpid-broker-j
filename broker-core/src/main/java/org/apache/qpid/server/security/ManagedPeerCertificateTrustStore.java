@@ -23,7 +23,6 @@ package org.apache.qpid.server.security;
 import java.security.cert.Certificate;
 import java.util.List;
 
-import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedOperation;
@@ -32,7 +31,9 @@ import org.apache.qpid.server.model.TrustStore;
 
 @ManagedObject(category = false, type = ManagedPeerCertificateTrustStore.TYPE_NAME,
         description = "Stores multiple PEM or DER encoded certificates in the broker configuration which the Trust Store will trust for secure connections (e.g., HTTPS or AMQPS)")
-public interface ManagedPeerCertificateTrustStore<X extends ManagedPeerCertificateTrustStore<X>> extends TrustStore<X>
+public interface ManagedPeerCertificateTrustStore<X extends ManagedPeerCertificateTrustStore<X>> extends TrustStore<X>,
+                                                                                                         MutableCertificateTrustStore
+
 {
 
     String TYPE_NAME = "ManagedCertificateStore";
@@ -51,9 +52,6 @@ public interface ManagedPeerCertificateTrustStore<X extends ManagedPeerCertifica
                                description = "PEM or base64 encoded DER certificate to be added to the Trust Store",
                                mandatory = true)
                         Certificate certificate);
-
-    @DerivedAttribute(description = "List of details about the certificates like validity dates, SANs, issuer and subject names, etc.")
-    List<CertificateDetails> getCertificateDetails();
 
     @ManagedOperation(description = "Remove given certificates from the Trust Store.",
             changesConfiguredObjectState = true)

@@ -26,6 +26,8 @@ import java.util.List;
 
 import javax.net.ssl.TrustManager;
 
+import org.apache.qpid.server.security.CertificateDetails;
+
 @ManagedObject( defaultType = "FileTrustStore" )
 public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
 {
@@ -37,6 +39,9 @@ public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
 
     @ManagedAttribute( defaultValue = "[]", description = "If 'exposedAsMessageSource' is true and 'includedVirtualHostNodeMessageSources' is empty, the trust store will expose its certificates only to VirtualHostNodes who are not in this list." )
     List<VirtualHostNode<?>> getExcludedVirtualHostNodeMessageSources();
+
+    @DerivedAttribute(description = "List of details about the certificates like validity dates, SANs, issuer and subject names, etc.")
+    List<CertificateDetails> getCertificateDetails();
 
     TrustManager[] getTrustManagers() throws GeneralSecurityException;
 

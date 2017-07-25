@@ -29,12 +29,15 @@ import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -119,7 +122,7 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
         // verify that it is not in use
         String storeName = getName();
 
-        Collection<Port<?>> ports = new ArrayList<Port<?>>(_broker.getPorts());
+        Collection<Port<?>> ports = new ArrayList<>(_broker.getPorts());
         for (Port port : ports)
         {
             Collection<TrustStore> trustStores = port.getTrustStores();
@@ -138,7 +141,7 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
             }
         }
 
-        Collection<AuthenticationProvider> authenticationProviders = new ArrayList<AuthenticationProvider>(_broker.getAuthenticationProviders());
+        Collection<AuthenticationProvider> authenticationProviders = new ArrayList<>(_broker.getAuthenticationProviders());
         for (AuthenticationProvider authProvider : authenticationProviders)
         {
             if (authProvider instanceof SimpleLDAPAuthenticationManager)
@@ -272,7 +275,7 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
             final TrustManagerFactory tmf = TrustManagerFactory
                     .getInstance(trustManagerFactoryAlgorithm);
             tmf.init(ts);
-            final Collection<TrustManager> trustManagersCol = new ArrayList<TrustManager>();
+            final Collection<TrustManager> trustManagersCol = new ArrayList<>();
             final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
             TrustManager[] delegateManagers = tmf.getTrustManagers();
             for (TrustManager tm : delegateManagers)
@@ -344,6 +347,22 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
         }
     }
 
+
+    @Override
+    public List<CertificateDetails> getCertificateDetails()
+    {
+        try
+        {
+            return Arrays.stream(getCertificates())
+                         .filter(cert -> cert instanceof X509Certificate)
+                         .map(x509cert -> new CertificateDetailsImpl((X509Certificate) x509cert))
+                         .collect(Collectors.toList());
+        }
+        catch (GeneralSecurityException e)
+        {
+            throw new IllegalConfigurationException("Failed to extract certificate details", e);
+        }
+    }
 
     private static URL getUrlFromString(String urlString) throws MalformedURLException
     {

@@ -28,18 +28,16 @@ import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import javax.naming.InvalidNameException;
-import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import javax.security.auth.x500.X500Principal;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -63,8 +61,8 @@ import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
-import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 @ManagedObject( category = false )
 public class NonJavaTrustStoreImpl
@@ -112,60 +110,14 @@ public class NonJavaTrustStoreImpl
 
 
     @Override
-    public List<Map<CertificateDetails,Object>> getCertificateDetails()
+    public List<CertificateDetails> getCertificateDetails()
     {
-        List<Map<CertificateDetails,Object>> certificateDetails = new ArrayList<>();
-        if(_certificates != null)
-        {
-            for (X509Certificate certificate : _certificates)
-            {
-                Map<CertificateDetails, Object> details = new EnumMap<>(CertificateDetails.class);
-
-                details.put(CertificateDetails.SUBJECT_NAME, getNameFromCertificate(certificate));
-                details.put(CertificateDetails.ISSUER_NAME, certificate.getIssuerX500Principal().getName());
-                details.put(CertificateDetails.VALID_START, certificate.getNotBefore());
-                details.put(CertificateDetails.VALID_END, certificate.getNotAfter());
-                certificateDetails.add(details);
-            }
-        }
-        return certificateDetails;
+        return (_certificates == null)
+                ? Collections.emptyList()
+                : Arrays.stream(_certificates)
+                        .map(CertificateDetailsImpl::new)
+                        .collect(Collectors.toList());
     }
-
-    private String getNameFromCertificate(final X509Certificate certificate)
-    {
-        String name;
-        X500Principal subjectX500Principal = certificate.getSubjectX500Principal();
-        name = getCommonNameFromPrincipal(subjectX500Principal);
-
-        return name;
-    }
-
-    private String getCommonNameFromPrincipal(final X500Principal subjectX500Principal)
-    {
-        String name;
-        String dn = subjectX500Principal.getName();
-        try
-        {
-            LdapName ldapDN = new LdapName(dn);
-            name = dn;
-            for (Rdn rdn : ldapDN.getRdns())
-            {
-                if (rdn.getType().equalsIgnoreCase("CN"))
-                {
-                    name = String.valueOf(rdn.getValue());
-                    break;
-                }
-            }
-
-        }
-        catch (InvalidNameException e)
-        {
-            LOGGER.error("Error getting subject name from certificate");
-            name =  null;
-        }
-        return name;
-    }
-
 
     @Override
     public TrustManager[] getTrustManagers() throws GeneralSecurityException

@@ -18,22 +18,20 @@
  * under the License.
  *
  */
-define(["dojo/dom",
+define(["dojo/_base/lang",
         "dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
         "dijit/registry",
+        "qpid/management/store/CertificateGridWidget",
         "dojox/html/entities",
-        "qpid/common/properties",
         "qpid/common/updater",
         "qpid/common/util",
-        "qpid/common/formatter",
         "qpid/management/addStore",
         "dojo/text!showTrustStore.html",
         "dojo/domReady!"],
-    function (dom, parser, query, connect, registry, entities, properties, updater, util, formatter, addStore, template)
+    function (lang, parser, query, connect, registry, CertificateGridWidget, entities, updater, util, addStore, template)
     {
-
         function TrustStore(kwArgs)
         {
             this.controller = kwArgs.controller;
@@ -64,15 +62,15 @@ define(["dojo/dom",
                     });
 
                     var deleteTrustStoreButton = query(".deleteStoreButton", contentPane.containerNode)[0];
-                    var node = registry.byNode(deleteTrustStoreButton);
-                    connect.connect(node, "onClick", function (evt)
+                    var deleteButtonNode = registry.byNode(deleteTrustStoreButton);
+                    connect.connect(deleteButtonNode, "onClick", function (evt)
                     {
                         that.deleteKeyStore();
                     });
 
                     var editTrustStoreButton = query(".editStoreButton", contentPane.containerNode)[0];
-                    var node = registry.byNode(editTrustStoreButton);
-                    connect.connect(node, "onClick", function (evt)
+                    var editButtonNode = registry.byNode(editTrustStoreButton);
+                    connect.connect(editButtonNode, "onClick", function (evt)
                     {
                         that.management.load(that.modelObj,
                             {
@@ -85,12 +83,24 @@ define(["dojo/dom",
                                 addStore.show(data[0], that.url);
                             }, util.xhrErrorHandler);
                     });
+
+                    var gridNode = query(".managedCertificatesGrid", contentPane.containerNode)[0];
+                    that.certificatesGrid = new CertificateGridWidget({
+                        management: that.management,
+                        modelObj: that.modelObj
+                    }, gridNode);
+                    that.certificatesGrid.startup();
+                    that.certificatesGrid.on("certificatesUpdated", lang.hitch(this, function()
+                    {
+                        that.keyStoreUpdater.update();
+                    }));
                 });
         };
 
         TrustStore.prototype.close = function ()
         {
             updater.remove(this.keyStoreUpdater);
+            this.certificatesGrid.destroy();
         };
 
         function KeyStoreUpdater(tabObject)
@@ -142,6 +152,7 @@ define(["dojo/dom",
                 {
                     that.trustStoreData = data[0];
                     that.updateHeader();
+                    that.tabObject.certificatesGrid.update(that.trustStoreData.certificateDetails);
 
                     if (callback)
                     {
@@ -154,6 +165,11 @@ define(["dojo/dom",
                     }
                     else
                     {
+                        var implementsManagedInterface = that.management.metadata.implementsManagedInterface("TrustStore",
+                            that.trustStoreData.type,
+                            "MutableCertificateTrustStore");
+                        that.tabObject.certificatesGrid.enableCertificateControls(implementsManagedInterface);
+
                         require(["qpid/management/store/" + encodeURIComponent(that.trustStoreData.type.toLowerCase())
                                  + "/show"], function (DetailsUI)
                         {
@@ -184,13 +200,13 @@ define(["dojo/dom",
                 this.management.remove(this.modelObj)
                     .then(function (data)
                     {
-                        that.contentPane.onClose()
+                        that.contentPane.onClose();
                         that.controller.tabContainer.removeChild(that.contentPane);
                         that.contentPane.destroyRecursive();
                         that.close();
                     }, util.xhrErrorHandler);
             }
-        }
+        };
 
         return TrustStore;
     });
