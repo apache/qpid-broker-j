@@ -35,9 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -69,7 +69,6 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     private long _contentSize;
 
     // TODO move to somewhere more useful
-    private static final Symbol JMS_TYPE = Symbol.valueOf("x-opt-jms-type");
     private static final Symbol DELIVERY_TIME = Symbol.valueOf("x-opt-delivery-time");
     private static final Symbol NOT_VALID_BEFORE = Symbol.valueOf("x-qpid-not-valid-before");
 
@@ -615,21 +614,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         @Override
         public String getType()
         {
-            String subject = getSubject();
-            if (subject != null)
-            {
-                return subject;
-            }
-
-            // Use legacy annotation if present and there was no subject
-            if (_messageAnnotationsSection == null || _messageAnnotationsSection.getValue().get(JMS_TYPE) == null)
-            {
-                return null;
-            }
-            else
-            {
-                return _messageAnnotationsSection.getValue().get(JMS_TYPE).toString();
-            }
+            return getSubject();
         }
 
         @Override
