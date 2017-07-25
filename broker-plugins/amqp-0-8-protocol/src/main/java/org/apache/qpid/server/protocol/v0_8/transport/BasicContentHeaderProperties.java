@@ -810,6 +810,12 @@ public class BasicContentHeaderProperties
         nullEncodedForm();
     }
 
+
+    public boolean hasTimestamp()
+    {
+        return (_propertyFlags & TIMESTAMP_MASK) != 0;
+    }
+
     public String getTypeAsString()
     {
         return (_type == null) ? null : _type.toString();
