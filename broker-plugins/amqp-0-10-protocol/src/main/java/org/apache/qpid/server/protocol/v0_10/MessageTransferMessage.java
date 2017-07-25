@@ -56,6 +56,12 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
     }
 
     @Override
+    public String getTo()
+    {
+        return getMetaData().getExchange();
+    }
+
+    @Override
     public AMQMessageHeader getMessageHeader()
     {
         return getMetaData().getMessageHeader();

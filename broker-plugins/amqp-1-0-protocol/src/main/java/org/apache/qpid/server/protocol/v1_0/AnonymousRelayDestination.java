@@ -75,7 +75,7 @@ public class AnonymousRelayDestination implements ReceivingDestination
     public Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken)
     {
         final ReceivingDestination destination;
-        final String routingAddress = message.getInitialRoutingAddress();
+        final String routingAddress = message.getTo();
         if (!routingAddress.startsWith("/") && routingAddress.contains("/"))
         {
             String[] parts = routingAddress.split("/", 2);

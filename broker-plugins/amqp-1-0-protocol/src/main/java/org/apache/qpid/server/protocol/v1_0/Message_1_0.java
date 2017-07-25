@@ -74,13 +74,8 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
     public String getInitialRoutingAddress()
     {
         MessageMetaData_1_0.MessageHeader_1_0 messageHeader = getMessageHeader();
-        String routingAddress = null;
-        final String to = messageHeader.getTo();
-        if (to != null)
-        {
-            routingAddress = to;
-        }
-        else if (messageHeader.getHeader("routing-key") instanceof String)
+        final String routingAddress;
+        if (messageHeader.getHeader("routing-key") instanceof String)
         {
             routingAddress = (String) messageHeader.getHeader("routing-key");
         }
@@ -98,6 +93,13 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
         }
 
         return routingAddress;
+    }
+
+    @Override
+    public String getTo()
+    {
+        MessageMetaData_1_0.MessageHeader_1_0 messageHeader = getMessageHeader();
+        return messageHeader.getTo();
     }
 
     private MessageMetaData_1_0 getMessageMetaData()

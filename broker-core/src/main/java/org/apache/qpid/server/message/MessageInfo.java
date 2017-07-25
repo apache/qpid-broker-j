@@ -50,4 +50,6 @@ public interface MessageInfo
     String getUserId();
     Map<String,Object> getHeaders();
     Date getNotValidBefore();
+    String getInitialRoutingAddress();
+    String getTo();
 }

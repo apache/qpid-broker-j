@@ -798,7 +798,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
         }
 
-        InternalMessage internalMessage = InternalMessage.createMessage(getMessageStore(), header, body, message.isPersistent());
+        InternalMessage internalMessage = InternalMessage.createMessage(getMessageStore(), header, body, message.isPersistent(), address);
         AutoCommitTransaction txn = new AutoCommitTransaction(getMessageStore());
         final InstanceProperties instanceProperties =
                 new InstanceProperties()

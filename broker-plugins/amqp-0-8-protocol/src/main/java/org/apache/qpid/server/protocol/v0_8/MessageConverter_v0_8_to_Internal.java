@@ -77,7 +77,7 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
         Object body = convertMessageBody(mimeType, data);
 
         return InternalMessage.convert(serverMessage.getMessageNumber(), serverMessage.isPersistent(),
-                new DelegatingMessageHeader(serverMessage.getMessageHeader(), encoding), body);
+                new DelegatingMessageHeader(serverMessage.getMessageHeader(), encoding), body, serverMessage.getTo());
     }
 
     @Override

@@ -48,6 +48,7 @@ public class MessageInfoImpl implements MessageInfo
     private final long _id;
     private final Map<String, Object> _headers;
     private final String _initialRoutingAddress;
+    private final String _to;
     private final Date _notValidBefore;
     private final String _messageType;
 
@@ -85,6 +86,7 @@ public class MessageInfoImpl implements MessageInfo
         _headerSize = message.getSizeIncludingHeader() - message.getSize();
         _id = message.getMessageNumber();
         _initialRoutingAddress = message.getInitialRoutingAddress();
+        _to = message.getTo();
         _notValidBefore = messageHeader.getNotValidBefore() == 0L ? null : new Date(messageHeader.getNotValidBefore());
 
         if(includeHeaders)
@@ -235,8 +237,15 @@ public class MessageInfoImpl implements MessageInfo
         return _notValidBefore == null ? null : new Date(_notValidBefore.getTime());
     }
 
+    @Override
     public String getInitialRoutingAddress()
     {
         return _initialRoutingAddress;
+    }
+
+    @Override
+    public String getTo()
+    {
+        return _to;
     }
 }

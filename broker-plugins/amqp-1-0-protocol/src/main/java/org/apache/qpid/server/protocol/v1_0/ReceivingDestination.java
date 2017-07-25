@@ -44,14 +44,4 @@ public interface ReceivingDestination
     String getAddress();
 
     MessageDestination getMessageDestination();
-
-    static String getRoutingAddress(final ServerMessage<?> message, final String destinationName)
-    {
-        String initialRoutingAddress = message.getInitialRoutingAddress();
-        if (destinationName != null && initialRoutingAddress.startsWith(destinationName + "/"))
-        {
-            initialRoutingAddress = initialRoutingAddress.substring(destinationName.length() + 1);
-        }
-        return initialRoutingAddress;
-    }
 }

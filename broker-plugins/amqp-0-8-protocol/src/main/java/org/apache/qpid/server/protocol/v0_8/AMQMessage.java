@@ -74,6 +74,12 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
     }
 
     @Override
+    public String getTo()
+    {
+        return AMQShortString.toString(getMessagePublishInfo().getExchange());
+    }
+
+    @Override
     public AMQMessageHeader getMessageHeader()
     {
         return getMessageMetaData().getMessageHeader();

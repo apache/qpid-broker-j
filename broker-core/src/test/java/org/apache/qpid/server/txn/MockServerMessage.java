@@ -97,6 +97,12 @@ class MockServerMessage implements ServerMessage
     }
 
     @Override
+    public String getTo()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public AMQMessageHeader getMessageHeader()
     {
         throw new UnsupportedOperationException();

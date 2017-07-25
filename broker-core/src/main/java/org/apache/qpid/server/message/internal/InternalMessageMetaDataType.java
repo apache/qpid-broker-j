@@ -67,7 +67,7 @@ public class InternalMessageMetaDataType implements MessageMetaDataType<Internal
     @Override
     public ServerMessage<InternalMessageMetaData> createMessage(final StoredMessage<InternalMessageMetaData> msg)
     {
-        return new InternalMessage(msg);
+        return new InternalMessage(msg, null);
     }
 
     @Override

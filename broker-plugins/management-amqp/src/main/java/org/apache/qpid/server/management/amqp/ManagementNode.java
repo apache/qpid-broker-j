@@ -900,7 +900,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         else if (convertedValue instanceof Serializable)
         {
             return InternalMessage.createMessage(_addressSpace.getMessageStore(), responseHeader,
-                                                 (Serializable) convertedValue, false);
+                                                 (Serializable) convertedValue, false, null);
         }
         else
         {

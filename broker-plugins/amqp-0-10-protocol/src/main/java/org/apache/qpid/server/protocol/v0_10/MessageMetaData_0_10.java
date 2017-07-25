@@ -216,6 +216,11 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
         return _deliveryProps == null ? null : _deliveryProps.getRoutingKey();
     }
 
+    public String getExchange()
+    {
+        return _deliveryProps == null ? null : _deliveryProps.getExchange();
+    }
+
     public AMQMessageHeader getMessageHeader()
     {
         return _messageHeader;

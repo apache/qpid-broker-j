@@ -49,18 +49,22 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
     private final Object _messageBody;
     private InternalMessageHeader _header;
     private String _initialRoutingAddress = "";
+    private final String _destinationName;
 
 
     InternalMessage(final StoredMessage<InternalMessageMetaData> handle,
-                final InternalMessageHeader header,
-                final Object messageBody)
+                    final InternalMessageHeader header,
+                    final Object messageBody,
+                    final String destinationName)
     {
         super(handle, null);
         _header = header;
         _messageBody = messageBody;
+        _destinationName = destinationName;
     }
 
-    InternalMessage(final StoredMessage<InternalMessageMetaData> msg)
+    InternalMessage(final StoredMessage<InternalMessageMetaData> msg,
+                    final String destinationName)
     {
         super(msg, null);
         _header = msg.getMetaData().getHeader();
@@ -80,12 +84,19 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
             throw new ConnectionScopedRuntimeException("Object message contained an object which could not " +
                                                        "be deserialized", e);
         }
+        _destinationName = destinationName;
     }
 
     @Override
     public String getInitialRoutingAddress()
     {
         return _initialRoutingAddress;
+    }
+
+    @Override
+    public String getTo()
+    {
+        return _destinationName;
     }
 
     @Override
@@ -125,7 +136,9 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
 
     public static InternalMessage createMessage(final MessageStore store,
                                                 final AMQMessageHeader header,
-                                                final Serializable bodyObject, final boolean persistent)
+                                                final Serializable bodyObject,
+                                                final boolean persistent,
+                                                final String destinationName)
     {
         InternalMessageHeader internalHeader;
         if(header instanceof InternalMessageHeader)
@@ -148,7 +161,7 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
             MessageHandle<InternalMessageMetaData> handle = store.addMessage(metaData);
             handle.addContent(QpidByteBuffer.wrap(bytes));
             StoredMessage<InternalMessageMetaData> storedMessage = handle.allContentAdded();
-            return new InternalMessage(storedMessage, internalHeader, bodyObject);
+            return new InternalMessage(storedMessage, internalHeader, bodyObject, destinationName);
         }
         catch (IOException e)
         {
@@ -164,17 +177,17 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
 
     public static InternalMessage createStringMessage(MessageStore store, AMQMessageHeader header, String messageBody, boolean persistent)
     {
-        return createMessage(store, header, messageBody, persistent);
+        return createMessage(store, header, messageBody, persistent, null);
     }
 
     public static InternalMessage createMapMessage(MessageStore store, AMQMessageHeader header, Map<? extends Object,? extends Object> messageBody)
     {
-        return createMessage(store, header, new LinkedHashMap<Object,Object>(messageBody), false);
+        return createMessage(store, header, new LinkedHashMap<Object,Object>(messageBody), false, null);
     }
 
     public static InternalMessage createListMessage(MessageStore store, AMQMessageHeader header, List<? extends Object> messageBody)
     {
-        return createMessage(store, header, new ArrayList<Object>(messageBody), false);
+        return createMessage(store, header, new ArrayList<Object>(messageBody), false, null);
     }
 
     public static InternalMessage createBytesMessage(MessageStore store, AMQMessageHeader header, byte[] messageBody)
@@ -185,14 +198,18 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
 
     public static InternalMessage createBytesMessage(MessageStore store, AMQMessageHeader header, byte[] messageBody, boolean persist)
     {
-        return createMessage(store, header, messageBody, persist);
+        return createMessage(store, header, messageBody, persist, null);
     }
 
-    public static InternalMessage convert(long messageNumber, boolean persistent, AMQMessageHeader header, Object messageBody)
+    public static InternalMessage convert(long messageNumber,
+                                          boolean persistent,
+                                          AMQMessageHeader header,
+                                          Object messageBody,
+                                          final String destinationName)
     {
         InternalMessageHeader convertedHeader = new InternalMessageHeader(header);
         StoredMessage<InternalMessageMetaData> handle = createReadOnlyHandle(messageNumber, persistent, convertedHeader, messageBody);
-        return new InternalMessage(handle, convertedHeader, messageBody);
+        return new InternalMessage(handle, convertedHeader, messageBody, destinationName);
     }
 
     private static StoredMessage<InternalMessageMetaData> createReadOnlyHandle(final long messageNumber,

@@ -423,7 +423,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     }
                     final StoredMessage<MessageMetaData> storedMessage = handle.allContentAdded();
 
-                    final AMQMessage amqMessage = createAMQMessage(storedMessage);
+                    final AMQMessage amqMessage = new AMQMessage(storedMessage, _connection.getReference());
                     try (MessageReference reference = amqMessage.newReference())
                     {
 
@@ -1228,15 +1228,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     public ClientDeliveryMethod getClientDeliveryMethod()
     {
         return _clientDeliveryMethod;
-    }
-
-
-    private AMQMessage createAMQMessage(StoredMessage<MessageMetaData> handle)
-    {
-
-        AMQMessage message = new AMQMessage(handle, _connection.getReference());
-
-        return message;
     }
 
     public Subject getSubject()

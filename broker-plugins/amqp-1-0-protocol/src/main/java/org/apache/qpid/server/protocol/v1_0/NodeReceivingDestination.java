@@ -84,9 +84,7 @@ public class NodeReceivingDestination implements ReceivingDestination
     @Override
     public Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken)
     {
-        final String routingAddress = _routingAddress == null
-                ? ReceivingDestination.getRoutingAddress(message, _address)
-                : _routingAddress;
+        final String routingAddress = _routingAddress == null ? getRoutingAddress(message) : _routingAddress;
         _destination.authorisePublish(securityToken, Collections.singletonMap("routingKey", routingAddress));
 
         final InstanceProperties instanceProperties =
@@ -148,6 +146,20 @@ public class NodeReceivingDestination implements ReceivingDestination
             }
         }
         return ACCEPTED;
+    }
+
+    private String getRoutingAddress(final ServerMessage<?> message)
+    {
+        String initialRoutingAddress = message.getInitialRoutingAddress();
+        if (initialRoutingAddress == null || "".equals(initialRoutingAddress))
+        {
+            initialRoutingAddress = message.getTo() == null ? "" : message.getTo();
+        }
+        if (_address != null && initialRoutingAddress.startsWith(_address + "/"))
+        {
+            initialRoutingAddress = initialRoutingAddress.substring(_address.length() + 1);
+        }
+        return initialRoutingAddress;
     }
 
     private Outcome createdRejectedOutcome(AmqpError errorCode, String errorMessage)

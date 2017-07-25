@@ -30,6 +30,8 @@ public interface ServerMessage<T extends StorableMessageMetaData> extends Enqueu
 
     String getInitialRoutingAddress();
 
+    String getTo();
+
     AMQMessageHeader getMessageHeader();
 
     @Override

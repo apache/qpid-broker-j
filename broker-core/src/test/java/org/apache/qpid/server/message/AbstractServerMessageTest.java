@@ -48,6 +48,12 @@ public class AbstractServerMessageTest extends QpidTestCase
         }
 
         @Override
+        public String getTo()
+        {
+            return null;
+        }
+
+        @Override
         public AMQMessageHeader getMessageHeader()
         {
             return null;

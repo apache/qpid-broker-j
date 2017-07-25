@@ -157,6 +157,12 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
 
         @Override
+        public String getTo()
+        {
+            return null;
+        }
+
+        @Override
         public long getSize()
         {
             return 0;
