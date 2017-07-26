@@ -99,21 +99,18 @@ public class BDBCacheSizeSetter extends AbstractConfigurationChangeListener
             }
         }
         int numberOfJEEnvironments = bdbEnvironmentContainers.size();
-        if (numberOfJEEnvironments == 0)
+        if (numberOfJEEnvironments > 0)
         {
-            // This should never happen out side of tests
-            LOGGER.warn("Cannot find any BDBEnvironmentContainer instance when there should be at least one.");
-            numberOfJEEnvironments = 1;
-        }
-        long cacheSize = totalCacheSize / numberOfJEEnvironments;
-        if (cacheSize < BDBVirtualHost.BDB_MIN_CACHE_SIZE)
-        {
-            cacheSize = BDBVirtualHost.BDB_MIN_CACHE_SIZE;
-        }
-        LOGGER.debug("Setting JE cache size: totalCacheSize: {}; numberOfJEEnvironment: {}; cacheSize: {}", totalCacheSize, numberOfJEEnvironments, cacheSize);
-        for (BDBEnvironmentContainer bdbEnvironmentContainer : bdbEnvironmentContainers)
-        {
-            bdbEnvironmentContainer.setBDBCacheSize(cacheSize);
+            long cacheSize = totalCacheSize / numberOfJEEnvironments;
+            if (cacheSize < BDBVirtualHost.BDB_MIN_CACHE_SIZE)
+            {
+                cacheSize = BDBVirtualHost.BDB_MIN_CACHE_SIZE;
+            }
+            LOGGER.debug("Setting JE cache size: totalCacheSize: {}; numberOfJEEnvironment: {}; cacheSize: {}", totalCacheSize, numberOfJEEnvironments, cacheSize);
+            for (BDBEnvironmentContainer bdbEnvironmentContainer : bdbEnvironmentContainers)
+            {
+                bdbEnvironmentContainer.setBDBCacheSize(cacheSize);
+            }
         }
     }
 

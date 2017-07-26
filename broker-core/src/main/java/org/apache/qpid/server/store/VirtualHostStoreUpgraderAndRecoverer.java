@@ -1039,9 +1039,9 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                 if(child instanceof VirtualHost)
                 {
                     child.removeChangeListener(configChangeListener);
+                    removeVirtualHostConfiguration((VirtualHost<?>) child, durableConfigurationStore);
                 }
             }
-
         });
         if(isNew)
         {
@@ -1052,4 +1052,24 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         }
     }
 
+    private void removeVirtualHostConfiguration(final VirtualHost<?> virtualHost,
+                                                final DurableConfigurationStore durableConfigurationStore)
+    {
+        Set<ConfiguredObjectRecord> records = new HashSet<>();
+        applyRecursively(virtualHost, new RecursiveAction<ConfiguredObject<?>>()
+        {
+            @Override
+            public boolean applyToChildren(final ConfiguredObject<?> object)
+            {
+                return object.isDurable();
+            }
+
+            @Override
+            public void performAction(final ConfiguredObject<?> object)
+            {
+                records.add(object.asObjectRecord());
+            }
+        });
+        durableConfigurationStore.remove(records.toArray(new ConfiguredObjectRecord[records.size()]));
+    }
 }

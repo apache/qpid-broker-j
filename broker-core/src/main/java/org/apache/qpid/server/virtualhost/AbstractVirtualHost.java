@@ -156,9 +156,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final AccessControlContext _housekeepingJobContext;
     private final AccessControlContext _fileSystemSpaceCheckerJobContext;
     private final AtomicBoolean _acceptsConnections = new AtomicBoolean(false);
-    private TaskExecutor _preferenceTaskExecutor;
+    private volatile TaskExecutor _preferenceTaskExecutor;
+    private volatile boolean _deleteRequested;
 
-    private static enum BlockingType { STORE, FILESYSTEM };
+    private enum BlockingType { STORE, FILESYSTEM };
 
     private static final String USE_ASYNC_RECOVERY = "use_async_message_store_recovery";
 
@@ -167,7 +168,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private static final int HOUSEKEEPING_SHUTDOWN_TIMEOUT = 5;
 
-    private ScheduledThreadPoolExecutor _houseKeepingTaskExecutor;
+    private volatile ScheduledThreadPoolExecutor _houseKeepingTaskExecutor;
 
     private final Broker<?> _broker;
 
@@ -1151,7 +1152,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
-    protected void shutdownHouseKeeping()
+    private void shutdownHouseKeeping()
     {
         if(_houseKeepingTaskExecutor != null)
         {
@@ -1168,6 +1169,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 _logger.warn("Interrupted during Housekeeping shutdown:", e);
                 Thread.currentThread().interrupt();
+            }
+            finally
+            {
+                _houseKeepingTaskExecutor = null;
             }
         }
     }
@@ -1511,7 +1516,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     protected ListenableFuture<Void> beforeClose()
     {
         setState(State.UNAVAILABLE);
-        _virtualHostLoggersToClose = new ArrayList(getChildren(VirtualHostLogger.class));
+        _virtualHostLoggersToClose = new ArrayList<>(getChildren(VirtualHostLogger.class));
         //Stop Connections
         return closeConnections();
     }
@@ -1521,9 +1526,22 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         _dtxRegistry.close();
         shutdownHouseKeeping();
+
+        if (_deleteRequested)
+        {
+            deleteLinkRegistry();
+        }
+
         closeMessageStore();
         stopPreferenceTaskExecutor();
         closePreferenceStore();
+
+        if (_deleteRequested)
+        {
+            deleteMessageStore();
+            deletePreferenceStore();
+        }
+
         closeNetworkConnectionScheduler();
         _eventLogger.message(VirtualHostMessages.CLOSED(getName()));
 
@@ -1532,11 +1550,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
 
-    public ListenableFuture<Void> closeConnections()
+    private ListenableFuture<Void> closeConnections()
     {
         if (_logger.isDebugEnabled())
         {
-            _logger.debug("Closing connection registry :" + _connections.size() + " connections.");
+            _logger.debug("Closing connection registry : {} connection(s).", _connections.size());
         }
         _acceptsConnections.set(false);
         for(AMQPConnection<?> conn : _connections)
@@ -1719,7 +1737,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
-    protected void reportIfError(State state)
+    private void reportIfError(State state)
     {
         if (state == State.ERRORED)
         {
@@ -2244,6 +2262,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         if (_preferenceTaskExecutor != null)
         {
             _preferenceTaskExecutor.stop();
+            _preferenceTaskExecutor = null;
         }
     }
 
@@ -2263,47 +2282,68 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
+    @SuppressWarnings("ignore")
     @StateTransition( currentState = { State.ACTIVE, State.ERRORED }, desiredState = State.DELETED )
     private ListenableFuture<Void> doDelete()
     {
+        _deleteRequested = true;
+
         return doAfterAlways(closeAsync(),
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        if (_linkRegistry != null)
-                        {
-                            _linkRegistry.delete();
-                        }
-                        MessageStore ms = getMessageStore();
-                        if (ms != null)
-                        {
-                            try
-                            {
-                                ms.onDelete(AbstractVirtualHost.this);
-                            }
-                            catch (Exception e)
-                            {
-                                _logger.warn("Exception occurred on message store deletion", e);
-                            }
-                        }
-                        PreferenceStore ps = _preferenceStore;
-                        if (ps != null)
-                        {
-                            try
-                            {
-                                ps.onDelete();
-                            }
-                            catch (Exception e)
-                            {
-                                _logger.warn("Exception occurred on preference store deletion", e);
-                            }
-                        }
-                        deleted();
-                        setState(State.DELETED);
-                    }
-                });
+                             () ->
+                             {
+                                 setState(State.DELETED);
+                                 deleted();
+                             });
+    }
+
+    private void deleteLinkRegistry()
+    {
+        if (_linkRegistry != null)
+        {
+            _linkRegistry.delete();
+            _linkRegistry = null;
+        }
+    }
+
+    private void deletePreferenceStore()
+    {
+        final PreferenceStore ps = _preferenceStore;
+        if (ps != null)
+        {
+            try
+            {
+                ps.onDelete();
+            }
+            catch (Exception e)
+            {
+                _logger.warn("Exception occurred on preference store deletion", e);
+            }
+            finally
+            {
+                _preferenceStore = null;
+
+            }
+        }
+    }
+
+    private void deleteMessageStore()
+    {
+        MessageStore ms = _messageStore;
+        if (ms != null)
+        {
+            try
+            {
+                ms.onDelete(AbstractVirtualHost.this);
+            }
+            catch (Exception e)
+            {
+                _logger.warn( "Exception occurred on message store deletion", e);
+            }
+            finally
+            {
+                _messageStore = null;
+            }
+        }
     }
 
     @Override
