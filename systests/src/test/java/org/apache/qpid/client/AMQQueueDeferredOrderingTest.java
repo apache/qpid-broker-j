@@ -44,9 +44,8 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(AMQQueueDeferredOrderingTest.class);
-    private Connection con;
-    private Session session;
-    private Queue queue;
+    private Connection _con;
+    private Queue _queue;
     private MessageConsumer consumer;
     private int _numMessages;
     private ExecutorService _executor;
@@ -60,9 +59,9 @@ public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
         private int start;
         private int end;
 
-        public ASyncProducer(Queue q, int start, int end) throws JMSException
+        ASyncProducer(Queue q, int start, int end) throws JMSException
         {
-            this.session = con.createSession(true, Session.SESSION_TRANSACTED);
+            this.session = _con.createSession(true, Session.SESSION_TRANSACTED);
             this._logger.info("Create Consumer of Q1");
             this.producer = this.session.createProducer(q);
             this.start = start;
@@ -98,15 +97,15 @@ public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
         _numMessages = isBrokerStorePersistent() ? 300 : 1000;
 
         _logger.info("Create Connection");
-        con = getConnectionWithOptions(isBroker10()? Collections.singletonMap("amqp.traceFrames", "true") : Collections.emptyMap());
+        _con = getConnectionWithOptions(isBroker10()? Collections.singletonMap("amqp.traceFrames", "true") : Collections.emptyMap());
         _logger.info("Create Session");
-        session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final Session session = _con.createSession(false, Session.AUTO_ACKNOWLEDGE);
         _logger.info("Create Q");
-        queue = createTestQueue(session);
+        _queue = createTestQueue(session);
         _logger.info("Create Consumer of Q");
-        consumer = session.createConsumer(queue);
+        consumer = session.createConsumer(_queue);
         _logger.info("Start Connection");
-        con.start();
+        _con.start();
         _executor = Executors.newSingleThreadExecutor();
     }
 
@@ -117,19 +116,19 @@ public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
 
         // Setup initial messages
         _logger.info("Creating first producer thread");
-        f = _executor.submit(new ASyncProducer(queue, 0, _numMessages / 2));
+        f = _executor.submit(new ASyncProducer(_queue, 0, _numMessages / 2));
         publisherException = f.get(1, TimeUnit.MINUTES);
         assertNull("Publishing first batch failed: " + publisherException, publisherException);
 
         // Setup second set of messages to produce while we consume
         _logger.info("Creating second producer thread");
-        f = _executor.submit(new ASyncProducer(queue, _numMessages / 2, _numMessages));
+        f = _executor.submit(new ASyncProducer(_queue, _numMessages / 2, _numMessages));
 
         // Start consuming and checking they're in order
         _logger.info("Consuming messages");
         for (int i = 0; i < _numMessages; i++)
         {
-            Message msg = consumer.receive(3000);
+            Message msg = consumer.receive(getReceiveTimeout());
 
             assertNotNull("Message " + i + " should not be null", msg);
             assertTrue("Message " + i + " should be a text message", msg instanceof TextMessage);
@@ -154,7 +153,7 @@ public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
             try
             {
                 _logger.info("Closing connection");
-                con.close();
+                _con.close();
             }
             finally
             {
@@ -162,10 +161,4 @@ public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
             }
         }
     }
-
-    public static junit.framework.Test suite()
-    {
-        return new junit.framework.TestSuite(AMQQueueDeferredOrderingTest.class);
-    }
-
 }
