@@ -34,20 +34,19 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
-import javax.naming.NamingException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.QpidException;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class SortedQueueTest extends QpidBrokerTestCase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SortedQueueTest.class);
-    public static final String TEST_SORT_KEY = "testSortKey";
+    private static final String TEST_SORT_KEY = "testSortKey";
     private static final String[] VALUES = SortedQueueEntryListTest.keys.clone();
     private static final String[] VALUES_SORTED = SortedQueueEntryListTest.keys.clone();
+    private static final int NUMBER_OF_MESSAGES = 200;
     private final String[] SUBSET_KEYS = { "000", "100", "200", "300", "400", "500", "600", "700", "800", "900" };
 
     private Connection _producerConnection;
@@ -64,7 +63,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
         _producerConnection = getConnection();
         _consumerConnection = getConnectionWithPrefetch(1);
         _producerSession = _producerConnection.createSession(true, Session.SESSION_TRANSACTED);
-        _receiveInterval = isBrokerStorePersistent() ? 3000l : 1500l;
+        _receiveInterval = getReceiveTimeout();
     }
 
     @Override
@@ -76,7 +75,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
         super.tearDown();
     }
 
-    public void testSortOrder() throws JMSException, NamingException, QpidException
+    public void testSortOrder() throws Exception
     {
         final Queue queue = createQueue();
         final MessageProducer producer = _producerSession.createProducer(queue);
@@ -108,23 +107,22 @@ public class SortedQueueTest extends QpidBrokerTestCase
         assertEquals("Incorrect number of messages received", VALUES.length, messageCount);
     }
 
-    public void testAutoAckSortedQueue() throws JMSException, NamingException, QpidException
+    public void testAutoAckSortedQueue() throws Exception
     {
         runThroughSortedQueueForSessionMode(Session.AUTO_ACKNOWLEDGE);
     }
 
-    public void testTransactedSortedQueue() throws JMSException, NamingException, QpidException
+    public void testTransactedSortedQueue() throws Exception
     {
         runThroughSortedQueueForSessionMode(Session.SESSION_TRANSACTED);
     }
 
-    public void testClientAckSortedQueue() throws JMSException, NamingException, QpidException
+    public void testClientAckSortedQueue() throws Exception
     {
         runThroughSortedQueueForSessionMode(Session.CLIENT_ACKNOWLEDGE);
     }
 
-    private void runThroughSortedQueueForSessionMode(final int sessionMode) throws JMSException, NamingException,
-                                                                                   QpidException
+    private void runThroughSortedQueueForSessionMode(final int sessionMode) throws Exception
     {
         final Queue queue = createQueue();
         final MessageProducer producer = _producerSession.createProducer(queue);
@@ -140,22 +138,15 @@ public class SortedQueueTest extends QpidBrokerTestCase
             _producerSession.commit();
         }
 
-        try
-        {
-            consumerThread.join(getConsumerThreadJoinInterval());
-        }
-        catch(InterruptedException e)
-        {
-            fail("Test failed waiting for consumer to complete");
-        }
+        consumerThread.join(getConsumerThreadJoinInterval());
 
-        assertTrue("Consumer timed out", consumerThread.isStopped());
+        assertTrue(String.format("Consumer thread timed out after awaiting : %d ms", getConsumerThreadJoinInterval()), consumerThread.isStopped());
         assertEquals("Incorrect number of messages received", VALUES.length, consumerThread.getConsumed());
 
         producer.close();
     }
 
-    public void testSortedQueueWithAscendingSortedKeys() throws JMSException, NamingException, QpidException
+    public void testSortedQueueWithAscendingSortedKeys() throws Exception
     {
         final Queue queue = createQueue();
         final MessageProducer producer = _producerSession.createProducer(queue);
@@ -163,7 +154,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
         final TestConsumerThread consumerThread = new TestConsumerThread(Session.AUTO_ACKNOWLEDGE, queue);
         consumerThread.start();
 
-        for(int i = 0; i < 200; i++)
+        for(int i = 0; i < NUMBER_OF_MESSAGES; i++)
         {
             final String ascendingKey = AscendingSortedKeys.getNextKey();
             final Message msg = _producerSession.createTextMessage("Message Text:" + ascendingKey);
@@ -172,33 +163,26 @@ public class SortedQueueTest extends QpidBrokerTestCase
             _producerSession.commit();
         }
 
-        try
-        {
-            consumerThread.join(getConsumerThreadJoinInterval());
-        }
-        catch(InterruptedException e)
-        {
-            fail("Test failed waiting for consumer to complete");
-        }
+        consumerThread.join(getConsumerThreadJoinInterval());
 
-        assertTrue("Consumer timed out", consumerThread.isStopped());
-        assertEquals("Incorrect number of messages received", 200, consumerThread.getConsumed());
+        assertTrue(String.format("Consumer thread timed out after awaiting : %d ms", getConsumerThreadJoinInterval()), consumerThread.isStopped());
+        assertEquals("Incorrect number of messages received", NUMBER_OF_MESSAGES, consumerThread.getConsumed());
 
         producer.close();
     }
 
     private long getConsumerThreadJoinInterval()
     {
-        return isBrokerStorePersistent() ? 50000L: 5000L;
+        return _receiveInterval * NUMBER_OF_MESSAGES;
     }
 
-    public void testSortOrderWithNonUniqueKeys() throws JMSException, NamingException, QpidException
+    public void testSortOrderWithNonUniqueKeys() throws Exception
     {
         final Queue queue = createQueue();
         final MessageProducer producer = _producerSession.createProducer(queue);
 
         int count = 0;
-        while(count < 200)
+        while(count < NUMBER_OF_MESSAGES)
         {
             final Message msg = _producerSession.createTextMessage("Message Text:" + count++);
             msg.setStringProperty(TEST_SORT_KEY, "samesortkeyvalue");
@@ -223,10 +207,10 @@ public class SortedQueueTest extends QpidBrokerTestCase
             messageCount++;
         }
 
-        assertEquals("Incorrect number of messages received", 200, messageCount);
+        assertEquals("Incorrect number of messages received", NUMBER_OF_MESSAGES, messageCount);
     }
 
-    public void testSortOrderWithUniqueKeySubset() throws JMSException, NamingException, QpidException
+    public void testSortOrderWithUniqueKeySubset() throws Exception
     {
         final Queue queue = createQueue();
         final MessageProducer producer = _producerSession.createProducer(queue);
@@ -260,7 +244,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
         assertEquals("Incorrect number of messages received", 100, messageCount);
     }
 
-    public void testGetNextWithAck() throws JMSException, NamingException, QpidException
+    public void testGetNextWithAck() throws Exception
     {
         Queue _queue = createQueue();
         MessageProducer producer = _producerSession.createProducer(_queue);
@@ -331,7 +315,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
         }
     }
 
-    private Queue createQueue() throws QpidException, JMSException
+    private Queue createQueue() throws Exception
     {
         final Map<String, Object> arguments = new HashMap<String, Object>();
         arguments.put(SortedQueue.SORT_KEY, TEST_SORT_KEY);
@@ -339,20 +323,20 @@ public class SortedQueueTest extends QpidBrokerTestCase
         return getQueueFromName(_producerSession, getTestQueueName());
     }
 
-    private Message getSortableTestMesssage(final String key) throws JMSException
+    private Message getSortableTestMesssage(final String key) throws Exception
     {
         final Message msg = _producerSession.createTextMessage("Message Text: Key Value" + key);
         msg.setStringProperty(TEST_SORT_KEY, key);
         return msg;
     }
 
-    private void sendAndCommitMessage(final MessageProducer producer, final String keyValue) throws JMSException
+    private void sendAndCommitMessage(final MessageProducer producer, final String keyValue) throws Exception
     {
         producer.send(getSortableTestMesssage(keyValue));
         _producerSession.commit();
     }
 
-    private Message assertReceiveAndValidateMessage(final MessageConsumer consumer, final String expectedKey) throws JMSException
+    private Message assertReceiveAndValidateMessage(final MessageConsumer consumer, final String expectedKey) throws Exception
     {
         final Message received = assertReceiveMessage(consumer);
         assertEquals("Received message with unexpected sorted key value", expectedKey,
