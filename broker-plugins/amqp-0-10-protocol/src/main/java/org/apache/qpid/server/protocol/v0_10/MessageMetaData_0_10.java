@@ -252,6 +252,16 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
         return _header;
     }
 
+    public DeliveryProperties getDeliveryProperties()
+    {
+        return _deliveryProps;
+    }
+
+    public MessageProperties getMessageProperties()
+    {
+        return _messageProps;
+    }
+
     private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData_0_10>
     {
         @Override

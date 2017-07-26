@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
@@ -149,10 +151,23 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
         }
 
         deliveryProps.setExpiration(message_0_8.getExpiration());
+        if (message_0_8.getExpiration() != 0)
+        {
+            deliveryProps.setTtl(message_0_8.getExpiration() - message_0_8.getArrivalTime());
+        }
         deliveryProps.setImmediate(message_0_8.isImmediate());
+        deliveryProps.setDiscardUnroutable(!message_0_8.isMandatory());
         deliveryProps.setPriority(MessageDeliveryPriority.get(properties.getPriority()));
         deliveryProps.setRoutingKey(message_0_8.getInitialRoutingAddress());
         deliveryProps.setTimestamp(properties.getTimestamp());
+        if (properties.getDeliveryMode() == BasicContentHeaderProperties.PERSISTENT)
+        {
+            deliveryProps.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+        }
+        else
+        {
+            deliveryProps.setDeliveryMode(MessageDeliveryMode.NON_PERSISTENT);
+        }
 
         messageProps.setContentEncoding(properties.getEncodingAsString());
         messageProps.setContentLength(size);
@@ -208,7 +223,7 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
             }
             catch(IllegalArgumentException e)
             {
-                // ignore - can't parse
+                throw new MessageConversionException("Could not convert message from 0-8 to 0-10 because messageId conversion failed.", e);
             }
         }
 
