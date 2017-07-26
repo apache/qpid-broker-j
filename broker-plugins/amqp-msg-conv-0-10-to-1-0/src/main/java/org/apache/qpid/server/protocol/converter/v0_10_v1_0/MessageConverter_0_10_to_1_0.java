@@ -21,11 +21,14 @@
 
 package org.apache.qpid.server.protocol.converter.v0_10_v1_0;
 
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_10.MessageTransferMessage;
+import org.apache.qpid.server.protocol.v0_10.transport.ReplyTo;
 import org.apache.qpid.server.protocol.v1_0.MessageConverter_to_1_0;
 import org.apache.qpid.server.protocol.v1_0.MessageMetaData_1_0;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
@@ -35,6 +38,7 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
@@ -58,6 +62,8 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
                                                   final EncodingRetainingSection<?> bodySection,
                                                   SectionEncoder sectionEncoder)
     {
+        Properties props = new Properties();
+
         final MessageProperties msgProps = serverMessage.getHeader().getMessageProperties();
         final DeliveryProperties deliveryProps = serverMessage.getHeader().getDeliveryProperties();
 
@@ -73,9 +79,35 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
             {
                 header.setTtl(UnsignedInteger.valueOf(deliveryProps.getTtl()));
             }
+
+            if(deliveryProps.hasExpiration())
+            {
+                props.setAbsoluteExpiryTime(new Date(deliveryProps.getExpiration()));
+            }
+
+            if(deliveryProps.hasTimestamp())
+            {
+                props.setCreationTime(new Date(deliveryProps.getTimestamp()));
+            }
+
+            String to = deliveryProps.getExchange();
+            if (deliveryProps.getRoutingKey() != null)
+            {
+                String routingKey = deliveryProps.getRoutingKey();
+                if (to != null && !"".equals(to))
+                {
+                    to += "/" + routingKey;
+                }
+                else
+                {
+                    to = routingKey;
+                }
+            }
+            props.setTo(to);
+
         }
 
-        Properties props = new Properties();
+
         ApplicationProperties applicationProperties = null;
 
 
@@ -94,14 +126,14 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
         {
             if(msgProps.hasContentEncoding()
                && !GZIPUtils.GZIP_CONTENT_ENCODING.equals(msgProps.getContentEncoding())
-               && bodySection instanceof Data)
+               && bodySection instanceof DataSection)
             {
                 props.setContentEncoding(Symbol.valueOf(msgProps.getContentEncoding()));
             }
 
             if(msgProps.hasCorrelationId())
             {
-                props.setCorrelationId(msgProps.getCorrelationId());
+                props.setCorrelationId(new Binary(msgProps.getCorrelationId()));
             }
 
             if(msgProps.hasMessageId())
@@ -110,7 +142,24 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
             }
             if(msgProps.hasReplyTo())
             {
-                props.setReplyTo(msgProps.getReplyTo().getExchange()+"/"+msgProps.getReplyTo().getRoutingKey());
+                ReplyTo replyTo = msgProps.getReplyTo();
+                String to = null;
+                if (replyTo.hasExchange() && !"".equals(replyTo.getExchange()))
+                {
+                    to = replyTo.getExchange();
+                }
+                if (replyTo.hasRoutingKey())
+                {
+                    if (to != null)
+                    {
+                        to += "/" + replyTo.getRoutingKey();
+                    }
+                    else
+                    {
+                        to = replyTo.getRoutingKey();
+                    }
+                }
+                props.setReplyTo(to);
             }
             if(msgProps.hasContentType())
             {
@@ -123,8 +172,6 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
                 }
             }
 
-            props.setSubject(serverMessage.getInitialRoutingAddress());
-
             if(msgProps.hasUserId())
             {
                 props.setUserId(new Binary(msgProps.getUserId()));
@@ -133,14 +180,43 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
             Map<String, Object> applicationPropertiesMap = msgProps.getApplicationHeaders();
             if(applicationPropertiesMap != null)
             {
+                applicationPropertiesMap = new LinkedHashMap<>(applicationPropertiesMap);
+                if (applicationPropertiesMap.containsKey("x-jms-type"))
+                {
+                    props.setSubject(String.valueOf(applicationPropertiesMap.get("x-jms-type")));
+                    applicationPropertiesMap.remove("x-jms-type");
+                }
+
                 if(applicationPropertiesMap.containsKey("qpid.subject"))
                 {
                     props.setSubject(String.valueOf(applicationPropertiesMap.get("qpid.subject")));
-                    applicationPropertiesMap = new LinkedHashMap<>(applicationPropertiesMap);
                     applicationPropertiesMap.remove("qpid.subject");
                 }
-                applicationProperties = new ApplicationProperties(applicationPropertiesMap);
 
+                if(applicationPropertiesMap.containsKey("JMSXGroupID"))
+                {
+                    props.setGroupId(String.valueOf(applicationPropertiesMap.get("JMSXGroupID")));
+                    applicationPropertiesMap.remove("JMSXGroupID");
+                }
+
+                if(applicationPropertiesMap.containsKey("JMSXGroupSeq"))
+                {
+                    Object jmsxGroupSeq = applicationPropertiesMap.get("JMSXGroupSeq");
+                    if (jmsxGroupSeq instanceof Integer)
+                    {
+                        props.setGroupSequence(UnsignedInteger.valueOf((Integer)jmsxGroupSeq));
+                        applicationPropertiesMap.remove("JMSXGroupSeq");
+                    }
+                }
+
+                try
+                {
+                    applicationProperties = new ApplicationProperties(applicationPropertiesMap);
+                }
+                catch (IllegalArgumentException e)
+                {
+                    throw new MessageConversionException("Could not convert message from 0-10 to 1.0 because application headers conversion failed.", e);
+                }
             }
         }
         return new MessageMetaData_1_0(header.createEncodingRetainingSection(),

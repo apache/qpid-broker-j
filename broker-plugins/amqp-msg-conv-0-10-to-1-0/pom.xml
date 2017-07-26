@@ -51,6 +51,12 @@
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-plugins-amqp-1-0-protocol</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-test-utils</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
