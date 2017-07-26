@@ -196,7 +196,7 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
                 }
 
                 String exchangeName = burl.getExchangeName();
-                if(exchangeName != null)
+                if(exchangeName != null && !"".equals(exchangeName))
                 {
                     replyTo.setExchange(exchangeName);
                 }

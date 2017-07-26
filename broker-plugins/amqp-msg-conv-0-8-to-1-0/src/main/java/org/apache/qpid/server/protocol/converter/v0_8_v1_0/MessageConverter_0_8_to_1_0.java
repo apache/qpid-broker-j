@@ -183,7 +183,7 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
         if (messagePublishInfo.getRoutingKey() != null)
         {
             String routingKey = AMQShortString.toString(messagePublishInfo.getRoutingKey());
-            if (to != null)
+            if (to != null && !"".equals(to))
             {
                 to += "/" + routingKey;
             }

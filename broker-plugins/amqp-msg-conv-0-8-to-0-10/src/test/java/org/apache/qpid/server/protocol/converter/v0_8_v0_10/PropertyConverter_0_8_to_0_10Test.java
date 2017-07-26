@@ -216,7 +216,7 @@ public class PropertyConverter_0_8_to_0_10Test extends QpidTestCase
 
         final MessageProperties messageProperties =
                 convertedMessage.getStoredMessage().getMetaData().getMessageProperties();
-        assertEquals("Unexpected reply-to exchange", "", messageProperties.getReplyTo().getExchange());
+        assertNull("Unexpected reply-to exchange",  messageProperties.getReplyTo().getExchange());
         assertEquals("Unexpected reply-to routing-key", "queue_name", messageProperties.getReplyTo().getRoutingKey());
     }
 
@@ -232,7 +232,7 @@ public class PropertyConverter_0_8_to_0_10Test extends QpidTestCase
 
         final MessageProperties messageProperties =
                 convertedMessage.getStoredMessage().getMetaData().getMessageProperties();
-        assertEquals("Unexpected reply-to exchange", "", messageProperties.getReplyTo().getExchange());
+        assertNull("Unexpected reply-to exchange", messageProperties.getReplyTo().getExchange());
         assertEquals("Unexpected reply-to routing-key", "test_routing_key", messageProperties.getReplyTo().getRoutingKey());
     }
 
