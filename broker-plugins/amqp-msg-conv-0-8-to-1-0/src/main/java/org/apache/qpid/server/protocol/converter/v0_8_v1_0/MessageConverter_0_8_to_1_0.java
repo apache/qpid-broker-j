@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
@@ -39,7 +40,6 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
@@ -195,10 +195,15 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
         props.setTo(to);
 
 
-        // TODO: http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-application
-        // Adhere to "the values are restricted to be of simple types only, that is, excluding map, list, and array types".
-        // 0-8..0-91 for instance supported field tables with maps as values.
-        final ApplicationProperties applicationProperties = new ApplicationProperties(applicationPropertiesMap);
+        final ApplicationProperties applicationProperties;
+        try
+        {
+            applicationProperties = new ApplicationProperties(applicationPropertiesMap);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new MessageConversionException("Could not convert message from 0-8 to 1.0 because headers conversion failed.", e);
+        }
 
         return new MessageMetaData_1_0(header.createEncodingRetainingSection(),
                                        null,

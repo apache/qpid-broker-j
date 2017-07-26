@@ -23,7 +23,12 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
+import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
+
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
 public class ApplicationProperties implements NonEncodingRetainingSection<Map<String,Object>>
 {
@@ -32,6 +37,21 @@ public class ApplicationProperties implements NonEncodingRetainingSection<Map<St
 
     public ApplicationProperties(Map<String,Object> value)
     {
+        if (value == null)
+        {
+            throw new IllegalArgumentException("Value must not be null");
+        }
+        for(Map.Entry<String,Object> entry: value.entrySet())
+        {
+            if (entry.getKey() == null)
+            {
+                throw new IllegalArgumentException("Application properties do not allow null keys");
+            }
+            if (!isSimpleType(entry.getValue()))
+            {
+                throw new IllegalArgumentException("Application properties do not allow non-primitive values");
+            }
+        }
         _value = value;
     }
 
@@ -46,4 +66,19 @@ public class ApplicationProperties implements NonEncodingRetainingSection<Map<St
     {
         return new ApplicationPropertiesSection(this);
     }
+
+    private boolean isSimpleType(final Object value)
+    {
+        return value == null
+               || value instanceof String
+               || value instanceof Number
+               || value instanceof Boolean
+               || value instanceof Symbol
+               || value instanceof Date
+               || value instanceof Character
+               || value instanceof UUID
+               || value instanceof Binary
+               || value instanceof byte[];
+    }
+
 }

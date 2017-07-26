@@ -698,10 +698,6 @@ public class FieldTable
         {
             return setChar(string, (Character) object);
         }
-        else if (object instanceof Collection)
-        {
-            return setFieldArray(string, (Collection)object);
-        }
         else if (object instanceof FieldTable)
         {
             return setFieldTable(string, (FieldTable) object);
@@ -709,6 +705,10 @@ public class FieldTable
         else if (object instanceof Map)
         {
             return setFieldTable(string, FieldTable.convertToFieldTable((Map<String,Object>) object));
+        }
+        else if (object instanceof Collection)
+        {
+            return setFieldArray(string, (Collection)object);
         }
         else if (object instanceof Date)
         {
@@ -1205,15 +1205,7 @@ public class FieldTable
             for(Map.Entry<String,Object> entry : map.entrySet())
             {
                 final AMQShortString propertyNameAsShotString = AMQShortString.valueOf(entry.getKey());
-                Object value = entry.getValue();
-                if(value instanceof Map)
-                {
-                    table.setFieldTable(propertyNameAsShotString, convertToFieldTable((Map<String,Object>)value));
-                }
-                else
-                {
-                    table.put(propertyNameAsShotString, value);
-                }
+                table.put(propertyNameAsShotString, entry.getValue());
             }
 
             return table;

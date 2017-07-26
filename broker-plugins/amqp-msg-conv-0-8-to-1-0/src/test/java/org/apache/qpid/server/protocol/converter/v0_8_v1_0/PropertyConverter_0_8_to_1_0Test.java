@@ -30,6 +30,7 @@ import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
@@ -382,6 +383,42 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
 
         assertTrue("JMSXGroupSeq was removed from application properties",
                    applicationProperties.containsKey("JMSXGroupSeq"));
+    }
+
+    public void testHeaderWithFiledTableValueConversionFails()
+    {
+        Map<String, Object> headers = Collections.singletonMap("mapHeader", Collections.emptyMap());
+        BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
+        basicContentHeaderProperties.setHeaders(FieldTable.convertToFieldTable(headers));
+        AMQMessage message = createTestMessage(basicContentHeaderProperties);
+
+        try
+        {
+            _messageConverter.convert(message, _namedAddressSpace);
+            fail("Exception is expected");
+        }
+        catch (MessageConversionException e)
+        {
+            // pass
+        }
+    }
+
+    public void testHeaderWithFieldArrayValueConversionFails()
+    {
+        Map<String, Object> headers = Collections.singletonMap("listHeader", Collections.emptyList());
+        BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
+        basicContentHeaderProperties.setHeaders(FieldTable.convertToFieldTable(headers));
+        AMQMessage message = createTestMessage(basicContentHeaderProperties);
+
+        try
+        {
+            _messageConverter.convert(message, _namedAddressSpace);
+            fail("Exception is expected");
+        }
+        catch (MessageConversionException e)
+        {
+            // pass
+        }
     }
 
     public void testExchangeRoutingKeyConversion()
