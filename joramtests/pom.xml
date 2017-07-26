@@ -109,7 +109,7 @@
                     <includes>
                         <include>%regex[.*Test.*]</include>
                     </includes>
-
+                    <excludesFile>${joramtests.profile-excludes}</excludesFile>
                     <skipTests>true</skipTests>
                 </configuration>
             </plugin>
@@ -229,6 +229,7 @@
             <properties>
                 <java.naming.factory.initial>org.apache.qpid.amqp_1_0.jms.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
                 <java.naming.provider.url>${project.build.directory}/test-classes/qpid-amqp-1-0-client-jms/jndi.properties</java.naming.provider.url>
+                <joramtests.profile-excludes>${project.build.directory}/test-classes/qpid-amqp-1-0-client-jms/surefire.excludes</joramtests.profile-excludes>
             </properties>
             <dependencies>
                 <dependency>
@@ -251,6 +252,7 @@
             <properties>
                 <java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</java.naming.factory.initial>
                 <java.naming.provider.url>${project.build.directory}/test-classes/qpid-jms-client/jndi.properties</java.naming.provider.url>
+                <joramtests.profile-excludes>${project.build.directory}/test-classes/qpid-jms-client/surefire.excludes</joramtests.profile-excludes>
             </properties>
             <dependencies>
                 <dependency>
@@ -272,6 +274,7 @@
             <properties>
                 <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
                 <java.naming.provider.url>${project.build.directory}/test-classes/jms-client/jndi.properties</java.naming.provider.url>
+                <joramtests.profile-excludes>${project.build.directory}/test-classes/jms-client/surefire.excludes</joramtests.profile-excludes>
                 <qpid.amqp.version>0-9</qpid.amqp.version>
             </properties>
             <dependencies>
