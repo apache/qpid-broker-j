@@ -349,13 +349,13 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         if (authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.SUCCESS)
         {
             final boolean finalChallenge = challenge != null && challenge.length != 0;
+            _successfulAuthenticationResult = authenticationResult;
             if (_sendSaslFinalChallengeAsChallenge && finalChallenge)
             {
                 continueSaslNegotiation(challenge);
             }
             else
             {
-                _successfulAuthenticationResult = authenticationResult;
                 setSubject(_successfulAuthenticationResult.getSubject());
                 SaslOutcome outcome = new SaslOutcome();
                 outcome.setCode(SaslCode.OK);
