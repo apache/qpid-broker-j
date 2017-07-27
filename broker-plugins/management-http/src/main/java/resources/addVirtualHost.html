@@ -1,0 +1,60 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  -->
+<div class="dijitHidden">
+    <div data-dojo-attach-point="addVirtualHost" data-dojo-type="dijit.Dialog" style="width:600px;" data-dojo-props="title:'Add'" id="${id}_addVirtualHost">
+      <div id="${id}_addVirtualHost.contentPane">
+
+        <form id="${id}_addVirtualHost.form" data-dojo-attach-point="virtualHostForm" method="post" data-dojo-type="dijit/form/Form">
+            <div class="formBox">
+              <fieldset>
+                <legend>Virtual Host</legend>
+                <div class="clear">
+                    <div class="formLabel-labelCell tableContainer-labelCell">Type*:</div>
+                    <div class="tableContainer-valueCell formLabel-controlCell">
+                        <select data-dojo-attach-point="virtualHostType" id="${id}_addVirtualHost.type" data-dojo-type="dijit/form/FilteringSelect"
+                                data-dojo-props="
+                                name: 'type',
+                                required: true,
+                                disabled: true,
+                                placeHolder: 'select virtual host type',
+                                promptMessage: 'Type of virtual host',
+                                title: 'Select virtual host type',
+                                searchAttr: 'name'">
+                        </select>
+                    </div>
+                </div>
+                <div class="clear"></div>
+
+                <div data-dojo-attach-point="typeFields" id="${id}_addVirtualHost.typeFields"></div>
+                  <div data-dojo-type="dijit/TitlePane" data-dojo-props="title: 'Context variables',  open: false">
+                      <div id="${id}_addVirtualHost.context" data-dojo-attach-point="virtualHostContext"
+                           data-dojo-type="qpid.common.ContextVariablesEditor"
+                           data-dojo-props="name: 'context', title: 'Context variables'"></div>
+                  </div>
+              </fieldset>
+            </div>
+        </form>
+      </div>
+      <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
+            <button data-dojo-attach-point="addButton" data-dojo-type="dijit/form/Button" id="${id}_addVirtualHost.addButton" data-dojo-props="label: 'Add'" type="submit"></button>
+            <button data-dojo-attach-point="cancelButton" data-dojo-type="dijit/form/Button" id="${id}_addVirtualHost.cancelButton" data-dojo-props="label: 'Cancel'" ></button>
+      </div>
+    </div>
+</div>

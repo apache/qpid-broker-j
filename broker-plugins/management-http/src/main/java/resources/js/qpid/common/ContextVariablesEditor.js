@@ -297,24 +297,24 @@ define(["qpid/common/util",
             },
             destroy: function ()
             {
-                if (this.domNode)
+                if (this.domNode  && this.domNode.destroy)
                 {
-                    this.domNode.destroy();
+                    this.domNode.destroy(); // TODO probably dead code
                     this.domNode = null;
                 }
                 if (this._grid != null)
                 {
-                    this._grid.destroyRecursively();
+                    this._grid.destroyRecursive();
                     this._grid = null;
                 }
                 if (this._addButton != null)
                 {
-                    this._addButton.destroyRecursively();
+                    this._addButton.destroyRecursive();
                     this._addButton = null;
                 }
                 if (this._deleteButton != null)
                 {
-                    this._deleteButton.destroyRecursively();
+                    this._deleteButton.destroyRecursive();
                     this._deleteButton = null;
                 }
             },

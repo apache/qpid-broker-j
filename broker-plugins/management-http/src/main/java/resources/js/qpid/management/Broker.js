@@ -21,6 +21,7 @@
 define(["dojo/parser",
         "dojo/query",
         "dojo/json",
+        "dojo/_base/lang",
         "dojo/_base/connect",
         "dojo/store/Memory",
         "dojo/promise/all",
@@ -33,6 +34,7 @@ define(["dojo/parser",
         "dojox/html/entities",
         "qpid/management/addAuthenticationProvider",
         "qpid/management/addVirtualHostNodeAndVirtualHost",
+        "qpid/management/addVirtualHost",
         "qpid/management/addPort",
         "qpid/management/addStore",
         "qpid/management/addGroupProvider",
@@ -56,6 +58,7 @@ define(["dojo/parser",
     function (parser,
               query,
               json,
+              lang,
               connect,
               memory,
               all,
@@ -68,6 +71,7 @@ define(["dojo/parser",
               entities,
               addAuthenticationProvider,
               addVirtualHostNodeAndVirtualHost,
+              AddVirtualHostDialog,
               addPort,
               addStore,
               addGroupProvider,
@@ -410,9 +414,10 @@ define(["dojo/parser",
             this.virtualHostMenuButton = registry.byNode(query(".virtualHostMenuButton", node)[0]);
 
             var hostMenuItems = this.virtualHostMenuButton.dropDown.getChildren();
-            var viewVirtualHostItem = hostMenuItems[0];
-            var startVirtualHostItem = hostMenuItems[1];
-            var stopVirtualHostItem = hostMenuItems[2];
+            var addVirtualHostItem = hostMenuItems[0];
+            var viewVirtualHostItem = hostMenuItems[1];
+            var startVirtualHostItem = hostMenuItems[2];
+            var stopVirtualHostItem = hostMenuItems[3];
 
             var nodeMenuItems = this.virtualHostNodeMenuButton.dropDown.getChildren();
             var viewNodeItem = nodeMenuItems[0];
@@ -423,9 +428,34 @@ define(["dojo/parser",
             var toggler = function (index)
             {
                 that.toggleVirtualHostNodeNodeMenus(index);
-            }
+            };
             connect.connect(this.vhostsGrid.grid.selection, 'onSelected', toggler);
             connect.connect(this.vhostsGrid.grid.selection, 'onDeselected', toggler);
+
+            addVirtualHostItem.on("click", function ()
+            {
+                var data = that.vhostsGrid.grid.selection.getSelected();
+                if (data.length === 1)
+                {
+                    var item = data[0];
+                    var nodeModelObject = that.controller.structure.findById(item.id);
+                    var dialog = new AddVirtualHostDialog({
+                        management: that.controller.management,
+                        virtualhostNodeType: item.type,
+                        virtualhostNodeModelObject: nodeModelObject
+                    });
+                    dialog.show();
+                    dialog.on("done", function (update)
+                    {
+                        dialog.hideAndDestroy();
+                        that.vhostsGrid.grid.selection.clear();
+                        if (update)
+                        {
+                            that.update();
+                        }
+                    });
+                }
+            });
 
             viewVirtualHostItem.on("click", function ()
             {
@@ -937,7 +967,7 @@ define(["dojo/parser",
             var data = this.vhostsGrid.grid.selection.getSelected();
             var selected = data && data[0];
             this.virtualHostNodeMenuButton.set("disabled", !selected);
-            this.virtualHostMenuButton.set("disabled", !selected || !data[0].vhId);
+            this.virtualHostMenuButton.set("disabled", !selected);
             if (selected)
             {
                 var nodeMenuItems = this.virtualHostNodeMenuButton.dropDown.getChildren();
@@ -946,9 +976,10 @@ define(["dojo/parser",
                 var startNodeItem = nodeMenuItems[2];
                 var stopNodeItem = nodeMenuItems[3];
 
-                var viewVirtualHostItem = hostMenuItems[0];
-                var startVirtualHostItem = hostMenuItems[1];
-                var stopVirtualHostItem = hostMenuItems[2];
+                var addVirtualHostItem = hostMenuItems[0];
+                var viewVirtualHostItem = hostMenuItems[1];
+                var startVirtualHostItem = hostMenuItems[2];
+                var stopVirtualHostItem = hostMenuItems[3];
 
                 var item = data[0];
                 startNodeItem.set("disabled", item.state != "STOPPED");
@@ -956,13 +987,14 @@ define(["dojo/parser",
 
                 if (item.vhId)
                 {
+                    addVirtualHostItem.set("disabled", true);
                     viewVirtualHostItem.set("disabled", false);
-
                     startVirtualHostItem.set("disabled", item.vhState != "STOPPED");
                     stopVirtualHostItem.set("disabled", item.vhState != "ACTIVE");
                 }
                 else
                 {
+                    addVirtualHostItem.set("disabled", false);
                     viewVirtualHostItem.set("disabled", true);
                     startVirtualHostItem.set("disabled", true);
                     stopVirtualHostItem.set("disabled", true);
