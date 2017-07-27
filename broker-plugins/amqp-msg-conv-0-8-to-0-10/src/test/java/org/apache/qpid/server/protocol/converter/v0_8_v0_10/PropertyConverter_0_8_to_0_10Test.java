@@ -101,7 +101,7 @@ public class PropertyConverter_0_8_to_0_10Test extends QpidTestCase
         final MessageProperties messageProperties =
                 convertedMessage.getStoredMessage().getMetaData().getMessageProperties();
         Map<String, Object> applicationProperties = messageProperties.getApplicationHeaders();
-        assertEquals("Unexpected application applicationProperties", headers, new HashMap<>(applicationProperties));
+        assertEquals("Unexpected applicationProperties", headers, new HashMap<>(applicationProperties));
     }
 
     public void testPersistentDeliveryModeConversion()
@@ -302,18 +302,16 @@ public class PropertyConverter_0_8_to_0_10Test extends QpidTestCase
     {
         BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
         final String messageId = "testMessageId";
-        basicContentHeaderProperties.setMessageId(messageId);
+        basicContentHeaderProperties.setMessageId("ID:" + messageId);
         AMQMessage message = createTestMessage(basicContentHeaderProperties);
 
-        try
-        {
-            _messageConverter.convert(message, _namedAddressSpace);
-            fail("non-UUID messageId should not be converted");
-        }
-        catch (MessageConversionException e)
-        {
-            // pass
-        }
+        final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        final MessageProperties messageProperties =
+                convertedMessage.getStoredMessage().getMetaData().getMessageProperties();
+        assertEquals("Unexpected message id",
+                     UUID.nameUUIDFromBytes(messageId.getBytes(UTF_8)),
+                     messageProperties.getMessageId());
     }
 
     public void testTimestampConversion()

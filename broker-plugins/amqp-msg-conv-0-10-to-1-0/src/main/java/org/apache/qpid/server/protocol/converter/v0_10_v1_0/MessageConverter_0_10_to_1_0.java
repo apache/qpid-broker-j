@@ -63,26 +63,27 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
                                                   SectionEncoder sectionEncoder)
     {
         Properties props = new Properties();
+        props.setCreationTime(new Date(serverMessage.getArrivalTime()));
 
         final MessageProperties msgProps = serverMessage.getHeader().getMessageProperties();
         final DeliveryProperties deliveryProps = serverMessage.getHeader().getDeliveryProperties();
-
         Header header = new Header();
         if(deliveryProps != null)
         {
-            header.setDurable(deliveryProps.hasDeliveryMode() && deliveryProps.getDeliveryMode() == MessageDeliveryMode.PERSISTENT);
-            if(deliveryProps.hasPriority())
+            header.setDurable(deliveryProps.hasDeliveryMode()
+                              && deliveryProps.getDeliveryMode() == MessageDeliveryMode.PERSISTENT);
+            if (deliveryProps.hasPriority())
             {
                 header.setPriority(UnsignedByte.valueOf((byte) deliveryProps.getPriority().getValue()));
             }
-            if(deliveryProps.hasTtl())
+            if (deliveryProps.hasTtl())
             {
                 header.setTtl(UnsignedInteger.valueOf(deliveryProps.getTtl()));
             }
-
-            if(deliveryProps.hasExpiration())
+            else if (deliveryProps.hasExpiration())
             {
-                props.setAbsoluteExpiryTime(new Date(deliveryProps.getExpiration()));
+                long ttl = Math.max(0, deliveryProps.getExpiration() - serverMessage.getArrivalTime());
+                header.setTtl(UnsignedInteger.valueOf(ttl));
             }
 
             if(deliveryProps.hasTimestamp())
@@ -109,18 +110,6 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
 
 
         ApplicationProperties applicationProperties = null;
-
-
-        /*
-            TODO: the current properties are not currently set:
-
-            absoluteExpiryTime
-            creationTime
-            groupId
-            groupSequence
-            replyToGroupId
-            to
-        */
 
         if(msgProps != null)
         {

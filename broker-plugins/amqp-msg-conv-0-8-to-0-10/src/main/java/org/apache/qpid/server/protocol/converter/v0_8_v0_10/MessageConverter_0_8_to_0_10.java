@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.converter.v0_8_v0_10;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Map;
@@ -211,20 +213,22 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
 
         if(properties.getMessageId() != null)
         {
+            UUID uuid;
+            String messageIdAsString = properties.getMessageIdAsString();
+            if(messageIdAsString.startsWith("ID:"))
+            {
+                messageIdAsString = messageIdAsString.substring(3);
+            }
+
             try
             {
-                String messageIdAsString = properties.getMessageIdAsString();
-                if(messageIdAsString.startsWith("ID:"))
-                {
-                    messageIdAsString = messageIdAsString.substring(3);
-                }
-                UUID uuid = UUID.fromString(messageIdAsString);
-                messageProps.setMessageId(uuid);
+                uuid = UUID.fromString(messageIdAsString);
             }
             catch(IllegalArgumentException e)
             {
-                throw new MessageConversionException("Could not convert message from 0-8 to 0-10 because messageId conversion failed.", e);
+                uuid = UUID.nameUUIDFromBytes(messageIdAsString.getBytes(UTF_8));
             }
+            messageProps.setMessageId(uuid);
         }
 
 

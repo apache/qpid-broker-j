@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.AMQPInvalidClassException;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
@@ -69,24 +70,42 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
                                               ? BasicContentHeaderProperties.PERSISTENT
                                               : BasicContentHeaderProperties.NON_PERSISTENT));
             }
-            if(deliveryProps.hasExpiration())
+
+            if (deliveryProps.hasTtl())
+            {
+                props.setExpiration(messageTransferMessage.getArrivalTime() + deliveryProps.getTtl());
+            }
+            else if(deliveryProps.hasExpiration())
             {
                 props.setExpiration(deliveryProps.getExpiration());
             }
+
             if(deliveryProps.hasPriority())
             {
                 props.setPriority((byte) deliveryProps.getPriority().getValue());
             }
+
             if(deliveryProps.hasTimestamp())
             {
                 props.setTimestamp(deliveryProps.getTimestamp());
+            }
+            else
+            {
+                props.setTimestamp(messageTransferMessage.getArrivalTime());
             }
         }
         if(messageProps != null)
         {
             if(messageProps.hasAppId())
             {
-                props.setAppId(new AMQShortString(messageProps.getAppId()));
+                try
+                {
+                    props.setAppId(new AMQShortString(messageProps.getAppId()));
+                }
+                catch (IllegalArgumentException e)
+                {
+                    // pass
+                }
             }
             if(messageProps.hasContentType())
             {
@@ -102,6 +121,7 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
             }
             if(messageProps.hasMessageId())
             {
+                // Add prefix 'ID:' to workaround broken 0-8..0-9-1 Qpid JMS client
                 props.setMessageId("ID:" + messageProps.getMessageId().toString());
             }
             if(messageProps.hasReplyTo())
@@ -114,16 +134,17 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
                     exchangeName = "";
                 }
 
-                MessageDestination destination = addressSpace.getAttainedMessageDestination(exchangeName);
-                Exchange<?> exchange = destination instanceof Exchange ? (Exchange<?>) destination : null;
+                if (!"".equals(exchangeName) || (routingKey != null && !"".equals(routingKey)))
+                {
+                    MessageDestination destination = addressSpace.getAttainedMessageDestination(exchangeName);
+                    Exchange<?> exchange = destination instanceof Exchange ? (Exchange<?>) destination : null;
 
-                String exchangeClass = exchange == null
-                                            ? ExchangeDefaults.DIRECT_EXCHANGE_CLASS
-                                            : exchange.getType();
-                props.setReplyTo(exchangeClass + "://" + exchangeName + "//?routingkey='" + (routingKey == null
-                                                                                             ? ""
-                                                                                             : routingKey + "'"));
-
+                    String exchangeClass = exchange == null
+                            ? ExchangeDefaults.DIRECT_EXCHANGE_CLASS
+                            : exchange.getType();
+                    String routingKeyOption = routingKey == null ? "" : "?routingkey='" + routingKey + "'";
+                    props.setReplyTo(String.format("%s://%s//%s", exchangeClass, exchangeName, routingKeyOption));
+                }
             }
             if(messageProps.hasUserId())
             {
@@ -135,20 +156,30 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
                 Map<String, Object> appHeaders = new HashMap<String, Object>(messageProps.getApplicationHeaders());
                 if(messageProps.getApplicationHeaders().containsKey("x-jms-type"))
                 {
-                    props.setType(String.valueOf(appHeaders.remove("x-jms-type")));
+                    String jmsType = String.valueOf(appHeaders.remove("x-jms-type"));
+                    try
+                    {
+                        props.setType(jmsType);
+                    }
+                    catch (IllegalArgumentException e)
+                    {
+                        throw new MessageConversionException("Could not convert message from 0-10 to 0-8 because x-jms-type conversion failed.", e);
+                    }
                 }
 
                 FieldTable ft = new FieldTable();
-                for(Map.Entry<String, Object> entry : appHeaders.entrySet())
+                for (Map.Entry<String, Object> entry : appHeaders.entrySet())
                 {
+                    String headerName = entry.getKey();
                     try
                     {
-                        ft.put(AMQShortString.validValueOf(entry.getKey()), entry.getValue());
+                        ft.put(AMQShortString.validValueOf(headerName), entry.getValue());
                     }
                     catch (AMQPInvalidClassException e)
                     {
-                        // TODO
-                        // log here, but ignore - just can;t convert
+                        throw new MessageConversionException(String.format(
+                                "Could not convert message from 0-10 to 0-8 because conversion of application header '%s' failed.",
+                                headerName), e);
                     }
                 }
                 props.setHeaders(ft);

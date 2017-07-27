@@ -769,6 +769,11 @@ public class BasicContentHeaderProperties
         nullEncodedForm();
     }
 
+    public boolean hasExpiration()
+    {
+        return (_propertyFlags & EXPIRATION_MASK) != 0;
+    }
+
     public AMQShortString getMessageId()
     {
         return _messageId;

@@ -22,7 +22,6 @@
 package org.apache.qpid.server.protocol.converter.v0_10_v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.mockito.Matchers.booleanThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -95,7 +94,8 @@ public class PropertyConverter_0_10_to_1_0Test extends QpidTestCase
         String contentEncoding = "my-test-encoding";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setContentEncoding(contentEncoding);
-        MessageTransferMessage message = createTestMessage(new DeliveryProperties(), messageProperties, new byte[]{(byte)1}, 0);
+        MessageTransferMessage message =
+                createTestMessage(new DeliveryProperties(), messageProperties, new byte[]{(byte) 1}, 0);
 
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -115,7 +115,7 @@ public class PropertyConverter_0_10_to_1_0Test extends QpidTestCase
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
-        assertEquals("Unexpected application applicationProperties", headers, new HashMap<>(applicationProperties));
+        assertEquals("Unexpected applicationProperties", headers, new HashMap<>(applicationProperties));
     }
 
     public void testHeaderConversionWhenQpidSubjectIsPresent()
@@ -184,7 +184,9 @@ public class PropertyConverter_0_10_to_1_0Test extends QpidTestCase
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         Properties properties = convertedMessage.getPropertiesSection().getValue();
-        assertEquals("Unexpected correlationId", correlationId, new String(((Binary)properties.getCorrelationId()).getArray(), UTF_8));
+        assertEquals("Unexpected correlationId",
+                     correlationId,
+                     new String(((Binary) properties.getCorrelationId()).getArray(), UTF_8));
     }
 
     public void testReplyToConversionWhenExchangeAndRoutingKeySpecified()
@@ -221,7 +223,6 @@ public class PropertyConverter_0_10_to_1_0Test extends QpidTestCase
         messageProperties.setReplyTo(new ReplyTo(null, routingKey));
         MessageTransferMessage message = createTestMessage(messageProperties);
 
-
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         Properties properties = convertedMessage.getPropertiesSection().getValue();
@@ -253,21 +254,25 @@ public class PropertyConverter_0_10_to_1_0Test extends QpidTestCase
         assertNull("Unexpected reply-to", properties.getReplyTo());
     }
 
-        public void testExpirationConversion()
-        {
-            long timestamp = System.currentTimeMillis();
-            int ttl = 100000;
-            final long expiration = timestamp + ttl;
+    public void testExpirationConversion()
+    {
+        long timestamp = System.currentTimeMillis();
+        int ttl = 100000;
+        final long expiration = timestamp + ttl;
 
-            final DeliveryProperties deliveryProperties = new DeliveryProperties();
-            deliveryProperties.setExpiration(expiration);
-            MessageTransferMessage message = createTestMessage(deliveryProperties, new MessageProperties(), null, timestamp);
+        final DeliveryProperties deliveryProperties = new DeliveryProperties();
+        deliveryProperties.setExpiration(expiration);
+        MessageTransferMessage message =
+                createTestMessage(deliveryProperties, new MessageProperties(), null, timestamp);
 
-            final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
-            Properties properties = convertedMessage.getPropertiesSection().getValue();
-            assertEquals("Unexpected expiration", expiration, properties.getAbsoluteExpiryTime().getTime());
-        }
+        Properties properties = convertedMessage.getPropertiesSection().getValue();
+        assertNull("Unexpected expiration", properties.getAbsoluteExpiryTime());
+
+        Header header = convertedMessage.getHeaderSection().getValue();
+        assertEquals("Unexpected TTL", ttl, header.getTtl().intValue());
+    }
 
     public void testTTLConversion()
     {
@@ -276,12 +281,16 @@ public class PropertyConverter_0_10_to_1_0Test extends QpidTestCase
 
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setTtl(ttl);
-        MessageTransferMessage message = createTestMessage(deliveryProperties, new MessageProperties(), null, timestamp);
+        MessageTransferMessage message =
+                createTestMessage(deliveryProperties, new MessageProperties(), null, timestamp);
 
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         Header header = convertedMessage.getHeaderSection().getValue();
         assertEquals("Unexpected TTL", ttl, header.getTtl().longValue());
+
+        Properties properties = convertedMessage.getPropertiesSection().getValue();
+        assertNull("Unexpected expiration", properties.getAbsoluteExpiryTime());
     }
 
     public void testMessageIdConversion()
@@ -303,6 +312,17 @@ public class PropertyConverter_0_10_to_1_0Test extends QpidTestCase
         final long timestamp = System.currentTimeMillis() - 1000;
         deliveryProperties.setTimestamp(timestamp);
         MessageTransferMessage message = createTestMessage(deliveryProperties);
+        final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        Properties properties = convertedMessage.getPropertiesSection().getValue();
+        assertEquals("Unexpected creation timestamp", timestamp, properties.getCreationTime().getTime());
+    }
+
+    public void testArrivalTimeConversion()
+    {
+        final long timestamp = System.currentTimeMillis() - 1000;
+        MessageTransferMessage message =
+                createTestMessage(new DeliveryProperties(), new MessageProperties(), null, timestamp);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         Properties properties = convertedMessage.getPropertiesSection().getValue();
@@ -501,7 +521,8 @@ public class PropertyConverter_0_10_to_1_0Test extends QpidTestCase
                                                      final long arrivalTime)
     {
         int bodySize = content == null ? 0 : content.length;
-        final org.apache.qpid.server.protocol.v0_10.transport.Header header = new org.apache.qpid.server.protocol.v0_10.transport.Header(deliveryProperties, messageProperties);
+        final org.apache.qpid.server.protocol.v0_10.transport.Header header =
+                new org.apache.qpid.server.protocol.v0_10.transport.Header(deliveryProperties, messageProperties);
         final MessageMetaData_0_10 metaData = new MessageMetaData_0_10(header, bodySize, arrivalTime);
 
         final StoredMessage<MessageMetaData_0_10> storedMessage = mock(StoredMessage.class);

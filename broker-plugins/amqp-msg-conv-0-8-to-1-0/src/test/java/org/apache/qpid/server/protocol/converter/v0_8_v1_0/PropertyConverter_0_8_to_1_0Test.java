@@ -109,7 +109,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
-        assertEquals("Unexpected application applicationProperties", headers, new HashMap<>(applicationProperties));
+        assertEquals("Unexpected applicationProperties", headers, new HashMap<>(applicationProperties));
     }
 
     public void testHeaderConversionWhenQpidSubjectIsPresent()
@@ -257,7 +257,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         int ttl = 100000;
         final long expiration = timestamp + ttl;
         basicContentHeaderProperties.setExpiration(expiration);
-        basicContentHeaderProperties.setTimestamp(timestamp);
+
         AMQMessage message = createTestMessage(basicContentHeaderProperties, timestamp);
 
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
@@ -266,7 +266,7 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         assertEquals("Unexpected TTL", ttl, header.getTtl().longValue());
 
         Properties properties = convertedMessage.getPropertiesSection().getValue();
-        assertEquals("Unexpected expiration", expiration, properties.getAbsoluteExpiryTime().getTime());
+        assertNull("Unexpected expiration", properties.getAbsoluteExpiryTime());
     }
 
     public void testMessageIdConversion()
@@ -288,6 +288,17 @@ public class PropertyConverter_0_8_to_1_0Test extends QpidTestCase
         final long timestamp = System.currentTimeMillis() - 10000;
         basicContentHeaderProperties.setTimestamp(timestamp);
         AMQMessage message = createTestMessage(basicContentHeaderProperties);
+
+        final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        Properties properties = convertedMessage.getPropertiesSection().getValue();
+        assertEquals("Unexpected creation timestamp", timestamp, properties.getCreationTime().getTime());
+    }
+
+    public void testArrivalTimeConversion()
+    {
+        final long timestamp = System.currentTimeMillis() - 10000;
+        AMQMessage message = createTestMessage(new BasicContentHeaderProperties(), null, timestamp);
 
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 

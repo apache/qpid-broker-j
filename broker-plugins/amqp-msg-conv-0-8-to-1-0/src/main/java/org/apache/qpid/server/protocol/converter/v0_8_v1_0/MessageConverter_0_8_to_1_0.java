@@ -65,17 +65,15 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
         Properties props = new Properties();
         header.setDurable(serverMessage.isPersistent());
 
-        BasicContentHeaderProperties contentHeader =
-                  serverMessage.getContentHeaderBody().getProperties();
+        BasicContentHeaderProperties contentHeader = serverMessage.getContentHeaderBody().getProperties();
 
         header.setPriority(UnsignedByte.valueOf(contentHeader.getPriority()));
-        final long expiration = serverMessage.getExpiration();
-        final long arrivalTime = serverMessage.getArrivalTime();
 
-        if(expiration > arrivalTime)
+        if(contentHeader.hasExpiration())
         {
-            header.setTtl(UnsignedInteger.valueOf(expiration - arrivalTime));
-            props.setAbsoluteExpiryTime(new Date(expiration));
+            final long expiration = serverMessage.getExpiration();
+            final long arrivalTime = serverMessage.getArrivalTime();
+            header.setTtl(UnsignedInteger.valueOf(Math.max(0, expiration - arrivalTime)));
         }
 
         if(!GZIPUtils.GZIP_CONTENT_ENCODING.equals(contentHeader.getEncodingAsString()) && bodySection instanceof DataSection)
@@ -147,6 +145,10 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
         if (contentHeader.hasTimestamp())
         {
             props.setCreationTime(new Date(contentHeader.getTimestamp()));
+        }
+        else
+        {
+            props.setCreationTime(new Date(serverMessage.getArrivalTime()));
         }
 
         if (contentHeader.getType() != null)
