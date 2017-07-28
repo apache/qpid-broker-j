@@ -22,6 +22,11 @@ package org.apache.qpid.server.protocol.converter;
 
 public class MessageConversionException extends RuntimeException
 {
+    public MessageConversionException(final String msg)
+    {
+        super(msg);
+    }
+
     public MessageConversionException(final String msg, final Throwable cause)
     {
         super(msg, cause);

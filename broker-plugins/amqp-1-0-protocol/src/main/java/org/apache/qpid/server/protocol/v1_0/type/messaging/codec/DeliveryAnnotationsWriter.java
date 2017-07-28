@@ -38,7 +38,7 @@ public class DeliveryAnnotationsWriter extends AbstractDescribedTypeWriter<Deliv
     public DeliveryAnnotationsWriter(final Registry registry,
                                      final DeliveryAnnotations object)
     {
-        super(DESCRIPTOR_WRITER, registry.getValueWriter(object));
+        super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
     private static Factory<DeliveryAnnotations> FACTORY = new Factory<DeliveryAnnotations>()

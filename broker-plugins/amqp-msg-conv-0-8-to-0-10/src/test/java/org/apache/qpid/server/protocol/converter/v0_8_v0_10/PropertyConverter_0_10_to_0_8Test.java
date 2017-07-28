@@ -24,6 +24,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -189,6 +190,37 @@ public class PropertyConverter_0_10_to_0_8Test extends QpidTestCase
         assertEquals("Unexpected correlationId", correlationId, properties.getCorrelationId().toString());
     }
 
+    public void testCorrelationIdConversionWhenLengthExceeds255()
+    {
+        final String correlationId = generateLongString();
+        final MessageProperties messageProperties = new MessageProperties();
+        messageProperties.setCorrelationId(correlationId.getBytes());
+        MessageTransferMessage message = createTestMessage(messageProperties);
+
+        try
+        {
+            _messageConverter.convert(message, _namedAddressSpace);
+            fail("expected exception not thrown");
+        }
+        catch (MessageConversionException e)
+        {
+            // pass
+        }
+    }
+
+    public void testCorrelationIdConversionWhenNotString()
+    {
+        final byte[] correlationId = new byte[] {(byte) 0xc3, 0x28};
+        final MessageProperties messageProperties = new MessageProperties();
+        messageProperties.setCorrelationId(correlationId);
+        MessageTransferMessage message = createTestMessage(messageProperties);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        BasicContentHeaderProperties properties = convertedMessage.getContentHeaderBody().getProperties();
+        assertTrue("Unexpected correlationId", Arrays.equals(correlationId, properties.getCorrelationId().getBytes()));
+    }
+
     public void testReplyToConversionWhenExchangeAndRoutingKeySpecified()
     {
         final String exchangeName = "amq.direct";
@@ -257,6 +289,23 @@ public class PropertyConverter_0_10_to_0_8Test extends QpidTestCase
 
         BasicContentHeaderProperties properties = convertedMessage.getContentHeaderBody().getProperties();
         assertNull("Unexpected reply-to", properties.getReplyTo());
+    }
+
+    public void testReplyToConversionWhenResultExceeds255()
+    {
+        final MessageProperties messageProperties = new MessageProperties();
+        messageProperties.setReplyTo(new ReplyTo(generateLongString(255), generateLongString(255)));
+        MessageTransferMessage message = createTestMessage(messageProperties);
+
+        try
+        {
+            _messageConverter.convert(message, _namedAddressSpace);
+            fail("expected exception not thrown");
+        }
+        catch (MessageConversionException e)
+        {
+            // pass
+        }
     }
 
     public void testExpirationConversion()
@@ -374,6 +423,32 @@ public class PropertyConverter_0_10_to_0_8Test extends QpidTestCase
         assertEquals("Unexpected user-id", userId, properties.getUserId().toString());
     }
 
+    public void testUserIdConversionExceeds255()
+    {
+        final String userId = generateLongString();
+        final MessageProperties messageProperties = new MessageProperties();
+        messageProperties.setUserId(userId.getBytes());
+        MessageTransferMessage message = createTestMessage(messageProperties);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        BasicContentHeaderProperties properties = convertedMessage.getContentHeaderBody().getProperties();
+
+        assertNull("Unexpected user-id", properties.getUserId());
+    }
+
+    public void testUserIdConversionWhenNotUtf8()
+    {
+        final byte[] userId = new byte[] {(byte) 0xc3, 0x28};
+        final MessageProperties messageProperties = new MessageProperties();
+        messageProperties.setUserId(userId);
+        MessageTransferMessage message = createTestMessage(messageProperties);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        BasicContentHeaderProperties properties = convertedMessage.getContentHeaderBody().getProperties();
+
+        assertTrue("Unexpected user-id", Arrays.equals(userId, properties.getUserId().getBytes()));
+    }
+
     public void testExchangeConversion()
     {
         final String testExchange = "testExchange";
@@ -482,8 +557,13 @@ public class PropertyConverter_0_10_to_0_8Test extends QpidTestCase
 
     private String generateLongString()
     {
+        return generateLongString(AMQShortString.MAX_LENGTH + 1);
+    }
+
+    private String generateLongString(int stringLength)
+    {
         StringBuilder buffer = new StringBuilder();
-        for(int i = 0; i < AMQShortString.MAX_LENGTH + 1 ; i++)
+        for(int i = 0; i < stringLength ; i++)
         {
             buffer.append('x');
         }

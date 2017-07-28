@@ -113,7 +113,14 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
             }
             if(messageProps.hasCorrelationId())
             {
-                props.setCorrelationId(new AMQShortString(messageProps.getCorrelationId()));
+                try
+                {
+                    props.setCorrelationId(new AMQShortString(messageProps.getCorrelationId()));
+                }
+                catch (IllegalArgumentException e)
+                {
+                    throw new MessageConversionException("Could not convert message from 0-10 to 0-8 because conversion of 'correlationId' failed.", e);
+                }
             }
             if(messageProps.hasContentEncoding())
             {
@@ -143,12 +150,28 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
                             ? ExchangeDefaults.DIRECT_EXCHANGE_CLASS
                             : exchange.getType();
                     String routingKeyOption = routingKey == null ? "" : "?routingkey='" + routingKey + "'";
-                    props.setReplyTo(String.format("%s://%s//%s", exchangeClass, exchangeName, routingKeyOption));
+                    final String replyToBindingUrl =
+                            String.format("%s://%s//%s", exchangeClass, exchangeName, routingKeyOption);
+                    try
+                    {
+                        props.setReplyTo(replyToBindingUrl);
+                    }
+                    catch (IllegalArgumentException e)
+                    {
+                        throw new MessageConversionException("Could not convert message from 0-10 to 0-8 because conversion of 'reply-to' failed.", e);
+                    }
                 }
             }
             if(messageProps.hasUserId())
             {
-                props.setUserId(new AMQShortString(messageProps.getUserId()));
+                try
+                {
+                    props.setUserId(new AMQShortString(messageProps.getUserId()));
+                }
+                catch (IllegalArgumentException e)
+                {
+                    // ignore
+                }
             }
 
             if(messageProps.hasApplicationHeaders())
