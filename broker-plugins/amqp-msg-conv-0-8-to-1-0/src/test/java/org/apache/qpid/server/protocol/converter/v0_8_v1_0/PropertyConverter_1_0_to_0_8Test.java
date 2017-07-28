@@ -596,7 +596,7 @@ public class PropertyConverter_1_0_to_0_8Test extends QpidTestCase
         final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
 
         assertEquals("Unexpected exchange", testExchange, messagePublishInfo.getExchange().toString());
-        assertEquals("Unexpected routing key", null, messagePublishInfo.getRoutingKey());
+        assertEquals("Unexpected routing key", "", messagePublishInfo.getRoutingKey().toString());
     }
 
     public void testToConversionWhenExchangeIsSpecifiedAndSubjectIsSet()
