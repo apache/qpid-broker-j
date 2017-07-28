@@ -1198,6 +1198,11 @@
       </properties>
     </profile>
 
+    <!--
+    Split store profiles.
+    Virtual host configuration can be overridden by setting blueprint property like below
+    -Dprofile.virtualhostnode.context.blueprint='{"type":"BDB","storePath":"${qpid.work_dir}/${this:name}/bdb"}'
+    -->
     <profile>
       <id>java-json.1-0</id>
       <activation>
@@ -1213,16 +1218,11 @@
         <profile.test.amqp_port_protocols>["AMQP_1_0"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"DERBY","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"BDB","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
         <profile.java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</profile.java.naming.factory.initial>
         <profile.java.naming.provider.url>test-profiles${file.separator}test-provider-1-0.properties</profile.java.naming.provider.url>
       </properties>
     </profile>
-    <!--
-    Split store profiles.
-    Virtual host configuration can be overridden by setting blueprint property like below
-    -Dprofile.virtualhostnode.context.blueprint='{"type":"BDB","storePath":"${qpid.work_dir}/${this:name}/bdb"}'
-    -->
     <profile>
       <id>java-json.0-9-1</id>
       <activation>
@@ -1238,7 +1238,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"DERBY","storePath":"${dollar.sign}{json:qpid.work_dir}${dollar.sign}{json:file.separator}${dollar.sign}{this:name}${dollar.sign}{json:file.separator}derby","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"BDB","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
 
@@ -1257,7 +1257,7 @@
               <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
               <profile.broker.persistent>true</profile.broker.persistent>
               <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
-              <profile.virtualhostnode.context.blueprint>{"type":"DERBY","storePath":"${dollar.sign}{json:qpid.work_dir}${dollar.sign}{json:file.separator}${dollar.sign}{this:name}${dollar.sign}{json:file.separator}derby","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
+              <profile.virtualhostnode.context.blueprint>{"type":"BDB","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
           </properties>
       </profile>
 
