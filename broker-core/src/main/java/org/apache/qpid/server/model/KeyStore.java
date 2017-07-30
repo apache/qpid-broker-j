@@ -36,6 +36,11 @@ public interface KeyStore<X extends KeyStore<X>> extends ConfiguredObject<X>
     @ManagedContextDefault(name = CERTIFICATE_EXPIRY_CHECK_FREQUENCY)
     int DEFAULT_CERTIFICATE_EXPIRY_CHECK_FREQUENCY = 1;
 
+    @DerivedAttribute
+    int getCertificateExpiryWarnPeriod();
+
+    @DerivedAttribute
+    int getCertificateExpiryCheckFrequency();
 
     KeyManager[] getKeyManagers() throws GeneralSecurityException;
 }

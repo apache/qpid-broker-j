@@ -31,9 +31,8 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -58,41 +57,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.messages.TrustStoreMessages;
-import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.model.TrustStore;
-import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.Strings;
 
 @ManagedObject( category = false )
 public class SiteSpecificTrustStoreImpl
-        extends AbstractConfiguredObject<SiteSpecificTrustStoreImpl> implements SiteSpecificTrustStore<SiteSpecificTrustStoreImpl>
+        extends AbstractTrustStore<SiteSpecificTrustStoreImpl> implements SiteSpecificTrustStore<SiteSpecificTrustStoreImpl>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SiteSpecificTrustStoreImpl.class);
 
-    private final Broker<?> _broker;
-    private final EventLogger _eventLogger;
-
     @ManagedAttributeField
     private String _siteUrl;
-    @ManagedAttributeField
-    private boolean _exposedAsMessageSource;
-    @ManagedAttributeField
-    private List<VirtualHostNode<?>> _includedVirtualHostNodeMessageSources;
-    @ManagedAttributeField
-    private List<VirtualHostNode<?>> _excludedVirtualHostNodeMessageSources;
 
     private volatile TrustManager[] _trustManagers = new TrustManager[0];
 
@@ -103,10 +84,7 @@ public class SiteSpecificTrustStoreImpl
     @ManagedObjectFactoryConstructor
     public SiteSpecificTrustStoreImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
-        super(broker, attributes);
-        _broker = broker;
-        _eventLogger = _broker.getEventLogger();
-        _eventLogger.message(TrustStoreMessages.CREATE(getName()));
+        super(attributes, broker);
     }
 
     @Override
@@ -189,54 +167,14 @@ public class SiteSpecificTrustStoreImpl
     @StateTransition(currentState = {State.ACTIVE, State.ERRORED}, desiredState = State.DELETED)
     protected ListenableFuture<Void> doDelete()
     {
-        // verify that it is not in use
-        String storeName = getName();
-
-        Collection<Port<?>> ports = new ArrayList<>(_broker.getPorts());
-        for (Port port : ports)
-        {
-            Collection<TrustStore> trustStores = port.getTrustStores();
-            if(trustStores != null)
-            {
-                for (TrustStore store : trustStores)
-                {
-                    if(storeName.equals(store.getAttribute(TrustStore.NAME)))
-                    {
-                        throw new IntegrityViolationException("Trust store '"
-                                + storeName
-                                + "' can't be deleted as it is in use by a port: "
-                                + port.getName());
-                    }
-                }
-            }
-        }
-
-        Collection<AuthenticationProvider> authenticationProviders = new ArrayList<AuthenticationProvider>(_broker.getAuthenticationProviders());
-        for (AuthenticationProvider authProvider : authenticationProviders)
-        {
-            if(authProvider.getAttributeNames().contains(SimpleLDAPAuthenticationManager.TRUST_STORE))
-            {
-                Object attributeType = authProvider.getAttribute(AuthenticationProvider.TYPE);
-                Object attributeValue = authProvider.getAttribute(SimpleLDAPAuthenticationManager.TRUST_STORE);
-                if (SimpleLDAPAuthenticationManager.PROVIDER_TYPE.equals(attributeType)
-                        && storeName.equals(attributeValue))
-                {
-                    throw new IntegrityViolationException("Trust store '"
-                            + storeName
-                            + "' can't be deleted as it is in use by an authentication manager: "
-                            + authProvider.getName());
-                }
-            }
-        }
-        deleted();
-        setState(State.DELETED);
-        _eventLogger.message(TrustStoreMessages.DELETE(getName()));
-        return Futures.immediateFuture(null);
+        return deleteIfNotInUse();
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     protected ListenableFuture<Void> doActivate()
     {
+        initializeExpiryChecking();
+
         final SettableFuture<Void> result = SettableFuture.create();
         if(_x509Certificate == null)
         {
@@ -386,24 +324,6 @@ public class SiteSpecificTrustStoreImpl
     }
 
     @Override
-    public boolean isExposedAsMessageSource()
-    {
-        return _exposedAsMessageSource;
-    }
-
-    @Override
-    public List<VirtualHostNode<?>> getIncludedVirtualHostNodeMessageSources()
-    {
-        return _includedVirtualHostNodeMessageSources;
-    }
-
-    @Override
-    public List<VirtualHostNode<?>> getExcludedVirtualHostNodeMessageSources()
-    {
-        return _excludedVirtualHostNodeMessageSources;
-    }
-
-    @Override
     public List<CertificateDetails> getCertificateDetails()
     {
         return Collections.singletonList(new CertificateDetailsImpl(_x509Certificate));
@@ -428,9 +348,16 @@ public class SiteSpecificTrustStoreImpl
     }
 
     @Override
-    protected void logOperation(final String operation)
+    protected void checkCertificateExpiry()
     {
-        _broker.getEventLogger().message(TrustStoreMessages.OPERATION(operation));
+        int expiryWarning = getCertificateExpiryWarnPeriod();
+        if(expiryWarning > 0)
+        {
+            long currentTime = System.currentTimeMillis();
+            Date expiryTestDate = new Date(currentTime + (ONE_DAY * (long) expiryWarning));
+
+            checkCertificateExpiry(currentTime, expiryTestDate, _x509Certificate);
+        }
     }
 
     private static class AlwaysTrustManager implements X509TrustManager

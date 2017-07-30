@@ -33,6 +33,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -47,30 +48,20 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.messages.TrustStoreMessages;
-import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.TrustStore;
-import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
-import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 import org.apache.qpid.server.transport.network.security.ssl.QpidMultipleTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
-public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreImpl> implements FileTrustStore<FileTrustStoreImpl>
+public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> implements FileTrustStore<FileTrustStoreImpl>
 {
-    private final Broker<?> _broker;
-    private final EventLogger _eventLogger;
 
     @ManagedAttributeField
     private String _trustStoreType;
@@ -84,13 +75,6 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
     @ManagedAttributeField
     private String _password;
 
-    @ManagedAttributeField
-    private boolean _exposedAsMessageSource;
-    @ManagedAttributeField
-    private List<VirtualHostNode<?>> _includedVirtualHostNodeMessageSources;
-    @ManagedAttributeField
-    private List<VirtualHostNode<?>> _excludedVirtualHostNodeMessageSources;
-
     static
     {
         Handler.register();
@@ -99,10 +83,7 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
     @ManagedObjectFactoryConstructor
     public FileTrustStoreImpl(Map<String, Object> attributes, Broker<?> broker)
     {
-        super(broker, attributes);
-        _broker = broker;
-        _eventLogger = _broker.getEventLogger();
-        _eventLogger.message(TrustStoreMessages.CREATE(getName()));
+        super(attributes, broker);
     }
 
     @Override
@@ -119,52 +100,13 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
     @StateTransition(currentState = {State.ACTIVE, State.ERRORED}, desiredState = State.DELETED)
     protected ListenableFuture<Void> doDelete()
     {
-        // verify that it is not in use
-        String storeName = getName();
-
-        Collection<Port<?>> ports = new ArrayList<>(_broker.getPorts());
-        for (Port port : ports)
-        {
-            Collection<TrustStore> trustStores = port.getTrustStores();
-            if(trustStores != null)
-            {
-                for (TrustStore store : trustStores)
-                {
-                    if(storeName.equals(store.getAttribute(TrustStore.NAME)))
-                    {
-                        throw new IntegrityViolationException("Trust store '"
-                                + storeName
-                                + "' can't be deleted as it is in use by a port: "
-                                + port.getName());
-                    }
-                }
-            }
-        }
-
-        Collection<AuthenticationProvider> authenticationProviders = new ArrayList<>(_broker.getAuthenticationProviders());
-        for (AuthenticationProvider authProvider : authenticationProviders)
-        {
-            if (authProvider instanceof SimpleLDAPAuthenticationManager)
-            {
-                SimpleLDAPAuthenticationManager simpleLdap = (SimpleLDAPAuthenticationManager) authProvider;
-                if (simpleLdap.getTrustStore() == this)
-                {
-                    throw new IntegrityViolationException("Trust store '"
-                            + storeName
-                            + "' can't be deleted as it is in use by an authentication manager: "
-                            + authProvider.getName());
-                }
-            }
-        }
-        deleted();
-        setState(State.DELETED);
-        _eventLogger.message(TrustStoreMessages.DELETE(getName()));
-        return Futures.immediateFuture(null);
+        return deleteIfNotInUse();
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     protected ListenableFuture<Void> doActivate()
     {
+        initializeExpiryChecking();
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
     }
@@ -178,10 +120,6 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
         if (changedAttributes.contains(TrustStore.DESIRED_STATE) && updated.getDesiredState() == State.DELETED)
         {
             return;
-        }
-        if(changedAttributes.contains(TrustStore.NAME) && !getName().equals(updated.getName()))
-        {
-            throw new IllegalConfigurationException("Changing the trust store name is not allowed");
         }
         validateTrustStore(updated);
     }
@@ -347,7 +285,6 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
         }
     }
 
-
     @Override
     public List<CertificateDetails> getCertificateDetails()
     {
@@ -361,6 +298,28 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
         catch (GeneralSecurityException e)
         {
             throw new IllegalConfigurationException("Failed to extract certificate details", e);
+        }
+    }
+
+    @Override
+    protected void checkCertificateExpiry()
+    {
+        int expiryWarning = getCertificateExpiryWarnPeriod();
+        if(expiryWarning > 0)
+        {
+            long currentTime = System.currentTimeMillis();
+            Date expiryTestDate = new Date(currentTime + (ONE_DAY * (long) expiryWarning));
+
+            try
+            {
+                Arrays.stream(getCertificates())
+                      .filter(cert -> cert instanceof X509Certificate)
+                      .forEach(x509cert -> checkCertificateExpiry(currentTime, expiryTestDate,
+                                                                  (X509Certificate) x509cert));
+            }
+            catch (GeneralSecurityException e)
+            {
+            }
         }
     }
 
@@ -391,29 +350,5 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
         {
             _path = null;
         }
-    }
-
-    @Override
-    public boolean isExposedAsMessageSource()
-    {
-        return _exposedAsMessageSource;
-    }
-
-    @Override
-    public List<VirtualHostNode<?>> getIncludedVirtualHostNodeMessageSources()
-    {
-        return _includedVirtualHostNodeMessageSources;
-    }
-
-    @Override
-    public List<VirtualHostNode<?>> getExcludedVirtualHostNodeMessageSources()
-    {
-        return _excludedVirtualHostNodeMessageSources;
-    }
-
-    @Override
-    protected void logOperation(final String operation)
-    {
-        _broker.getEventLogger().message(TrustStoreMessages.OPERATION(operation));
     }
 }

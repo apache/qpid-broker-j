@@ -31,6 +31,20 @@ import org.apache.qpid.server.security.CertificateDetails;
 @ManagedObject( defaultType = "FileTrustStore" )
 public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
 {
+    String CERTIFICATE_EXPIRY_WARN_PERIOD = "qpid.truststore.certificateExpiryWarnPeriod";
+
+    @ManagedContextDefault(name = CERTIFICATE_EXPIRY_WARN_PERIOD)
+    int DEFAULT_CERTIFICATE_EXPIRY_WARN_PERIOD = 30;
+
+    String CERTIFICATE_EXPIRY_CHECK_FREQUENCY = "qpid.truststore.certificateExpiryCheckFrequency";
+
+    @ManagedContextDefault(name = CERTIFICATE_EXPIRY_CHECK_FREQUENCY)
+    int DEFAULT_CERTIFICATE_EXPIRY_CHECK_FREQUENCY = 1;
+
+    @Override
+    @ManagedAttribute(immutable = true)
+    String getName();
+
     @ManagedAttribute( defaultValue = "false", description = "If true the Trust Store will expose its certificates as a special artificial message source.")
     boolean isExposedAsMessageSource();
 
@@ -42,6 +56,12 @@ public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
 
     @DerivedAttribute(description = "List of details about the certificates like validity dates, SANs, issuer and subject names, etc.")
     List<CertificateDetails> getCertificateDetails();
+
+    @DerivedAttribute
+    int getCertificateExpiryWarnPeriod();
+
+    @DerivedAttribute
+    int getCertificateExpiryCheckFrequency();
 
     TrustManager[] getTrustManagers() throws GeneralSecurityException;
 

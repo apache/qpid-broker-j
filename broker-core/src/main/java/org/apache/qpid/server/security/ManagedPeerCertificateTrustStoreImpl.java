@@ -28,6 +28,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -46,40 +47,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.messages.TrustStoreMessages;
-import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.model.TrustStore;
-import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.server.transport.network.security.ssl.QpidMultipleTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustManager;
 
 @ManagedObject( category = false )
 public class ManagedPeerCertificateTrustStoreImpl
-        extends AbstractConfiguredObject<ManagedPeerCertificateTrustStoreImpl> implements ManagedPeerCertificateTrustStore<ManagedPeerCertificateTrustStoreImpl>
+        extends AbstractTrustStore<ManagedPeerCertificateTrustStoreImpl> implements ManagedPeerCertificateTrustStore<ManagedPeerCertificateTrustStoreImpl>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ManagedPeerCertificateTrustStoreImpl.class);
-
-    private final Broker<?> _broker;
-    private final EventLogger _eventLogger;
-
-    @ManagedAttributeField
-    private boolean _exposedAsMessageSource;
-    @ManagedAttributeField
-    private List<VirtualHostNode<?>> _includedVirtualHostNodeMessageSources;
-    @ManagedAttributeField
-    private List<VirtualHostNode<?>> _excludedVirtualHostNodeMessageSources;
 
     private volatile TrustManager[] _trustManagers = new TrustManager[0];
 
@@ -89,10 +70,7 @@ public class ManagedPeerCertificateTrustStoreImpl
     @ManagedObjectFactoryConstructor
     public ManagedPeerCertificateTrustStoreImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
-        super(broker, attributes);
-        _broker = broker;
-        _eventLogger = _broker.getEventLogger();
-        _eventLogger.message(TrustStoreMessages.CREATE(getName()));
+        super(attributes, broker);
     }
 
     @Override
@@ -114,70 +92,16 @@ public class ManagedPeerCertificateTrustStoreImpl
     @StateTransition(currentState = {State.ACTIVE, State.ERRORED}, desiredState = State.DELETED)
     protected ListenableFuture<Void> doDelete()
     {
-        // verify that it is not in use
-        String storeName = getName();
-
-        Collection<Port<?>> ports = new ArrayList<>(_broker.getPorts());
-        for (Port port : ports)
-        {
-            Collection<TrustStore> trustStores = port.getTrustStores();
-            if(trustStores != null)
-            {
-                for (TrustStore store : trustStores)
-                {
-                    if(storeName.equals(store.getAttribute(TrustStore.NAME)))
-                    {
-                        throw new IntegrityViolationException("Trust store '"
-                                + storeName
-                                + "' can't be deleted as it is in use by a port: "
-                                + port.getName());
-                    }
-                }
-            }
-        }
-
-        Collection<AuthenticationProvider> authenticationProviders = new ArrayList<AuthenticationProvider>(_broker.getAuthenticationProviders());
-        for (AuthenticationProvider authProvider : authenticationProviders)
-        {
-            if(authProvider.getAttributeNames().contains(SimpleLDAPAuthenticationManager.TRUST_STORE))
-            {
-                Object attributeType = authProvider.getAttribute(AuthenticationProvider.TYPE);
-                Object attributeValue = authProvider.getAttribute(SimpleLDAPAuthenticationManager.TRUST_STORE);
-                if (SimpleLDAPAuthenticationManager.PROVIDER_TYPE.equals(attributeType)
-                        && storeName.equals(attributeValue))
-                {
-                    throw new IntegrityViolationException("Trust store '"
-                            + storeName
-                            + "' can't be deleted as it is in use by an authentication manager: "
-                            + authProvider.getName());
-                }
-            }
-        }
-        deleted();
-        setState(State.DELETED);
-        _eventLogger.message(TrustStoreMessages.DELETE(getName()));
-        return Futures.immediateFuture(null);
+        return deleteIfNotInUse();
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     protected ListenableFuture<Void> doActivate()
     {
+        initializeExpiryChecking();
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
     }
-
-
-    @Override
-    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
-    {
-        super.validateChange(proxyForValidation, changedAttributes);
-        ManagedPeerCertificateTrustStore<?> changedStore = (ManagedPeerCertificateTrustStore) proxyForValidation;
-        if (changedAttributes.contains(NAME) && !getName().equals(changedStore.getName()))
-        {
-            throw new IllegalConfigurationException("Changing the key store name is not allowed");
-        }
-    }
-
 
     @SuppressWarnings("unused")
     private void updateTrustManagers()
@@ -235,25 +159,6 @@ public class ManagedPeerCertificateTrustStoreImpl
         }
     }
 
-
-    @Override
-    public boolean isExposedAsMessageSource()
-    {
-        return _exposedAsMessageSource;
-    }
-
-    @Override
-    public List<VirtualHostNode<?>> getIncludedVirtualHostNodeMessageSources()
-    {
-        return _includedVirtualHostNodeMessageSources;
-    }
-
-    @Override
-    public List<VirtualHostNode<?>> getExcludedVirtualHostNodeMessageSources()
-    {
-        return _excludedVirtualHostNodeMessageSources;
-    }
-
     @Override
     public List<Certificate> getStoredCertificates()
     {
@@ -266,7 +171,7 @@ public class ManagedPeerCertificateTrustStoreImpl
         final Set<Certificate> certificates = new LinkedHashSet<>(_storedCertificates);
         if (certificates.add(cert))
         {
-            setAttributes(Collections.<String, Object>singletonMap("storedCertificates", certificates));
+            setAttributes(Collections.singletonMap("storedCertificates", certificates));
         }
     }
 
@@ -318,14 +223,23 @@ public class ManagedPeerCertificateTrustStoreImpl
 
         if (updated)
         {
-            setAttributes(Collections.<String, Object>singletonMap("storedCertificates", currentCerts));
+            setAttributes(Collections.singletonMap("storedCertificates", currentCerts));
         }
     }
 
-
     @Override
-    protected void logOperation(final String operation)
+    protected void checkCertificateExpiry()
     {
-        _broker.getEventLogger().message(TrustStoreMessages.OPERATION(operation));
+        int expiryWarning = getCertificateExpiryWarnPeriod();
+        if(expiryWarning > 0)
+        {
+            long currentTime = System.currentTimeMillis();
+            Date expiryTestDate = new Date(currentTime + (ONE_DAY * (long) expiryWarning));
+
+            _storedCertificates.stream()
+                               .filter(cert -> cert instanceof X509Certificate)
+                               .forEach(x509cert -> checkCertificateExpiry(currentTime, expiryTestDate,
+                                                                           (X509Certificate) x509cert));
+        }
     }
 }
