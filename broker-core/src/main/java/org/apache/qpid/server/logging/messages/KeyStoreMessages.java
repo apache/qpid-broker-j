@@ -22,13 +22,13 @@ package org.apache.qpid.server.logging.messages;
 
 import static org.apache.qpid.server.logging.AbstractMessageLogger.DEFAULT_LOG_HIERARCHY_PREFIX;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.qpid.server.logging.LogMessage;
-
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.ResourceBundle;
+
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.server.logging.LogMessage;
 
 /**
  * DO NOT EDIT DIRECTLY, THIS FILE WAS GENERATED.
@@ -36,7 +36,7 @@ import java.util.ResourceBundle;
  * Generated using GenerateLogMessages and LogMessages.vm
  * This file is based on the content of KeyStore_logmessages.properties
  *
- * To regenerate, edit the templates/properties and run the build with -Dgenerate=true
+ * To regenerate, use Maven lifecycle generates-sources with -Dgenerate=true
  */
 public class KeyStoreMessages
 {
@@ -63,43 +63,38 @@ public class KeyStoreMessages
     }
 
     public static final String KEYSTORE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore";
-    public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.delete";
-    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.create";
-    public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.operation";
-    public static final String EXPIRING_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.expiring";
     public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.close";
+    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.create";
+    public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.delete";
+    public static final String EXPIRING_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.expiring";
     public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.open";
+    public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.operation";
 
     static
     {
         LoggerFactory.getLogger(KEYSTORE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
-        LoggerFactory.getLogger(EXPIRING_LOG_HIERARCHY);
         LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(EXPIRING_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.KeyStore_logmessages", _currentLocale);
     }
 
     /**
      * Log a KeyStore message of the Format:
-     * <pre>KST-1004 : Delete "{0}"</pre>
+     * <pre>KST-1003 : Close</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETE(String param1)
+    public static LogMessage CLOSE()
     {
-        String rawMessage = _messages.getString("DELETE");
+        String rawMessage = _messages.getString("CLOSE");
 
-        final Object[] messageArguments = {param1};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
+        final String message = rawMessage;
 
         return new LogMessage()
         {
@@ -112,7 +107,7 @@ public class KeyStoreMessages
             @Override
             public String getLogHierarchy()
             {
-                return DELETE_LOG_HIERARCHY;
+                return CLOSE_LOG_HIERARCHY;
             }
 
             @Override
@@ -205,14 +200,14 @@ public class KeyStoreMessages
 
     /**
      * Log a KeyStore message of the Format:
-     * <pre>KST-1006 : Operation : {0}</pre>
+     * <pre>KST-1004 : Delete "{0}"</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPERATION(String param1)
+    public static LogMessage DELETE(String param1)
     {
-        String rawMessage = _messages.getString("OPERATION");
+        String rawMessage = _messages.getString("DELETE");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
@@ -232,7 +227,7 @@ public class KeyStoreMessages
             @Override
             public String getLogHierarchy()
             {
-                return OPERATION_LOG_HIERARCHY;
+                return DELETE_LOG_HIERARCHY;
             }
 
             @Override
@@ -325,14 +320,14 @@ public class KeyStoreMessages
 
     /**
      * Log a KeyStore message of the Format:
-     * <pre>KST-1003 : Close</pre>
+     * <pre>KST-1002 : Open</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE()
+    public static LogMessage OPEN()
     {
-        String rawMessage = _messages.getString("CLOSE");
+        String rawMessage = _messages.getString("OPEN");
 
         final String message = rawMessage;
 
@@ -347,7 +342,7 @@ public class KeyStoreMessages
             @Override
             public String getLogHierarchy()
             {
-                return CLOSE_LOG_HIERARCHY;
+                return OPEN_LOG_HIERARCHY;
             }
 
             @Override
@@ -380,16 +375,21 @@ public class KeyStoreMessages
 
     /**
      * Log a KeyStore message of the Format:
-     * <pre>KST-1002 : Open</pre>
+     * <pre>KST-1006 : Operation : {0}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPEN()
+    public static LogMessage OPERATION(String param1)
     {
-        String rawMessage = _messages.getString("OPEN");
+        String rawMessage = _messages.getString("OPERATION");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -402,7 +402,7 @@ public class KeyStoreMessages
             @Override
             public String getLogHierarchy()
             {
-                return OPEN_LOG_HIERARCHY;
+                return OPERATION_LOG_HIERARCHY;
             }
 
             @Override

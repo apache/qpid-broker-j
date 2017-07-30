@@ -32,6 +32,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.TreeSet;
+import java.util.Set;
 import java.util.ResourceBundle;
 
 public class GenerateLogMessages
@@ -283,7 +285,7 @@ public class GenerateLogMessages
     private HashMap<String, Object> prepareType(String messsageName, ResourceBundle messages) throws InvalidTypeException
     {
         // Load the LogMessages Resource Bundle
-        Enumeration<String> messageKeys = messages.getKeys();
+        Set<String> messageKeys = new TreeSet<>(messages.keySet());
 
         //Create the return map
         HashMap<String, Object> messageTypeData = new HashMap<String, Object>();
@@ -295,12 +297,9 @@ public class GenerateLogMessages
         messageTypeData.put("list", logMessageList);
 
         //Process each of the properties
-        while (messageKeys.hasMoreElements())
+        for(String message : messageKeys)
         {
             HashMap<String, Object> logEntryData = new HashMap<String, Object>();
-
-            //Add MessageName to amp
-            String message = messageKeys.nextElement();
 
             // Process the log message if it matches the specified key e.g.'BRK_'
             if (!message.equals("package"))

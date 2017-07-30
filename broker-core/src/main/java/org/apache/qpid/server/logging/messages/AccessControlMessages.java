@@ -36,7 +36,7 @@ import org.apache.qpid.server.logging.LogMessage;
  * Generated using GenerateLogMessages and LogMessages.vm
  * This file is based on the content of AccessControl_logmessages.properties
  *
- * To regenerate, edit the templates/properties and run the build with -Dgenerate=true
+ * To regenerate, use Maven lifecycle generates-sources with -Dgenerate=true
  */
 public class AccessControlMessages
 {
@@ -64,25 +64,25 @@ public class AccessControlMessages
 
     public static final String ACCESSCONTROL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol";
     public static final String ALLOWED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.allowed";
-    public static final String DENIED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.denied";
-    public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.delete";
-    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.create";
-    public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.operation";
     public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.close";
+    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.create";
+    public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.delete";
+    public static final String DENIED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.denied";
     public static final String LOADED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.loaded";
     public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.open";
+    public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.operation";
 
     static
     {
         LoggerFactory.getLogger(ACCESSCONTROL_LOG_HIERARCHY);
         LoggerFactory.getLogger(ALLOWED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(DENIED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
         LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(DENIED_LOG_HIERARCHY);
         LoggerFactory.getLogger(LOADED_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.AccessControl_logmessages", _currentLocale);
     }
@@ -149,21 +149,16 @@ public class AccessControlMessages
 
     /**
      * Log a AccessControl message of the Format:
-     * <pre>ACL-1002 : Denied : {0} {1} {2}</pre>
+     * <pre>ACL-1013 : Close</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage DENIED(String param1, String param2, String param3)
+    public static LogMessage CLOSE()
     {
-        String rawMessage = _messages.getString("DENIED");
+        String rawMessage = _messages.getString("CLOSE");
 
-        final Object[] messageArguments = {param1, param2, param3};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
+        final String message = rawMessage;
 
         return new LogMessage()
         {
@@ -176,67 +171,7 @@ public class AccessControlMessages
             @Override
             public String getLogHierarchy()
             {
-                return DENIED_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a AccessControl message of the Format:
-     * <pre>ACL-1014 : Delete "{0}"</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage DELETE(String param1)
-    {
-        String rawMessage = _messages.getString("DELETE");
-
-        final Object[] messageArguments = {param1};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            @Override
-            public String toString()
-            {
-                return message;
-            }
-
-            @Override
-            public String getLogHierarchy()
-            {
-                return DELETE_LOG_HIERARCHY;
+                return CLOSE_LOG_HIERARCHY;
             }
 
             @Override
@@ -329,14 +264,14 @@ public class AccessControlMessages
 
     /**
      * Log a AccessControl message of the Format:
-     * <pre>ACL-1016 : Operation : {0}</pre>
+     * <pre>ACL-1014 : Delete "{0}"</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPERATION(String param1)
+    public static LogMessage DELETE(String param1)
     {
-        String rawMessage = _messages.getString("OPERATION");
+        String rawMessage = _messages.getString("DELETE");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
@@ -356,7 +291,7 @@ public class AccessControlMessages
             @Override
             public String getLogHierarchy()
             {
-                return OPERATION_LOG_HIERARCHY;
+                return DELETE_LOG_HIERARCHY;
             }
 
             @Override
@@ -389,16 +324,21 @@ public class AccessControlMessages
 
     /**
      * Log a AccessControl message of the Format:
-     * <pre>ACL-1013 : Close</pre>
+     * <pre>ACL-1002 : Denied : {0} {1} {2}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE()
+    public static LogMessage DENIED(String param1, String param2, String param3)
     {
-        String rawMessage = _messages.getString("CLOSE");
+        String rawMessage = _messages.getString("DENIED");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1, param2, param3};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -411,7 +351,7 @@ public class AccessControlMessages
             @Override
             public String getLogHierarchy()
             {
-                return CLOSE_LOG_HIERARCHY;
+                return DENIED_LOG_HIERARCHY;
             }
 
             @Override
@@ -527,6 +467,66 @@ public class AccessControlMessages
             public String getLogHierarchy()
             {
                 return OPEN_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a AccessControl message of the Format:
+     * <pre>ACL-1016 : Operation : {0}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage OPERATION(String param1)
+    {
+        String rawMessage = _messages.getString("OPERATION");
+
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return OPERATION_LOG_HIERARCHY;
             }
 
             @Override

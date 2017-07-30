@@ -22,13 +22,13 @@ package org.apache.qpid.server.logging.messages;
 
 import static org.apache.qpid.server.logging.AbstractMessageLogger.DEFAULT_LOG_HIERARCHY_PREFIX;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.qpid.server.logging.LogMessage;
-
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.ResourceBundle;
+
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.server.logging.LogMessage;
 
 /**
  * DO NOT EDIT DIRECTLY, THIS FILE WAS GENERATED.
@@ -36,7 +36,7 @@ import java.util.ResourceBundle;
  * Generated using GenerateLogMessages and LogMessages.vm
  * This file is based on the content of Exchange_logmessages.properties
  *
- * To regenerate, edit the templates/properties and run the build with -Dgenerate=true
+ * To regenerate, use Maven lifecycle generates-sources with -Dgenerate=true
  */
 public class ExchangeMessages
 {

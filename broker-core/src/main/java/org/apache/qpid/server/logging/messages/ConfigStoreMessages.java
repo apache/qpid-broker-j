@@ -22,13 +22,13 @@ package org.apache.qpid.server.logging.messages;
 
 import static org.apache.qpid.server.logging.AbstractMessageLogger.DEFAULT_LOG_HIERARCHY_PREFIX;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.qpid.server.logging.LogMessage;
-
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.ResourceBundle;
+
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.server.logging.LogMessage;
 
 /**
  * DO NOT EDIT DIRECTLY, THIS FILE WAS GENERATED.
@@ -36,7 +36,7 @@ import java.util.ResourceBundle;
  * Generated using GenerateLogMessages and LogMessages.vm
  * This file is based on the content of ConfigStore_logmessages.properties
  *
- * To regenerate, edit the templates/properties and run the build with -Dgenerate=true
+ * To regenerate, use Maven lifecycle generates-sources with -Dgenerate=true
  */
 public class ConfigStoreMessages
 {
@@ -63,34 +63,34 @@ public class ConfigStoreMessages
     }
 
     public static final String CONFIGSTORE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "configstore";
-    public static final String RECOVERY_START_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "configstore.recovery_start";
-    public static final String CREATED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "configstore.created";
-    public static final String STORE_LOCATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "configstore.store_location";
     public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "configstore.close";
+    public static final String CREATED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "configstore.created";
     public static final String RECOVERY_COMPLETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "configstore.recovery_complete";
+    public static final String RECOVERY_START_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "configstore.recovery_start";
+    public static final String STORE_LOCATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "configstore.store_location";
 
     static
     {
         LoggerFactory.getLogger(CONFIGSTORE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(RECOVERY_START_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CREATED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(STORE_LOCATION_LOG_HIERARCHY);
         LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CREATED_LOG_HIERARCHY);
         LoggerFactory.getLogger(RECOVERY_COMPLETE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(RECOVERY_START_LOG_HIERARCHY);
+        LoggerFactory.getLogger(STORE_LOCATION_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.ConfigStore_logmessages", _currentLocale);
     }
 
     /**
      * Log a ConfigStore message of the Format:
-     * <pre>CFG-1004 : Recovery Start</pre>
+     * <pre>CFG-1003 : Closed</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage RECOVERY_START()
+    public static LogMessage CLOSE()
     {
-        String rawMessage = _messages.getString("RECOVERY_START");
+        String rawMessage = _messages.getString("CLOSE");
 
         final String message = rawMessage;
 
@@ -105,7 +105,7 @@ public class ConfigStoreMessages
             @Override
             public String getLogHierarchy()
             {
-                return RECOVERY_START_LOG_HIERARCHY;
+                return CLOSE_LOG_HIERARCHY;
             }
 
             @Override
@@ -193,6 +193,116 @@ public class ConfigStoreMessages
 
     /**
      * Log a ConfigStore message of the Format:
+     * <pre>CFG-1005 : Recovery Complete</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage RECOVERY_COMPLETE()
+    {
+        String rawMessage = _messages.getString("RECOVERY_COMPLETE");
+
+        final String message = rawMessage;
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return RECOVERY_COMPLETE_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a ConfigStore message of the Format:
+     * <pre>CFG-1004 : Recovery Start</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage RECOVERY_START()
+    {
+        String rawMessage = _messages.getString("RECOVERY_START");
+
+        final String message = rawMessage;
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return RECOVERY_START_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a ConfigStore message of the Format:
      * <pre>CFG-1002 : Store location : {0}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
@@ -221,116 +331,6 @@ public class ConfigStoreMessages
             public String getLogHierarchy()
             {
                 return STORE_LOCATION_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a ConfigStore message of the Format:
-     * <pre>CFG-1003 : Closed</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage CLOSE()
-    {
-        String rawMessage = _messages.getString("CLOSE");
-
-        final String message = rawMessage;
-
-        return new LogMessage()
-        {
-            @Override
-            public String toString()
-            {
-                return message;
-            }
-
-            @Override
-            public String getLogHierarchy()
-            {
-                return CLOSE_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a ConfigStore message of the Format:
-     * <pre>CFG-1005 : Recovery Complete</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage RECOVERY_COMPLETE()
-    {
-        String rawMessage = _messages.getString("RECOVERY_COMPLETE");
-
-        final String message = rawMessage;
-
-        return new LogMessage()
-        {
-            @Override
-            public String toString()
-            {
-                return message;
-            }
-
-            @Override
-            public String getLogHierarchy()
-            {
-                return RECOVERY_COMPLETE_LOG_HIERARCHY;
             }
 
             @Override

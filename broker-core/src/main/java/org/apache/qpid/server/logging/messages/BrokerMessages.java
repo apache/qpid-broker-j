@@ -36,7 +36,7 @@ import org.apache.qpid.server.logging.LogMessage;
  * Generated using GenerateLogMessages and LogMessages.vm
  * This file is based on the content of Broker_logmessages.properties
  *
- * To regenerate, edit the templates/properties and run the build with -Dgenerate=true
+ * To regenerate, use Maven lifecycle generates-sources with -Dgenerate=true
  */
 public class BrokerMessages
 {
@@ -63,56 +63,61 @@ public class BrokerMessages
     }
 
     public static final String BROKER_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker";
-    public static final String READY_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.ready";
-    public static final String FAILED_CHILDREN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.failed_children";
-    public static final String LISTENING_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.listening";
-    public static final String STARTUP_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.startup";
-    public static final String MANAGEMENT_MODE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.management_mode";
-    public static final String STATS_MSGS_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.stats_msgs";
-    public static final String PLATFORM_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.platform";
     public static final String CONFIG_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.config";
-    public static final String SHUTTING_DOWN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.shutting_down";
-    public static final String STATS_DATA_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.stats_data";
+    public static final String FAILED_CHILDREN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.failed_children";
     public static final String FATAL_ERROR_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.fatal_error";
-    public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.operation";
-    public static final String STOPPED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.stopped";
-    public static final String PROCESS_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.process";
+    public static final String LISTENING_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.listening";
+    public static final String MANAGEMENT_MODE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.management_mode";
     public static final String MAX_MEMORY_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.max_memory";
+    public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.operation";
+    public static final String PLATFORM_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.platform";
+    public static final String PROCESS_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.process";
+    public static final String READY_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.ready";
+    public static final String SHUTTING_DOWN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.shutting_down";
+    public static final String STARTUP_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.startup";
+    public static final String STATS_DATA_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.stats_data";
+    public static final String STATS_MSGS_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.stats_msgs";
+    public static final String STOPPED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.stopped";
 
     static
     {
         LoggerFactory.getLogger(BROKER_LOG_HIERARCHY);
-        LoggerFactory.getLogger(READY_LOG_HIERARCHY);
-        LoggerFactory.getLogger(FAILED_CHILDREN_LOG_HIERARCHY);
-        LoggerFactory.getLogger(LISTENING_LOG_HIERARCHY);
-        LoggerFactory.getLogger(STARTUP_LOG_HIERARCHY);
-        LoggerFactory.getLogger(MANAGEMENT_MODE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(STATS_MSGS_LOG_HIERARCHY);
-        LoggerFactory.getLogger(PLATFORM_LOG_HIERARCHY);
         LoggerFactory.getLogger(CONFIG_LOG_HIERARCHY);
-        LoggerFactory.getLogger(SHUTTING_DOWN_LOG_HIERARCHY);
-        LoggerFactory.getLogger(STATS_DATA_LOG_HIERARCHY);
+        LoggerFactory.getLogger(FAILED_CHILDREN_LOG_HIERARCHY);
         LoggerFactory.getLogger(FATAL_ERROR_LOG_HIERARCHY);
-        LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
-        LoggerFactory.getLogger(STOPPED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(PROCESS_LOG_HIERARCHY);
+        LoggerFactory.getLogger(LISTENING_LOG_HIERARCHY);
+        LoggerFactory.getLogger(MANAGEMENT_MODE_LOG_HIERARCHY);
         LoggerFactory.getLogger(MAX_MEMORY_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
+        LoggerFactory.getLogger(PLATFORM_LOG_HIERARCHY);
+        LoggerFactory.getLogger(PROCESS_LOG_HIERARCHY);
+        LoggerFactory.getLogger(READY_LOG_HIERARCHY);
+        LoggerFactory.getLogger(SHUTTING_DOWN_LOG_HIERARCHY);
+        LoggerFactory.getLogger(STARTUP_LOG_HIERARCHY);
+        LoggerFactory.getLogger(STATS_DATA_LOG_HIERARCHY);
+        LoggerFactory.getLogger(STATS_MSGS_LOG_HIERARCHY);
+        LoggerFactory.getLogger(STOPPED_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Broker_logmessages", _currentLocale);
     }
 
     /**
      * Log a Broker message of the Format:
-     * <pre>BRK-1004 : Qpid Broker Ready</pre>
+     * <pre>BRK-1006 : Using configuration : {0}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage READY()
+    public static LogMessage CONFIG(String param1)
     {
-        String rawMessage = _messages.getString("READY");
+        String rawMessage = _messages.getString("CONFIG");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -125,7 +130,7 @@ public class BrokerMessages
             @Override
             public String getLogHierarchy()
             {
-                return READY_LOG_HIERARCHY;
+                return CONFIG_LOG_HIERARCHY;
             }
 
             @Override
@@ -218,16 +223,16 @@ public class BrokerMessages
 
     /**
      * Log a Broker message of the Format:
-     * <pre>BRK-1002 : Starting : Listening on {0} port {1,number,#}</pre>
+     * <pre>BRK-1016 : Fatal error : {0} : See log file for more information</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage LISTENING(String param1, Number param2)
+    public static LogMessage FATAL_ERROR(String param1)
     {
-        String rawMessage = _messages.getString("LISTENING");
+        String rawMessage = _messages.getString("FATAL_ERROR");
 
-        final Object[] messageArguments = {param1, param2};
+        final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -245,7 +250,7 @@ public class BrokerMessages
             @Override
             public String getLogHierarchy()
             {
-                return LISTENING_LOG_HIERARCHY;
+                return FATAL_ERROR_LOG_HIERARCHY;
             }
 
             @Override
@@ -278,14 +283,14 @@ public class BrokerMessages
 
     /**
      * Log a Broker message of the Format:
-     * <pre>BRK-1001 : Startup : Version: {0} Build: {1}</pre>
+     * <pre>BRK-1002 : Starting : Listening on {0} port {1,number,#}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage STARTUP(String param1, String param2)
+    public static LogMessage LISTENING(String param1, Number param2)
     {
-        String rawMessage = _messages.getString("STARTUP");
+        String rawMessage = _messages.getString("LISTENING");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
@@ -305,7 +310,7 @@ public class BrokerMessages
             @Override
             public String getLogHierarchy()
             {
-                return STARTUP_LOG_HIERARCHY;
+                return LISTENING_LOG_HIERARCHY;
             }
 
             @Override
@@ -398,194 +403,14 @@ public class BrokerMessages
 
     /**
      * Log a Broker message of the Format:
-     * <pre>BRK-1009 : {0,choice,0#delivered|1#received} : {1,number,#.###} msg/s peak : {2,number,#} msgs total</pre>
+     * <pre>BRK-1011 : Maximum Memory : Heap : {0,number} bytes Direct : {1,number} bytes</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage STATS_MSGS(Number param1, Number param2, Number param3)
+    public static LogMessage MAX_MEMORY(Number param1, Number param2)
     {
-        String rawMessage = _messages.getString("STATS_MSGS");
-
-        final Object[] messageArguments = {param1, param2, param3};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            @Override
-            public String toString()
-            {
-                return message;
-            }
-
-            @Override
-            public String getLogHierarchy()
-            {
-                return STATS_MSGS_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a Broker message of the Format:
-     * <pre>BRK-1010 : Platform : JVM : {0} version: {1} OS : {2} version: {3} arch: {4} cores: {5}</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage PLATFORM(String param1, String param2, String param3, String param4, String param5, String param6)
-    {
-        String rawMessage = _messages.getString("PLATFORM");
-
-        final Object[] messageArguments = {param1, param2, param3, param4, param5, param6};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            @Override
-            public String toString()
-            {
-                return message;
-            }
-
-            @Override
-            public String getLogHierarchy()
-            {
-                return PLATFORM_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a Broker message of the Format:
-     * <pre>BRK-1006 : Using configuration : {0}</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage CONFIG(String param1)
-    {
-        String rawMessage = _messages.getString("CONFIG");
-
-        final Object[] messageArguments = {param1};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            @Override
-            public String toString()
-            {
-                return message;
-            }
-
-            @Override
-            public String getLogHierarchy()
-            {
-                return CONFIG_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a Broker message of the Format:
-     * <pre>BRK-1003 : Shutting down : {0} port {1,number,#}</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage SHUTTING_DOWN(String param1, Number param2)
-    {
-        String rawMessage = _messages.getString("SHUTTING_DOWN");
+        String rawMessage = _messages.getString("MAX_MEMORY");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
@@ -605,127 +430,7 @@ public class BrokerMessages
             @Override
             public String getLogHierarchy()
             {
-                return SHUTTING_DOWN_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a Broker message of the Format:
-     * <pre>BRK-1008 : {0,choice,0#delivered|1#received} : {1,number,#.###} kB/s peak : {2,number,#} bytes total</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage STATS_DATA(Number param1, Number param2, Number param3)
-    {
-        String rawMessage = _messages.getString("STATS_DATA");
-
-        final Object[] messageArguments = {param1, param2, param3};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            @Override
-            public String toString()
-            {
-                return message;
-            }
-
-            @Override
-            public String getLogHierarchy()
-            {
-                return STATS_DATA_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a Broker message of the Format:
-     * <pre>BRK-1016 : Fatal error : {0} : See log file for more information</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage FATAL_ERROR(String param1)
-    {
-        String rawMessage = _messages.getString("FATAL_ERROR");
-
-        final Object[] messageArguments = {param1};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            @Override
-            public String toString()
-            {
-                return message;
-            }
-
-            @Override
-            public String getLogHierarchy()
-            {
-                return FATAL_ERROR_LOG_HIERARCHY;
+                return MAX_MEMORY_LOG_HIERARCHY;
             }
 
             @Override
@@ -818,16 +523,21 @@ public class BrokerMessages
 
     /**
      * Log a Broker message of the Format:
-     * <pre>BRK-1005 : Stopped</pre>
+     * <pre>BRK-1010 : Platform : JVM : {0} version: {1} OS : {2} version: {3} arch: {4} cores: {5}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage STOPPED()
+    public static LogMessage PLATFORM(String param1, String param2, String param3, String param4, String param5, String param6)
     {
-        String rawMessage = _messages.getString("STOPPED");
+        String rawMessage = _messages.getString("PLATFORM");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1, param2, param3, param4, param5, param6};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -840,7 +550,7 @@ public class BrokerMessages
             @Override
             public String getLogHierarchy()
             {
-                return STOPPED_LOG_HIERARCHY;
+                return PLATFORM_LOG_HIERARCHY;
             }
 
             @Override
@@ -933,14 +643,69 @@ public class BrokerMessages
 
     /**
      * Log a Broker message of the Format:
-     * <pre>BRK-1011 : Maximum Memory : Heap : {0,number} bytes Direct : {1,number} bytes</pre>
+     * <pre>BRK-1004 : Qpid Broker Ready</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage MAX_MEMORY(Number param1, Number param2)
+    public static LogMessage READY()
     {
-        String rawMessage = _messages.getString("MAX_MEMORY");
+        String rawMessage = _messages.getString("READY");
+
+        final String message = rawMessage;
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return READY_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Broker message of the Format:
+     * <pre>BRK-1003 : Shutting down : {0} port {1,number,#}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage SHUTTING_DOWN(String param1, Number param2)
+    {
+        String rawMessage = _messages.getString("SHUTTING_DOWN");
 
         final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
@@ -960,7 +725,242 @@ public class BrokerMessages
             @Override
             public String getLogHierarchy()
             {
-                return MAX_MEMORY_LOG_HIERARCHY;
+                return SHUTTING_DOWN_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Broker message of the Format:
+     * <pre>BRK-1001 : Startup : Version: {0} Build: {1}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage STARTUP(String param1, String param2)
+    {
+        String rawMessage = _messages.getString("STARTUP");
+
+        final Object[] messageArguments = {param1, param2};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return STARTUP_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Broker message of the Format:
+     * <pre>BRK-1008 : {0,choice,0#delivered|1#received} : {1,number,#.###} kB/s peak : {2,number,#} bytes total</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage STATS_DATA(Number param1, Number param2, Number param3)
+    {
+        String rawMessage = _messages.getString("STATS_DATA");
+
+        final Object[] messageArguments = {param1, param2, param3};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return STATS_DATA_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Broker message of the Format:
+     * <pre>BRK-1009 : {0,choice,0#delivered|1#received} : {1,number,#.###} msg/s peak : {2,number,#} msgs total</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage STATS_MSGS(Number param1, Number param2, Number param3)
+    {
+        String rawMessage = _messages.getString("STATS_MSGS");
+
+        final Object[] messageArguments = {param1, param2, param3};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return STATS_MSGS_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Broker message of the Format:
+     * <pre>BRK-1005 : Stopped</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage STOPPED()
+    {
+        String rawMessage = _messages.getString("STOPPED");
+
+        final String message = rawMessage;
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return STOPPED_LOG_HIERARCHY;
             }
 
             @Override

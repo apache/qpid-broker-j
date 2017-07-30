@@ -22,13 +22,13 @@ package org.apache.qpid.server.logging.messages;
 
 import static org.apache.qpid.server.logging.AbstractMessageLogger.DEFAULT_LOG_HIERARCHY_PREFIX;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.qpid.server.logging.LogMessage;
-
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.ResourceBundle;
+
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.server.logging.LogMessage;
 
 /**
  * DO NOT EDIT DIRECTLY, THIS FILE WAS GENERATED.
@@ -36,7 +36,7 @@ import java.util.ResourceBundle;
  * Generated using GenerateLogMessages and LogMessages.vm
  * This file is based on the content of Queue_logmessages.properties
  *
- * To regenerate, edit the templates/properties and run the build with -Dgenerate=true
+ * To regenerate, use Maven lifecycle generates-sources with -Dgenerate=true
  */
 public class QueueMessages
 {
@@ -64,21 +64,21 @@ public class QueueMessages
 
     public static final String QUEUE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue";
     public static final String CREATED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.created";
-    public static final String DROPPED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.dropped";
-    public static final String OVERFULL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.overfull";
-    public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.operation";
-    public static final String UNDERFULL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.underfull";
     public static final String DELETED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.deleted";
+    public static final String DROPPED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.dropped";
+    public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.operation";
+    public static final String OVERFULL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.overfull";
+    public static final String UNDERFULL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "queue.underfull";
 
     static
     {
         LoggerFactory.getLogger(QUEUE_LOG_HIERARCHY);
         LoggerFactory.getLogger(CREATED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(DROPPED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(OVERFULL_LOG_HIERARCHY);
-        LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
-        LoggerFactory.getLogger(UNDERFULL_LOG_HIERARCHY);
         LoggerFactory.getLogger(DELETED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(DROPPED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OVERFULL_LOG_HIERARCHY);
+        LoggerFactory.getLogger(UNDERFULL_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Queue_logmessages", _currentLocale);
     }
@@ -208,16 +208,16 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
-     * <pre>QUE-1005 : Dropped : {0,number} messages, Depth : {1,number} bytes, {2,number} messages, Capacity : {3,number} bytes, {4,number} messages</pre>
+     * <pre>QUE-1002 : Deleted : ID: {0}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage DROPPED(Number param1, Number param2, Number param3, Number param4, Number param5)
+    public static LogMessage DELETED(String param1)
     {
-        String rawMessage = _messages.getString("DROPPED");
+        String rawMessage = _messages.getString("DELETED");
 
-        final Object[] messageArguments = {param1, param2, param3, param4, param5};
+        final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -235,7 +235,7 @@ public class QueueMessages
             @Override
             public String getLogHierarchy()
             {
-                return DROPPED_LOG_HIERARCHY;
+                return DELETED_LOG_HIERARCHY;
             }
 
             @Override
@@ -268,16 +268,16 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
-     * <pre>QUE-1003 : Overfull : Size : {0,number} bytes, Capacity : {1,number}, Messages : {2,number}, Message Capacity : {3,number}</pre>
+     * <pre>QUE-1005 : Dropped : {0,number} messages, Depth : {1,number} bytes, {2,number} messages, Capacity : {3,number} bytes, {4,number} messages</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage OVERFULL(Number param1, Number param2, Number param3, Number param4)
+    public static LogMessage DROPPED(Number param1, Number param2, Number param3, Number param4, Number param5)
     {
-        String rawMessage = _messages.getString("OVERFULL");
+        String rawMessage = _messages.getString("DROPPED");
 
-        final Object[] messageArguments = {param1, param2, param3, param4};
+        final Object[] messageArguments = {param1, param2, param3, param4, param5};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -295,7 +295,7 @@ public class QueueMessages
             @Override
             public String getLogHierarchy()
             {
-                return OVERFULL_LOG_HIERARCHY;
+                return DROPPED_LOG_HIERARCHY;
             }
 
             @Override
@@ -388,6 +388,66 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
+     * <pre>QUE-1003 : Overfull : Size : {0,number} bytes, Capacity : {1,number}, Messages : {2,number}, Message Capacity : {3,number}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage OVERFULL(Number param1, Number param2, Number param3, Number param4)
+    {
+        String rawMessage = _messages.getString("OVERFULL");
+
+        final Object[] messageArguments = {param1, param2, param3, param4};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return OVERFULL_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Queue message of the Format:
      * <pre>QUE-1004 : Underfull : Size : {0,number} bytes, Resume Capacity : {1,number}, Messages : {2,number}, Message Capacity : {3,number}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
@@ -446,65 +506,6 @@ public class QueueMessages
         };
     }
 
-    /**
-     * Log a Queue message of the Format:
-     * <pre>QUE-1002 : Deleted : ID: {0}</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage DELETED(String param1)
-    {
-        String rawMessage = _messages.getString("DELETED");
-
-        final Object[] messageArguments = {param1};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            @Override
-            public String toString()
-            {
-                return message;
-            }
-
-            @Override
-            public String getLogHierarchy()
-            {
-                return DELETED_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
 
     private QueueMessages()
     {
