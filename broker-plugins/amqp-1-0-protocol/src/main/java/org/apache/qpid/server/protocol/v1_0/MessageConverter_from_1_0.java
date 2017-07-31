@@ -49,6 +49,10 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class MessageConverter_from_1_0
@@ -222,5 +226,126 @@ public class MessageConverter_from_1_0
             result.add(convertValue(entry));
         }
         return result;
+    }
+
+    public static UnsignedInteger getGroupSequence(final Message_1_0 serverMsg)
+    {
+        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
+        if (propertiesSection != null)
+        {
+            final Properties properties = propertiesSection.getValue();
+            if (properties != null)
+            {
+                return properties.getGroupSequence();
+            }
+        }
+        return null;
+    }
+
+    public static String getGroupId(final Message_1_0 serverMsg)
+    {
+        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
+        if (propertiesSection != null)
+        {
+            final Properties properties = propertiesSection.getValue();
+            if (properties != null)
+            {
+                return properties.getGroupId();
+            }
+        }
+        return null;
+    }
+
+    public static Date getCreationTime(final Message_1_0 serverMsg)
+    {
+        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
+        if (propertiesSection != null)
+        {
+            final Properties properties = propertiesSection.getValue();
+            if (properties != null)
+            {
+                return properties.getCreationTime();
+            }
+        }
+        return null;
+    }
+
+    public static Date getAbsoluteExpiryTime(final Message_1_0 serverMsg)
+    {
+        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
+        if (propertiesSection != null)
+        {
+            final Properties properties = propertiesSection.getValue();
+            if (properties != null)
+            {
+                return properties.getAbsoluteExpiryTime();
+            }
+        }
+        return null;
+    }
+
+    public static Long getTtl(final Message_1_0 serverMsg)
+    {
+        HeaderSection headerSection = serverMsg.getHeaderSection();
+        if (headerSection != null)
+        {
+            Header header = headerSection.getValue();
+            if (header != null)
+            {
+                UnsignedInteger ttl = header.getTtl();
+                if (ttl != null)
+                {
+                    return ttl.longValue();
+                }
+            }
+        }
+        return null;
+    }
+
+    public static Binary getUserId(final Message_1_0 serverMsg)
+    {
+        Binary userId = null;
+        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
+        if (propertiesSection != null)
+        {
+            final Properties properties = propertiesSection.getValue();
+            if (properties != null)
+            {
+                userId = properties.getUserId();
+            }
+        }
+        return userId;
+    }
+
+    public static Object getCorrelationId(final Message_1_0 serverMsg)
+    {
+        Object correlationIdObject = null;
+        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
+        if (propertiesSection != null)
+        {
+            final Properties properties = propertiesSection.getValue();
+            if (properties != null)
+            {
+                correlationIdObject = properties.getCorrelationId();
+
+            }
+        }
+        return correlationIdObject;
+    }
+
+    public static Object getMessageId(final Message_1_0 serverMsg)
+    {
+        Object messageId = null;
+        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
+        if (propertiesSection != null)
+        {
+            final Properties properties = propertiesSection.getValue();
+            if (properties != null)
+            {
+                messageId = properties.getMessageId();
+
+            }
+        }
+        return messageId;
     }
 }

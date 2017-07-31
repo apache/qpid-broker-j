@@ -20,6 +20,17 @@
  */
 package org.apache.qpid.server.protocol.converter.v0_8_v1_0;
 
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.convertBodyToObject;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.convertValue;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getAbsoluteExpiryTime;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getCorrelationId;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getCreationTime;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getGroupId;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getGroupSequence;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getMessageId;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getTtl;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getUserId;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -42,22 +53,15 @@ import org.apache.qpid.server.protocol.v0_8.MessageMetaData;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
-import org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0;
 import org.apache.qpid.server.protocol.v1_0.MessageMetaData_1_0;
 import org.apache.qpid.server.protocol.v1_0.Message_1_0;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
 import org.apache.qpid.server.store.StoredMessage;
 
 @PluggableService
 public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_0, AMQMessage>
 {
-    private static final int BASIC_CLASS_ID = 60;
-
 
     @Override
     public Class<Message_1_0> getInputClass()
@@ -86,7 +90,7 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
     private StoredMessage<MessageMetaData> convertToStoredMessage(final Message_1_0 serverMsg,
                                                                   final NamedAddressSpace addressSpace)
     {
-        Object bodyObject = MessageConverter_from_1_0.convertBodyToObject(serverMsg);
+        Object bodyObject = convertBodyToObject(serverMsg);
 
         final ObjectToMimeContentConverter converter = MimeContentConverterRegistry.getBestFitObjectToMimeContentConverter(bodyObject);
 
@@ -169,7 +173,7 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
         props.setContentType(bodyMimeType);
         props.setEncoding(convertToShortStringForProperty("content-encoding",
                                                           serverMsg.getMessageHeader().getEncoding()));
-        props.setCorrelationId(getCorrelationId(serverMsg));
+        props.setCorrelationId(getCorrelationIdAsShortString(serverMsg));
         props.setDeliveryMode(serverMsg.isPersistent() ? BasicContentHeaderProperties.PERSISTENT : BasicContentHeaderProperties.NON_PERSISTENT);
 
 
@@ -187,21 +191,21 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
             }
         }
 
-        props.setMessageId(getMessageId(serverMsg));
+        props.setMessageId(getMessageIdAsShortString(serverMsg));
         props.setPriority(serverMsg.getMessageHeader().getPriority());
         props.setReplyTo(getReplyTo(serverMsg, addressSpace));
-        final long timestamp = serverMsg.getMessageHeader().getTimestamp();
-        if (timestamp > 0)
+        Date timestamp = getCreationTime(serverMsg);
+        if (timestamp != null)
         {
-            props.setTimestamp(timestamp);
+            props.setTimestamp(timestamp.getTime());
         }
         else
         {
             props.setTimestamp(serverMsg.getArrivalTime());
         }
-        props.setUserId(getUserId(serverMsg));
+        props.setUserId(getUserIdAsShortString(serverMsg));
 
-        Map<String,Object> headerProps = new LinkedHashMap<String, Object>();
+        Map<String,Object> headerProps = new LinkedHashMap<>();
 
         if(header.getSubject() != null)
         {
@@ -223,8 +227,7 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
 
         for (String headerName : serverMsg.getMessageHeader().getHeaderNames())
         {
-            headerProps.put(headerName,
-                            MessageConverter_from_1_0.convertValue(serverMsg.getMessageHeader().getHeader(headerName)));
+            headerProps.put(headerName, convertValue(serverMsg.getMessageHeader().getHeader(headerName)));
         }
 
         final FieldTable headers;
@@ -298,123 +301,47 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
                                                                                                 routingKey));
     }
 
-    private UnsignedInteger getGroupSequence(final Message_1_0 serverMsg)
+    private AMQShortString getUserIdAsShortString(final Message_1_0 serverMsg)
     {
-        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
-        if (propertiesSection != null)
+        Binary userId = getUserId(serverMsg);
+        if (userId != null)
         {
-            final Properties properties = propertiesSection.getValue();
-            if (properties != null)
+            try
             {
-                return properties.getGroupSequence();
+                return new AMQShortString(userId.getArray());
+            }
+            catch (IllegalArgumentException e)
+            {
+                return null;
             }
         }
         return null;
     }
 
-    private String getGroupId(final Message_1_0 serverMsg)
+    private AMQShortString getMessageIdAsShortString(final Message_1_0 serverMsg)
     {
-        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
-        if (propertiesSection != null)
+        Object messageId = getMessageId(serverMsg);
+        try
         {
-            final Properties properties = propertiesSection.getValue();
-            if (properties != null)
+            if (messageId instanceof Binary)
             {
-                return properties.getGroupId();
+                return new AMQShortString(((Binary) messageId).getArray());
+            }
+            else if (messageId instanceof byte[])
+            {
+                return new AMQShortString(((byte[]) messageId));
+            }
+            else
+            {
+                return AMQShortString.valueOf(messageId);
             }
         }
-        return null;
-    }
-
-    private AMQShortString getUserId(final Message_1_0 serverMsg)
-    {
-        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
-        if (propertiesSection != null)
+        catch (IllegalArgumentException e)
         {
-            final Properties properties = propertiesSection.getValue();
-            if (properties != null)
-            {
-                Binary userId = properties.getUserId();
-                if (userId != null)
-                {
-                    try
-                    {
-                        return new AMQShortString(userId.getArray());
-                    }
-                    catch (IllegalArgumentException e)
-                    {
-                        return null;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    private AMQShortString getMessageId(final Message_1_0 serverMsg)
-    {
-        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
-        if (propertiesSection != null)
-        {
-            final Properties properties = propertiesSection.getValue();
-            if (properties != null)
-            {
-                Object messageId = properties.getMessageId();
-                try
-                {
-                    if (messageId instanceof Binary)
-                    {
-                        return new AMQShortString(((Binary) messageId).getArray());
-                    }
-                    else if (messageId instanceof byte[])
-                    {
-                        return new AMQShortString(((byte[]) messageId));
-                    }
-                    else
-                    {
-                        return AMQShortString.valueOf(messageId);
-                    }
-                }
-                catch (IllegalArgumentException e)
-                {
-                    // pass
-                }
-            }
+            // pass
         }
         return null;
 
-    }
-
-    private Date getAbsoluteExpiryTime(final Message_1_0 serverMsg)
-    {
-        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
-        if (propertiesSection != null)
-        {
-            final Properties properties = propertiesSection.getValue();
-            if (properties != null)
-            {
-                return properties.getAbsoluteExpiryTime();
-            }
-        }
-        return null;
-    }
-
-    private Long getTtl(final Message_1_0 serverMsg)
-    {
-        HeaderSection headerSection = serverMsg.getHeaderSection();
-        if (headerSection != null)
-        {
-            Header header = headerSection.getValue();
-            if (header != null)
-            {
-                UnsignedInteger ttl = header.getTtl();
-                if (ttl != null)
-                {
-                    return ttl.longValue();
-                }
-            }
-        }
-        return null;
     }
 
     private AMQShortString getReplyTo(final Message_1_0 serverMsg, final NamedAddressSpace addressSpace)
@@ -431,36 +358,28 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
         }
     }
 
-    private AMQShortString getCorrelationId(final Message_1_0 serverMsg)
+    private AMQShortString getCorrelationIdAsShortString(final Message_1_0 serverMsg)
     {
-        AMQShortString correlationId = null;
-        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
-        if (propertiesSection != null)
+        Object correlationIdObject = getCorrelationId(serverMsg);
+        final AMQShortString correlationId;
+        try
         {
-            final Properties properties = propertiesSection.getValue();
-            if (properties != null)
+            if (correlationIdObject instanceof Binary)
             {
-                final Object correlationIdObject = properties.getCorrelationId();
-                try
-                {
-                    if (correlationIdObject instanceof Binary)
-                    {
-                        correlationId = new AMQShortString(((Binary) correlationIdObject).getArray());
-                    }
-                    else if (correlationIdObject instanceof byte[])
-                    {
-                        correlationId = new AMQShortString(((byte[]) correlationIdObject));
-                    }
-                    else
-                    {
-                        correlationId = AMQShortString.valueOf(correlationIdObject);
-                    }
-                }
-                catch (IllegalArgumentException e)
-                {
-                    throw new MessageConversionException("Could not convert message from 1.0 to 0-8 because conversion of 'correlation-id' failed.", e);
-                }
+                correlationId = new AMQShortString(((Binary) correlationIdObject).getArray());
             }
+            else if (correlationIdObject instanceof byte[])
+            {
+                correlationId = new AMQShortString(((byte[]) correlationIdObject));
+            }
+            else
+            {
+                correlationId = AMQShortString.valueOf(correlationIdObject);
+            }
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new MessageConversionException("Could not convert message from 1.0 to 0-8 because conversion of 'correlation-id' failed.", e);
         }
         return correlationId;
     }

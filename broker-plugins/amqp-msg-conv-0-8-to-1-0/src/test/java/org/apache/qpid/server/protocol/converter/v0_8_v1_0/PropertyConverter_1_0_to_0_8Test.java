@@ -479,7 +479,7 @@ public class PropertyConverter_1_0_to_0_8Test extends QpidTestCase
         assertEquals("Unexpected timestamp", arrivalTime, convertedProperties.getTimestamp());
     }
 
-    public void testUserIdyConversion()
+    public void testUserIdConversion()
     {
         final String userId = "test-userId";
         Properties properties = new Properties();
@@ -492,7 +492,7 @@ public class PropertyConverter_1_0_to_0_8Test extends QpidTestCase
         assertEquals("Unexpected user-id", userId, convertedProperties.getUserIdAsString());
     }
 
-    public void testUserIdyConversionWhenLengthExceeds255()
+    public void testUserIdConversionWhenLengthExceeds255()
     {
         final String userId = generateLongString();
         Properties properties = new Properties();
@@ -505,7 +505,7 @@ public class PropertyConverter_1_0_to_0_8Test extends QpidTestCase
         assertNull("Unexpected user-id", convertedProperties.getUserId());
     }
 
-    public void testUserIdyConversionWhenNonUtf8()
+    public void testUserIdConversionWhenNonUtf8()
     {
         final byte[] userId = new byte[]{(byte) 0xc3, 0x28};
         Properties properties = new Properties();
