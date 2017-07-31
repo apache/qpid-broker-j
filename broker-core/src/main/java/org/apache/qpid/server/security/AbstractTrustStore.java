@@ -49,6 +49,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
+import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
 
 public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
         extends AbstractConfiguredObject<X> implements TrustStore<X>
@@ -160,16 +161,22 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
         Collection<AuthenticationProvider> authenticationProviders = new ArrayList<>(_broker.getAuthenticationProviders());
         for (AuthenticationProvider authProvider : authenticationProviders)
         {
+            TrustStore otherTrustStore = null;
             if (authProvider instanceof SimpleLDAPAuthenticationManager)
             {
-                SimpleLDAPAuthenticationManager simpleLdap = (SimpleLDAPAuthenticationManager) authProvider;
-                if (simpleLdap.getTrustStore() == this)
-                {
-                    throw new IntegrityViolationException("Trust store '"
-                                                          + storeName
-                                                          + "' can't be deleted as it is in use by an authentication manager: "
-                                                          + authProvider.getName());
-                }
+                otherTrustStore = ((SimpleLDAPAuthenticationManager) authProvider).getTrustStore();
+            }
+            else if (authProvider instanceof OAuth2AuthenticationProvider)
+            {
+                otherTrustStore = ((OAuth2AuthenticationProvider) authProvider).getTrustStore();
+            }
+
+            if (otherTrustStore == this)
+            {
+                throw new IntegrityViolationException(String.format(
+                        "Trust store '%s' can't be deleted as it is in use by an authentication manager: '%s'",
+                        getName(),
+                        authProvider.getName()));
             }
         }
         deleted();
