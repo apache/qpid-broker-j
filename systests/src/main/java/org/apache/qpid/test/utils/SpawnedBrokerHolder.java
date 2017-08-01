@@ -178,8 +178,9 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
             }
             //Ensure broker has stopped
             _process.destroy();
-            throw new RuntimeException("broker failed to become ready:"
-                    + standardOutputPiper.getStopLine());
+            throw new RuntimeException(String.format("Broker failed to become ready within %d ms. Stop line : %s",
+                                                     BROKER_STARTUP_TIME,
+                                                     standardOutputPiper.getStopLine()));
         }
 
         _windowsPids = retrieveWindowsPidsIfPossible();

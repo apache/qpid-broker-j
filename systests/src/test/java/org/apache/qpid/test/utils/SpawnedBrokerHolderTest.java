@@ -21,6 +21,12 @@ package org.apache.qpid.test.utils;
 
 public class SpawnedBrokerHolderTest extends QpidBrokerTestCase
 {
+    @Override
+    public void startDefaultBroker() throws Exception
+    {
+        // Don't start default broker
+    }
+
     public void testRestartOnSamePort() throws Exception
     {
         BrokerHolder broker = createSpawnedBroker();
