@@ -34,33 +34,38 @@ import javax.net.ssl.X509TrustManager;
 /**
  * TrustManager implementation which accepts the client certificate
  * only if the underlying check by the delegate pass through and
- * the certificate is physically saved in the truststore. 
+ * the certificate is physically saved in the truststore.
  */
-public class QpidPeersOnlyTrustManager implements X509TrustManager {
+public class QpidPeersOnlyTrustManager implements X509TrustManager
+{
 
-    final private KeyStore ts;
-    final private X509TrustManager delegate;
-    final List<Certificate> trustedCerts = new ArrayList<Certificate>();
-    
-    public QpidPeersOnlyTrustManager(KeyStore ts, X509TrustManager trustManager) throws KeyStoreException {
-        this.ts = ts;
-        this.delegate = trustManager;
-        Enumeration<String> aliases = this.ts.aliases();
+    private final KeyStore _ts;
+    private final X509TrustManager _delegate;
+    private final List<Certificate> _trustedCerts = new ArrayList<>();
+
+    public QpidPeersOnlyTrustManager(KeyStore ts, X509TrustManager trustManager) throws KeyStoreException
+    {
+        _ts = ts;
+        _delegate = trustManager;
+        Enumeration<String> aliases = this._ts.aliases();
         while (aliases.hasMoreElements())
         {
-            trustedCerts.add(ts.getCertificate(aliases.nextElement()));
+            _trustedCerts.add(ts.getCertificate(aliases.nextElement()));
         }
     }
 
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType)
-            throws CertificateException {
-        this.delegate.checkClientTrusted(chain, authType);
-        for (Certificate serverTrustedCert : this.trustedCerts)
+            throws CertificateException
+    {
+        _delegate.checkClientTrusted(chain, authType);
+        for (Certificate serverTrustedCert : this._trustedCerts)
         {
             // first position in the chain contains the peer's own certificate
             if (chain[0].equals(serverTrustedCert))
+            {
                 return;  // peer's certificate found in the store
+            }
         }
         // peer's certificate was not found in the store, do not trust the client
         throw new CertificateException();
@@ -68,12 +73,14 @@ public class QpidPeersOnlyTrustManager implements X509TrustManager {
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType)
-            throws CertificateException {
-        this.delegate.checkServerTrusted(chain, authType);
+            throws CertificateException
+    {
+        _delegate.checkServerTrusted(chain, authType);
     }
 
     @Override
-    public X509Certificate[] getAcceptedIssuers() {
+    public X509Certificate[] getAcceptedIssuers()
+    {
         // return empty array since this implementation of TrustManager doesn't
         // rely on certification authorities
         return new X509Certificate[0];

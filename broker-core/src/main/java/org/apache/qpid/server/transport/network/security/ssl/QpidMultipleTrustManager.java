@@ -33,28 +33,31 @@ import javax.net.ssl.X509TrustManager;
  * Supports multiple X509TrustManager(s). Check succeeds if any of the
  * underlying managers succeeds.
  */
-public class QpidMultipleTrustManager implements X509TrustManager {
+public class QpidMultipleTrustManager implements X509TrustManager
+{
 
-    private List<X509TrustManager> trustManagers;
+    private final List<X509TrustManager> _trustManagers;
 
-    public QpidMultipleTrustManager() {
-        this.trustManagers = new ArrayList<X509TrustManager>();
+    public QpidMultipleTrustManager()
+    {
+        _trustManagers = new ArrayList<>();
     }
 
     public boolean isEmpty()
     {
-        return trustManagers.isEmpty();
+        return _trustManagers.isEmpty();
     }
-    
+
     public void addTrustManager(final X509TrustManager trustManager)
     {
-        this.trustManagers.add(trustManager);
+        _trustManagers.add(trustManager);
     }
-    
+
     @Override
     public void checkClientTrusted(X509Certificate[] chain, String authType)
-            throws CertificateException {
-        for (X509TrustManager trustManager : this.trustManagers)
+            throws CertificateException
+    {
+        for (X509TrustManager trustManager : _trustManagers)
         {
             try
             {
@@ -62,7 +65,7 @@ public class QpidMultipleTrustManager implements X509TrustManager {
                 // this trustManager check succeeded, no need to check another one
                 return;
             }
-            catch(CertificateException ex)
+            catch (CertificateException ex)
             {
                 // do nothing, try another one in a loop
             }
@@ -73,8 +76,9 @@ public class QpidMultipleTrustManager implements X509TrustManager {
 
     @Override
     public void checkServerTrusted(X509Certificate[] chain, String authType)
-            throws CertificateException {
-        for (X509TrustManager trustManager : this.trustManagers)
+            throws CertificateException
+    {
+        for (X509TrustManager trustManager : _trustManagers)
         {
             try
             {
@@ -82,7 +86,7 @@ public class QpidMultipleTrustManager implements X509TrustManager {
                 // this trustManager check succeeded, no need to check another one
                 return;
             }
-            catch(CertificateException ex)
+            catch (CertificateException ex)
             {
                 // do nothing, try another one in a loop
             }
@@ -92,9 +96,10 @@ public class QpidMultipleTrustManager implements X509TrustManager {
     }
 
     @Override
-    public X509Certificate[] getAcceptedIssuers() {
-        final Collection<X509Certificate> accIssuersCol = new ArrayList<X509Certificate>();
-        for (X509TrustManager trustManager : this.trustManagers)
+    public X509Certificate[] getAcceptedIssuers()
+    {
+        final Collection<X509Certificate> accIssuersCol = new ArrayList<>();
+        for (X509TrustManager trustManager : _trustManagers)
         {
             accIssuersCol.addAll(Arrays.asList(trustManager.getAcceptedIssuers()));
         }
