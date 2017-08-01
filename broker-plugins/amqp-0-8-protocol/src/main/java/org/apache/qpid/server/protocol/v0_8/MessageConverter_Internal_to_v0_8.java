@@ -32,6 +32,7 @@ import org.apache.qpid.server.message.mimecontentconverter.ObjectToMimeContentCo
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
@@ -166,15 +167,17 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
         final BasicContentHeaderProperties props = new BasicContentHeaderProperties();
         props.setAppId(serverMsg.getMessageHeader().getAppId());
         props.setContentType(bodyMimeType);
-        props.setCorrelationId(serverMsg.getMessageHeader().getCorrelationId());
+        props.setCorrelationId(convertToShortStringForProperty("correlation-id", serverMsg.getMessageHeader().getCorrelationId()));
         props.setDeliveryMode(serverMsg.isPersistent() ? BasicContentHeaderProperties.PERSISTENT : BasicContentHeaderProperties.NON_PERSISTENT);
         props.setExpiration(serverMsg.getExpiration());
-        props.setMessageId(serverMsg.getMessageHeader().getMessageId());
+        props.setMessageId(convertToOptionalAMQPShortString(serverMsg.getMessageHeader().getMessageId()));
         props.setPriority(serverMsg.getMessageHeader().getPriority());
-        props.setReplyTo(serverMsg.getMessageHeader().getReplyTo());
+        props.setReplyTo(convertToOptionalAMQPShortString(serverMsg.getMessageHeader().getReplyTo()));
         props.setTimestamp(serverMsg.getMessageHeader().getTimestamp());
-        props.setUserId(serverMsg.getMessageHeader().getUserId());
 
+        props.setUserId(convertToOptionalAMQPShortString(serverMsg.getMessageHeader().getUserId()));
+
+        props.setEncoding(convertToShortStringForProperty("encoding", serverMsg.getMessageHeader().getEncoding()));
 
         Map<String,Object> headerProps = new LinkedHashMap<String, Object>();
 
@@ -183,11 +186,45 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
             headerProps.put(headerName, serverMsg.getMessageHeader().getHeader(headerName));
         }
 
-        props.setHeaders(FieldTable.convertToFieldTable(headerProps));
+        try
+        {
+            props.setHeaders(FieldTable.convertToFieldTable(headerProps));
+        }
+        catch (IllegalArgumentException | AMQPInvalidClassException e)
+        {
+            throw new MessageConversionException("Could not convert message from internal to 0-8 because headers conversion failed.", e);
+        }
 
         final ContentHeaderBody chb = new ContentHeaderBody(props);
         chb.setBodySize(size);
         return new MessageMetaData(publishInfo, chb, serverMsg.getArrivalTime());
+    }
+
+    private AMQShortString convertToOptionalAMQPShortString(final String stringValue)
+    {
+        AMQShortString result;
+        try
+        {
+            result = AMQShortString.valueOf(stringValue);
+        }
+        catch (IllegalArgumentException e)
+        {
+            result = null;
+        }
+        return result;
+    }
+
+    private AMQShortString convertToShortStringForProperty(String propertyName, String s)
+    {
+        try
+        {
+            return AMQShortString.valueOf(s);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new MessageConversionException(String.format(
+                    "Could not convert message from internal to 0-8 because conversion of '%s' failed.", propertyName), e);
+        }
     }
 
 
