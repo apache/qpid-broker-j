@@ -27,14 +27,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
@@ -71,9 +74,13 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
         }
 
         Properties properties = new Properties();
-        properties.setCorrelationId(serverMessage.getMessageHeader().getCorrelationId());
+        if (serverMessage.getMessageHeader().getEncoding() != null)
+        {
+            properties.setContentEncoding(Symbol.valueOf(serverMessage.getMessageHeader().getEncoding()));
+        }
+        properties.setCorrelationId(getCorrelationId(serverMessage));
         properties.setCreationTime(new Date(serverMessage.getMessageHeader().getTimestamp()));
-        properties.setMessageId(serverMessage.getMessageHeader().getMessageId());
+        properties.setMessageId(getMessageId(serverMessage));
         if(bodySection instanceof Data)
         {
             properties.setContentType(Symbol.valueOf(serverMessage.getMessageHeader().getMimeType()));
@@ -88,7 +95,15 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
         ApplicationProperties applicationProperties = null;
         if(!serverMessage.getMessageHeader().getHeaderNames().isEmpty())
         {
-            applicationProperties = new ApplicationProperties(serverMessage.getMessageHeader().getHeaderMap() );
+            try
+            {
+                applicationProperties = new ApplicationProperties(serverMessage.getMessageHeader().getHeaderMap());
+            }
+            catch (IllegalArgumentException e)
+            {
+                throw new MessageConversionException("Could not convert message from internal to 1.0"
+                                                     + " because conversion of 'application headers' failed.", e);
+            }
         }
 
         return new MessageMetaData_1_0(header.createEncodingRetainingSection(),
@@ -100,6 +115,42 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
                                        serverMessage.getArrivalTime(),
                                        bodySection.getEncodedSize());
 
+    }
+
+    private Object getMessageId(final InternalMessage serverMessage)
+    {
+        String messageIdAsString = serverMessage.getMessageHeader().getMessageId();
+        return stringToMessageId(messageIdAsString);
+    }
+
+    private Object getCorrelationId(final InternalMessage serverMessage)
+    {
+        String correlationIdAsString = serverMessage.getMessageHeader().getCorrelationId();
+        return stringToMessageId(correlationIdAsString);
+    }
+
+    private Object stringToMessageId(final String correlationIdAsString)
+    {
+        Object messageId = null;
+        if (correlationIdAsString != null)
+        {
+            try
+            {
+                messageId = UUID.fromString(correlationIdAsString);
+            }
+            catch (IllegalArgumentException e)
+            {
+                try
+                {
+                    messageId = UnsignedLong.valueOf(correlationIdAsString);
+                }
+                catch (NumberFormatException nfe)
+                {
+                    messageId = correlationIdAsString;
+                }
+            }
+        }
+        return messageId;
     }
 
     @Override

@@ -317,6 +317,36 @@ public class MessageConverter_from_1_0
         return userId;
     }
 
+    public static String getReplyTo(final Message_1_0 serverMsg)
+    {
+        String replyTo = null;
+        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
+        if (propertiesSection != null)
+        {
+            final Properties properties = propertiesSection.getValue();
+            if (properties != null)
+            {
+                replyTo = properties.getReplyTo();
+            }
+        }
+        return replyTo;
+    }
+
+    public static Symbol getContentEncoding(final Message_1_0 serverMsg)
+    {
+        Symbol contentEncoding = null;
+        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
+        if (propertiesSection != null)
+        {
+            final Properties properties = propertiesSection.getValue();
+            if (properties != null)
+            {
+                contentEncoding = properties.getContentEncoding();
+            }
+        }
+        return contentEncoding;
+    }
+
     public static Object getCorrelationId(final Message_1_0 serverMsg)
     {
         Object correlationIdObject = null;

@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.store.MessageHandle;
@@ -68,21 +69,28 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
     {
         super(msg, null);
         _header = msg.getMetaData().getHeader();
-        Collection<QpidByteBuffer> bufs = msg.getContent(0, (int)getSize());
+        long contentSize = getSize();
+        if (contentSize > 0)
+        {
+            Collection<QpidByteBuffer> bufs = msg.getContent(0, (int) contentSize);
 
-        try(ObjectInputStream is = new ObjectInputStream(new ByteBufferInputStream(ByteBufferUtils.combine(bufs))))
-        {
-            _messageBody = is.readObject();
-
+            try (ObjectInputStream is = new ObjectInputStream(new ByteBufferInputStream(ByteBufferUtils.combine(bufs))))
+            {
+                _messageBody = is.readObject();
+            }
+            catch (IOException e)
+            {
+                throw new ConnectionScopedRuntimeException("Unexpected IO Exception in operation in memory", e);
+            }
+            catch (ClassNotFoundException e)
+            {
+                throw new ConnectionScopedRuntimeException("Object message contained an object which could not " +
+                                                           "be deserialized", e);
+            }
         }
-        catch (IOException e)
+        else
         {
-            throw new ConnectionScopedRuntimeException("Unexpected IO Exception in operation in memory", e);
-        }
-        catch (ClassNotFoundException e)
-        {
-            throw new ConnectionScopedRuntimeException("Object message contained an object which could not " +
-                                                       "be deserialized", e);
+            _messageBody = null;
         }
         _destinationName = destinationName;
     }
