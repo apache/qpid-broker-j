@@ -20,17 +20,24 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.message.internal.InternalMessageHeader;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
 import org.apache.qpid.server.message.mimecontentconverter.ObjectToMimeContentConverter;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
+import org.apache.qpid.server.protocol.v0_10.transport.EncoderUtils;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.Header;
@@ -40,6 +47,9 @@ import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 @PluggableService
 public class MessageConverter_Internal_to_v0_10 implements MessageConverter<InternalMessage, MessageTransferMessage>
 {
+    private static final int MAX_VBIN16_LENGTH = 0xFFFF;
+    private static final int MAX_STR8_LENGTH = 0xFF;
+
     @Override
     public Class<InternalMessage> getInputClass()
     {
@@ -158,20 +168,33 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
         DeliveryProperties deliveryProps = new DeliveryProperties();
         MessageProperties messageProps = new MessageProperties();
 
-        deliveryProps.setExpiration(serverMsg.getExpiration());
-        deliveryProps.setPriority(MessageDeliveryPriority.get(serverMsg.getMessageHeader().getPriority()));
+        deliveryProps.setDeliveryMode(serverMsg.isPersistent()
+                                              ? MessageDeliveryMode.PERSISTENT
+                                              : MessageDeliveryMode.NON_PERSISTENT);
+        long expiration = serverMsg.getExpiration();
+        if (expiration > 0)
+        {
+            deliveryProps.setExpiration(expiration);
+            deliveryProps.setTtl(Math.max(0, expiration - serverMsg.getArrivalTime()));
+        }
+        InternalMessageHeader messageHeader = serverMsg.getMessageHeader();
+        deliveryProps.setPriority(MessageDeliveryPriority.get(messageHeader.getPriority()));
         deliveryProps.setRoutingKey(serverMsg.getInitialRoutingAddress());
-        deliveryProps.setTimestamp(serverMsg.getMessageHeader().getTimestamp());
+        deliveryProps.setTimestamp(messageHeader.getTimestamp());
 
-        messageProps.setContentEncoding(serverMsg.getMessageHeader().getEncoding());
+        messageProps.setContentEncoding(ensureStr8("content-encoding", messageHeader.getEncoding()));
         messageProps.setContentLength(size);
         messageProps.setContentType(bodyMimeType);
-        if (serverMsg.getMessageHeader().getCorrelationId() != null)
+        if (messageHeader.getCorrelationId() != null)
         {
-            messageProps.setCorrelationId(serverMsg.getMessageHeader().getCorrelationId().getBytes());
+            messageProps.setCorrelationId(ensureVBin16("correlation-id", messageHeader
+                    .getCorrelationId().getBytes(UTF_8)));
         }
-        messageProps.setApplicationHeaders(serverMsg.getMessageHeader().getHeaderMap());
-        String messageIdAsString = serverMsg.getMessageHeader().getMessageId();
+
+        validateValue(messageHeader.getHeaderMap(), "application-headers");
+
+        messageProps.setApplicationHeaders(messageHeader.getHeaderMap());
+        String messageIdAsString = messageHeader.getMessageId();
         if (messageIdAsString != null)
         {
             try
@@ -187,8 +210,60 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
                 // ignore message id is not a UUID
             }
         }
+        String userId = messageHeader.getUserId();
+        if (userId != null)
+        {
+            byte[] bytes = userId.getBytes(UTF_8);
+            if (bytes.length <= MAX_VBIN16_LENGTH)
+            {
+                messageProps.setUserId(bytes);
+            }
+        }
         Header header = new Header(deliveryProps, messageProps, null);
         return new MessageMetaData_0_10(header, size, serverMsg.getArrivalTime());
+    }
+
+    private void validateValue(final Object value, final String path)
+    {
+        try
+        {
+            EncoderUtils.getEncodingType(value);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new MessageConversionException(String.format(
+                    "Could not convert message from internal to 0-10 because conversion of %s failed. Unsupported type is used.", path),e);
+        }
+
+        if (value instanceof Map)
+        {
+            for(Map.Entry<?,?> entry: ((Map<?,?>)value).entrySet())
+            {
+                Object key = entry.getKey();
+                String childPath = path + "['" + key + "']";
+                if (key instanceof String)
+                {
+                    ensureStr8(childPath, (String)key);
+                }
+                else
+                {
+                    throw new MessageConversionException(
+                            String.format(
+                                    "Could not convert message from internal to 0-10 because conversion of %s failed.", childPath));
+                }
+                validateValue(entry.getValue(), childPath);
+            }
+        }
+        else if (value instanceof Collection)
+        {
+            Collection<?> collection = (Collection<?>) value;
+            int index = 0;
+            for (Object o: collection)
+            {
+                validateValue(o, path+ "[" + index + "]");
+                index++;
+            }
+        }
     }
 
 
@@ -197,4 +272,29 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
     {
         return "Internal to v0-10";
     }
+
+    private byte[] ensureVBin16(final String propertyName, final byte[] result)
+    {
+        if (result != null && result.length > MAX_VBIN16_LENGTH)
+        {
+            throw new MessageConversionException(String.format(
+                    "Could not convert message from internal to 0-10 because conversion of '%s' failed."
+                    + " The array length exceeds allowed maximum.",
+                    propertyName));
+        }
+        return result;
+    }
+
+    private String ensureStr8(final String propertyName, String string)
+    {
+        if (string != null && string.length() > MAX_STR8_LENGTH)
+        {
+            throw new MessageConversionException(String.format(
+                    "Could not convert message from internal to 0-10 because conversion of '%s' failed."
+                    + " The string length exceeds allowed maximum.",
+                    propertyName));
+        }
+        return string;
+    }
+
 }
