@@ -99,7 +99,7 @@ public class NonJavaTrustStoreImpl
     }
 
     @Override
-    public TrustManager[] getTrustManagers() throws GeneralSecurityException
+    public TrustManager[] getTrustManagersInternal() throws GeneralSecurityException
     {
         if (_trustManagers == null || _trustManagers.length == 0)
         {

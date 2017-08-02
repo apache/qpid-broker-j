@@ -198,8 +198,9 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
     {
         _password = password;
     }
+
     @Override
-    public TrustManager[] getTrustManagers() throws GeneralSecurityException
+    public TrustManager[] getTrustManagersInternal() throws GeneralSecurityException
     {
         String trustStorePassword = getPassword();
         String trustStoreType = _trustStoreType;

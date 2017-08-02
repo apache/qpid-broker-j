@@ -31,6 +31,9 @@ import org.apache.qpid.server.security.CertificateDetails;
 @ManagedObject( defaultType = "FileTrustStore" )
 public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
 {
+    String TRUST_ANCHOR_VALIDITY_ENFORCED = "trustAnchorValidityEnforced";
+    String PEERS_ONLY = "peersOnly";
+
     String CERTIFICATE_EXPIRY_WARN_PERIOD = "qpid.truststore.certificateExpiryWarnPeriod";
 
     @ManagedContextDefault(name = CERTIFICATE_EXPIRY_WARN_PERIOD)
@@ -40,6 +43,8 @@ public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
 
     @ManagedContextDefault(name = CERTIFICATE_EXPIRY_CHECK_FREQUENCY)
     int DEFAULT_CERTIFICATE_EXPIRY_CHECK_FREQUENCY = 1;
+    @ManagedContextDefault(name = "qpid.truststore.trustAnchorValidityEnforced")
+    boolean DEFAULT_TRUST_ANCHOR_VALIDITY_ENFORCED = false;
 
     @Override
     @ManagedAttribute(immutable = true)
@@ -53,6 +58,10 @@ public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
 
     @ManagedAttribute( defaultValue = "[]", description = "If 'exposedAsMessageSource' is true and 'includedVirtualHostNodeMessageSources' is empty, the trust store will expose its certificates only to VirtualHostNodes who are not in this list." )
     List<VirtualHostNode<?>> getExcludedVirtualHostNodeMessageSources();
+
+    @ManagedAttribute( defaultValue = "${qpid.truststore.trustAnchorValidityEnforced}",
+                       description = "If true, the trust anchor's validity dates will be enforced.")
+    boolean isTrustAnchorValidityEnforced();
 
     @DerivedAttribute(description = "List of details about the certificates like validity dates, SANs, issuer and subject names, etc.")
     List<CertificateDetails> getCertificateDetails();

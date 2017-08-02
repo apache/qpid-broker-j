@@ -19,17 +19,29 @@
  */
 package org.apache.qpid.server.security;
 
+import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
+import java.security.PublicKey;
+import java.security.SignatureException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
+import java.security.cert.TrustAnchor;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
@@ -67,6 +79,8 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     private List<VirtualHostNode<?>> _includedVirtualHostNodeMessageSources;
     @ManagedAttributeField
     private List<VirtualHostNode<?>> _excludedVirtualHostNodeMessageSources;
+    @ManagedAttributeField
+    private boolean _trustAnchorValidityEnforced;
 
     private ScheduledFuture<?> _checkExpiryTaskFuture;
 
@@ -209,6 +223,54 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     }
 
     @Override
+    public final TrustManager[] getTrustManagers() throws GeneralSecurityException
+    {
+        if (isTrustAnchorValidityEnforced())
+        {
+            final Set<Certificate> trustManagerCerts = Sets.newHashSet(getCertificates());
+            final Set<TrustAnchor> trustAnchors = new HashSet<>();
+            final Set<Certificate> otherCerts = new HashSet<>();
+            for (Certificate certs : trustManagerCerts)
+            {
+                if (certs instanceof X509Certificate && isSelfSigned((X509Certificate) certs))
+                {
+                    trustAnchors.add(new TrustAnchor((X509Certificate) certs, null));
+                }
+                else
+                {
+                    otherCerts.add(certs);
+                }
+            }
+
+            TrustManager[] trustManagers = getTrustManagersInternal();
+            TrustManager[] wrappedTrustManagers = new TrustManager[trustManagers.length];
+
+            for (int i = 0; i < trustManagers.length; i++)
+            {
+                final TrustManager trustManager = trustManagers[i];
+                if (trustManager instanceof X509TrustManager)
+                {
+                    wrappedTrustManagers[i] = new TrustAnchorValidatingTrustManager(getName(),
+                                                                                    (X509TrustManager) trustManager,
+                                                                                    trustAnchors,
+                                                                                    otherCerts);
+                }
+                else
+                {
+                    wrappedTrustManagers[i] = trustManager;
+                }
+            }
+            return wrappedTrustManagers;
+        }
+        else
+        {
+            return getTrustManagersInternal();
+        }
+    }
+
+    protected abstract TrustManager[] getTrustManagersInternal() throws GeneralSecurityException;
+
+    @Override
     public final int getCertificateExpiryWarnPeriod()
     {
         try
@@ -239,6 +301,12 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     }
 
     @Override
+    public boolean isTrustAnchorValidityEnforced()
+    {
+        return _trustAnchorValidityEnforced;
+    }
+
+    @Override
     public boolean isExposedAsMessageSource()
     {
         return _exposedAsMessageSource;
@@ -254,5 +322,19 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     public List<VirtualHostNode<?>> getExcludedVirtualHostNodeMessageSources()
     {
         return _excludedVirtualHostNodeMessageSources;
+    }
+
+    private boolean isSelfSigned(X509Certificate cert) throws GeneralSecurityException
+    {
+        try
+        {
+            PublicKey key = cert.getPublicKey();
+            cert.verify(key);
+            return true;
+        }
+        catch (SignatureException | InvalidKeyException e)
+        {
+            return false;
+        }
     }
 }

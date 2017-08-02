@@ -32,7 +32,6 @@ import org.apache.qpid.server.model.TrustStore;
 public interface FileTrustStore<X extends FileTrustStore<X>> extends TrustStore<X>
 {
     String TRUST_MANAGER_FACTORY_ALGORITHM = "trustManagerFactoryAlgorithm";
-    String PEERS_ONLY = "peersOnly";
     String TRUST_STORE_TYPE = "trustStoreType";
     String PASSWORD = "password";
     String STORE_URL = "storeUrl";

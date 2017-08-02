@@ -20,13 +20,7 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
-import static org.apache.qpid.test.utils.TestSSLConstants.BROKER_PEERSTORE;
-import static org.apache.qpid.test.utils.TestSSLConstants.BROKER_PEERSTORE_PASSWORD;
-import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE;
-import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
-import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE;
-import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE_PASSWORD;
-import static org.apache.qpid.test.utils.TestSSLConstants.UNTRUSTED_KEYSTORE;
+import static org.apache.qpid.test.utils.TestSSLConstants.*;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -156,6 +150,40 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
                                      KEYSTORE_PASSWORD,
                                      TestSSLConstants.CERT_ALIAS_UNTRUSTED_CLIENT
                                     );
+            fail("Connection should not succeed");
+        }
+        catch (JMSException e)
+        {
+            // pass
+        }
+    }
+
+    public void testExternalAuthenticationDeniesExpiredClientCert() throws Exception
+    {
+        final String expiredTrustStore = "expiredTrustStore";
+        final List<String>
+                storeNames = Arrays.asList(TestBrokerConfiguration.ENTRY_NAME_SSL_TRUSTSTORE, expiredTrustStore);
+
+        //set the broker's SSL config, inc which SSL stores to use
+        setCommonBrokerSSLProperties(true, storeNames);
+
+        Map<String, Object> sslTrustStoreAttributes = new HashMap<>();
+        sslTrustStoreAttributes.put(TrustStore.NAME, expiredTrustStore);
+        sslTrustStoreAttributes.put(FileTrustStore.STORE_URL, BROKER_EXPIRED_TRUSTSTORE);
+        sslTrustStoreAttributes.put(FileTrustStore.PASSWORD, BROKER_TRUSTSTORE_PASSWORD);
+        sslTrustStoreAttributes.put(FileTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true);
+        getDefaultBrokerConfiguration().addObjectConfiguration(TrustStore.class, sslTrustStoreAttributes);
+
+        super.startDefaultBroker();
+
+        try
+        {
+            getExternalSSLConnection(false,
+                                     TRUSTSTORE,
+                                     TRUSTSTORE_PASSWORD,
+                                     EXPIRED_KEYSTORE,
+                                     KEYSTORE_PASSWORD,
+                                     null);
             fail("Connection should not succeed");
         }
         catch (JMSException e)

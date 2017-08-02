@@ -22,6 +22,7 @@ public interface TestSSLConstants
 {
     String KEYSTORE = "test-profiles/test_resources/ssl/java_client_keystore.jks";
     String UNTRUSTED_KEYSTORE = "test-profiles/test_resources/ssl/java_client_untrusted_keystore.jks";
+    String EXPIRED_KEYSTORE = "test-profiles/test_resources/ssl/java_client_expired_keystore.jks";
     String KEYSTORE_PASSWORD = "password";
     String TRUSTSTORE = "test-profiles/test_resources/ssl/java_client_truststore.jks";
     String TRUSTSTORE_PASSWORD = "password";
@@ -38,5 +39,6 @@ public interface TestSSLConstants
     String BROKER_PEERSTORE_PASSWORD = "password";
 
     String BROKER_TRUSTSTORE = "test-profiles/test_resources/ssl/java_broker_truststore.jks";
+    String BROKER_EXPIRED_TRUSTSTORE = "test-profiles/test_resources/ssl/java_broker_expired_truststore.jks";
     String BROKER_TRUSTSTORE_PASSWORD = "password";
 }
