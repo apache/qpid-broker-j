@@ -37,7 +37,7 @@ import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.test.utils.QpidTestCase;
 
-public class MessageConverter_v0_8_to_InternalTest extends QpidTestCase
+public class PropertyConverter_v0_8_to_InternalTest extends QpidTestCase
 {
     private MessageConverter_v0_8_to_Internal _messageConverter;
     private NamedAddressSpace _addressSpace;
