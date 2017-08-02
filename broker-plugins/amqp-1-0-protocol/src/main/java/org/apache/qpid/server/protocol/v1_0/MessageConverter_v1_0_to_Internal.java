@@ -56,7 +56,7 @@ public class MessageConverter_v1_0_to_Internal implements MessageConverter<Messa
     {
         Object bodyObject = MessageConverter_from_1_0.convertBodyToObject(serverMessage);
 
-        return InternalMessage.convert(serverMessage.getMessageNumber(), serverMessage.isPersistent(), serverMessage.getMessageHeader(), bodyObject, serverMessage.getTo());
+        return InternalMessage.convert(serverMessage, serverMessage.getMessageHeader(), bodyObject);
     }
 
     @Override

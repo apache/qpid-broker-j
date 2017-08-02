@@ -594,8 +594,14 @@ public class MessagesRestTest extends QpidRestTestCase
         }
         else
         {
-            assertEquals("Unexpected message attribute expirationTime", ((Number) message.get("timestamp")).longValue()
-                                                                        + _ttl, message.get("expirationTime"));
+            final long expirationTime = ((Number) message.get("expirationTime")).longValue();
+            final long currentTime = System.currentTimeMillis();
+            assertTrue(String.format("Unexpected message attribute expirationTime. got %d which is not >= %d",
+                                     expirationTime,
+                                     _startTime + _ttl), expirationTime >= _startTime + _ttl);
+            assertTrue(String.format("Unexpected message attribute expirationTime. got %d which is not <= %d",
+                                     expirationTime,
+                                     currentTime + _ttl), expirationTime <= currentTime + _ttl);
             assertEquals("Unexpected message attribute priority", 5, message.get("priority"));
             assertEquals("Unexpected message attribute persistent", Boolean.FALSE, message.get("persistent"));
         }

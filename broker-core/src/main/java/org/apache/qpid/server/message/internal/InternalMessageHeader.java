@@ -20,14 +20,16 @@
  */
 package org.apache.qpid.server.message.internal;
 
-import org.apache.qpid.server.message.AMQMessageHeader;
-
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.apache.qpid.server.message.AMQMessageHeader;
 
 public final class InternalMessageHeader implements AMQMessageHeader, Serializable
 {
@@ -60,10 +62,10 @@ public final class InternalMessageHeader implements AMQMessageHeader, Serializab
                                  final long timestamp,
                                  final long notValidBefore,
                                  final String type,
-                                 final String replyTo)
+                                 final String replyTo,
+                                 final long arrivalTime)
     {
-        _headers = headers == null ? new LinkedHashMap<String, Object>()
-                : new LinkedHashMap<String, Object>(headers);
+        _headers = headers == null ? new LinkedHashMap<>() : new LinkedHashMap<>(headers);
 
         _correlationId = correlationId;
         _expiration = expiration;
@@ -73,33 +75,36 @@ public final class InternalMessageHeader implements AMQMessageHeader, Serializab
         _mimeType = mimeType;
         _encoding = encoding;
         _priority = priority;
-        _timestamp = timestamp;
+        _timestamp = timestamp > 0 ? timestamp : arrivalTime;
         _notValidBefore = notValidBefore;
         _type = type;
         _replyTo = replyTo;
-        _arrivalTime = System.currentTimeMillis();
+        _arrivalTime = arrivalTime;
     }
 
     public InternalMessageHeader(final AMQMessageHeader header)
     {
-        _correlationId = header.getCorrelationId();
-        _expiration = header.getExpiration();
-        _userId = header.getUserId();
-        _appId = header.getAppId();
-        _messageId = header.getMessageId();
-        _mimeType = header.getMimeType();
-        _encoding = header.getEncoding();
-        _priority = header.getPriority();
-        _timestamp = header.getTimestamp();
-        _notValidBefore = header.getNotValidBefore();
-        _type = header.getType();
-        _replyTo = header.getReplyTo();
-        _headers = new LinkedHashMap<String, Object>();
-        for(String headerName : header.getHeaderNames())
-        {
-            _headers.put(headerName, header.getHeader(headerName));
-        }
-        _arrivalTime = System.currentTimeMillis();
+        this(header, System.currentTimeMillis());
+    }
+
+    public InternalMessageHeader(final AMQMessageHeader header, long arrivalTime)
+    {
+        this(header.getHeaderNames()
+                   .stream()
+                   .collect(Collectors.toMap(Function.identity(), header::getHeader)),
+             header.getCorrelationId(),
+             header.getExpiration(),
+             header.getUserId(),
+             header.getAppId(),
+             header.getMessageId(),
+             header.getMimeType(),
+             header.getEncoding(),
+             header.getPriority(),
+             header.getTimestamp(),
+             header.getNotValidBefore(),
+             header.getType(),
+             header.getReplyTo(),
+             arrivalTime);
     }
 
     @Override
@@ -205,6 +210,6 @@ public final class InternalMessageHeader implements AMQMessageHeader, Serializab
 
     public Map<String,Object> getHeaderMap()
     {
-        return Collections.unmodifiableMap(new LinkedHashMap<String, Object>(_headers));
+        return Collections.unmodifiableMap(new LinkedHashMap<>(_headers));
     }
 }

@@ -41,7 +41,6 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
     private DeliveryProperties _deliveryProps;
     private MessageProperties _messageProps;
     private MessageTransferHeader _messageHeader;
-    private long _arrivalTime;
     private int _bodySize;
 
     private static final int ENCODER_SIZE = 1 << 10;
@@ -70,8 +69,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
             _deliveryProps = null;
             _messageProps = null;
         }
-        _messageHeader = new MessageTransferHeader(_deliveryProps, _messageProps);
-        _arrivalTime = arrivalTime;
+        _messageHeader = new MessageTransferHeader(_deliveryProps, _messageProps, arrivalTime);
         _bodySize = bodySize;
 
     }
@@ -119,7 +117,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
     {
         ServerEncoder encoder = new ServerEncoder(ENCODER_SIZE, false);
 
-        encoder.writeInt64(_arrivalTime);
+        encoder.writeInt64(_messageHeader.getArrivalTime());
         encoder.writeInt32(_bodySize);
         int headersLength = 0;
         if (_header != null)
@@ -239,12 +237,12 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
 
     public long getExpiration()
     {
-        return _deliveryProps == null ? 0L : _deliveryProps.getExpiration();
+        return _messageHeader.getExpiration();
     }
 
     public long getArrivalTime()
     {
-        return _arrivalTime;
+        return _messageHeader.getArrivalTime();
     }
 
     public Header getHeader()

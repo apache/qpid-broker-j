@@ -33,9 +33,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
+import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
@@ -209,13 +209,14 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
         return createMessage(store, header, messageBody, persist, null);
     }
 
-    public static InternalMessage convert(long messageNumber,
-                                          boolean persistent,
+    public static InternalMessage convert(final ServerMessage serverMessage,
                                           AMQMessageHeader header,
-                                          Object messageBody,
-                                          final String destinationName)
+                                          Object messageBody)
     {
-        InternalMessageHeader convertedHeader = new InternalMessageHeader(header);
+        long messageNumber = serverMessage.getMessageNumber();
+        boolean persistent = serverMessage.isPersistent();
+        String destinationName = serverMessage.getTo();
+        InternalMessageHeader convertedHeader = new InternalMessageHeader(header, serverMessage.getArrivalTime());
         StoredMessage<InternalMessageMetaData> handle = createReadOnlyHandle(messageNumber, persistent, convertedHeader, messageBody);
         return new InternalMessage(handle, convertedHeader, messageBody, destinationName);
     }

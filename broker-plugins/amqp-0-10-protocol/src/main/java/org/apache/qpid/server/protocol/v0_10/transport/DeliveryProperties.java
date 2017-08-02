@@ -22,9 +22,7 @@
 package org.apache.qpid.server.protocol.v0_10.transport;
 
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 
@@ -73,71 +71,6 @@ public final class DeliveryProperties extends Struct {
 
 
     public DeliveryProperties() {}
-
-
-    public DeliveryProperties(final DeliveryProperties deliveryProp)
-    {
-        this(deliveryProp.getPriority(), deliveryProp.getDeliveryMode(),
-             deliveryProp.getTtl(), deliveryProp.getTimestamp(),
-             deliveryProp.getExpiration(), deliveryProp.getExchange(),
-             deliveryProp.getRoutingKey(), deliveryProp.getResumeId(),
-             deliveryProp.getResumeTtl(), getOptions(deliveryProp));
-    }
-
-    private static Option[] getOptions(final DeliveryProperties deliveryProp)
-    {
-        List<Option> optionList = new ArrayList<>();
-        if(deliveryProp.getDiscardUnroutable())
-        {
-            optionList.add(Option.DISCARD_UNROUTABLE);
-        }
-        if(deliveryProp.getImmediate())
-        {
-            optionList.add(Option.DISCARD_UNROUTABLE);
-        }
-        if(deliveryProp.getRedelivered())
-        {
-            optionList.add(Option.REDELIVERED);
-        }
-        return optionList.toArray(new Option[optionList.size()]);
-    }
-
-
-    public DeliveryProperties(MessageDeliveryPriority priority, MessageDeliveryMode deliveryMode, long ttl, long timestamp, long expiration, String exchange, String routingKey, String resumeId, long resumeTtl, Option ... _options) {
-        if(priority != null) {
-            setPriority(priority);
-        }
-        if(deliveryMode != null) {
-            setDeliveryMode(deliveryMode);
-        }
-        setTtl(ttl);
-        setTimestamp(timestamp);
-        setExpiration(expiration);
-        if(exchange != null) {
-            setExchange(exchange);
-        }
-        if(routingKey != null) {
-            setRoutingKey(routingKey);
-        }
-        if(resumeId != null) {
-            setResumeId(resumeId);
-        }
-        setResumeTtl(resumeTtl);
-
-        for (int i=0; i < _options.length; i++) {
-            switch (_options[i]) {
-            case DISCARD_UNROUTABLE: packing_flags |= 256; break;
-            case IMMEDIATE: packing_flags |= 512; break;
-            case REDELIVERED: packing_flags |= 1024; break;
-            case NONE: break;
-            default: throw new IllegalArgumentException("invalid option: " + _options[i]);
-            }
-        }
-
-    }
-
-
-
 
     public final boolean hasDiscardUnroutable() {
         return (packing_flags & 256) != 0;

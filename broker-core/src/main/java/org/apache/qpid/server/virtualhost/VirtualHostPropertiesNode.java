@@ -84,7 +84,7 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
         InternalMessageHeader header = new InternalMessageHeader(headers,
                                                                  null, 0l, null, null, UUID.randomUUID().toString(),
                                                                  null, null, (byte) 4, System.currentTimeMillis(),
-                                                                 0L, null, null);
+                                                                 0L, null, null, System.currentTimeMillis());
         final InternalMessage message =
                 InternalMessage.createBytesMessage(_addressSpace.getMessageStore(), header, new byte[0]);
         message.setInitialRoutingAddress(getName());

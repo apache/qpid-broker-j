@@ -77,7 +77,7 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
         Object body = convertMessageBody(mimeType, data);
         MessageProperties messageProps = serverMessage.getHeader().getMessageProperties();
         AMQMessageHeader fixedHeader = new DelegatingMessageHeader(serverMessage.getMessageHeader(), messageProps == null ? null : messageProps.getReplyTo(), encoding);
-        return InternalMessage.convert(serverMessage.getMessageNumber(), serverMessage.isPersistent(), fixedHeader, body, serverMessage.getTo());
+        return InternalMessage.convert(serverMessage, fixedHeader, body);
     }
 
     @Override

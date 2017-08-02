@@ -34,12 +34,16 @@ class MessageTransferHeader implements AMQMessageHeader
 
     private final DeliveryProperties _deliveryProps;
     private final MessageProperties _messageProps;
+    private final long _arrivalTime;
     private long _notValidBefore;
 
-    public MessageTransferHeader(DeliveryProperties deliveryProps, MessageProperties messageProps)
+    public MessageTransferHeader(DeliveryProperties deliveryProps,
+                                 MessageProperties messageProps,
+                                 final long arrivalTime)
     {
         _deliveryProps = deliveryProps;
         _messageProps = messageProps;
+        _arrivalTime = arrivalTime;
     }
 
     @Override
@@ -58,7 +62,20 @@ class MessageTransferHeader implements AMQMessageHeader
     @Override
     public long getExpiration()
     {
-        return _deliveryProps == null ? 0L : _deliveryProps.getExpiration();
+        long expiration = 0L;
+        if (_deliveryProps != null)
+        {
+            // The AMQP 0-x client wrongly sets ttl to 0 when it means "no ttl".
+            if (_deliveryProps.hasTtl() && _deliveryProps.getTtl() != 0L)
+            {
+                expiration = _arrivalTime + _deliveryProps.getTtl();
+            }
+            else if (_deliveryProps.hasExpiration())
+            {
+                expiration = _deliveryProps.getExpiration();
+            }
+        }
+        return expiration;
     }
 
     @Override
@@ -190,5 +207,10 @@ class MessageTransferHeader implements AMQMessageHeader
     {
         Map<String, Object> appHeaders = _messageProps == null ? null : _messageProps.getApplicationHeaders();
         return appHeaders != null && appHeaders.containsKey(name);
+    }
+
+    long getArrivalTime()
+    {
+        return _arrivalTime;
     }
 }
