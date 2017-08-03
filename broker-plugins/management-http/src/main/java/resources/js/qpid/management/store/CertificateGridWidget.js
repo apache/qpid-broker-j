@@ -135,7 +135,7 @@ define(["dojo/_base/declare",
             destroy: function ()
             {
                 this.inherited(arguments);
-                this.certificatesGrid.destroy();
+                this.certificatesGrid.close();
             },
             resize: function ()
             {
