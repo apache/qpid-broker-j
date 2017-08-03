@@ -60,6 +60,13 @@ public class StringToTextPlain implements ObjectToMimeContentConverter<String>
     @Override
     public byte[] toMimeContent(final String object)
     {
-        return object.getBytes(StandardCharsets.UTF_8);
+        if (object == null)
+        {
+            return new byte[0];
+        }
+        else
+        {
+            return object.getBytes(StandardCharsets.UTF_8);
+        }
     }
 }

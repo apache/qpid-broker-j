@@ -60,26 +60,31 @@ public class MapToJmsMapMessage implements ObjectToMimeContentConverter<Map>
     @Override
     public boolean isAcceptable(final Map map)
     {
-        for(Entry entry : (Set<Entry>) map.entrySet())
+        if (map != null)
         {
-            Object key = entry.getKey();
-            if (!(key instanceof String))
+            for (Entry entry : (Set<Entry>) map.entrySet())
             {
-                return false;
-            }
-            Object value = entry.getValue();
-            if(!(value instanceof String
-                 || value instanceof Integer
-                 || value instanceof Long
-                 || value instanceof Double
-                 || value instanceof Float
-                 || value instanceof Byte
-                 || value instanceof Short
-                 || value instanceof Character
-                 || value instanceof Boolean
-                 || value instanceof byte[]))
-            {
-                return false;
+                Object key = entry.getKey();
+                if (!(key instanceof String))
+                {
+                    return false;
+                }
+                Object value = entry.getValue();
+
+                if (value != null
+                    && !(value instanceof String
+                      || value instanceof Integer
+                      || value instanceof Long
+                      || value instanceof Double
+                      || value instanceof Float
+                      || value instanceof Byte
+                      || value instanceof Short
+                      || value instanceof Character
+                      || value instanceof Boolean
+                      || value instanceof byte[]))
+                {
+                    return false;
+                }
             }
         }
         return true;
@@ -89,19 +94,22 @@ public class MapToJmsMapMessage implements ObjectToMimeContentConverter<Map>
     public byte[] toMimeContent(final Map map)
     {
         TypedBytesContentWriter writer = new TypedBytesContentWriter();
-        writer.writeIntImpl(map.size());
+        writer.writeIntImpl(map == null ? 0 : map.size());
 
-        try
+        if (map != null)
         {
-            for(Entry entry : (Set<Entry>)map.entrySet())
+            try
             {
-                writer.writeNullTerminatedStringImpl((String)entry.getKey());
-                writer.writeObject(entry.getValue());
+                for (Entry entry : (Set<Entry>) map.entrySet())
+                {
+                    writer.writeNullTerminatedStringImpl((String) entry.getKey());
+                    writer.writeObject(entry.getValue());
+                }
             }
-        }
-        catch (TypedBytesFormatException e)
-        {
-            throw new IllegalArgumentException(e);
+            catch (TypedBytesFormatException e)
+            {
+                throw new IllegalArgumentException(e);
+            }
         }
 
         final ByteBuffer buf = writer.getData();

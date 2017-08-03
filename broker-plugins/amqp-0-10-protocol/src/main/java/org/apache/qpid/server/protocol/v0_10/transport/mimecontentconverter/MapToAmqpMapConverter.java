@@ -26,6 +26,7 @@ import java.util.Map;
 import org.apache.qpid.server.message.mimecontentconverter.ObjectToMimeContentConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v0_10.transport.BBEncoder;
+import org.apache.qpid.server.protocol.v0_10.transport.EncoderUtils;
 
 @PluggableService
 public class MapToAmqpMapConverter implements ObjectToMimeContentConverter<Map>
@@ -57,7 +58,7 @@ public class MapToAmqpMapConverter implements ObjectToMimeContentConverter<Map>
     @Override
     public boolean isAcceptable(final Map map)
     {
-        return true;
+        return EncoderUtils.isEncodable(map);
     }
 
     @Override

@@ -58,20 +58,24 @@ public class ListToJmsStreamMessage implements ObjectToMimeContentConverter<List
     @Override
     public boolean isAcceptable(final List list)
     {
-        for(Object value : list)
+        if (list != null)
         {
-            if(!(value instanceof String
-                 || value instanceof Integer
-                 || value instanceof Long
-                 || value instanceof Double
-                 || value instanceof Float
-                 || value instanceof Byte
-                 || value instanceof Short
-                 || value instanceof Character
-                 || value instanceof Boolean
-                 || value instanceof byte[]))
+            for (Object value : list)
             {
-                return false;
+                if (value != null
+                    && !(value instanceof String
+                      || value instanceof Integer
+                      || value instanceof Long
+                      || value instanceof Double
+                      || value instanceof Float
+                      || value instanceof Byte
+                      || value instanceof Short
+                      || value instanceof Character
+                      || value instanceof Boolean
+                      || value instanceof byte[]))
+                {
+                    return false;
+                }
             }
         }
         return true;
@@ -80,6 +84,11 @@ public class ListToJmsStreamMessage implements ObjectToMimeContentConverter<List
     @Override
     public byte[] toMimeContent(final List list)
     {
+        if (list == null)
+        {
+            return new byte[0];
+        }
+
         TypedBytesContentWriter writer = new TypedBytesContentWriter();
 
         for(Object o : list)

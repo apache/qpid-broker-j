@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v0_10.transport;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -335,5 +336,55 @@ public class EncoderUtils
                 }
                 return t.getWidth() + (value == null ? 0 : ((byte[])value).length);
         }
+    }
+
+    public static boolean isEncodable(final Object value)
+    {
+        try
+        {
+            getEncodingType(value);
+        }
+        catch (IllegalArgumentException e)
+        {
+            return false;
+        }
+
+        if (value instanceof Map)
+        {
+            for(Map.Entry<?,?> entry: ((Map<?,?>)value).entrySet())
+            {
+                Object key = entry.getKey();
+                if (key instanceof String)
+                {
+                    String string = (String)key;
+                    if ( string.length() > 0xFF)
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+                if (!isEncodable(entry.getValue()))
+                {
+                    return false;
+                }
+            }
+        }
+        else if (value instanceof Collection)
+        {
+            Collection<?> collection = (Collection<?>) value;
+            int index = 0;
+            for (Object o: collection)
+            {
+                if (!isEncodable(o))
+                {
+                    return false;
+                }
+                index++;
+            }
+        }
+        return true;
     }
 }

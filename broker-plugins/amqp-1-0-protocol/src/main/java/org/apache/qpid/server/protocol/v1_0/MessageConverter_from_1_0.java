@@ -20,9 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,8 +34,10 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -51,9 +52,11 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class MessageConverter_from_1_0
 {
@@ -70,12 +73,18 @@ public class MessageConverter_from_1_0
                                                                                         byte[].class,
                                                                                         UUID.class));
 
+    private static final Pattern TEXT_CONTENT_TYPES = Pattern.compile("^(text/.*)|(application/(xml|xml-dtd|.*\\+xml|json|.*\\+json|javascript|ecmascript))$");
+    private static final Pattern MAP_MESSAGE_CONTENT_TYPES = Pattern.compile("^amqp/map|jms/map-message$");
+    private static final Pattern LIST_MESSAGE_CONTENT_TYPES = Pattern.compile("^amqp/list|jms/stream-message$");
+    private static final Pattern
+            OBJECT_MESSAGE_CONTENT_TYPES = Pattern.compile("^application/x-java-serialized-object|application/java-object-stream$");
+
     public static Object convertBodyToObject(final Message_1_0 serverMessage)
     {
         final Collection<QpidByteBuffer> allData = serverMessage.getContent(0, (int) serverMessage.getSize());
         SectionDecoderImpl sectionDecoder = new SectionDecoderImpl(MessageConverter_v1_0_to_Internal.TYPE_REGISTRY.getSectionDecoderRegistry());
 
-        Object bodyObject;
+        Object bodyObject = null;
         try
         {
             List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(new ArrayList<>(allData));
@@ -97,7 +106,7 @@ public class MessageConverter_from_1_0
                 {
                     if(previousSection != null && (previousSection.getClass() != section.getClass() || section instanceof AmqpValueSection))
                     {
-                        throw new ConnectionScopedRuntimeException("Message is badly formed and has multiple body section which are not all Data or not all AmqpSequence");
+                        throw new MessageConversionException("Message is badly formed and has multiple body section which are not all Data or not all AmqpSequence");
                     }
                     else
                     {
@@ -106,13 +115,8 @@ public class MessageConverter_from_1_0
                 }
             }
 
-
-            if(sections.isEmpty())
-            {
-                // should actually be illegal
-                bodyObject = new byte[0];
-            }
-            else
+            // In 1.0 of the spec, it is illegal to have message with no body but AMQP-127 asks to have that restriction lifted
+            if(!sections.isEmpty())
             {
                 EncodingRetainingSection<?> firstBodySection = sections.get(0);
                 if(firstBodySection instanceof AmqpValueSection)
@@ -208,8 +212,9 @@ public class MessageConverter_from_1_0
             }
             else
             {
-                // Throw exception instead?
-                return value.toString();
+                throw new MessageConversionException(String.format(
+                        "Could not convert message from 1.0. Unsupported type '%s'.",
+                        value.getClass().getSimpleName()));
             }
         }
         else
@@ -226,6 +231,115 @@ public class MessageConverter_from_1_0
             result.add(convertValue(entry));
         }
         return result;
+    }
+
+    public static ContentHint getTypeHint(final Message_1_0 serverMsg)
+    {
+        Symbol contentType = getContentType(serverMsg);
+
+        JmsMessageTypeAnnotation jmsMessageTypeAnnotation = null;
+        MessageAnnotationsSection section = serverMsg.getMessageAnnotationsSection();
+        if (section != null)
+        {
+            Map<Symbol, Object> annotations = section.getValue();
+            if (annotations != null && annotations.containsKey(JmsMessageTypeAnnotation.ANNOTATION_KEY))
+            {
+                Object object = annotations.get(JmsMessageTypeAnnotation.ANNOTATION_KEY);
+                if (object instanceof Byte)
+                {
+                    try
+                    {
+                        jmsMessageTypeAnnotation = JmsMessageTypeAnnotation.valueOf(((Byte) object));
+                    }
+                    catch (IllegalArgumentException e)
+                    {
+                        // ignore
+                    }
+                }
+            }
+        }
+
+        Class<?> classHint = null;
+        String mimeTypeHint = null;
+
+        if (jmsMessageTypeAnnotation != null)
+        {
+            switch (jmsMessageTypeAnnotation)
+            {
+                case MESSAGE:
+                    classHint = Void.class;
+                    break;
+                case MAP_MESSAGE:
+                    classHint = Map.class;
+                    break;
+                case BYTES_MESSAGE:
+                    classHint = byte[].class;
+                    break;
+                case OBJECT_MESSAGE:
+                    classHint = Serializable.class;
+                    break;
+                case TEXT_MESSAGE:
+                    classHint = String.class;
+                    break;
+                case STREAM_MESSAGE:
+                    classHint = List.class;
+                    break;
+                default:
+                    throw new ServerScopedRuntimeException(String.format(
+                            "Unexpected jms message type annotation %s", jmsMessageTypeAnnotation));
+            }
+        }
+
+        if (contentType != null)
+        {
+            Class<?> contentTypeClassHint = null;
+            String type = contentType.toString();
+            String supportedContentType = null;
+            if (TEXT_CONTENT_TYPES.matcher(type).matches())
+            {
+                contentTypeClassHint = String.class;
+                // the AMQP 0-x client does not accept arbitrary "text/*" mimeTypes so use "text/plain"
+                supportedContentType = "text/plain";
+            }
+            else if (MAP_MESSAGE_CONTENT_TYPES.matcher(type).matches())
+            {
+                contentTypeClassHint = Map.class;
+                supportedContentType = contentType.toString();
+            }
+            else if (LIST_MESSAGE_CONTENT_TYPES.matcher(type).matches())
+            {
+                contentTypeClassHint = List.class;
+                supportedContentType = contentType.toString();
+            }
+            else if (OBJECT_MESSAGE_CONTENT_TYPES.matcher(type).matches())
+            {
+                contentTypeClassHint = Serializable.class;
+                // the AMQP 0-x client does not accept the "application/x-java-serialized-object" mimeTypes so use fall back
+                supportedContentType = "application/java-object-stream";
+            }
+
+            if (classHint == null || classHint == contentTypeClassHint)
+            {
+                classHint = contentTypeClassHint;
+                mimeTypeHint = supportedContentType;
+            }
+        }
+
+        return new ContentHint(classHint, mimeTypeHint);
+    }
+
+    public static Symbol getContentType(final Message_1_0 serverMsg)
+    {
+        final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
+        if (propertiesSection != null)
+        {
+            final Properties properties = propertiesSection.getValue();
+            if (properties != null)
+            {
+                return properties.getContentType();
+            }
+        }
+        return null;
     }
 
     public static UnsignedInteger getGroupSequence(final Message_1_0 serverMsg)
@@ -378,4 +492,27 @@ public class MessageConverter_from_1_0
         }
         return messageId;
     }
+
+    public static class ContentHint
+    {
+        private final Class<?> _contentClass;
+        private final String _contentType;
+
+        public ContentHint(final Class<?> contentClass, final String contentType)
+        {
+            _contentClass = contentClass;
+            _contentType = contentType;
+        }
+
+        public Class<?> getContentClass()
+        {
+            return _contentClass;
+        }
+
+        public String getContentType()
+        {
+            return _contentType;
+        }
+    }
+
 }

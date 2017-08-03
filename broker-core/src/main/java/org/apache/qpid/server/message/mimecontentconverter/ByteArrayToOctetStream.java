@@ -58,6 +58,10 @@ public class ByteArrayToOctetStream implements ObjectToMimeContentConverter<byte
     @Override
     public byte[] toMimeContent(final byte[] object)
     {
+        if (object == null)
+        {
+            return new byte[0];
+        }
         return object;
     }
 }

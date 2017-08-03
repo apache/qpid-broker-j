@@ -24,7 +24,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import java.util.UUID;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -225,44 +224,10 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
 
     private void validateValue(final Object value, final String path)
     {
-        try
-        {
-            EncoderUtils.getEncodingType(value);
-        }
-        catch (IllegalArgumentException e)
+        if (!EncoderUtils.isEncodable(value))
         {
             throw new MessageConversionException(String.format(
-                    "Could not convert message from internal to 0-10 because conversion of %s failed. Unsupported type is used.", path),e);
-        }
-
-        if (value instanceof Map)
-        {
-            for(Map.Entry<?,?> entry: ((Map<?,?>)value).entrySet())
-            {
-                Object key = entry.getKey();
-                String childPath = path + "['" + key + "']";
-                if (key instanceof String)
-                {
-                    ensureStr8(childPath, (String)key);
-                }
-                else
-                {
-                    throw new MessageConversionException(
-                            String.format(
-                                    "Could not convert message from internal to 0-10 because conversion of %s failed.", childPath));
-                }
-                validateValue(entry.getValue(), childPath);
-            }
-        }
-        else if (value instanceof Collection)
-        {
-            Collection<?> collection = (Collection<?>) value;
-            int index = 0;
-            for (Object o: collection)
-            {
-                validateValue(o, path+ "[" + index + "]");
-                index++;
-            }
+                    "Could not convert message from internal to 0-10 because conversion of %s failed. Unsupported type is used.", path));
         }
     }
 

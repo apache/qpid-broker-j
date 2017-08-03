@@ -72,6 +72,7 @@ public class MimeContentConverterRegistry
             }
             classToMineConverters.put(objectClass, converter);
         }
+        classToMineConverters.put(Void.class, new StringToTextPlain());
         return ImmutableMultimap.copyOf(classToMineConverters);
     }
 
@@ -101,28 +102,41 @@ public class MimeContentConverterRegistry
 
     public static ObjectToMimeContentConverter getBestFitObjectToMimeContentConverter(Object object)
     {
-        if (object == null)
-        {
-            return null;
-        }
-
-        final List<Class<?>> classes = new ArrayList<>(Arrays.asList(object.getClass().getInterfaces()));
-        classes.add(object.getClass());
         ObjectToMimeContentConverter converter = null;
-        for (Class<?> i : classes)
+        if (object != null)
         {
-            for (ObjectToMimeContentConverter candidate : _classToMimeContentConverters.get(i))
+            final List<Class<?>> classes = new ArrayList<>(Arrays.asList(object.getClass().getInterfaces()));
+            classes.add(object.getClass());
+            for (Class<?> i : classes)
             {
-                if (candidate.isAcceptable(object))
+                for (ObjectToMimeContentConverter candidate : _classToMimeContentConverters.get(i))
                 {
-                    if (converter == null || candidate.getRank() > converter.getRank())
+                    if (candidate.isAcceptable(object))
                     {
-                        converter = candidate;
+                        if (converter == null || candidate.getRank() > converter.getRank())
+                        {
+                            converter = candidate;
+                        }
                     }
                 }
             }
         }
+        return converter;
+    }
 
+    public static ObjectToMimeContentConverter getBestFitObjectToMimeContentConverter(Object object, Class<?> typeHint)
+    {
+        ObjectToMimeContentConverter converter = null;
+        for (ObjectToMimeContentConverter candidate : _classToMimeContentConverters.get(typeHint))
+        {
+            if (candidate.isAcceptable(object))
+            {
+                if (converter == null || candidate.getRank() > converter.getRank())
+                {
+                    converter = candidate;
+                }
+            }
+        }
         return converter;
     }
 }
