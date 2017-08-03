@@ -19,6 +19,8 @@
  */
 package org.apache.qpid.disttest.jms;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.UUID;
@@ -43,6 +45,9 @@ import javax.jms.Topic;
 import javax.naming.Context;
 import javax.naming.NamingException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.disttest.DistributedTestConstants;
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.client.Client;
@@ -56,8 +61,6 @@ import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.apache.qpid.disttest.message.CreateSessionCommand;
 import org.apache.qpid.disttest.message.RegisterClientCommand;
 import org.apache.qpid.disttest.message.Response;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ClientJmsDelegate
 {
@@ -687,7 +690,7 @@ public class ClientJmsDelegate
         {
             if (message != null && message instanceof TextMessage)
             {
-                return ((TextMessage) message).getText().getBytes().length;
+                return ((TextMessage) message).getText().getBytes(UTF_8).length;
             }
 
             return 0;

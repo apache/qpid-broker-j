@@ -20,13 +20,14 @@
  */
 package org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
 import java.util.Collections;
@@ -55,7 +56,6 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 public class CloudFoundryOAuth2IdentityResolverService implements OAuth2IdentityResolverService
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudFoundryOAuth2IdentityResolverService.class);
-    private static final String UTF8 = StandardCharsets.UTF_8.name();
 
     public static final String TYPE = "CloudFoundryIdentityResolver";
 
@@ -105,10 +105,10 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
         HttpURLConnection connection = connectionBuilder.build();
 
         connection.setDoOutput(true); // makes sure to use POST
-        connection.setRequestProperty("Accept-Charset", UTF8);
-        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + UTF8);
+        connection.setRequestProperty("Accept-Charset", UTF_8.name());
+        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + UTF_8.name());
         connection.setRequestProperty("Accept", "application/json");
-        String encoded = DatatypeConverter.printBase64Binary((clientId + ":" + clientSecret).getBytes());
+        String encoded = DatatypeConverter.printBase64Binary((clientId + ":" + clientSecret).getBytes(UTF_8));
         connection.setRequestProperty("Authorization", "Basic " + encoded);
 
         final Map<String,String> requestParameters = Collections.singletonMap("token", accessToken);
@@ -117,7 +117,7 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
 
         try (OutputStream output = connection.getOutputStream())
         {
-            output.write(OAuth2Utils.buildRequestQuery(requestParameters).getBytes(UTF8));
+            output.write(OAuth2Utils.buildRequestQuery(requestParameters).getBytes(UTF_8));
             output.close();
 
             try (InputStream input = OAuth2Utils.getResponseStream(connection))

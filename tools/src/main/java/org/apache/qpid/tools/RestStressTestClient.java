@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.tools;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -242,7 +245,7 @@ public class RestStressTestClient
 
             if (saslMechanism == null)
             {
-                _authorizationHeader = "Basic " + DatatypeConverter.printBase64Binary((_username + ":" + _password).getBytes());
+                _authorizationHeader = "Basic " + DatatypeConverter.printBase64Binary((_username + ":" + _password).getBytes(UTF_8));
             }
             else
             {
@@ -321,7 +324,7 @@ public class RestStressTestClient
             try
             {
                 OutputStream os = connection.getOutputStream();
-                os.write(postParameters.getBytes());
+                os.write(postParameters.getBytes(US_ASCII));
                 os.flush();
             }
             catch (IOException e)
@@ -468,10 +471,10 @@ public class RestStressTestClient
 
                 String macAlgorithm = "HmacMD5";
                 Mac mac = Mac.getInstance(macAlgorithm);
-                mac.init(new SecretKeySpec(password.getBytes("UTF-8"), macAlgorithm));
+                mac.init(new SecretKeySpec(password.getBytes(UTF_8), macAlgorithm));
                 final byte[] messageAuthenticationCode = mac.doFinal(challengeBytes);
                 String responseAsString = username + " " + toHex(messageAuthenticationCode);
-                byte[] responseBytes = responseAsString.getBytes();
+                byte[] responseBytes = responseAsString.getBytes(UTF_8);
                 return DatatypeConverter.printBase64Binary(responseBytes);
             }
             catch (Exception e)

@@ -20,7 +20,14 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import java.util.*;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryPriority;
@@ -51,7 +58,7 @@ class MessageTransferHeader implements AMQMessageHeader
     {
         if (_messageProps != null && _messageProps.getCorrelationId() != null)
         {
-            return new String(_messageProps.getCorrelationId());
+            return new String(_messageProps.getCorrelationId(), UTF_8);
         }
         else
         {
@@ -82,14 +89,14 @@ class MessageTransferHeader implements AMQMessageHeader
     public String getUserId()
     {
         byte[] userIdBytes = _messageProps == null ? null : _messageProps.getUserId();
-        return userIdBytes == null ? null : new String(userIdBytes);
+        return userIdBytes == null ? null : new String(userIdBytes, UTF_8);
     }
 
     @Override
     public String getAppId()
     {
         byte[] appIdBytes = _messageProps == null ? null : _messageProps.getAppId();
-        return appIdBytes == null ? null : new String(appIdBytes);
+        return appIdBytes == null ? null : new String(appIdBytes, UTF_8);
     }
 
     @Override

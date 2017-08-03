@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -353,8 +355,8 @@ public class AMQPConnection_0_8Impl
             AMQMethodBody responseBody = getMethodRegistry().createConnectionStartBody((short) getProtocolMajorVersion(),
                                                                                        (short) pv.getActualMinorVersion(),
                                                                                        serverProperties,
-                                                                                       mechanisms.getBytes(),
-                                                                                       locales.getBytes());
+                                                                                       mechanisms.getBytes(US_ASCII),
+                                                                                       locales.getBytes(US_ASCII));
             writeFrame(responseBody.generateFrame(0));
             _state = ConnectionState.AWAIT_START_OK;
 

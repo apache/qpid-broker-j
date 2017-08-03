@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.tools;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -33,13 +35,14 @@ import javax.jms.Message;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.tools.TestConfiguration.MessageType;
 import org.apache.qpid.tools.report.BasicReporter;
 import org.apache.qpid.tools.report.Reporter;
 import org.apache.qpid.tools.report.Statistics.Throughput;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class QpidSend
 {
@@ -156,7 +159,7 @@ public class QpidSend
 		}
 		else
 		{
-			return MessageFactory.createMessagePayload(size).getBytes();
+			return MessageFactory.createMessagePayload(size).getBytes(UTF_8);
 		}
 	}
 

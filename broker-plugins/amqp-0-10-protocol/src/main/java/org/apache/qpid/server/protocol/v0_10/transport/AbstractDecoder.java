@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v0_10.transport;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -435,11 +437,22 @@ public abstract class AbstractDecoder implements Decoder
             return readStr16();
 
         case STR8_LATIN:
-        case STR8_UTF16:
         case STR16_LATIN:
+            Charset charset;
+            try
+            {
+                charset = Charset.forName("ISO-8859-15");
+            }
+            catch (UnsupportedCharsetException e)
+            {
+                // We do not want to start throwing execptions from here so we fall back to ISO_8859_1
+                charset = StandardCharsets.ISO_8859_1;
+            }
+            return new String(readBytes(t), charset);
+
+        case STR8_UTF16:
         case STR16_UTF16:
-            // XXX: need to do character conversion
-            return new String(readBytes(t));
+            return new String(readBytes(t), StandardCharsets.UTF_16);
 
         case MAP:
             return readMap();

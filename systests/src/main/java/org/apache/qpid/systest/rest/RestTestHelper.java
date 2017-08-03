@@ -18,6 +18,8 @@
  */
 package org.apache.qpid.systest.rest;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -228,7 +230,7 @@ public class RestTestHelper
 
         if(_username != null)
         {
-            String encoded = DatatypeConverter.printBase64Binary((_username + ":" + _password).getBytes());
+            String encoded = DatatypeConverter.printBase64Binary((_username + ":" + _password).getBytes(UTF_8));
             httpCon.setRequestProperty("Authorization", "Basic " + encoded);
         }
 
@@ -284,7 +286,7 @@ public class RestTestHelper
         }
         if (LOGGER.isTraceEnabled())
         {
-            LOGGER.trace("RESPONSE:" + new String(baos.toByteArray()));
+            LOGGER.trace("RESPONSE:" + new String(baos.toByteArray(), UTF_8));
         }
         return baos.toByteArray();
     }

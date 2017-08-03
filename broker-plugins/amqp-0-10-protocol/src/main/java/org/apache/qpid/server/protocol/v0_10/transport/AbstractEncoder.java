@@ -23,7 +23,9 @@ package org.apache.qpid.server.protocol.v0_10.transport;
 import static org.apache.qpid.server.transport.util.Functions.lsb;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -519,11 +521,23 @@ public abstract class AbstractEncoder implements Encoder
             break;
 
         case STR8_LATIN:
-        case STR8_UTF16:
         case STR16_LATIN:
+            Charset charset;
+            try
+            {
+                charset = Charset.forName("ISO-8859-15");
+            }
+            catch (UnsupportedCharsetException e)
+            {
+                // We do not want to start throwing execptions from here so we fall back to ISO_8859_1
+                charset = StandardCharsets.ISO_8859_1;
+            }
+            writeBytes(t, coerce(String.class, value).getBytes(charset));
+            break;
+
+        case STR8_UTF16:
         case STR16_UTF16:
-            // XXX: need to do character conversion
-            writeBytes(t, coerce(String.class, value).getBytes());
+            writeBytes(t, coerce(String.class, value).getBytes(StandardCharsets.UTF_16));
             break;
 
         case MAP:

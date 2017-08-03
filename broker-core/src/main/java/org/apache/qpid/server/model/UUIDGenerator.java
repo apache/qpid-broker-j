@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.model;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.util.UUID;
 
 public class UUIDGenerator
@@ -40,7 +42,7 @@ public class UUIDGenerator
             sb.append("/").append(name);
         }
 
-        return UUID.nameUUIDFromBytes(sb.toString().getBytes());
+        return UUID.nameUUIDFromBytes(sb.toString().getBytes(UTF_8));
     }
 
     public static UUID generateExchangeUUID(String exchangeName, String virtualHostName)

@@ -21,6 +21,8 @@
 package org.apache.qpid.tools;
 
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import javax.jms.BytesMessage;
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -32,7 +34,7 @@ public class MessageFactory
     public static Message createBytesMessage(Session ssn, int size) throws JMSException
     {
         BytesMessage msg = ssn.createBytesMessage();
-        msg.writeBytes(createMessagePayload(size).getBytes());
+        msg.writeBytes(createMessagePayload(size).getBytes(UTF_8));
         return msg;
     }
 

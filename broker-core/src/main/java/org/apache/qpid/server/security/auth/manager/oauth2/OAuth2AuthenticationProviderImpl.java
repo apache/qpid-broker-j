@@ -19,6 +19,8 @@
 
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,7 +30,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
 import java.util.Collection;
@@ -71,7 +72,6 @@ public class OAuth2AuthenticationProviderImpl
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuth2AuthenticationProviderImpl.class);
-    private static final String UTF8 = StandardCharsets.UTF_8.name();
 
     private final ObjectMapper _objectMapper = new ObjectMapper();
 
@@ -268,13 +268,13 @@ public class OAuth2AuthenticationProviderImpl
             connection = connectionBuilder.build();
 
             connection.setDoOutput(true); // makes sure to use POST
-            connection.setRequestProperty("Accept-Charset", UTF8);
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + UTF8);
+            connection.setRequestProperty("Accept-Charset", UTF_8.name());
+            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + UTF_8.name());
             connection.setRequestProperty("Accept", "application/json");
 
             if (getTokenEndpointNeedsAuth())
             {
-                String encoded = DatatypeConverter.printBase64Binary((getClientId() + ":" + getClientSecret()).getBytes());
+                String encoded = DatatypeConverter.printBase64Binary((getClientId() + ":" + getClientSecret()).getBytes(UTF_8));
                 connection.setRequestProperty("Authorization", "Basic " + encoded);
             }
 
@@ -285,7 +285,7 @@ public class OAuth2AuthenticationProviderImpl
             requestBody.put("redirect_uri", redirectUri);
             requestBody.put("grant_type", "authorization_code");
             requestBody.put("response_type", "token");
-            body = OAuth2Utils.buildRequestQuery(requestBody).getBytes(UTF8);
+            body = OAuth2Utils.buildRequestQuery(requestBody).getBytes(UTF_8);
             connection.connect();
 
             try (OutputStream output = connection.getOutputStream())
@@ -400,7 +400,7 @@ public class OAuth2AuthenticationProviderImpl
             String vhostName = URLEncoder.encode(addressSpace == null
                                                          ? ""
                                                          : addressSpace.getName(),
-                                                 StandardCharsets.UTF_8.name());
+                                                 UTF_8.name());
 
             final Strings.MapResolver virtualhostResolver = new Strings.MapResolver(Collections.singletonMap("virtualhost",
                                                                                                          vhostName));

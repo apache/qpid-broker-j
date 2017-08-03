@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.util.Collection;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -141,7 +143,7 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
         messageProps.setContentType(serverMsg.getMessageHeader().getMimeType());
         if(serverMsg.getMessageHeader().getCorrelationId() != null)
         {
-            messageProps.setCorrelationId(serverMsg.getMessageHeader().getCorrelationId().getBytes());
+            messageProps.setCorrelationId(serverMsg.getMessageHeader().getCorrelationId().getBytes(UTF_8));
         }
 
         Header header = new Header(deliveryProps, messageProps, null);
