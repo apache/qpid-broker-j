@@ -747,7 +747,7 @@ td.advancedSearchField, col.autoWidth {
 
 .claro .loading
 {
-    background-image: url("../dojo/dijit/themes/claro/images/loadingAnimation.gif");
+    background-image: url("../dojo/dijit/icons/images/loadingAnimation.gif");
 }
 .loadingBar
 {
