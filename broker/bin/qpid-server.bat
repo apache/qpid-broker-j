@@ -87,6 +87,7 @@ if "%~1" neq "" goto runLoop
 goto endRunArgs
 
 :runFound
+if "%var%" == "-run:pauseOnError" goto runPauseOnError
 if "%var%" == "-run:debug" goto runDebug
 if "%var%" == "-run:jpda" goto runJdpa
 if "%var:~0,24%" == "-run:external-classpath-" goto runExternalClasspath
@@ -123,6 +124,11 @@ if "%var%" == "-run:external-classpath-last" goto extCPLast
 if "%var%" == "-run:external-classpath-only" goto extCPOnly
 echo Invalid value provided for external classpath.
 goto end
+
+
+:runPauseOnError
+set pauseOnError=true
+goto beforeRunShift
 
 :extCPFirst
 set CLASSPATH=%EXTERNAL_CLASSPATH%;%CLASSPATH%
@@ -191,6 +197,12 @@ set COMMAND="%JAVA_HOME%\bin\java" %JAVA_VM% %JAVA_MEM% %JAVA_GC% %QPID_OPTS% %J
 if "%debug%" == "true" echo %CLASSPATH%;%LAUNCH_JAR%;%MODULE_JARS%
 if "%debug%" == "true" echo %COMMAND%
 %COMMAND%
+
+if not errorlevel 1 goto end
+if not "%pauseOnError%" == "true" goto end
+
+echo Info: Process ended with non-zero errorlevel %ERRORLEVEL%
+pause
 
 :end
 ENDLOCAL
