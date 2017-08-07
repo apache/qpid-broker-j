@@ -214,40 +214,50 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
             final TrustManagerFactory tmf = TrustManagerFactory
                     .getInstance(trustManagerFactoryAlgorithm);
             tmf.init(ts);
-            final Collection<TrustManager> trustManagersCol = new ArrayList<>();
-            final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
-            TrustManager[] delegateManagers = tmf.getTrustManagers();
-            for (TrustManager tm : delegateManagers)
-            {
-                if (tm instanceof X509TrustManager)
-                {
-                    if (_peersOnly)
-                    {
-                        // truststore is supposed to trust only clients which peers certificates
-                        // are directly in the store. CA signing will not be considered.
-                        mulTrustManager.addTrustManager(new QpidPeersOnlyTrustManager(ts, (X509TrustManager) tm));
-                    }
-                    else
-                    {
-                        mulTrustManager.addTrustManager((X509TrustManager) tm);
-                    }
-                }
-                else
-                {
-                    trustManagersCol.add(tm);
-                }
-            }
-            if (! mulTrustManager.isEmpty())
-            {
-                trustManagersCol.add(mulTrustManager);
-            }
 
-            if (trustManagersCol.isEmpty())
+            TrustManager[] delegateManagers = tmf.getTrustManagers();
+            if (delegateManagers.length == 0)
             {
                 throw new IllegalStateException("Truststore " + this + " defines no trust managers");
             }
+            else if (delegateManagers.length == 1)
+            {
+                if (_peersOnly  && delegateManagers[0] instanceof X509TrustManager)
+                {
+                    return new TrustManager[] {new QpidPeersOnlyTrustManager(ts,
+                                                                             ((X509TrustManager) delegateManagers[0]))};
+                }
+                else
+                {
+                    return delegateManagers;
+                }
+            }
             else
             {
+                final Collection<TrustManager> trustManagersCol = new ArrayList<>();
+                final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
+                for (TrustManager tm : delegateManagers)
+                {
+                    if (tm instanceof X509TrustManager)
+                    {
+                        if (_peersOnly)
+                        {
+                            mulTrustManager.addTrustManager(new QpidPeersOnlyTrustManager(ts, (X509TrustManager) tm));
+                        }
+                        else
+                        {
+                            mulTrustManager.addTrustManager((X509TrustManager) tm);
+                        }
+                    }
+                    else
+                    {
+                        trustManagersCol.add(tm);
+                    }
+                }
+                if (! mulTrustManager.isEmpty())
+                {
+                    trustManagersCol.add(mulTrustManager);
+                }
                 return trustManagersCol.toArray(new TrustManager[trustManagersCol.size()]);
             }
         }

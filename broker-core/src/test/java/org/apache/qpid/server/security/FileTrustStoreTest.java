@@ -47,7 +47,7 @@ import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
-import org.apache.qpid.server.transport.network.security.ssl.QpidMultipleTrustManager;
+import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.server.util.FileUtils;
@@ -123,7 +123,7 @@ public class FileTrustStoreTest extends QpidTestCase
         assertNotNull(trustManagers);
         assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
         assertNotNull("Trust manager unexpected null", trustManagers[0]);
-        assertTrue("Trust manager unexpected null", trustManagers[0] instanceof QpidMultipleTrustManager);
+        assertTrue("Trust manager unexpected null", trustManagers[0] instanceof QpidPeersOnlyTrustManager);
     }
 
     public void testUseOfExpiredTrustAnchorAllowed() throws Exception
