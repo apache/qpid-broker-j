@@ -126,7 +126,7 @@ define(["dojo/_base/lang",
                 }
             }
 
-            storeNodes(["name", "type", "state", "exposedAsMessageSource"]);
+            storeNodes(["name", "type", "state", "exposedAsMessageSource", "trustAnchorValidityEnforced"]);
 
         }
 
@@ -137,6 +137,8 @@ define(["dojo/_base/lang",
             this.state.innerHTML = entities.encode(String(this.trustStoreData["state"]));
             this.exposedAsMessageSource.innerHTML =
                 entities.encode(String(this.trustStoreData["exposedAsMessageSource"]));
+            this.trustAnchorValidityEnforced.innerHTML =
+                entities.encode(String(this.trustStoreData["trustAnchorValidityEnforced"]));
         };
 
         KeyStoreUpdater.prototype.update = function (callback)

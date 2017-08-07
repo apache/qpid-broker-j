@@ -81,6 +81,10 @@
                         will distribute certificates contained within the trustore to clients.
                         Used by the end to end message encryption feature.</para>
                 </listitem>
+                <listitem>
+                    <para><emphasis>Trust Anchor Validity Enforced</emphasis>. If enabled, authentications will
+                        fail if the trust anchor's validity date has not yet been reached or already expired.</para>
+                </listitem>
             </itemizedlist>
         </para>
         <para>The following attributes apply to <emphasis>File Trust Stores</emphasis> only.</para>

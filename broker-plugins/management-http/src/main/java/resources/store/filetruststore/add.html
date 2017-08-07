@@ -50,9 +50,11 @@
                 <input type="text" id="addStore.peersOnly"
                        data-dojo-type="dijit/form/CheckBox"
                        data-dojo-props="
-                              name: 'peersOnly',
-                              promptMessage: 'Peers only or not',
-                              title: 'Tick if peers only'" />
+                              name: 'peersOnly'" />
+                <div data-dojo-type="dijit/Tooltip"
+                     data-dojo-props="connectId: ['addStore.peersOnly'],
+                                      label: 'If true, the Truststore it will authenticate only those clients that present a certificate exactly matching a certificate contained within the Truststore'">
+                </div>
             </div>
         </div>
         <div class="clear">

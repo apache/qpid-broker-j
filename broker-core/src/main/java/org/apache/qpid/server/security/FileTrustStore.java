@@ -57,7 +57,9 @@ public interface FileTrustStore<X extends FileTrustStore<X>> extends TrustStore<
     @ManagedAttribute( defaultValue = "${trustStoreFile.trustStoreType}")
     String getTrustStoreType();
 
-    @ManagedAttribute( defaultValue = "false" )
+    @ManagedAttribute( defaultValue = "false",
+            description = "If true, the Truststore it will authenticate only those clients that present a certificate"
+                          + " exactly matching a certificate contained within the Truststore.")
     boolean isPeersOnly();
 
     @ManagedAttribute( secure = true, mandatory = true )

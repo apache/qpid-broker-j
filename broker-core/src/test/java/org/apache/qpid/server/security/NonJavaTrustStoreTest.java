@@ -22,9 +22,14 @@ package org.apache.qpid.server.security;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import javax.net.ssl.TrustManager;
+import java.security.KeyStore;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -35,7 +40,9 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.TestSSLConstants;
 
 
 public class NonJavaTrustStoreTest extends QpidTestCase
@@ -61,23 +68,55 @@ public class NonJavaTrustStoreTest extends QpidTestCase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
-        attributes.put("certificatesUrl", getClass().getResource("/java_broker.crt").toExternalForm());
+        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, getClass().getResource("/java_broker.crt").toExternalForm());
         attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
 
-        NonJavaTrustStoreImpl fileTrustStore =
-                (NonJavaTrustStoreImpl) _factory.create(TrustStore.class, attributes,  _broker);
+        TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
 
-        TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
+        TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
         assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
         assertNotNull("Trust manager unexpected null", trustManagers[0]);
+    }
+
+    public void testUseOfExpiredTrustAnchorDenied() throws Exception
+    {
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
+        attributes.put(NonJavaTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true);
+        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, getClass().getResource("/expired.crt").toExternalForm());
+        attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
+
+        TrustStore trustStore = _factory.create(TrustStore.class, attributes, _broker);
+
+        TrustManager[] trustManagers = trustStore.getTrustManagers();
+        assertNotNull(trustManagers);
+        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
+        assertTrue("Unexpected trust manager type",trustManagers[0] instanceof X509TrustManager);
+        X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
+
+        KeyStore clientStore = SSLUtil.getInitializedKeyStore(TestSSLConstants.EXPIRED_KEYSTORE,
+                                                              TestSSLConstants.KEYSTORE_PASSWORD,
+                                                              KeyStore.getDefaultType());
+        String alias = clientStore.aliases().nextElement();
+        X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
+
+        try
+        {
+            trustManager.checkClientTrusted(new X509Certificate[] {certificate}, "NULL");
+            fail("Exception not thrown");
+        }
+        catch (CertificateExpiredException e)
+        {
+            // PASS
+        }
     }
 
     public void testCreationOfTrustStoreFromNonCertificate() throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(NonJavaTrustStore.NAME, "myTestTrustStore");
-        attributes.put("certificatesUrl", getClass().getResource("/java_broker.req").toExternalForm());
+        attributes.put(NonJavaTrustStore.CERTIFICATES_URL, getClass().getResource("/java_broker.req").toExternalForm());
         attributes.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
 
         try

@@ -20,10 +20,6 @@
  */
 package org.apache.qpid.server.security;
 
-import java.util.List;
-import java.util.Map;
-
-import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.TrustStore;
@@ -31,6 +27,8 @@ import org.apache.qpid.server.model.TrustStore;
 @ManagedObject( category = false, type = "NonJavaTrustStore" )
 public interface NonJavaTrustStore<X extends NonJavaTrustStore<X>> extends TrustStore<X>
 {
+    String CERTIFICATES_URL = "certificatesUrl";
+
     @Override
     @ManagedAttribute(defaultValue = "${this:certificateDetails}")
     String getDescription();

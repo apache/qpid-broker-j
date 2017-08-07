@@ -18,13 +18,30 @@
   -->
 
 <div class="clear">
-    <div id="addStore.exposedAsMessageSourceLabel" class="formLabel-labelCell tableContainer-labelCell">Exposed As Message Source:</div>
-    <div class="formLabel-controlCell tableContainer-valueCell">
-        <input type="text" id="addStore.exposedAsMessageSource"
-               data-dojo-type="dijit/form/CheckBox"
-               data-dojo-props="
-                              name: 'exposedAsMessageSource',
-                              promptMessage: 'Expose trust store as message source',
-                              title: 'Tick to expose trust store as message source'" />
+    <div class="clear">
+
+        <div id="addStore.exposedAsMessageSourceLabel" class="formLabel-labelCell tableContainer-labelCell">Exposed As Message Source:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addStore.exposedAsMessageSource"
+                   data-dojo-type="dijit/form/CheckBox"
+                   data-dojo-props="
+                              name: 'exposedAsMessageSource'" />
+            <div data-dojo-type="dijit/Tooltip"
+                 data-dojo-props="connectId: ['addStore.exposedAsMessageSource'],
+                                      label: 'Expose trust store as message source'">
+            </div>
+    </div>
+    <div class="clear">
+        <div id="addStore.trustAnchorValidityEnforcedLabel" class="formLabel-labelCell tableContainer-labelCell">Trust Anchor Validity Enforced:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addStore.trustAnchorValidityEnforced"
+                   data-dojo-type="dijit/form/CheckBox"
+                   data-dojo-props="
+                              name: 'trustAnchorValidityEnforced'" />
+            <div data-dojo-type="dijit/Tooltip"
+                 data-dojo-props="connectId: ['addStore.trustAnchorValidityEnforced'],
+                                      label: 'If true, trust anchor validity dates will be enforced'">
+            </div>
+        </div>
     </div>
 </div>
