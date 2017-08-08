@@ -21,9 +21,9 @@
 package org.apache.qpid.server.protocol.converter.v0_10_v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.convertBodyToObject;
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.convertValue;
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getAbsoluteExpiryTime;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getConvertedContentAndMimeType;
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getCorrelationId;
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getCreationTime;
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getGroupId;
@@ -42,8 +42,6 @@ import java.util.UUID;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
-import org.apache.qpid.server.message.mimecontentconverter.ObjectToMimeContentConverter;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
@@ -58,6 +56,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryPriority;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.ReplyTo;
+import org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.ConvertedContentAndMimeType;
 import org.apache.qpid.server.protocol.v1_0.MessageMetaData_1_0;
 import org.apache.qpid.server.protocol.v1_0.Message_1_0;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -104,16 +103,12 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
     private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final Message_1_0 serverMsg,
                                                                        final NamedAddressSpace addressSpace)
     {
-        Object bodyObject = convertBodyToObject(serverMsg);
-
-        final ObjectToMimeContentConverter converter = MimeContentConverterRegistry.getBestFitObjectToMimeContentConverter(bodyObject);
-        final byte[] messageContent = converter == null ? new byte[] {} : converter.toMimeContent(bodyObject);
-        final String mimeType = converter == null ? null  : converter.getMimeType();
-
+        final ConvertedContentAndMimeType convertedContentAndMimeType = getConvertedContentAndMimeType(serverMsg);
+        final byte[] convertedContent = convertedContentAndMimeType.getContent();
         final MessageMetaData_0_10 messageMetaData_0_10 = convertMetaData(serverMsg,
                                                                           addressSpace,
-                                                                          mimeType,
-                                                                          messageContent.length);
+                                                                          convertedContentAndMimeType.getMimeType(),
+                                                                          convertedContent.length);
         final int metadataSize = messageMetaData_0_10.getStorableSize();
 
         return new StoredMessage<MessageMetaData_0_10>()
@@ -133,13 +128,13 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
             @Override
             public Collection<QpidByteBuffer> getContent(final int offset, final int length)
             {
-                return Collections.singleton(QpidByteBuffer.wrap(messageContent, offset, length));
+                return Collections.singleton(QpidByteBuffer.wrap(convertedContent, offset, length));
             }
 
             @Override
             public int getContentSize()
             {
-                return messageContent.length;
+                return convertedContent.length;
             }
 
             @Override
@@ -488,5 +483,4 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
         }
         return buffer.array();
     }
-
 }

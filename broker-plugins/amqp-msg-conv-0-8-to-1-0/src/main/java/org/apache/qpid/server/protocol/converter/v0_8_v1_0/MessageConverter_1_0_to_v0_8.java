@@ -20,21 +20,26 @@
  */
 package org.apache.qpid.server.protocol.converter.v0_8_v1_0;
 
-import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.*;
 
-import java.io.Serializable;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.convertValue;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getAbsoluteExpiryTime;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getConvertedContentAndMimeType;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getCorrelationId;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getCreationTime;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getGroupId;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getGroupSequence;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getMessageId;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getTtl;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getUserId;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.mimecontentconverter.ByteArrayToOctetStream;
-import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
-import org.apache.qpid.server.message.mimecontentconverter.ObjectToMimeContentConverter;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.MessageConverter;
@@ -47,10 +52,10 @@ import org.apache.qpid.server.protocol.v0_8.MessageMetaData;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
+import org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.ConvertedContentAndMimeType;
 import org.apache.qpid.server.protocol.v1_0.MessageMetaData_1_0;
 import org.apache.qpid.server.protocol.v1_0.Message_1_0;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.store.StoredMessage;
 
@@ -85,48 +90,12 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
     private StoredMessage<MessageMetaData> convertToStoredMessage(final Message_1_0 serverMsg,
                                                                   final NamedAddressSpace addressSpace)
     {
-        Object bodyObject = convertBodyToObject(serverMsg);
-        ObjectToMimeContentConverter converter = MimeContentConverterRegistry.getBestFitObjectToMimeContentConverter(bodyObject);
-
-        ContentHint contentHint = getTypeHint(serverMsg);
-        Class<?> typeHint = contentHint.getContentClass();
-        if (typeHint == null && bodyObject == null)
-        {
-            typeHint = Void.class;
-        }
-
-        if (converter == null)
-        {
-            converter = MimeContentConverterRegistry.getBestFitObjectToMimeContentConverter(bodyObject, typeHint);
-
-            if (converter == null)
-            {
-                throw new MessageConversionException(String.format(
-                        "Could not convert message from 1.0 to 0-8 because conversion of content failed. Could not find mime type converter for the content '%s'.", bodyObject == null ? null : bodyObject.getClass().getSimpleName()));
-            }
-        }
-
-        final byte[] messageContent = converter.toMimeContent(bodyObject);
-        String mimeType = converter.getMimeType();
-        if (bodyObject instanceof byte[])
-        {
-            if (Serializable.class == typeHint)
-            {
-                mimeType = "application/java-object-stream";
-            }
-            else if (String.class == typeHint)
-            {
-                mimeType = "text/plain";
-            }
-            else if ((Map.class == typeHint || List.class == typeHint) && contentHint.getContentType() != null)
-            {
-                mimeType = contentHint.getContentType();
-            }
-        }
+        final ConvertedContentAndMimeType convertedContentAndMimeType = getConvertedContentAndMimeType(serverMsg);
+        final byte[] convertedContent = convertedContentAndMimeType.getContent();
 
         final MessageMetaData messageMetaData_0_8 = convertMetaData(serverMsg,
-                                                                    mimeType,
-                                                                    messageContent.length,
+                                                                    convertedContentAndMimeType.getMimeType(),
+                                                                    convertedContent.length,
                                                                     addressSpace);
         final int metadataSize = messageMetaData_0_8.getStorableSize();
 
@@ -147,13 +116,13 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
             @Override
             public Collection<QpidByteBuffer> getContent(final int offset, final int length)
             {
-                return Collections.singleton(QpidByteBuffer.wrap(messageContent, offset, length));
+                return Collections.singleton(QpidByteBuffer.wrap(convertedContent, offset, length));
             }
 
             @Override
             public int getContentSize()
             {
-                return messageContent.length;
+                return convertedContent.length;
             }
 
             @Override

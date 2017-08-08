@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import static org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry.getBestFitObjectToMimeContentConverter;
+
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -37,6 +39,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.message.mimecontentconverter.ObjectToMimeContentConverter;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -79,7 +82,7 @@ public class MessageConverter_from_1_0
     private static final Pattern
             OBJECT_MESSAGE_CONTENT_TYPES = Pattern.compile("^application/x-java-serialized-object|application/java-object-stream$");
 
-    public static Object convertBodyToObject(final Message_1_0 serverMessage)
+    static Object convertBodyToObject(final Message_1_0 serverMessage)
     {
         final Collection<QpidByteBuffer> allData = serverMessage.getContent(0, (int) serverMessage.getSize());
         SectionDecoderImpl sectionDecoder = new SectionDecoderImpl(MessageConverter_v1_0_to_Internal.TYPE_REGISTRY.getSectionDecoderRegistry());
@@ -233,7 +236,7 @@ public class MessageConverter_from_1_0
         return result;
     }
 
-    public static ContentHint getTypeHint(final Message_1_0 serverMsg)
+    private static ContentHint getTypeHint(final Message_1_0 serverMsg)
     {
         Symbol contentType = getContentType(serverMsg);
 
@@ -493,26 +496,93 @@ public class MessageConverter_from_1_0
         return messageId;
     }
 
-    public static class ContentHint
+    public static ConvertedContentAndMimeType getConvertedContentAndMimeType(final Message_1_0 serverMsg)
+    {
+        Object bodyObject = convertBodyToObject(serverMsg);
+        ObjectToMimeContentConverter converter = getBestFitObjectToMimeContentConverter(bodyObject);
+
+        ContentHint contentHint = getTypeHint(serverMsg);
+        Class<?> typeHint = contentHint.getContentClass();
+        if (typeHint == null && bodyObject == null)
+        {
+            typeHint = Void.class;
+        }
+
+        if (converter == null)
+        {
+            converter = getBestFitObjectToMimeContentConverter(bodyObject, typeHint);
+
+            if (converter == null)
+            {
+                throw new MessageConversionException(String.format(
+                        "Could not convert message from 1.0 to 0-x because conversion of content failed."
+                        + " Could not find mime type converter for the content '%s'.",
+                        bodyObject == null ? null : bodyObject.getClass().getSimpleName()));
+            }
+        }
+
+        final byte[] messageContent = converter.toMimeContent(bodyObject);
+        String mimeType = converter.getMimeType();
+        if (bodyObject instanceof byte[])
+        {
+            if (Serializable.class == typeHint)
+            {
+                mimeType = "application/java-object-stream";
+            }
+            else if (String.class == typeHint)
+            {
+                mimeType = "text/plain";
+            }
+            else if ((Map.class == typeHint || List.class == typeHint) && contentHint.getContentType() != null)
+            {
+                mimeType = contentHint.getContentType();
+            }
+        }
+
+        return new ConvertedContentAndMimeType(messageContent, mimeType);
+    }
+
+    private static class ContentHint
     {
         private final Class<?> _contentClass;
         private final String _contentType;
 
-        public ContentHint(final Class<?> contentClass, final String contentType)
+        private ContentHint(final Class<?> contentClass, final String contentType)
         {
             _contentClass = contentClass;
             _contentType = contentType;
         }
 
-        public Class<?> getContentClass()
+        private Class<?> getContentClass()
         {
             return _contentClass;
         }
 
-        public String getContentType()
+        private String getContentType()
         {
             return _contentType;
         }
     }
 
+    public static class ConvertedContentAndMimeType
+    {
+        private final byte[] _content;
+        private final String _mimeType;
+
+        private ConvertedContentAndMimeType(final byte[] content, final String mimeType)
+        {
+            _content = content;
+            _mimeType = mimeType;
+        }
+
+        public byte[] getContent()
+        {
+            return _content;
+        }
+
+        public String getMimeType()
+        {
+            return _mimeType;
+        }
+    }
 }
