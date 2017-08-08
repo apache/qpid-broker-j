@@ -117,8 +117,8 @@ class TrustAnchorValidatingTrustManager implements X509TrustManager
                                                                    final Set<Certificate> otherCerts)
             throws GeneralSecurityException
     {
-        Set<Certificate> intermediateCerts = new HashSet<>();
-        intermediateCerts.addAll(otherCerts);
+        Set<Certificate> storeCerts = new HashSet<>();
+        storeCerts.addAll(otherCerts);
 
         Iterator<X509Certificate> iterator = Arrays.asList(x509Certificates).iterator();
 
@@ -131,17 +131,20 @@ class TrustAnchorValidatingTrustManager implements X509TrustManager
         while (iterator.hasNext())
         {
             X509Certificate intermediate = iterator.next();
-            intermediateCerts.add(intermediate);
+            storeCerts.add(intermediate);
         }
+
 
         X509CertSelector selector = new X509CertSelector();
         selector.setCertificate(peerCertificate);
+        // IBM JDK seems to require that the peer's certficate exists in the Collection too
+        storeCerts.add(peerCertificate);
 
         PKIXBuilderParameters pkixParams = new PKIXBuilderParameters(trustAnchors, selector);
         pkixParams.setRevocationEnabled(false);
 
         CertStore intermediateCertStore = CertStore.getInstance("Collection",
-                                                                new CollectionCertStoreParameters(intermediateCerts));
+                                                                new CollectionCertStoreParameters(storeCerts));
         pkixParams.addCertStore(intermediateCertStore);
 
         CertPathBuilder builder = CertPathBuilder.getInstance("PKIX");

@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.security.KeyStore;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
@@ -177,9 +178,18 @@ public class FileTrustStoreTest extends QpidTestCase
             trustManager.checkClientTrusted(new X509Certificate[] {certificate}, "NULL");
             fail("Exception not thrown");
         }
-        catch (CertificateExpiredException e)
+        catch (CertificateException e)
         {
-            // PASS
+            if (e instanceof CertificateExpiredException || "Certificate expired".equals(e.getMessage()))
+            {
+                // IBMJSSE2 does not throw CertificateExpiredException, it throws a CertificateException
+                // PASS
+            }
+            else
+            {
+                throw e;
+            }
+
         }
     }
 
