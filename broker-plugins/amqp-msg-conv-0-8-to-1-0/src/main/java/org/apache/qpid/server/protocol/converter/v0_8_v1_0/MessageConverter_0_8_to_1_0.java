@@ -25,12 +25,12 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.apache.qpid.server.protocol.converter.MessageConversionException;
-import org.apache.qpid.server.protocol.v0_8.AMQShortString;
-import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
-import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
+import org.apache.qpid.server.protocol.v0_8.AMQShortString;
+import org.apache.qpid.server.protocol.v0_8.FieldTable;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.protocol.v1_0.MessageConverter_to_1_0;
 import org.apache.qpid.server.protocol.v1_0.MessageMetaData_1_0;
@@ -43,6 +43,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotations;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.url.AMQBindingURL;
 import org.apache.qpid.server.util.GZIPUtils;
@@ -81,13 +82,8 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
             props.setContentEncoding(Symbol.valueOf(contentHeader.getEncodingAsString()));
         }
 
-        props.setContentType(Symbol.valueOf(contentHeader.getContentTypeAsString()));
-
-        // Modify the content type when we are dealing with java object messages produced by the Qpid 0.x client
-        if(props.getContentType() == Symbol.valueOf("application/java-object-stream"))
-        {
-            props.setContentType(Symbol.valueOf("application/x-java-serialized-object"));
-        }
+        Symbol contentType = getContentType(contentHeader.getContentTypeAsString(), bodySection);
+        props.setContentType(contentType);
 
         final AMQShortString correlationId = contentHeader.getCorrelationId();
         if(correlationId != null)
@@ -207,9 +203,12 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
             throw new MessageConversionException("Could not convert message from 0-8 to 1.0 because headers conversion failed.", e);
         }
 
+        MessageAnnotations messageAnnotations = createMessageAnnotation(bodySection,
+                                                                        contentHeader.getContentTypeAsString());
+
         return new MessageMetaData_1_0(header.createEncodingRetainingSection(),
                                        null,
-                                       null,
+                                       messageAnnotations == null ? null : messageAnnotations.createEncodingRetainingSection(),
                                        props.createEncodingRetainingSection(),
                                        applicationProperties.createEncodingRetainingSection(),
                                        null,

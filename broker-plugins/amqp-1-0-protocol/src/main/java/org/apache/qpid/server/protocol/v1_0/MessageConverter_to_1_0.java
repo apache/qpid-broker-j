@@ -20,9 +20,22 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.qpid.server.protocol.v1_0.JmsMessageTypeAnnotation.BYTES_MESSAGE;
+import static org.apache.qpid.server.protocol.v1_0.JmsMessageTypeAnnotation.MAP_MESSAGE;
+import static org.apache.qpid.server.protocol.v1_0.JmsMessageTypeAnnotation.MESSAGE;
+import static org.apache.qpid.server.protocol.v1_0.JmsMessageTypeAnnotation.OBJECT_MESSAGE;
+import static org.apache.qpid.server.protocol.v1_0.JmsMessageTypeAnnotation.STREAM_MESSAGE;
+import static org.apache.qpid.server.protocol.v1_0.JmsMessageTypeAnnotation.TEXT_MESSAGE;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -30,8 +43,8 @@ import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
+import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
@@ -39,20 +52,163 @@ import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequence;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotations;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.NonEncodingRetainingSection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.GZIPUtils;
 
 public abstract class MessageConverter_to_1_0<M extends ServerMessage> implements MessageConverter<M, Message_1_0>
 {
+    private static final byte[] SERIALIZED_NULL = getObjectBytes(null);
     private final AMQPDescribedTypeRegistry _typeRegistry = AMQPDescribedTypeRegistry.newInstance()
-                                                                                         .registerTransportLayer()
-                                                                                         .registerMessagingLayer()
-                                                                                         .registerTransactionLayer()
-                                                                                         .registerSecurityLayer();
+                                                                                     .registerTransportLayer()
+                                                                                     .registerMessagingLayer()
+                                                                                     .registerTransactionLayer()
+                                                                                     .registerSecurityLayer();
+
+    public static Symbol getContentType(final String contentMimeType, final EncodingRetainingSection<?> bodySection)
+    {
+        Symbol contentType = null;
+        if (contentMimeType != null)
+        {
+            if (MessageConverter_from_1_0.TEXT_CONTENT_TYPES.matcher(contentMimeType).matches())
+            {
+                contentType = Symbol.valueOf(contentMimeType);
+            }
+            else if (MessageConverter_from_1_0.BYTES_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            {
+                contentType = Symbol.valueOf("application/octet-stream");
+            }
+            else if (MessageConverter_from_1_0.MAP_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            {
+                contentType = null;
+            }
+            else if (MessageConverter_from_1_0.LIST_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            {
+                contentType = null;
+            }
+            else if (MessageConverter_from_1_0.OBJECT_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            {
+                contentType = Symbol.valueOf("application/x-java-serialized-object");
+            }
+            else
+            {
+                contentType = Symbol.valueOf(contentMimeType);
+            }
+        }
+        return contentType;
+    }
+
+    public static MessageAnnotations createMessageAnnotation(final EncodingRetainingSection<?> bodySection,
+                                                             final String contentMimeType)
+    {
+        MessageAnnotations messageAnnotations = null;
+        final Symbol key = Symbol.valueOf("x-opt-jms-msg-type");
+        if (contentMimeType != null)
+        {
+            if (MessageConverter_from_1_0.TEXT_CONTENT_TYPES.matcher(contentMimeType).matches())
+            {
+                messageAnnotations = new MessageAnnotations(Collections.singletonMap(key, TEXT_MESSAGE.getType()));
+            }
+            else if (MessageConverter_from_1_0.BYTES_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            {
+                messageAnnotations = new MessageAnnotations(Collections.singletonMap(key, BYTES_MESSAGE.getType()));
+            }
+            else if (MessageConverter_from_1_0.MAP_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            {
+                if (isSectionValidForJmsMap(bodySection))
+                {
+                    messageAnnotations = new MessageAnnotations(Collections.singletonMap(key, MAP_MESSAGE.getType()));
+                }
+            }
+            else if (MessageConverter_from_1_0.LIST_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            {
+                if (isSectionValidForJmsList(bodySection))
+                {
+                    messageAnnotations =
+                            new MessageAnnotations(Collections.singletonMap(key, STREAM_MESSAGE.getType()));
+                }
+            }
+            else if (MessageConverter_from_1_0.OBJECT_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            {
+                messageAnnotations = new MessageAnnotations(Collections.singletonMap(key, OBJECT_MESSAGE.getType()));
+            }
+        }
+        else if (bodySection instanceof AmqpValueSection && bodySection.getValue() == null)
+        {
+            messageAnnotations = new MessageAnnotations(Collections.singletonMap(key, MESSAGE.getType()));
+        }
+        return messageAnnotations;
+    }
+
+    private static boolean isSectionValidForJmsList(final EncodingRetainingSection<?> section)
+    {
+        if (section instanceof AmqpSequenceSection)
+        {
+            final List<?> list = ((AmqpSequenceSection) section).getValue();
+            for (Object entry: list)
+            {
+                if (!(entry == null
+                      || entry instanceof Boolean
+                      || entry instanceof Byte
+                      || entry instanceof Short
+                      || entry instanceof Integer
+                      || entry instanceof Long
+                      || entry instanceof Float
+                      || entry instanceof Double
+                      || entry instanceof Character
+                      || entry instanceof String
+                      || entry instanceof Binary))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean isSectionValidForJmsMap(final EncodingRetainingSection<?> section)
+    {
+        if (section instanceof AmqpValueSection)
+        {
+            final Object valueObject = ((AmqpValueSection) section).getValue();
+            if (valueObject instanceof Map)
+            {
+                final Map<?, ?> map = (Map) valueObject;
+                for (Map.Entry<?,?> entry: map.entrySet())
+                {
+                    if (!(entry.getKey() instanceof String))
+                    {
+                        return false;
+                    }
+                    Object value = entry.getValue();
+                    if (!(value == null
+                          || value instanceof Boolean
+                          || value instanceof Byte
+                          || value instanceof Short
+                          || value instanceof Integer
+                          || value instanceof Long
+                          || value instanceof Float
+                          || value instanceof Double
+                          || value instanceof Character
+                          || value instanceof String
+                          || value instanceof Binary))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     public final Class<Message_1_0> getOutputClass()
@@ -92,24 +248,44 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
 
     private static NonEncodingRetainingSection<?> convertMessageBody(String mimeType, byte[] data)
     {
-
-        MimeContentToObjectConverter converter = MimeContentConverterRegistry.getMimeContentToObjectConverter(mimeType);
-        if (converter != null)
+        if (data != null && data.length != 0)
         {
-            Object bodyObject = converter.toObject(data);
 
-            if (bodyObject instanceof String)
+            MimeContentToObjectConverter converter =
+                    MimeContentConverterRegistry.getMimeContentToObjectConverter(mimeType);
+            if (converter != null)
             {
-                return new AmqpValue(bodyObject);
+                Object bodyObject = converter.toObject(data);
+
+                if (bodyObject instanceof String)
+                {
+                    return new AmqpValue(bodyObject);
+                }
+                else if (bodyObject instanceof Map)
+                {
+                    return new AmqpValue(fixMapValues((Map<String, Object>) bodyObject));
+                }
+                else if (bodyObject instanceof List)
+                {
+                    return new AmqpSequence(fixListValues((List<Object>) bodyObject));
+                }
             }
-            else if (bodyObject instanceof Map)
+            else if (mimeType != null && MessageConverter_from_1_0.TEXT_CONTENT_TYPES.matcher(mimeType).matches())
             {
-                return new AmqpValue(fixMapValues((Map<String, Object>) bodyObject));
+                return new AmqpValue(new String(data, UTF_8));
             }
-            else if (bodyObject instanceof List)
-            {
-                return new AmqpValue(fixListValues((List<Object>) bodyObject));
-            }
+        }
+        else if (mimeType == null)
+        {
+            return new AmqpValue(null);
+        }
+        else if (MessageConverter_from_1_0.OBJECT_MESSAGE_CONTENT_TYPES.matcher(mimeType).matches())
+        {
+            return new Data(new Binary(SERIALIZED_NULL));
+        }
+        else if (MessageConverter_from_1_0.TEXT_CONTENT_TYPES.matcher(mimeType).matches())
+        {
+            return new AmqpValue(null);
         }
         return new Data(new Binary(data));
     }
@@ -186,6 +362,22 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         }
 
         return convertMessageBody(mimeType, data).createEncodingRetainingSection();
+    }
+
+    private static byte[] getObjectBytes(final Object object)
+    {
+        final byte[] expected;
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(baos))
+        {
+            oos.writeObject(object);
+            expected = baos.toByteArray();
+        }
+        catch (IOException e)
+        {
+            throw new IllegalStateException(e);
+        }
+        return expected;
     }
 
     private static class ConvertedMessage<M extends ServerMessage> implements StoredMessage<MessageMetaData_1_0>

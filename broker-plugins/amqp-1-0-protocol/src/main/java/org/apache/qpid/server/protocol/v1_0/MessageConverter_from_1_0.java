@@ -76,11 +76,12 @@ public class MessageConverter_from_1_0
                                                                                         byte[].class,
                                                                                         UUID.class));
 
-    private static final Pattern TEXT_CONTENT_TYPES = Pattern.compile("^(text/.*)|(application/(xml|xml-dtd|.*\\+xml|json|.*\\+json|javascript|ecmascript))$");
-    private static final Pattern MAP_MESSAGE_CONTENT_TYPES = Pattern.compile("^amqp/map|jms/map-message$");
-    private static final Pattern LIST_MESSAGE_CONTENT_TYPES = Pattern.compile("^amqp/list|jms/stream-message$");
-    private static final Pattern
+    public static final Pattern TEXT_CONTENT_TYPES = Pattern.compile("^(text/.*)|(application/(xml|xml-dtd|.*\\+xml|json|.*\\+json|javascript|ecmascript))$");
+    public static final Pattern MAP_MESSAGE_CONTENT_TYPES = Pattern.compile("^amqp/map|jms/map-message$");
+    public static final Pattern LIST_MESSAGE_CONTENT_TYPES = Pattern.compile("^amqp/list|jms/stream-message$");
+    public static final Pattern
             OBJECT_MESSAGE_CONTENT_TYPES = Pattern.compile("^application/x-java-serialized-object|application/java-object-stream$");
+    public static final Pattern BYTES_MESSAGE_CONTENT_TYPES = Pattern.compile("^application/octet-stream$");
 
     static Object convertBodyToObject(final Message_1_0 serverMessage)
     {
@@ -319,6 +320,11 @@ public class MessageConverter_from_1_0
                 contentTypeClassHint = Serializable.class;
                 // the AMQP 0-x client does not accept the "application/x-java-serialized-object" mimeTypes so use fall back
                 supportedContentType = "application/java-object-stream";
+            }
+            else if (BYTES_MESSAGE_CONTENT_TYPES.matcher(type).matches())
+            {
+                contentTypeClassHint = byte[].class;
+                supportedContentType = "application/octet-stream";
             }
 
             if (classHint == null || classHint == contentTypeClassHint)

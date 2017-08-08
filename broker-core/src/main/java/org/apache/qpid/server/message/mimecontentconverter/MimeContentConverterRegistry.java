@@ -72,7 +72,7 @@ public class MimeContentConverterRegistry
             }
             classToMineConverters.put(objectClass, converter);
         }
-        classToMineConverters.put(Void.class, new StringToTextPlain());
+        classToMineConverters.put(Void.class, new IdentityConverter());
         return ImmutableMultimap.copyOf(classToMineConverters);
     }
 
@@ -137,6 +137,7 @@ public class MimeContentConverterRegistry
                 }
             }
         }
+
         return converter;
     }
 }
