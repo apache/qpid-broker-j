@@ -161,8 +161,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
     public void testExternalAuthenticationDeniesExpiredClientCert() throws Exception
     {
         final String expiredTrustStore = "expiredTrustStore";
-        final List<String>
-                storeNames = Arrays.asList(TestBrokerConfiguration.ENTRY_NAME_SSL_TRUSTSTORE, expiredTrustStore);
+        final List<String> storeNames = Arrays.asList(expiredTrustStore);
 
         //set the broker's SSL config, inc which SSL stores to use
         setCommonBrokerSSLProperties(true, storeNames);
@@ -173,6 +172,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
         sslTrustStoreAttributes.put(FileTrustStore.PASSWORD, BROKER_TRUSTSTORE_PASSWORD);
         sslTrustStoreAttributes.put(FileTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true);
         getDefaultBrokerConfiguration().addObjectConfiguration(TrustStore.class, sslTrustStoreAttributes);
+        getDefaultBrokerConfiguration().removeObjectConfiguration(TrustStore.class, TestBrokerConfiguration.ENTRY_NAME_SSL_TRUSTSTORE);
 
         super.startDefaultBroker();
 
