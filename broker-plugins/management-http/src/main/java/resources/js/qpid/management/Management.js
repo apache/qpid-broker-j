@@ -344,7 +344,7 @@ define(["dojo/_base/lang",
             {
                 window.location = url;
             }, 100);
-        }
+        };
 
         // summary:
         //  Downloads current JSON for object specified as modelObj argument into iframe
@@ -356,7 +356,7 @@ define(["dojo/_base/lang",
             document.body.appendChild(iframe);
             iframe.src = url;
             // It seems there is no way to remove this iframe in a manner that is cross browser compatible.
-        }
+        };
 
         // summary:
         //  Builds relative REST url (excluding schema, host and port) for the object representing CO hierarchy
@@ -377,9 +377,9 @@ define(["dojo/_base/lang",
         Management.prototype.objectToURL = function (modelObj)
         {
             var url = null;
-            if (modelObj.type == "broker")
+            if (modelObj.type === "broker")
             {
-                url = "broker"
+                url = "broker";
             }
             else
             {
@@ -392,7 +392,7 @@ define(["dojo/_base/lang",
 
                 if (modelObj.name)
                 {
-                    if (url.substring(url.length - 1) != "/")
+                    if (url.substring(url.length - 1) !== "/")
                     {
                         url = url + "/";
                     }
@@ -468,7 +468,7 @@ define(["dojo/_base/lang",
                 url = url + "?" + ioQuery.objectToQuery(parameters);
             }
             return this.getFullUrl(url);
-        }
+        };
 
         // summary:
         //  Returns full REST url for the relative REST url

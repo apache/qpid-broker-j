@@ -19,45 +19,54 @@
  -
  -->
 <div class="broker">
-    <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Broker Attributes',  open: false">
-        <div id="brokerAttributes" class="clear">
-             <div id="brokerAttribute.name.container" class="clear">
-                <div class="formLabel-labelCell">Broker name:</div>
-                <div id="brokerAttribute.name"></div>
+    <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Broker',  open: false">
+        <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Broker Attributes',  open: true">
+            <div id="brokerAttributes" class="clear">
+                 <div id="brokerAttribute.name.container" class="clear">
+                    <div class="formLabel-labelCell">Broker name:</div>
+                    <div id="brokerAttribute.name"></div>
+                </div>
+                <div id="brokerAttribute.operatingSystem.container" class="clear">
+                    <div class="formLabel-labelCell">Operating system:</div>
+                    <div id="brokerAttribute.operatingSystem"></div>
+                </div>
+                <div id="brokerAttribute.platform.container" class="clear">
+                    <div class="formLabel-labelCell">Platform:</div>
+                    <div id="brokerAttribute.platform"></div>
+                </div>
+                <div id="brokerAttribute.productVersion.container" class="clear">
+                    <div class="formLabel-labelCell">Broker version:</div>
+                    <div id="brokerAttribute.productVersion"></div>
+                </div>
+                <div id="brokerAttribute.modelVersion.container" class="clear">
+                    <div class="formLabel-labelCell">Broker model version:</div>
+                    <div id="brokerAttribute.modelVersion"></div>
+                </div>
+                <div id="brokerAttribute.processPid.container" class="clear">
+                    <div class="formLabel-labelCell">PID:</div>
+                    <div id="brokerAttribute.processPid"></div>
+                </div>
+                <div id="brokerAttribute.confidentialConfigurationEncryptionProvider.container" class="clear">
+                    <div class="formLabel-labelCell">Config Encryption:</div>
+                    <div id="brokerAttribute.confidentialConfigurationEncryptionProvider"></div>
+                </div>
+                <div id="brokerAttribute.statisticsReportingPeriod.container" class="hidden clear">
+                    <div class="formLabel-labelCell">Statistics reporting period (s):</div>
+                    <div id="brokerAttribute.statisticsReportingPeriod"></div>
+                </div>
+                <div id="brokerAttribute.statisticsReportingResetEnabled.container" class="hidden clear">
+                    <div class="formLabel-labelCell">Statistics reporting auto-reset enabled:</div>
+                    <div id="brokerAttribute.statisticsReportingResetEnabled"></div>
+                </div>
+                <div class="clear"></div>
             </div>
-            <div id="brokerAttribute.operatingSystem.container" class="clear">
-                <div class="formLabel-labelCell">Operation system:</div>
-                <div id="brokerAttribute.operatingSystem"></div>
-            </div>
-            <div id="brokerAttribute.platform.container" class="clear">
-                <div class="formLabel-labelCell">Platform:</div>
-                <div id="brokerAttribute.platform"></div>
-            </div>
-            <div id="brokerAttribute.productVersion.container" class="clear">
-                <div class="formLabel-labelCell">Broker version:</div>
-                <div id="brokerAttribute.productVersion"></div>
-            </div>
-            <div id="brokerAttribute.modelVersion.container" class="clear">
-                <div class="formLabel-labelCell">Broker model version:</div>
-                <div id="brokerAttribute.modelVersion"></div>
-            </div>
-            <div id="brokerAttribute.confidentialConfigurationEncryptionProvider.container" class="clear">
-                <div class="formLabel-labelCell">Config Encryption:</div>
-                <div id="brokerAttribute.confidentialConfigurationEncryptionProvider"></div>
-            </div>
-            <div id="brokerAttribute.statisticsReportingPeriod.container" class="hidden clear">
-                <div class="formLabel-labelCell">Statistics reporting period (s):</div>
-                <div id="brokerAttribute.statisticsReportingPeriod"></div>
-            </div>
-            <div id="brokerAttribute.statisticsReportingResetEnabled.container" class="hidden clear">
-                <div class="formLabel-labelCell">Statistics reporting auto-reset enabled:</div>
-                <div id="brokerAttribute.statisticsReportingResetEnabled"></div>
-            </div>
-            <div class="clear"></div>
+            <br/>
         </div>
-        <br/>
-        <button data-dojo-type="dijit.form.Button" class="editBroker">Edit</button>
-    </div>
+        <div class="dijitDialogPaneActionBar">
+            <button data-dojo-type="dijit.form.Button" class="editBroker">Edit</button>
+            <button data-dojo-type="dijit.form.Button" class="restartBroker">Restart</button>
+        </div>
+   </div>
     <br/>
     <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Virtual Hosts'">
         <div class="broker-virtualhosts"></div>

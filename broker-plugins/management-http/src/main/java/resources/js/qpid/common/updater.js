@@ -20,7 +20,7 @@
  */
 define([], function ()
 {
-    var updateList = new Array();
+    var updateList = [];
 
     function invokeUpdates()
     {
@@ -56,7 +56,6 @@ define([], function ()
         {
             updateList.push(obj);
         },
-
         remove: function (obj)
         {
             for (var i = 0; i < updateList.length; i++)
@@ -68,12 +67,16 @@ define([], function ()
                 }
             }
         },
-
         restartTimer: function()
         {
             clearInterval(timer);
             invokeUpdates();
             timer = setInterval(invokeUpdates, 1000 * updatePeriod);
+        },
+        cancel: function()
+        {
+            updateList = [];
+            clearInterval(timer);
         }
     };
 });

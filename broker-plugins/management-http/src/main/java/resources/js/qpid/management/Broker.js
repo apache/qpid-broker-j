@@ -22,14 +22,17 @@ define(["dojo/parser",
         "dojo/query",
         "dojo/json",
         "dojo/_base/lang",
+        "dojo/_base/event",
         "dojo/_base/connect",
         "dojo/store/Memory",
         "dojo/promise/all",
+        "dojo/request/xhr",
         "qpid/common/properties",
         "qpid/common/updater",
         "qpid/common/util",
         "qpid/common/UpdatableStore",
         "dojox/grid/EnhancedGrid",
+        "dojox/widget/Standby",
         "dijit/registry",
         "dojox/html/entities",
         "qpid/management/addAuthenticationProvider",
@@ -59,14 +62,17 @@ define(["dojo/parser",
               query,
               json,
               lang,
+              event,
               connect,
               memory,
               all,
+              xhr,
               properties,
               updater,
               util,
               UpdatableStore,
               EnhancedGrid,
+              Standby,
               registry,
               entities,
               addAuthenticationProvider,
@@ -85,6 +91,7 @@ define(["dojo/parser",
                                     "operatingSystem",
                                     "platform",
                                     "productVersion",
+                                    "processPid",
                                     "modelVersion",
                                     "statisticsReportingPeriod",
                                     "statisticsReportingResetEnabled",
@@ -184,6 +191,12 @@ define(["dojo/parser",
                         connect.connect(registry.byNode(editButton), "onClick", function (evt)
                         {
                             editBroker.show(that.management, that.brokerUpdater.brokerData);
+                        });
+                        var restartButton = query(".restartBroker", contentPane.containerNode)[0];
+                        connect.connect(registry.byNode(restartButton), "onClick", function (evt)
+                        {
+                            that.restartBroker();
+                            event.stop(evt);
                         });
 
                         var addKeystoreButton = query(".addKeystore", contentPane.containerNode)[0];
@@ -301,6 +314,34 @@ define(["dojo/parser",
                         });
 
                     });
+            }
+        };
+
+        Broker.prototype.restartBroker = function ()
+        {
+            if (confirm("Warning! Restart will disconnect all applications and logoff all users, including you."
+                        + " All messaging operations will be interrupted until applications reconnect."
+                        + " Are you certain you wish to proceed?"))
+            {
+                this.management.post({url: this.management.objectToURL(this.modelObj) + "/restart"}, {})
+                    .then(lang.hitch(this, function ()
+                    {
+                        updater.cancel();
+                        var standby = new Standby({target: dojo.body()});
+                        document.body.appendChild(standby.domNode);
+                        standby.startup();
+                        standby.show();
+                        var pollUrl = this.management.getFullUrl("/");
+                        var logout = function ()
+                        {
+                            window.location = "logout";
+                        };
+                        var ping = function ()
+                        {
+                            xhr(pollUrl, {method: "GET"}).then(logout, ping);
+                        };
+                        var timer = setInterval(lang.hitch(this, ping), 5000);
+                    }));
             }
         };
 
