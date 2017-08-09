@@ -41,6 +41,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotations;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
@@ -110,7 +111,7 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
 
 
         ApplicationProperties applicationProperties = null;
-
+        String originalContentMimeType = null;
         if(msgProps != null)
         {
             if(msgProps.hasContentEncoding()
@@ -150,15 +151,13 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
                 }
                 props.setReplyTo(to);
             }
+
             if(msgProps.hasContentType())
             {
-                props.setContentType(Symbol.valueOf(msgProps.getContentType()));
-
-                // Modify the content type when we are dealing with java object messages produced by the Qpid 0.x client
-                if(props.getContentType() == Symbol.valueOf("application/java-object-stream"))
-                {
-                    props.setContentType(Symbol.valueOf("application/x-java-serialized-object"));
-                }
+                originalContentMimeType = msgProps.getContentType();
+                final Symbol contentType =
+                        MessageConverter_to_1_0.getContentType(originalContentMimeType, bodySection);
+                props.setContentType(contentType);
             }
 
             if(msgProps.hasUserId())
@@ -208,9 +207,11 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
                 }
             }
         }
+        final MessageAnnotations messageAnnotation =
+                MessageConverter_to_1_0.createMessageAnnotation(bodySection, originalContentMimeType);
         return new MessageMetaData_1_0(header.createEncodingRetainingSection(),
                                        null,
-                                       null,
+                                       messageAnnotation == null ? null : messageAnnotation.createEncodingRetainingSection(),
                                        props.createEncodingRetainingSection(),
                                        applicationProperties == null ? null : applicationProperties.createEncodingRetainingSection(),
                                        null,
