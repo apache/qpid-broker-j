@@ -147,7 +147,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         return messageAnnotations;
     }
 
-    private static boolean isSectionValidForJmsList(final EncodingRetainingSection<?> section)
+    public static boolean isSectionValidForJmsList(final EncodingRetainingSection<?> section)
     {
         if (section instanceof AmqpSequenceSection)
         {
@@ -174,7 +174,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         return false;
     }
 
-    private static boolean isSectionValidForJmsMap(final EncodingRetainingSection<?> section)
+    public static boolean isSectionValidForJmsMap(final EncodingRetainingSection<?> section)
     {
         if (section instanceof AmqpValueSection)
         {

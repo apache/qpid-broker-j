@@ -184,20 +184,23 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     {
         if (isBroker10())
         {
-            assertTrue(String.format("The response was not an Object Message. It was a : %s ",
-                                     responseMessage.getClass()), responseMessage instanceof ObjectMessage);
-            assertTrue("The Object Message did not contain a Map",
-                       ((ObjectMessage) responseMessage).getObject() instanceof Map);
+            if (!(responseMessage instanceof MapMessage)
+                && !(responseMessage instanceof ObjectMessage
+                      && ((ObjectMessage) responseMessage).getObject() instanceof Map))
+            {
+                fail(String.format("The response was neither a Map Message nor an Object Message containing a Map. It was a : %s ",
+                                   responseMessage.getClass()));
+            }
         }
         else
         {
-            assertTrue("The response was not a MapMessage", responseMessage instanceof MapMessage);
+            assertTrue(String.format("The response was not a MapMessage. It was a '%s'.", responseMessage.getClass()), responseMessage instanceof MapMessage);
         }
     }
 
     private Object getValueFromMapResponse(final Message responseMessage, String name) throws JMSException
     {
-        if (isBroker10())
+        if (isBroker10() && responseMessage instanceof ObjectMessage)
         {
             return ((Map)((ObjectMessage)responseMessage).getObject()).get(name);
         }
@@ -210,7 +213,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     @SuppressWarnings("unchecked")
     private Collection<String> getMapResponseKeys(final Message responseMessage) throws JMSException
     {
-        if (isBroker10())
+        if (isBroker10() && responseMessage instanceof ObjectMessage)
         {
             return ((Map)((ObjectMessage)responseMessage).getObject()).keySet();
         }
