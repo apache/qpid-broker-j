@@ -74,7 +74,7 @@ public class ManagedPeerCertificateTrustStoreImpl
     }
 
     @Override
-    public TrustManager[] getTrustManagersInternal()
+    protected TrustManager[] getTrustManagersInternal()
     {
         if (_trustManagers == null || _trustManagers.length == 0)
         {

@@ -32,7 +32,6 @@ import org.apache.qpid.server.security.CertificateDetails;
 public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
 {
     String TRUST_ANCHOR_VALIDITY_ENFORCED = "trustAnchorValidityEnforced";
-    String PEERS_ONLY = "peersOnly";
 
     String CERTIFICATE_EXPIRY_WARN_PERIOD = "qpid.truststore.certificateExpiryWarnPeriod";
 

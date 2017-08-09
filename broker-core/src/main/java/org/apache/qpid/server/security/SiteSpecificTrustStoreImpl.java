@@ -149,7 +149,7 @@ public class SiteSpecificTrustStoreImpl
     }
 
     @Override
-    public TrustManager[] getTrustManagersInternal() throws GeneralSecurityException
+    protected TrustManager[] getTrustManagersInternal() throws GeneralSecurityException
     {
         if (_trustManagers == null || _trustManagers.length == 0)
         {
