@@ -88,6 +88,7 @@ define(["dojo/_base/xhr",
                         });
                     }
                 });
+                util.applyMetadataToWidgets(data.containerNode, "VirtualHostNode", data.type, data.metadata);
             }
         };
     });

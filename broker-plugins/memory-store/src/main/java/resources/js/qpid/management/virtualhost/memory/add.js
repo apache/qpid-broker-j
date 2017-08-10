@@ -23,14 +23,18 @@ define(["dojo/_base/xhr",
         "dojo/json",
         "dijit/registry",
         "dojo/text!virtualhost/memory/add.html",
+        "qpid/common/util",
         "dijit/form/ValidationTextBox",
-        "dojo/domReady!"], function (xhr, parser, dom, domConstruct, json, registry, template)
+        "dojo/domReady!"], function (xhr, parser, dom, domConstruct, json, registry, template, util)
 {
     return {
         show: function (data)
         {
             this.containerNode = domConstruct.create("div", {innerHTML: template}, data.containerNode);
-            parser.parse(this.containerNode);
+            parser.parse(this.containerNode).then(function (instances)
+            {
+                util.applyMetadataToWidgets(data.containerNode, "VirtualHost", data.type, data.metadata);
+            });
         }
     };
 });

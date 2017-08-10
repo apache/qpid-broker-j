@@ -26,9 +26,10 @@ define(["dojo/_base/xhr",
         "dojo/json",
         "dijit/registry",
         "dojo/text!virtualhostnode/bdb_ha/add.html",
+        "qpid/common/util",
         "dijit/form/ValidationTextBox",
         "dijit/form/RadioButton",
-        "dojo/domReady!"], function (xhr, parser, array, dom, domConstruct, json, registry, template)
+        "dojo/domReady!"], function (xhr, parser, array, dom, domConstruct, json, registry, template, util)
 {
     return {
         show: function (data)
@@ -48,11 +49,14 @@ define(["dojo/_base/xhr",
                     {
                         that._groupChoiceChanged(type,
                             that.virtualHostNodeBdbhaTypeFieldsContainer,
-                            "qpid/management/virtualhostnode/bdb_ha/add/");
+                            "qpid/management/virtualhostnode/bdb_ha/add/",
+                            data
+                        );
                     });
+                    util.applyMetadataToWidgets(data.containerNode, "VirtualHostNode", data.type, data.metadata);
                 });
         },
-        _groupChoiceChanged: function (type, typeFieldsContainer, urlStem)
+        _groupChoiceChanged: function (type, typeFieldsContainer, urlStem, data)
         {
             var widgets = registry.findWidgets(typeFieldsContainer);
             array.forEach(widgets, function (item)
@@ -70,7 +74,9 @@ define(["dojo/_base/xhr",
                     {
                         TypeUI.show({
                             containerNode: typeFieldsContainer,
-                            parent: that
+                            parent: that,
+                            type: data.type,
+                            metadata: data.metadata
                         });
                     }
                     catch (e)

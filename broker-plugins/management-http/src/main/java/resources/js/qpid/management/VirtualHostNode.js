@@ -20,6 +20,7 @@
  */
 define(["dojo/parser",
         "dojo/query",
+        "dojo/_base/lang",
         "dojo/_base/connect",
         "dijit/registry",
         "dojox/html/entities",
@@ -31,11 +32,13 @@ define(["dojo/parser",
         "qpid/management/addQueue",
         "qpid/management/addExchange",
         "qpid/management/editVirtualHostNode",
+        "qpid/management/addVirtualHost",
         "dojox/grid/EnhancedGrid",
         "dojo/text!showVirtualHostNode.html",
         "dojo/domReady!"],
     function (parser,
               query,
+              lang,
               connect,
               registry,
               entities,
@@ -47,6 +50,7 @@ define(["dojo/parser",
               addQueue,
               addExchange,
               editVirtualHostNode,
+              AddVirtualHostDialog,
               EnhancedGrid,
               template)
     {
@@ -85,6 +89,25 @@ define(["dojo/parser",
             this.editNodeButton = registry.byNode(query(".editNodeButton", containerNode)[0]);
             this.deleteNodeButton = registry.byNode(query(".deleteNodeButton", containerNode)[0]);
             this.virtualHostGridPanel = registry.byNode(query(".virtualHostGridPanel", containerNode)[0]);
+            this.addVirtualHostButton = registry.byNode(query(".addVHButton", containerNode)[0]);
+            this.addVirtualHostButton.on("click", lang.hitch(this, function ()
+            {
+                var dialog = new AddVirtualHostDialog({
+                    management: this.management,
+                    virtualhostNodeType: this.vhostNodeUpdater.type.innerHTML,
+                    virtualhostNodeModelObject: this.modelObj
+                });
+                dialog.show();
+                dialog.on("done", lang.hitch(this, function (update)
+                {
+                    dialog.hideAndDestroy();
+                    if (update)
+                    {
+                        this.vhostNodeUpdater.update();
+                    }
+                }));
+            }));
+            this.addVirtualHostButton.domNode.style.display = "none";
             this.deleteNodeButton.on("click", function (e)
             {
                 if (confirm("Deletion of virtual host node will delete both configuration and message data.\n\n"
@@ -268,7 +291,8 @@ define(["dojo/parser",
 
             this.tabObject.virtualHostGridPanel.domNode.style.display = data.virtualhosts ? "block" : "none";
             util.updateUpdatableStore(this.tabObject.vhostsGrid, data.virtualhosts);
-        }
+            this.tabObject.addVirtualHostButton.domNode.style.display =data.virtualhosts ? "none" : "";
+        };
 
         return VirtualHostNode;
     });

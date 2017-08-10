@@ -18,17 +18,16 @@
   ~
   -->
 <div class="dijitHidden">
-    <div data-dojo-attach-point="addVirtualHost" data-dojo-type="dijit.Dialog" style="width:600px;" data-dojo-props="title:'Add'" id="${id}_addVirtualHost">
-      <div id="${id}_addVirtualHost.contentPane">
-
-        <form id="${id}_addVirtualHost.form" data-dojo-attach-point="virtualHostForm" method="post" data-dojo-type="dijit/form/Form">
-            <div class="formBox">
-              <fieldset>
-                <legend>Virtual Host</legend>
+    <div data-dojo-attach-point="addVirtualHost" data-dojo-type="dijit.Dialog" style="width:600px;"
+         data-dojo-props="title:'Add Virtual Host'" id="${id}_addVirtualHost">
+        <form id="${id}_addVirtualHost.form" data-dojo-attach-point="virtualHostForm" method="post"
+              data-dojo-type="dijit/form/Form">
+            <div id="${id}_addVirtualHost.contentPane">
                 <div class="clear">
                     <div class="formLabel-labelCell tableContainer-labelCell">Type*:</div>
                     <div class="tableContainer-valueCell formLabel-controlCell">
-                        <select data-dojo-attach-point="virtualHostType" id="${id}_addVirtualHost.type" data-dojo-type="dijit/form/FilteringSelect"
+                        <select data-dojo-attach-point="virtualHostType" id="${id}_addVirtualHost.type"
+                                data-dojo-type="dijit/form/FilteringSelect"
                                 data-dojo-props="
                                 name: 'type',
                                 required: true,
@@ -41,20 +40,20 @@
                     </div>
                 </div>
                 <div class="clear"></div>
-
                 <div data-dojo-attach-point="typeFields" id="${id}_addVirtualHost.typeFields"></div>
-                  <div data-dojo-type="dijit/TitlePane" data-dojo-props="title: 'Context variables',  open: false">
-                      <div id="${id}_addVirtualHost.context" data-dojo-attach-point="virtualHostContext"
-                           data-dojo-type="qpid.common.ContextVariablesEditor"
-                           data-dojo-props="name: 'context', title: 'Context variables'"></div>
-                  </div>
-              </fieldset>
+                <div data-dojo-type="dijit/TitlePane" data-dojo-props="title: 'Context variables',  open: false"
+                     data-dojo-attach-point="contextEditorPane">
+                    <div id="${id}_addVirtualHost.context" data-dojo-attach-point="virtualHostContext"
+                         data-dojo-type="qpid.common.ContextVariablesEditor"
+                         data-dojo-props="name: 'context', title: 'Context variables'"></div>
+                </div>
+            </div>
+            <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
+                <button data-dojo-attach-point="addButton" data-dojo-type="dijit/form/Button"
+                        id="${id}_addVirtualHost.addButton" data-dojo-props="label: 'Add'" type="submit"></button>
+                <button data-dojo-attach-point="cancelButton" data-dojo-type="dijit/form/Button"
+                        id="${id}_addVirtualHost.cancelButton" data-dojo-props="label: 'Cancel'"></button>
             </div>
         </form>
-      </div>
-      <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
-            <button data-dojo-attach-point="addButton" data-dojo-type="dijit/form/Button" id="${id}_addVirtualHost.addButton" data-dojo-props="label: 'Add'" type="submit"></button>
-            <button data-dojo-attach-point="cancelButton" data-dojo-type="dijit/form/Button" id="${id}_addVirtualHost.cancelButton" data-dojo-props="label: 'Cancel'" ></button>
-      </div>
     </div>
 </div>

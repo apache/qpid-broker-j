@@ -40,6 +40,7 @@ define(["dojo/_base/xhr",
                         .set("regExpGen", util.numericOrContextVarRegexp);
                     registry.byId("addVirtualHost.storeOverfullSize")
                         .set("regExpGen", util.numericOrContextVarRegexp);
+                    util.applyMetadataToWidgets(data.containerNode, "VirtualHost", data.type, data.metadata);
                 });
         }
     };

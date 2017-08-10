@@ -45,6 +45,7 @@ define(["dojo/_base/xhr",
                         .set("regExpGen", util.nodeAddressOrContextVarRegexp);
 
                     dom.byId("addVirtualHostNode.uploadFields").style.display = "none";
+                    util.applyMetadataToWidgets(data.containerNode, "VirtualHostNode", data.type, data.metadata);
                 });
         }
     };

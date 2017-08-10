@@ -104,6 +104,7 @@ define(["dojo/_base/xhr",
             {
                 return that.permittedNodesArray;
             };
+            util.applyMetadataToWidgets(data.containerNode, "VirtualHostNode", data.type, data.metadata);
         },
         _updatePermittedNodesJson: function ()
         {

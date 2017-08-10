@@ -53,7 +53,7 @@ define(["dojo/_base/declare",
               template)
     {
 
-        return declare("qpid.management.addVirtualHostDialog",
+        return declare("qpid.management.addVirtualHost",
             [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
             {
                 //Strip out the apache comment header from the template html as comments unsupported.
@@ -66,6 +66,7 @@ define(["dojo/_base/declare",
                 virtualHostType: null,
                 typeFields: null,
                 context: null,
+                contextEditorPane: null,
 
                 // constructor parameters
                 management: null,
@@ -110,13 +111,12 @@ define(["dojo/_base/declare",
                 },
                 hideAndDestroy: function ()
                 {
-                    //this.addVirtualHost.hide();  // Seems to upset destroy??
                     this.destroy();
                 },
                 destroy: function ()
                 {
-                    this.addVirtualHost.destroyRecursive(false);
-                    domConstruct.destroy(this.typeFields);
+                    this._destroyTypeFields();
+                    this.addVirtualHost.destroyRecursive();
                     this.inherited(arguments);
                 },
                 _onCancel: function (data)
@@ -152,12 +152,7 @@ define(["dojo/_base/declare",
                 },
                 _onVhTypeChanged: function (type)
                 {
-                    var widgets = registry.findWidgets(this.typeFields);
-                    array.forEach(widgets, function (item)
-                    {
-                        item.destroyRecursive();
-                    });
-                    domConstruct.empty(this.typeFields);
+                    this._destroyTypeFields();
                     this.virtualHostContext.removeDynamicallyAddedInheritedContext();
                     if (type)
                     {
@@ -169,15 +164,32 @@ define(["dojo/_base/declare",
                                 typeUI.show({
                                     containerNode: this.typeFields,
                                     parent: this,
-                                    metadata: metadata
+                                    metadata: metadata,
+                                    type: type
                                 });
-                                util.applyMetadataToWidgets(this.typeFields, "VirtualHost", type, metadata);
                             }
                             catch (e)
                             {
                                 console.warn(e);
                             }
                         }));
+                    }
+                },
+                _destroyTypeFields: function()
+                {
+                    var widgets = registry.findWidgets(this.typeFields);
+                    array.forEach(widgets, function (item)
+                    {
+                        item.destroyRecursive();
+                    });
+                    domConstruct.empty(this.typeFields);
+                },
+                on: function (type, listener)
+                {
+                    this.inherited(arguments);
+                    if (type === "done")
+                    {
+                        this.addVirtualHost.on("hide", function(){listener(false);});
                     }
                 }
 

@@ -87,16 +87,11 @@ define(["dojo/_base/event",
                 this.reader = window.FileReader ? new FileReader() : undefined;
 
                 this.dialog = registry.byId("addVirtualHostNodeAndVirtualHost");
+                this.dialog.on("hide", lang.hitch(this, this._cancel));
                 this.addButton = registry.byId("addVirtualHostNodeAndVirtualHost.addButton");
                 this.cancelButton = registry.byId("addVirtualHostNodeAndVirtualHost.cancelButton");
-                this.cancelButton.on("click", function (e)
-                {
-                    that._cancel(e);
-                });
-                this.addButton.on("click", function (e)
-                {
-                    that._add(e);
-                });
+                this.cancelButton.on("click", lang.hitch(this, this._cancel));
+                this.addButton.on("click", lang.hitch(this, this._add));
 
                 this.virtualHostNodeTypeFieldsContainer = dom.byId("addVirtualHostNode.typeFields");
                 this.virtualHostNodeSelectedFileContainer = dom.byId("addVirtualHostNode.selectedFile");
@@ -282,12 +277,7 @@ define(["dojo/_base/event",
             },
             _typeChanged: function (type, typeFieldsContainer, urlStem, category)
             {
-                var widgets = registry.findWidgets(typeFieldsContainer);
-                array.forEach(widgets, function (item)
-                {
-                    item.destroyRecursive();
-                });
-                domConstruct.empty(typeFieldsContainer);
+                this._destroyContainerWidgets(typeFieldsContainer);
                 if (category)
                 {
                     var context = this["v" + category.substring(1) + "Context"];
@@ -307,15 +297,27 @@ define(["dojo/_base/event",
                             typeUI.show({
                                 containerNode: typeFieldsContainer,
                                 parent: that,
-                                metadata: metadata
+                                metadata: metadata,
+                                type: type
                             });
-                            util.applyMetadataToWidgets(typeFieldsContainer, category, type, metadata);
                         }
                         catch (e)
                         {
                             console.warn(e);
                         }
                     });
+                }
+            },
+            _destroyContainerWidgets: function(typeFieldsContainer)
+            {
+                if (typeFieldsContainer)
+                {
+                    var widgets = registry.findWidgets(typeFieldsContainer);
+                    array.forEach(widgets, function (item)
+                    {
+                        item.destroyRecursive();
+                    });
+                    domConstruct.empty(typeFieldsContainer);
                 }
             },
             _vhnFileFlagChanged: function (selected)
@@ -352,6 +354,8 @@ define(["dojo/_base/event",
             _cancel: function (e)
             {
                 util.abortReaderSafely(this.reader);
+                this._destroyContainerWidgets(this.virtualHostNodeTypeFieldsContainer);
+                this._destroyContainerWidgets(this.virtualHostTypeFieldsContainer);
                 this.dialog.hide();
             },
             _add: function (e)

@@ -50,6 +50,7 @@ define(["dojo/_base/xhr",
             {
                 dom.byId("addVirtualHost.diskFlowControls").style.display = "none";
             }
+            util.applyMetadataToWidgets(this.containerNode, "VirtualHost", data.type, data.metadata);
 
         }
     };
