@@ -199,6 +199,17 @@ define(["dojo/parser",
                             event.stop(evt);
                         });
 
+                        var brokerDiagnosticsMenu = registry.byNode(query(".brokerDiagnosticsMenu",
+                                                                          contentPane.containerNode)[0]);
+
+                        var hostMenuItems = brokerDiagnosticsMenu.dropDown.getChildren();
+                        var downloadJvmThreadDumpButton = hostMenuItems[0];
+                        downloadJvmThreadDumpButton.on("click", function (evt)
+                        {
+                            that.downloadJvmThreadDump();
+                            event.stop(evt);
+                        });
+
                         var addKeystoreButton = query(".addKeystore", contentPane.containerNode)[0];
                         connect.connect(registry.byNode(addKeystoreButton), "onClick", function (evt)
                         {
@@ -343,6 +354,14 @@ define(["dojo/parser",
                         var timer = setInterval(lang.hitch(this, ping), 5000);
                     }));
             }
+        };
+
+        Broker.prototype.downloadJvmThreadDump = function()
+        {
+            var suggestedAttachmentName = encodeURIComponent("QpidBroker_" + this.name + "_ThreadDump.txt");
+            this.management.downloadIntoFrame(this.modelObj, {
+                contentDispositionAttachmentFilename: suggestedAttachmentName
+            }, "getThreadStackTraces");
         };
 
         Broker.prototype.close = function ()

@@ -646,6 +646,12 @@ public class RestServlet extends AbstractServlet
         }
 
         Object returnVal = operation.perform(target, operationArguments);
+        String attachmentFilename = request.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
+        if (attachmentFilename != null)
+        {
+            setContentDispositionHeaderIfNecessary(response, attachmentFilename);
+        }
+
         if(returnVal instanceof Content)
         {
             Content content = (Content)returnVal;
@@ -684,14 +690,6 @@ public class RestServlet extends AbstractServlet
                 }
                 returnVal = output;
             }
-
-            String attachmentFilename = request.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
-
-            if (attachmentFilename != null)
-            {
-                setContentDispositionHeaderIfNecessary(response, attachmentFilename);
-            }
-
             sendJsonResponse(returnVal, request, response);
         }
     }

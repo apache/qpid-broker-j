@@ -348,9 +348,9 @@ define(["dojo/_base/lang",
 
         // summary:
         //  Downloads current JSON for object specified as modelObj argument into iframe
-        Management.prototype.downloadIntoFrame = function (modelObj, parameters)
+        Management.prototype.downloadIntoFrame = function (modelObj, parameters, operation)
         {
-            var url = this.buildObjectURL(modelObj, parameters);
+            var url = this.buildObjectURL(modelObj, parameters, operation);
             var iframe = document.createElement('iframe');
             iframe.id = "downloader_" + modelObj.name;
             document.body.appendChild(iframe);

@@ -65,6 +65,13 @@
         <div class="dijitDialogPaneActionBar">
             <button data-dojo-type="dijit.form.Button" class="editBroker">Edit</button>
             <button data-dojo-type="dijit.form.Button" class="restartBroker">Restart</button>
+            <div data-dojo-type="dijit.form.DropDownButton" data-dojo-props="iconClass: 'dijitIconFunction'" class="brokerDiagnosticsMenu">
+                <span>Diagnostics</span>
+                <div data-dojo-type="dijit.Menu">
+                    <div data-dojo-type="dijit.MenuItem"
+                         data-dojo-props="iconClass: 'downloadLogsIcon'">Download JVM thread-dump</div>
+                </div>
+            </div>
         </div>
    </div>
     <br/>

@@ -33,6 +33,7 @@ import java.lang.management.ThreadMXBean;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -360,6 +361,8 @@ public abstract class AbstractContainer<X extends AbstractContainer<X>> extends 
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);
         StringBuilder threadDump = new StringBuilder();
+        threadDump.append(String.format("Full thread dump captured %s", Instant.now())).append(System.lineSeparator());
+
         for (ThreadInfo threadInfo : threadInfos)
         {
             threadDump.append(getThreadStackTraces(threadInfo));
@@ -388,6 +391,10 @@ public abstract class AbstractContainer<X extends AbstractContainer<X>> extends 
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);
         StringBuilder threadDump = new StringBuilder();
+        threadDump.append(String.format("Thread dump (names matching '%s') captured %s",
+                                        threadNameFindExpression,
+                                        Instant.now())).append(System.lineSeparator());
+
         Pattern pattern = threadNameFindExpression == null || threadNameFindExpression.equals("") ? null : Pattern.compile(
                 threadNameFindExpression);
         for (ThreadInfo threadInfo : threadInfos)
