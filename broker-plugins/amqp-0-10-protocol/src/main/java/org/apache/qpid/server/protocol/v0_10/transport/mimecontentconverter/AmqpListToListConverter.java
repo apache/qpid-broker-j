@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v0_10.transport.mimecontentconverter;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
@@ -51,6 +52,11 @@ public class AmqpListToListConverter implements MimeContentToObjectConverter<Lis
     @Override
     public List toObject(final byte[] data)
     {
+        if (data == null || data.length == 0)
+        {
+            return Collections.emptyList();
+        }
+
         BBDecoder decoder = new BBDecoder();
         decoder.init(ByteBuffer.wrap(data));
         return decoder.readList();

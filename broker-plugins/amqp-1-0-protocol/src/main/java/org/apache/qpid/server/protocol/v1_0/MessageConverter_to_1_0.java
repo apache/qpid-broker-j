@@ -21,6 +21,9 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.qpid.server.message.mimecontentconverter.ConversionUtils.*;
+import static org.apache.qpid.server.message.mimecontentconverter.ConversionUtils.OBJECT_MESSAGE_CONTENT_TYPES;
+import static org.apache.qpid.server.message.mimecontentconverter.ConversionUtils.TEXT_CONTENT_TYPES;
 import static org.apache.qpid.server.protocol.v1_0.JmsMessageTypeAnnotation.BYTES_MESSAGE;
 import static org.apache.qpid.server.protocol.v1_0.JmsMessageTypeAnnotation.MAP_MESSAGE;
 import static org.apache.qpid.server.protocol.v1_0.JmsMessageTypeAnnotation.MESSAGE;
@@ -42,6 +45,7 @@ import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.message.mimecontentconverter.ConversionUtils;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -76,23 +80,23 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         Symbol contentType = null;
         if (contentMimeType != null)
         {
-            if (MessageConverter_from_1_0.TEXT_CONTENT_TYPES.matcher(contentMimeType).matches())
+            if (TEXT_CONTENT_TYPES.matcher(contentMimeType).matches())
             {
                 contentType = Symbol.valueOf(contentMimeType);
             }
-            else if (MessageConverter_from_1_0.BYTES_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            else if (BYTES_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
             {
                 contentType = Symbol.valueOf("application/octet-stream");
             }
-            else if (MessageConverter_from_1_0.MAP_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            else if (MAP_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
             {
                 contentType = null;
             }
-            else if (MessageConverter_from_1_0.LIST_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            else if (LIST_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
             {
                 contentType = null;
             }
-            else if (MessageConverter_from_1_0.OBJECT_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            else if (OBJECT_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
             {
                 contentType = Symbol.valueOf("application/x-java-serialized-object");
             }
@@ -111,22 +115,22 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         final Symbol key = Symbol.valueOf("x-opt-jms-msg-type");
         if (contentMimeType != null)
         {
-            if (MessageConverter_from_1_0.TEXT_CONTENT_TYPES.matcher(contentMimeType).matches())
+            if (TEXT_CONTENT_TYPES.matcher(contentMimeType).matches())
             {
                 messageAnnotations = new MessageAnnotations(Collections.singletonMap(key, TEXT_MESSAGE.getType()));
             }
-            else if (MessageConverter_from_1_0.BYTES_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            else if (BYTES_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
             {
                 messageAnnotations = new MessageAnnotations(Collections.singletonMap(key, BYTES_MESSAGE.getType()));
             }
-            else if (MessageConverter_from_1_0.MAP_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            else if (MAP_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
             {
                 if (isSectionValidForJmsMap(bodySection))
                 {
                     messageAnnotations = new MessageAnnotations(Collections.singletonMap(key, MAP_MESSAGE.getType()));
                 }
             }
-            else if (MessageConverter_from_1_0.LIST_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            else if (LIST_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
             {
                 if (isSectionValidForJmsList(bodySection))
                 {
@@ -134,7 +138,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                             new MessageAnnotations(Collections.singletonMap(key, STREAM_MESSAGE.getType()));
                 }
             }
-            else if (MessageConverter_from_1_0.OBJECT_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
+            else if (OBJECT_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
             {
                 messageAnnotations = new MessageAnnotations(Collections.singletonMap(key, OBJECT_MESSAGE.getType()));
             }
@@ -269,7 +273,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                     return new AmqpSequence(fixListValues((List<Object>) bodyObject));
                 }
             }
-            else if (mimeType != null && MessageConverter_from_1_0.TEXT_CONTENT_TYPES.matcher(mimeType).matches())
+            else if (mimeType != null && TEXT_CONTENT_TYPES.matcher(mimeType).matches())
             {
                 return new AmqpValue(new String(data, UTF_8));
             }
@@ -278,19 +282,19 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         {
             return new AmqpValue(null);
         }
-        else if (MessageConverter_from_1_0.OBJECT_MESSAGE_CONTENT_TYPES.matcher(mimeType).matches())
+        else if (OBJECT_MESSAGE_CONTENT_TYPES.matcher(mimeType).matches())
         {
             return new Data(new Binary(SERIALIZED_NULL));
         }
-        else if (MessageConverter_from_1_0.TEXT_CONTENT_TYPES.matcher(mimeType).matches())
+        else if (TEXT_CONTENT_TYPES.matcher(mimeType).matches())
         {
             return new AmqpValue("");
         }
-        else if (MessageConverter_from_1_0.MAP_MESSAGE_CONTENT_TYPES.matcher(mimeType).matches())
+        else if (MAP_MESSAGE_CONTENT_TYPES.matcher(mimeType).matches())
         {
             return new AmqpValue(Collections.emptyMap());
         }
-        else if (MessageConverter_from_1_0.LIST_MESSAGE_CONTENT_TYPES.matcher(mimeType).matches())
+        else if (LIST_MESSAGE_CONTENT_TYPES.matcher(mimeType).matches())
         {
             return new AmqpSequence(Collections.emptyList());
         }

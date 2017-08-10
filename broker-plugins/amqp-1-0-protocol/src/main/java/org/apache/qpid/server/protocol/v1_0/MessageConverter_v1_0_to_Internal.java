@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.message.internal.InternalMessageHeader;
+import org.apache.qpid.server.message.mimecontentconverter.ConversionUtils;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -72,7 +73,7 @@ public class MessageConverter_v1_0_to_Internal implements MessageConverter<Messa
                                            final NamedAddressSpace addressSpace,
                                            final Object convertedBodyObject)
     {
-        final String convertedMimeType = getInternalConvertedContentAndMimeType(serverMessage, convertedBodyObject);
+        final String convertedMimeType = getInternalConvertedMimeType(serverMessage, convertedBodyObject);
         final MessageMetaData_1_0.MessageHeader_1_0 messageHeader = serverMessage.getMessageHeader();
         final InternalMessageHeader header = new InternalMessageHeader(messageHeader.getHeadersAsMap(),
                                                                        messageHeader.getCorrelationId(),
@@ -103,8 +104,8 @@ public class MessageConverter_v1_0_to_Internal implements MessageConverter<Messa
         return "v1-0 to Internal";
     }
 
-    private static String getInternalConvertedContentAndMimeType(final Message_1_0 serverMsg,
-                                                                 final Object convertedBodyObject)
+    private static String getInternalConvertedMimeType(final Message_1_0 serverMsg,
+                                                       final Object convertedBodyObject)
     {
         MessageConverter_from_1_0.ContentHint contentHint = getInternalTypeHint(serverMsg);
 
@@ -129,7 +130,7 @@ public class MessageConverter_v1_0_to_Internal implements MessageConverter<Messa
             }
             else if (contentClassHint == String.class
                      && (originalContentType == null
-                         || !MessageConverter_from_1_0.TEXT_CONTENT_TYPES.matcher(originalContentType).matches()))
+                         || !ConversionUtils.TEXT_CONTENT_TYPES.matcher(originalContentType).matches()))
             {
                 mimeType = "text/plain";
             }
@@ -153,7 +154,7 @@ public class MessageConverter_v1_0_to_Internal implements MessageConverter<Messa
         }
         else if (convertedBodyObject instanceof String
                  && (originalContentType == null
-                     || !MessageConverter_from_1_0.TEXT_CONTENT_TYPES.matcher(originalContentType).matches()))
+                     || !ConversionUtils.TEXT_CONTENT_TYPES.matcher(originalContentType).matches()))
         {
             mimeType = "text/plain";
         }
@@ -222,23 +223,23 @@ public class MessageConverter_v1_0_to_Internal implements MessageConverter<Messa
         {
             Class<?> contentTypeClassHint = null;
             String type = contentType.toString();
-            if (MessageConverter_from_1_0.TEXT_CONTENT_TYPES.matcher(type).matches())
+            if (ConversionUtils.TEXT_CONTENT_TYPES.matcher(type).matches())
             {
                 contentTypeClassHint = String.class;
             }
-            else if (MessageConverter_from_1_0.MAP_MESSAGE_CONTENT_TYPES.matcher(type).matches())
+            else if (ConversionUtils.MAP_MESSAGE_CONTENT_TYPES.matcher(type).matches())
             {
                 contentTypeClassHint = Map.class;
             }
-            else if (MessageConverter_from_1_0.LIST_MESSAGE_CONTENT_TYPES.matcher(type).matches())
+            else if (ConversionUtils.LIST_MESSAGE_CONTENT_TYPES.matcher(type).matches())
             {
                 contentTypeClassHint = List.class;
             }
-            else if (MessageConverter_from_1_0.OBJECT_MESSAGE_CONTENT_TYPES.matcher(type).matches())
+            else if (ConversionUtils.OBJECT_MESSAGE_CONTENT_TYPES.matcher(type).matches())
             {
                 contentTypeClassHint = Serializable.class;
             }
-            else if (MessageConverter_from_1_0.BYTES_MESSAGE_CONTENT_TYPES.matcher(type).matches())
+            else if (ConversionUtils.BYTES_MESSAGE_CONTENT_TYPES.matcher(type).matches())
             {
                 contentTypeClassHint = byte[].class;
             }

@@ -59,6 +59,12 @@
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-broker-plugins-amqp-0-10-protocol</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

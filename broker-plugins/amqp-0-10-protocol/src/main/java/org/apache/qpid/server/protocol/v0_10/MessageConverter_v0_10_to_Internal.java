@@ -20,13 +20,24 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.qpid.server.message.mimecontentconverter.ConversionUtils.LIST_MESSAGE_CONTENT_TYPES;
+import static org.apache.qpid.server.message.mimecontentconverter.ConversionUtils.MAP_MESSAGE_CONTENT_TYPES;
+import static org.apache.qpid.server.message.mimecontentconverter.ConversionUtils.OBJECT_MESSAGE_CONTENT_TYPES;
+import static org.apache.qpid.server.message.mimecontentconverter.ConversionUtils.TEXT_CONTENT_TYPES;
+
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.message.internal.InternalMessageHeader;
+import org.apache.qpid.server.message.mimecontentconverter.ConversionUtils;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -75,15 +86,63 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
         }
 
         Object body = convertMessageBody(mimeType, data);
-        MessageProperties messageProps = serverMessage.getHeader().getMessageProperties();
-        AMQMessageHeader fixedHeader = new DelegatingMessageHeader(serverMessage.getMessageHeader(), messageProps == null ? null : messageProps.getReplyTo(), encoding);
-        return InternalMessage.convert(serverMessage, fixedHeader, body);
+        final AMQMessageHeader convertedHeader = convertHeader(serverMessage, addressSpace, body, encoding);
+        return InternalMessage.convert(serverMessage, convertedHeader, body);
     }
 
     @Override
     public void dispose(final InternalMessage message)
     {
 
+    }
+
+    private AMQMessageHeader convertHeader(final MessageTransferMessage serverMessage,
+                                           final NamedAddressSpace addressSpace,
+                                           final Object convertedBodyObject, final String encoding)
+    {
+        final String convertedMimeType = getInternalConvertedMimeType(serverMessage, convertedBodyObject);
+        final AMQMessageHeader messageHeader = serverMessage.getMessageHeader();
+
+        Map<String, Object> headers = new HashMap<>();
+        messageHeader.getHeaderNames()
+                     .forEach(headerName -> headers.put(headerName, messageHeader.getHeader(headerName)));
+
+        final InternalMessageHeader header = new InternalMessageHeader(headers,
+                                                                       messageHeader.getCorrelationId(),
+                                                                       messageHeader.getExpiration(),
+                                                                       messageHeader.getUserId(),
+                                                                       messageHeader.getAppId(),
+                                                                       messageHeader.getMessageId(),
+                                                                       convertedMimeType,
+                                                                       messageHeader.getEncoding(),
+                                                                       messageHeader.getPriority(),
+                                                                       messageHeader.getTimestamp(),
+                                                                       messageHeader.getNotValidBefore(),
+                                                                       messageHeader.getType(),
+                                                                       messageHeader.getReplyTo(),
+                                                                       serverMessage.getArrivalTime());
+        MessageProperties messageProps = serverMessage.getHeader().getMessageProperties();
+        final ReplyTo replyTo = messageProps == null ? null : messageProps.getReplyTo();
+        return new DelegatingMessageHeader(header, replyTo, encoding);
+    }
+
+    private String getInternalConvertedMimeType(final MessageTransferMessage serverMessage, final Object convertedBodyObject)
+    {
+        String originalMimeType = serverMessage.getMessageHeader().getMimeType();
+        if (originalMimeType != null)
+        {
+            if (ConversionUtils.LIST_MESSAGE_CONTENT_TYPES.matcher(originalMimeType).matches()
+                || ConversionUtils.MAP_MESSAGE_CONTENT_TYPES.matcher(originalMimeType).matches())
+            {
+                return null;
+            }
+            else if (ConversionUtils.OBJECT_MESSAGE_CONTENT_TYPES.matcher(originalMimeType).matches())
+            {
+                return "application/x-java-serialized-object";
+            }
+        }
+
+        return originalMimeType;
     }
 
     private static class DelegatingMessageHeader implements AMQMessageHeader
@@ -206,14 +265,38 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
     private static Object convertMessageBody(String mimeType, byte[] data)
     {
         MimeContentToObjectConverter converter = MimeContentConverterRegistry.getMimeContentToObjectConverter(mimeType);
-        if (converter != null)
+        if (data != null && data.length != 0)
         {
-            return converter.toObject(data);
+            if (converter != null)
+            {
+                return converter.toObject(data);
+            }
+            else if (mimeType != null && TEXT_CONTENT_TYPES.matcher(mimeType).matches())
+            {
+                return new String(data, UTF_8);
+            }
         }
-        else
+        else if (mimeType == null)
         {
-            return data;
+            return null;
         }
+        else if (OBJECT_MESSAGE_CONTENT_TYPES.matcher(mimeType).matches())
+        {
+            return new byte[0];
+        }
+        else if (ConversionUtils.TEXT_CONTENT_TYPES.matcher(mimeType).matches())
+        {
+            return "";
+        }
+        else if (MAP_MESSAGE_CONTENT_TYPES.matcher(mimeType).matches())
+        {
+            return Collections.emptyMap();
+        }
+        else if (LIST_MESSAGE_CONTENT_TYPES.matcher(mimeType).matches())
+        {
+            return Collections.emptyList();
+        }
+        return data;
     }
 
     @Override

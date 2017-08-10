@@ -17,10 +17,9 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.protocol.converter.v0_10_v1_0;
+package org.apache.qpid.server.protocol.v0_10;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getContentType;
 import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -32,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,37 +43,19 @@ import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.protocol.v0_10.MessageMetaData_0_10;
-import org.apache.qpid.server.protocol.v0_10.MessageTransferMessage;
 import org.apache.qpid.server.protocol.v0_10.transport.Header;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.mimecontentconverter.ListToAmqpListConverter;
 import org.apache.qpid.server.protocol.v0_10.transport.mimecontentconverter.MapToAmqpMapConverter;
-import org.apache.qpid.server.protocol.v1_0.JmsMessageTypeAnnotation;
-import org.apache.qpid.server.protocol.v1_0.Message_1_0;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
-import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.typedmessage.TypedBytesContentWriter;
 import org.apache.qpid.test.utils.QpidTestCase;
 
-public class MessageConverter_0_10_to_1_0Test extends QpidTestCase
+public class MessageConverter_0_10_to_InternalTest extends QpidTestCase
 {
-    private final MessageConverter_0_10_to_1_0 _converter = new MessageConverter_0_10_to_1_0();
-    private final AMQPDescribedTypeRegistry _typeRegistry = AMQPDescribedTypeRegistry.newInstance()
-                                                                                     .registerTransportLayer()
-                                                                                     .registerMessagingLayer()
-                                                                                     .registerTransactionLayer()
-                                                                                     .registerSecurityLayer();
+    private final MessageConverter_v0_10_to_Internal _converter = new MessageConverter_v0_10_to_Internal();
 
     private final StoredMessage<MessageMetaData_0_10> _handle = mock(StoredMessage.class);
 
@@ -163,35 +145,26 @@ public class MessageConverter_0_10_to_1_0Test extends QpidTestCase
 
     public void testConvertBytesMessageBody() throws Exception
     {
-        doTestBytesMessage("helloworld".getBytes(), "application/octet-stream");
+        doTestBytesMessage("helloworld".getBytes());
     }
 
     public void testConvertBytesMessageBodyNoContentType() throws Exception
     {
         final byte[] messageContent = "helloworld".getBytes();
-        doTest(messageContent,
-               null,
-               DataSection.class,
-               messageContent,
-               null,
-               null);
+        doTest(messageContent, null, messageContent, null);
     }
 
-    public void testConvertBytesMessageBodyUnknownContentType() throws Exception
+    public void testConvertMessageBodyUnknownContentType() throws Exception
     {
         final byte[] messageContent = "helloworld".getBytes();
-        doTest(messageContent,
-               "my/bytes",
-               DataSection.class,
-               messageContent,
-               Symbol.valueOf("my/bytes"),
-               null);
+        final String mimeType = "my/bytes";
+        doTest(messageContent, mimeType, messageContent, mimeType);
     }
 
 
     public void testConvertEmptyBytesMessageBody() throws Exception
     {
-        doTestBytesMessage(new byte[0], "application/octet-stream");
+        doTestBytesMessage(new byte[0]);
     }
 
     public void testConvertJmsStreamMessageBody() throws Exception
@@ -200,14 +173,14 @@ public class MessageConverter_0_10_to_1_0Test extends QpidTestCase
         final byte[] messageBytes = getJmsStreamMessageBytes(expected);
 
         final String mimeType = "jms/stream-message";
-        doTestStreamMessage(messageBytes, mimeType, expected, JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
+        doTestStreamMessage(messageBytes, mimeType, expected);
     }
 
-    public void testConvertJmsStreamMessageEmptyBody() throws Exception
+    public void testConvertEmptyJmsStreamMessageBody() throws Exception
     {
-        final List<Object> expected = Collections.emptyList();
-
-        doTestStreamMessage(null, "jms/stream-message", expected, JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
+        final List<Object> expected = Lists.newArrayList();
+        final String mimeType = "jms/stream-message";
+        doTestStreamMessage(null, mimeType, expected);
     }
 
     public void testConvertAmqpListMessageBody() throws Exception
@@ -215,17 +188,13 @@ public class MessageConverter_0_10_to_1_0Test extends QpidTestCase
         final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D);
         final byte[] messageBytes = new ListToAmqpListConverter().toMimeContent(expected);
 
-        final String mimeType = "amqp/list";
-        doTestStreamMessage(messageBytes, mimeType, expected, JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
+        doTestStreamMessage(messageBytes, "amqp/list", expected);
     }
 
-    public void testConvertAmqpListMessageBodyWithNonJmsContent() throws Exception
+    public void testConvertEmptyAmqpListMessageBody() throws Exception
     {
-        final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D, Lists.newArrayList("nonJMSList"));
-        final byte[] messageBytes = new ListToAmqpListConverter().toMimeContent(expected);
-
-        final String mimeType = "amqp/list";
-        doTestStreamMessage(messageBytes, mimeType, expected, null);
+        final List<Object> expected = Lists.newArrayList();
+        doTestStreamMessage(null, "amqp/list", expected);
     }
 
     public void testConvertJmsMapMessageBody() throws Exception
@@ -233,7 +202,12 @@ public class MessageConverter_0_10_to_1_0Test extends QpidTestCase
         final Map<String, Object> expected = Collections.singletonMap("key", "value");
         final byte[] messageBytes = getJmsMapMessageBytes(expected);
 
-        doTestMapMessage(messageBytes, "jms/map-message", expected, JmsMessageTypeAnnotation.MAP_MESSAGE.getType());
+        doTestMapMessage(messageBytes, "jms/map-message", expected);
+    }
+
+    public void testConvertEmptyJmsMapMessageBody() throws Exception
+    {
+        doTestMapMessage(null, "jms/map-message", Collections.emptyMap());
     }
 
     public void testConvertAmqpMapMessageBody() throws Exception
@@ -241,64 +215,45 @@ public class MessageConverter_0_10_to_1_0Test extends QpidTestCase
         final Map<String, Object> expected = Collections.singletonMap("key", "value");
         final byte[] messageBytes = new MapToAmqpMapConverter().toMimeContent(expected);
 
-        doTestMapMessage(messageBytes, "amqp/map", expected, JmsMessageTypeAnnotation.MAP_MESSAGE.getType());
+        doTestMapMessage(messageBytes, "amqp/map", expected);
     }
 
-    public void testConvertJmsMapMessageEmptyBody() throws Exception
+    public void testConvertEmptyAmqpMapMessageBody() throws Exception
     {
-        final Map<String, Object> expected = Collections.emptyMap();
-
-        doTestMapMessage(null, "jms/map-message", expected, JmsMessageTypeAnnotation.MAP_MESSAGE.getType());
-    }
-
-
-    public void testConvertAmqpMapMessageBodyWithNonJmsContent() throws Exception
-    {
-        final Map<String, Object> expected = Collections.singletonMap("key", Collections.singletonList("nonJmsList"));
-        final byte[] messageBytes = new MapToAmqpMapConverter().toMimeContent(expected);
-
-        doTestMapMessage(messageBytes, "amqp/map", expected, null);
+        doTestMapMessage(null, "amqp/map", Collections.emptyMap());
     }
 
     public void testConvertObjectStreamMessageBody() throws Exception
     {
         final byte[] messageBytes = getObjectStreamMessageBytes(UUID.randomUUID());
-        final byte[] expectedBytes = messageBytes;
-
-        doTestObjectMessage(messageBytes, "application/java-object-stream", expectedBytes);
+        doTestObjectMessage(messageBytes, "application/java-object-stream", messageBytes);
     }
 
     public void testConvertObjectStream2MessageBody() throws Exception
     {
         final byte[] messageBytes = getObjectStreamMessageBytes(UUID.randomUUID());
-        final byte[] expectedBytes = messageBytes;
-
-        doTestObjectMessage(messageBytes, "application/x-java-serialized-object", expectedBytes);
+        doTestObjectMessage(messageBytes, "application/x-java-serialized-object", messageBytes);
     }
 
     public void testConvertEmptyObjectStreamMessageBody() throws Exception
     {
-        final byte[] messageBytes = null;
-        final byte[] expectedBytes = getObjectStreamMessageBytes(messageBytes);
-        final String mimeType = "application/java-object-stream";
-
-        doTestObjectMessage(messageBytes, mimeType, expectedBytes);
+        doTestObjectMessage(null, "application/java-object-stream", new byte[0]);
     }
 
     public void testConvertEmptyMessageWithoutContentType() throws Exception
     {
-        doTest(null, null, AmqpValueSection.class, null, null, JmsMessageTypeAnnotation.MESSAGE.getType());
+        doTest(null, null, null, null);
     }
 
     public void testConvertEmptyMessageWithUnknownContentType() throws Exception
     {
-        doTest(null, "foo/bar", DataSection.class, new byte[0], Symbol.valueOf("foo/bar"), null);
+        doTest(null, "foo/bar", new byte[0], "foo/bar");
     }
 
     public void testConvertMessageWithoutContentType() throws Exception
     {
         final byte[] expectedContent = "someContent".getBytes(UTF_8);
-        doTest(expectedContent, null, DataSection.class, expectedContent, null, null);
+        doTest(expectedContent, null, expectedContent, null);
     }
 
 
@@ -342,16 +297,6 @@ public class MessageConverter_0_10_to_1_0Test extends QpidTestCase
         return expected;
     }
 
-    private List<EncodingRetainingSection<?>> getEncodingRetainingSections(final Collection<QpidByteBuffer> content,
-                                                                           final int expectedNumberOfSections)
-            throws Exception
-    {
-        SectionDecoder sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
-        final List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(new ArrayList<>(content));
-        assertEquals("Unexpected number of sections", expectedNumberOfSections, sections.size());
-        return sections;
-    }
-
     private MessageTransferMessage getAmqMessage(final byte[] expected, final String mimeType)
     {
         configureMessageContent(expected);
@@ -389,61 +334,42 @@ public class MessageConverter_0_10_to_1_0Test extends QpidTestCase
         });
     }
 
-    private Byte getJmsMessageTypeAnnotation(final Message_1_0 convertedMessage)
-    {
-        MessageAnnotationsSection messageAnnotationsSection = convertedMessage.getMessageAnnotationsSection();
-        if (messageAnnotationsSection != null)
-        {
-            Map<Symbol, Object> messageAnnotations = messageAnnotationsSection.getValue();
-            if (messageAnnotations != null)
-            {
-                Object annotation = messageAnnotations.get(Symbol.valueOf("x-opt-jms-msg-type"));
-                if (annotation instanceof Byte)
-                {
-                    return ((Byte) annotation);
-                }
-            }
-        }
-        return null;
-    }
-
     private void doTestTextMessage(final String originalContent, final String mimeType) throws Exception
     {
-        final byte[] contentBytes = originalContent == null ? null : originalContent.getBytes(UTF_8);
-        String expectedContent = originalContent == null ? "" : originalContent;
-        doTest(contentBytes,
-               mimeType,
-               AmqpValueSection.class,
-               expectedContent,
-               Symbol.valueOf(mimeType),
-               JmsMessageTypeAnnotation.TEXT_MESSAGE.getType());
+
+        final byte[] contentBytes;
+        final String expectedContent;
+        if (originalContent == null)
+        {
+            contentBytes = null;
+            expectedContent = "";
+        }
+        else
+        {
+            contentBytes = originalContent.getBytes(UTF_8);
+            expectedContent = originalContent;
+        }
+        doTest(contentBytes, mimeType, expectedContent, mimeType);
     }
 
 
     private void doTestMapMessage(final byte[] messageBytes,
                                   final String mimeType,
-                                  final Map<String, Object> expected,
-                                  final Byte expectedJmsTypeAnnotation) throws Exception
+                                  final Map<String, Object> expected) throws Exception
     {
-        doTest(messageBytes, mimeType, AmqpValueSection.class, expected, null, expectedJmsTypeAnnotation);
+        doTest(messageBytes, mimeType, expected, null);
     }
 
-    private void doTestBytesMessage(final byte[] messageContent, final String mimeType) throws Exception
+    private void doTestBytesMessage(final byte[] messageContent) throws Exception
     {
-        doTest(messageContent,
-               mimeType,
-               DataSection.class,
-               messageContent,
-               Symbol.valueOf(mimeType),
-               JmsMessageTypeAnnotation.BYTES_MESSAGE.getType());
+        doTest(messageContent,"application/octet-stream", messageContent, "application/octet-stream");
     }
 
     private void doTestStreamMessage(final byte[] messageBytes,
                                      final String mimeType,
-                                     final List<Object> expected,
-                                     final Byte expectedJmsTypAnnotation) throws Exception
+                                     final List<Object> expected) throws Exception
     {
-        doTest(messageBytes, mimeType, AmqpSequenceSection.class, expected, null, expectedJmsTypAnnotation);
+        doTest(messageBytes, mimeType, expected, null);
     }
 
     private void doTestObjectMessage(final byte[] messageBytes,
@@ -451,60 +377,40 @@ public class MessageConverter_0_10_to_1_0Test extends QpidTestCase
                                      final byte[] expectedBytes)
             throws Exception
     {
-        doTest(messageBytes,
-               mimeType,
-               DataSection.class,
-               expectedBytes,
-               Symbol.valueOf("application/x-java-serialized-object"),
-               JmsMessageTypeAnnotation.OBJECT_MESSAGE.getType());
+        doTest(messageBytes, mimeType, expectedBytes, "application/x-java-serialized-object");
     }
 
     private void doTest(final byte[] messageBytes,
                         final String mimeType,
-                        final Class<? extends EncodingRetainingSection<?>> expectedBodySection,
                         final Object expectedContent,
-                        final Symbol expectedContentType,
-                        final Byte expectedJmsTypeAnnotation) throws Exception
+                        final String expectedMimeType) throws Exception
     {
         final MessageTransferMessage sourceMessage = getAmqMessage(messageBytes, mimeType);
-        final Message_1_0 convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
-
-        List<EncodingRetainingSection<?>> sections = getEncodingRetainingSections(content, 1);
-        EncodingRetainingSection<?> encodingRetainingSection = sections.get(0);
-        assertEquals("Unexpected section type", expectedBodySection, encodingRetainingSection.getClass());
-
+        final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        
         if (expectedContent instanceof byte[])
         {
             assertArrayEquals("Unexpected content",
                               ((byte[]) expectedContent),
-                              ((Binary) encodingRetainingSection.getValue()).getArray());
+                              ((byte[]) convertedMessage.getMessageBody()));
+        }
+        else if (expectedContent instanceof List)
+        {
+            assertEquals("Unexpected content",
+                         new ArrayList<Object>((Collection) expectedContent),
+                         new ArrayList<Object>((Collection) convertedMessage.getMessageBody()));
+        }
+        else if (expectedContent instanceof Map)
+        {
+            assertEquals("Unexpected content",
+                         new HashMap<Object,Object>((Map) expectedContent),
+                         new HashMap<Object,Object>((Map) convertedMessage.getMessageBody()));
         }
         else
         {
-            assertEquals("Unexpected content", expectedContent, encodingRetainingSection.getValue());
+            assertEquals("Unexpected content", expectedContent, convertedMessage.getMessageBody());
         }
-
-        Symbol contentType = getContentType(convertedMessage);
-        if (expectedContentType == null)
-        {
-            assertNull("Content type should be null", contentType);
-        }
-        else
-        {
-            assertEquals("Unexpected content type", expectedContentType, contentType);
-        }
-
-        Byte jmsMessageTypeAnnotation = getJmsMessageTypeAnnotation(convertedMessage);
-        if (expectedJmsTypeAnnotation == null)
-        {
-            assertNull("Unexpected annotation 'x-opt-jms-msg-type'", jmsMessageTypeAnnotation);
-        }
-        else
-        {
-            assertEquals("Unexpected annotation 'x-opt-jms-msg-type'",
-                         expectedJmsTypeAnnotation,
-                         jmsMessageTypeAnnotation);
-        }
+        String convertedMimeType = convertedMessage.getMessageHeader().getMimeType();
+        assertEquals("Unexpected content type", expectedMimeType, convertedMimeType);
     }
 }

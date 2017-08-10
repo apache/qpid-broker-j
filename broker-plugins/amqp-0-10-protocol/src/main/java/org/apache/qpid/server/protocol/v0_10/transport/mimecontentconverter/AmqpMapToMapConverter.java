@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v0_10.transport.mimecontentconverter;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.Map;
 
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
@@ -51,6 +52,11 @@ public class AmqpMapToMapConverter implements MimeContentToObjectConverter<Map>
     @Override
     public Map toObject(final byte[] data)
     {
+        if (data == null || data.length == 0)
+        {
+            return Collections.emptyMap();
+        }
+
         BBDecoder decoder = new BBDecoder();
         decoder.init(ByteBuffer.wrap(data));
         return decoder.readMap();

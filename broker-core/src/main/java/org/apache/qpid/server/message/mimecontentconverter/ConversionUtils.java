@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,36 +17,18 @@
  * under the License.
  *
  */
+
 package org.apache.qpid.server.message.mimecontentconverter;
 
-import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 
-import org.apache.qpid.server.plugin.PluggableService;
-
-@PluggableService
-public class TextPlainToString implements MimeContentToObjectConverter<String>
+public class ConversionUtils
 {
-    @Override
-    public String getType()
-    {
-        return getMimeType();
-    }
-
-    @Override
-    public Class<String> getObjectClass()
-    {
-        return String.class;
-    }
-
-    @Override
-    public String getMimeType()
-    {
-        return "text/plain";
-    }
-
-    @Override
-    public String toObject(final byte[] data)
-    {
-        return data == null ? "" : new String(data, StandardCharsets.UTF_8);
-    }
+    public static final Pattern
+            TEXT_CONTENT_TYPES = Pattern.compile("^(text/.*)|(application/(xml|xml-dtd|.*\\+xml|json|.*\\+json|javascript|ecmascript))$");
+    public static final Pattern MAP_MESSAGE_CONTENT_TYPES = Pattern.compile("^amqp/map|jms/map-message$");
+    public static final Pattern LIST_MESSAGE_CONTENT_TYPES = Pattern.compile("^amqp/list|jms/stream-message$");
+    public static final Pattern
+            OBJECT_MESSAGE_CONTENT_TYPES = Pattern.compile("^application/x-java-serialized-object|application/java-object-stream$");
+    public static final Pattern BYTES_MESSAGE_CONTENT_TYPES = Pattern.compile("^application/octet-stream$");
 }

@@ -48,6 +48,6 @@ public class TextXmlToString implements MimeContentToObjectConverter<String>
     @Override
     public String toObject(final byte[] data)
     {
-        return new String(data, StandardCharsets.UTF_8);
+        return data == null ? "" : new String(data, StandardCharsets.UTF_8);
     }
 }

@@ -22,6 +22,7 @@ package org.apache.qpid.server.typedmessage.mimecontentconverter;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -54,6 +55,11 @@ public class JmsMapMessageToMap implements MimeContentToObjectConverter<Map>
     @Override
     public Map toObject(final byte[] data)
     {
+        if (data == null || data.length == 0)
+        {
+            return Collections.emptyMap();
+        }
+
         TypedBytesContentReader reader = new TypedBytesContentReader(ByteBuffer.wrap(data));
 
         LinkedHashMap map = new LinkedHashMap();
