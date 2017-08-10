@@ -120,24 +120,6 @@ public class PropertyConverter_0_10_to_0_8Test extends QpidTestCase
         assertEquals("Unexpected subject in application properties", testSubject, applicationProperties.get("qpid.subject"));
     }
 
-    public void testApplicationHeadersConversionContainingInconvertibleValues()
-    {
-        Map<String, Object> headers = Collections.singletonMap("testUUID", UUID.randomUUID());
-        final MessageProperties messageProperties = new MessageProperties();
-        messageProperties.setApplicationHeaders(headers);
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
-        try
-        {
-            _messageConverter.convert(message, _namedAddressSpace);
-            fail("Exception is not thrown");
-        }
-        catch (MessageConversionException e)
-        {
-            // pass
-        }
-    }
-
     public void testPersistentDeliveryModeConversion()
     {
         MessageDeliveryMode deliveryMode = MessageDeliveryMode.PERSISTENT;

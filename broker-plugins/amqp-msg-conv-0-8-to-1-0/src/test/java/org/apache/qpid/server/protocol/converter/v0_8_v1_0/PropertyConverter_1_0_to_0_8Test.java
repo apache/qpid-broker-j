@@ -116,6 +116,40 @@ public class PropertyConverter_1_0_to_0_8Test extends QpidTestCase
         assertEquals("Unexpected headers", properties, new HashMap<>(headers));
     }
 
+    public void testApplicationPropertiesConversionWithUuid()
+    {
+        Map<String, Object> properties = new HashMap<>();
+        final String key = "uuidProperty";
+        properties.put(key, UUID.randomUUID());
+        ApplicationProperties applicationProperties = new ApplicationProperties(properties);
+        Message_1_0 message = createTestMessage(applicationProperties);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
+        final Map<String, Object> headers = FieldTable.convertToMap(convertedProperties.getHeaders());
+        assertEquals("Unexpected headers size", properties.size(), headers.size());
+        assertEquals("Unexpected headers", properties.get(key), UUID.fromString((String) headers.get(key)));
+
+    }
+
+    public void testApplicationPropertiesConversionWithDate()
+    {
+        Map<String, Object> properties = new HashMap<>();
+        final String key = "dateProperty";
+        properties.put(key, new Date());
+        ApplicationProperties applicationProperties = new ApplicationProperties(properties);
+        Message_1_0 message = createTestMessage(applicationProperties);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
+        final Map<String, Object> headers = FieldTable.convertToMap(convertedProperties.getHeaders());
+        assertEquals("Unexpected headers size", properties.size(), headers.size());
+        assertEquals("Unexpected headers", properties.get(key), new Date((Long) headers.get(key)));
+
+    }
+
     public void testSubjectConversion()
     {
         final String subject = "testSubject";

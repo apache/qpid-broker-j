@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -721,6 +722,10 @@ public class FieldTable
         else if (object instanceof byte[])
         {
             return setBytes(string, (byte[]) object);
+        }
+        else if (object instanceof UUID)
+        {
+            return setString(string, object.toString());
         }
 
         throw new AMQPInvalidClassException(AMQPInvalidClassException.INVALID_OBJECT_MSG + (object == null ? "null" : object.getClass()));

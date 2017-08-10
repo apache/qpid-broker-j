@@ -74,7 +74,8 @@ public class MessageConverter_from_1_0
                                                                                         Character.class,
                                                                                         String.class,
                                                                                         byte[].class,
-                                                                                        UUID.class));
+                                                                                        UUID.class,
+                                                                                        Date.class));
 
     public static final Pattern TEXT_CONTENT_TYPES = Pattern.compile("^(text/.*)|(application/(xml|xml-dtd|.*\\+xml|json|.*\\+json|javascript|ecmascript))$");
     public static final Pattern MAP_MESSAGE_CONTENT_TYPES = Pattern.compile("^amqp/map|jms/map-message$");
@@ -206,10 +207,6 @@ public class MessageConverter_from_1_0
             {
                 return value.toString();
             }
-            else if(value instanceof Date)
-            {
-                return ((Date)value).getTime();
-            }
             else if(value instanceof Binary)
             {
                 return ((Binary)value).getArray();
@@ -237,7 +234,7 @@ public class MessageConverter_from_1_0
         return result;
     }
 
-    private static ContentHint getTypeHint(final Message_1_0 serverMsg)
+    private static ContentHint getAmqp0xTypeHint(final Message_1_0 serverMsg)
     {
         Symbol contentType = getContentType(serverMsg);
 
@@ -502,12 +499,12 @@ public class MessageConverter_from_1_0
         return messageId;
     }
 
-    public static ConvertedContentAndMimeType getConvertedContentAndMimeType(final Message_1_0 serverMsg)
+    public static ConvertedContentAndMimeType getAmqp0xConvertedContentAndMimeType(final Message_1_0 serverMsg)
     {
         Object bodyObject = convertBodyToObject(serverMsg);
         ObjectToMimeContentConverter converter = getBestFitObjectToMimeContentConverter(bodyObject);
 
-        ContentHint contentHint = getTypeHint(serverMsg);
+        ContentHint contentHint = getAmqp0xTypeHint(serverMsg);
         Class<?> typeHint = contentHint.getContentClass();
         if (typeHint == null && bodyObject == null)
         {
@@ -548,23 +545,23 @@ public class MessageConverter_from_1_0
         return new ConvertedContentAndMimeType(messageContent, mimeType);
     }
 
-    private static class ContentHint
+    public static class ContentHint
     {
         private final Class<?> _contentClass;
         private final String _contentType;
 
-        private ContentHint(final Class<?> contentClass, final String contentType)
+        public ContentHint(final Class<?> contentClass, final String contentType)
         {
             _contentClass = contentClass;
             _contentType = contentType;
         }
 
-        private Class<?> getContentClass()
+        public Class<?> getContentClass()
         {
             return _contentClass;
         }
 
-        private String getContentType()
+        public String getContentType()
         {
             return _contentType;
         }

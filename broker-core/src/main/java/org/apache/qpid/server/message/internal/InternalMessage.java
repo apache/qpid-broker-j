@@ -40,9 +40,9 @@ import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ByteBufferInputStream;
 import org.apache.qpid.server.util.ByteBufferUtils;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, InternalMessageMetaData>
 {
@@ -53,10 +53,10 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
     private final String _destinationName;
 
 
-    InternalMessage(final StoredMessage<InternalMessageMetaData> handle,
-                    final InternalMessageHeader header,
-                    final Object messageBody,
-                    final String destinationName)
+    public InternalMessage(final StoredMessage<InternalMessageMetaData> handle,
+                           final InternalMessageHeader header,
+                           final Object messageBody,
+                           final String destinationName)
     {
         super(handle, null);
         _header = header;
@@ -64,6 +64,7 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
         _destinationName = destinationName;
     }
 
+    // used by recovery path
     InternalMessage(final StoredMessage<InternalMessageMetaData> msg,
                     final String destinationName)
     {

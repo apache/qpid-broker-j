@@ -30,31 +30,16 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class InternalMessageMetaData implements StorableMessageMetaData
 {
-
-
-    private boolean _isPersistent;
-    private InternalMessageHeader _header;
-    private int _contentSize;
-    private byte[] _headerBytes;
+    private final boolean _isPersistent;
+    private final InternalMessageHeader _header;
+    private final int _contentSize;
+    private volatile byte[] _headerBytes;
 
     public InternalMessageMetaData(final boolean isPersistent, final InternalMessageHeader header, final int contentSize)
     {
         _isPersistent = isPersistent;
         _header = header;
         _contentSize = contentSize;
-
-        try(ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-            ObjectOutputStream os = new ObjectOutputStream(bytesOut))
-        {
-            os.writeInt(contentSize);
-            os.writeObject(header);
-            os.close();
-            _headerBytes = bytesOut.toByteArray();
-        }
-        catch (IOException e)
-        {
-            throw new ConnectionScopedRuntimeException("Unexpected IO Exception on in memory operation", e);
-        }
     }
 
     @Override
@@ -66,12 +51,14 @@ public class InternalMessageMetaData implements StorableMessageMetaData
     @Override
     public int getStorableSize()
     {
+        ensureHeaderIsEncoded();
         return _headerBytes.length;
     }
 
     @Override
     public void writeToBuffer(final QpidByteBuffer dest)
     {
+        ensureHeaderIsEncoded();
         dest.put(_headerBytes);
     }
 
@@ -115,5 +102,22 @@ public class InternalMessageMetaData implements StorableMessageMetaData
         return new InternalMessageMetaData(persistent, header, contentSize);
     }
 
-
+    private void ensureHeaderIsEncoded()
+    {
+        if (_headerBytes == null)
+        {
+            try(ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
+                ObjectOutputStream os = new ObjectOutputStream(bytesOut))
+            {
+                os.writeInt(_contentSize);
+                os.writeObject(_header);
+                os.close();
+                _headerBytes = bytesOut.toByteArray();
+            }
+            catch (IOException e)
+            {
+                throw new ConnectionScopedRuntimeException("Unexpected IO Exception on in memory operation", e);
+            }
+        }
+    }
 }

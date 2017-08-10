@@ -23,7 +23,7 @@ package org.apache.qpid.server.protocol.converter.v0_8_v1_0;
 
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.convertValue;
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getAbsoluteExpiryTime;
-import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getConvertedContentAndMimeType;
+import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getAmqp0xConvertedContentAndMimeType;
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getCorrelationId;
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getCreationTime;
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getGroupId;
@@ -90,7 +90,7 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
     private StoredMessage<MessageMetaData> convertToStoredMessage(final Message_1_0 serverMsg,
                                                                   final NamedAddressSpace addressSpace)
     {
-        final ConvertedContentAndMimeType convertedContentAndMimeType = getConvertedContentAndMimeType(serverMsg);
+        final ConvertedContentAndMimeType convertedContentAndMimeType = getAmqp0xConvertedContentAndMimeType(serverMsg);
         final byte[] convertedContent = convertedContentAndMimeType.getContent();
 
         final MessageMetaData messageMetaData_0_8 = convertMetaData(serverMsg,
