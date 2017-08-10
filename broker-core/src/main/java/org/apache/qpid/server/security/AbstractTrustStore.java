@@ -29,7 +29,9 @@ import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -47,6 +50,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.TrustStoreMessages;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
@@ -84,7 +88,7 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
 
     private ScheduledFuture<?> _checkExpiryTaskFuture;
 
-    public AbstractTrustStore(Map<String, Object> attributes, Broker<?> broker)
+    AbstractTrustStore(Map<String, Object> attributes, Broker<?> broker)
     {
         super(broker, attributes);
 
@@ -120,7 +124,7 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
         _broker.getEventLogger().message(TrustStoreMessages.OPERATION(operation));
     }
 
-    protected void initializeExpiryChecking()
+    void initializeExpiryChecking()
     {
         int checkFrequency = getCertificateExpiryCheckFrequency();
         if(getBroker().getState() == State.ACTIVE)
@@ -148,13 +152,13 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
         }
     }
 
-    protected final ListenableFuture<Void> deleteIfNotInUse()
+    final ListenableFuture<Void> deleteIfNotInUse()
     {
         // verify that it is not in use
         String storeName = getName();
 
         Collection<Port<?>> ports = new ArrayList<>(_broker.getPorts());
-        for (Port port : ports)
+        for (Port<?> port : ports)
         {
             Collection<TrustStore> trustStores = port.getTrustStores();
             if(trustStores != null)
@@ -199,9 +203,32 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
         return Futures.immediateFuture(null);
     }
 
-    protected abstract void checkCertificateExpiry();
+    private void checkCertificateExpiry()
+    {
+        int expiryWarning = getCertificateExpiryWarnPeriod();
+        if(expiryWarning > 0)
+        {
+            long currentTime = System.currentTimeMillis();
+            Date expiryTestDate = new Date(currentTime + (ONE_DAY * (long) expiryWarning));
 
-    protected void checkCertificateExpiry(final long currentTime,
+            try
+            {
+                Certificate[] certificatesInternal = getCertificatesInternal();
+                if (certificatesInternal.length > 0)
+                {
+                    Arrays.stream(certificatesInternal)
+                          .filter(cert -> cert instanceof X509Certificate)
+                          .forEach(x509cert -> checkCertificateExpiry(currentTime, expiryTestDate, (X509Certificate) x509cert));
+                }
+            }
+            catch (GeneralSecurityException e)
+            {
+                LOGGER.debug("Unexpected exception whilst checking certificate expiry", e);
+            }
+        }
+    }
+
+    private void checkCertificateExpiry(final long currentTime,
                                           final Date expiryTestDate,
                                           final X509Certificate cert)
     {
@@ -269,6 +296,7 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     }
 
     protected abstract TrustManager[] getTrustManagersInternal() throws GeneralSecurityException;
+    protected abstract Certificate[] getCertificatesInternal() throws GeneralSecurityException;
 
     @Override
     public final int getCertificateExpiryWarnPeriod()
@@ -322,6 +350,27 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     public List<VirtualHostNode<?>> getExcludedVirtualHostNodeMessageSources()
     {
         return _excludedVirtualHostNodeMessageSources;
+    }
+
+    @Override
+    public List<CertificateDetails> getCertificateDetails()
+    {
+        try
+        {
+            Certificate[] certificatesInternal = getCertificatesInternal();
+            if (certificatesInternal.length > 0)
+            {
+                return Arrays.stream(certificatesInternal)
+                             .filter(cert -> cert instanceof X509Certificate)
+                             .map(x509cert -> new CertificateDetailsImpl((X509Certificate) x509cert))
+                             .collect(Collectors.toList());
+            }
+            return Collections.emptyList();
+        }
+        catch (GeneralSecurityException e)
+        {
+            throw new IllegalConfigurationException("Failed to extract certificate details", e);
+        }
     }
 
     private boolean isSelfSigned(X509Certificate cert) throws GeneralSecurityException

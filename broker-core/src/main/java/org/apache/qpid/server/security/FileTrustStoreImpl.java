@@ -29,16 +29,11 @@ import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -297,41 +292,9 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
     }
 
     @Override
-    public List<CertificateDetails> getCertificateDetails()
+    protected Certificate[] getCertificatesInternal() throws GeneralSecurityException
     {
-        try
-        {
-            return Arrays.stream(getCertificates())
-                         .filter(cert -> cert instanceof X509Certificate)
-                         .map(x509cert -> new CertificateDetailsImpl((X509Certificate) x509cert))
-                         .collect(Collectors.toList());
-        }
-        catch (GeneralSecurityException e)
-        {
-            throw new IllegalConfigurationException("Failed to extract certificate details", e);
-        }
-    }
-
-    @Override
-    protected void checkCertificateExpiry()
-    {
-        int expiryWarning = getCertificateExpiryWarnPeriod();
-        if(expiryWarning > 0)
-        {
-            long currentTime = System.currentTimeMillis();
-            Date expiryTestDate = new Date(currentTime + (ONE_DAY * (long) expiryWarning));
-
-            try
-            {
-                Arrays.stream(getCertificates())
-                      .filter(cert -> cert instanceof X509Certificate)
-                      .forEach(x509cert -> checkCertificateExpiry(currentTime, expiryTestDate,
-                                                                  (X509Certificate) x509cert));
-            }
-            catch (GeneralSecurityException e)
-            {
-            }
-        }
+        return getCertificates();
     }
 
     private static URL getUrlFromString(String urlString) throws MalformedURLException

@@ -39,15 +39,13 @@ import javax.net.ssl.X509TrustManager;
 public class QpidPeersOnlyTrustManager implements X509TrustManager
 {
 
-    private final KeyStore _ts;
     private final X509TrustManager _delegate;
     private final List<Certificate> _trustedCerts = new ArrayList<>();
 
     public QpidPeersOnlyTrustManager(KeyStore ts, X509TrustManager trustManager) throws KeyStoreException
     {
-        _ts = ts;
         _delegate = trustManager;
-        Enumeration<String> aliases = this._ts.aliases();
+        Enumeration<String> aliases = ts.aliases();
         while (aliases.hasMoreElements())
         {
             _trustedCerts.add(ts.getCertificate(aliases.nextElement()));

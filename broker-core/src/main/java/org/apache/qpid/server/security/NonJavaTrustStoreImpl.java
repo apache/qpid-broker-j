@@ -61,17 +61,15 @@ public class NonJavaTrustStoreImpl
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NonJavaTrustStoreImpl.class);
 
-    @ManagedAttributeField( afterSet = "updateTrustManagers" )
-    private String _certificatesUrl;
-
-    private volatile TrustManager[] _trustManagers = new TrustManager[0];
-
-
-
     static
     {
         Handler.register();
     }
+
+    @ManagedAttributeField( afterSet = "updateTrustManagers" )
+    private String _certificatesUrl;
+
+    private volatile TrustManager[] _trustManagers = new TrustManager[0];
 
     private X509Certificate[] _certificates;
 
@@ -85,17 +83,6 @@ public class NonJavaTrustStoreImpl
     public String getCertificatesUrl()
     {
         return _certificatesUrl;
-    }
-
-
-    @Override
-    public List<CertificateDetails> getCertificateDetails()
-    {
-        return (_certificates == null)
-                ? Collections.emptyList()
-                : Arrays.stream(_certificates)
-                        .map(CertificateDetailsImpl::new)
-                        .collect(Collectors.toList());
     }
 
     @Override
@@ -151,19 +138,10 @@ public class NonJavaTrustStoreImpl
     }
 
     @Override
-    protected void checkCertificateExpiry()
+    protected Certificate[] getCertificatesInternal() throws GeneralSecurityException
     {
-        int expiryWarning = getCertificateExpiryWarnPeriod();
-        if(expiryWarning > 0)
-        {
-            long currentTime = System.currentTimeMillis();
-            Date expiryTestDate = new Date(currentTime + (ONE_DAY * (long) expiryWarning));
-
-            Arrays.stream(_certificates)
-                  .filter(cert -> cert instanceof X509Certificate)
-                  .forEach(x509cert -> checkCertificateExpiry(currentTime, expiryTestDate,
-                                                              x509cert));
-        }
+        X509Certificate[] certificates = _certificates;
+        return certificates == null ? new X509Certificate[0] : certificates;
     }
 
     private void validateTrustStoreAttributes(NonJavaTrustStore<?> keyStore)

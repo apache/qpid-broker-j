@@ -31,9 +31,6 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -324,11 +321,6 @@ public class SiteSpecificTrustStoreImpl
     }
 
     @Override
-    public List<CertificateDetails> getCertificateDetails()
-    {
-        return Collections.singletonList(new CertificateDetailsImpl(_x509Certificate));
-    }
-    @Override
     public void refreshCertificate()
     {
         logOperation("refreshCertificate");
@@ -348,15 +340,15 @@ public class SiteSpecificTrustStoreImpl
     }
 
     @Override
-    protected void checkCertificateExpiry()
+    protected Certificate[] getCertificatesInternal() throws GeneralSecurityException
     {
-        int expiryWarning = getCertificateExpiryWarnPeriod();
-        if(expiryWarning > 0)
+        if (_x509Certificate == null)
         {
-            long currentTime = System.currentTimeMillis();
-            Date expiryTestDate = new Date(currentTime + (ONE_DAY * (long) expiryWarning));
-
-            checkCertificateExpiry(currentTime, expiryTestDate, _x509Certificate);
+            return new Certificate[0];
+        }
+        else
+        {
+            return new Certificate[]{_x509Certificate};
         }
     }
 

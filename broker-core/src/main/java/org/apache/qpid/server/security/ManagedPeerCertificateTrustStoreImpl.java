@@ -28,7 +28,6 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -176,21 +175,6 @@ public class ManagedPeerCertificateTrustStoreImpl
     }
 
     @Override
-    public List<CertificateDetails> getCertificateDetails()
-    {
-        List<CertificateDetails> details = new ArrayList<>();
-        for(Certificate cert : _storedCertificates)
-        {
-            if(cert instanceof X509Certificate)
-            {
-                details.add(new CertificateDetailsImpl((X509Certificate)cert));
-            }
-        }
-        return details;
-    }
-
-
-    @Override
     public void removeCertificates(final List<CertificateDetails> certs)
     {
         final Map<String, Set<BigInteger>> certsToRemove = new HashMap<>();
@@ -228,18 +212,8 @@ public class ManagedPeerCertificateTrustStoreImpl
     }
 
     @Override
-    protected void checkCertificateExpiry()
+    protected Certificate[] getCertificatesInternal() throws GeneralSecurityException
     {
-        int expiryWarning = getCertificateExpiryWarnPeriod();
-        if(expiryWarning > 0)
-        {
-            long currentTime = System.currentTimeMillis();
-            Date expiryTestDate = new Date(currentTime + (ONE_DAY * (long) expiryWarning));
-
-            _storedCertificates.stream()
-                               .filter(cert -> cert instanceof X509Certificate)
-                               .forEach(x509cert -> checkCertificateExpiry(currentTime, expiryTestDate,
-                                                                           (X509Certificate) x509cert));
-        }
+        return getCertificates();
     }
 }
