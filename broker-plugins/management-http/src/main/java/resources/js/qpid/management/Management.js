@@ -353,6 +353,7 @@ define(["dojo/_base/lang",
             var url = this.buildObjectURL(modelObj, parameters, operation);
             var iframe = document.createElement('iframe');
             iframe.id = "downloader_" + modelObj.name;
+            iframe.style.display = "none";
             document.body.appendChild(iframe);
             iframe.src = url;
             // It seems there is no way to remove this iframe in a manner that is cross browser compatible.
