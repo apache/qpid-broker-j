@@ -203,6 +203,13 @@ public class MessageConverter_0_10_to_1_0Test extends QpidTestCase
         doTestStreamMessage(messageBytes, mimeType, expected, JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
     }
 
+    public void testConvertJmsStreamMessageEmptyBody() throws Exception
+    {
+        final List<Object> expected = Collections.emptyList();
+
+        doTestStreamMessage(null, "jms/stream-message", expected, JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
+    }
+
     public void testConvertAmqpListMessageBody() throws Exception
     {
         final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D);
@@ -236,6 +243,14 @@ public class MessageConverter_0_10_to_1_0Test extends QpidTestCase
 
         doTestMapMessage(messageBytes, "amqp/map", expected, JmsMessageTypeAnnotation.MAP_MESSAGE.getType());
     }
+
+    public void testConvertJmsMapMessageEmptyBody() throws Exception
+    {
+        final Map<String, Object> expected = Collections.emptyMap();
+
+        doTestMapMessage(null, "jms/map-message", expected, JmsMessageTypeAnnotation.MAP_MESSAGE.getType());
+    }
+
 
     public void testConvertAmqpMapMessageBodyWithNonJmsContent() throws Exception
     {
@@ -396,7 +411,7 @@ public class MessageConverter_0_10_to_1_0Test extends QpidTestCase
     private void doTestTextMessage(final String originalContent, final String mimeType) throws Exception
     {
         final byte[] contentBytes = originalContent == null ? null : originalContent.getBytes(UTF_8);
-        String expectedContent = originalContent == null ? null : originalContent;
+        String expectedContent = originalContent == null ? "" : originalContent;
         doTest(contentBytes,
                mimeType,
                AmqpValueSection.class,

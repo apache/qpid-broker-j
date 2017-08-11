@@ -32,7 +32,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -285,7 +284,15 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         }
         else if (MessageConverter_from_1_0.TEXT_CONTENT_TYPES.matcher(mimeType).matches())
         {
-            return new AmqpValue(null);
+            return new AmqpValue("");
+        }
+        else if (MessageConverter_from_1_0.MAP_MESSAGE_CONTENT_TYPES.matcher(mimeType).matches())
+        {
+            return new AmqpValue(Collections.emptyMap());
+        }
+        else if (MessageConverter_from_1_0.LIST_MESSAGE_CONTENT_TYPES.matcher(mimeType).matches())
+        {
+            return new AmqpSequence(Collections.emptyList());
         }
         return new Data(new Binary(data));
     }
