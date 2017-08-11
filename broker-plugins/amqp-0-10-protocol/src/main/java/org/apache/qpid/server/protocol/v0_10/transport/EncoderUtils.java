@@ -357,7 +357,7 @@ public class EncoderUtils
                 if (key instanceof String)
                 {
                     String string = (String)key;
-                    if ( string.length() > 0xFF)
+                    if (string.length() > 0xFF)
                     {
                         return false;
                     }

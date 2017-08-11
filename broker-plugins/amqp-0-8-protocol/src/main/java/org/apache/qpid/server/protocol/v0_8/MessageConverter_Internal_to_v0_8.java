@@ -71,7 +71,16 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
     {
         Object messageBody = serverMsg.getMessageBody();
         ObjectToMimeContentConverter converter = MimeContentConverterRegistry.getBestFitObjectToMimeContentConverter(messageBody);
-        final byte[] messageContent = converter == null ? new byte[] {} : converter.toMimeContent(messageBody);
+        final byte[] messageContent;
+        try
+        {
+            messageContent = converter == null ? new byte[] {} : converter.toMimeContent(messageBody);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new MessageConversionException("Could not convert message from Internal to 0-8 because"
+                                                 + " conversion of message content failed.", e);
+        }
         String mimeType = converter == null ? null  : converter.getMimeType();
 
         mimeType = improveMimeType(serverMsg, mimeType);

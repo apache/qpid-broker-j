@@ -26,6 +26,7 @@ import java.util.List;
 import org.apache.qpid.server.message.mimecontentconverter.ObjectToMimeContentConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v0_10.transport.BBEncoder;
+import org.apache.qpid.server.protocol.v0_10.transport.EncoderUtils;
 
 @PluggableService
 public class ListToAmqpListConverter implements ObjectToMimeContentConverter<List>
@@ -57,7 +58,7 @@ public class ListToAmqpListConverter implements ObjectToMimeContentConverter<Lis
     @Override
     public boolean isAcceptable(final List list)
     {
-        return true;
+        return EncoderUtils.isEncodable(list);
     }
 
     @Override
