@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessage;
@@ -250,30 +249,6 @@ public class PropertyConverter_Internal_to_v0_8Test extends QpidTestCase
                 FieldTable.convertToMap(convertedMessage.getContentHeaderBody().getProperties().getHeaders());
         assertEquals("Unexpected application properties", properties, new HashMap<>(convertedHeaders));
     }
-
-    public void testHeadersConversionWithUnsupportedTypes()
-    {
-        final Map<String, Object> properties = Collections.singletonMap("uuidProperty", UUID.randomUUID());
-        final AMQMessageHeader header = mock(AMQMessageHeader.class);
-        when(header.getHeaderNames()).thenReturn(properties.keySet());
-        doAnswer(invocation ->
-                 {
-                     final String originalArgument = (String) (invocation.getArguments())[0];
-                     return properties.get(originalArgument);
-                 }).when(header).getHeader(any(String.class));
-        InternalMessage originalMessage = createTestMessage(header);
-
-        try
-        {
-            _messageConverter.convert(originalMessage, _addressSpace);
-            fail("Expected exception not thrown");
-        }
-        catch (MessageConversionException e)
-        {
-            // pass
-        }
-    }
-
 
     public void testHeadersConversionWhenKeyLengthExceeds255()
     {
