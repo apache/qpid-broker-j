@@ -57,7 +57,7 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
         _handler.checkOverflow(newlyEnqueued);
     }
 
-    private static class Handler extends AbstractConfigurationChangeListener implements OverflowPolicyHandler
+    private static class Handler extends AbstractConfigurationChangeListener
     {
         private final Queue<?> _queue;
         private final EventLogger _eventLogger;
@@ -78,8 +78,7 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
             }
         }
 
-        @Override
-        public void checkOverflow(final QueueEntry newlyEnqueued)
+        private void checkOverflow(final QueueEntry newlyEnqueued)
         {
             long maximumQueueDepthBytes = _queue.getMaximumQueueDepthBytes();
             long maximumQueueDepthMessages = _queue.getMaximumQueueDepthMessages();

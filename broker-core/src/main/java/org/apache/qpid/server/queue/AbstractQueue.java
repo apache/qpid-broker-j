@@ -241,7 +241,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @ManagedAttributeField
     private volatile boolean _holdOnPublishEnabled;
 
-    @ManagedAttributeField(afterSet = "postSetOverflowPolicy")
+    @ManagedAttributeField()
     private OverflowPolicy _overflowPolicy;
     @ManagedAttributeField
     private long _maximumQueueDepthMessages;
@@ -573,17 +573,19 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
 
-        if (_rejectPolicyHandler != null)
+        OverflowPolicy overflowPolicy = getOverflowPolicy();
+        _postEnqueueOverflowPolicyHandler = createPostEnqueueOverflowPolicyHandler(overflowPolicy);
+        if (overflowPolicy == OverflowPolicy.REJECT)
         {
+            _rejectPolicyHandler = new RejectPolicyHandler(this);
             _rejectPolicyHandler.onQueueOpen();
         }
 
         updateAlertChecks();
     }
 
-    private void createOverflowPolicyHandler(final OverflowPolicy overflowPolicy)
+    private OverflowPolicyHandler createPostEnqueueOverflowPolicyHandler(final OverflowPolicy overflowPolicy)
     {
-        RejectPolicyHandler rejectPolicyHandler = null;
         OverflowPolicyHandler overflowPolicyHandler;
         switch (overflowPolicy)
         {
@@ -601,15 +603,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 break;
             case REJECT:
                 overflowPolicyHandler = new NoneOverflowPolicyHandler();
-                rejectPolicyHandler = new RejectPolicyHandler(this);
                 break;
             default:
                 throw new IllegalStateException(String.format("Overflow policy '%s' is not implemented",
                                                               overflowPolicy.name()));
         }
 
-        _rejectPolicyHandler = rejectPolicyHandler;
-        _postEnqueueOverflowPolicyHandler = overflowPolicyHandler;
+        return overflowPolicyHandler;
     }
 
     protected LogMessage getCreatedLogMessage()
@@ -3091,15 +3091,29 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         return super.changeAttribute(name, desired);
-
     }
 
-    @SuppressWarnings("ignore")
-    private void postSetOverflowPolicy()
+    @Override
+    protected void changeAttributes(final Map<String, Object> attributes)
     {
-        createOverflowPolicyHandler(getOverflowPolicy());
-        if (getState() == State.ACTIVE)
+        OverflowPolicy existingPolicy = getOverflowPolicy();
+        super.changeAttributes(attributes);
+
+        // Overflow policies depend on queue depth attributes.
+        // Thus, we need to create and invoke  overflow policy handler
+        // after all required attributes are changed.
+        if (attributes.containsKey(OVERFLOW_POLICY) && existingPolicy != _overflowPolicy)
         {
+            if (existingPolicy == OverflowPolicy.REJECT)
+            {
+                _rejectPolicyHandler = null;
+            }
+            _postEnqueueOverflowPolicyHandler = createPostEnqueueOverflowPolicyHandler(_overflowPolicy);
+            if (_overflowPolicy == OverflowPolicy.REJECT)
+            {
+                _rejectPolicyHandler = new RejectPolicyHandler(this);
+            }
+
             _postEnqueueOverflowPolicyHandler.checkOverflow(null);
         }
     }
