@@ -21,8 +21,6 @@ package org.apache.qpid.server.queue;
 import org.apache.qpid.server.message.MessageDeletedException;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
 
@@ -43,14 +41,20 @@ public class FlowToDiskOverflowPolicyHandler implements OverflowPolicyHandler
 
     }
 
-    private static class Handler extends AbstractConfigurationChangeListener
+    private static class Handler extends OverflowPolicyMaximumQueueDepthChangeListener
     {
         private final Queue<?> _queue;
-        private boolean _limitsChanged;
 
         private Handler(final Queue<?> queue)
         {
+            super(OverflowPolicy.FLOW_TO_DISK);
             _queue = queue;
+        }
+
+        @Override
+        void onMaximumQueueDepthChange(final Queue<?> queue)
+        {
+            checkOverflow(null);
         }
 
         private void checkOverflow(final QueueEntry newlyEnqueued)
@@ -67,38 +71,6 @@ public class FlowToDiskOverflowPolicyHandler implements OverflowPolicyHandler
                 {
                     flowNewEntryToDiskIfNecessary(newlyEnqueued, maximumQueueDepthBytes, maximumQueueDepthMessages);
                 }
-            }
-        }
-
-        @Override
-        public void attributeSet(final ConfiguredObject<?> object,
-                                 final String attributeName,
-                                 final Object oldAttributeValue,
-                                 final Object newAttributeValue)
-        {
-            super.attributeSet(object, attributeName, oldAttributeValue, newAttributeValue);
-            if (Queue.MAXIMUM_QUEUE_DEPTH_BYTES.equals(attributeName)
-                || Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES.equals(attributeName))
-            {
-                _limitsChanged = true;
-            }
-        }
-
-        @Override
-        public void bulkChangeEnd(final ConfiguredObject<?> object)
-        {
-            super.bulkChangeEnd(object);
-            if (_queue.getOverflowPolicy() == OverflowPolicy.FLOW_TO_DISK)
-            {
-                if (_limitsChanged)
-                {
-                    _limitsChanged = false;
-                    flowTailToDiskIfNecessary(_queue.getMaximumQueueDepthBytes(), _queue.getMaximumQueueDepthMessages());
-                }
-            }
-            else
-            {
-                _queue.removeChangeListener(this);
             }
         }
 

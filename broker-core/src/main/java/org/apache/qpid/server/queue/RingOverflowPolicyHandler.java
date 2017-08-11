@@ -21,71 +21,93 @@ package org.apache.qpid.server.queue;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.QueueMessages;
+import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
 
 public class RingOverflowPolicyHandler implements OverflowPolicyHandler
 {
-    private final Queue<?> _queue;
-    private final EventLogger _eventLogger;
+    private final Handler _handler;
 
     RingOverflowPolicyHandler(final Queue<?> queue,
                               final EventLogger eventLogger)
     {
-        _queue = queue;
-        _eventLogger = eventLogger;
+        _handler = new Handler(queue, eventLogger);
+        queue.addChangeListener(_handler);
     }
 
     @Override
     public void checkOverflow(final QueueEntry newlyEnqueued)
     {
-        final long maximumQueueDepthMessages = _queue.getMaximumQueueDepthMessages();
-        final long maximumQueueDepthBytes = _queue.getMaximumQueueDepthBytes();
+        _handler.checkOverflow();
+    }
 
-        boolean bytesOverflow, messagesOverflow, overflow = false;
-        int counter = 0;
-        int queueDepthMessages;
-        long queueDepthBytes;
-        do
+    private static class Handler extends OverflowPolicyMaximumQueueDepthChangeListener
+    {
+        private final Queue<?> _queue;
+        private final EventLogger _eventLogger;
+
+        public Handler(final Queue<?> queue, final EventLogger eventLogger)
         {
-            queueDepthMessages = _queue.getQueueDepthMessages();
-            queueDepthBytes = _queue.getQueueDepthBytes();
+            super(OverflowPolicy.RING);
+            _queue = queue;
+            _eventLogger = eventLogger;
+        }
 
-            messagesOverflow = maximumQueueDepthMessages >= 0 && queueDepthMessages > maximumQueueDepthMessages;
-            bytesOverflow = maximumQueueDepthBytes >= 0 && queueDepthBytes > maximumQueueDepthBytes;
+        @Override
+        void onMaximumQueueDepthChange(final Queue<?> queue)
+        {
+            checkOverflow();
+        }
 
-            if (bytesOverflow || messagesOverflow)
+        private void checkOverflow()
+        {
+            final long maximumQueueDepthMessages = _queue.getMaximumQueueDepthMessages();
+            final long maximumQueueDepthBytes = _queue.getMaximumQueueDepthBytes();
+
+            boolean bytesOverflow, messagesOverflow, overflow = false;
+            int counter = 0;
+            int queueDepthMessages;
+            long queueDepthBytes;
+            do
             {
-                if (!overflow)
-                {
-                    overflow = true;
-                }
+                queueDepthMessages = _queue.getQueueDepthMessages();
+                queueDepthBytes = _queue.getQueueDepthBytes();
 
-                QueueEntry entry = _queue.getLeastSignificantOldestEntry();
+                messagesOverflow = maximumQueueDepthMessages >= 0 && queueDepthMessages > maximumQueueDepthMessages;
+                bytesOverflow = maximumQueueDepthBytes >= 0 && queueDepthBytes > maximumQueueDepthBytes;
 
-                if (entry != null)
+                if (bytesOverflow || messagesOverflow)
                 {
-                    counter++;
-                    _queue.deleteEntry(entry);
-                }
-                else
-                {
-                    queueDepthMessages = _queue.getQueueDepthMessages();
-                    queueDepthBytes = _queue.getQueueDepthBytes();
-                    break;
+                    if (!overflow)
+                    {
+                        overflow = true;
+                    }
+
+                    QueueEntry entry = _queue.getLeastSignificantOldestEntry();
+
+                    if (entry != null)
+                    {
+                        counter++;
+                        _queue.deleteEntry(entry);
+                    }
+                    else
+                    {
+                        queueDepthMessages = _queue.getQueueDepthMessages();
+                        queueDepthBytes = _queue.getQueueDepthBytes();
+                        break;
+                    }
                 }
             }
-        }
-        while (bytesOverflow || messagesOverflow);
+            while (bytesOverflow || messagesOverflow);
 
-        if (overflow)
-        {
-            _eventLogger.message(_queue.getLogSubject(),
-                                 QueueMessages.DROPPED(
-                                         counter,
-                                         queueDepthBytes,
-                                         queueDepthMessages,
-                                         maximumQueueDepthBytes,
-                                         maximumQueueDepthMessages));
+            if (overflow)
+            {
+                _eventLogger.message(_queue.getLogSubject(), QueueMessages.DROPPED(counter,
+                                                                                   queueDepthBytes,
+                                                                                   queueDepthMessages,
+                                                                                   maximumQueueDepthBytes,
+                                                                                   maximumQueueDepthMessages));
+            }
         }
     }
 
