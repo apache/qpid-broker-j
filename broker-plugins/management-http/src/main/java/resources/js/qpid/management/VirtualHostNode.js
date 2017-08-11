@@ -88,7 +88,6 @@ define(["dojo/parser",
             this.startNodeButton = registry.byNode(query(".startNodeButton", containerNode)[0]);
             this.editNodeButton = registry.byNode(query(".editNodeButton", containerNode)[0]);
             this.deleteNodeButton = registry.byNode(query(".deleteNodeButton", containerNode)[0]);
-            this.virtualHostGridPanel = registry.byNode(query(".virtualHostGridPanel", containerNode)[0]);
             this.addVirtualHostButton = registry.byNode(query(".addVHButton", containerNode)[0]);
             this.addVirtualHostButton.on("click", lang.hitch(this, function ()
             {
@@ -107,7 +106,31 @@ define(["dojo/parser",
                     }
                 }));
             }));
-            this.addVirtualHostButton.domNode.style.display = "none";
+
+            this.deleteVirtualHostButton = registry.byNode(query(".deleteVHButton", containerNode)[0]);
+            this.deleteVirtualHostButton.on("click", lang.hitch(this, function ()
+            {
+                if (confirm("Deletion of virtual host will delete messages.\n\n"
+                            + "Are you sure you want to proceed with delete operation?"))
+                {
+                    var modeData = this.vhostNodeUpdater.nodeData;
+                    if (modeData.virtualhosts)
+                    {
+                        var modelObj = virtualHostModelObect = {
+                            name: modeData.virtualhosts[0].name,
+                            type: "virtualhost",
+                            parent: this.modelObj
+                        };
+
+                        this.management.remove(modelObj)
+                            .then(lang.hitch(this, function (result)
+                            {
+                                this.vhostNodeUpdater.update();
+                            }));
+                    }
+                }
+            }));
+
             this.deleteNodeButton.on("click", function (e)
             {
                 if (confirm("Deletion of virtual host node will delete both configuration and message data.\n\n"
@@ -289,9 +312,11 @@ define(["dojo/parser",
                 this.details.update(data);
             }
 
-            this.tabObject.virtualHostGridPanel.domNode.style.display = data.virtualhosts ? "block" : "none";
             util.updateUpdatableStore(this.tabObject.vhostsGrid, data.virtualhosts);
-            this.tabObject.addVirtualHostButton.domNode.style.display =data.virtualhosts ? "none" : "";
+
+            var virtualHostExists = !!data.virtualhosts;
+            this.tabObject.addVirtualHostButton.set("disabled", virtualHostExists);
+            this.tabObject.deleteVirtualHostButton.set("disabled", !virtualHostExists);
         };
 
         return VirtualHostNode;
