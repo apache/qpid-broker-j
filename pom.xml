@@ -717,6 +717,7 @@
             <qpid.tests.mms.messagestore.persistence>${profile.qpid.tests.mms.messagestore.persistence}</qpid.tests.mms.messagestore.persistence>
             <java.naming.factory.initial>${profile.java.naming.factory.initial}</java.naming.factory.initial>
             <java.naming.provider.url>${profile.java.naming.provider.url}</java.naming.provider.url>
+            <java.io.tmpdir>${java.io.tmpdir}</java.io.tmpdir>
           </systemPropertyVariables>
         </configuration>
       </plugin>
