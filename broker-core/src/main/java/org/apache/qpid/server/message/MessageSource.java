@@ -93,7 +93,8 @@ public interface MessageSource extends TransactionLogResource, MessageNode
     enum MessageConversionExceptionHandlingPolicy
     {
         CLOSE,
-        ROUTE_TO_ALTERNATE
+        ROUTE_TO_ALTERNATE,
+        REJECT
     }
 
     MessageConversionExceptionHandlingPolicy getMessageConversionExceptionHandlingPolicy();

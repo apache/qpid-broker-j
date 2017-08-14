@@ -316,6 +316,12 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
                                             + "  Message skipped.", entry.getMessage(), mce.getMessage());
                             }
                             break;
+                        case REJECT:
+                            entry.reject(consumer);
+                            entry.release(consumer);
+                            LOGGER.info("Failed to convert message {} for this consumer because '{}'."
+                                        + "  Message skipped.", entry.getMessage(), mce.getMessage());
+                            break;
                         default:
                             throw new ServerScopedRuntimeException("Unrecognised policy " + handlingPolicy);
                     }

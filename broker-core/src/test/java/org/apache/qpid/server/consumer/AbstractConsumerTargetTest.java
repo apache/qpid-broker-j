@@ -46,10 +46,10 @@ import org.apache.qpid.test.utils.QpidTestCase;
 public class AbstractConsumerTargetTest extends QpidTestCase
 {
 
-    TestAbstractConsumerTarget _consumerTarget;
+    private TestAbstractConsumerTarget _consumerTarget;
     private Consumer _consumer;
     private MessageSource _messageSource;
-    AMQPConnection _connection = mock(AMQPConnection.class);
+    private AMQPConnection _connection = mock(AMQPConnection.class);
     private MessageInstance _messageInstance;
 
     @Override
@@ -73,8 +73,7 @@ public class AbstractConsumerTargetTest extends QpidTestCase
 
     public void testConversionExceptionPolicyClose() throws Exception
     {
-        when(_consumer.acquires()).thenReturn(true);
-        when(_messageSource.getMessageConversionExceptionHandlingPolicy()).thenReturn(MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE);
+        configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE);
 
         try
         {
@@ -93,8 +92,7 @@ public class AbstractConsumerTargetTest extends QpidTestCase
 
     public void testConversionExceptionPolicyCloseForNonAcquiringConsumer() throws Exception
     {
-        when(_consumer.acquires()).thenReturn(false);
-        when(_messageSource.getMessageConversionExceptionHandlingPolicy()).thenReturn(MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE);
+        configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE);
 
         try
         {
@@ -113,8 +111,7 @@ public class AbstractConsumerTargetTest extends QpidTestCase
 
     public void testConversionExceptionPolicyReroute() throws Exception
     {
-        when(_consumer.acquires()).thenReturn(true);
-        when(_messageSource.getMessageConversionExceptionHandlingPolicy()).thenReturn(MessageSource.MessageConversionExceptionHandlingPolicy.ROUTE_TO_ALTERNATE);
+        configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.ROUTE_TO_ALTERNATE);
 
         _consumerTarget.sendNextMessage();
         assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
@@ -123,12 +120,32 @@ public class AbstractConsumerTargetTest extends QpidTestCase
 
     public void testConversionExceptionPolicyRerouteForNonAcquiringConsumer() throws Exception
     {
-        when(_consumer.acquires()).thenReturn(false);
-        when(_messageSource.getMessageConversionExceptionHandlingPolicy()).thenReturn(MessageSource.MessageConversionExceptionHandlingPolicy.ROUTE_TO_ALTERNATE);
+        configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.ROUTE_TO_ALTERNATE);
 
         _consumerTarget.sendNextMessage();
         assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class));
+    }
+
+    public void testConversionExceptionPolicyReject() throws Exception
+    {
+        configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.REJECT);
+
+        _consumerTarget.sendNextMessage();
+
+        assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
+        verify(_messageInstance).reject(_consumer);
+        verify(_messageInstance).release(_consumer);
+    }
+
+    public void testConversionExceptionPolicyRejectForNonAcquiringConsumer() throws Exception
+    {
+        configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.REJECT);
+
+        _consumerTarget.sendNextMessage();
+        assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
+        verify(_messageInstance).reject(_consumer);
+        verify(_messageInstance).release(_consumer);
     }
 
     public void testConversionExceptionPolicyWhenOwningResourceIsNotMessageSource() throws Exception
@@ -149,6 +166,13 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         }
         assertTrue("message credit was not restored", _consumerTarget.isCreditRestored());
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class));
+    }
+
+    private void configureBehaviour(final boolean acquires,
+                                    final MessageSource.MessageConversionExceptionHandlingPolicy exceptionHandlingPolicy)
+    {
+        when(_consumer.acquires()).thenReturn(acquires);
+        when(_messageSource.getMessageConversionExceptionHandlingPolicy()).thenReturn(exceptionHandlingPolicy);
     }
 
     private class TestAbstractConsumerTarget extends AbstractConsumerTarget<TestAbstractConsumerTarget>

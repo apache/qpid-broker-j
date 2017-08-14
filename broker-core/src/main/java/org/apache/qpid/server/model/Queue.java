@@ -125,7 +125,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     @ManagedContextDefault( name = MESSAGE_CONVERSION_EXCEPTION_HANDLING_POLICY,
             description = "The behaviour of consumer if it tries to consumer a messages that it cannot convert.")
-    MessageConversionExceptionHandlingPolicy DEFAULT_MESSAGE_CONVERSION_EXCEPTION_HANDLING_POLICY = MessageConversionExceptionHandlingPolicy.CLOSE;
+    MessageConversionExceptionHandlingPolicy DEFAULT_MESSAGE_CONVERSION_EXCEPTION_HANDLING_POLICY = MessageConversionExceptionHandlingPolicy.REJECT;
 
     @SuppressWarnings("unused")
     @ManagedAttribute( defaultValue = "${queue.defaultEnsureNonDestructiveConsumers}" )
