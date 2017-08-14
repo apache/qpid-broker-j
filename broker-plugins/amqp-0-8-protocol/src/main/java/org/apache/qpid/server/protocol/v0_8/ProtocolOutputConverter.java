@@ -31,18 +31,17 @@ import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageContentSource;
-import org.apache.qpid.server.message.ServerMessage;
 
 public interface ProtocolOutputConverter
 {
     void confirmConsumerAutoClose(int channelId, AMQShortString consumerTag);
 
-    long writeDeliver(final ServerMessage msg,
+    long writeDeliver(final AMQMessage msg,
                       final InstanceProperties props, int channelId,
                       long deliveryTag,
                       AMQShortString consumerTag);
 
-    long writeGetOk(final ServerMessage msg,
+    long writeGetOk(final AMQMessage msg,
                     final InstanceProperties props,
                     int channelId,
                     long deliveryTag,

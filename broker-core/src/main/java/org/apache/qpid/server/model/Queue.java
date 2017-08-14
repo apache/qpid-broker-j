@@ -121,6 +121,11 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                           + "none is explicitly set")
     String DEFAULT_ENSURE_NON_DESTRUCTIVE_CONSUMERS = "false";
 
+    String MESSAGE_CONVERSION_EXCEPTION_HANDLING_POLICY = "qpid.queue.messageConversion.exceptionHandlingPolicy";
+
+    @ManagedContextDefault( name = MESSAGE_CONVERSION_EXCEPTION_HANDLING_POLICY,
+            description = "The behaviour of consumer if it tries to consumer a messages that it cannot convert.")
+    MessageConversionExceptionHandlingPolicy DEFAULT_MESSAGE_CONVERSION_EXCEPTION_HANDLING_POLICY = MessageConversionExceptionHandlingPolicy.CLOSE;
 
     @SuppressWarnings("unused")
     @ManagedAttribute( defaultValue = "${queue.defaultEnsureNonDestructiveConsumers}" )
@@ -174,6 +179,10 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @SuppressWarnings("unused")
     @DerivedAttribute
     boolean isQueueFlowStopped();
+
+    @Override
+    @DerivedAttribute
+    MessageConversionExceptionHandlingPolicy getMessageConversionExceptionHandlingPolicy();
 
     @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.alertThresholdMessageAge")

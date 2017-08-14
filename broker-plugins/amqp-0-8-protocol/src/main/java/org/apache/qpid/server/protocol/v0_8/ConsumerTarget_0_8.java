@@ -20,9 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.qpid.server.QpidException;
 import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
 import org.apache.qpid.server.flow.FlowCreditManager;
@@ -32,6 +29,8 @@ import org.apache.qpid.server.message.MessageInstance.EntryState;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.plugin.MessageConverter;
+import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.StateChangeListener;
@@ -47,8 +46,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
 
     private final ClientDeliveryMethod _deliveryMethod;
 
-    private final AtomicLong _unacknowledgedCount = new AtomicLong(0);
-    private final AtomicLong _unacknowledgedBytes = new AtomicLong(0);
     private final String _targetAddress;
 
 
@@ -82,28 +79,18 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
                   filters, creditManager, deliveryMethod, multiQueue);
         }
 
-        /**
-         * This method can be called by each of the publisher threads. As a result all changes to the channel object must be
-         * thread safe.
-         *
-         *
-         *
-         * @param consumer
-         * @param entry
-         * @param batch
-         * @throws QpidException
-         */
         @Override
-        public void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
+        protected void doSendInternal(final MessageInstanceConsumer consumer,
+                                      final MessageInstance entry,
+                                      final AMQMessage message,
+                                      final boolean batch)
         {
             // We don't decrement the reference here as we don't want to consume the message
             // but we do want to send it to the client.
 
             long deliveryTag = getChannel().getNextDeliveryTag();
-            sendToClient(consumer, entry.getMessage(), entry.getInstanceProperties(), deliveryTag);
-
+            sendToClient(consumer, message, entry.getInstanceProperties(), deliveryTag);
         }
-
     }
 
     public static ConsumerTarget_0_8 createNoAckTarget(AMQChannel channel,
@@ -131,16 +118,11 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
             _txn = new AutoCommitTransaction(channel.getAddressSpace().getMessageStore());
         }
 
-        /**
-         * This method can be called by each of the publisher threads. As a result all changes to the channel object must be
-         * thread safe.
-         *
-         * @param consumer
-         * @param entry   The message to send
-         * @param batch
-         */
         @Override
-        public void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
+        protected void doSendInternal(final MessageInstanceConsumer consumer,
+                                      final MessageInstance entry,
+                                      final AMQMessage message,
+                                      final boolean batch)
         {
             // if we do not need to wait for client acknowledgements
             // we can decrement the reference count immediately.
@@ -153,17 +135,15 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
             // the message is unacked, it will be lost.
             _txn.dequeue(entry.getEnqueueRecord(), NOOP);
 
-            ServerMessage message = entry.getMessage();
-            MessageReference ref = message.newReference();
-            InstanceProperties props = entry.getInstanceProperties();
-            entry.delete();
-            getChannel().getConnection().setDeferFlush(batch);
-            long deliveryTag = getChannel().getNextDeliveryTag();
+            try( MessageReference ref = entry.getMessage().newReference())
+            {
+                InstanceProperties props = entry.getInstanceProperties();
+                entry.delete();
+                getChannel().getConnection().setDeferFlush(batch);
+                long deliveryTag = getChannel().getNextDeliveryTag();
 
-            sendToClient(consumer, message, props, deliveryTag);
-
-            ref.release();
-
+                sendToClient(consumer, message, props, deliveryTag);
+            }
         }
 
         private static final ServerTransaction.Action NOOP =
@@ -234,20 +214,13 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
             _usesCredit = usesCredit;
         }
 
-        /**
-         * This method can be called by each of the publisher threads. As a result all changes to the channel object must be
-         * thread safe.
-         *
-         * @param consumer
-         * @param entry   The message to send
-         * @param batch
-         */
         @Override
-        public void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
+        protected void doSendInternal(final MessageInstanceConsumer consumer,
+                                      final MessageInstance entry,
+                                      final AMQMessage message,
+                                      final boolean batch)
         {
-
             // put queue entry on a list and then notify the connection to read list.
-
             synchronized (getChannel())
             {
                 getChannel().getConnection().setDeferFlush(batch);
@@ -255,17 +228,10 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
 
                 addUnacknowledgedMessage(entry);
                 getChannel().addUnacknowledgedMessage(entry, deliveryTag, consumer, _usesCredit);
-                long size = sendToClient(consumer, entry.getMessage(), entry.getInstanceProperties(), deliveryTag);
+                sendToClient(consumer, message, entry.getInstanceProperties(), deliveryTag);
                 entry.incrementDeliveryCount();
             }
-
-
         }
-
-
-
-
-
     }
 
     private final AMQChannel _channel;
@@ -399,7 +365,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
         updateNotifyWorkDesired();
     }
 
-    protected long sendToClient(final MessageInstanceConsumer consumer, final ServerMessage message,
+    protected long sendToClient(final MessageInstanceConsumer consumer, final AMQMessage message,
                                 final InstanceProperties props,
                                 final long deliveryTag)
     {
@@ -425,6 +391,41 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
     }
 
     @Override
+    final protected void doSend(final MessageInstanceConsumer consumer, final MessageInstance entry, final boolean batch)
+    {
+        ServerMessage serverMessage = entry.getMessage();
+        MessageConverter<ServerMessage<?>, AMQMessage> messageConverter = null;
+        final AMQMessage msg;
+        if(serverMessage instanceof AMQMessage)
+        {
+            msg = (AMQMessage) serverMessage;
+        }
+        else
+        {
+            messageConverter = MessageConverterRegistry.getConverter((Class<ServerMessage<?>>) serverMessage.getClass(), AMQMessage.class);
+            msg = messageConverter.convert(serverMessage, getConnection().getAddressSpace());
+        }
+
+        try
+        {
+            doSendInternal(consumer, entry, msg, batch);
+        }
+        finally
+        {
+            if(messageConverter != null)
+            {
+                messageConverter.dispose(msg);
+            }
+        }
+    }
+
+    protected abstract void doSendInternal(final MessageInstanceConsumer consumer,
+                                           final MessageInstance entry,
+                                           final AMQMessage message,
+                                           final boolean batch);
+
+
+    @Override
     public void flushBatched()
     {
         _channel.getConnection().setDeferFlush(false);
@@ -441,23 +442,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
     {
         _unacknowledgedBytes.addAndGet(-entry.getMessage().getSizeIncludingHeader());
         _unacknowledgedCount.decrementAndGet();
-    }
-
-    @Override
-    public void acquisitionRemoved(final MessageInstance node)
-    {
-    }
-
-    @Override
-    public long getUnacknowledgedBytes()
-    {
-        return _unacknowledgedBytes.longValue();
-    }
-
-    @Override
-    public long getUnacknowledgedMessages()
-    {
-        return _unacknowledgedCount.longValue();
     }
 
     private final StateChangeListener<MessageInstance, EntryState> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, EntryState>()

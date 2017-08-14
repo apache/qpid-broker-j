@@ -109,6 +109,12 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         return true;
     }
 
+    @Override
+    public MessageConversionExceptionHandlingPolicy getMessageConversionExceptionHandlingPolicy()
+    {
+        return MessageConversionExceptionHandlingPolicy.CLOSE;
+    }
+
     protected class Consumer<T extends ConsumerTarget> implements MessageInstanceConsumer<T>
     {
 

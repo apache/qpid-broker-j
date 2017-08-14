@@ -54,7 +54,6 @@ import org.apache.qpid.server.properties.ConnectionStartProperties;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.message.InstanceProperties;
-import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -1250,7 +1249,7 @@ public class AMQPConnection_0_8Impl
         }
 
         @Override
-        public long deliverToClient(final ConsumerTarget_0_8 target, final ServerMessage message,
+        public long deliverToClient(final ConsumerTarget_0_8 target, final AMQMessage message,
                                     final InstanceProperties props, final long deliveryTag)
         {
             long size = _protocolOutputConverter.writeDeliver(message,

@@ -265,8 +265,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                    MessageSource.ExistingExclusiveConsumer, MessageSource.ConsumerAccessRefused,
                    MessageSource.QueueDeleted
     {
-        final GetDeliveryMethod getDeliveryMethod =
-                new GetDeliveryMethod(queue);
+        final GetDeliveryMethod getDeliveryMethod = new GetDeliveryMethod(queue);
 
         ConsumerTarget_0_8 target;
         EnumSet<ConsumerOption> options = EnumSet.of(ConsumerOption.TRANSIENT, ConsumerOption.ACQUIRES,
@@ -285,9 +284,14 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                                              INFINITE_CREDIT_CREDIT_MANAGER, getDeliveryMethod);
         }
 
-        MessageInstanceConsumer<ConsumerTarget_0_8> sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
+        queue.addConsumer(target, null, AMQMessage.class, "", options, null);
         target.updateNotifyWorkDesired();
-        target.sendNextMessage();
+        boolean canCallSendNextMessageAgain;
+        do
+        {
+            canCallSendNextMessageAgain = target.sendNextMessage();
+        }
+        while (canCallSendNextMessageAgain && !getDeliveryMethod.hasDeliveredMessage());
         target.close();
         return getDeliveryMethod.hasDeliveredMessage();
     }
@@ -1291,7 +1295,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
 
         @Override
-        public long deliverToClient(final ConsumerTarget_0_8 target, final ServerMessage message,
+        public long deliverToClient(final ConsumerTarget_0_8 target, final AMQMessage message,
                                     final InstanceProperties props, final long deliveryTag)
         {
 

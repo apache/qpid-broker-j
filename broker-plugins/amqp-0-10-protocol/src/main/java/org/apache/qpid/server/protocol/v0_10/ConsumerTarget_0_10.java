@@ -80,9 +80,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
     private final ServerSession _session;
     private final AtomicBoolean _stopped = new AtomicBoolean(true);
 
-    private final AtomicLong _unacknowledgedCount = new AtomicLong(0);
-    private final AtomicLong _unacknowledgedBytes = new AtomicLong(0);
-
     private int _deferredMessageCredit;
     private long _deferredSizeCredit;
 
@@ -368,11 +365,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         _unacknowledgedCount.decrementAndGet();
     }
 
-    @Override
-    public void acquisitionRemoved(final MessageInstance entry)
-    {
-    }
-
     private void deferredAddCredit(final int deferredMessageCredit, final long deferredSizeCredit)
     {
         _deferredMessageCredit += deferredMessageCredit;
@@ -611,18 +603,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
     public String getTargetAddress()
     {
         return _targetAddress;
-    }
-
-    @Override
-    public long getUnacknowledgedBytes()
-    {
-        return _unacknowledgedBytes.longValue();
-    }
-
-    @Override
-    public long getUnacknowledgedMessages()
-    {
-        return _unacknowledgedCount.longValue();
     }
 
     @Override

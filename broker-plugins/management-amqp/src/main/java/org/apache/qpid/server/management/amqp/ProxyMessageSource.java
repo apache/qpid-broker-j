@@ -194,6 +194,12 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
         return session.getConnectionReference() == _connectionReference;
     }
 
+    @Override
+    public MessageConversionExceptionHandlingPolicy getMessageConversionExceptionHandlingPolicy()
+    {
+        return MessageConversionExceptionHandlingPolicy.CLOSE;
+    }
+
     private class WrappingTarget<T extends ConsumerTarget<T>> implements ConsumerTarget<WrappingTarget<T>>
     {
         private final T _underlying;

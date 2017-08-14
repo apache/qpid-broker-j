@@ -42,7 +42,6 @@ import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageContentSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageConverter;
-import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.util.GZIPUtils;
 
@@ -61,36 +60,14 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
 
     @Override
-    public long writeDeliver(final ServerMessage m,
+    public long writeDeliver(final AMQMessage msg,
                              final InstanceProperties props, int channelId,
                              long deliveryTag,
                              AMQShortString consumerTag)
     {
-        MessageConverter<ServerMessage, AMQMessage> messageConverter = null;
-        final AMQMessage msg;
-        if(m instanceof AMQMessage)
-        {
-            msg = (AMQMessage) m;
-        }
-        else
-        {
-            messageConverter = getMessageConverter(m);
-            msg = messageConverter.convert(m, _connection.getAddressSpace());
-        }
         final boolean isRedelivered = Boolean.TRUE.equals(props.getProperty(InstanceProperties.Property.REDELIVERED));
         AMQBody deliverBody = createEncodedDeliverBody(msg, isRedelivered, deliveryTag, consumerTag);
-        final long result = writeMessageDelivery(msg, channelId, deliverBody);
-        if(messageConverter != null)
-        {
-            messageConverter.dispose(msg);
-        }
-        return result;
-    }
-
-    private <M extends ServerMessage> MessageConverter<M, AMQMessage> getMessageConverter(M message)
-    {
-        Class<M> clazz = (Class<M>) message.getClass();
-        return MessageConverterRegistry.getConverter(clazz, AMQMessage.class);
+        return writeMessageDelivery(msg, channelId, deliverBody);
     }
 
     private long writeMessageDelivery(AMQMessage message, int channelId, AMQBody deliverBody)
@@ -304,30 +281,14 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
     }
 
     @Override
-    public long writeGetOk(final ServerMessage msg,
+    public long writeGetOk(final AMQMessage amqMessage,
                            final InstanceProperties props,
                            int channelId,
                            long deliveryTag,
                            int queueSize)
     {
-        final AMQMessage amqMessage;
-        MessageConverter<ServerMessage, AMQMessage> messageConverter = null;
-        if(msg instanceof AMQMessage)
-        {
-            amqMessage = (AMQMessage) msg;
-        }
-        else
-        {
-            messageConverter = getMessageConverter(msg);
-            amqMessage = messageConverter.convert(msg, _connection.getAddressSpace());
-        }
         AMQBody deliver = createEncodedGetOkBody(amqMessage, props, deliveryTag, queueSize);
-        final long result = writeMessageDelivery(amqMessage, channelId, deliver);
-        if(messageConverter != null)
-        {
-            messageConverter.dispose(amqMessage);
-        }
-        return result;
+        return writeMessageDelivery(amqMessage, channelId, deliver);
     }
 
 

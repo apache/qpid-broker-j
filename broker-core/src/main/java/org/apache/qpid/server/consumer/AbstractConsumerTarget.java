@@ -25,22 +25,32 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.SubscriptionMessages;
+import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
+import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.Consumer;
-import org.apache.qpid.server.message.MessageContainer;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.queue.SuspendedConsumerLoggingTicker;
+import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>> implements ConsumerTarget<T>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractConsumerTarget.class);
+
     private static final LogSubject MULTI_QUEUE_LOG_SUBJECT = new LogSubject()
     {
         @Override
@@ -49,6 +59,8 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
             return "[(** Multi-Queue **)] ";
         }
     };
+    protected final AtomicLong _unacknowledgedBytes = new AtomicLong(0);
+    protected final AtomicLong _unacknowledgedCount = new AtomicLong(0);
     private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
 
     private final boolean _isMultiQueue;
@@ -84,6 +96,12 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
         {
             return MULTI_QUEUE_LOG_SUBJECT;
         }
+    }
+
+    @Override
+    public void acquisitionRemoved(final MessageInstance node)
+    {
+
     }
 
     @Override
@@ -214,6 +232,18 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
         }
     }
 
+    @Override
+    public long getUnacknowledgedMessages()
+    {
+        return _unacknowledgedCount.longValue();
+    }
+
+    @Override
+    public long getUnacknowledgedBytes()
+    {
+        return _unacknowledgedBytes.longValue();
+    }
+
     protected abstract void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch);
 
 
@@ -248,6 +278,54 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
             try
             {
                 send(consumer, entry, false);
+            }
+            catch (MessageConversionException mce)
+            {
+                restoreCredit(entry.getMessage());
+                final TransactionLogResource owningResource = entry.getOwningResource();
+                if (owningResource instanceof MessageSource)
+                {
+                    final MessageSource.MessageConversionExceptionHandlingPolicy handlingPolicy =
+                            ((MessageSource) owningResource).getMessageConversionExceptionHandlingPolicy();
+                    switch(handlingPolicy)
+                    {
+                        case CLOSE:
+                            entry.release(consumer);
+                            throw new ConnectionScopedRuntimeException(String.format(
+                                    "Unable to convert message %s for this consumer",
+                                    entry.getMessage()), mce);
+                        case ROUTE_TO_ALTERNATE:
+                            if (consumer.acquires())
+                            {
+                                int enqueues = entry.routeToAlternate(null, null);
+                                if (enqueues == 0)
+                                {
+                                    LOGGER.info("Failed to convert message {} for this consumer because '{}'."
+                                                + "  Message discarded.", entry.getMessage(), mce.getMessage());
+
+                                }
+                                else
+                                {
+                                    LOGGER.info("Failed to convert message {} for this consumer because '{}'."
+                                                + "  Message routed to alternate.", entry.getMessage(), mce.getMessage());
+                                }
+                            }
+                            else
+                            {
+                                LOGGER.info("Failed to convert message {} for this browser because '{}'."
+                                            + "  Message skipped.", entry.getMessage(), mce.getMessage());
+                            }
+                            break;
+                        default:
+                            throw new ServerScopedRuntimeException("Unrecognised policy " + handlingPolicy);
+                    }
+                }
+                else
+                {
+                    throw new ConnectionScopedRuntimeException(String.format(
+                            "Unable to convert message %s for this consumer",
+                            entry.getMessage()), mce);
+                }
             }
             finally
             {

@@ -72,8 +72,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerTarget_1_0.class);
     private final boolean _acquires;
-    private final AtomicLong _unacknowledgedCount = new AtomicLong(0);
-    private final AtomicLong _unacknowledgedBytes = new AtomicLong(0);
 
     private long _deliveryTag = 0L;
 
@@ -373,11 +371,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         return _linkEndpoint.getSession();
     }
 
-    public void flush()
-    {
-        while(sendNextMessage());
-    }
-
     private class DispositionAction implements UnsettledAction
     {
 
@@ -655,26 +648,9 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     }
 
     @Override
-    public void acquisitionRemoved(final MessageInstance node)
-    {
-    }
-
-    @Override
     public String getTargetAddress()
     {
         return _linkEndpoint.getTarget().getAddress();
-    }
-
-    @Override
-    public long getUnacknowledgedBytes()
-    {
-        return _unacknowledgedBytes.get();
-    }
-
-    @Override
-    public long getUnacknowledgedMessages()
-    {
-        return _unacknowledgedCount.get();
     }
 
     @Override

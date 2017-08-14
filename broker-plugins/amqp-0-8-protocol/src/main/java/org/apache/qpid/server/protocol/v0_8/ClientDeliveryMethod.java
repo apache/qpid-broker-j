@@ -21,10 +21,9 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import org.apache.qpid.server.message.InstanceProperties;
-import org.apache.qpid.server.message.ServerMessage;
 
 public interface ClientDeliveryMethod
 {
-    long deliverToClient(final ConsumerTarget_0_8 target, final ServerMessage message, final InstanceProperties props,
+    long deliverToClient(final ConsumerTarget_0_8 target, final AMQMessage message, final InstanceProperties props,
                          final long deliveryTag);
 }

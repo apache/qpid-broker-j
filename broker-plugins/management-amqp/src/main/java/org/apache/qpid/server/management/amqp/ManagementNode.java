@@ -1581,6 +1581,12 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         _consumers.remove(managementNodeConsumer);
     }
 
+    @Override
+    public MessageConversionExceptionHandlingPolicy getMessageConversionExceptionHandlingPolicy()
+    {
+        return MessageConversionExceptionHandlingPolicy.CLOSE;
+    }
+
     private AmqpConnectionMetaData getCallerConnectionMetaData()
     {
         Subject currentSubject = Subject.getSubject(AccessController.getContext());

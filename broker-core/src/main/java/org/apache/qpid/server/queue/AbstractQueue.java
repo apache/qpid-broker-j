@@ -92,6 +92,7 @@ import org.apache.qpid.server.message.MessageInfoImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSender;
+import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.RejectType;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
@@ -269,6 +270,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private volatile OverflowPolicyHandler _postEnqueueOverflowPolicyHandler;
     private long _flowToDiskThreshold;
     private volatile MessageDestination _alternateBindingDestination;
+    private volatile MessageConversionExceptionHandlingPolicy _messageConversionExceptionHandlingPolicy;
 
     private interface HoldMethod
     {
@@ -503,6 +505,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         _mimeTypeToFileExtension = getContextValue(Map.class, MAP_OF_STRING_STRING, MIME_TYPE_TO_FILE_EXTENSION);
+        _messageConversionExceptionHandlingPolicy = getContextValue(MessageConversionExceptionHandlingPolicy.class, MESSAGE_CONVERSION_EXCEPTION_HANDLING_POLICY);
+
         _flowToDiskThreshold = getAncestor(Broker.class).getFlowToDiskThreshold();
 
         if(_defaultFilters != null)
@@ -3540,6 +3544,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             _bindingCount--;
         }
+    }
+
+    @Override
+    public MessageConversionExceptionHandlingPolicy getMessageConversionExceptionHandlingPolicy()
+    {
+        return _messageConversionExceptionHandlingPolicy;
     }
 
     private void validateOrCreateAlternateBinding(final Queue<?> queue, final boolean mayCreate)
