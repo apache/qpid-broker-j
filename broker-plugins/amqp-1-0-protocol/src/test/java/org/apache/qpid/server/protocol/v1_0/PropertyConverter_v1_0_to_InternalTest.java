@@ -39,6 +39,7 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
@@ -110,6 +111,21 @@ public class PropertyConverter_v1_0_to_InternalTest extends QpidTestCase
         Properties properties = new Properties();
         properties.setAbsoluteExpiryTime(new Date(expiryTime));
         Message_1_0 originalMessage = createTestMessage(properties, arrivalTime);
+
+        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+
+        assertEquals("Unexpected expiration", 0, convertedMessage.getMessageHeader().getExpiration());
+    }
+
+    public void testTTLConversion()
+    {
+        long ttl = 10000;
+        long arrivalTime = System.currentTimeMillis();
+        long expiryTime = arrivalTime + ttl;
+        final Header header = new Header();
+        header.setTtl(UnsignedInteger.valueOf(ttl));
+
+        Message_1_0 originalMessage = createTestMessage(header, arrivalTime);
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
