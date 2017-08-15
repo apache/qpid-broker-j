@@ -31,6 +31,7 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -148,11 +149,12 @@ public class SiteSpecificTrustStoreImpl
     @Override
     protected TrustManager[] getTrustManagersInternal() throws GeneralSecurityException
     {
-        if (_trustManagers == null || _trustManagers.length == 0)
+        TrustManager[] trustManagers = _trustManagers;
+        if (trustManagers == null || trustManagers.length == 0)
         {
             throw new IllegalStateException("Truststore " + this + " defines no trust managers");
         }
-        return _trustManagers;
+        return Arrays.copyOf(trustManagers, trustManagers.length);
     }
 
     @Override

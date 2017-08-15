@@ -66,11 +66,11 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
     private static final Logger LOGGER = LoggerFactory.getLogger(NonJavaKeyStoreImpl.class);
 
     @ManagedAttributeField( afterSet = "updateKeyManagers" )
-    private String _privateKeyUrl;
+    private volatile String _privateKeyUrl;
     @ManagedAttributeField( afterSet = "updateKeyManagers" )
-    private String _certificateUrl;
+    private volatile String _certificateUrl;
     @ManagedAttributeField( afterSet = "updateKeyManagers" )
-    private String _intermediateCertificateUrl;
+    private volatile String _intermediateCertificateUrl;
 
     private volatile KeyManager[] _keyManagers = new KeyManager[0];
 
@@ -81,7 +81,7 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
         Handler.register();
     }
 
-    private X509Certificate _certificate;
+    private volatile X509Certificate _certificate;
 
     @ManagedObjectFactoryConstructor
     public NonJavaKeyStoreImpl(final Map<String, Object> attributes, Broker<?> broker)
@@ -155,8 +155,8 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
     @Override
     public KeyManager[] getKeyManagers() throws GeneralSecurityException
     {
-
-        return _keyManagers;
+        KeyManager[] keyManagers = _keyManagers;
+        return keyManagers == null ? new KeyManager[0] : Arrays.copyOf(keyManagers, keyManagers.length);
     }
 
     @Override

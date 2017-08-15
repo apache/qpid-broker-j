@@ -31,6 +31,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Map;
@@ -60,16 +61,16 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
 {
 
     @ManagedAttributeField
-    private String _trustStoreType;
+    private volatile String _trustStoreType;
     @ManagedAttributeField
-    private String _trustManagerFactoryAlgorithm;
+    private volatile String _trustManagerFactoryAlgorithm;
     @ManagedAttributeField(afterSet = "postSetStoreUrl")
-    private String _storeUrl;
-    private String _path;
+    private volatile String _storeUrl;
+    private volatile String _path;
     @ManagedAttributeField
-    private boolean _peersOnly;
+    private volatile boolean _peersOnly;
     @ManagedAttributeField
-    private String _password;
+    private volatile String _password;
 
     private volatile TrustManager[] _trustManagers;
     private volatile Certificate[] _certificates;
@@ -227,13 +228,19 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
     @Override
     protected TrustManager[] getTrustManagersInternal() throws GeneralSecurityException
     {
-        return _trustManagers;
+        TrustManager[] trustManagers = _trustManagers;
+        if (trustManagers == null || trustManagers.length == 0)
+        {
+            throw new IllegalStateException("Truststore " + this + " defines no trust managers");
+        }
+        return Arrays.copyOf(trustManagers, trustManagers.length);
     }
 
     @Override
     public Certificate[] getCertificates() throws GeneralSecurityException
     {
-        return _certificates;
+        Certificate[] certificates = _certificates;
+        return certificates == null ? new Certificate[0] : Arrays.copyOf(certificates, certificates.length);
     }
 
     private static URL getUrlFromString(String urlString) throws MalformedURLException

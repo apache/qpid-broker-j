@@ -29,6 +29,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
@@ -250,7 +251,8 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
 
                 kmf.init(ks, keyStoreCharPassword);
 
-                return kmf.getKeyManagers();
+                KeyManager[] keyManagers = kmf.getKeyManagers();
+                return keyManagers == null ? new KeyManager[0] : Arrays.copyOf(keyManagers, keyManagers.length);
             }
         }
         catch (IOException e)

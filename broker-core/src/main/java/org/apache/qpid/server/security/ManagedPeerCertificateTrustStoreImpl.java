@@ -26,6 +26,7 @@ import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -75,17 +76,19 @@ public class ManagedPeerCertificateTrustStoreImpl
     @Override
     protected TrustManager[] getTrustManagersInternal()
     {
-        if (_trustManagers == null || _trustManagers.length == 0)
+        TrustManager[] trustManagers = _trustManagers;
+        if (trustManagers == null || trustManagers.length == 0)
         {
             throw new IllegalStateException("Truststore " + this + " defines no trust managers");
         }
-        return _trustManagers;
+        return Arrays.copyOf(trustManagers, trustManagers.length);
     }
 
     @Override
     public Certificate[] getCertificates()
     {
-        return _storedCertificates.toArray(new Certificate[_storedCertificates.size()]);
+        List<Certificate> storedCertificates = new ArrayList<>(_storedCertificates);
+        return storedCertificates.toArray(new Certificate[storedCertificates.size()]);
     }
 
     @StateTransition(currentState = {State.ACTIVE, State.ERRORED}, desiredState = State.DELETED)
@@ -121,7 +124,7 @@ public class ManagedPeerCertificateTrustStoreImpl
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             tmf.init(inMemoryKeyStore);
 
-            final Collection<TrustManager> trustManagersCol = new ArrayList<TrustManager>();
+            final Collection<TrustManager> trustManagersCol = new ArrayList<>();
             final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
             TrustManager[] delegateManagers = tmf.getTrustManagers();
             for (TrustManager tm : delegateManagers)
@@ -182,7 +185,7 @@ public class ManagedPeerCertificateTrustStoreImpl
         {
             if (!certsToRemove.containsKey(cert.getIssuerName()))
             {
-                certsToRemove.put(cert.getIssuerName(), new HashSet<BigInteger>());
+                certsToRemove.put(cert.getIssuerName(), new HashSet<>());
             }
             certsToRemove.get(cert.getIssuerName()).add(new BigInteger(cert.getSerialNumber()));
         }

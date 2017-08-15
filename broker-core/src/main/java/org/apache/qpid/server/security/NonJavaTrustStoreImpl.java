@@ -88,11 +88,12 @@ public class NonJavaTrustStoreImpl
     @Override
     protected TrustManager[] getTrustManagersInternal() throws GeneralSecurityException
     {
-        if (_trustManagers == null || _trustManagers.length == 0)
+        TrustManager[] trustManagers = _trustManagers;
+        if (trustManagers == null || trustManagers.length == 0)
         {
             throw new IllegalStateException("Truststore " + this + " defines no trust managers");
         }
-        return _trustManagers;
+        return Arrays.copyOf(trustManagers, trustManagers.length);
     }
 
     @Override
