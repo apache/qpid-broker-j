@@ -577,19 +577,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
 
-        OverflowPolicy overflowPolicy = getOverflowPolicy();
-        _postEnqueueOverflowPolicyHandler = createPostEnqueueOverflowPolicyHandler(overflowPolicy);
-        if (overflowPolicy == OverflowPolicy.REJECT)
-        {
-            _rejectPolicyHandler = new RejectPolicyHandler(this);
-            _rejectPolicyHandler.onQueueOpen();
-        }
+        createOverflowPolicyHandlers(_overflowPolicy);
 
         updateAlertChecks();
     }
 
-    private OverflowPolicyHandler createPostEnqueueOverflowPolicyHandler(final OverflowPolicy overflowPolicy)
+    private void createOverflowPolicyHandlers(final OverflowPolicy overflowPolicy)
     {
+        RejectPolicyHandler rejectPolicyHandler = null;
         OverflowPolicyHandler overflowPolicyHandler;
         switch (overflowPolicy)
         {
@@ -607,13 +602,15 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 break;
             case REJECT:
                 overflowPolicyHandler = new NoneOverflowPolicyHandler();
+                rejectPolicyHandler = new RejectPolicyHandler(this);
                 break;
             default:
                 throw new IllegalStateException(String.format("Overflow policy '%s' is not implemented",
                                                               overflowPolicy.name()));
         }
 
-        return overflowPolicyHandler;
+        _rejectPolicyHandler = rejectPolicyHandler;
+        _postEnqueueOverflowPolicyHandler = overflowPolicyHandler;
     }
 
     protected LogMessage getCreatedLogMessage()
@@ -3112,11 +3109,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 _rejectPolicyHandler = null;
             }
-            _postEnqueueOverflowPolicyHandler = createPostEnqueueOverflowPolicyHandler(_overflowPolicy);
-            if (_overflowPolicy == OverflowPolicy.REJECT)
-            {
-                _rejectPolicyHandler = new RejectPolicyHandler(this);
-            }
+            createOverflowPolicyHandlers(_overflowPolicy);
 
             _postEnqueueOverflowPolicyHandler.checkOverflow(null);
         }

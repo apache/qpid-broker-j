@@ -41,11 +41,7 @@ public class RejectPolicyHandler
     RejectPolicyHandler(final Queue<?> queue)
     {
         _handler = new Handler(queue);
-        MessageStore messageStore = _handler.getMessageStore();
-        if (messageStore != null)
-        {
-            messageStore.addMessageDeleteListener(_handler);
-        }
+        addMessageDeleteListener();
         queue.addChangeListener(_handler);
     }
 
@@ -62,11 +58,6 @@ public class RejectPolicyHandler
     void postEnqueue(MessageInstance instance)
     {
         _handler.postEnqueue(instance);
-    }
-
-    void onQueueOpen()
-    {
-        addMessageDeleteListener();
     }
 
     private void addMessageDeleteListener()
