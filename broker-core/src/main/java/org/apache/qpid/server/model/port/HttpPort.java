@@ -56,6 +56,12 @@ public interface HttpPort<X extends HttpPort<X>> extends Port<X>
     @ManagedContextDefault(name = PORT_HTTP_ACCEPT_BACKLOG, description = "The size of the pending connection backlog")
     int DEFAULT_PORT_HTTP_ACCEPT_BACKLOG = 1024;
 
+    String ABSOLUTE_SESSION_TIMEOUT = "qpid.port.http.absoluteSessionTimeout";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = ABSOLUTE_SESSION_TIMEOUT,
+                           description = "The maximum amount of time (in milliseconds) a session can be active.")
+    long DEFAULT_ABSOLUTE_SESSION_TIMEOUT = -1;
+
     @ManagedAttribute(defaultValue = "*")
     String getBindingAddress();
 
@@ -117,4 +123,9 @@ public interface HttpPort<X extends HttpPort<X>> extends Port<X>
 
     @DerivedAttribute(description = "Actual number of selectors.")
     int getNumberOfSelectors();
+
+    @DerivedAttribute(description = "This timeout defines the maximum amount of time (in milliseconds) a session can be"
+                                    + " active, regardless of any session activity. A value of zero or less disables"
+                                    + " the limit.")
+    long getAbsoluteSessionTimeout();
 }

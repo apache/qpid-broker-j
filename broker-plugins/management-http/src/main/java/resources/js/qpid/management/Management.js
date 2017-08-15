@@ -66,6 +66,7 @@ define(["dojo/_base/lang",
         // Optional errorHandler method can be set and invoked on error responses.
         function Management(brokerURL, errorHandler)
         {
+            this.errorCallback = {};
             this.brokerURL = brokerURL;
             this.errorHandler = errorHandler || function (error)
                 {
@@ -123,6 +124,19 @@ define(["dojo/_base/lang",
 
             var url = this.getFullUrl(request.url);
             var promise = xhr(url, requestOptions);
+            promise.otherwise(lang.hitch(this, function (error) {
+                if (error)
+                {
+                    var status = error.status || (error.response ? error.response.status : null);
+                    if (status)
+                    {
+                        var callbacks = this.errorCallback[status];
+                        array.forEach(callbacks, function (callback) {
+                            callback(error);
+                        });
+                    }
+                }
+            }));
             var errorHandler = this.errorHandler;
 
             // decorate promise in order to use a default error handler when 'then' method is invoked without providing error handler
@@ -678,6 +692,15 @@ define(["dojo/_base/lang",
         Management.prototype.getAuthenticatedUser = function ()
         {
             return this.user;
+        };
+
+        Management.prototype.addErrorCallback = function(status, f)
+        {
+            if (!(status in this.errorCallback))
+            {
+                this.errorCallback[status] = [];
+            }
+            this.errorCallback[status].push(f);
         };
 
         return Management;

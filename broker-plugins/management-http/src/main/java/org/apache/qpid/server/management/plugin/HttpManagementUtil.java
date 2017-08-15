@@ -34,6 +34,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
 
 import javax.security.auth.Subject;
@@ -41,6 +43,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionBindingEvent;
+import javax.servlet.http.HttpSessionBindingListener;
 
 import org.apache.qpid.server.management.plugin.servlet.ServletConnectionPrincipal;
 import org.apache.qpid.server.management.plugin.session.LoginLogoutReporter;
@@ -66,6 +70,7 @@ public class HttpManagementUtil
 
     private static final String ATTR_LOGIN_LOGOUT_REPORTER = "Qpid.loginLogoutReporter";
     private static final String ATTR_SUBJECT = "Qpid.subject";
+    private static final String ATTR_INVALIDATE_FUTURE = "Qpid.invalidateFuture";
     private static final String ATTR_LOG_ACTOR = "Qpid.logActor";
 
     private static final String ATTR_PORT = "org.apache.qpid.server.model.Port";
@@ -143,25 +148,51 @@ public class HttpManagementUtil
 
     public static void assertManagementAccess(final Broker<?> broker, Subject subject)
     {
-        Subject.doAs(subject, new PrivilegedAction<Void>()
-        {
-            @Override
-            public Void run()
-            {
-                broker.authorise(MANAGE_ACTION);
-                return null;
-            }
+        Subject.doAs(subject, (PrivilegedAction<Void>) () -> {
+            broker.authorise(MANAGE_ACTION);
+            return null;
         });
     }
 
     public static void saveAuthorisedSubject(HttpServletRequest request, Subject subject)
     {
         HttpSession session = request.getSession();
+        Broker<?> broker = getBroker(session.getServletContext());
+        HttpPort<?> port =  HttpManagementUtil.getPort(request);
         setSessionAttribute(ATTR_SUBJECT, subject, session, request);
         setSessionAttribute(ATTR_LOGIN_LOGOUT_REPORTER,
-                            new LoginLogoutReporter(subject, getBroker(session.getServletContext())),
+                            new LoginLogoutReporter(subject, broker),
                             session,
                             request);
+
+        long absoluteSessionTimeout = port.getAbsoluteSessionTimeout();
+        if (absoluteSessionTimeout > 0)
+        {
+            scheduleAbsoluteSessionTimeout(request, session, broker, absoluteSessionTimeout);
+        }
+    }
+
+    private static void scheduleAbsoluteSessionTimeout(final HttpServletRequest request,
+                                                       final HttpSession session,
+                                                       final Broker<?> broker, final long absoluteSessionTimeout)
+    {
+        ScheduledFuture<?> invalidateFuture = broker.scheduleTask(
+                absoluteSessionTimeout, TimeUnit.MILLISECONDS,
+                () -> invalidateSession(session));
+
+        setSessionAttribute(ATTR_INVALIDATE_FUTURE, new HttpSessionBindingListener() {
+
+            @Override
+            public void valueBound(final HttpSessionBindingEvent event)
+            {
+            }
+
+            @Override
+            public void valueUnbound(final HttpSessionBindingEvent event)
+            {
+                invalidateFuture.cancel(false);
+            }
+        }, session, request);
     }
 
     public static Subject tryToAuthenticate(HttpServletRequest request, HttpManagementConfiguration managementConfig)
@@ -262,7 +293,7 @@ public class HttpManagementUtil
                 Set<Principal> principalSet = subject.getPrincipals();
                 if (!principalSet.isEmpty())
                 {
-                    TreeSet<String> principalNames = new TreeSet();
+                    TreeSet<String> principalNames = new TreeSet<>();
                     for (Principal principal : principalSet)
                     {
                         principalNames.add(principal.getName());

@@ -177,6 +177,7 @@ define(["dojo/query",
         {
             this.controller = controller;
             this.management = new Management("", util.xhrErrorHandler);
+            this.management.addErrorCallback(401, updater.cancel);
             this.structure = new Structure();
 
             var management = this.management;

@@ -49,6 +49,7 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
     private int _numberOfAcceptors;
     private int _numberOfSelectors;
     private int _acceptsBacklogSize;
+    private long _absoluteSessionTimeout;
 
     @ManagedObjectFactoryConstructor
     public HttpPortImpl(final Map<String, Object> attributes,
@@ -131,6 +132,7 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
         _acceptsBacklogSize = getContextValue(Integer.class, HttpPort.PORT_HTTP_ACCEPT_BACKLOG);
         _numberOfAcceptors = getContextValue(Integer.class, HttpPort.PORT_HTTP_NUMBER_OF_ACCEPTORS);
         _numberOfSelectors =  getContextValue(Integer.class, HttpPort.PORT_HTTP_NUMBER_OF_SELECTORS);
+        _absoluteSessionTimeout =  getContextValue(Long.class, HttpPort.ABSOLUTE_SESSION_TIMEOUT);
     }
 
     @Override
@@ -182,6 +184,12 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
         {
             validateThreadPoolSettings(changed);
         }
+    }
+
+    @Override
+    public long getAbsoluteSessionTimeout()
+    {
+        return _absoluteSessionTimeout;
     }
 
     private void validateThreadPoolSettings(HttpPort<?> httpPort)
