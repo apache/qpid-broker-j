@@ -211,9 +211,4 @@ public class ManagedPeerCertificateTrustStoreImpl
         }
     }
 
-    @Override
-    protected Certificate[] getCertificatesInternal() throws GeneralSecurityException
-    {
-        return getCertificates();
-    }
 }

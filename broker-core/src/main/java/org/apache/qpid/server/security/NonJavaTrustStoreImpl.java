@@ -98,14 +98,8 @@ public class NonJavaTrustStoreImpl
     @Override
     public Certificate[] getCertificates() throws GeneralSecurityException
     {
-        try
-        {
-            return SSLUtil.readCertificates(getUrlFromString(getCertificatesUrl()));
-        }
-        catch (IOException e)
-        {
-            throw new GeneralSecurityException(e);
-        }
+        X509Certificate[] certificates = _certificates;
+        return certificates == null ? new X509Certificate[0] : certificates;
     }
 
     @Override
@@ -135,13 +129,6 @@ public class NonJavaTrustStoreImpl
         super.validateChange(proxyForValidation, changedAttributes);
         NonJavaTrustStore changedStore = (NonJavaTrustStore) proxyForValidation;
         validateTrustStoreAttributes(changedStore);
-    }
-
-    @Override
-    protected Certificate[] getCertificatesInternal() throws GeneralSecurityException
-    {
-        X509Certificate[] certificates = _certificates;
-        return certificates == null ? new X509Certificate[0] : certificates;
     }
 
     private void validateTrustStoreAttributes(NonJavaTrustStore<?> keyStore)

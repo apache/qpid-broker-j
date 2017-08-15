@@ -213,7 +213,7 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
 
             try
             {
-                Certificate[] certificatesInternal = getCertificatesInternal();
+                Certificate[] certificatesInternal = getCertificates();
                 if (certificatesInternal.length > 0)
                 {
                     Arrays.stream(certificatesInternal)
@@ -296,7 +296,6 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     }
 
     protected abstract TrustManager[] getTrustManagersInternal() throws GeneralSecurityException;
-    protected abstract Certificate[] getCertificatesInternal() throws GeneralSecurityException;
 
     @Override
     public final int getCertificateExpiryWarnPeriod()
@@ -357,7 +356,7 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     {
         try
         {
-            Certificate[] certificatesInternal = getCertificatesInternal();
+            Certificate[] certificatesInternal = getCertificates();
             if (certificatesInternal.length > 0)
             {
                 return Arrays.stream(certificatesInternal)

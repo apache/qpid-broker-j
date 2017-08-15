@@ -26,6 +26,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
@@ -69,6 +70,9 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
     private boolean _peersOnly;
     @ManagedAttributeField
     private String _password;
+
+    private volatile TrustManager[] _trustManagers;
+    private volatile Certificate[] _certificates;
 
     static
     {
@@ -119,13 +123,39 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
         validateTrustStore(updated);
     }
 
+    @Override
+    protected void onOpen()
+    {
+        super.onOpen();
+        initialize();
+    }
+
+    @Override
+    protected void changeAttributes(final Map<String, Object> attributes)
+    {
+        super.changeAttributes(attributes);
+        if (attributes.containsKey(STORE_URL)
+            || attributes.containsKey(PASSWORD)
+            || attributes.containsKey(TRUST_STORE_TYPE)
+            || attributes.containsKey(TRUST_MANAGER_FACTORY_ALGORITHM)
+            || attributes.containsKey(PEERS_ONLY))
+        {
+            initialize();
+        }
+    }
+
+    private static KeyStore initializeKeyStore(final FileTrustStore trustStore)
+            throws GeneralSecurityException, IOException
+    {
+        URL trustStoreUrl = getUrlFromString(trustStore.getStoreUrl());
+        return SSLUtil.getInitializedKeyStore(trustStoreUrl, trustStore.getPassword(), trustStore.getTrustStoreType());
+    }
 
     private static void validateTrustStore(FileTrustStore trustStore)
     {
         try
         {
-            URL trustStoreUrl = getUrlFromString(trustStore.getStoreUrl());
-            SSLUtil.getInitializedKeyStore(trustStoreUrl, trustStore.getPassword(), trustStore.getTrustStoreType());
+            initializeKeyStore(trustStore);
         }
         catch (Exception e)
         {
@@ -197,104 +227,13 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
     @Override
     protected TrustManager[] getTrustManagersInternal() throws GeneralSecurityException
     {
-        String trustStorePassword = getPassword();
-        String trustStoreType = _trustStoreType;
-        String trustManagerFactoryAlgorithm = _trustManagerFactoryAlgorithm;
-
-        try
-        {
-            URL trustStoreUrl = getUrlFromString(_storeUrl);
-
-            KeyStore ts = SSLUtil.getInitializedKeyStore(trustStoreUrl, trustStorePassword, trustStoreType);
-            final TrustManagerFactory tmf = TrustManagerFactory
-                    .getInstance(trustManagerFactoryAlgorithm);
-            tmf.init(ts);
-
-            TrustManager[] delegateManagers = tmf.getTrustManagers();
-            if (delegateManagers.length == 0)
-            {
-                throw new IllegalStateException("Truststore " + this + " defines no trust managers");
-            }
-            else if (delegateManagers.length == 1)
-            {
-                if (_peersOnly  && delegateManagers[0] instanceof X509TrustManager)
-                {
-                    return new TrustManager[] {new QpidPeersOnlyTrustManager(ts,
-                                                                             ((X509TrustManager) delegateManagers[0]))};
-                }
-                else
-                {
-                    return delegateManagers;
-                }
-            }
-            else
-            {
-                final Collection<TrustManager> trustManagersCol = new ArrayList<>();
-                final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
-                for (TrustManager tm : delegateManagers)
-                {
-                    if (tm instanceof X509TrustManager)
-                    {
-                        if (_peersOnly)
-                        {
-                            mulTrustManager.addTrustManager(new QpidPeersOnlyTrustManager(ts, (X509TrustManager) tm));
-                        }
-                        else
-                        {
-                            mulTrustManager.addTrustManager((X509TrustManager) tm);
-                        }
-                    }
-                    else
-                    {
-                        trustManagersCol.add(tm);
-                    }
-                }
-                if (! mulTrustManager.isEmpty())
-                {
-                    trustManagersCol.add(mulTrustManager);
-                }
-                return trustManagersCol.toArray(new TrustManager[trustManagersCol.size()]);
-            }
-        }
-        catch (IOException e)
-        {
-            throw new GeneralSecurityException(e);
-        }
+        return _trustManagers;
     }
 
     @Override
     public Certificate[] getCertificates() throws GeneralSecurityException
     {
-        String trustStorePassword = getPassword();
-        String trustStoreType = _trustStoreType;
-
-        try
-        {
-            URL trustStoreUrl = getUrlFromString(_storeUrl);
-
-            KeyStore ts = SSLUtil.getInitializedKeyStore(trustStoreUrl, trustStorePassword, trustStoreType);
-
-            final Collection<Certificate> certificates = new ArrayList<>();
-
-            Enumeration<String> aliases = ts.aliases();
-            while (aliases.hasMoreElements())
-            {
-                certificates.add(ts.getCertificate(aliases.nextElement()));
-            }
-
-            return certificates.toArray(new Certificate[certificates.size()]);
-
-        }
-        catch (IOException e)
-        {
-            throw new GeneralSecurityException(e);
-        }
-    }
-
-    @Override
-    protected Certificate[] getCertificatesInternal() throws GeneralSecurityException
-    {
-        return getCertificates();
+        return _certificates;
     }
 
     private static URL getUrlFromString(String urlString) throws MalformedURLException
@@ -324,5 +263,83 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
         {
             _path = null;
         }
+    }
+
+    private void initialize()
+    {
+        try
+        {
+            KeyStore ts = initializeKeyStore(this);
+            _trustManagers = createTrustManagers(ts);
+            _certificates = createCertificates(ts);
+        }
+        catch (Exception e)
+        {
+            throw new IllegalConfigurationException(String.format("Cannot instantiate trust store '%s'", getName()), e);
+        }
+    }
+
+    private TrustManager[] createTrustManagers(final KeyStore ts) throws NoSuchAlgorithmException, KeyStoreException
+    {
+        final TrustManagerFactory tmf = TrustManagerFactory.getInstance(_trustManagerFactoryAlgorithm);
+        tmf.init(ts);
+
+        TrustManager[] delegateManagers = tmf.getTrustManagers();
+        if (delegateManagers.length == 0)
+        {
+            throw new IllegalStateException("Truststore " + this + " defines no trust managers");
+        }
+        else if (delegateManagers.length == 1)
+        {
+            if (_peersOnly  && delegateManagers[0] instanceof X509TrustManager)
+            {
+                return new TrustManager[] {new QpidPeersOnlyTrustManager(ts, ((X509TrustManager) delegateManagers[0]))};
+            }
+            else
+            {
+                return delegateManagers;
+            }
+        }
+        else
+        {
+            final Collection<TrustManager> trustManagersCol = new ArrayList<>();
+            final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
+            for (TrustManager tm : delegateManagers)
+            {
+                if (tm instanceof X509TrustManager)
+                {
+                    if (_peersOnly)
+                    {
+                        mulTrustManager.addTrustManager(new QpidPeersOnlyTrustManager(ts, (X509TrustManager) tm));
+                    }
+                    else
+                    {
+                        mulTrustManager.addTrustManager((X509TrustManager) tm);
+                    }
+                }
+                else
+                {
+                    trustManagersCol.add(tm);
+                }
+            }
+            if (! mulTrustManager.isEmpty())
+            {
+                trustManagersCol.add(mulTrustManager);
+            }
+            return trustManagersCol.toArray(new TrustManager[trustManagersCol.size()]);
+        }
+    }
+
+    private Certificate[] createCertificates(final KeyStore ts) throws KeyStoreException
+    {
+        final Collection<Certificate> certificates = new ArrayList<>();
+
+        Enumeration<String> aliases = ts.aliases();
+        while (aliases.hasMoreElements())
+        {
+            certificates.add(ts.getCertificate(aliases.nextElement()));
+        }
+
+        return certificates.toArray(new Certificate[certificates.size()]);
     }
 }

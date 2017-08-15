@@ -158,7 +158,8 @@ public class SiteSpecificTrustStoreImpl
     @Override
     public Certificate[] getCertificates() throws GeneralSecurityException
     {
-        return new Certificate[]{_x509Certificate};
+        X509Certificate x509Certificate = _x509Certificate;
+        return x509Certificate == null ? new Certificate[0] : new Certificate[]{x509Certificate};
     }
 
     @StateTransition(currentState = {State.ACTIVE, State.ERRORED}, desiredState = State.DELETED)
@@ -337,19 +338,6 @@ public class SiteSpecificTrustStoreImpl
             }
         });
         doSync(modelFuture);
-    }
-
-    @Override
-    protected Certificate[] getCertificatesInternal() throws GeneralSecurityException
-    {
-        if (_x509Certificate == null)
-        {
-            return new Certificate[0];
-        }
-        else
-        {
-            return new Certificate[]{_x509Certificate};
-        }
     }
 
     private static class AlwaysTrustManager implements X509TrustManager

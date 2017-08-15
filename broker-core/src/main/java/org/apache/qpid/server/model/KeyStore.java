@@ -29,14 +29,14 @@ public interface KeyStore<X extends KeyStore<X>> extends ConfiguredObject<X>
     String CERTIFICATE_EXPIRY_WARN_PERIOD = "qpid.keystore.certificateExpiryWarnPeriod";
 
     @ManagedContextDefault(name = CERTIFICATE_EXPIRY_WARN_PERIOD,
-            description = "The number of days before the certificate expiry date"
-                          + " to issue the operational log warning about the certificate expiry")
+            description = "The number of days before a certificate's expiry"
+                          + " that certificate expiration warnings will be written to the log")
     int DEFAULT_CERTIFICATE_EXPIRY_WARN_PERIOD = 30;
 
     String CERTIFICATE_EXPIRY_CHECK_FREQUENCY = "qpid.keystore.certificateExpiryCheckFrequency";
 
     @ManagedContextDefault(name = CERTIFICATE_EXPIRY_CHECK_FREQUENCY,
-            description = "The interval of number of days to check certificate expiry")
+            description = "Period (in days) with which the Broker will repeat the certificate expiration warning")
     int DEFAULT_CERTIFICATE_EXPIRY_CHECK_FREQUENCY = 1;
 
     @DerivedAttribute
