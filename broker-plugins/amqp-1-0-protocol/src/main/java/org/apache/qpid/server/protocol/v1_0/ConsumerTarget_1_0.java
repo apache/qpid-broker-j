@@ -154,24 +154,31 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
             Collection<QpidByteBuffer> bodyContent = message.getContent(0, (int) message.getSize());
             HeaderSection headerSection = message.getHeaderSection();
 
-            if (entry.getDeliveryCount() != 0)
+            UnsignedInteger ttl = headerSection == null ? null : headerSection.getValue().getTtl();
+            if (entry.getDeliveryCount() != 0 || ttl != null)
             {
-
                 Header header = new Header();
                 if (headerSection != null)
                 {
                     final Header oldHeader = headerSection.getValue();
                     header.setDurable(oldHeader.getDurable());
                     header.setPriority(oldHeader.getPriority());
-                    header.setTtl(oldHeader.getTtl());
+
+                    if (ttl != null)
+                    {
+                        long timeSpentOnBroker = System.currentTimeMillis() - message.getArrivalTime();
+                        final long adjustedTtl = Math.max(0L, ttl.longValue() - timeSpentOnBroker);
+                        header.setTtl(UnsignedInteger.valueOf(adjustedTtl));
+                    }
                     headerSection.dispose();
                 }
-                header.setDeliveryCount(UnsignedInteger.valueOf(entry.getDeliveryCount()));
 
-                QpidByteBuffer headerPayload = _sectionEncoder.encodeObject(header);
-                headerSection = new HeaderSection();
-                headerSection.setEncodedForm(Collections.singletonList(headerPayload));
-                headerPayload.dispose();
+                if (entry.getDeliveryCount() != 0)
+                {
+                    header.setDeliveryCount(UnsignedInteger.valueOf(entry.getDeliveryCount()));
+                }
+
+                headerSection = header.createEncodingRetainingSection();
             }
             List<QpidByteBuffer> payload = new ArrayList<>();
             if(headerSection != null)
