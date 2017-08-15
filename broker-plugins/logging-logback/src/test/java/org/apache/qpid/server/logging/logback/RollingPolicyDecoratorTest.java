@@ -31,10 +31,17 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 
 import ch.qos.logback.core.Context;
@@ -43,19 +50,26 @@ import ch.qos.logback.core.rolling.RollingPolicyBase;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.server.util.FileUtils;
+
+import ch.qos.logback.core.rolling.helper.FileNamePattern;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RollingPolicyDecoratorTest extends QpidTestCase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RollingPolicyDecoratorTest.class);
+
     private RollingPolicyBase _delegate;
     private RollingPolicyDecorator _policy;
     private RollingPolicyDecorator.RolloverListener _listener;
     private File _baseFolder;
     private File _testFile;
+    private Pattern _rolledFileRegExp;
 
     @Override
     public void setUp() throws Exception
@@ -66,11 +80,16 @@ public class RollingPolicyDecoratorTest extends QpidTestCase
         _testFile = createTestFile("test.2015-06-25.0.gz");
         Context mockContext = mock(Context.class);
         _delegate = mock(RollingPolicyBase.class);
-        when(_delegate.getFileNamePattern()).thenReturn( _baseFolder + File.separator + "test.%d{yyyy-MM-dd}.%i.gz");
+        String fileNamePattern = _baseFolder.getAbsolutePath() + "/" + "test.%d{yyyy-MM-dd}.%i.gz";
+        when(_delegate.getFileNamePattern()).thenReturn(fileNamePattern);
         when(_delegate.getContext()).thenReturn(mockContext);
         _listener = mock(RollingPolicyDecorator.RolloverListener.class);
 
         _policy = new RollingPolicyDecorator(_delegate, _listener, createMockExecutorService());
+
+        _rolledFileRegExp = Pattern.compile(new FileNamePattern(fileNamePattern, mockContext).toRegex());
+
+        LOGGER.debug("Rolled file reg exp: {} ", _rolledFileRegExp);
     }
 
     @Override
@@ -147,6 +166,8 @@ public class RollingPolicyDecoratorTest extends QpidTestCase
         _policy.rollover();
         verify(_delegate).rollover();
 
+        scan(_baseFolder);
+
         Matcher<String[]> matcher = getMatcher(new String[]{ _testFile.getName() });
         verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher));
 
@@ -155,6 +176,56 @@ public class RollingPolicyDecoratorTest extends QpidTestCase
         verify(_delegate, times(2)).rollover();
         Matcher<String[]> matcher2 = getMatcher(new String[]{_testFile.getName(), secondFile.getName()});
         verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher2));
+    }
+
+    private void scan(final File baseFolder)
+    {
+        final List<Path> rolledFiles = new ArrayList<>();
+        try
+        {
+            Files.walkFileTree(baseFolder.toPath(), new FileVisitor<Path>()
+            {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                {
+                    String absolutePath = file.toAbsolutePath().toString();
+                    LOGGER.debug("Visiting file: {} ", absolutePath);
+                    if (File.separatorChar == '\\')
+                    {
+                        absolutePath = absolutePath.replace('\\', '/');
+                    }
+
+                    if (_rolledFileRegExp.matcher(absolutePath).matches())
+                    {
+                        rolledFiles.add(file);
+                    }
+                    return  FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc)
+                {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc)
+                {
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+        catch(IOException e)
+        {
+            LOGGER.warn("Unexpected IOException while scanning for rollover files.", e);
+        }
+        LOGGER.debug("Rolled files: {}", rolledFiles);
     }
 
     private Matcher<String[]> getMatcher(final String[] expected)

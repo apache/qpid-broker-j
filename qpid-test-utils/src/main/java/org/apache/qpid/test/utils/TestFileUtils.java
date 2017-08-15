@@ -84,7 +84,11 @@ public class TestFileUtils
         }
         catch (IOException e)
         {
-            throw new RuntimeException("Cannot create temporary file with prefix " + prefix + " and suffix " + SUFFIX, e);
+            throw new RuntimeException(String.format(
+                    "Cannot create temporary file with prefix '%s' and suffix '%s'. ${java.io.tmpdir}='%s'",
+                    prefix,
+                    suffix,
+                    System.getProperty("java.io.tmpdir")), e);
         }
 
         return tmpFile;
