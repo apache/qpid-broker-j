@@ -296,7 +296,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public void reject()
+        public void reject(final MessageInstanceConsumer<?> consumer)
         {
             delete();
         }

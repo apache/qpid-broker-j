@@ -261,7 +261,7 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
 
         //acquire, reject, and release the message using the consumer
         assertTrue("Queue entry should have been able to be acquired", _queueEntry.acquire(sub));
-        _queueEntry.reject();
+        _queueEntry.reject(sub);
         _queueEntry.release();
 
         //verify the rejection is recorded
@@ -272,7 +272,7 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
 
         assertFalse("Queue entry should not yet have been rejected by the consumer", _queueEntry.isRejectedBy(sub2));
         assertTrue("Queue entry should have been able to be acquired", _queueEntry.acquire(sub2));
-        _queueEntry.reject();
+        _queueEntry.reject(sub2);
 
         //verify it still records being rejected by both consumers
         assertTrue("Queue entry should have been rejected by the consumer", _queueEntry.isRejectedBy(sub));

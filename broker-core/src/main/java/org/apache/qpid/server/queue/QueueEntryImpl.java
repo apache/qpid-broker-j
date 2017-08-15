@@ -20,8 +20,9 @@
  */
 package org.apache.qpid.server.queue;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -39,8 +40,6 @@ import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.AlternateBinding;
-import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -58,7 +57,9 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     private final MessageReference _message;
 
-    private Set<Object> _rejectedBy = null;
+    private volatile Set<Object> _rejectedBy = null;
+    private static final AtomicReferenceFieldUpdater<QueueEntryImpl, Set> _rejectedByUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(QueueEntryImpl.class, Set.class, "_rejectedBy");
 
     private static final EntryState HELD_STATE = new EntryState()
     {
@@ -493,23 +494,18 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public void reject()
+    public void reject(final MessageInstanceConsumer<?> consumer)
     {
-        QueueConsumer<?,?> consumer = getAcquiringConsumer();
-
-        if (consumer != null)
+        if (consumer == null)
         {
-            if (_rejectedBy == null)
-            {
-                _rejectedBy = new HashSet<>();
-            }
+            throw new IllegalArgumentException("consumer must not be null");
+        }
 
-            _rejectedBy.add(consumer.getIdentifier());
-        }
-        else
+        if (_rejectedBy == null)
         {
-            _log.warn("Requesting rejection by null subscriber:" + this);
+            _rejectedByUpdater.compareAndSet(this, null, Collections.newSetFromMap(new ConcurrentHashMap<>()));
         }
+        _rejectedBy.add(consumer);
     }
 
     @Override

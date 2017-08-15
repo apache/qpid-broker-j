@@ -125,7 +125,7 @@ class ManagementResponse implements MessageInstance
     }
 
     @Override
-    public void reject()
+    public void reject(final MessageInstanceConsumer<?> consumer)
     {
         delete();
     }

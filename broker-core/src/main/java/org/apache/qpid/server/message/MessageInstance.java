@@ -57,7 +57,7 @@ public interface MessageInstance
 
     boolean isRedelivered();
 
-    void reject();
+    void reject(final MessageInstanceConsumer<?> consumer);
 
     boolean isRejectedBy(MessageInstanceConsumer consumer);
 

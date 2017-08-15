@@ -1684,7 +1684,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         }
 
         @Override
-        public void reject()
+        public void reject(final MessageInstanceConsumer<?> consumer)
         {
 
         }

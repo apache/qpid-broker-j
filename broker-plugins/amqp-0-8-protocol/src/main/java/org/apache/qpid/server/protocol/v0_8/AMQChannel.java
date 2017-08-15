@@ -2332,7 +2332,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     }
                     else
                     {
-                        message.reject();
+                        message.reject(unackedMessageConsumerAssociation.getConsumer());
 
                         final boolean maxDeliveryCountEnabled = isMaxDeliveryCountEnabled(deliveryTag);
                         if (_logger.isDebugEnabled())
@@ -2359,6 +2359,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                             else
                             {
                                 message.incrementDeliveryCount();
+                                message.release(unackedMessageConsumerAssociation.getConsumer());
                             }
                         }
                         else
