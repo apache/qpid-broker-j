@@ -27,11 +27,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jms.Connection;
-import javax.jms.Message;
 import javax.jms.MessageConsumer;
-import javax.jms.MessageListener;
 import javax.jms.Queue;
 import javax.jms.Session;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.client.RejectBehaviour;
 import org.apache.qpid.configuration.ClientProperties;
@@ -41,6 +42,7 @@ import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 public class LiveQueueOperationsTest extends QpidBrokerTestCase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LiveQueueOperationsTest.class);
 
     private static final int MAX_DELIVERY_COUNT = 2;
 
@@ -78,22 +80,19 @@ public class LiveQueueOperationsTest extends QpidBrokerTestCase
 
         final CountDownLatch clearQueueLatch = new CountDownLatch(10);
         final AtomicReference<Throwable> throwableAtomicReference = new AtomicReference<>();
-        consumer.setMessageListener(new MessageListener()
-        {
-            @Override
-            public void onMessage(final Message message)
-            {
-                try
-                {
-                    clearQueueLatch.countDown();
-                    session.rollback();
-                }
-                catch (Throwable t)
-                {
-                    throwableAtomicReference.set(t);
-                }
-            }
-        });
+        consumer.setMessageListener(message ->
+                                    {
+                                        try
+                                        {
+                                            clearQueueLatch.countDown();
+                                            session.rollback();
+                                        }
+                                        catch (Throwable t)
+                                        {
+                                            LOGGER.error("Unexpected exception from rollback", t);
+                                            throwableAtomicReference.set(t);
+                                        }
+                                    });
 
 
         boolean ready = clearQueueLatch.await(30, TimeUnit.SECONDS);
@@ -123,12 +122,14 @@ public class LiveQueueOperationsTest extends QpidBrokerTestCase
         queueDepthMessages = (int) statistics.get("queueDepthMessages");
         assertEquals("Unexpected queue depth after consumer close", 0, queueDepthMessages);
 
-        assertNull("Unexpected exception thrown", throwableAtomicReference.get());
+        assertEquals("Unexpected exception thrown", null, throwableAtomicReference.get());
     }
 
     private Map<String, Object> getStatistics(final RestTestHelper restTestHelper, final String objectUrl) throws Exception
     {
         Map<String, Object> object = restTestHelper.getJsonAsSingletonList(objectUrl);
-        return (Map<String, Object>) object.get("statistics");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> statistics = (Map<String, Object>) object.get("statistics");
+        return statistics;
     }
 }
