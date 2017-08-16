@@ -327,9 +327,9 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public boolean acquire(MessageInstanceConsumer sub)
+    public boolean acquire(MessageInstanceConsumer<?> consumer)
     {
-        final boolean acquired = acquire(((QueueConsumer<?,?>) sub).getOwningState().getUnstealableState());
+        final boolean acquired = acquire(((QueueConsumer<?,?>) consumer).getOwningState().getUnstealableState());
         if(acquired)
         {
             _deliveryCountUpdater.compareAndSet(this,-1,0);
@@ -338,7 +338,7 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer consumer)
+    public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer<?> consumer)
     {
         EntryState state = _state;
         if(state instanceof StealableConsumerAcquiredState
@@ -396,14 +396,14 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public boolean isAcquiredBy(MessageInstanceConsumer consumer)
+    public boolean isAcquiredBy(MessageInstanceConsumer<?> consumer)
     {
         EntryState state = _state;
         return (state instanceof ConsumerAcquiredState && ((ConsumerAcquiredState)state).getConsumer() == consumer);
     }
 
     @Override
-    public boolean removeAcquisitionFromConsumer(MessageInstanceConsumer consumer)
+    public boolean removeAcquisitionFromConsumer(MessageInstanceConsumer<?> consumer)
     {
         EntryState state = _state;
         if(state instanceof StealableConsumerAcquiredState
@@ -434,7 +434,7 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public void release(MessageInstanceConsumer consumer)
+    public void release(MessageInstanceConsumer<?> consumer)
     {
         EntryState state = _state;
         if(isAcquiredBy(consumer) && _stateUpdater.compareAndSet(this, state, AVAILABLE_STATE))
@@ -509,7 +509,7 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public boolean isRejectedBy(MessageInstanceConsumer consumer)
+    public boolean isRejectedBy(MessageInstanceConsumer<?> consumer)
     {
         return _rejectedBy != null && _rejectedBy.contains(consumer.getIdentifier());
     }

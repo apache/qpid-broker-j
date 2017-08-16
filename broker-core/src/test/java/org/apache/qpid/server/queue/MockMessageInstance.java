@@ -75,13 +75,13 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public boolean isAcquiredBy(final MessageInstanceConsumer consumer)
+    public boolean isAcquiredBy(final MessageInstanceConsumer<?> consumer)
     {
         return false;
     }
 
     @Override
-    public boolean removeAcquisitionFromConsumer(final MessageInstanceConsumer consumer)
+    public boolean removeAcquisitionFromConsumer(final MessageInstanceConsumer<?> consumer)
     {
         return false;
     }
@@ -99,13 +99,13 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public boolean acquire(final MessageInstanceConsumer sub)
+    public boolean acquire(final MessageInstanceConsumer<?> consumer)
     {
         return false;
     }
 
     @Override
-    public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer consumer)
+    public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer<?> consumer)
     {
         return false;
     }
@@ -151,7 +151,7 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public boolean isRejectedBy(final MessageInstanceConsumer consumer)
+    public boolean isRejectedBy(final MessageInstanceConsumer<?> consumer)
     {
         return false;
     }
@@ -163,7 +163,7 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public void release(final MessageInstanceConsumer release)
+    public void release(final MessageInstanceConsumer<?> consumer)
     {
     }
 

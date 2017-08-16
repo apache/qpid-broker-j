@@ -226,7 +226,7 @@ public class LastValueQueueList extends OrderedQueueEntryList
         }
 
         @Override
-        public void release(MessageInstanceConsumer consumer)
+        public void release(MessageInstanceConsumer<?> consumer)
         {
             super.release(consumer);
 

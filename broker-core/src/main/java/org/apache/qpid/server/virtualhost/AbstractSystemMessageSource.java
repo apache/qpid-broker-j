@@ -272,13 +272,13 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public boolean isAcquiredBy(final MessageInstanceConsumer consumer)
+        public boolean isAcquiredBy(final MessageInstanceConsumer<?> consumer)
         {
             return consumer == _consumer && !isDeleted();
         }
 
         @Override
-        public boolean removeAcquisitionFromConsumer(final MessageInstanceConsumer consumer)
+        public boolean removeAcquisitionFromConsumer(final MessageInstanceConsumer<?> consumer)
         {
             return consumer == _consumer;
         }
@@ -302,7 +302,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public boolean isRejectedBy(final MessageInstanceConsumer consumer)
+        public boolean isRejectedBy(final MessageInstanceConsumer<?> consumer)
         {
             return false;
         }
@@ -320,13 +320,13 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public boolean acquire(final MessageInstanceConsumer sub)
+        public boolean acquire(final MessageInstanceConsumer<?> consumer)
         {
             return false;
         }
 
         @Override
-        public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer consumer)
+        public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer<?> consumer)
         {
             return false;
         }
@@ -382,7 +382,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public void release(MessageInstanceConsumer consumer)
+        public void release(MessageInstanceConsumer<?> consumer)
         {
             release();
         }

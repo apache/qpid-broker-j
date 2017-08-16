@@ -279,7 +279,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         }
 
         @Override
-        public boolean acquire(MessageInstanceConsumer sub)
+        public boolean acquire(MessageInstanceConsumer<?> consumer)
         {
             if(_message.getMessageNumber() % 2 == 0)
             {
@@ -287,12 +287,12 @@ public class StandardQueueTest extends AbstractQueueTestBase
             }
             else
             {
-                return super.acquire(sub);
+                return super.acquire(consumer);
             }
         }
 
         @Override
-        public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer consumer)
+        public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer<?> consumer)
         {
             return true;
         }

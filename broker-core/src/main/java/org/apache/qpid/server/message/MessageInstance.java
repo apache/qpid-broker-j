@@ -49,9 +49,9 @@ public interface MessageInstance
 
     boolean acquiredByConsumer();
 
-    boolean isAcquiredBy(MessageInstanceConsumer consumer);
+    boolean isAcquiredBy(MessageInstanceConsumer<?> consumer);
 
-    boolean removeAcquisitionFromConsumer(MessageInstanceConsumer consumer);
+    boolean removeAcquisitionFromConsumer(MessageInstanceConsumer<?> consumer);
 
     void setRedelivered();
 
@@ -59,15 +59,15 @@ public interface MessageInstance
 
     void reject(final MessageInstanceConsumer<?> consumer);
 
-    boolean isRejectedBy(MessageInstanceConsumer consumer);
+    boolean isRejectedBy(MessageInstanceConsumer<?> consumer);
 
     boolean getDeliveredToConsumer();
 
     boolean expired();
 
-    boolean acquire(MessageInstanceConsumer sub);
+    boolean acquire(MessageInstanceConsumer<?> consumer);
 
-    boolean makeAcquisitionUnstealable(final MessageInstanceConsumer consumer);
+    boolean makeAcquisitionUnstealable(final MessageInstanceConsumer<?> consumer);
 
     boolean makeAcquisitionStealable();
 
@@ -251,7 +251,7 @@ public interface MessageInstance
 
     void release();
 
-    void release(MessageInstanceConsumer release);
+    void release(MessageInstanceConsumer<?> consumer);
 
     void delete();
 
