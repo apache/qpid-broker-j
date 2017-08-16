@@ -505,7 +505,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         {
             _rejectedByUpdater.compareAndSet(this, null, Collections.newSetFromMap(new ConcurrentHashMap<>()));
         }
-        _rejectedBy.add(consumer);
+        _rejectedBy.add(consumer.getIdentifier());
     }
 
     @Override
