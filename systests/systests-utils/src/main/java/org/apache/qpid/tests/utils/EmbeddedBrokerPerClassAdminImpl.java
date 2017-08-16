@@ -18,7 +18,7 @@
  *
  */
 
-package org.apache.qpid.tests.protocol.v1_0;
+package org.apache.qpid.tests.utils;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -43,9 +43,9 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.SystemLauncher;
 import org.apache.qpid.server.SystemLauncherListener;
 import org.apache.qpid.server.logging.logback.LogbackLoggingSystemLauncherListener;
-import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.ManageableMessage;
 import org.apache.qpid.server.model.NotFoundException;
@@ -87,7 +87,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             context.put("qpid.port.protocol_handshake_timeout", "1000000");
 
             Map<String,Object> systemConfigAttributes = new HashMap<>();
-            systemConfigAttributes.put(SystemConfig.INITIAL_CONFIGURATION_LOCATION, "classpath:config-protocol-tests.json");
+            //systemConfigAttributes.put(SystemConfig.INITIAL_CONFIGURATION_LOCATION, "classpath:config-protocol-tests.json");
             systemConfigAttributes.put(ConfiguredObject.CONTEXT, context);
             systemConfigAttributes.put(ConfiguredObject.TYPE, System.getProperty("broker.config-store-type", "JSON"));
             systemConfigAttributes.put(SystemConfig.STARTUP_LOGGED_TO_SYSTEM_OUT, Boolean.FALSE);
@@ -202,7 +202,9 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         final Map<String, Object> attributes = new HashMap<>();
         attributes.put(Queue.NAME, queueName);
         attributes.put(Queue.TYPE, "standard");
-        _currentVirtualHostNode.getVirtualHost().createChild(Queue.class, attributes);
+        final Queue queue = _currentVirtualHostNode.getVirtualHost().createChild(Queue.class, attributes);
+        final Exchange exchange = _currentVirtualHostNode.getVirtualHost().getChildByName(Exchange.class, "amq.direct");
+        exchange.bind(queueName, queueName, Collections.emptyMap(), false);
     }
 
     @Override

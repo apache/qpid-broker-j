@@ -143,19 +143,16 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- optional modules -->
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-bdbstore</artifactId>
       <scope>runtime</scope>
-      <optional>true</optional>
     </dependency>
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-plugins-amqp-1-0-protocol-bdb-link-store</artifactId>
       <scope>runtime</scope>
-      <optional>true</optional>
     </dependency>
 
     <!-- test dependencies -->

@@ -15,24 +15,15 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
 
-package org.apache.qpid.tests.protocol.v1_0;
+package org.apache.qpid.systests.end_to_end_conversion.client;
 
-import java.util.Map;
-
-import org.apache.qpid.server.plugin.QpidServiceLoader;
-
-public class BrokerAdminFactory
+public class VerificationException extends RuntimeException
 {
-    BrokerAdmin createInstance(String type)
+    public VerificationException(final String message)
     {
-        Map<String, BrokerAdmin> adminFacades = new QpidServiceLoader().getInstancesByType(BrokerAdmin.class);
-        BrokerAdmin brokerAdmin = adminFacades.get(type);
-        if (brokerAdmin == null)
-        {
-            throw new RuntimeException(String.format("Could not find BrokerAdmin implementation of type '%s'", type));
-        }
-        return brokerAdmin;
+        super(message);
     }
 }

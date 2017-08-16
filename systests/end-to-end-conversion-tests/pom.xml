@@ -1,0 +1,140 @@
+<?xml version="1.0"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  -->
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-systests-parent</artifactId>
+        <version>7.0.0-SNAPSHOT</version>
+        <relativePath>../../qpid-systests-parent/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>qpid-systests-end-to-end-conversion-tests</artifactId>
+    <name>Apache Qpid End to End Conversion Tests</name>
+    <description>End to end conversion tests</description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <resolverVersion>1.0.3</resolverVersion>
+        <mavenVersion>3.5.0</mavenVersion>
+        <client1Gavs>org.apache.qpid:qpid-jms-client:${qpid-jms-client-version}</client1Gavs>
+        <client1AdditionalJavaArguments></client1AdditionalJavaArguments>
+        <client2Gavs>org.apache.qpid:qpid-client:${qpid-jms-client-amqp-0-x-version},org.apache.geronimo.specs:geronimo-jms_1.1_spec:${geronimo-jms-1-1-version}</client2Gavs>
+        <client2AdditionalJavaArguments>-Dqpid.amqp.version=0-9-1</client2AdditionalJavaArguments>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-jms_1.1_spec</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.qpid</groupId>
+            <artifactId>qpid-broker</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-core</artifactId>
+            <version>${mavenVersion}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-connector-basic</artifactId>
+            <version>${resolverVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-transport-file</artifactId>
+            <version>${resolverVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-transport-http</artifactId>
+            <version>${resolverVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.qpid</groupId>
+            <artifactId>qpid-systests-utils</artifactId>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                    <workingDirectory>${project.basedir}</workingDirectory>
+                    <systemPropertyVariables>
+                        <qpid.initialConfigurationLocation>classpath:config-end-to-end-conversion-tests.json</qpid.initialConfigurationLocation>
+                        <qpid.systests.end_to_end_conversion.localRepository>${settings.localRepository}</qpid.systests.end_to_end_conversion.localRepository>
+                        <qpid.systests.end_to_end_conversion.remoteRepository>https://repo.maven.apache.org/maven2/</qpid.systests.end_to_end_conversion.remoteRepository>
+                    </systemPropertyVariables>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>client1 -> client2</id>
+                        <configuration>
+                            <skip>false</skip>
+                            <systemPropertyVariables>
+                                <qpid.systests.end_to_end_conversion.executionId>c1_c2</qpid.systests.end_to_end_conversion.executionId>
+                                <qpid.systests.end_to_end_conversion.publisherGavs>${client1Gavs}</qpid.systests.end_to_end_conversion.publisherGavs>
+                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>${client1AdditionalJavaArguments}</qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.subscriberGavs>${client2Gavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
+                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>${client2AdditionalJavaArguments}</qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>client2 -> client1</id>
+                        <configuration>
+                            <skip>false</skip>
+                            <systemPropertyVariables>
+                                <qpid.systests.end_to_end_conversion.executionId>c2_c1</qpid.systests.end_to_end_conversion.executionId>
+                                <qpid.systests.end_to_end_conversion.publisherGavs>${client2Gavs}</qpid.systests.end_to_end_conversion.publisherGavs>
+                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>${client2AdditionalJavaArguments}</qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.subscriberGavs>${client1Gavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
+                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>${client1AdditionalJavaArguments}</qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+
+</project>

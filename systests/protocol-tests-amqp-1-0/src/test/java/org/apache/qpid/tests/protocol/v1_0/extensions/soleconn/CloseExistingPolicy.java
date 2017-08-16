@@ -45,12 +45,12 @@ import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnect
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
-import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
+import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
-public class CloseExistingPolicy extends ProtocolTestBase
+public class CloseExistingPolicy extends BrokerAdminUsingTestBase
 {
     private InetSocketAddress _brokerAddress;
 

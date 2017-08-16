@@ -27,13 +27,12 @@ import java.nio.charset.StandardCharsets;
 
 import org.junit.Test;
 
-import org.apache.qpid.tests.protocol.v1_0.BrokerAdmin;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.protocol.v1_0.HeaderResponse;
-import org.apache.qpid.tests.protocol.v1_0.ProtocolTestBase;
+import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 
-public class ProtocolHeaderTest extends ProtocolTestBase
+public class ProtocolHeaderTest extends BrokerAdminUsingTestBase
 {
     @Test
     @SpecificationTest(section = "2.2",

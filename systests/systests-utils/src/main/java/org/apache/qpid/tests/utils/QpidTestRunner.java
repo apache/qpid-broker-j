@@ -15,16 +15,15 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
 
-package org.apache.qpid.tests.protocol.v1_0;
+package org.apache.qpid.tests.utils;
 
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class QpidTestRunner extends BlockJUnit4ClassRunner
 {
@@ -42,7 +41,7 @@ public class QpidTestRunner extends BlockJUnit4ClassRunner
     protected Object createTest() throws Exception
     {
         Object test = super.createTest();
-        ProtocolTestBase qpidTest = ((ProtocolTestBase) test);
+        BrokerAdminUsingTestBase qpidTest = ((BrokerAdminUsingTestBase) test);
         qpidTest.init(_brokerAdmin);
         return test;
     }
