@@ -21,6 +21,7 @@
 define(["dojo/parser",
         "dojo/query",
         "dojo/json",
+        "dojo/dom",
         "dojo/_base/lang",
         "dojo/_base/event",
         "dojo/_base/connect",
@@ -57,10 +58,12 @@ define(["dojo/parser",
         "dijit/form/DropDownButton",
         "dijit/Menu",
         "dijit/MenuItem",
+        "qpid/common/StatisticsWidget",
         "dojo/domReady!"],
     function (parser,
               query,
               json,
+              dom,
               lang,
               event,
               connect,
@@ -375,6 +378,13 @@ define(["dojo/parser",
             this.controller = brokerTab.controller;
             this.brokerObj = brokerTab.modelObj;
             this.contentPane = brokerTab.contentPane;
+            this.brokerStatistics = new qpid.common.StatisticsWidget({
+                category:  "Broker",
+                type: null,
+                management: this.controller.management
+            });
+            this.brokerStatistics.placeAt(dom.byId("showBroker.statistics"));
+
             this.accessControlProvidersWarn = query(".broker-access-control-providers-warning", node)[0];
             this.management = this.controller.management;
             var that = this;
@@ -889,7 +899,7 @@ define(["dojo/parser",
         BrokerUpdater.prototype.showVirtualHost = function (item)
         {
             this.controller.showById(item.vhId);
-        }
+        };
 
         BrokerUpdater.prototype.updateHeader = function ()
         {
@@ -980,6 +990,9 @@ define(["dojo/parser",
                             }
                         }
                     }
+                    that.brokerStatistics.update(that.brokerData.statistics);
+                    that.brokerStatistics.resize();
+
                     util.flattenStatistics(that.brokerData);
 
                     that.updateHeader();

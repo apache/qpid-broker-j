@@ -32,6 +32,26 @@ define(["dojo/_base/array", "dojox/lang/functional/object"], function (array, fo
         return null;
     };
 
+    Metadata.prototype.getStatisticsMetadata = function (category, type, statisticType)
+    {
+        var metadata = this.getMetaData(category, type);
+        if (metadata && metadata.statistics)
+        {
+            var filteredStatItems = [];
+            fobject.forIn(metadata.statistics, function(statItem) {
+               if (statItem.statisticType === statisticType)
+               {
+                   filteredStatItems.push(statItem);
+               }
+            }, this);
+            return filteredStatItems;
+        }
+        else
+        {
+            return [];
+        }
+    };
+
     Metadata.prototype.getDefaultValueForAttribute = function (category, type, attributeName)
     {
         var metaDataForInstance = this.getMetaData(category, type);
