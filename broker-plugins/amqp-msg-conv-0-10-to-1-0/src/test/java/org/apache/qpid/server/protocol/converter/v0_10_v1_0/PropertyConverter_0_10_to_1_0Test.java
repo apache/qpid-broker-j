@@ -22,6 +22,7 @@
 package org.apache.qpid.server.protocol.converter.v0_10_v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -178,15 +179,29 @@ public class PropertyConverter_0_10_to_1_0Test extends QpidTestCase
     {
         final String correlationId = "testCorrelationId";
         final MessageProperties messageProperties = new MessageProperties();
-        messageProperties.setCorrelationId(correlationId.getBytes());
+        messageProperties.setCorrelationId(correlationId.getBytes(UTF_8));
         MessageTransferMessage message = createTestMessage(messageProperties);
 
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         Properties properties = convertedMessage.getPropertiesSection().getValue();
-        assertEquals("Unexpected correlationId",
-                     correlationId,
-                     new String(((Binary) properties.getCorrelationId()).getArray(), UTF_8));
+        assertEquals("Unexpected correlationId", correlationId, properties.getCorrelationId());
+    }
+
+    public void testBinaryCorrelationIdConversion()
+    {
+        final byte[] correlationId = new byte[]{0x00, (byte) 0xff, (byte) 0xc3};
+        final MessageProperties messageProperties = new MessageProperties();
+        messageProperties.setCorrelationId(correlationId);
+        MessageTransferMessage message = createTestMessage(messageProperties);
+
+        final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        Properties properties = convertedMessage.getPropertiesSection().getValue();
+        assertTrue(String.format("Unexpected correlationId type. expected 'Binary' actual '%s'",
+                                 properties.getCorrelationId().getClass().getSimpleName()),
+                   properties.getCorrelationId() instanceof Binary);
+        assertArrayEquals("Unexpected correlationId", correlationId, ((Binary) properties.getCorrelationId()).getArray());
     }
 
     public void testReplyToConversionWhenExchangeAndRoutingKeySpecified()

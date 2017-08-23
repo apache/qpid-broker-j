@@ -21,6 +21,11 @@
 
 package org.apache.qpid.server.protocol.converter.v0_10_v1_0;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -28,6 +33,9 @@ import java.util.Map;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_10.MessageTransferMessage;
+import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.ReplyTo;
 import org.apache.qpid.server.protocol.v1_0.MessageConverter_to_1_0;
 import org.apache.qpid.server.protocol.v1_0.MessageMetaData_1_0;
@@ -37,15 +45,11 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotations;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
-import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
-import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
-import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.util.GZIPUtils;
 
 @PluggableService
@@ -123,7 +127,18 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
 
             if(msgProps.hasCorrelationId())
             {
-                props.setCorrelationId(new Binary(msgProps.getCorrelationId()));
+                CharsetDecoder charsetDecoder = StandardCharsets.UTF_8.newDecoder()
+                                                                      .onMalformedInput(CodingErrorAction.REPORT)
+                                                                      .onUnmappableCharacter(CodingErrorAction.REPORT);
+                try
+                {
+                    String correlationIdAsString = charsetDecoder.decode(ByteBuffer.wrap(msgProps.getCorrelationId())).toString();
+                    props.setCorrelationId(correlationIdAsString);
+                }
+                catch (CharacterCodingException e)
+                {
+                    props.setCorrelationId(new Binary(msgProps.getCorrelationId()));
+                }
             }
 
             if(msgProps.hasMessageId())
