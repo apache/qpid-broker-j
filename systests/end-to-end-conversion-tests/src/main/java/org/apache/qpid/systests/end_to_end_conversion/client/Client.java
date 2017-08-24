@@ -20,12 +20,10 @@
 
 package org.apache.qpid.systests.end_to_end_conversion.client;
 
-import java.io.ByteArrayOutputStream;
-import java.io.NotSerializableException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.net.Socket;
 import java.util.Arrays;
@@ -36,6 +34,7 @@ import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
+import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
@@ -44,7 +43,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 
 import org.apache.qpid.systests.end_to_end_conversion.EndToEndConversionTestBase;
-import org.apache.qpid.systests.end_to_end_conversion.JmsInstructions;
 
 public class Client
 {
@@ -66,15 +64,18 @@ public class Client
              final ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
              final ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());)
         {
-            System.out.println(String.format("Connected to controller %d -> %d", socket.getLocalPort(), socket.getPort()));
+            System.out.println(String.format("Connected to controller %d -> %d",
+                                             socket.getLocalPort(),
+                                             socket.getPort()));
             socket.setSoTimeout(EndToEndConversionTestBase.CLIENT_SOCKET_TIMEOUT);
             try
             {
                 final Object o = inputStream.readObject();
-                final ClientInstructions instructions;
-                if (o instanceof ClientInstructions)
+                final List<ClientInstruction> instructions;
+
+                if (o instanceof List && ((List<?>) o).stream().allMatch(item -> item instanceof ClientInstruction))
                 {
-                    instructions = (ClientInstructions) o;
+                    instructions = (List<ClientInstruction>) o;
                 }
                 else
                 {
@@ -82,93 +83,108 @@ public class Client
                 }
                 System.out.println(String.format("Received instructions : %s", instructions.toString()));
 
-                String contextFactory = instructions.getContextFactory();
-                String connectionUrl = instructions.getConnectionUrl();
-                String queueName = instructions.getQueueName();
-
-                Connection connection = null;
-                try
+                if (!instructions.isEmpty())
                 {
+                    String connectionUrl = null;
+                    javax.naming.Context context = null;
                     Hashtable<Object, Object> env = new Hashtable<>();
-                    env.put(Context.INITIAL_CONTEXT_FACTORY, contextFactory);
-                    env.put("connectionfactory.myFactoryLookup", connectionUrl);
-                    env.put("queue.myQueueLookup", queueName);
-
-                    javax.naming.Context context = new InitialContext(env);
-
-                    ConnectionFactory factory = (ConnectionFactory) context.lookup("myFactoryLookup");
-                    Destination queue = (Destination) context.lookup("myQueueLookup");
-
-                    System.out.println(String.format("Connecting to broker: %s", connectionUrl));
-                    connection = factory.createConnection();
-
-                    handleInstructions(connection, queue, instructions.getJmsInstructions());
-                }
-                finally
-                {
-                    if (connection != null)
+                    for (int i = 0; i < instructions.size(); i++)
                     {
-                        connection.close();
+                        final ClientInstruction instruction = instructions.get(i);
+                        if (instruction instanceof ConfigureJndiContext)
+                        {
+                            env.put(Context.INITIAL_CONTEXT_FACTORY,
+                                    ((ConfigureJndiContext) instruction).getContextFactory());
+                            connectionUrl = ((ConfigureJndiContext) instruction).getConnectionUrl();
+                            env.put("connectionfactory.myFactoryLookup", connectionUrl);
+                        }
+                        else if (instruction instanceof ConfigureDestination)
+                        {
+                            env.putAll(((ConfigureDestination) instruction).getDestinations());
+                        }
+                        else
+                        {
+                            context = new InitialContext(env);
+                            ConnectionFactory factory = (ConnectionFactory) context.lookup("myFactoryLookup");
+                            System.out.println(String.format("Connecting to broker: %s", connectionUrl));
+                            Connection connection = factory.createConnection();
+                            try
+                            {
+                                connection.start();
+                                handleInstructions(context, connection, instructions.subList(i, instructions.size()));
+                            }
+                            finally
+                            {
+                                connection.close();
+                            }
+                            break;
+                        }
                     }
                 }
                 System.out.println("Finished successfully");
                 objectOutputStream.writeObject(new ClientResult());
             }
+            catch (VerificationException e)
+            {
+                final VerificationException serializableException = new VerificationException(stringifyStacktrace(e));
+                objectOutputStream.writeObject(new ClientResult(serializableException));
+            }
             catch (Exception e)
             {
-                System.out.println("Encountered exception: " + e.getMessage());
-                try (OutputStream baos = new ByteArrayOutputStream();
-                     ObjectOutputStream oos = new ObjectOutputStream(baos))
-                {
-                    oos.writeObject(e);
-                    objectOutputStream.writeObject(new ClientResult(e));
-                }
-                catch (NotSerializableException nse)
-                {
-                    StringWriter sw = new StringWriter();
-                    PrintWriter pw = new PrintWriter(sw);
-                    e.printStackTrace(pw);
-                    final RuntimeException serializableException = new RuntimeException(
-                            "Client failed with non-serializable exception",
-                            new Exception(sw.toString()));
-                    objectOutputStream.writeObject(new ClientResult(serializableException));
-                }
+                final String stringifiedStacktrace = stringifyStacktrace(e);
+                System.out.println(stringifiedStacktrace);
+                final RuntimeException serializableException =
+                        new RuntimeException("Client failed with exception", new Exception(stringifiedStacktrace));
+                objectOutputStream.writeObject(new ClientResult(serializableException));
             }
         }
         catch (Exception e)
         {
-            System.out.println("Encountered exception: " + e.getMessage());
             e.printStackTrace();
+            e.printStackTrace(System.out);
         }
     }
 
-    private void handleInstructions(final Connection connection,
-                                    final Destination queue,
-                                    final List<JmsInstructions> jmsInstructions) throws Exception
+    private String stringifyStacktrace(final Throwable e)
+    {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        e.printStackTrace(pw);
+        return sw.toString();
+    }
+
+    private void handleInstructions(final Context context,
+                                    final Connection connection,
+                                    final List<ClientInstruction> instructions) throws Exception
     {
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         try
         {
-            for (JmsInstructions jmsInstruction : jmsInstructions)
+            for (ClientInstruction instruction : instructions)
             {
-                System.out.println(String.format("Process instruction: %s", jmsInstruction));
-                if (jmsInstruction instanceof JmsInstructions.PublishMessage)
+                System.out.println(String.format("Process instruction: %s", instruction));
+                if (instruction instanceof MessagingInstruction.PublishMessage)
                 {
-                    publishMessage(session, queue, jmsInstruction.getMessageDescription());
+                    final MessagingInstruction.PublishMessage publishInstruction =
+                            (MessagingInstruction.PublishMessage) instruction;
+                    final Destination destination =
+                            (Destination) context.lookup(publishInstruction.getDestinationJndiName());
+                    final MessageDescription messageDescription = publishInstruction.getMessageDescription();
+                    publishMessage(context, session, destination, messageDescription);
                 }
-                else if (jmsInstruction instanceof JmsInstructions.ReceiveMessage)
+                else if (instruction instanceof MessagingInstruction.ReceiveMessage)
                 {
-                    connection.start();
-                    receiveMessage(session, queue, jmsInstruction.getMessageDescription());
-                }
-                else if (jmsInstruction instanceof JmsInstructions.ReplyToMessage)
-                {
-                    throw new RuntimeException("ReplyTo is not implemented, yet.");
+                    final MessagingInstruction.ReceiveMessage receiveInstruction =
+                            (MessagingInstruction.ReceiveMessage) instruction;
+                    final Destination destination =
+                            (Destination) context.lookup(receiveInstruction.getDestinationJndiName());
+                    final MessageDescription messageDescription = receiveInstruction.getMessageDescription();
+                    receiveMessage(session, destination, messageDescription);
                 }
                 else
                 {
                     throw new RuntimeException(String.format("Unknown jmsInstruction class: '%s'",
-                                                             jmsInstruction.getClass().getName()));
+                                                             instruction.getClass().getName()));
                 }
             }
         }
@@ -180,37 +196,133 @@ public class Client
 
     private void receiveMessage(final Session session,
                                 final Destination queue,
-                                final JmsInstructions.MessageDescription messageDescription) throws Exception
+                                final MessageDescription messageDescription) throws Exception
     {
+        final Message message;
         MessageConsumer consumer = session.createConsumer(queue);
+        try
+        {
+            message = consumer.receive(RECEIVE_TIMEOUT);
+            MessageVerifier.verifyMessage(messageDescription, message);
+            System.out.println(String.format("Received message: %s", message));
+        }
+        finally
+        {
+            consumer.close();
+        }
 
-        final Message message = consumer.receive(RECEIVE_TIMEOUT);
-        MessageVerifier.verifyMessage(messageDescription, message);
-        System.out.println(String.format("Received message: %s", message));
+        if (message != null && message.getJMSReplyTo() != null)
+        {
+            System.out.println(String.format("Received message had replyTo: %s", message.getJMSReplyTo()));
+            sendReply(session,
+                      message.getJMSReplyTo(),
+                      messageDescription.getHeader(MessageDescription.MessageHeader.CORRELATION_ID));
+        }
     }
 
-
-    private void publishMessage(final Session session,
+    private void publishMessage(final Context context,
+                                final Session session,
                                 final Destination queue,
-                                final JmsInstructions.MessageDescription messageDescription)
-            throws Exception
+                                final MessageDescription messageDescription) throws Exception
     {
+        Message message = MessageCreator.fromMessageDescription(session, messageDescription);
+        Destination replyToDestination = null;
+        if (messageDescription.getReplyToJndiName() != null)
+        {
+            final String replyToJndiName = messageDescription.getReplyToJndiName();
+            if (replyToJndiName.equals(EndToEndConversionTestBase.TEMPORARY_QUEUE_JNDI_NAME))
+            {
+                replyToDestination = session.createTemporaryQueue();
+            }
+            else
+            {
+                replyToDestination = (Destination) context.lookup(replyToJndiName);
+            }
+            message.setJMSReplyTo(replyToDestination);
+        }
         MessageProducer messageProducer = session.createProducer(queue);
         try
         {
-            Message message = MessageCreator.fromMessageDescription(session, messageDescription);
             messageProducer.send(message,
-                                 messageDescription.getHeader(JmsInstructions.MessageDescription.MessageHeader.DELIVERY_MODE,
+                                 messageDescription.getHeader(MessageDescription.MessageHeader.DELIVERY_MODE,
                                                               DeliveryMode.NON_PERSISTENT),
-                                 messageDescription.getHeader(JmsInstructions.MessageDescription.MessageHeader.PRIORITY,
+                                 messageDescription.getHeader(MessageDescription.MessageHeader.PRIORITY,
                                                               Message.DEFAULT_PRIORITY),
-                                 messageDescription.getHeader(JmsInstructions.MessageDescription.MessageHeader.EXPIRATION,
+                                 messageDescription.getHeader(MessageDescription.MessageHeader.EXPIRATION,
                                                               Message.DEFAULT_TIME_TO_LIVE));
             System.out.println(String.format("Sent message: %s", message));
         }
         finally
         {
             messageProducer.close();
+        }
+
+        if (replyToDestination != null)
+        {
+            receiveReply(session,
+                         replyToDestination,
+                         messageDescription.getHeader(MessageDescription.MessageHeader.CORRELATION_ID));
+        }
+    }
+
+    private void receiveReply(final Session session,
+                              final Destination jmsReplyTo,
+                              final Serializable expectedCorrelationId)
+            throws Exception
+    {
+        final MessageConsumer consumer = session.createConsumer(jmsReplyTo);
+        try
+        {
+            final Message message = consumer.receive(RECEIVE_TIMEOUT);
+            System.out.println(String.format("Received message: %s", message));
+            if (expectedCorrelationId != null)
+            {
+                if (expectedCorrelationId instanceof byte[])
+                {
+                    if (!Arrays.equals((byte[]) expectedCorrelationId, message.getJMSCorrelationIDAsBytes()))
+                    {
+                        throw new VerificationException("ReplyTo message has unexpected correlationId.");
+                    }
+                }
+                else
+                {
+                    if (!expectedCorrelationId.equals(message.getJMSCorrelationID()))
+                    {
+                        throw new VerificationException("ReplyTo message has unexpected correlationId.");
+                    }
+                }
+            }
+        }
+        finally
+        {
+            consumer.close();
+        }
+    }
+
+    private void sendReply(final Session session, final Destination jmsReplyTo, final Serializable correlationId)
+            throws JMSException
+    {
+        final Message replyToMessage = session.createMessage();
+        if (correlationId != null)
+        {
+            if (correlationId instanceof byte[])
+            {
+                replyToMessage.setJMSCorrelationIDAsBytes((byte[]) correlationId);
+            }
+            else
+            {
+                replyToMessage.setJMSCorrelationID((String) correlationId);
+            }
+        }
+        System.out.println(String.format("Sending reply message: %s", replyToMessage));
+        MessageProducer producer = session.createProducer(jmsReplyTo);
+        try
+        {
+            producer.send(replyToMessage);
+        }
+        finally
+        {
+            producer.close();
         }
     }
 }

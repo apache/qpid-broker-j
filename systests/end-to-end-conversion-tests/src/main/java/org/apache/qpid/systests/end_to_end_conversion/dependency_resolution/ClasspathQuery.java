@@ -52,6 +52,7 @@ public class ClasspathQuery
     private static final LoadingCache<Collection<String>, List<File>> _classpathCache;
     private static final RepositorySystem _mavenRepositorySystem;
     private static final RepositorySystemSession _mavenRepositorySession;
+
     static
     {
         _mavenRepositorySystem = Booter.newRepositorySystem();
@@ -68,6 +69,7 @@ public class ClasspathQuery
                                           }
                                       });
     }
+
     private final Class<?> _clientClass;
     private final Collection<String> _clientGavs;
 
@@ -76,21 +78,6 @@ public class ClasspathQuery
     {
         _clientClass = clientClass;
         _clientGavs = gavs;
-    }
-
-    public Class<?> getClientClass()
-    {
-        return _clientClass;
-    }
-
-    public Collection<String> getClientGavs()
-    {
-        return _clientGavs;
-    }
-
-    public String getClasspath()
-    {
-        return buildClassPath(_clientClass, _clientGavs);
     }
 
     public static String getCacheStats()
@@ -146,6 +133,21 @@ public class ClasspathQuery
                                        .collect(Collectors.toSet()));
         }
         return jars;
+    }
+
+    public Class<?> getClientClass()
+    {
+        return _clientClass;
+    }
+
+    public Collection<String> getClientGavs()
+    {
+        return _clientGavs;
+    }
+
+    public String getClasspath()
+    {
+        return buildClassPath(_clientClass, _clientGavs);
     }
 
     private String buildClassPath(final Class<?> clientClazz, final Collection<String> gavs)

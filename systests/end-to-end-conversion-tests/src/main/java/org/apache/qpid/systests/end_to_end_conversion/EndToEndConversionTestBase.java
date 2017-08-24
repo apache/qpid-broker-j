@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -39,34 +40,31 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.end_to_end_conversion.client.Client;
-import org.apache.qpid.systests.end_to_end_conversion.client.ClientInstructions;
+import org.apache.qpid.systests.end_to_end_conversion.client.ClientInstruction;
 import org.apache.qpid.systests.end_to_end_conversion.client.ClientResult;
+import org.apache.qpid.systests.end_to_end_conversion.client.ConfigureDestination;
+import org.apache.qpid.systests.end_to_end_conversion.client.ConfigureJndiContext;
 import org.apache.qpid.systests.end_to_end_conversion.dependency_resolution.ClasspathQuery;
+import org.apache.qpid.systests.end_to_end_conversion.utils.LoggingOutputStream;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 
 public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
 {
-    public static final String QUEUE_NAME = "queue";
+    public static final String TEMPORARY_QUEUE_JNDI_NAME = "<TEMPORARY>";
     public static final int CLIENT_SOCKET_TIMEOUT = 30000;
+    private static final int SERVER_SOCKET_TIMEOUT = 30000;
     private static final Logger LOGGER = LoggerFactory.getLogger(EndToEndConversionTestBase.class);
     private static final Logger CLIENT_LOGGER = LoggerFactory.getLogger(Client.class);
-    private static final int SERVER_SOCKET_TIMEOUT = 30000;
-    private ListeningExecutorService _executorService =
+    private final ListeningExecutorService _executorService =
             MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
-
-    @Before
-    public void setUp()
-    {
-        getBrokerAdmin().createQueue(QUEUE_NAME);
-    }
 
     @AfterClass
     public static void reportStats()
@@ -74,7 +72,7 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
         System.out.println("LQDEBUG: " + ClasspathQuery.getCacheStats());
     }
 
-    protected ListenableFuture<?> runPublisher(final List<JmsInstructions> jmsInstructions)
+    protected ListenableFuture<?> runPublisher(final List<ClientInstruction> clientInstructions)
     {
         List<String> gavs = Arrays.asList(System.getProperty("qpid.systests.end_to_end_conversion.publisherGavs",
                                                              "org.apache.qpid:qpid-jms-client:LATEST")
@@ -85,11 +83,11 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
 
         return _executorService.submit(() -> {
             Thread.currentThread().setName("Publisher");
-            runClient(gavs, additionalJavaArgs, jmsInstructions);
+            runClient(gavs, additionalJavaArgs, clientInstructions);
         });
     }
 
-    protected ListenableFuture<?> runSubscriber(final List<JmsInstructions> jmsInstructions)
+    protected ListenableFuture<?> runSubscriber(final List<ClientInstruction> clientInstructions)
     {
         List<String> gavs = Arrays.asList(System.getProperty("qpid.systests.end_to_end_conversion.subscriberGavs",
                                                              "org.apache.qpid:qpid-client:LATEST,org.apache.geronimo.specs:geronimo-jms_1.1_spec:1.1.1")
@@ -101,34 +99,103 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
 
         return _executorService.submit(() -> {
             Thread.currentThread().setName("Subscriber");
-            runClient(gavs, additionalJavaArgs, jmsInstructions);
+            runClient(gavs, additionalJavaArgs, clientInstructions);
         });
     }
 
-    private ClientInstructions getClientInstructions(final List<JmsInstructions> jmsInstructions,
-                                                     final boolean amqp0xClient)
+    private List<ClientInstruction> amendClientInstructions(final List<ClientInstruction> clientInstructions,
+                                                            final boolean amqp0xClient)
     {
-        ClientInstructions clientInstructions = new ClientInstructions();
-        clientInstructions.setJmsInstructions(jmsInstructions);
-        if (amqp0xClient)
+        if (clientInstructions.isEmpty())
         {
-            clientInstructions.setContextFactory(getAmqp0xContextFactory());
-            clientInstructions.setConnectionUrl(getAmqp0xConnectionUrl());
+            LOGGER.warn("client instructions are empty!");
         }
         else
         {
-            clientInstructions.setContextFactory(getAmqp10ContextFactory());
-            clientInstructions.setConnectionUrl(getAmqp10ConnectionUrl());
+            if (!(clientInstructions.get(0) instanceof ConfigureDestination))
+            {
+                LOGGER.warn(String.format("first client instructions should be a 'ConfigureDestination' but is '%s'!",
+                                          clientInstructions.get(0).getClass().getSimpleName()));
+            }
+            if (clientInstructions.stream().filter(item -> item instanceof ConfigureJndiContext).count() != 0)
+            {
+                LOGGER.warn("Test should not set a 'ConfigureContext' client instruction!"
+                            + " This is set by the base class.");
+            }
         }
-        clientInstructions.setQueueName(QUEUE_NAME);
-        return clientInstructions;
+
+        final String contextFactory;
+        final String connectionUrl;
+        if (amqp0xClient)
+        {
+            contextFactory = getAmqp0xContextFactory();
+            connectionUrl = getAmqp0xConnectionUrl();
+        }
+        else
+        {
+            contextFactory = getAmqp10ContextFactory();
+            connectionUrl = getAmqp10ConnectionUrl();
+        }
+        ConfigureJndiContext jndiContext = new ConfigureJndiContext(contextFactory, connectionUrl);
+        List<ClientInstruction> instructions = new ArrayList<>();
+        instructions.add(jndiContext);
+        instructions.addAll(clientInstructions);
+        return instructions;
+    }
+
+    protected Protocol getPublisherProtocolVersion()
+    {
+        final String publisherGavs = System.getProperty("qpid.systests.end_to_end_conversion.publisherGavs",
+                                                        "org.apache.qpid:qpid-jms-client:LATEST");
+        final String additionalArgs =
+                System.getProperty("qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments", "");
+        return getClientProtocolVersion(publisherGavs, additionalArgs);
+    }
+
+    protected Protocol getSubscriberProtocolVersion()
+    {
+        final String publisherGavs = System.getProperty("qpid.systests.end_to_end_conversion.subscriberGavs",
+                                                        "org.apache.qpid:qpid-jms-client:LATEST");
+        final String additionalArgs = System.getProperty(
+                "qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments",
+                "-Dqpid.amqp.version=0-9-1");
+        return getClientProtocolVersion(publisherGavs, additionalArgs);
+    }
+
+    private Protocol getClientProtocolVersion(final String publisherGavs, final String additionalArgs)
+    {
+        if (publisherGavs.contains("org.apache.qpid:qpid-jms-client"))
+        {
+            return Protocol.AMQP_1_0;
+        }
+        else
+        {
+            if (additionalArgs.contains("0-10"))
+            {
+                return Protocol.AMQP_0_10;
+            }
+            else if (additionalArgs.contains("0-9-1"))
+            {
+                return Protocol.AMQP_0_9_1;
+            }
+            else if (additionalArgs.contains("0-9"))
+            {
+                return Protocol.AMQP_0_9;
+            }
+            else if (additionalArgs.contains("0-8"))
+            {
+                return Protocol.AMQP_0_8;
+            }
+        }
+        throw new RuntimeException("Unable to determine client protocol version");
     }
 
     private void runClient(final Collection<String> clientGavs,
                            final List<String> additionalJavaArguments,
-                           final List<JmsInstructions> jmsInstructions)
+                           final List<ClientInstruction> jmsInstructions)
     {
-        final ClientInstructions clientInstructions = getClientInstructions(jmsInstructions, isAmqp0xClient(clientGavs));
+        final List<ClientInstruction> clientInstructions = amendClientInstructions(jmsInstructions,
+                                                                                   isAmqp0xClient(clientGavs));
         final ClasspathQuery classpathQuery = new ClasspathQuery(Client.class, clientGavs);
 
         try (final ServerSocket serverSocket = new ServerSocket(0))

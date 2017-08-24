@@ -18,7 +18,7 @@
  *
  */
 
-package org.apache.qpid.systests.end_to_end_conversion;
+package org.apache.qpid.systests.end_to_end_conversion.utils;
 
 import java.io.IOException;
 import java.io.OutputStream;

@@ -20,8 +20,6 @@
 
 package org.apache.qpid.systests.end_to_end_conversion.client;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,11 +39,9 @@ import javax.jms.StreamMessage;
 import javax.jms.TextMessage;
 import javax.xml.bind.DatatypeConverter;
 
-import org.apache.qpid.systests.end_to_end_conversion.JmsInstructions;
-
 public class MessageVerifier
 {
-    public static void verifyMessage(final JmsInstructions.MessageDescription messageDescription, final Message message)
+    public static void verifyMessage(final MessageDescription messageDescription, final Message message)
             throws VerificationException
     {
         verifyNotNull("No message received", message);
@@ -54,10 +50,10 @@ public class MessageVerifier
         verifyMessageProperties(messageDescription, message);
     }
 
-    private static void verifyMessageTypeAndContent(final JmsInstructions.MessageDescription messageDescription,
+    private static void verifyMessageTypeAndContent(final MessageDescription messageDescription,
                                                     final Message message) throws VerificationException
     {
-        final JmsInstructions.MessageDescription.MessageType messageType = messageDescription.getMessageType();
+        final MessageDescription.MessageType messageType = messageDescription.getMessageType();
         Object expectedMessageContent = messageDescription.getContent();
         Serializable actualContent;
         Class<? extends Message> expectedMessageClass;
@@ -122,13 +118,13 @@ public class MessageVerifier
         }
     }
 
-    private static void verifyMessageHeaders(final JmsInstructions.MessageDescription messageDescription,
+    private static void verifyMessageHeaders(final MessageDescription messageDescription,
                                              final Message message) throws VerificationException
     {
         try
         {
-            for (Map.Entry<JmsInstructions.MessageDescription.MessageHeader, Serializable> entry : messageDescription.getHeaders()
-                                                                                                                     .entrySet())
+            for (Map.Entry<MessageDescription.MessageHeader, Serializable> entry : messageDescription.getHeaders()
+                                                                                                     .entrySet())
             {
                 Object actualValue;
 
@@ -186,7 +182,7 @@ public class MessageVerifier
         }
     }
 
-    private static void verifyMessageProperties(final JmsInstructions.MessageDescription messageDescription,
+    private static void verifyMessageProperties(final MessageDescription messageDescription,
                                                 final Message message) throws VerificationException
     {
         try

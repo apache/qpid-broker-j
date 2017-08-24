@@ -33,12 +33,10 @@ import javax.jms.Message;
 import javax.jms.Session;
 import javax.jms.StreamMessage;
 
-import org.apache.qpid.systests.end_to_end_conversion.JmsInstructions;
-
 public class MessageCreator
 {
     public static Message fromMessageDescription(final Session session,
-                                                 final JmsInstructions.MessageDescription messageDescription)
+                                                 final MessageDescription messageDescription)
             throws Exception
     {
         Message message = createMessage(messageDescription, session);
@@ -47,7 +45,7 @@ public class MessageCreator
         return message;
     }
 
-    private static void setProperties(final JmsInstructions.MessageDescription messageDescription,
+    private static void setProperties(final MessageDescription messageDescription,
                                       final Message message)
     {
         final HashMap<String, Serializable> properties = messageDescription.getProperties();
@@ -71,7 +69,7 @@ public class MessageCreator
         }
     }
 
-    private static Message createMessage(final JmsInstructions.MessageDescription messageDescription,
+    private static Message createMessage(final MessageDescription messageDescription,
                                          final Session session)
             throws Exception
     {
@@ -81,7 +79,7 @@ public class MessageCreator
             switch (messageDescription.getMessageType())
             {
                 case MESSAGE:
-                    message = session.createMessage();
+                    message = session.createTextMessage();
                     break;
                 case BYTES_MESSAGE:
                     message = session.createBytesMessage();
@@ -121,10 +119,11 @@ public class MessageCreator
         return message;
     }
 
-    private static void setJmsHeader(final JmsInstructions.MessageDescription messageDescription, final Message message)
+    private static void setJmsHeader(final MessageDescription messageDescription,
+                                     final Message message)
             throws JMSException
     {
-        final HashMap<JmsInstructions.MessageDescription.MessageHeader, Serializable> header =
+        final HashMap<MessageDescription.MessageHeader, Serializable> header =
                 messageDescription.getHeaders();
 
         if (header == null)
@@ -132,7 +131,7 @@ public class MessageCreator
             return;
         }
 
-        for (Map.Entry<JmsInstructions.MessageDescription.MessageHeader, Serializable> entry : header.entrySet())
+        for (Map.Entry<MessageDescription.MessageHeader, Serializable> entry : header.entrySet())
         {
             try
             {
@@ -161,8 +160,8 @@ public class MessageCreator
                         }
                         break;
                     case REPLY_TO:
-                        message.setJMSReplyTo((Destination) entry.getValue());
-                        break;
+                        throw new RuntimeException("The Test should not set the replyTo header."
+                                                   + " It should rather use the dedicated method");
                     case REDELIVERED:
                         message.setJMSRedelivered((Boolean) entry.getValue());
                         break;
