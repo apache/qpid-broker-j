@@ -45,6 +45,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     public static final String REPLY_QUEUE_NAME = "testReplyQueue";
     private static final String QUEUE_JNDI_NAME = "queue";
     private static final String REPLY_QUEUE_JNDI_NAME = "replyQueue";
+    private static final String REPLY_TOPIC_NAME = "amq.topic/topic";
+    private static final String REPLY_TOPIC_JNDI_NAME = "replyTopic";
 
 
     private HashMap<String, String> _defaultDestinations;
@@ -58,6 +60,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         _defaultDestinations = new HashMap<>();
         _defaultDestinations.put("queue." + QUEUE_JNDI_NAME, QUEUE_NAME);
         _defaultDestinations.put("queue." + REPLY_QUEUE_JNDI_NAME, REPLY_QUEUE_NAME);
+        _defaultDestinations.put("topic." + REPLY_TOPIC_JNDI_NAME, REPLY_TOPIC_NAME);
 /*
         destinations.put("topic.topic", "testTopic");
         destinations.put("topic.replyTopic", "testReplyTopic");
@@ -157,6 +160,12 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     public void replyToTemporaryQueue() throws Exception
     {
         performReplyToTest(TEMPORARY_QUEUE_JNDI_NAME);
+    }
+
+    @Test
+    public void replyToTopic() throws Exception
+    {
+        performReplyToTest(REPLY_TOPIC_JNDI_NAME);
     }
 
     public void performReplyToTest(final String temporaryQueueJndiName) throws Exception
