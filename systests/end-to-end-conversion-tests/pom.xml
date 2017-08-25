@@ -37,10 +37,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <resolverVersion>1.0.3</resolverVersion>
         <mavenVersion>3.5.0</mavenVersion>
-        <client1Gavs>org.apache.qpid:qpid-jms-client:${qpid-jms-client-version}</client1Gavs>
-        <client1AdditionalJavaArguments></client1AdditionalJavaArguments>
-        <client2Gavs>org.apache.qpid:qpid-client:${qpid-jms-client-amqp-0-x-version},org.apache.geronimo.specs:geronimo-jms_1.1_spec:${geronimo-jms-1-1-version}</client2Gavs>
-        <client2AdditionalJavaArguments>-Dqpid.amqp.version=0-9-1</client2AdditionalJavaArguments>
+        <amqp10ClientGavs>org.apache.qpid:qpid-jms-client:${qpid-jms-client-version}</amqp10ClientGavs>
+        <amqp0xClientGavs>org.apache.qpid:qpid-client:${qpid-jms-client-amqp-0-x-version},org.apache.geronimo.specs:geronimo-jms_1.1_spec:${geronimo-jms-1-1-version}</amqp0xClientGavs>
     </properties>
 
     <dependencies>
@@ -90,7 +88,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <skip>true</skip>
+                    <skipTests>${skipTests}</skipTests>
                     <workingDirectory>${project.basedir}</workingDirectory>
                     <systemPropertyVariables>
                         <qpid.initialConfigurationLocation>classpath:config-end-to-end-conversion-tests.json</qpid.initialConfigurationLocation>
@@ -100,15 +98,15 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <id>client1 -> client2</id>
+                        <id>0-9-1 -> 1.0</id>
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <qpid.systests.end_to_end_conversion.executionId>c1_c2</qpid.systests.end_to_end_conversion.executionId>
-                                <qpid.systests.end_to_end_conversion.publisherGavs>${client1Gavs}</qpid.systests.end_to_end_conversion.publisherGavs>
-                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>${client1AdditionalJavaArguments}</qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
-                                <qpid.systests.end_to_end_conversion.subscriberGavs>${client2Gavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
-                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>${client2AdditionalJavaArguments}</qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.executionId>0-9-1_to_1.0</qpid.systests.end_to_end_conversion.executionId>
+                                <qpid.systests.end_to_end_conversion.publisherGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
+                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>-Dqpid.amqp.version=0-9-1</qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.subscriberGavs>${amqp10ClientGavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
+                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments></qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
                             </systemPropertyVariables>
                         </configuration>
                         <goals>
@@ -116,15 +114,79 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>client2 -> client1</id>
+                        <id>1.0 -> 0-9-1</id>
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <qpid.systests.end_to_end_conversion.executionId>c2_c1</qpid.systests.end_to_end_conversion.executionId>
-                                <qpid.systests.end_to_end_conversion.publisherGavs>${client2Gavs}</qpid.systests.end_to_end_conversion.publisherGavs>
-                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>${client2AdditionalJavaArguments}</qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
-                                <qpid.systests.end_to_end_conversion.subscriberGavs>${client1Gavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
-                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>${client1AdditionalJavaArguments}</qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.executionId>1.0_to_0-9-1</qpid.systests.end_to_end_conversion.executionId>
+                                <qpid.systests.end_to_end_conversion.publisherGavs>${amqp10ClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
+                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments></qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.subscriberGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
+                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>-Dqpid.amqp.version=0-9-1</qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>0-10 -> 1.0</id>
+                        <configuration>
+                            <skip>false</skip>
+                            <systemPropertyVariables>
+                                <qpid.systests.end_to_end_conversion.executionId>0-10_to_1.0</qpid.systests.end_to_end_conversion.executionId>
+                                <qpid.systests.end_to_end_conversion.publisherGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
+                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>-Dqpid.amqp.version=0-10</qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.subscriberGavs>${amqp10ClientGavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
+                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments></qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>1.0 -> 0-10</id>
+                        <configuration>
+                            <skip>false</skip>
+                            <systemPropertyVariables>
+                                <qpid.systests.end_to_end_conversion.executionId>1.0_to_0-10</qpid.systests.end_to_end_conversion.executionId>
+                                <qpid.systests.end_to_end_conversion.publisherGavs>${amqp10ClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
+                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments></qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.subscriberGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
+                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>-Dqpid.amqp.version=0-10</qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>0-9-1 -> 0-10</id>
+                        <configuration>
+                            <skip>false</skip>
+                            <systemPropertyVariables>
+                                <qpid.systests.end_to_end_conversion.executionId>0-9-1_to_0-10</qpid.systests.end_to_end_conversion.executionId>
+                                <qpid.systests.end_to_end_conversion.publisherGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
+                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>-Dqpid.amqp.version=0-9-1</qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.subscriberGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
+                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>-Dqpid.amqp.version=0-10</qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>0-10 -> 0-9-1</id>
+                        <configuration>
+                            <skip>false</skip>
+                            <systemPropertyVariables>
+                                <qpid.systests.end_to_end_conversion.executionId>0-10_to_0-9-1</qpid.systests.end_to_end_conversion.executionId>
+                                <qpid.systests.end_to_end_conversion.publisherGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
+                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>-Dqpid.amqp.version=0-10</qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.subscriberGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
+                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>-Dqpid.amqp.version=0-9-1</qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
                             </systemPropertyVariables>
                         </configuration>
                         <goals>
