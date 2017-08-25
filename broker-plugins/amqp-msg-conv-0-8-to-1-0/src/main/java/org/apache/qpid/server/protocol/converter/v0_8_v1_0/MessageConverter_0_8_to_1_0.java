@@ -97,40 +97,9 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
             props.setMessageId(messageId.toString());
         }
 
-        final String originalReplyTo = String.valueOf(contentHeader.getReplyTo());
-        try
+        if (contentHeader.getReplyTo() != null)
         {
-            AMQBindingURL burl = new AMQBindingURL(originalReplyTo);
-            String replyTo;
-
-            if(burl.getExchangeName() != null && !burl.getExchangeName().equals(""))
-            {
-                replyTo = burl.getExchangeName();
-
-                if(burl.getRoutingKey() != null)
-                {
-                    replyTo += "/" + burl.getRoutingKey();
-                }
-
-            }
-            else if(burl.getQueueName() != null && !burl.getQueueName().equals(""))
-            {
-                replyTo = burl.getQueueName();
-            }
-            else if(burl.getRoutingKey() != null)
-            {
-                replyTo = burl.getRoutingKey();
-            }
-            else
-            {
-                replyTo = originalReplyTo;
-            }
-
-            props.setReplyTo(replyTo);
-        }
-        catch (URISyntaxException e)
-        {
-            props.setReplyTo(originalReplyTo);
+            props.setReplyTo(convertReplyTo(contentHeader.getReplyTo()));
         }
 
         if(contentHeader.getUserId() != null)
@@ -214,6 +183,43 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
                                        null,
                                        serverMessage.getArrivalTime(),
                                        bodySection.getEncodedSize());
+    }
+
+    private String convertReplyTo(final AMQShortString replyTo)
+    {
+        String convertedReplyTo;
+        final String originalReplyTo = String.valueOf(replyTo);
+        try
+        {
+            AMQBindingURL burl = new AMQBindingURL(originalReplyTo);
+
+            if (burl.getExchangeName() != null && !burl.getExchangeName().equals(""))
+            {
+                convertedReplyTo = burl.getExchangeName();
+
+                if (burl.getRoutingKey() != null)
+                {
+                    convertedReplyTo += "/" + burl.getRoutingKey();
+                }
+            }
+            else if (burl.getQueueName() != null && !burl.getQueueName().equals(""))
+            {
+                convertedReplyTo = burl.getQueueName();
+            }
+            else if (burl.getRoutingKey() != null)
+            {
+                convertedReplyTo = burl.getRoutingKey();
+            }
+            else
+            {
+                convertedReplyTo = originalReplyTo;
+            }
+        }
+        catch (URISyntaxException e)
+        {
+            convertedReplyTo = originalReplyTo;
+        }
+        return convertedReplyTo;
     }
 
     @Override
