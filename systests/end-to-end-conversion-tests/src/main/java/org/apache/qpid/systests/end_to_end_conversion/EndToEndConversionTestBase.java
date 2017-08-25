@@ -154,12 +154,12 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
 
     protected Protocol getSubscriberProtocolVersion()
     {
-        final String publisherGavs = System.getProperty("qpid.systests.end_to_end_conversion.subscriberGavs",
-                                                        "org.apache.qpid:qpid-jms-client:LATEST");
+        final String subscriberGavs = System.getProperty("qpid.systests.end_to_end_conversion.subscriberGavs",
+                                                        "org.apache.qpid:qpid-client:LATEST,org.apache.geronimo.specs:geronimo-jms_1.1_spec:1.1.1");
         final String additionalArgs = System.getProperty(
                 "qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments",
                 "-Dqpid.amqp.version=0-9-1");
-        return getClientProtocolVersion(publisherGavs, additionalArgs);
+        return getClientProtocolVersion(subscriberGavs, additionalArgs);
     }
 
     private Protocol getClientProtocolVersion(final String publisherGavs, final String additionalArgs)
@@ -210,6 +210,7 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
 
             LOGGER.debug("starting client process with arguments: {}", arguments);
             ProcessBuilder processBuilder = new ProcessBuilder(arguments);
+            processBuilder.environment().put("PN_TRACE_FRM", "true");
             Process p = processBuilder.start();
             try (final InputStream pInputStream = p.getInputStream();
                  final LoggingOutputStream loggingOutputStream = new LoggingOutputStream(CLIENT_LOGGER, Level.DEBUG))
