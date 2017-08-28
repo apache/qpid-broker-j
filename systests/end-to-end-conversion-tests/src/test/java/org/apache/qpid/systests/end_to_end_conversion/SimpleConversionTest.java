@@ -20,14 +20,17 @@
 
 package org.apache.qpid.systests.end_to_end_conversion;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.Before;
@@ -36,18 +39,14 @@ import org.junit.Test;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.end_to_end_conversion.client.ClientInstruction;
 import org.apache.qpid.systests.end_to_end_conversion.client.MessageDescription;
+import org.apache.qpid.systests.end_to_end_conversion.client.SerializableTestClass;
 import org.apache.qpid.systests.end_to_end_conversion.client.VerificationException;
 
 public class SimpleConversionTest extends EndToEndConversionTestBase
 {
     private static final long TEST_TIMEOUT = 30000L;
-    public static final String QUEUE_NAME = "testQueue";
-    public static final String REPLY_QUEUE_NAME = "testReplyQueue";
+    private static final String QUEUE_NAME = "testQueue";
     private static final String QUEUE_JNDI_NAME = "queue";
-    private static final String REPLY_QUEUE_JNDI_NAME = "replyQueue";
-    private static final String REPLY_TOPIC_NAME = "amq.topic/topic";
-    private static final String REPLY_TOPIC_JNDI_NAME = "replyTopic";
-
 
     private HashMap<String, String> _defaultDestinations;
 
@@ -55,18 +54,17 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     public void setup()
     {
         getBrokerAdmin().createQueue(QUEUE_NAME);
-        getBrokerAdmin().createQueue(REPLY_QUEUE_NAME);
 
         _defaultDestinations = new HashMap<>();
         _defaultDestinations.put("queue." + QUEUE_JNDI_NAME, QUEUE_NAME);
-        _defaultDestinations.put("queue." + REPLY_QUEUE_JNDI_NAME, REPLY_QUEUE_NAME);
-        _defaultDestinations.put("topic." + REPLY_TOPIC_JNDI_NAME, REPLY_TOPIC_NAME);
-/*
-        destinations.put("topic.topic", "testTopic");
-        destinations.put("topic.replyTopic", "testReplyTopic");
-        destinations.put("destination.destination", "testDestination");
-        destinations.put("destination.replyDestination", "testReplyDestination");
-*/
+    }
+
+    @Test
+    public void message() throws Exception
+    {
+        final MessageDescription messageDescription = new MessageDescription();
+        messageDescription.setMessageType(MessageDescription.MessageType.MESSAGE);
+        performSimpleTest(messageDescription);
     }
 
     @Test
@@ -90,15 +88,52 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     }
 
     @Test
+    public void streamMessage() throws Exception
+    {
+        final MessageDescription messageDescription = new MessageDescription();
+        messageDescription.setMessageType(MessageDescription.MessageType.STREAM_MESSAGE);
+        messageDescription.setContent(Lists.newArrayList(true,
+                                                         (byte) -7,
+                                                         (short) 259,
+                                                         Integer.MAX_VALUE,
+                                                         Long.MAX_VALUE,
+                                                         37.5f,
+                                                         38.5,
+                                                         "testString",
+                                                         null,
+                                                         new byte[]{0x24, 0x00, (byte) 0xFF}));
+
+        performSimpleTest(messageDescription);
+    }
+
+    @Test
     public void mapMessage() throws Exception
     {
         final MessageDescription messageDescription = new MessageDescription();
         messageDescription.setMessageType(MessageDescription.MessageType.MAP_MESSAGE);
         HashMap<String, Object> content = new HashMap<>();
-        content.put("int", 42);
         content.put("boolean", true);
+        content.put("byte", (byte) -7);
+        content.put("short", (short) 259);
+        content.put("int", 42);
+        content.put("long", Long.MAX_VALUE);
+        content.put("float", 37.5f);
+        content.put("double", 37.5);
         content.put("string", "testString");
+        content.put("byteArray", new byte[] {0x24 , 0x00, (byte) 0xFF});
+
         messageDescription.setContent(content);
+
+        performSimpleTest(messageDescription);
+    }
+
+    @Test
+    public void objectMessage() throws Exception
+    {
+        final MessageDescription messageDescription = new MessageDescription();
+        messageDescription.setMessageType(MessageDescription.MessageType.OBJECT_MESSAGE);
+        messageDescription.setContent(new SerializableTestClass(Collections.singletonMap("testKey", "testValue"),
+                                                                Collections.singletonList(42)));
 
         performSimpleTest(messageDescription);
     }
@@ -142,18 +177,26 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     public void property() throws Exception
     {
         final MessageDescription messageDescription = new MessageDescription();
-        messageDescription.setProperty("intProperty", 42);
-        messageDescription.setProperty("stringProperty", "foobar");
         messageDescription.setProperty("booleanProperty", true);
+        messageDescription.setProperty("byteProperty", (byte) -7);
+        messageDescription.setProperty("shortProperty", (short) 259);
+        messageDescription.setProperty("intProperty", 42);
+        messageDescription.setProperty("longProperty", Long.MAX_VALUE);
+        messageDescription.setProperty("floatProperty", 37.5f);
         messageDescription.setProperty("doubleProperty", 37.5);
+        messageDescription.setProperty("stringProperty", "foobar");
 
         performSimpleTest(messageDescription);
     }
 
     @Test
-    public void replyTo() throws Exception
+    public void replyToStaticQueue() throws Exception
     {
-        performReplyToTest(REPLY_QUEUE_JNDI_NAME);
+        final String replyQueueName = "testReplyQueue";
+        final String replyQueueJndiName = "replyQueue";
+        _defaultDestinations.put("queue." + replyQueueJndiName, replyQueueName);
+        getBrokerAdmin().createQueue(replyQueueName);
+        performReplyToTest(replyQueueJndiName);
     }
 
     @Test
@@ -163,12 +206,70 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     }
 
     @Test
-    public void replyToTopic() throws Exception
+    public void replyToAmqp10Topic() throws Exception
     {
-        performReplyToTest(REPLY_TOPIC_JNDI_NAME);
+        assumeTrue("This test is for AMQP 1.0 publisher",
+                    EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()));
+
+        final String replyTopicJndiName = "replyTopic";
+        _defaultDestinations.put("topic." + replyTopicJndiName, "amq.topic/topic");
+        performReplyToTest(replyTopicJndiName);
     }
 
-    public void performReplyToTest(final String temporaryQueueJndiName) throws Exception
+    @Test
+    public void replyToAmqp0xTopic() throws Exception
+    {
+        assumeFalse("This test is for AMQP 0-x publisher",
+                    EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()));
+
+        String jndiName = "testTopic";
+        _defaultDestinations.put("topic." + jndiName, "myTopic");
+        performReplyToTest(jndiName);
+    }
+
+    @Test
+    public void replyToBURLDestination() throws Exception
+    {
+        assumeFalse("This test is for AMQP 0-x publisher",
+                   EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()));
+
+        String jndiName = "testDestination";
+        String testDestination = "myQueue";
+        _defaultDestinations.put("destination." + jndiName,
+                                 String.format("BURL:direct://amq.direct//%s?routingkey='%s'", testDestination, testDestination));
+
+        getBrokerAdmin().createQueue(testDestination);
+
+        performReplyToTest(jndiName);
+    }
+
+    @Test
+    public void replyToAddressDestination() throws Exception
+    {
+        assumeFalse("This test is for AMQP 0-x publisher",
+                    EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()));
+
+        assumeTrue("QPID-7902: setJMSReplyTo for address based destination is broken on client side for 0-8...0-9-1",
+                    EnumSet.of(Protocol.AMQP_0_10).contains(getPublisherProtocolVersion()));
+
+        String replyToJndiName = "replyToJndiName";
+        String consumeReplyToJndiName = "consumeReplyToJndiName";
+        String testDestination = "myQueue";
+        _defaultDestinations.put("destination." + replyToJndiName, "ADDR: amq.fanout/testReplyToQueue");
+        _defaultDestinations.put("destination." + consumeReplyToJndiName,
+                                 "ADDR: testReplyToQueue; {create:always, node: {type: queue, x-bindings:[{exchange: 'amq.fanout', key: testReplyToQueue}]}}");
+
+        getBrokerAdmin().createQueue(testDestination);
+
+        performReplyToTest(replyToJndiName, consumeReplyToJndiName);
+    }
+
+    private void performReplyToTest(final String jndiName) throws Exception
+    {
+        performReplyToTest(jndiName, null);
+    }
+
+    private void performReplyToTest(final String replyToJndiName, final String consumeReplyToJndiName) throws Exception
     {
         assumeTrue("This test is known to fail for pre 0-10 subscribers (QPID-7898)",
                    EnumSet.of(Protocol.AMQP_0_10, Protocol.AMQP_1_0).contains(getSubscriberProtocolVersion()));
@@ -179,8 +280,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         final List<ClientInstruction>
                 publisherInstructions = new ClientInstructionBuilder().configureDestinations(_defaultDestinations)
                                                                       .publishMessage(destinationJndiName)
-                                                                      .withReplyToJndiName(
-                                                                                                    temporaryQueueJndiName)
+                                                                      .withReplyToJndiName(replyToJndiName)
+                                                                      .withConsumeReplyToJndiName(consumeReplyToJndiName)
                                                                       .withHeader(MessageDescription.MessageHeader.CORRELATION_ID,
                                                                                   correlationId)
                                                                       .build();
@@ -192,7 +293,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         performTest(publisherInstructions, subscriberInstructions);
     }
 
-    public void performSimpleTest(final MessageDescription messageDescription) throws Exception
+    private void performSimpleTest(final MessageDescription messageDescription) throws Exception
     {
         final String destinationJndiName = QUEUE_JNDI_NAME;
         final List<ClientInstruction> publisherInstructions =
@@ -206,7 +307,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         performTest(publisherInstructions,subscriberInstructions);
     }
 
-    public void performTest(final List<ClientInstruction> publisherInstructions,
+    private void performTest(final List<ClientInstruction> publisherInstructions,
                             final List<ClientInstruction> subscriberInstructions) throws Exception
     {
         final ListenableFuture<?> publisherFuture = runPublisher(publisherInstructions);

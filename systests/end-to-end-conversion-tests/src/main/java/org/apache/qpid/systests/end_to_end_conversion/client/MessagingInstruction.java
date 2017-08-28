@@ -52,9 +52,21 @@ public abstract class MessagingInstruction implements ClientInstruction
 
     public static class PublishMessage extends MessagingInstruction
     {
+        private String _consumeReplyToJndiName;
+
         public PublishMessage(final String destinationJndiName, final MessageDescription messageDescription)
         {
             super(destinationJndiName, messageDescription);
+        }
+
+        public String getConsumeReplyToJndiName()
+        {
+            return _consumeReplyToJndiName;
+        }
+
+        public void setConsumeReplyToJndiName(final String consumeReplyToJndiName)
+        {
+            _consumeReplyToJndiName = consumeReplyToJndiName;
         }
     }
 

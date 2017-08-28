@@ -22,7 +22,6 @@ package org.apache.qpid.systests.end_to_end_conversion;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -93,6 +92,14 @@ public class ClientInstructionBuilder
     public ClientInstructionBuilder withReplyToJndiName(final String replyToJndiName)
     {
         _latestMessageDescription.setReplyToJndiName(replyToJndiName);
+        return this;
+    }
+
+    public ClientInstructionBuilder withConsumeReplyToJndiName(final String consumeReplyToJndiName)
+    {
+        MessagingInstruction.PublishMessage publishMessageInstruction =
+                (MessagingInstruction.PublishMessage) _clientInstructions.get(_clientInstructions.size() - 1);
+        publishMessageInstruction.setConsumeReplyToJndiName(consumeReplyToJndiName);
         return this;
     }
 

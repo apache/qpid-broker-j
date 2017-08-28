@@ -23,9 +23,11 @@ package org.apache.qpid.systests.end_to_end_conversion.client;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -220,26 +222,21 @@ public class MessageVerifier
                                             final T expectedValue,
                                             final S actualValue)
     {
-        final String failureTemplate = "%s: expected <%s>, actual <%s>";
-        final String typeFailureTemplate = "%s: expected type <%s>, actual type <%s>";
-        final String arraySizeFailureTemplate = "%s: expected array of length <%d>, actual length <%d> ('%s' vs '%s')";
-        final String arrayFailureTemplate = "%s: arrays do not match ('%s' vs '%s')";
-        final String subclassFailureTemplate = "%s: expected subclass of <%s>, actual <%s>";
         if (expectedValue == null && actualValue == null)
         {
             return;
         }
         else if (expectedValue == null && actualValue != null)
         {
-            throw new VerificationException(String.format(failureTemplate, failureMessage, null, actualValue));
+            throw new VerificationException(String.format("%s: expected <%s>, actual <%s>", failureMessage, null, actualValue));
         }
         else if (expectedValue != null && actualValue == null)
         {
-            throw new VerificationException(String.format(failureTemplate, failureMessage, expectedValue, null));
+            throw new VerificationException(String.format("%s: expected <%s>, actual <%s>", failureMessage, expectedValue, null));
         }
         else if (expectedValue.getClass() != actualValue.getClass())
         {
-            throw new VerificationException(String.format(typeFailureTemplate,
+            throw new VerificationException(String.format("%s: expected type <%s>, actual type <%s>",
                                                           failureMessage,
                                                           expectedValue.getClass(),
                                                           actualValue.getClass()));
@@ -250,7 +247,7 @@ public class MessageVerifier
             {
                 if (!((Class<?>) expectedValue).isAssignableFrom(((Class<?>) actualValue)))
                 {
-                    throw new VerificationException(String.format(subclassFailureTemplate,
+                    throw new VerificationException(String.format("%s: expected subclass of <%s>, actual <%s>",
                                                                   failureMessage,
                                                                   ((Class<?>) expectedValue).getName(),
                                                                   ((Class<?>) actualValue).getName()));
@@ -272,26 +269,81 @@ public class MessageVerifier
                 }
                 if (expectedValueAsBytes.length != actualValueAsBytes.length)
                 {
-                    throw new VerificationException(String.format(arraySizeFailureTemplate,
-                                                                  failureMessage,
-                                                                  expectedValueAsBytes.length,
-                                                                  actualValueAsBytes.length,
-                                                                  expectedValueAsString,
-                                                                  actualValueAsString));
+                    throw new VerificationException(String.format(
+                            "%s: expected array of length <%d>, actual length <%d> ('%s' vs '%s')",
+                            failureMessage,
+                            expectedValueAsBytes.length,
+                            actualValueAsBytes.length,
+                            expectedValueAsString,
+                            actualValueAsString));
                 }
                 if (!Arrays.equals(expectedValueAsBytes, actualValueAsBytes))
                 {
-                    throw new VerificationException(String.format(arrayFailureTemplate,
+                    throw new VerificationException(String.format("%s: arrays do not match ('%s' vs '%s')",
                                                                   failureMessage,
                                                                   expectedValueAsString,
                                                                   actualValueAsString));
+                }
+            }
+            else if (expectedValue instanceof Map)
+            {
+                if (!(actualValue instanceof Map))
+                {
+                    throw new VerificationException(String.format("%s: expected type <Map>, actual <%s>",
+                                                                  failureMessage,
+                                                                  actualValue.getClass()));
+                }
+                Map<String, Object> actualValueAsMap = (Map<String, Object>) actualValue;
+                for (Map.Entry<String, Object> entry : ((Map<String, Object>) expectedValue).entrySet())
+                {
+                    if (!actualValueAsMap.containsKey(entry.getKey()))
+                    {
+                        throw new VerificationException(String.format("%s: Map does not contain expected key <%s>",
+                                                                      failureMessage,
+                                                                      entry.getKey()));
+                    }
+                    else
+                    {
+                        verifyEquals(String.format("%s: MapVerification for key '%s' failed",
+                                                   failureMessage,
+                                                   entry.getKey()),
+                                     entry.getValue(),
+                                     actualValueAsMap.get(entry.getKey()));
+                    }
+                }
+            }
+            else if (expectedValue instanceof Collection)
+            {
+                if (!(actualValue instanceof Collection))
+                {
+                    throw new VerificationException(String.format("%s: expected type <Collection>, actual type <%s>",
+                                                                  failureMessage,
+                                                                  actualValue.getClass()));
+                }
+                Collection<Object> actualValueAsCollection = (Collection<Object>) actualValue;
+                final Collection expectedValueAsCollection = (Collection) expectedValue;
+                if (expectedValueAsCollection.size() != actualValueAsCollection.size())
+                {
+                    throw new VerificationException(String.format("%s: expected Collection of size <%s>, actual size <%s>",
+                                                                  failureMessage,
+                                                                  expectedValueAsCollection.size(),
+                                                                  actualValueAsCollection.size()));
+                }
+                final Iterator<Object> actualValueIterator = actualValueAsCollection.iterator();
+                int index = 0;
+                for (Object entry : expectedValueAsCollection)
+                {
+                    verifyEquals(String.format("%s: CollectionVerification for index %d failed", failureMessage, index),
+                                 entry,
+                                 actualValueIterator.next());
+                    index++;
                 }
             }
             else
             {
                 if (!expectedValue.equals(actualValue))
                 {
-                    throw new VerificationException(String.format(failureTemplate,
+                    throw new VerificationException(String.format("%s: expected <%s>, actual <%s>",
                                                                   failureMessage,
                                                                   expectedValue,
                                                                   actualValue));

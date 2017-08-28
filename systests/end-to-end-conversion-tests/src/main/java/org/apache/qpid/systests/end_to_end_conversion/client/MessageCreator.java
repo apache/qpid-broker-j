@@ -64,7 +64,7 @@ public class MessageCreator
             {
                 throw new RuntimeException(String.format("Could not set message property '%s' to this value: %s",
                                                          entry.getKey(),
-                                                         entry.getValue().toString()), e);
+                                                         String.valueOf(entry.getValue())), e);
             }
         }
     }

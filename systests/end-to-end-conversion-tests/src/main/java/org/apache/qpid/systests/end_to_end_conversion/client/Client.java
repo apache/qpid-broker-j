@@ -167,10 +167,7 @@ public class Client
                 {
                     final MessagingInstruction.PublishMessage publishInstruction =
                             (MessagingInstruction.PublishMessage) instruction;
-                    final Destination destination =
-                            (Destination) context.lookup(publishInstruction.getDestinationJndiName());
-                    final MessageDescription messageDescription = publishInstruction.getMessageDescription();
-                    publishMessage(context, session, destination, messageDescription);
+                    publishMessage(context, session, publishInstruction);
                 }
                 else if (instruction instanceof MessagingInstruction.ReceiveMessage)
                 {
@@ -203,8 +200,8 @@ public class Client
         try
         {
             message = consumer.receive(RECEIVE_TIMEOUT);
-            MessageVerifier.verifyMessage(messageDescription, message);
             System.out.println(String.format("Received message: %s", message));
+            MessageVerifier.verifyMessage(messageDescription, message);
         }
         finally
         {
@@ -222,80 +219,96 @@ public class Client
 
     private void publishMessage(final Context context,
                                 final Session session,
-                                final Destination queue,
-                                final MessageDescription messageDescription) throws Exception
+                                final MessagingInstruction.PublishMessage publishMessageInstruction) throws Exception
     {
+        final MessageDescription messageDescription = publishMessageInstruction.getMessageDescription();
+
         Message message = MessageCreator.fromMessageDescription(session, messageDescription);
-        Destination replyToDestination = null;
-        if (messageDescription.getReplyToJndiName() != null)
-        {
-            final String replyToJndiName = messageDescription.getReplyToJndiName();
-            if (replyToJndiName.equals(EndToEndConversionTestBase.TEMPORARY_QUEUE_JNDI_NAME))
-            {
-                replyToDestination = session.createTemporaryQueue();
-            }
-            else
-            {
-                replyToDestination = (Destination) context.lookup(replyToJndiName);
-            }
-            message.setJMSReplyTo(replyToDestination);
-        }
-        MessageProducer messageProducer = session.createProducer(queue);
+        MessageConsumer replyToConsumer = null;
         try
         {
-            messageProducer.send(message,
-                                 messageDescription.getHeader(MessageDescription.MessageHeader.DELIVERY_MODE,
-                                                              DeliveryMode.NON_PERSISTENT),
-                                 messageDescription.getHeader(MessageDescription.MessageHeader.PRIORITY,
-                                                              Message.DEFAULT_PRIORITY),
-                                 messageDescription.getHeader(MessageDescription.MessageHeader.EXPIRATION,
-                                                              Message.DEFAULT_TIME_TO_LIVE));
-            System.out.println(String.format("Sent message: %s", message));
-        }
-        finally
-        {
-            messageProducer.close();
-        }
-
-        if (replyToDestination != null)
-        {
-            receiveReply(session,
-                         replyToDestination,
-                         messageDescription.getHeader(MessageDescription.MessageHeader.CORRELATION_ID));
-        }
-    }
-
-    private void receiveReply(final Session session,
-                              final Destination jmsReplyTo,
-                              final Serializable expectedCorrelationId)
-            throws Exception
-    {
-        final MessageConsumer consumer = session.createConsumer(jmsReplyTo);
-        try
-        {
-            final Message message = consumer.receive(RECEIVE_TIMEOUT);
-            System.out.println(String.format("Received message: %s", message));
-            if (expectedCorrelationId != null)
+            if (messageDescription.getReplyToJndiName() != null)
             {
-                if (expectedCorrelationId instanceof byte[])
+                final Destination replyToDestination, consumerReplyToDestination;
+                final String replyToJndiName = messageDescription.getReplyToJndiName();
+                if (replyToJndiName.equals(EndToEndConversionTestBase.TEMPORARY_QUEUE_JNDI_NAME))
                 {
-                    if (!Arrays.equals((byte[]) expectedCorrelationId, message.getJMSCorrelationIDAsBytes()))
-                    {
-                        throw new VerificationException("ReplyTo message has unexpected correlationId.");
-                    }
+                    replyToDestination = session.createTemporaryQueue();
                 }
                 else
                 {
-                    if (!expectedCorrelationId.equals(message.getJMSCorrelationID()))
-                    {
-                        throw new VerificationException("ReplyTo message has unexpected correlationId.");
-                    }
+                    replyToDestination = (Destination) context.lookup(replyToJndiName);
                 }
+
+                if (publishMessageInstruction.getConsumeReplyToJndiName() != null)
+                {
+                    consumerReplyToDestination =
+                            (Destination) context.lookup(publishMessageInstruction.getConsumeReplyToJndiName());
+                }
+                else
+                {
+                    consumerReplyToDestination = replyToDestination;
+                }
+
+                message.setJMSReplyTo(replyToDestination);
+                replyToConsumer = session.createConsumer(consumerReplyToDestination);
+            }
+
+            final Destination destination =
+                    (Destination) context.lookup(publishMessageInstruction.getDestinationJndiName());
+            MessageProducer messageProducer = session.createProducer(destination);
+            try
+            {
+                messageProducer.send(message,
+                                     messageDescription.getHeader(MessageDescription.MessageHeader.DELIVERY_MODE,
+                                                                  DeliveryMode.NON_PERSISTENT),
+                                     messageDescription.getHeader(MessageDescription.MessageHeader.PRIORITY,
+                                                                  Message.DEFAULT_PRIORITY),
+                                     messageDescription.getHeader(MessageDescription.MessageHeader.EXPIRATION,
+                                                                  Message.DEFAULT_TIME_TO_LIVE));
+                System.out.println(String.format("Sent message: %s", message));
+            }
+            finally
+            {
+                messageProducer.close();
+            }
+
+            if (replyToConsumer != null)
+            {
+                receiveReply(replyToConsumer,
+                             messageDescription.getHeader(MessageDescription.MessageHeader.CORRELATION_ID));
             }
         }
         finally
         {
-            consumer.close();
+            if (replyToConsumer != null)
+            {
+                replyToConsumer.close();
+            }
+        }
+    }
+
+    private void receiveReply(final MessageConsumer consumer, final Serializable expectedCorrelationId)
+            throws Exception
+    {
+        final Message message = consumer.receive(RECEIVE_TIMEOUT);
+        System.out.println(String.format("Received message: %s", message));
+        if (expectedCorrelationId != null)
+        {
+            if (expectedCorrelationId instanceof byte[])
+            {
+                if (!Arrays.equals((byte[]) expectedCorrelationId, message.getJMSCorrelationIDAsBytes()))
+                {
+                    throw new VerificationException("ReplyTo message has unexpected correlationId.");
+                }
+            }
+            else
+            {
+                if (!expectedCorrelationId.equals(message.getJMSCorrelationID()))
+                {
+                    throw new VerificationException("ReplyTo message has unexpected correlationId.");
+                }
+            }
         }
     }
 
