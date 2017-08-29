@@ -33,13 +33,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
@@ -63,8 +66,27 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
     private static final int SERVER_SOCKET_TIMEOUT = 30000;
     private static final Logger LOGGER = LoggerFactory.getLogger(EndToEndConversionTestBase.class);
     private static final Logger CLIENT_LOGGER = LoggerFactory.getLogger(Client.class);
-    private final ListeningExecutorService _executorService =
-            MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
+    private ListeningExecutorService _executorService;
+
+    @Before
+    public void setupExecutor()
+    {
+        _executorService = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
+    }
+
+    @After
+    public void teardownExecutor() throws InterruptedException
+    {
+        if (_executorService != null)
+        {
+            _executorService.shutdown();
+            if (!_executorService.awaitTermination(10, TimeUnit.SECONDS))
+            {
+                _executorService.shutdownNow();
+            }
+            _executorService = null;
+        }
+    }
 
     @AfterClass
     public static void reportStats()
@@ -198,6 +220,7 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
                                                                                    isAmqp0xClient(clientGavs));
         final ClasspathQuery classpathQuery = new ClasspathQuery(Client.class, clientGavs);
 
+        LOGGER.debug("starting server socket");
         try (final ServerSocket serverSocket = new ServerSocket(0))
         {
             serverSocket.setSoTimeout(SERVER_SOCKET_TIMEOUT);
@@ -217,15 +240,13 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
             {
                 final LoggingThread loggingThread = new LoggingThread(pInputStream, loggingOutputStream);
                 loggingThread.start();
-                LOGGER.debug("client process {} started", serverSocket.getLocalPort());
+                LOGGER.debug("client process started listening on port {}", serverSocket.getLocalPort());
 
                 try (final Socket clientSocket = serverSocket.accept();
                      final ObjectOutputStream outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
                      final ObjectInputStream inputStream = new ObjectInputStream(clientSocket.getInputStream()))
                 {
-                    LOGGER.debug("client process {} connected from port {}",
-                                 clientSocket.getLocalPort(),
-                                 clientSocket.getPort());
+                    LOGGER.debug("client process connected from port {}", clientSocket.getPort());
                     clientSocket.setSoTimeout(CLIENT_SOCKET_TIMEOUT);
                     outputStream.writeObject(clientInstructions);
                     final Object result = inputStream.readObject();
@@ -251,14 +272,16 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
                 }
             }
 
-            LOGGER.debug("client process {} finished exit value: {}", serverSocket.getLocalPort(), p.exitValue());
+            LOGGER.debug("client process finished exit value: {}", p.exitValue());
         }
         catch (RuntimeException e)
         {
+            LOGGER.debug("client process finished with exception: {}", e);
             throw e;
         }
         catch (Exception e)
         {
+            LOGGER.error("client process finished with exception: {}", e);
             throw new RuntimeException(e);
         }
         finally

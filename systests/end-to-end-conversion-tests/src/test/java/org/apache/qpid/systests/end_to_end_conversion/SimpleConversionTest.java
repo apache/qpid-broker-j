@@ -34,7 +34,9 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.end_to_end_conversion.client.ClientInstruction;
@@ -45,18 +47,20 @@ import org.apache.qpid.systests.end_to_end_conversion.client.VerificationExcepti
 public class SimpleConversionTest extends EndToEndConversionTestBase
 {
     private static final long TEST_TIMEOUT = 30000L;
-    private static final String QUEUE_NAME = "testQueue";
     private static final String QUEUE_JNDI_NAME = "queue";
 
     private HashMap<String, String> _defaultDestinations;
+    @Rule
+    public TestName _testName = new TestName();
 
     @Before
     public void setup()
     {
-        getBrokerAdmin().createQueue(QUEUE_NAME);
+        final String queueName = _testName.getMethodName();
+        getBrokerAdmin().createQueue(queueName);
 
         _defaultDestinations = new HashMap<>();
-        _defaultDestinations.put("queue." + QUEUE_JNDI_NAME, QUEUE_NAME);
+        _defaultDestinations.put("queue." + QUEUE_JNDI_NAME, queueName);
     }
 
     @Test
@@ -192,7 +196,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void replyToStaticQueue() throws Exception
     {
-        final String replyQueueName = "testReplyQueue";
+        final String replyQueueName = _testName.getMethodName() + "ReplyQueue";
         final String replyQueueJndiName = "replyQueue";
         _defaultDestinations.put("queue." + replyQueueJndiName, replyQueueName);
         getBrokerAdmin().createQueue(replyQueueName);
@@ -234,7 +238,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
                    EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()));
 
         String jndiName = "testDestination";
-        String testDestination = "myQueue";
+        String testDestination = _testName.getMethodName() + "MyQueue";
         _defaultDestinations.put("destination." + jndiName,
                                  String.format("BURL:direct://amq.direct//%s?routingkey='%s'", testDestination, testDestination));
 
@@ -254,7 +258,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
 
         String replyToJndiName = "replyToJndiName";
         String consumeReplyToJndiName = "consumeReplyToJndiName";
-        String testDestination = "myQueue";
+        String testDestination = _testName.getMethodName() + "MyQueue";
         _defaultDestinations.put("destination." + replyToJndiName, "ADDR: amq.fanout/testReplyToQueue");
         _defaultDestinations.put("destination." + consumeReplyToJndiName,
                                  "ADDR: testReplyToQueue; {create:always, node: {type: queue, x-bindings:[{exchange: 'amq.fanout', key: testReplyToQueue}]}}");

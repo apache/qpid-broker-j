@@ -26,6 +26,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -87,7 +88,7 @@ public class ClasspathQuery
 
     private static List<File> doBuildClassPath(final Collection<String> gavs)
     {
-        return new ArrayList<>(getJarFiles(gavs));
+        return Collections.unmodifiableList(new ArrayList<>(getJarFiles(gavs)));
     }
 
     private static Set<File> getJarFiles(final Collection<String> gavs)
@@ -152,7 +153,7 @@ public class ClasspathQuery
 
     private String buildClassPath(final Class<?> clientClazz, final Collection<String> gavs)
     {
-        List<File> classpathElements = _classpathCache.getUnchecked(gavs);
+        List<File> classpathElements = new ArrayList<>(_classpathCache.getUnchecked(gavs));
         classpathElements.add(getLocalClasspathElement(clientClazz));
 
         final String collect = classpathElements.stream()
