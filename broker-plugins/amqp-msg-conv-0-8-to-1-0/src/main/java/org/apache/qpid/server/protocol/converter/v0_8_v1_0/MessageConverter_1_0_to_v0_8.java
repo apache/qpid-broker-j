@@ -39,7 +39,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.model.DestinationAddress;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.MessageConverter;
@@ -343,16 +346,47 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
 
     private AMQShortString getReplyTo(final Message_1_0 serverMsg, final NamedAddressSpace addressSpace)
     {
-        // TODO : QPID-7602 - we probably need to look up the replyTo object and construct the correct BURL based on that
         final String replyTo = serverMsg.getMessageHeader().getReplyTo();
-        try
+
+        if (replyTo != null)
         {
-            return AMQShortString.valueOf(replyTo);
+            DestinationAddress destinationAddress = new DestinationAddress(addressSpace, replyTo);
+            MessageDestination messageDestination = destinationAddress.getMessageDestination();
+
+            final String replyToBindingUrl;
+            if (messageDestination instanceof Exchange)
+            {
+                Exchange<?> exchange = (Exchange<?>) messageDestination;
+                replyToBindingUrl = String.format("%s://%s//?routingkey='%s'",
+                                                  exchange.getType(),
+                                                  exchange.getName(),
+                                                  destinationAddress.getRoutingKey());
+            }
+            else if (messageDestination instanceof Queue)
+            {
+                replyToBindingUrl = String.format("%s:////%s",
+                                                  ExchangeDefaults.DIRECT_EXCHANGE_CLASS,
+                                                  messageDestination.getName());
+            }
+            else
+            {
+                replyToBindingUrl = String.format("%s:////?routingkey='%s'",
+                                                  ExchangeDefaults.DIRECT_EXCHANGE_CLASS,
+                                                  destinationAddress.getRoutingKey());
+            }
+
+            try
+            {
+                return AMQShortString.valueOf(replyToBindingUrl);
+            }
+            catch (IllegalArgumentException e)
+            {
+                throw new MessageConversionException(
+                        "Could not convert message from 1.0 to 0-8 because conversion of 'reply-to' failed.",
+                        e);
+            }
         }
-        catch (IllegalArgumentException e)
-        {
-            throw new MessageConversionException("Could not convert message from 1.0 to 0-8 because conversion of 'reply-to' failed.", e);
-        }
+        return null;
     }
 
     private AMQShortString getCorrelationIdAsShortString(final Message_1_0 serverMsg)

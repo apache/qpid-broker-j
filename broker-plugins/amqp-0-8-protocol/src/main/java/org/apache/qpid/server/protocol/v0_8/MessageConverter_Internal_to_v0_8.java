@@ -26,10 +26,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
 import org.apache.qpid.server.message.mimecontentconverter.ObjectToMimeContentConverter;
+import org.apache.qpid.server.model.DestinationAddress;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
@@ -58,7 +63,7 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
     @Override
     public AMQMessage convert(InternalMessage serverMsg, NamedAddressSpace addressSpace)
     {
-        return new AMQMessage(convertToStoredMessage(serverMsg), null);
+        return new AMQMessage(convertToStoredMessage(serverMsg, addressSpace), null);
     }
 
     @Override
@@ -67,7 +72,8 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
 
     }
 
-    private StoredMessage<MessageMetaData> convertToStoredMessage(final InternalMessage serverMsg)
+    private StoredMessage<MessageMetaData> convertToStoredMessage(final InternalMessage serverMsg,
+                                                                  final NamedAddressSpace addressSpace)
     {
         Object messageBody = serverMsg.getMessageBody();
         ObjectToMimeContentConverter converter = MimeContentConverterRegistry.getBestFitObjectToMimeContentConverter(messageBody);
@@ -85,9 +91,8 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
 
         mimeType = improveMimeType(serverMsg, mimeType);
 
-        final MessageMetaData messageMetaData_0_8 = convertMetaData(serverMsg,
-                                                                    mimeType,
-                                                                    messageContent.length);
+        final MessageMetaData messageMetaData_0_8 =
+                convertMetaData(serverMsg, addressSpace, mimeType, messageContent.length);
         final int metadataSize = messageMetaData_0_8.getStorableSize();
 
         return new StoredMessage<MessageMetaData>()
@@ -164,7 +169,10 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
         return mimeType;
     }
 
-    private MessageMetaData convertMetaData(final InternalMessage serverMsg, final String bodyMimeType, final int size)
+    private MessageMetaData convertMetaData(final InternalMessage serverMsg,
+                                            final NamedAddressSpace addressSpace,
+                                            final String bodyMimeType,
+                                            final int size)
     {
 
         MessagePublishInfo publishInfo = new MessagePublishInfo(AMQShortString.EMPTY_STRING,
@@ -181,7 +189,7 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
         props.setExpiration(serverMsg.getExpiration());
         props.setMessageId(convertToOptionalAMQPShortString(serverMsg.getMessageHeader().getMessageId()));
         props.setPriority(serverMsg.getMessageHeader().getPriority());
-        props.setReplyTo(convertToOptionalAMQPShortString(serverMsg.getMessageHeader().getReplyTo()));
+        props.setReplyTo(convertToShortStringForProperty("reply-to", getReplyTo(serverMsg, addressSpace)));
         props.setTimestamp(serverMsg.getMessageHeader().getTimestamp());
 
         props.setUserId(convertToOptionalAMQPShortString(serverMsg.getMessageHeader().getUserId()));
@@ -207,6 +215,42 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
         final ContentHeaderBody chb = new ContentHeaderBody(props);
         chb.setBodySize(size);
         return new MessageMetaData(publishInfo, chb, serverMsg.getArrivalTime());
+    }
+
+    private String getReplyTo(final InternalMessage serverMsg, final NamedAddressSpace addressSpace)
+    {
+        String replyTo = serverMsg.getMessageHeader().getReplyTo();
+
+        if (replyTo != null)
+        {
+            DestinationAddress destinationAddress = new DestinationAddress(addressSpace, replyTo);
+            MessageDestination messageDestination = destinationAddress.getMessageDestination();
+
+            final String replyToBindingUrl;
+            if (messageDestination instanceof Exchange)
+            {
+                Exchange<?> exchange = (Exchange<?>) messageDestination;
+                replyToBindingUrl = String.format("%s://%s//?routingkey='%s'",
+                                                  exchange.getType(),
+                                                  exchange.getName(),
+                                                  destinationAddress.getRoutingKey());
+            }
+            else if (messageDestination instanceof Queue)
+            {
+                replyToBindingUrl = String.format("%s:////%s",
+                                                  ExchangeDefaults.DIRECT_EXCHANGE_CLASS,
+                                                  messageDestination.getName());
+            }
+            else
+            {
+                replyToBindingUrl = String.format("%s:////?routingkey='%s'",
+                                                  ExchangeDefaults.DIRECT_EXCHANGE_CLASS,
+                                                  destinationAddress.getRoutingKey());
+            }
+
+            return replyToBindingUrl;
+        }
+        return null;
     }
 
     private AMQShortString convertToOptionalAMQPShortString(final String stringValue)

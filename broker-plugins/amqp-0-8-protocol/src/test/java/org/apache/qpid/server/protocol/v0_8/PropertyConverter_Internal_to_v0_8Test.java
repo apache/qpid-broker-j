@@ -21,7 +21,9 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -30,12 +32,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.message.internal.InternalMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessageMetaData;
 import org.apache.qpid.server.message.internal.InternalMessageMetaDataType;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.store.StoredMessage;
@@ -52,6 +57,7 @@ public class PropertyConverter_Internal_to_v0_8Test extends QpidTestCase
         super.setUp();
         _messageConverter = new MessageConverter_Internal_to_v0_8();
         _addressSpace = mock(NamedAddressSpace.class);
+        when(_addressSpace.getLocalAddress(anyString())).then(returnsFirstArg());
     }
 
     public void testDurableTrueConversion()
@@ -271,6 +277,83 @@ public class PropertyConverter_Internal_to_v0_8Test extends QpidTestCase
         {
             // pass
         }
+    }
+
+    public void testReplyToConversionWhenQueueIsSpecified()
+    {
+        final String replyTo = "testQueue";
+        final AMQMessageHeader header = mock(AMQMessageHeader.class);
+        when(header.getReplyTo()).thenReturn(replyTo);
+        Queue queue = mock(Queue.class);
+        when(queue.getName()).thenReturn(replyTo);
+        when(_addressSpace.getAttainedMessageDestination(replyTo)).thenReturn(queue);
+
+        InternalMessage originalMessage = createTestMessage(header);
+
+        AMQMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+
+        assertEquals("Unexpected reply-to",
+                     "direct:////" + replyTo,
+                     convertedMessage.getContentHeaderBody().getProperties().getReplyToAsString());
+    }
+
+    public void testReplyToConversionWhenExchangeIsSpecified()
+    {
+        final String replyTo = "testExchange";
+        final AMQMessageHeader header = mock(AMQMessageHeader.class);
+        when(header.getReplyTo()).thenReturn(replyTo);
+        Exchange exchange = mock(Exchange.class);
+        when(exchange.getName()).thenReturn(replyTo);
+        when(exchange.getType()).thenReturn(ExchangeDefaults.FANOUT_EXCHANGE_CLASS);
+
+        when(_addressSpace.getAttainedMessageDestination(replyTo)).thenReturn(exchange);
+
+        InternalMessage originalMessage = createTestMessage(header);
+
+        AMQMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+
+        assertEquals("Unexpected reply-to",
+                     "fanout://" + replyTo + "//?routingkey=''",
+                     convertedMessage.getContentHeaderBody().getProperties().getReplyToAsString());
+    }
+
+    public void testReplyToConversionWhenExchangeAndRoutingKeyAreSpecified()
+    {
+        final String exchangeName = "testExchange";
+        final String routingKey = "testKey";
+        final String replyTo = String.format("%s/%s", exchangeName, routingKey);
+        final AMQMessageHeader header = mock(AMQMessageHeader.class);
+        when(header.getReplyTo()).thenReturn(replyTo);
+        Exchange exchange = mock(Exchange.class);
+        when(exchange.getName()).thenReturn(exchangeName);
+        when(exchange.getType()).thenReturn(ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
+
+        when(_addressSpace.getAttainedMessageDestination(exchangeName)).thenReturn(exchange);
+
+        InternalMessage originalMessage = createTestMessage(header);
+
+        AMQMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+
+        assertEquals("Unexpected reply-to",
+                     "topic://" + exchangeName + "//?routingkey='" + routingKey + "'",
+                     convertedMessage.getContentHeaderBody().getProperties().getReplyToAsString());
+    }
+
+    public void testReplyToConversionWhenNonExistingExchangeAndRoutingKeyAreSpecified()
+    {
+        final String exchangeName = "testExchange";
+        final String routingKey = "testKey";
+        final String replyTo = String.format("%s/%s", exchangeName, routingKey);
+        final AMQMessageHeader header = mock(AMQMessageHeader.class);
+        when(header.getReplyTo()).thenReturn(replyTo);
+
+        InternalMessage originalMessage = createTestMessage(header);
+
+        AMQMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+
+        assertEquals("Unexpected reply-to",
+                     "direct:////?routingkey='" + replyTo + "'",
+                     convertedMessage.getContentHeaderBody().getProperties().getReplyToAsString());
     }
 
     private InternalMessage createTestMessage(final AMQMessageHeader header)

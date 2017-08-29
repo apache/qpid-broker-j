@@ -27,21 +27,26 @@ import java.util.Collections;
 import java.util.UUID;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.message.internal.InternalMessageHeader;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
 import org.apache.qpid.server.message.mimecontentconverter.ObjectToMimeContentConverter;
+import org.apache.qpid.server.model.DestinationAddress;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
-import org.apache.qpid.server.protocol.v0_10.transport.EncoderUtils;
-import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
-import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.EncoderUtils;
 import org.apache.qpid.server.protocol.v0_10.transport.Header;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryPriority;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.ReplyTo;
+import org.apache.qpid.server.store.StoredMessage;
 
 @PluggableService
 public class MessageConverter_Internal_to_v0_10 implements MessageConverter<InternalMessage, MessageTransferMessage>
@@ -64,7 +69,7 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
     @Override
     public MessageTransferMessage convert(InternalMessage serverMsg, NamedAddressSpace addressSpace)
     {
-        return new MessageTransferMessage(convertToStoredMessage(serverMsg), null);
+        return new MessageTransferMessage(convertToStoredMessage(serverMsg, addressSpace), null);
     }
 
     @Override
@@ -73,7 +78,8 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
 
     }
 
-    private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final InternalMessage serverMsg)
+    private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final InternalMessage serverMsg,
+                                                                       final NamedAddressSpace addressSpace)
     {
         Object messageBody = serverMsg.getMessageBody();
         ObjectToMimeContentConverter converter = MimeContentConverterRegistry.getBestFitObjectToMimeContentConverter(messageBody);
@@ -82,9 +88,8 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
 
         mimeType = improveMimeType(serverMsg, mimeType);
 
-        final MessageMetaData_0_10 messageMetaData_0_10 = convertMetaData(serverMsg,
-                                                                          mimeType,
-                                                                          messageContent.length);
+        final MessageMetaData_0_10 messageMetaData_0_10 =
+                convertMetaData(serverMsg, addressSpace, mimeType, messageContent.length);
         final int metadataSize = messageMetaData_0_10.getStorableSize();
 
         return new StoredMessage<MessageMetaData_0_10>()
@@ -162,7 +167,10 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
         return mimeType;
     }
 
-    private MessageMetaData_0_10 convertMetaData(InternalMessage serverMsg, final String bodyMimeType, final int size)
+    private MessageMetaData_0_10 convertMetaData(final InternalMessage serverMsg,
+                                                 final NamedAddressSpace addressSpace,
+                                                 final String bodyMimeType,
+                                                 final int size)
     {
         DeliveryProperties deliveryProps = new DeliveryProperties();
         MessageProperties messageProps = new MessageProperties();
@@ -218,8 +226,26 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
                 messageProps.setUserId(bytes);
             }
         }
+
+        final String origReplyTo = messageHeader.getReplyTo();
+        if (origReplyTo != null && !origReplyTo.equals(""))
+        {
+            messageProps.setReplyTo(getReplyTo(addressSpace, origReplyTo));
+        }
+
         Header header = new Header(deliveryProps, messageProps, null);
         return new MessageMetaData_0_10(header, size, serverMsg.getArrivalTime());
+    }
+
+    private ReplyTo getReplyTo(final NamedAddressSpace addressSpace, final String origReplyTo)
+    {
+        DestinationAddress destinationAddress = new DestinationAddress(addressSpace, origReplyTo);
+        MessageDestination messageDestination = destinationAddress.getMessageDestination();
+        final String exchange = ensureStr8("reply-to[\"exchange\"]", messageDestination instanceof Exchange
+                ? messageDestination.getName() : "");
+        final String routingKey = ensureStr8("reply-to[\"routing-key\"]", messageDestination instanceof Queue
+                ? messageDestination.getName() : destinationAddress.getRoutingKey());
+        return new ReplyTo(exchange, routingKey);
     }
 
     private void validateValue(final Object value, final String path)
