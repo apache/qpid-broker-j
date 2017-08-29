@@ -1498,18 +1498,17 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public String getLocalAddress(final String routingAddress)
     {
-        String localAddress = routingAddress;
         if(getGlobalAddressDomains() != null)
         {
             for(String domain : getGlobalAddressDomains())
             {
-                if(localAddress.length() > routingAddress.length() - domain.length() && routingAddress.startsWith(domain + "/"))
+                if(routingAddress.startsWith(domain + "/"))
                 {
-                    localAddress = routingAddress.substring(domain.length());
+                    return routingAddress.substring(domain.length() + 1);
                 }
             }
         }
-        return localAddress;
+        return routingAddress;
     }
 
     @Override

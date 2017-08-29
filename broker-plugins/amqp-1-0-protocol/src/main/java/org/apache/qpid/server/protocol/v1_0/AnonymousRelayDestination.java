@@ -26,11 +26,9 @@ import java.util.Arrays;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.DestinationAddress;
 import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -76,53 +74,19 @@ public class AnonymousRelayDestination implements ReceivingDestination
     {
         final ReceivingDestination destination;
         final String routingAddress = message.getTo();
-        if (!routingAddress.startsWith("/") && routingAddress.contains("/"))
+        DestinationAddress destinationAddress = new DestinationAddress(_addressSpace, routingAddress);
+        MessageDestination messageDestination = destinationAddress.getMessageDestination();
+        if (messageDestination != null)
         {
-            String[] parts = routingAddress.split("/", 2);
-            MessageDestination exchangeDestination = _addressSpace.getAttainedMessageDestination(parts[0]);
-            if (exchangeDestination instanceof Exchange)
-            {
-                destination = new NodeReceivingDestination(exchangeDestination,
-                                                           _target.getDurable(),
-                                                           _target.getExpiryPolicy(),
-                                                           parts[0],
-                                                           _target.getCapabilities(),
-                                                           _eventLogger);
-            }
-            else
-            {
-                destination = null;
-            }
+            destination = new NodeReceivingDestination(destinationAddress,
+                                                       _target.getDurable(),
+                                                       _target.getExpiryPolicy(),
+                                                       _target.getCapabilities(),
+                                                       _eventLogger);
         }
         else
         {
-            MessageDestination messageDestination = _addressSpace.getAttainedMessageDestination(routingAddress);
-            if(messageDestination == null)
-            {
-                // TODO - should we do this... if the queue is not being advertised as a destination, shouldn't we
-                //        respect that?
-
-                // Covers the unlikely case where there is no attained destination with the given address, but there is
-                // a queue with that address
-                MessageSource source = _addressSpace.getAttainedMessageSource(routingAddress);
-                if (source instanceof Queue)
-                {
-                    messageDestination = (Queue<?>) source;
-                }
-            }
-            if (messageDestination != null)
-            {
-                destination = new NodeReceivingDestination(messageDestination,
-                                                           _target.getDurable(),
-                                                           _target.getExpiryPolicy(),
-                                                           routingAddress,
-                                                           _target.getCapabilities(),
-                                                           _eventLogger);
-            }
-            else
-            {
-                destination = null;
-            }
+            destination = null;
         }
 
         final Outcome outcome;

@@ -167,6 +167,12 @@ public abstract class AbstractNonConnectionAcceptingVirtualHost<X extends Abstra
     }
 
     @Override
+    public String getLocalAddress(final String routingAddress)
+    {
+        return routingAddress;
+    }
+
+    @Override
     public boolean isActive()
     {
         return false;

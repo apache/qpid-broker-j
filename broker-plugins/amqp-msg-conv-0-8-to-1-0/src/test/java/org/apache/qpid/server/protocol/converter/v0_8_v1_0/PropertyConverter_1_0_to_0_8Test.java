@@ -20,6 +20,8 @@
 package org.apache.qpid.server.protocol.converter.v0_8_v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.mockito.AdditionalAnswers.returnsFirstArg;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -65,6 +67,7 @@ public class PropertyConverter_1_0_to_0_8Test extends QpidTestCase
     {
         super.setUp();
         _namedAddressSpace = mock(NamedAddressSpace.class);
+        when(_namedAddressSpace.getLocalAddress(anyString())).then(returnsFirstArg());
         _messageConverter = new MessageConverter_1_0_to_v0_8();
     }
 

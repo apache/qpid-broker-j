@@ -59,6 +59,7 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.DestinationAddress;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
@@ -617,8 +618,14 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             if (Boolean.TRUE.equals(target.getDynamic()))
             {
                 MessageDestination tempDestination = createDynamicDestination(link, target.getDynamicNodeProperties(), target.getCapabilities());
-                // TODO: avoid NPE
-                target.setAddress(tempDestination.getName());
+                if(tempDestination != null)
+                {
+                    target.setAddress(_primaryDomain + tempDestination.getName());
+                }
+                else
+                {
+                    throw new AmqpErrorException(AmqpError.INTERNAL_ERROR, "Cannot create dynamic destination");
+                }
             }
 
             String addr = target.getAddress();
@@ -626,57 +633,18 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             {
                 destination = new AnonymousRelayDestination(getAddressSpace(), target, _connection.getEventLogger());
             }
-            else if (!addr.startsWith("/") && addr.contains("/"))
-            {
-                String[] parts = addr.split("/", 2);
-                Exchange<?> exchange = getExchange(parts[0]);
-                if (exchange != null)
-                {
-
-
-                    destination =
-                            new NodeReceivingDestination(exchange,
-                                                         target.getDurable(),
-                                                         target.getExpiryPolicy(),
-                                                         parts[0],
-                                                         target.getCapabilities(),
-                                                         _connection.getEventLogger());
-                    ((NodeReceivingDestination)destination).setRoutingAddress(parts[1]);
-                    
-                }
-                else
-                {
-                    destination = null;
-                }
-            }
             else
             {
-                MessageDestination messageDestination =
-                        getAddressSpace().getAttainedMessageDestination(addr);
-
-                if(messageDestination == null)
-                {
-                    // TODO - should we do this... if the queue is not being advertised as a destination, shouldn't we
-                    //        respect that?
-
-                    // Covers the unlikely case where there is no attained destination with the given address, but there is
-                    // a queue with that address
-                    MessageSource source = getAddressSpace().getAttainedMessageSource(addr);
-                    if (source instanceof Queue)
-                    {
-                        messageDestination = (Queue<?>) source;
-                    }
-                }
+                DestinationAddress destinationAddress = new DestinationAddress(getAddressSpace(), addr);
+                MessageDestination messageDestination = destinationAddress.getMessageDestination();
 
                 if (messageDestination != null)
                 {
-                    destination =
-                            new NodeReceivingDestination(messageDestination,
-                                                         target.getDurable(),
-                                                         target.getExpiryPolicy(),
-                                                         addr,
-                                                         target.getCapabilities(),
-                                                         _connection.getEventLogger());
+                    destination = new NodeReceivingDestination(destinationAddress,
+                                                               target.getDurable(),
+                                                               target.getExpiryPolicy(),
+                                                               target.getCapabilities(),
+                                                               _connection.getEventLogger());
                 }
                 else
                 {
@@ -825,11 +793,11 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     private MessageDestination createDynamicDestination(final Link_1_0<?, ?> link,
                                                         Map properties,
-                                                        final Symbol[] capabilities)
+                                                        final Symbol[] capabilities) throws AmqpErrorException
     {
         final Set<Symbol> capabilitySet = capabilities == null ? Collections.emptySet() : Sets.newHashSet(capabilities);
         boolean isTopic = capabilitySet.contains(Symbol.valueOf("temporary-topic")) || capabilitySet.contains(Symbol.valueOf("topic"));
-        final String destName = _primaryDomain + (isTopic ? "TempTopic" : "TempQueue") + UUID.randomUUID().toString();
+        final String destName = (isTopic ? "TempTopic" : "TempQueue") + UUID.randomUUID().toString();
         try
         {
             Map<String, Object> attributes = convertDynamicNodePropertiesToAttributes(link, properties, destName);
@@ -846,12 +814,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
         catch (AccessControlException e)
         {
-            Error error = new Error();
-            error.setCondition(AmqpError.UNAUTHORIZED_ACCESS);
-            error.setDescription(e.getMessage());
-
-            _connection.close(error);
-            return null;
+            throw new AmqpErrorException(AmqpError.UNAUTHORIZED_ACCESS, e.getMessage());
         }
         catch (AbstractConfiguredObject.DuplicateNameException e)
         {

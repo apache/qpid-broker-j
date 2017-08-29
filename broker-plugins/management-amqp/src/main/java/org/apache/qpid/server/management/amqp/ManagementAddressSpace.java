@@ -366,6 +366,12 @@ public class ManagementAddressSpace implements NamedAddressSpace
         return Collections.emptyList();
     }
 
+    @Override
+    public String getLocalAddress(final String routingAddress)
+    {
+        return routingAddress;
+    }
+
     private class DefaultDestination implements MessageDestination
     {
         @Override

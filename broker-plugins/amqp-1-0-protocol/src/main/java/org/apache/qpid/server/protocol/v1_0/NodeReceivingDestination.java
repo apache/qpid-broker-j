@@ -32,6 +32,7 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.RejectType;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.DestinationAddress;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -56,23 +57,33 @@ public class NodeReceivingDestination implements ReceivingDestination
     private TerminusDurability _durability;
     private TerminusExpiryPolicy _expiryPolicy;
     private final String _address;
-    private String _routingAddress;
+    private final String _routingAddress;
 
-    public NodeReceivingDestination(MessageDestination destination,
-                                    TerminusDurability durable,
-                                    TerminusExpiryPolicy expiryPolicy,
-                                    final String address, final Symbol[] capabilities,
+    public NodeReceivingDestination(final DestinationAddress destinationAddress,
+                                    final TerminusDurability durable,
+                                    final TerminusExpiryPolicy expiryPolicy,
+                                    final Symbol[] capabilities,
                                     final EventLogger eventLogger)
     {
-        _destination = destination;
+        _destination = destinationAddress.getMessageDestination();
         _durability = durable;
         _expiryPolicy = expiryPolicy;
-        _address = address;
-        _eventLogger = eventLogger;
-        _discardUnroutable = destination instanceof Exchange
-                             && ((capabilities != null && Arrays.asList(capabilities).contains(DISCARD_UNROUTABLE))
-                                 || ((Exchange)destination).getUnroutableMessageBehaviour() == Exchange.UnroutableMessageBehaviour.DISCARD);
 
+        _eventLogger = eventLogger;
+
+        if (_destination instanceof Exchange)
+        {
+            _discardUnroutable = ((capabilities != null && Arrays.asList(capabilities).contains(DISCARD_UNROUTABLE))
+                                     || ((Exchange)_destination).getUnroutableMessageBehaviour() == Exchange.UnroutableMessageBehaviour.DISCARD);
+            _routingAddress = destinationAddress.getRoutingKey();
+            _address = _destination.getName();
+        }
+        else
+        {
+            _discardUnroutable = false;
+            _routingAddress = "";
+            _address = destinationAddress.getRoutingAddress();
+        }
     }
 
     @Override
@@ -84,7 +95,7 @@ public class NodeReceivingDestination implements ReceivingDestination
     @Override
     public Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken)
     {
-        final String routingAddress = _routingAddress == null ? getRoutingAddress(message) : _routingAddress;
+        final String routingAddress = "".equals(_routingAddress) ? getRoutingAddress(message) : _routingAddress;
         _destination.authorisePublish(securityToken, Collections.singletonMap("routingKey", routingAddress));
 
         final InstanceProperties instanceProperties =
@@ -211,10 +222,5 @@ public class NodeReceivingDestination implements ReceivingDestination
         capabilities[0] = _discardUnroutable ? DISCARD_UNROUTABLE : REJECT_UNROUTABLE;
         capabilities[1] = DELAYED_DELIVERY;
         return capabilities;
-    }
-
-    public void setRoutingAddress(final String routingAddress)
-    {
-        _routingAddress = routingAddress;
     }
 }

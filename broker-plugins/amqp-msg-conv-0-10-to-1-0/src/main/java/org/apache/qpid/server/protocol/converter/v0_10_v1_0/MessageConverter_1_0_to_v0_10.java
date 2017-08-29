@@ -42,6 +42,7 @@ import java.util.UUID;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.model.DestinationAddress;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
@@ -294,30 +295,14 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
 
     private ReplyTo getReplyTo(final NamedAddressSpace addressSpace, final String origReplyTo)
     {
-        String exchange, routingKey;
-        if (origReplyTo.startsWith("/"))
-        {
-            exchange = "";
-            routingKey = origReplyTo;
-        }
-        else if (origReplyTo.contains("/"))
-        {
-            String[] parts = origReplyTo.split("/", 2);
-            exchange = parts[0];
-            routingKey = parts[1];
-        }
-        else if (addressSpace.getAttainedMessageDestination(origReplyTo) instanceof Exchange)
-        {
-            exchange = origReplyTo;
-            routingKey = "";
-        }
-        else
-        {
-            exchange = "";
-            routingKey = origReplyTo;
-        }
-        return new ReplyTo(ensureStr8("reply-to[\"exchange\"]", exchange),
-                           ensureStr8("reply-to[\"routing-key\"]", routingKey));
+        DestinationAddress destinationAddress = new DestinationAddress(addressSpace, origReplyTo);
+        MessageDestination messageDestination = destinationAddress.getMessageDestination();
+        return new ReplyTo(ensureStr8("reply-to[\"exchange\"]",
+                                      messageDestination instanceof Exchange ? messageDestination.getName() : ""),
+                           ensureStr8("reply-to[\"routing-key\"]",
+                                      messageDestination instanceof Queue
+                                              ? messageDestination.getName()
+                                              : destinationAddress.getRoutingKey()));
     }
 
     private void setExchangeAndRoutingKeyOnDeliveryProperties(final DeliveryProperties deliveryProps,

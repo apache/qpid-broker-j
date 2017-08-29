@@ -27,6 +27,7 @@ import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.DestinationAddress;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PermissionedObject;
@@ -98,34 +99,11 @@ public class DefaultDestination implements MessageDestination, PermissionedObjec
     {
         RoutingResult<M> result = new RoutingResult<>(message);
 
-        if (routingAddress != null && !routingAddress.trim().equals(""))
+        DestinationAddress destinationAddress = new DestinationAddress(_virtualHost, routingAddress);
+        MessageDestination messageDestination = destinationAddress.getMessageDestination();
+        if (messageDestination != null)
         {
-            final MessageDestination dest = _virtualHost.getAttainedMessageDestination(routingAddress);
-            if (dest == null)
-            {
-                routingAddress = _virtualHost.getLocalAddress(routingAddress);
-                if (routingAddress.contains("/") && !routingAddress.startsWith("/"))
-                {
-                    String[] parts = routingAddress.split("/", 2);
-                    Exchange<?> exchange = _virtualHost.getAttainedChildFromAddress(Exchange.class, parts[0]);
-                    if (exchange != null)
-                    {
-                        result.add(exchange.route(message, parts[1], instanceProperties));
-                    }
-                }
-                else if (!routingAddress.contains("/"))
-                {
-                    Exchange<?> exchange = _virtualHost.getAttainedChildFromAddress(Exchange.class, routingAddress);
-                    if (exchange != null)
-                    {
-                        result.add(exchange.route(message, "", instanceProperties));
-                    }
-                }
-            }
-            else
-            {
-                result.add(dest.route(message, routingAddress, instanceProperties));
-            }
+            result.add(messageDestination.route(message,destinationAddress.getRoutingKey(), instanceProperties));
         }
         return result;
     }

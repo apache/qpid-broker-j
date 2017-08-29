@@ -275,8 +275,6 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
     Queue<?> getAttainedQueue(String name);
 
-    String getLocalAddress(String routingAddress);
-
     <T extends ConfiguredObject<?>> T getAttainedChildFromAddress(Class<T> childClass,
                                                                   String address);
 

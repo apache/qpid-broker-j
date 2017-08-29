@@ -76,4 +76,6 @@ public interface NamedAddressSpace extends Named
     Collection<? extends Connection<?>> getConnections();
 
     List<String> getGlobalAddressDomains();
+
+    String getLocalAddress(String routingAddress);
 }
