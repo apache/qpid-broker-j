@@ -25,6 +25,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -32,10 +33,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
+import org.apache.qpid.server.protocol.v0_10.MessageTransferMessage;
+import org.apache.qpid.server.protocol.v0_10.transport.ReplyTo;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
@@ -337,6 +341,102 @@ public class PropertyConverter_1_0_to_0_8Test extends QpidTestCase
         }
     }
 
+    public void testReplyToConversionWhenQueueIsSpecified() throws IOException
+    {
+        final String replyTo = "myTestQueue";
+        final Queue queue = mock(Queue.class);
+        when(queue.getName()).thenReturn(replyTo);
+        when(_namedAddressSpace.getAttainedMessageDestination(replyTo)).thenReturn(queue);
+
+        Properties properties = new Properties();
+        properties.setReplyTo(replyTo);
+        Message_1_0 message = createTestMessage(properties);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
+
+        assertEquals("Unexpected reply-to", "direct:////" + replyTo, convertedProperties.getReplyToAsString());
+    }
+
+    public void testReplyToConversionWhenExchangeIsSpecified() throws IOException
+    {
+        final String replyTo = "myTestExchange";
+        final Exchange exchange = mock(Exchange.class);
+        when(exchange.getName()).thenReturn(replyTo);
+        when(exchange.getType()).thenReturn(ExchangeDefaults.FANOUT_EXCHANGE_CLASS);
+        when(_namedAddressSpace.getAttainedMessageDestination(replyTo)).thenReturn(exchange);
+
+        Properties properties = new Properties();
+        properties.setReplyTo(replyTo);
+        Message_1_0 message = createTestMessage(properties);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
+
+        assertEquals("Unexpected reply-to", "fanout://" + replyTo + "//", convertedProperties.getReplyToAsString());
+    }
+
+    public void testReplyToConversionWhenExchangeAndRoutingKeyAreSpecified() throws IOException
+    {
+        final String exchangeName = "testExchnageName";
+        final String routingKey = "testRoutingKey";
+        final String replyTo = String.format("%s/%s", exchangeName, routingKey);
+        final Exchange exchange = mock(Exchange.class);
+        when(exchange.getName()).thenReturn(exchangeName);
+        when(exchange.getType()).thenReturn(ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
+        when(_namedAddressSpace.getAttainedMessageDestination(exchangeName)).thenReturn(exchange);
+
+        Properties properties = new Properties();
+        properties.setReplyTo(replyTo);
+        Message_1_0 message = createTestMessage(properties);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
+
+        assertEquals("Unexpected reply-to", "topic://" + exchangeName + "//?routingkey='" + routingKey + "'", convertedProperties.getReplyToAsString());
+    }
+
+    public void testReplyToConversionWhenExchangeAndRoutingKeyAreSpecifiedAndGlobalPrefixIsUsed() throws IOException
+    {
+        final String exchangeName = "testExchnageName";
+        final String routingKey = "testRoutingKey";
+        final String globalPrefix = "/testPrefix";
+        final String replyTo = String.format("%s/%s/%s", globalPrefix, exchangeName, routingKey);
+        when(_namedAddressSpace.getLocalAddress(replyTo)).thenReturn(exchangeName + "/" + routingKey);
+        final Exchange exchange = mock(Exchange.class);
+        when(exchange.getName()).thenReturn(exchangeName);
+        when(exchange.getType()).thenReturn(ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
+        when(_namedAddressSpace.getAttainedMessageDestination(exchangeName)).thenReturn(exchange);
+
+        Properties properties = new Properties();
+        properties.setReplyTo(replyTo);
+        Message_1_0 message = createTestMessage(properties);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
+
+        assertEquals("Unexpected reply-to", "topic://" + exchangeName + "//?routingkey='" + routingKey + "'", convertedProperties.getReplyToAsString());
+    }
+
+    public void testReplyToConversionWhenReplyToCannotBeResolved() throws IOException
+    {
+        final String replyTo = "direct://amq.direct//test?routingkey='test'";
+
+        Properties properties = new Properties();
+        properties.setReplyTo(replyTo);
+        Message_1_0 message = createTestMessage(properties);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
+
+        assertEquals("Unexpected reply-to", "direct:////?routingkey='" + replyTo + "'", convertedProperties.getReplyToAsString());
+    }
+
     public void testTTLConversion()
     {
         long ttl = 10000;
@@ -611,6 +711,10 @@ public class PropertyConverter_1_0_to_0_8Test extends QpidTestCase
         properties.setTo(to);
         Message_1_0 message = createTestMessage(properties);
 
+        Exchange<?> exchange = mock(Exchange.class);
+        when(exchange.getName()).thenReturn(testExchange);
+        when(_namedAddressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
+
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
@@ -626,7 +730,9 @@ public class PropertyConverter_1_0_to_0_8Test extends QpidTestCase
         properties.setTo(testExchange);
         Message_1_0 message = createTestMessage(properties);
 
-        when(_namedAddressSpace.getAttainedMessageDestination(testExchange)).thenReturn(mock(Exchange.class));
+        final Exchange exchange = mock(Exchange.class);
+        when(exchange.getName()).thenReturn(testExchange);
+        when(_namedAddressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
 
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -645,7 +751,9 @@ public class PropertyConverter_1_0_to_0_8Test extends QpidTestCase
         properties.setSubject(testRoutingKey);
         Message_1_0 message = createTestMessage(properties);
 
-        when(_namedAddressSpace.getAttainedMessageDestination(testExchange)).thenReturn(mock(Exchange.class));
+        final Exchange exchange = mock(Exchange.class);
+        when(exchange.getName()).thenReturn(testExchange);
+        when(_namedAddressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
 
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -662,7 +770,9 @@ public class PropertyConverter_1_0_to_0_8Test extends QpidTestCase
         properties.setTo(testQueue);
         Message_1_0 message = createTestMessage(properties);
 
-        when(_namedAddressSpace.getAttainedMessageDestination(testQueue)).thenReturn(mock(Queue.class));
+        final Queue queue = mock(Queue.class);
+        when(queue.getName()).thenReturn(testQueue);
+        when(_namedAddressSpace.getAttainedMessageDestination(testQueue)).thenReturn(queue);
 
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -672,22 +782,41 @@ public class PropertyConverter_1_0_to_0_8Test extends QpidTestCase
         assertEquals("Unexpected routing key", testQueue, messagePublishInfo.getRoutingKey().toString());
     }
 
-    public void testToConversionWhenGlobalAddress()
+    public void testToConversionWhenGlobalAddressUnrecognized()
     {
         final String globalAddress = "/testQueue";
         Properties properties = new Properties();
         properties.setTo(globalAddress);
         Message_1_0 message = createTestMessage(properties);
 
-        try
-        {
-            _messageConverter.convert(message, _namedAddressSpace);
-            fail("Exception is not thrown");
-        }
-        catch (MessageConversionException e)
-        {
-            // pass
-        }
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
+
+        assertEquals("Unexpected exchange", "", messagePublishInfo.getExchange().toString());
+        assertEquals("Unexpected routing key", globalAddress, messagePublishInfo.getRoutingKey().toString());
+    }
+
+    public void testToConversionWhenGlobalAddressIsKnown()
+    {
+        final String globalPrefix = "/testPrefix";
+        final String queueName = "testQueue";
+        final String globalAddress = globalPrefix + "/" + queueName;
+        Properties properties = new Properties();
+        properties.setTo(globalAddress);
+        Message_1_0 message = createTestMessage(properties);
+
+        Queue<?> queue = mock(Queue.class);
+        when(queue.getName()).thenReturn(queueName);
+        when(_namedAddressSpace.getAttainedMessageDestination(queueName)).thenReturn(queue);
+        when(_namedAddressSpace.getLocalAddress(globalAddress)).thenReturn(queueName);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
+
+        assertEquals("Unexpected exchange", "", messagePublishInfo.getExchange().toString());
+        assertEquals("Unexpected routing key", queueName, messagePublishInfo.getRoutingKey().toString());
     }
 
     public void testToConversionWhenExchangeLengthExceeds255()
@@ -743,8 +872,8 @@ public class PropertyConverter_1_0_to_0_8Test extends QpidTestCase
 
         final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
 
-        assertEquals("Unexpected exchange", testDestination, messagePublishInfo.getExchange().toString());
-        assertEquals("Unexpected routing key", "", messagePublishInfo.getRoutingKey().toString());
+        assertEquals("Unexpected exchange", "", messagePublishInfo.getExchange().toString());
+        assertEquals("Unexpected routing key", testDestination, messagePublishInfo.getRoutingKey().toString());
     }
 
     private Message_1_0 createTestMessage(final Header header)

@@ -315,33 +315,24 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
         final String exchangeName;
         final String routingKey;
 
-        if (to != null)
+        if (to != null && !"".equals(to))
         {
-            if (to.startsWith("/"))
+            DestinationAddress destinationAddress = new DestinationAddress(addressSpace, to);
+            MessageDestination messageDestination = destinationAddress.getMessageDestination();
+            if (messageDestination instanceof Queue)
             {
-                //TODO: get local address from global
-                throw new MessageConversionException("Could not convert message from 1.0 to 0-10 because conversion of 'to' failed. Global addresses cannot be converted.");
+                exchangeName = "";
+                routingKey = messageDestination.getName();
             }
-
-            int separatorPosition = to.indexOf('/');
-            if (separatorPosition != -1)
+            else if (messageDestination instanceof Exchange)
             {
-                exchangeName = to.substring(0, separatorPosition);
-                routingKey = to.substring(separatorPosition + 1);
+                exchangeName = messageDestination.getName();
+                routingKey = "".equals(destinationAddress.getRoutingKey()) ? subject : destinationAddress.getRoutingKey();
             }
             else
             {
-                MessageDestination destination = addressSpace.getAttainedMessageDestination(to);
-                if (destination instanceof Queue)
-                {
-                    exchangeName = "";
-                    routingKey = to;
-                }
-                else
-                {
-                    exchangeName = to;
-                    routingKey = subject;
-                }
+                exchangeName = "";
+                routingKey = to;
             }
         }
         else
@@ -349,6 +340,7 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
             exchangeName = "";
             routingKey = subject;
         }
+
         deliveryProps.setRoutingKey(ensureStr8("to' or 'subject", routingKey));
         deliveryProps.setExchange(ensureStr8("to", exchangeName));
     }

@@ -110,6 +110,7 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
             properties.setUserId(new Binary(userId.getBytes(StandardCharsets.UTF_8)));
         }
         properties.setReplyTo(serverMessage.getMessageHeader().getReplyTo());
+        properties.setTo(serverMessage.getTo());
 
         ApplicationProperties applicationProperties = null;
         if(!serverMessage.getMessageHeader().getHeaderNames().isEmpty())

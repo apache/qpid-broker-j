@@ -49,6 +49,7 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
+import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageDeliveryMode;
 import org.apache.qpid.server.protocol.v0_10.transport.ReplyTo;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
@@ -431,6 +432,166 @@ public class PropertyConverter_Internal_to_v0_10Test extends QpidTestCase
         assertEquals("Unexpected routing key", replyTo, convertedReplyTo.getRoutingKey());
     }
 
+
+    public void testToConversionWhenExchangeAndRoutingKeyIsSpecified() throws IOException
+    {
+        final String testExchange = "testExchange";
+        final String testRoutingKey = "testRoutingKey";
+
+        String to = testExchange + "/" + testRoutingKey;
+
+        InternalMessage message = createTestMessage(to);
+
+        final Exchange<?> exchange = mock(Exchange.class);
+        when(exchange.getName()).thenReturn(testExchange);
+        when(_addressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
+
+        final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
+
+        final DeliveryProperties deliveryProperties =
+                convertedMessage.getStoredMessage().getMetaData().getDeliveryProperties();
+        assertEquals("Unexpected exchange", testExchange, deliveryProperties.getExchange());
+        assertEquals("Unexpected routing key", testRoutingKey, deliveryProperties.getRoutingKey());
+    }
+
+    public void testToConversionWhenExchangeIsSpecified() throws IOException
+    {
+        final String testExchange = "testExchange";
+
+        InternalMessage message = createTestMessage(testExchange);
+
+        final Exchange<?> exchange = mock(Exchange.class);
+        when(exchange.getName()).thenReturn(testExchange);
+        when(_addressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
+
+        final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
+
+        final DeliveryProperties deliveryProperties =
+                convertedMessage.getStoredMessage().getMetaData().getDeliveryProperties();
+        assertEquals("Unexpected exchange", testExchange, deliveryProperties.getExchange());
+        assertEquals("Unexpected routing key", "", deliveryProperties.getRoutingKey());
+    }
+
+    public void testToConversionWhenQueueIsSpecified() throws IOException
+    {
+        final String testQueue = "testQueue";
+
+        InternalMessage message = createTestMessage(testQueue);
+
+        final Queue<?> queue = mock(Queue.class);
+        when(queue.getName()).thenReturn(testQueue);
+        when(_addressSpace.getAttainedMessageDestination(testQueue)).thenReturn(queue);
+
+        final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
+
+        final DeliveryProperties deliveryProperties =
+                convertedMessage.getStoredMessage().getMetaData().getDeliveryProperties();
+        assertEquals("Unexpected exchange", "", deliveryProperties.getExchange());
+        assertEquals("Unexpected routing key", testQueue, deliveryProperties.getRoutingKey());
+    }
+
+    public void testToConversionWhenGlobalAddressIsUnknown() throws IOException
+    {
+        final String queueName = "testQueue";
+        final String prefix = "/testPrefix";
+        final String globalAddress = prefix + "/" + queueName;
+
+        InternalMessage message = createTestMessage(globalAddress);
+
+        final Queue<?> queue = mock(Queue.class);
+        when(queue.getName()).thenReturn(queueName);
+        when(_addressSpace.getAttainedMessageDestination(queueName)).thenReturn(queue);
+
+        final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
+
+        final DeliveryProperties deliveryProperties =
+                convertedMessage.getStoredMessage().getMetaData().getDeliveryProperties();
+        assertEquals("Unexpected exchange", "", deliveryProperties.getExchange());
+        assertEquals("Unexpected routing key", globalAddress, deliveryProperties.getRoutingKey());
+    }
+
+    public void testToConversionWhenGlobalAddressIsKnown() throws IOException
+    {
+        final String queueName = "testQueue";
+        final String prefix = "/testPrefix";
+        final String globalAddress = prefix + "/" + queueName;
+
+        InternalMessage message = createTestMessage(globalAddress);
+
+        final Queue<?> queue = mock(Queue.class);
+        when(queue.getName()).thenReturn(queueName);
+        when(_addressSpace.getLocalAddress(globalAddress)).thenReturn(queueName);
+        when(_addressSpace.getAttainedMessageDestination(queueName)).thenReturn(queue);
+        final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
+
+        final DeliveryProperties deliveryProperties =
+                convertedMessage.getStoredMessage().getMetaData().getDeliveryProperties();
+        assertEquals("Unexpected exchange", "", deliveryProperties.getExchange());
+        assertEquals("Unexpected routing key", queueName, deliveryProperties.getRoutingKey());
+    }
+
+    public void testToConversionWhenExchangeLengthExceeds255() throws IOException
+    {
+        final String testExchange = generateLongString();
+        final String testRoutingKey = "testRoutingKey";
+
+        String to = testExchange + "/" + testRoutingKey;
+
+        InternalMessage message = createTestMessage(to);
+
+        try
+        {
+            _messageConverter.convert(message, _addressSpace);
+            fail("Exception is not thrown");
+        }
+        catch (MessageConversionException e)
+        {
+            // pass
+        }
+    }
+
+    public void testToConversionWhenRoutingKeyLengthExceeds255() throws Exception
+    {
+        final String testExchange = "testExchange";
+        final String testRoutingKey = generateLongString();
+
+        String to = testExchange + "/" + testRoutingKey;
+
+        InternalMessage message = createTestMessage(to);
+
+        try
+        {
+            _messageConverter.convert(message, _addressSpace);
+            fail("Exception is not thrown");
+        }
+        catch (MessageConversionException e)
+        {
+            // pass
+        }
+    }
+
+    public void testToConversionWhenDestinationIsSpecifiedButDoesNotExists() throws IOException
+    {
+        final String testDestination = "testDestination";
+
+        InternalMessage message = createTestMessage(testDestination);
+
+        final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
+
+        final DeliveryProperties deliveryProperties =
+                convertedMessage.getStoredMessage().getMetaData().getDeliveryProperties();
+        assertEquals("Unexpected exchange", "", deliveryProperties.getExchange());
+        assertEquals("Unexpected routing key", testDestination, deliveryProperties.getRoutingKey());
+    }
+
+    private InternalMessage createTestMessage(String to) throws IOException
+    {
+        final InternalMessageHeader internalMessageHeader = new InternalMessageHeader(mock(AMQMessageHeader.class));
+        final StoredMessage<InternalMessageMetaData> handle =
+                createInternalStoredMessage(null,false, internalMessageHeader);
+        return new InternalMessage(handle, internalMessageHeader, null, to);
+    }
+
     private InternalMessage createTestMessage(final AMQMessageHeader header) throws IOException
     {
         return createTestMessage(header, null, false, System.currentTimeMillis());
@@ -442,22 +603,29 @@ public class PropertyConverter_Internal_to_v0_10Test extends QpidTestCase
         return createTestMessage(header, null, false, arrivalTime);
     }
 
-
     private InternalMessage createTestMessage(final AMQMessageHeader header,
                                               byte[] content,
                                               final boolean persistent, final long arrivalTime) throws IOException
     {
         final InternalMessageHeader internalMessageHeader = new InternalMessageHeader(header, arrivalTime);
-        int contentSize = 0;
-        final StoredMessage<InternalMessageMetaData> storedMessage = mock(StoredMessage.class);
-        if (content != null)
-        {
+        final StoredMessage<InternalMessageMetaData> storedMessage =
+                createInternalStoredMessage(content, persistent, internalMessageHeader);
+        return ((InternalMessage) InternalMessageMetaDataType.INSTANCE.createMessage(storedMessage));
+    }
 
+    private StoredMessage<InternalMessageMetaData> createInternalStoredMessage(final byte[] content,
+                                                                               final boolean persistent,
+                                                                               final InternalMessageHeader internalMessageHeader) throws IOException
+    {
+        final StoredMessage<InternalMessageMetaData> storedMessage = mock(StoredMessage.class);
+        int contentSize = content == null ? 0 : content.length;
+        if (contentSize > 0)
+        {
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                  ObjectOutputStream oos = new ObjectOutputStream(baos))
             {
                 oos.writeObject(content);
-                contentSize = baos.size();
+
                 when(storedMessage.getContent(0, contentSize)).thenReturn(Collections.singletonList(QpidByteBuffer.wrap(
                         baos.toByteArray())));
             }
@@ -466,7 +634,7 @@ public class PropertyConverter_Internal_to_v0_10Test extends QpidTestCase
         final InternalMessageMetaData metaData =
                 new InternalMessageMetaData(persistent, internalMessageHeader, contentSize);
         when(storedMessage.getMetaData()).thenReturn(metaData);
-        return ((InternalMessage) InternalMessageMetaDataType.INSTANCE.createMessage(storedMessage));
+        return storedMessage;
     }
 
     private String generateLongString()

@@ -339,7 +339,21 @@ public class PropertyConverter_0_10_to_InternalTest extends QpidTestCase
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
-        assertEquals("Unexpected exchange", testExchange, convertedMessage.getTo());
+        assertEquals("Unexpected to", testExchange, convertedMessage.getTo());
+    }
+
+    public void testInitialRoutingAddressConversion()
+    {
+        final String testExchange = "testExchange";
+        final DeliveryProperties deliveryProperties = new DeliveryProperties();
+        deliveryProperties.setExchange(testExchange);
+        final String testRoutingKey = "testRoutingKey";
+        deliveryProperties.setRoutingKey(testRoutingKey);
+        MessageTransferMessage message = createTestMessage(deliveryProperties);
+
+        final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+
+        assertEquals("Unexpected initial routing address", testRoutingKey, convertedMessage.getInitialRoutingAddress());
     }
 
     public void testApplicationIdConversion()

@@ -98,7 +98,8 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
 
     private AMQMessageHeader convertHeader(final MessageTransferMessage serverMessage,
                                            final NamedAddressSpace addressSpace,
-                                           final Object convertedBodyObject, final String encoding)
+                                           final Object convertedBodyObject,
+                                           final String encoding)
     {
         final String convertedMimeType = getInternalConvertedMimeType(serverMessage, convertedBodyObject);
         final AMQMessageHeader messageHeader = serverMessage.getMessageHeader();

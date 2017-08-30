@@ -43,6 +43,7 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
+import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -313,7 +314,7 @@ public class PropertyConverter_Internal_to_v0_8Test extends QpidTestCase
         AMQMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals("Unexpected reply-to",
-                     "fanout://" + replyTo + "//?routingkey=''",
+                     "fanout://" + replyTo + "//",
                      convertedMessage.getContentHeaderBody().getProperties().getReplyToAsString());
     }
 
@@ -356,6 +357,177 @@ public class PropertyConverter_Internal_to_v0_8Test extends QpidTestCase
                      convertedMessage.getContentHeaderBody().getProperties().getReplyToAsString());
     }
 
+    public void testToConversionWhenExchangeAndRoutingKeyIsSpecified()
+    {
+        final String testExchange = "testExchange";
+        final String testRoutingKey = "testRoutingKey";
+
+        String to = testExchange + "/" + testRoutingKey;
+
+        InternalMessage message = createTestMessage(to);
+
+        Exchange<?> exchange = mock(Exchange.class);
+        when(exchange.getName()).thenReturn(testExchange);
+        when(_addressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
+
+        final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
+
+        assertEquals("Unexpected exchange", testExchange, messagePublishInfo.getExchange().toString());
+        assertEquals("Unexpected routing key", testRoutingKey, messagePublishInfo.getRoutingKey().toString());
+    }
+
+    public void testToConversionWhenExchangeIsSpecified()
+    {
+        final String testExchange = "testExchange";
+        InternalMessage message = createTestMessage(testExchange);
+
+        final Exchange exchange = mock(Exchange.class);
+        when(exchange.getName()).thenReturn(testExchange);
+        when(_addressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
+
+        final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
+
+        assertEquals("Unexpected exchange", testExchange, messagePublishInfo.getExchange().toString());
+        assertEquals("Unexpected routing key", "", messagePublishInfo.getRoutingKey().toString());
+    }
+
+    public void testConversionWhenToIsUnsetButInitialRoutingKeyIsSet()
+    {
+        final String testExchange = "testExchange";
+        final String testRoutingKey = "testRoutingKey";
+
+        InternalMessage message = createTestMessage("");
+        final String testInitialRoutingAddress = testExchange + "/" + testRoutingKey;
+        message.setInitialRoutingAddress(testInitialRoutingAddress);
+
+        final Exchange exchange = mock(Exchange.class);
+        when(exchange.getName()).thenReturn(testExchange);
+        when(_addressSpace.getAttainedMessageDestination(testExchange)).thenReturn(exchange);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
+
+        final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
+
+        assertEquals("Unexpected exchange", testExchange, messagePublishInfo.getExchange().toString());
+        assertEquals("Unexpected routing key", testRoutingKey, messagePublishInfo.getRoutingKey().toString());
+    }
+
+    public void testToConversionWhenQueueIsSpecified()
+    {
+        final String testQueue = "testQueue";
+        InternalMessage message = createTestMessage(testQueue);
+
+        final Queue queue = mock(Queue.class);
+        when(queue.getName()).thenReturn(testQueue);
+        when(_addressSpace.getAttainedMessageDestination(testQueue)).thenReturn(queue);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
+
+        final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
+
+        assertEquals("Unexpected exchange", "", messagePublishInfo.getExchange().toString());
+        assertEquals("Unexpected routing key", testQueue, messagePublishInfo.getRoutingKey().toString());
+    }
+
+    public void testToConversionWhenGlobalAddressIsUnknown()
+    {
+        final String globalPrefix = "/testPrefix";
+        final String queueName = "testQueue";
+        final String globalAddress = globalPrefix + "/" + queueName;
+
+        InternalMessage message = createTestMessage(globalAddress);
+
+        Queue<?> queue = mock(Queue.class);
+        when(queue.getName()).thenReturn(queueName);
+        when(_addressSpace.getAttainedMessageDestination(queueName)).thenReturn(queue);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
+
+        final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
+
+        assertEquals("Unexpected exchange", "", messagePublishInfo.getExchange().toString());
+        assertEquals("Unexpected routing key", globalAddress, messagePublishInfo.getRoutingKey().toString());
+    }
+
+    public void testToConversionWhenGlobalAddressIsKnown()
+    {
+        final String globalPrefix = "/testPrefix";
+        final String queueName = "testQueue";
+        final String globalAddress = globalPrefix + "/" + queueName;
+
+        InternalMessage message = createTestMessage(globalAddress);
+
+        Queue<?> queue = mock(Queue.class);
+        when(queue.getName()).thenReturn(queueName);
+        when(_addressSpace.getAttainedMessageDestination(queueName)).thenReturn(queue);
+        when(_addressSpace.getLocalAddress(globalAddress)).thenReturn(queueName);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
+
+        final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
+
+        assertEquals("Unexpected exchange", "", messagePublishInfo.getExchange().toString());
+        assertEquals("Unexpected routing key", queueName, messagePublishInfo.getRoutingKey().toString());
+    }
+
+    public void testToConversionWhenExchangeLengthExceeds255()
+    {
+        final String testExchange = generateLongString();
+        final String testRoutingKey = "testRoutingKey";
+
+        String to = testExchange + "/" + testRoutingKey;
+
+        InternalMessage message = createTestMessage(to);
+
+        try
+        {
+            _messageConverter.convert(message, _addressSpace);
+            fail("Exception is not thrown");
+        }
+        catch (MessageConversionException e)
+        {
+            // pass
+        }
+    }
+
+    public void testToConversionWhenRoutingKeyLengthExceeds255()
+    {
+        final String testExchange = "testExchange";
+        final String testRoutingKey = generateLongString();
+
+        String to = testExchange + "/" + testRoutingKey;
+
+        InternalMessage message = createTestMessage(to);
+
+        try
+        {
+            _messageConverter.convert(message, _addressSpace);
+            fail("Exception is not thrown");
+        }
+        catch (MessageConversionException e)
+        {
+            // pass
+        }
+    }
+
+    public void testToConversionWhenDestinationIsSpecifiedButDoesNotExists()
+    {
+        final String testDestination = "testDestination";
+
+        InternalMessage message = createTestMessage(testDestination);
+
+        final AMQMessage convertedMessage = _messageConverter.convert(message, _addressSpace);
+
+        final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
+
+        assertEquals("Unexpected exchange", "", messagePublishInfo.getExchange().toString());
+        assertEquals("Unexpected routing key", testDestination, messagePublishInfo.getRoutingKey().toString());
+    }
+
     private InternalMessage createTestMessage(final AMQMessageHeader header)
     {
         return createTestMessage(header, null, false);
@@ -367,15 +539,32 @@ public class PropertyConverter_Internal_to_v0_8Test extends QpidTestCase
     {
         final InternalMessageHeader internalMessageHeader = new InternalMessageHeader(header);
         final int contentSize = content == null ? 0 : content.length;
+        final StoredMessage<InternalMessageMetaData> storedMessage =
+                createInternalStoredMessage(persistent, internalMessageHeader, contentSize);
+        return ((InternalMessage) InternalMessageMetaDataType.INSTANCE.createMessage(storedMessage));
+    }
+
+    private StoredMessage<InternalMessageMetaData> createInternalStoredMessage(final boolean persistent,
+                                                                               final InternalMessageHeader internalMessageHeader,
+                                                                               final int contentSize)
+    {
         final InternalMessageMetaData metaData =
                 new InternalMessageMetaData(persistent, internalMessageHeader, contentSize);
         final StoredMessage<InternalMessageMetaData> storedMessage = mock(StoredMessage.class);
 
         when(storedMessage.getMetaData()).thenReturn(metaData);
         when(storedMessage.getContentSize()).thenReturn(contentSize);
-        return ((InternalMessage) InternalMessageMetaDataType.INSTANCE.createMessage(storedMessage));
+        return storedMessage;
     }
 
+    private InternalMessage createTestMessage(String to)
+    {
+        final InternalMessageHeader internalMessageHeader = new InternalMessageHeader(mock(AMQMessageHeader.class));
+        final StoredMessage<InternalMessageMetaData> handle =
+                createInternalStoredMessage(false, internalMessageHeader, 0);
+        return new InternalMessage(handle, internalMessageHeader, null, to);
+    }
+    
     private String generateLongString()
     {
         return generateLongString(AMQShortString.MAX_LENGTH + 1);

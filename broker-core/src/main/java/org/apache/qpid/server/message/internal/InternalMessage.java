@@ -219,7 +219,9 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
         String destinationName = serverMessage.getTo();
         InternalMessageHeader convertedHeader = new InternalMessageHeader(header, serverMessage.getArrivalTime());
         StoredMessage<InternalMessageMetaData> handle = createReadOnlyHandle(messageNumber, persistent, convertedHeader, messageBody);
-        return new InternalMessage(handle, convertedHeader, messageBody, destinationName);
+        InternalMessage internalMessage = new InternalMessage(handle, convertedHeader, messageBody, destinationName);
+        internalMessage.setInitialRoutingAddress(serverMessage.getInitialRoutingAddress());
+        return internalMessage;
     }
 
     private static StoredMessage<InternalMessageMetaData> createReadOnlyHandle(final long messageNumber,

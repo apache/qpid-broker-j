@@ -175,11 +175,7 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
                                             final int size)
     {
 
-        MessagePublishInfo publishInfo = new MessagePublishInfo(AMQShortString.EMPTY_STRING,
-                                                                false,
-                                                                false,
-                                                                AMQShortString.valueOf(serverMsg.getInitialRoutingAddress()));
-
+        MessagePublishInfo publishInfo = createMessagePublishInfo(serverMsg, addressSpace);
 
         final BasicContentHeaderProperties props = new BasicContentHeaderProperties();
         props.setAppId(serverMsg.getMessageHeader().getAppId());
@@ -217,6 +213,51 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
         return new MessageMetaData(publishInfo, chb, serverMsg.getArrivalTime());
     }
 
+    private MessagePublishInfo createMessagePublishInfo(final InternalMessage serverMsg,
+                                                        final NamedAddressSpace addressSpace)
+    {
+        String to = serverMsg.getTo();
+
+        final String exchangeName;
+        final String routingKey;
+        if (to == null || "".equals(to))
+        {
+            to = serverMsg.getInitialRoutingAddress();
+        }
+
+        if (to != null && !"".equals(to))
+        {
+            DestinationAddress destinationAddress = new DestinationAddress(addressSpace, to);
+            MessageDestination messageDestination = destinationAddress.getMessageDestination();
+            if (messageDestination instanceof Queue)
+            {
+                exchangeName = "";
+                routingKey = messageDestination.getName();
+            }
+            else if (messageDestination instanceof Exchange)
+            {
+                exchangeName = messageDestination.getName();
+                routingKey = destinationAddress.getRoutingKey();
+            }
+            else
+            {
+                exchangeName = "";
+                routingKey = to;
+            }
+        }
+        else
+        {
+            exchangeName = "";
+            routingKey = "";
+        }
+
+        return new MessagePublishInfo(convertToShortStringForProperty("to", exchangeName),
+                                      false,
+                                      false,
+                                      convertToShortStringForProperty("to' or 'subject",
+                                                                      routingKey));
+    }
+
     private String getReplyTo(final InternalMessage serverMsg, final NamedAddressSpace addressSpace)
     {
         String replyTo = serverMsg.getMessageHeader().getReplyTo();
@@ -230,10 +271,14 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
             if (messageDestination instanceof Exchange)
             {
                 Exchange<?> exchange = (Exchange<?>) messageDestination;
-                replyToBindingUrl = String.format("%s://%s//?routingkey='%s'",
+
+                final String routingKeyOption = "".equals(destinationAddress.getRoutingKey())
+                        ? ""
+                        : String.format("?routingkey='%s'", destinationAddress.getRoutingKey());
+                replyToBindingUrl = String.format("%s://%s//%s",
                                                   exchange.getType(),
                                                   exchange.getName(),
-                                                  destinationAddress.getRoutingKey());
+                                                  routingKeyOption);
             }
             else if (messageDestination instanceof Queue)
             {

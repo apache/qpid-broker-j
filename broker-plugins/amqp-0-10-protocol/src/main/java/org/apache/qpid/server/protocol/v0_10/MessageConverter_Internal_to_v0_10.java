@@ -186,7 +186,7 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
         }
         InternalMessageHeader messageHeader = serverMsg.getMessageHeader();
         deliveryProps.setPriority(MessageDeliveryPriority.get(messageHeader.getPriority()));
-        deliveryProps.setRoutingKey(serverMsg.getInitialRoutingAddress());
+        convertToAndInitialRoutingKey(serverMsg, deliveryProps, addressSpace);
         deliveryProps.setTimestamp(messageHeader.getTimestamp());
 
         messageProps.setContentEncoding(ensureStr8("content-encoding", messageHeader.getEncoding()));
@@ -235,6 +235,49 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
 
         Header header = new Header(deliveryProps, messageProps, null);
         return new MessageMetaData_0_10(header, size, serverMsg.getArrivalTime());
+    }
+
+    private void convertToAndInitialRoutingKey(final InternalMessage serverMsg,
+                                               final DeliveryProperties deliveryProps,
+                                               final NamedAddressSpace addressSpace)
+    {
+        String to = serverMsg.getTo();
+
+        final String exchangeName;
+        final String routingKey;
+        if (to == null || "".equals(to))
+        {
+            to = serverMsg.getInitialRoutingAddress();
+        }
+
+        if (to != null && !"".equals(to))
+        {
+            DestinationAddress destinationAddress = new DestinationAddress(addressSpace, to);
+            MessageDestination messageDestination = destinationAddress.getMessageDestination();
+            if (messageDestination instanceof Queue)
+            {
+                exchangeName = "";
+                routingKey = messageDestination.getName();
+            }
+            else if (messageDestination instanceof Exchange)
+            {
+                exchangeName = messageDestination.getName();
+                routingKey = destinationAddress.getRoutingKey();
+            }
+            else
+            {
+                exchangeName = "";
+                routingKey = to;
+            }
+        }
+        else
+        {
+            exchangeName = "";
+            routingKey = "";
+        }
+
+        deliveryProps.setRoutingKey(ensureStr8("to' or 'initialRoutingAddress", routingKey));
+        deliveryProps.setExchange(ensureStr8("to' or 'initialRoutingAddress", exchangeName));
     }
 
     private ReplyTo getReplyTo(final NamedAddressSpace addressSpace, final String origReplyTo)

@@ -258,34 +258,24 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
 
         final String exchangeName;
         final String routingKey;
-
-        if (to != null)
+        if (to != null && !"".equals(to))
         {
-            if (to.startsWith("/"))
+            DestinationAddress destinationAddress = new DestinationAddress(addressSpace, to);
+            MessageDestination messageDestination = destinationAddress.getMessageDestination();
+            if (messageDestination instanceof Queue)
             {
-                //TODO: get local address from global
-                throw new MessageConversionException("Could not convert message from 1.0 to 0-8 because conversion of 'to' failed. Global addresses cannot be converted.");
+                exchangeName = "";
+                routingKey = messageDestination.getName();
             }
-
-            int separatorPosition = to.indexOf('/');
-            if (separatorPosition != -1)
+            else if (messageDestination instanceof Exchange)
             {
-                exchangeName = to.substring(0, separatorPosition);
-                routingKey = to.substring(separatorPosition + 1);
+                exchangeName = messageDestination.getName();
+                routingKey = "".equals(destinationAddress.getRoutingKey()) ? subject : destinationAddress.getRoutingKey();
             }
             else
             {
-                MessageDestination destination = addressSpace.getAttainedMessageDestination(to);
-                if (destination instanceof Queue)
-                {
-                    exchangeName = "";
-                    routingKey = to;
-                }
-                else
-                {
-                    exchangeName = to;
-                    routingKey = subject;
-                }
+                exchangeName = "";
+                routingKey = to;
             }
         }
         else
@@ -357,10 +347,13 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
             if (messageDestination instanceof Exchange)
             {
                 Exchange<?> exchange = (Exchange<?>) messageDestination;
-                replyToBindingUrl = String.format("%s://%s//?routingkey='%s'",
+                final String routingKeyOption = "".equals(destinationAddress.getRoutingKey())
+                        ? ""
+                        : String.format("?routingkey='%s'", destinationAddress.getRoutingKey());
+                replyToBindingUrl = String.format("%s://%s//%s",
                                                   exchange.getType(),
                                                   exchange.getName(),
-                                                  destinationAddress.getRoutingKey());
+                                                  routingKeyOption);
             }
             else if (messageDestination instanceof Queue)
             {

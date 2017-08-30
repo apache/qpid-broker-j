@@ -27,6 +27,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -228,6 +229,16 @@ public class PropertyConverter_Internal_to_v1_0Test extends QpidTestCase
         assertEquals("Unexpected replyTo", replyTo, convertedReplyTo);
     }
 
+    public void testToConversion() throws IOException
+    {
+        final String to = "amq.direct/test";
+        InternalMessage originalMessage = createTestMessage(to);
+
+        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+
+        assertEquals("Unexpected to", to, convertedMessage.getTo());
+    }
+
     public void testTimestampConversion()
     {
         final long timestamp = System.currentTimeMillis();
@@ -285,6 +296,14 @@ public class PropertyConverter_Internal_to_v1_0Test extends QpidTestCase
         }
     }
 
+    private InternalMessage createTestMessage(String to) throws IOException
+    {
+        final InternalMessageHeader internalMessageHeader = new InternalMessageHeader(mock(AMQMessageHeader.class));
+        final StoredMessage<InternalMessageMetaData> handle =
+                createInternalStoredMessage(null,false, internalMessageHeader);
+        return new InternalMessage(handle, internalMessageHeader, null, to);
+    }
+
     private InternalMessage createTestMessage(final AMQMessageHeader header)
     {
         return createTestMessage(header, null, false);
@@ -295,6 +314,15 @@ public class PropertyConverter_Internal_to_v1_0Test extends QpidTestCase
                                               final boolean persistent)
     {
         final InternalMessageHeader internalMessageHeader = new InternalMessageHeader(header);
+        final StoredMessage<InternalMessageMetaData> storedMessage =
+                createInternalStoredMessage(content, persistent, internalMessageHeader);
+        return ((InternalMessage) InternalMessageMetaDataType.INSTANCE.createMessage(storedMessage));
+    }
+
+    private StoredMessage<InternalMessageMetaData> createInternalStoredMessage(final byte[] content,
+                                                                               final boolean persistent,
+                                                                               final InternalMessageHeader internalMessageHeader)
+    {
         final int contentSize = content == null ? 0 : content.length;
         final InternalMessageMetaData metaData =
                 new InternalMessageMetaData(persistent, internalMessageHeader, contentSize);
@@ -302,6 +330,6 @@ public class PropertyConverter_Internal_to_v1_0Test extends QpidTestCase
 
         when(storedMessage.getMetaData()).thenReturn(metaData);
         when(storedMessage.getContentSize()).thenReturn(contentSize);
-        return ((InternalMessage) InternalMessageMetaDataType.INSTANCE.createMessage(storedMessage));
+        return storedMessage;
     }
 }
