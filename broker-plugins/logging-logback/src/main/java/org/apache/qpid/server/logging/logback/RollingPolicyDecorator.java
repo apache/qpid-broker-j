@@ -74,8 +74,9 @@ public class RollingPolicyDecorator implements RollingPolicy
 
         String filePathPattern = _decorated.getFileNamePattern();
         String filePathRegExp = new FileNamePattern(filePathPattern, _decorated.getContext()).toRegex();
-        _rolledFilesBaseFolder = getRolledFilesBaseFolderFromRegExp(filePathRegExp);
-        _rolledFileRegExp = Pattern.compile(filePathRegExp);
+        FilePathBaseFolderAndPatternPair pair = new FilePathBaseFolderAndPatternPair(filePathRegExp);
+        _rolledFilesBaseFolder = pair.getBaseFolder();
+        _rolledFileRegExp = pair.getPattern();
         _currentScanTask = null;
     }
 
@@ -157,24 +158,6 @@ public class RollingPolicyDecorator implements RollingPolicy
             _currentScanTask = task;
         }
         return task;
-    }
-
-    private Path getRolledFilesBaseFolderFromRegExp(String fileNamePattern)
-    {
-        int firstDigitPatternPosition= fileNamePattern.indexOf("\\d");
-        if (firstDigitPatternPosition == -1)
-        {
-            throw new RuntimeException("Rolling policy file pattern does not seem to contain date or integer token");
-        }
-        int slashBeforeDigitPatternPosition = fileNamePattern.lastIndexOf("/", firstDigitPatternPosition);
-        if (slashBeforeDigitPatternPosition != -1)
-        {
-            return new File(fileNamePattern.substring(0, slashBeforeDigitPatternPosition)).toPath().toAbsolutePath();
-        }
-        else
-        {
-            return new File(System.getProperty("user.dir")).toPath().toAbsolutePath();
-        }
     }
 
     private class ScanTask implements Runnable
@@ -308,5 +291,49 @@ public class RollingPolicyDecorator implements RollingPolicy
             return _canceled || Thread.currentThread().isInterrupted();
         }
 
+    }
+
+    private static class FilePathBaseFolderAndPatternPair
+    {
+        private static Pattern REGEX_SPECIAL_CHARACTERS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|]");
+        private final Path _baseFolder;
+        private final Pattern _pattern;
+
+        public FilePathBaseFolderAndPatternPair(String fileNamePattern)
+        {
+            String path;
+            int firstDigitPatternPosition= fileNamePattern.indexOf("\\d");
+            if (firstDigitPatternPosition == -1)
+            {
+                throw new RuntimeException("Rolling policy file pattern does not seem to contain date or integer token");
+            }
+            int slashBeforeDigitPatternPosition = fileNamePattern.lastIndexOf("/", firstDigitPatternPosition);
+            if (slashBeforeDigitPatternPosition != -1)
+            {
+                path = fileNamePattern.substring(0, slashBeforeDigitPatternPosition);
+                fileNamePattern = fileNamePattern.substring( slashBeforeDigitPatternPosition + 1);
+            }
+            else
+            {
+                path = System.getProperty("user.dir");
+            }
+            _baseFolder = new File(path).toPath().toAbsolutePath();
+            _pattern = Pattern.compile(escape(path) + "/" + fileNamePattern);
+        }
+
+        private String escape(String string)
+        {
+            return REGEX_SPECIAL_CHARACTERS.matcher(string).replaceAll("\\\\$0");
+        }
+
+        public Path getBaseFolder()
+        {
+            return _baseFolder;
+        }
+
+        public Pattern getPattern()
+        {
+            return _pattern;
+        }
     }
 }
