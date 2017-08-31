@@ -152,7 +152,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
             UnsignedInteger messageFormat = delivery.getMessageFormat();
             DeliveryState xfrState = delivery.getState();
             List<QpidByteBuffer> fragments = delivery.getPayload();
-            MessageFormat format = MessageFormatRegistry.getFormat(messageFormat == null ? 0 : messageFormat.intValue());
+            MessageFormat format = MessageFormatRegistry.getFormat(messageFormat.intValue());
             if(format != null)
             {
                 serverMessage = format.createMessage(fragments, getAddressSpace().getMessageStore(), getSession().getConnection().getReference());

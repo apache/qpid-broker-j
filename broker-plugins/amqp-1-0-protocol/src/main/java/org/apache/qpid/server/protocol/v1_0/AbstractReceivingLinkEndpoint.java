@@ -215,6 +215,12 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
             error = new Error(AmqpError.INVALID_FIELD,
                               "Transfer \"rcv-settle-mode\" is set to different value than on previous transfer.");
         }
+        else if (transfer.getMessageFormat() != null && !_currentDelivery.getMessageFormat()
+                                                                         .equals(transfer.getMessageFormat()))
+        {
+            error = new Error(AmqpError.INVALID_FIELD,
+                              "Transfer \"message-format\" is set to different value than on previous transfer.");
+        }
         return error;
     }
 

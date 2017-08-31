@@ -27,11 +27,13 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
@@ -43,6 +45,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -60,7 +63,6 @@ public class MessageFormat extends BrokerAdminUsingTestBase
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
-    @Ignore("QPID-7823")
     @Test
     @SpecificationTest(section = "2.7.5",
             description = "message-format: "
@@ -71,6 +73,8 @@ public class MessageFormat extends BrokerAdminUsingTestBase
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
+            QpidByteBuffer[] payloads = Utils.splitPayload("testData", 2);
+
             final Response<?> latestResponse = transport.newInteraction()
                                                         .negotiateProtocol().consumeResponse()
                                                         .open().consumeResponse(Open.class)
@@ -81,14 +85,14 @@ public class MessageFormat extends BrokerAdminUsingTestBase
                                                         .consumeResponse(Flow.class)
                                                         .transferMore(true)
                                                         .transferMessageFormat(UnsignedInteger.ZERO)
-                                                        .transferPayloadData("testData")
+                                                        .transferPayload(Collections.singletonList(payloads[0]))
                                                         .transfer()
                                                         .consumeResponse(null, Flow.class, Disposition.class)
                                                         .transferDeliveryTag(null)
                                                         .transferDeliveryId(null)
                                                         .transferMore(false)
                                                         .transferMessageFormat(UnsignedInteger.ONE)
-                                                        .transferPayloadData("moreTestData")
+                                                        .transferPayload(Collections.singletonList(payloads[1]))
                                                         .transfer()
                                                         .consumeResponse(Detach.class, End.class, Close.class)
                                                         .getLatestResponse();

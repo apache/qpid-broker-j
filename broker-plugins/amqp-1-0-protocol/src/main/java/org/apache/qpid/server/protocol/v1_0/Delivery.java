@@ -53,7 +53,7 @@ public class Delivery
         _deliveryId = transfer.getDeliveryId();
         _deliveryTag = transfer.getDeliveryTag();
         _linkEndpoint = endpoint;
-        _messageFormat = transfer.getMessageFormat();
+        _messageFormat = transfer.getMessageFormat() != null ? transfer.getMessageFormat() : UnsignedInteger.ZERO;
         addTransfer(transfer);
     }
 
