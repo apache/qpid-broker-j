@@ -120,8 +120,8 @@ public abstract class DescribedMapSectionConstructor<S extends AbstractSection> 
                     encoding.add(dup);
                 }
             }
-            S object = createObject(((SectionDecoderRegistry)handler.getDescribedTypeRegistry()).getUnderlyingRegistry());
-            object.setEncodedForm(encoding);
+            S object = createObject(((SectionDecoderRegistry)handler.getDescribedTypeRegistry()).getUnderlyingRegistry(),
+                                    encoding);
             for (QpidByteBuffer buffer: encoding)
             {
                 buffer.dispose();
@@ -131,5 +131,6 @@ public abstract class DescribedMapSectionConstructor<S extends AbstractSection> 
         }
     }
 
-    protected abstract S createObject(final DescribedTypeConstructorRegistry describedTypeRegistry);
+    protected abstract S createObject(final DescribedTypeConstructorRegistry describedTypeRegistry,
+                                      final List<QpidByteBuffer> encodedForm);
 }

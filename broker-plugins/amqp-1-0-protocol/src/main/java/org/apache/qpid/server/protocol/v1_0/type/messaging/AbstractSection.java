@@ -48,8 +48,15 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
     // _encodedSize is valid only when _encodedForm is non-null
     private long _encodedSize = 0;
 
-    protected AbstractSection()
+    protected AbstractSection(final List<QpidByteBuffer> encodedForm)
     {
+        _encodedForm = new ArrayList<>();
+        _encodedSize = 0;
+        for(QpidByteBuffer encodedChunk : encodedForm)
+        {
+            _encodedSize += encodedChunk.remaining();
+            _encodedForm.add(encodedChunk.duplicate());
+        }
     }
 
     protected AbstractSection(final S section)
@@ -90,19 +97,6 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
             returnVal.add(_encodedForm.get(i).duplicate());
         }
         return returnVal;
-    }
-
-    @Override
-    public synchronized final void setEncodedForm(final List<QpidByteBuffer> encodedForm)
-    {
-        clearEncodedForm();
-        _encodedForm = new ArrayList<>();
-        _encodedSize = 0;
-        for(QpidByteBuffer encodedChunk : encodedForm)
-        {
-            _encodedSize += encodedChunk.remaining();
-            _encodedForm.add(encodedChunk.duplicate());
-        }
     }
 
     @Override

@@ -21,17 +21,19 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
+import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.DeliveryAnnotationsConstructor;
 
 public class DeliveryAnnotationsSection extends AbstractSection<Map<Symbol,Object>, DeliveryAnnotations>
 {
-    public DeliveryAnnotationsSection()
+    public DeliveryAnnotationsSection(final List<QpidByteBuffer> encodedForm)
     {
-        super();
+        super(encodedForm);
     }
 
     DeliveryAnnotationsSection(final DeliveryAnnotations deliveryAnnotations)

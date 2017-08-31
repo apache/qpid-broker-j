@@ -21,17 +21,19 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
+import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.FooterConstructor;
 
 public class FooterSection extends AbstractSection<Map<Symbol,Object>, Footer>
 {
-    public FooterSection()
+    public FooterSection(final List<QpidByteBuffer> encodedForm)
     {
-        super();
+        super(encodedForm);
     }
 
     FooterSection(final Footer footer)

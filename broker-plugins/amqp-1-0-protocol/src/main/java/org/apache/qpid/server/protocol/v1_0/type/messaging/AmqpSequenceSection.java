@@ -23,14 +23,15 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import java.util.List;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.AmqpSequenceConstructor;
 
 public class AmqpSequenceSection extends AbstractSection<List, AmqpSequence>
 {
-    public AmqpSequenceSection()
+    public AmqpSequenceSection(final List<QpidByteBuffer> encodedForm)
     {
-        super();
+        super(encodedForm);
     }
 
     AmqpSequenceSection(final AmqpSequence sequence)

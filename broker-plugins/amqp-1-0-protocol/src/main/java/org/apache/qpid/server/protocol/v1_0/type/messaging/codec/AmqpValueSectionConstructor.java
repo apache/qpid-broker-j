@@ -105,8 +105,7 @@ public class AmqpValueSectionConstructor implements DescribedTypeConstructor<Amq
                     encoding.add(dup);
                 }
             }
-            AmqpValueSection object = new AmqpValueSection();
-            object.setEncodedForm(encoding);
+            AmqpValueSection object = new AmqpValueSection(encoding);
             for (QpidByteBuffer buffer: encoding)
             {
                 buffer.dispose();

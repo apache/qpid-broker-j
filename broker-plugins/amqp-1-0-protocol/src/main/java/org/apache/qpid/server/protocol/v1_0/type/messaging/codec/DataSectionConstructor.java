@@ -136,8 +136,7 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
                     encoding.add(dup);
                 }
             }
-            DataSection object = new DataSection();
-            object.setEncodedForm(encoding);
+            DataSection object = new DataSection(encoding);
             for (QpidByteBuffer buffer: encoding)
             {
                 buffer.dispose();

@@ -21,14 +21,17 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
+import java.util.List;
+
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.PropertiesConstructor;
 
 public class PropertiesSection extends AbstractSection<Properties, Properties>
 {
-    public PropertiesSection()
+    public PropertiesSection(final List<QpidByteBuffer> encodedForm)
     {
-        super();
+        super(encodedForm);
     }
 
     PropertiesSection(final Properties properties)

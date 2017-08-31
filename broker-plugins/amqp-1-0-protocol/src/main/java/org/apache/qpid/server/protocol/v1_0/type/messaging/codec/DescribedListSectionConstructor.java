@@ -124,8 +124,7 @@ public abstract class DescribedListSectionConstructor<S extends AbstractSection>
                     encoding.add(dup);
                 }
             }
-            S object = createObject();
-            object.setEncodedForm(encoding);
+            S object = createObject(encoding);
             for (QpidByteBuffer buffer: encoding)
             {
                 buffer.dispose();
@@ -135,5 +134,5 @@ public abstract class DescribedListSectionConstructor<S extends AbstractSection>
         }
     }
 
-    protected abstract S createObject();
+    protected abstract S createObject(final List<QpidByteBuffer> encodedForm);
 }

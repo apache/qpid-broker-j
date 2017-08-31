@@ -28,7 +28,6 @@ public interface EncodingRetaining
 {
     void writeTo(QpidByteBuffer dest);
     long getEncodedSize();
-    void setEncodedForm(List<QpidByteBuffer> encodedForm);
     List<QpidByteBuffer> getEncodedForm();
     void clearEncodedForm();
     EncodingRetaining copy();

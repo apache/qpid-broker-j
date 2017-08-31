@@ -23,6 +23,9 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
+import java.util.List;
+
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -46,9 +49,9 @@ public class AmqpSequenceSectionConstructor extends DescribedListSectionConstruc
     }
 
     @Override
-    protected AmqpSequenceSection createObject()
+    protected AmqpSequenceSection createObject(final List<QpidByteBuffer> encodedForm)
     {
-        return new AmqpSequenceSection();
+        return new AmqpSequenceSection(encodedForm);
     }
 
 }
