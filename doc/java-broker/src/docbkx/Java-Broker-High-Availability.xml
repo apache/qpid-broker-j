@@ -383,6 +383,30 @@
         <para>Transaction loss is reported by message <link linkend="Java-Broker-Appendix-Operation-Logging-Message-HA-1014">HA-1014</link>.</para>
       </important>
     </section>
+    <section xml:id="Java-Broker-High-Availability-Behaviour-MaximumMessageSize">
+      <title>Maximum message size</title>
+      <para>BEB JE restricts the maximum replicated message size to prevent DOS attacks.
+        It defines the setting <literal>je.rep.maxMessageSize</literal> to configure the maximum  message size
+        which will be accepted by a node. By default, it is dynamically calculated when the node is created
+        and is set to the half of the environment cache size.
+        Qpid itself defines a context variable <literal>qpid.max_message_size</literal> to control the maximum size
+        of the messages which can be accepted by the broker. Default is 100M. In order to avoid running into situation
+        when maximum message size exceeds the replication maximum messages size,
+        BDB JE setting <literal>je.rep.maxMessageSize</literal> and/or Qpid context variable
+        <literal>qpid.max_message_size</literal> need to be adjusted: <literal>qpid.max_message_size</literal>
+        should not exceed <literal>je.rep.maxMessageSize</literal>. Both limits can be set as context variables on
+        <literal>Broker</literal> level. Additionally, <literal>qpid.max_message_size</literal> can be configured
+        on AMQP port and <literal>je.rep.maxMessageSize</literal> can be configured on <literal>BDB HA Virtual Host Node</literal>.
+      </para>
+      <note>
+        <para>
+          Please note, that context variable <literal>qpid.broker.bdbTotalCacheSize</literal> defines the maximum amount
+          of cache which can be used by all active BDB JE containers. Default is 10M. The total cache size is split
+          equally between all BDB JE containers on the broker. The size of every container is adjusted
+          on creation or removal of new BDB/BDB HA virtual host or virtual host node.
+        </para>
+      </note>
+    </section>
   </section>
   <section xml:id="Java-Broker-High-Availability-NodeOperations">
     <title>Node Operations</title>
