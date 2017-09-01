@@ -141,12 +141,6 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
             }
         }
 
-        if (!_jvmOptions.containsKey("java.io.tmpdir"))
-        {
-            qpidOpts += " -Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir");
-        }
-
-
         if (processEnv.containsKey("QPID_OPTS"))
         {
             qpidOpts = processEnv.get("QPID_OPTS") + qpidOpts;
