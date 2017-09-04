@@ -286,8 +286,8 @@ define(["dojo/parser",
                 return "<input type='checkbox' disabled='disabled' " + (val ? "checked='checked'" : "") + " />";
             }
 
-            this.tabObject.startNodeButton.set("disabled", !(data.state == "STOPPED" || data.state == "ERRORED"));
-            this.tabObject.stopNodeButton.set("disabled", data.state != "ACTIVE");
+            this.tabObject.startNodeButton.set("disabled", !(data.state === "STOPPED" || data.state === "ERRORED"));
+            this.tabObject.stopNodeButton.set("disabled", data.state !== "ACTIVE");
 
             this.name.innerHTML = entities.encode(String(data["name"]));
             this.state.innerHTML = entities.encode(String(data["state"]));
@@ -315,8 +315,8 @@ define(["dojo/parser",
             util.updateUpdatableStore(this.tabObject.vhostsGrid, data.virtualhosts);
 
             var virtualHostExists = !!data.virtualhosts;
-            this.tabObject.addVirtualHostButton.set("disabled", virtualHostExists);
-            this.tabObject.deleteVirtualHostButton.set("disabled", !virtualHostExists);
+            this.tabObject.addVirtualHostButton.set("disabled",  data.state !== "ACTIVE" || virtualHostExists);
+            this.tabObject.deleteVirtualHostButton.set("disabled", data.state !== "ACTIVE" || !virtualHostExists);
         };
 
         return VirtualHostNode;

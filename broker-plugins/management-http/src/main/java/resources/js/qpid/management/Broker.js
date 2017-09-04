@@ -1067,7 +1067,7 @@ define(["dojo/parser",
                 }
                 else
                 {
-                    addVirtualHostItem.set("disabled", false);
+                    addVirtualHostItem.set("disabled", item.state != "ACTIVE");
                     viewVirtualHostItem.set("disabled", true);
                     startVirtualHostItem.set("disabled", true);
                     stopVirtualHostItem.set("disabled", true);
