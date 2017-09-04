@@ -31,6 +31,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.cert.Certificate;
 import java.util.Arrays;
@@ -119,7 +122,7 @@ public class SSLTest extends QpidBrokerTestCase
             File trustCertFile = extractCertFileFromTestTrustStore();
 
             url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT,
-                                trustCertFile.getCanonicalPath());
+                                encode(trustCertFile.getCanonicalPath()));
 
             Connection con = getConnection(new AMQConnectionURL(url));
             assertNotNull("connection should be successful", con);
@@ -514,7 +517,7 @@ public class SSLTest extends QpidBrokerTestCase
                          "&trust_store='%s'&ssl_verify_hostname='false'&trust_store_password='%s'" +
                          "&client_cert_path='%s'&client_cert_priv_key_path='%s''";
 
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT, TRUSTSTORE,TRUSTSTORE_PASSWORD, certAndKeyFiles[1].getCanonicalPath(), certAndKeyFiles[0].getCanonicalPath());
+            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT, TRUSTSTORE,TRUSTSTORE_PASSWORD, encode(certAndKeyFiles[1].getCanonicalPath()), encode(certAndKeyFiles[0].getCanonicalPath()));
 
             final AMQConnectionURL connectionURL = new AMQConnectionURL(url);
             Connection con = getConnection(connectionURL);
@@ -672,5 +675,9 @@ public class SSLTest extends QpidBrokerTestCase
         return certificateFile;
     }
 
-
+    private String encode(final String canonicalPath) throws UnsupportedEncodingException
+    {
+        return URLEncoder.encode(URLEncoder.encode(canonicalPath, StandardCharsets.UTF_8.name()).replace("+", "%20"),
+                                 StandardCharsets.UTF_8.name());
+    }
 }
