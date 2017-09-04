@@ -295,7 +295,6 @@ public class RollingPolicyDecorator implements RollingPolicy
 
     private static class FilePathBaseFolderAndPatternPair
     {
-        private static Pattern REGEX_SPECIAL_CHARACTERS = Pattern.compile("[{}()\\[\\].+*?^$\\\\|]");
         private final Path _baseFolder;
         private final Pattern _pattern;
 
@@ -318,12 +317,7 @@ public class RollingPolicyDecorator implements RollingPolicy
                 path = System.getProperty("user.dir");
             }
             _baseFolder = new File(path).toPath().toAbsolutePath();
-            _pattern = Pattern.compile(escape(path) + "/" + fileNamePattern);
-        }
-
-        private String escape(String string)
-        {
-            return REGEX_SPECIAL_CHARACTERS.matcher(string).replaceAll("\\\\$0");
+            _pattern = Pattern.compile(Pattern.quote(path) + "/" + fileNamePattern);
         }
 
         public Path getBaseFolder()
