@@ -61,7 +61,6 @@ define(["dojox/html/entities",
     {
         var fields = ["name",
                       "connectionThreadPoolSize",
-                      "queue.deadLetterQueueEnabled",
                       "storeTransactionIdleTimeoutWarn",
                       "storeTransactionIdleTimeoutClose",
                       "storeTransactionOpenTimeoutWarn",

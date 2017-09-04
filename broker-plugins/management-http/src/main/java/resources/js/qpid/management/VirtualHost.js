@@ -248,7 +248,6 @@ define(["dojo/parser",
                         "bytesOutRate",
                         "bytesOutRateUnits",
                         "virtualHostDetailsContainer",
-                        "deadLetterQueueEnabled",
                         "connectionThreadPoolSize",
                         "housekeepingCheckPeriod",
                         "housekeepingThreadCount",
@@ -428,8 +427,6 @@ define(["dojo/parser",
             this.state.innerHTML = entities.encode(String(this.vhostData["state"]));
             this.durable.innerHTML = entities.encode(String(this.vhostData["durable"]));
             this.lifetimePolicy.innerHTML = entities.encode(String(this.vhostData["lifetimePolicy"]));
-            this.deadLetterQueueEnabled.innerHTML =
-                entities.encode(String(this.vhostData["queue.deadLetterQueueEnabled"]));
             util.updateUI(this.vhostData,
                 ["housekeepingCheckPeriod",
                  "housekeepingThreadCount",
