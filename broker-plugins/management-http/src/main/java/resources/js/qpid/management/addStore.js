@@ -97,21 +97,22 @@ define(["dojo/_base/lang",
                 var storeTypeStore = util.makeTypeStore(storeTypeSupportedTypes);
                 this.storeType.set("store", storeTypeStore);
             },
-            show: function (effectiveData)
+            show: function (initialData, effectiveData)
             {
+                this.initialData = initialData;
                 this.effectiveData = effectiveData;
                 this._destroyTypeFields(this.storeTypeFieldsContainer);
                 this._destroyTypeFields(this.storeCategoryFieldsContainer);
                 this._loadCategoryUI = true;
                 this.storeForm.reset();
 
-                if (effectiveData)
+                if (initialData)
                 {
-                    this._initFields(effectiveData);
+                    this._initFields(initialData);
                 }
-                this.storeName.set("disabled", effectiveData == null ? false : true);
-                this.storeType.set("disabled", effectiveData == null ? false : true);
-                if (effectiveData == null)
+                this.storeName.set("disabled", !!initialData);
+                this.storeType.set("disabled", !!initialData);
+                if (!effectiveData)
                 {
                     this.dialog.set("title", "Add " + this.category);
                 }
@@ -163,7 +164,7 @@ define(["dojo/_base/lang",
 
                     var storeData = util.getFormWidgetValues(this.storeForm, this.initialData);
 
-                    if (this.effectiveData)
+                    if (this.initialData)
                     {
                         // update request
                         this.management.update(this.modelObj, storeData)
@@ -214,7 +215,7 @@ define(["dojo/_base/lang",
                 this._destroyTypeFields(typeFieldsContainer);
                 if (type)
                 {
-                    this._addCategoryMarkupIfRequired(category, type, this.effectiveData);
+                    this._addCategoryMarkupIfRequired(category, type, this.initialData);
                     var that = this;
                     require([baseUrl + type.toLowerCase() + "/add"], function (typeUI)
                     {
@@ -224,11 +225,10 @@ define(["dojo/_base/lang",
                             typeUI.show({
                                 containerNode: typeFieldsContainer,
                                 parent: that,
-                                data: that.initialData,
+                                initialData: that.initialData,
                                 effectiveData: that.effectiveData,
                                 metadata: metadata
                             });
-                            util.applyMetadataToWidgets(typeFieldsContainer, category, type, metadata);
                         }
                         catch (e)
                         {

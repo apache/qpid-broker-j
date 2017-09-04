@@ -666,7 +666,7 @@ define(["dojo/_base/xhr",
                     }
                     else
                     {
-                        if (type == "password")
+                        if (type === "password" || widget.hasOwnProperty("secureAttribute"))
                         {
                             if (value)
                             {

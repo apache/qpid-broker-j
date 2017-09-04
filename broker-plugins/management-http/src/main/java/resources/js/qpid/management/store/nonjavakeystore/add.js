@@ -48,53 +48,16 @@ define(["dojo/dom",
                             that.keyStoreOldBrowserWarning.className.replace("hidden", "");
                     }
 
-                    if (data.effectiveData)
-                    {
-                        that.update(data.effectiveData);
-                    }
+                    util.applyToWidgets(data.containerNode,
+                        "KeyStore",
+                        "NonJavaKeyStore",
+                        data.initialData,
+                        data.metadata,
+                        data.effectiveData);
 
-                    util.applyMetadataToWidgets(data.containerNode, "KeyStore", "NonJavaKeyStore", data.metadata);
+                    registry.byId("addStore.privateKeyUrl").set("required", !data.initialData);
+                    registry.byId("addStore.certificateUrl").set("required", !data.initialData);
                 });
-        },
-        update: function (effectiveData)
-        {
-            var attributes = this.metadata.getMetaData("KeyStore", "NonJavaKeyStore").attributes;
-            var widgets = registry.findWidgets(this.containerNode);
-            array.forEach(widgets, function (item)
-            {
-                var name = item.id.replace("addStore.", "");
-                if (name in attributes)
-                {
-                    var attribute = attributes[name];
-                    var value = effectiveData[name];
-                    if (value)
-                    {
-                        if (attribute.secure)
-                        {
-                            if (!/^\*+/.test(value))
-                            {
-                                item.set("value", value);
-                            }
-                            else
-                            {
-                                item.set("required", false);
-                                if (name == "privateKeyUrl")
-                                {
-                                    item.set("uploaded", true)
-                                }
-                                else
-                                {
-                                    item.set("placeHolder", value);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            item.set("value", value);
-                        }
-                    }
-                }
-            });
         }
     };
 

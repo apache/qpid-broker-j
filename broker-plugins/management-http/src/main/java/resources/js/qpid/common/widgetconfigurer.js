@@ -151,7 +151,31 @@ define(["dojo/_base/xhr",
                 {
                     if (dataValue)
                     {
-                        widget.set("value", dataValue);
+                        var attributes = meta.getMetaData(category, type).attributes;
+                        if (attributes && widgetName in attributes)
+                        {
+                            var attribute = attributes[widgetName];
+                            if (attribute.secure)
+                            {
+                                widget.set("secureAttribute", true);
+                                if (!/^\*+/.test(dataValue))
+                                {
+                                    widget.set("value", dataValue);
+                                }
+                                else
+                                {
+                                    widget.set("placeHolder", dataValue);
+                                }
+                            }
+                            else
+                            {
+                                widget.set("value", dataValue);
+                            }
+                        }
+                        else
+                        {
+                            widget.set("value", dataValue);
+                        }
                     }
                 }
             }

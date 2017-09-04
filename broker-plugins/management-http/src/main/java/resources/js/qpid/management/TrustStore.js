@@ -80,7 +80,7 @@ define(["dojo/_base/lang",
                             .then(function (data)
                             {
                                 addStore.setupTypeStore(that.management, "TrustStore", that.modelObj);
-                                addStore.show(data[0], that.url);
+                                addStore.show(data[0], that.keyStoreUpdater.trustStoreData);
                             }, util.xhrErrorHandler);
                     });
 

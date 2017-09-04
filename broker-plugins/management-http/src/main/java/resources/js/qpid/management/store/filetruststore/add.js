@@ -48,47 +48,16 @@ define(["dojo/dom",
                             that.keyStoreOldBrowserWarning.className.replace("hidden", "");
                     }
 
-                    if (data.effectiveData)
-                    {
-                        that.update(data.effectiveData);
-                    }
+                    util.applyToWidgets(data.containerNode,
+                        "TrustStore",
+                        "FileTrustStore",
+                        data.initialData,
+                        data.metadata,
+                        data.effectiveData);
 
-                    util.applyMetadataToWidgets(data.containerNode, "TrustStore", "FileTrustStore", data.metadata);
+                    registry.byId("addStore.storeUrl").set("required", !data.initialData);
+                    registry.byId("addStore.password").set("required", !data.initialData);
                 });
-        },
-        update: function (effectiveData)
-        {
-            var attributes = this.metadata.getMetaData("TrustStore", "FileTrustStore").attributes;
-            var widgets = registry.findWidgets(this.containerNode);
-            array.forEach(widgets, function (item)
-            {
-                var name = item.id.replace("addStore.", "");
-                if (name in attributes)
-                {
-                    var attribute = attributes[name];
-                    var value = effectiveData[name];
-                    if (value)
-                    {
-                        if (attribute.secure)
-                        {
-                            if (!/^\*+/.test(value))
-                            {
-                                item.set("value", value);
-                            }
-                            else
-                            {
-                                item.set("placeHolder", value);
-                                item.set("required", false);
-                            }
-                        }
-                        else
-                        {
-                            item.set("value", value);
-                        }
-                    }
-                }
-            });
-
         }
     };
 

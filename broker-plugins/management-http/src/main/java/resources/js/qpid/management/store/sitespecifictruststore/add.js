@@ -37,17 +37,8 @@ define(["dojo/dom",
             parser.parse(this.containerNode)
                 .then(function (instances)
                 {
-
-                    if (data.effectiveData)
-                    {
-                        that.update(data.effectiveData);
-                    }
-
-                    util.applyMetadataToWidgets(data.containerNode,
-                        "TrustStore",
-                        "SiteSpecificTrustStore",
-                        data.metadata);
-                    if (data.effectiveData)
+                    util.applyToWidgets(data.containerNode, "TrustStore", "SiteSpecificTrustStore", data.initialData, data.metadata, data.effectiveData);
+                    if (data.initialData)
                     {
                         util.disableWidgetsForImmutableFields(data.containerNode,
                             "TrustStore",
@@ -55,39 +46,6 @@ define(["dojo/dom",
                             data.metadata);
                     }
                 });
-        },
-        update: function (effectiveData)
-        {
-            var attributes = this.metadata.getMetaData("TrustStore", "SiteSpecificTrustStore").attributes;
-            var widgets = registry.findWidgets(this.containerNode);
-            array.forEach(widgets, function (item)
-            {
-                var name = item.id.replace("addStore.", "");
-                if (name in attributes)
-                {
-                    var attribute = attributes[name];
-                    var value = effectiveData[name];
-                    if (value)
-                    {
-                        if (attribute.secure)
-                        {
-                            if (!/^\*+/.test(value))
-                            {
-                                item.set("value", value);
-                            }
-                            else
-                            {
-                                item.set("placeHolder", value);
-                                item.set("required", false);
-                            }
-                        }
-                        else
-                        {
-                            item.set("value", value);
-                        }
-                    }
-                }
-            });
         }
     };
 
