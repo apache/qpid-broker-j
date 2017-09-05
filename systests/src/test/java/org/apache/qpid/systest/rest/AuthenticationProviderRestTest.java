@@ -21,6 +21,7 @@
 package org.apache.qpid.systest.rest;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -288,7 +289,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
         }
     }
 
-    private void assertProvider(boolean managesPrincipals, String type, Map<String, Object> provider)
+    private void assertProvider(boolean managesPrincipals, String type, Map<String, Object> provider) throws IOException
     {
         Asserts.assertAttributesPresent(provider, BrokerModel.getInstance().getTypeRegistry().getAttributeNames(
                                                 AuthenticationProvider.class),
@@ -306,8 +307,8 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
 
         if (managesPrincipals)
         {
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> users = (List<Map<String, Object>>) provider.get("users");
+            List<Map<String, Object>> users =
+                    getRestTestHelper().getJsonAsList("user/" + provider.get(AuthenticationProvider.NAME));
             assertNotNull("Users are not found", users);
             assertTrue("Unexpected number of users", users.size() > 1);
             for (Map<String, Object> user : users)

@@ -98,12 +98,12 @@ define(["dojo/dom",
                         that.close();
                     }, util.xhrErrorHandler);
             }
-        }
+        };
 
         Port.prototype.showEditDialog = function ()
         {
             var that = this;
-            this.management.load(that.modelObj.parent, {excludeInheritedContext: true})
+            this.management.load(that.modelObj.parent, {excludeInheritedContext: true, depth: 1})
                 .then(function (data)
                 {
                     var brokerData = data[0];
@@ -114,7 +114,7 @@ define(["dojo/dom",
                         brokerData.keystores,
                         brokerData.truststores);
                 }, util.xhrErrorHandler);
-        }
+        };
 
         function PortUpdater(portTab)
         {

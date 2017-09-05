@@ -71,7 +71,7 @@ public class BrokerRestTest extends QpidRestTestCase
 
     public void testGet() throws Exception
     {
-        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsSingletonList("broker");
+        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsSingletonList("broker?depth=1");
 
         assertBrokerAttributes(brokerDetails);
 

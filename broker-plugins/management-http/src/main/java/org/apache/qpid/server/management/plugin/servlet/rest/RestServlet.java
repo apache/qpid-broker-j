@@ -97,7 +97,7 @@ public class RestServlet extends AbstractServlet
                                         INHERITED_ACTUALS_PARAM,
                                         CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM,
                                         EXCLUDE_INHERITED_CONTEXT_PARAM));
-    public static final int DEFAULT_DEPTH = 1;
+    public static final int DEFAULT_DEPTH = 0;
     public static final int DEFAULT_OVERSIZE = 120;
 
     private transient final ConfiguredObjectToMapConverter _objectConverter = new ConfiguredObjectToMapConverter();

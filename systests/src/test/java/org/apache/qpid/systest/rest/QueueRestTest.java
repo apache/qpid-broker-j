@@ -93,7 +93,8 @@ public class QueueRestTest extends QpidRestTestCase
     public void testGetByName() throws Exception
     {
         String queueName = getTestQueueName();
-        Map<String, Object> queueDetails = getRestTestHelper().getJsonAsSingletonList("queue/test/test/" + queueName);
+        Map<String, Object> queueDetails =
+                getRestTestHelper().getJsonAsSingletonList("queue/test/test/" + queueName + "?depth=1");
         Asserts.assertQueue(queueName, "standard", queueDetails);
         assertStatistics(queueDetails);
 

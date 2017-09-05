@@ -24,6 +24,7 @@ import static org.apache.qpid.server.management.plugin.servlet.rest.AbstractServ
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,14 +93,15 @@ public class GroupProviderRestTest extends QpidRestTestCase
     {
         String groupName = "newGroup";
 
-        Map<String, Object> data = getRestTestHelper().getJsonAsSingletonList("groupprovider/" + FILE_GROUP_MANAGER);
+        Map<String, Object> data =
+                getRestTestHelper().getJsonAsSingletonList("groupprovider/" + FILE_GROUP_MANAGER + "?depth=1");
         assertNotNull("Cannot load data for provider", data);
 
         getRestTestHelper().assertNumberOfGroups(data, 1);
 
         getRestTestHelper().createGroup(groupName, FILE_GROUP_MANAGER);
 
-        data = getRestTestHelper().getJsonAsSingletonList("groupprovider/" + FILE_GROUP_MANAGER);
+        data = getRestTestHelper().getJsonAsSingletonList("groupprovider/" + FILE_GROUP_MANAGER + "?depth=1");
         assertNotNull("Cannot load data for provider", data);
 
         getRestTestHelper().assertNumberOfGroups(data, 2);
@@ -109,14 +111,15 @@ public class GroupProviderRestTest extends QpidRestTestCase
     {
         String groupName = "myGroup";
 
-        Map<String, Object> data = getRestTestHelper().getJsonAsSingletonList("groupprovider/" + FILE_GROUP_MANAGER);
+        Map<String, Object> data =
+                getRestTestHelper().getJsonAsSingletonList("groupprovider/" + FILE_GROUP_MANAGER + "?depth=1");
         assertNotNull("Cannot load data for provider", data);
 
         getRestTestHelper().assertNumberOfGroups(data, 1);
 
         getRestTestHelper().removeGroup(groupName, FILE_GROUP_MANAGER);
 
-        data = getRestTestHelper().getJsonAsSingletonList("groupprovider/" + FILE_GROUP_MANAGER);
+        data = getRestTestHelper().getJsonAsSingletonList("groupprovider/" + FILE_GROUP_MANAGER + "?depth=1");
         assertNotNull("Cannot load data for provider", data);
 
         getRestTestHelper().assertNumberOfGroups(data, 0);
@@ -328,7 +331,7 @@ public class GroupProviderRestTest extends QpidRestTestCase
                 "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
-    private void assertProvider(String name, String type, Map<String, Object> provider)
+    private void assertProvider(String name, String type, Map<String, Object> provider) throws IOException
     {
         Asserts.assertAttributesPresent(provider, BrokerModel.getInstance().getTypeRegistry().getAttributeNames(
                 GroupProvider.class),
@@ -353,7 +356,7 @@ public class GroupProviderRestTest extends QpidRestTestCase
                 (String) provider.get(GroupProvider.NAME));
 
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> groups = (List<Map<String, Object>>) provider.get("groups");
+        List<Map<String, Object>> groups = getRestTestHelper().getJsonAsList("group/" + name);
         assertNotNull("Groups were not found", groups);
         assertEquals("Unexpected number of groups", 1, groups.size());
         for (Map<String, Object> group : groups)

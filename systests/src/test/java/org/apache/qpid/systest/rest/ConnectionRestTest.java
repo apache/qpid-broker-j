@@ -118,7 +118,7 @@ public class ConnectionRestTest extends QpidRestTestCase
         String connectionName = getConnectionName();
 
         Map<String, Object> connectionDetailsFromPost = getRestTestHelper().postDataToPathAndGetObject("virtualhost/test/test/getConnection",
-                Collections.singletonMap("name", (Object) connectionName));
+                Collections.singletonMap("name", connectionName));
         assertConnection(connectionDetailsFromPost);
 
         Map<String, Object> connectionDetailsFromGet = getRestTestHelper().getJsonAsMap("virtualhost/test/test/getConnection?name="
@@ -219,7 +219,7 @@ public class ConnectionRestTest extends QpidRestTestCase
 
     }
 
-    private void assertConnection(Map<String, Object> connectionDetails) throws JMSException
+    private void assertConnection(Map<String, Object> connectionDetails) throws JMSException, IOException
     {
         Asserts.assertConnection(connectionDetails, isBroker10() ? 2 : 1);
 
@@ -234,8 +234,8 @@ public class ConnectionRestTest extends QpidRestTestCase
         assertEquals("Unexpected value of connection statistics attribute " + "messagesOut",
                 MESSAGE_NUMBER * 2 - 1, statistics.get("messagesOut"));
 
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> sessions = (List<Map<String, Object>>) connectionDetails.get(SESSIONS_ATTRIBUTE);
+        String encodedName = getRestTestHelper().encodeAsUTF(String.valueOf(connectionDetails.get(Connection.NAME)));
+        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/amqp/" + encodedName);
         assertNotNull("Sessions cannot be found", sessions);
         assertEquals("Unexpected number of sessions", 1, sessions.size());
         assertSession(sessions.get(0), (AMQSession<?, ?>) _session);

@@ -26,6 +26,7 @@ define(["dojo/dom",
         "dojo/_base/window",
         "dojo/_base/event",
         "dojo/_base/json",
+        "dojo/_base/lang",
         "dijit/registry",
         "dojox/html/entities",
         "qpid/common/util",
@@ -55,6 +56,7 @@ define(["dojo/dom",
               win,
               event,
               json,
+              lang,
               registry,
               entities,
               util,
@@ -156,7 +158,19 @@ define(["dojo/dom",
         {
             if (data)
             {
-                this.groupsGrid.update(data.groups);
+                this.controller.management.load({
+                        type: "group",
+                        parent: this.modelObj
+                    },
+                    {
+                        actuals: false,
+                        excludeInheritedContext: true,
+                        depth: 0
+                    })
+                    .then(lang.hitch(this, function (data)
+                    {
+                        this.groupsGrid.update(data);
+                    }), util.xhrErrorHandler);
             }
         };
 
