@@ -104,7 +104,8 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
                  @Param(name = "arguments", defaultValue = "{}") Map<String, Object> arguments,
                  @Param(name = "replaceExistingArguments", defaultValue = "false") boolean replaceExistingArguments);
 
-    @ManagedOperation(changesConfiguredObjectState = true)
+    @ManagedOperation(changesConfiguredObjectState = true,
+                      description = "Deletes all the bindings matching the given destination and bindingKey")
     boolean unbind(@Param(name="destination", mandatory = true) String destination,
                    @Param(name="bindingKey") String bindingKey);
 

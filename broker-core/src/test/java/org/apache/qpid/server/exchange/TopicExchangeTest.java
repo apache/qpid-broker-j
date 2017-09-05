@@ -25,38 +25,31 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
-import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.InstanceProperties;
-import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.queue.BaseQueue;
-import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class TopicExchangeTest extends QpidTestCase
 {
 
-    private TopicExchangeImpl _exchange;
+    private TopicExchange<?> _exchange;
     private VirtualHost<?> _vhost;
-
+    private InstanceProperties _instanceProperties;
+    private ServerMessage<?> _messageWithNoHeaders;
 
     @Override
     public void setUp() throws Exception
@@ -64,13 +57,18 @@ public class TopicExchangeTest extends QpidTestCase
         super.setUp();
         BrokerTestHelper.setUp();
         _vhost = BrokerTestHelper.createVirtualHost(getName());
+
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(Exchange.NAME, "test");
         attributes.put(Exchange.DURABLE, false);
         attributes.put(Exchange.TYPE, ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
 
-        _exchange = (TopicExchangeImpl) _vhost.createChild(Exchange.class, attributes);
+        _exchange = (TopicExchange) _vhost.createChild(Exchange.class, attributes);
         _exchange.open();
+
+        _instanceProperties = mock(InstanceProperties.class);
+        _messageWithNoHeaders = createTestMessage(Collections.emptyMap());
+
     }
 
     @Override
@@ -90,506 +88,509 @@ public class TopicExchangeTest extends QpidTestCase
         }
     }
 
-    private Queue<?> createQueue(String name)
-    {
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(Queue.NAME, name);
-        return _vhost.createChild(Queue.class, attributes);
-    }
-
+    /* Thus the routing pattern *.stock.# matches the routing keys usd.stock and eur.stock.db but not stock.nasdaq. */
     public void testNoRoute() throws Exception
     {
-        Queue<?> queue = createQueue("a*#b");
-        _exchange.bind(queue.getName(), "a.*.#.b", null, false);
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
 
-        routeMessage("a.b", 0l);
+        _exchange.bind(queue.getName(), "*.stock.#", null, false);
 
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       "stock.nasdaq",
+                                                                                       _instanceProperties);
+        assertFalse("Message unexpected routed to queue after bind", result.hasRoutes());
     }
 
     public void testDirectMatch() throws Exception
     {
-        Queue<?> queue = createQueue("ab");
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
+
         _exchange.bind(queue.getName(), "a.b", null, false);
 
-        routeMessage("a.b",0l);
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       "a.b",
+                                                                                       _instanceProperties);
 
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
+        assertEquals("Message unexpected routed to queue after bind", 1, result.getNumberOfRoutes());
 
-        Assert.assertEquals("Wrong message received", 0l, queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
+        Assert.assertEquals(1, result.getNumberOfRoutes());
 
-        queue.clearQueue();
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
-
-        int queueCount = routeMessage("a.c",1l);
-        Assert.assertEquals("Message should not route to any queues", 0, queueCount);
-
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
+        result = _exchange.route(_messageWithNoHeaders, "a.c", _instanceProperties);
+        Assert.assertEquals(0, result.getNumberOfRoutes());
     }
 
-
+    /** * matches a single word */
     public void testStarMatch() throws Exception
     {
-        Queue<?> queue = createQueue("a*");
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
+
         _exchange.bind(queue.getName(), "a.*", null, false);
 
-        routeMessage("a.b",0l);
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       "a.b",
+                                                                                       _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
 
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
+        result = _exchange.route(_messageWithNoHeaders, "a.bb", _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
 
-        Assert.assertEquals("Wrong message received", 0l, queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
+        result = _exchange.route(_messageWithNoHeaders, "a.b.c", _instanceProperties);
+        Assert.assertEquals(0, result.getNumberOfRoutes());
 
-        queue.clearQueue();
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
-
-
-        routeMessage("a.c",1l);
-
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
-
-        Assert.assertEquals("Wrong message received", 1l, queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
-
-        queue.clearQueue();
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
-
-        int queueCount = routeMessage("a",2l);
-        Assert.assertEquals("Message should not route to any queues", 0, queueCount);
-
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
+        result = _exchange.route(_messageWithNoHeaders, "a", _instanceProperties);
+        Assert.assertEquals(0, result.getNumberOfRoutes());
     }
 
+    /** # matches zero or more words */
     public void testHashMatch() throws Exception
     {
-        Queue<?> queue = createQueue("a#");
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
         _exchange.bind(queue.getName(), "a.#", null, false);
 
-        routeMessage("a.b.c",0l);
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       "a.b",
+                                                                                       _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
 
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
+        result = _exchange.route(_messageWithNoHeaders, "a.bb", _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
 
-        Assert.assertEquals("Wrong message received", 0l, queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
+        result = _exchange.route(_messageWithNoHeaders, "a.b.c", _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
 
-        queue.clearQueue();
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
+        result = _exchange.route(_messageWithNoHeaders, "a", _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
 
-        routeMessage("a.b",1l);
-
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
-
-        Assert.assertEquals("Wrong message received", 1l, queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
-
-        queue.clearQueue();
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
-
-
-        routeMessage("a.c",2l);
-
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
-
-        Assert.assertEquals("Wrong message received", 2l, queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
-
-        queue.clearQueue();
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
-
-        routeMessage("a",3l);
-
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
-
-        Assert.assertEquals("Wrong message received", 3l, queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
-
-        queue.clearQueue();
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
-
-
-        int queueCount = routeMessage("b", 4l);
-        Assert.assertEquals("Message should not route to any queues", 0, queueCount);
-
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
+        result = _exchange.route(_messageWithNoHeaders, "b", _instanceProperties);
+        Assert.assertEquals(0, result.getNumberOfRoutes());
     }
 
 
     public void testMidHash() throws Exception
     {
-        Queue<?> queue = createQueue("a");
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
         _exchange.bind(queue.getName(), "a.*.#.b", null, false);
 
-        routeMessage("a.c.d.b",0l);
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       "a.c.d.b",
+                                                                                       _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
 
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
+        result = _exchange.route(_messageWithNoHeaders, "a.c.d.d.b", _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
 
-        Assert.assertEquals("Wrong message received", 0l, queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
-
-        queue.clearQueue();
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
-
-        routeMessage("a.c.b",1l);
-
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
-
-        Assert.assertEquals("Wrong message received", 1l, queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
-
-        queue.clearQueue();
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
-
+        result = _exchange.route(_messageWithNoHeaders, "a.c.b", _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
     }
 
     public void testMatchAfterHash() throws Exception
     {
-        Queue<?> queue = createQueue("a#");
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
         _exchange.bind(queue.getName(), "a.*.#.b.c", null, false);
 
-        int queueCount = routeMessage("a.c.b.b",0l);
-        Assert.assertEquals("Message should not route to any queues", 0, queueCount);
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       "a.c.b.b",
+                                                                                       _instanceProperties);
+        Assert.assertEquals(0, result.getNumberOfRoutes());
 
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
+        result = _exchange.route(_messageWithNoHeaders, "a.a.b.c", _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
 
+        result = _exchange.route(_messageWithNoHeaders, "a.b.c.b", _instanceProperties);
+        Assert.assertEquals(0, result.getNumberOfRoutes());
 
-        routeMessage("a.a.b.c",1l);
-
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
-
-        Assert.assertEquals("Wrong message received",
-                            1l,
-                            queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
-
-        queue.clearQueue();
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
-
-        queueCount = routeMessage("a.b.c.b",2l);
-        Assert.assertEquals("Message should not route to any queues", 0, queueCount);
-
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
-
-        routeMessage("a.b.c.b.c",3l);
-
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
-
-        Assert.assertEquals("Wrong message received", 3l, queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
-
-        queue.clearQueue();
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
-
+        result = _exchange.route(_messageWithNoHeaders, "a.b.c.b.c", _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
     }
 
 
     public void testHashAfterHash() throws Exception
     {
-        Queue<?> queue = createQueue("a#");
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
         _exchange.bind(queue.getName(), "a.*.#.b.c.#.d", null, false);
 
-        int queueCount = routeMessage("a.c.b.b.c",0l);
-        Assert.assertEquals("Message should not route to any queues", 0, queueCount);
 
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       "a.c.b.b.c",
+                                                                                       _instanceProperties);
+        Assert.assertEquals(0, result.getNumberOfRoutes());
 
-        routeMessage("a.a.b.c.d",1l);
-
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
-
-        Assert.assertEquals("Wrong message received", 1l, queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
-
-        queue.clearQueue();
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
+        result = _exchange.route(_messageWithNoHeaders,
+                                 "a.a.b.c.d",
+                                 _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
 
     }
 
     public void testHashHash() throws Exception
     {
-        Queue<?> queue = createQueue("a#");
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
         _exchange.bind(queue.getName(), "a.#.*.#.d", null, false);
 
-        int queueCount = routeMessage("a.c.b.b.c",0l);
-        Assert.assertEquals("Message should not route to any queues", 0, queueCount);
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       "a.c.b.b.c",
+                                                                                       _instanceProperties);
+        Assert.assertEquals(0, result.getNumberOfRoutes());
 
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
+        result = _exchange.route(_messageWithNoHeaders, "a.c.b.b.c", _instanceProperties);
+        Assert.assertEquals(0, result.getNumberOfRoutes());
 
-        routeMessage("a.a.b.c.d",1l);
-
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
-
-        Assert.assertEquals("Wrong message received", 1l, queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
-
-        queue.clearQueue();
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
-
+        result = _exchange.route(_messageWithNoHeaders, "a.a.b.c.d", _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
     }
 
     public void testSubMatchFails() throws Exception
     {
-        Queue<?> queue = createQueue("a");
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
         _exchange.bind(queue.getName(), "a.b.c.d", null, false);
 
-        int queueCount = routeMessage("a.b.c",0l);
-        Assert.assertEquals("Message should not route to any queues", 0, queueCount);
-
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
-
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       "a.b.c",
+                                                                                       _instanceProperties);
+        Assert.assertEquals(0, result.getNumberOfRoutes());
     }
 
-    public void testMoreRouting() throws Exception
+    public void testRouteToManyQueues() throws Exception
     {
-        Queue<?> queue = createQueue("a");
-        _exchange.bind(queue.getName(), "a.b", null, false);
+        Queue<?> queue1 = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue1"));
+        Queue<?> queue2 = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue2"));
+        _exchange.bind(queue1.getName(), "a.b", null, false);
+        _exchange.bind(queue2.getName(), "a.*", null, false);
 
-        int queueCount = routeMessage("a.b.c",0l);
-        Assert.assertEquals("Message should not route to any queues", 0, queueCount);
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       "a.b",
+                                                                                       _instanceProperties);
+        Assert.assertEquals(2, result.getNumberOfRoutes());
 
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
+        result = _exchange.route(_messageWithNoHeaders,
+                                 "a.c",
+                                 _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
+
+        _exchange.deleteBinding("a.b", queue1);
+
+        result = _exchange.route(_messageWithNoHeaders,
+                                 "a.b",
+                                 _instanceProperties);
+        Assert.assertEquals(1, result.getNumberOfRoutes());
 
     }
 
-    public void testMoreQueue() throws Exception
+    public void testRouteToQueueWithSelector()
     {
-        Queue<?> queue = createQueue("a");
-        _exchange.bind(queue.getName(), "a.b", null, false);
+        String bindingKey = "mybinding";
 
-        int queueCount = routeMessage("a",0l);
-        Assert.assertEquals("Message should not route to any queues", 0, queueCount);
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
 
-        Assert.assertEquals(0, queue.getQueueDepthMessages());
+        InstanceProperties instanceProperties = mock(InstanceProperties.class);
+        ServerMessage<?> matchingMessage = createTestMessage(Collections.singletonMap("prop", true));
+        ServerMessage<?> unmatchingMessage = createTestMessage(Collections.singletonMap("prop", false));
 
+        boolean bind = _exchange.bind(queue.getName(), bindingKey,
+                                      Collections.singletonMap(JMS_SELECTOR.toString(), "prop = True"),
+                                      false);
+        assertTrue("Bind operation should be successful", bind);
+
+        RoutingResult<ServerMessage<?>> result = _exchange.route(matchingMessage, "mybinding", instanceProperties);
+        assertTrue("Message with matching selector not routed to queue", result.hasRoutes());
+
+        result = _exchange.route(unmatchingMessage, "mybinding", instanceProperties);
+        assertFalse("Message without matching selector unexpectedly routed to queue", result.hasRoutes());
+
+        boolean unbind = _exchange.unbind(queue.getName(), bindingKey);
+        assertTrue("Unbind operation should be successful", unbind);
+
+        result = _exchange.route(matchingMessage, "mybinding", instanceProperties);
+        assertFalse("Message with matching selector unexpectedly routed to queue after unbind", result.hasRoutes());
     }
 
-    public void testRouteWithJMSSelector() throws Exception
+    public void testRouteToQueueViaTwoExchanges()
     {
-        Queue<?> queue = createQueue("queue1");
-        final String bindingKey = "bindingKey";
+        String bindingKey = "key";
 
-        Map<String, Object> bindArgs = Collections.<String, Object>singletonMap(JMS_SELECTOR.toString(), "arg > 5");
-        _exchange.bind(queue.getName(), bindingKey, bindArgs, false);
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(Exchange.NAME, getTestName());
+        attributes.put(Exchange.TYPE, ExchangeDefaults.FANOUT_EXCHANGE_CLASS);
 
-        ServerMessage matchMsg1 = mock(ServerMessage.class);
-        when(matchMsg1.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
-        AMQMessageHeader msgHeader1 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 6));
-        when(matchMsg1.getMessageHeader()).thenReturn(msgHeader1);
-        routeMessage(matchMsg1, bindingKey, 1);
-        Assert.assertEquals("First message should be routed to queue", 1, queue.getQueueDepthMessages());
+        Exchange via = _vhost.createChild(Exchange.class, attributes);
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
 
-        ServerMessage nonmatchMsg2 = mock(ServerMessage.class);
-        when(nonmatchMsg2.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
+        boolean exchToViaBind = _exchange.bind(via.getName(), bindingKey, Collections.emptyMap(), false);
+        assertTrue("Exchange to exchange bind operation should be successful", exchToViaBind);
 
-        AMQMessageHeader msgHeader2 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 5));
-        when(nonmatchMsg2.getMessageHeader()).thenReturn(msgHeader2);
-        routeMessage(nonmatchMsg2, bindingKey, 2);
-        Assert.assertEquals("Second message should not be routed to queue", 1, queue.getQueueDepthMessages());
+        boolean viaToQueueBind = via.bind(queue.getName(), bindingKey, Collections.emptyMap(), false);
+        assertTrue("Exchange to queue bind operation should be successful", viaToQueueBind);
 
-        ServerMessage nonmatchMsg3 = mock(ServerMessage.class);
-        when(nonmatchMsg3.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
-
-        AMQMessageHeader msgHeader3 = createMessageHeader(Collections.<String, Object>emptyMap());
-        when(nonmatchMsg3.getMessageHeader()).thenReturn(msgHeader3);
-        routeMessage(nonmatchMsg3, bindingKey, 3);
-        Assert.assertEquals("Third message should not be routed to queue", 1, queue.getQueueDepthMessages());
-
-        ServerMessage matchMsg4 = mock(ServerMessage.class);
-        when(matchMsg4.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
-
-        AMQMessageHeader msgHeader4 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 7));
-        when(matchMsg4.getMessageHeader()).thenReturn(msgHeader4);
-        routeMessage(matchMsg4, bindingKey, 4);
-        Assert.assertEquals("First message should be routed to queue", 2, queue.getQueueDepthMessages());
-
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       bindingKey,
+                                                                                       _instanceProperties);
+        assertTrue("Message unexpectedly not routed to queue", result.hasRoutes());
     }
+
+    public void testRouteToQueueViaTwoExchangesWithReplacementRoutingKey()
+    {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(Exchange.NAME, getTestName());
+        attributes.put(Exchange.TYPE, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
+
+        Exchange via = _vhost.createChild(Exchange.class, attributes);
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
+
+        String bindingKey = "key";
+        String replacementKey = "key1";
+        boolean exchToViaBind = _exchange.bind(via.getName(),
+                                               bindingKey,
+                                               Collections.singletonMap(Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY,
+                                                                        replacementKey),
+                                               false);
+        assertTrue("Exchange to exchange bind operation should be successful", exchToViaBind);
+
+        boolean viaToQueueBind = via.bind(queue.getName(), replacementKey, Collections.emptyMap(), false);
+        assertTrue("Exchange to queue bind operation should be successful", viaToQueueBind);
+
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       bindingKey,
+                                                                                       _instanceProperties);
+        assertTrue("Message unexpectedly not routed to queue", result.hasRoutes());
+
+
+        result = _exchange.route(_messageWithNoHeaders, replacementKey, _instanceProperties);
+        assertFalse("Message unexpectedly was routed to queue", result.hasRoutes());
+    }
+
+    public void testRouteToQueueViaTwoExchangesWithReplacementRoutingKeyAndFiltering()
+    {
+        String bindingKey = "key1";
+        String replacementKey = "key2";
+
+        Map<String, Object> viaExchangeArguments = new HashMap<>();
+        viaExchangeArguments.put(Exchange.NAME, getTestName() + "_via_exch");
+        viaExchangeArguments.put(Exchange.TYPE, ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
+
+        Exchange via = _vhost.createChild(Exchange.class, viaExchangeArguments);
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
+
+
+        Map<String, Object> exchToViaBindArguments = new HashMap<>();
+        exchToViaBindArguments.put(Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY, replacementKey);
+        exchToViaBindArguments.put(JMS_SELECTOR.toString(), "prop = True");
+
+        boolean exchToViaBind = _exchange.bind(via.getName(),
+                                               bindingKey,
+                                               exchToViaBindArguments,
+                                               false);
+        assertTrue("Exchange to exchange bind operation should be successful", exchToViaBind);
+
+        boolean viaToQueueBind = via.bind(queue.getName(), replacementKey, Collections.emptyMap(), false);
+        assertTrue("Exchange to queue bind operation should be successful", viaToQueueBind);
+
+        RoutingResult<ServerMessage<?>> result = _exchange.route(createTestMessage(Collections.singletonMap("prop", true)),
+                                                                                       bindingKey,
+                                                                                       _instanceProperties);
+        assertTrue("Message unexpectedly not routed to queue", result.hasRoutes());
+
+        result = _exchange.route(createTestMessage(Collections.singletonMap("prop", false)),
+                                 bindingKey,
+                                 _instanceProperties);
+        assertFalse("Message unexpectedly routed to queue", result.hasRoutes());
+    }
+
+
+    public void testHierachicalRouteToQueueViaTwoExchangesWithReplacementRoutingKey()
+    {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(Exchange.NAME, getTestName());
+        attributes.put(Exchange.TYPE, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
+
+        Exchange via = _vhost.createChild(Exchange.class, attributes);
+        Queue<?> queue1 =
+                _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue1"));
+        Queue<?> queue2 =
+                _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue2"));
+
+        String bindingKey1 = "a.#";
+        String bindingKey2 = "a.*";
+        String replacementKey1 = "key1";
+        String replacementKey2 = "key2";
+
+        assertTrue("Exchange to exchange bind operation should be successful", _exchange.bind(via.getName(),
+                                                                                              bindingKey1,
+                                                                                              Collections.singletonMap(
+                                                                                                      Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY,
+                                                                                                      replacementKey1),
+                                                                                              false));
+
+        assertTrue("Exchange to exchange bind operation should be successful", _exchange.bind(via.getName(),
+                                                                                              bindingKey2,
+                                                                                              Collections.singletonMap(
+                                                                                                      Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY,
+                                                                                                      replacementKey2),
+                                                                                              false));
+
+        assertTrue("Exchange to queue1 bind operation should be successful",
+                   via.bind(queue1.getName(), replacementKey1, Collections.emptyMap(), false));
+
+        assertTrue("Exchange to queue2 bind operation should be successful",
+                   via.bind(queue2.getName(), replacementKey2, Collections.emptyMap(), false));
+
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       "a.b",
+                                                                                       _instanceProperties);
+        assertEquals("Unexpected number of routes", 2, result.getNumberOfRoutes());
+
+        result = _exchange.route(_messageWithNoHeaders, "a.b.c", _instanceProperties);
+        assertEquals("Unexpected number of routes", 1, result.getNumberOfRoutes());
+
+        assertTrue("Message is not routed into 'queue1'", result.getRoutes().contains(queue1));
+    }
+
 
     public void testUpdateBindingReplacingSelector() throws Exception
     {
-        Queue<?> queue = createQueue("queue1");
-        final String bindingKey = "a";
+        String bindingKey = "mybinding";
 
-        Map<String, Object> originalArgs = Collections.<String, Object>singletonMap(JMS_SELECTOR.toString(), "arg > 5");
-        _exchange.bind(queue.getName(), bindingKey, originalArgs, false);
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
 
-        AMQMessageHeader mgsHeader1 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 6));
-        ServerMessage msg1 = mock(ServerMessage.class);
-        when(msg1.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
-        when(msg1.getMessageHeader()).thenReturn(mgsHeader1);
+        InstanceProperties instanceProperties = mock(InstanceProperties.class);
+        ServerMessage<?> matchingMessage = createTestMessage(Collections.singletonMap("prop", true));
 
-        routeMessage(msg1, bindingKey, 1);
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
+        boolean bind = _exchange.bind(queue.getName(), bindingKey,
+                                      Collections.singletonMap(JMS_SELECTOR.toString(), "prop = True"),
+                                      false);
+        assertTrue("Bind operation should be successful", bind);
 
-        // Update the binding
-        Map<String, Object> newArgs = Collections.<String, Object>singletonMap(JMS_SELECTOR.toString(), "arg > 6");
-        _exchange.replaceBinding(bindingKey, queue, newArgs);
+        RoutingResult<ServerMessage<?>> result = _exchange.route(matchingMessage, bindingKey, instanceProperties);
+        assertTrue("Message with matching selector not routed to queue", result.hasRoutes());
 
-        // Message that would have matched the original selector but not the new
-        AMQMessageHeader mgsHeader2 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 6));
-        ServerMessage msg2 = mock(ServerMessage.class);
-        when(msg2.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
-        when(msg2.getMessageHeader()).thenReturn(mgsHeader2);
 
-        routeMessage(msg2, bindingKey, 2);
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
+        _exchange.replaceBinding(bindingKey, queue, Collections.singletonMap(JMS_SELECTOR.toString(), "prop = False"));
 
-        // Message that matches only the second
-        AMQMessageHeader mgsHeader3 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 7));
-        ServerMessage msg3 = mock(ServerMessage.class);
-        when(msg3.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
-        when(msg3.getMessageHeader()).thenReturn(mgsHeader3);
+        result = _exchange.route(matchingMessage, bindingKey, instanceProperties);
+        assertFalse("Message unexpectedly routed to queue after rebind", result.hasRoutes());
 
-        routeMessage(msg3, bindingKey, 2);
-        Assert.assertEquals(2, queue.getQueueDepthMessages());
+        result = _exchange.route(matchingMessage, bindingKey, instanceProperties);
+        assertFalse(result.hasRoutes());
 
+        matchingMessage = createTestMessage(Collections.singletonMap("prop", false));
+        result = _exchange.route(matchingMessage, bindingKey, instanceProperties);
+        assertTrue("Message not routed to queue", result.hasRoutes());
     }
 
-    // This demonstrates QPID-5785.  Deleting the exchange after this combination of binding
-    // updates generated a NPE
+    public void testUpdateBindingRemovingSelector() throws Exception
+    {
+        String bindingKey = "mybinding";
+
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
+
+        InstanceProperties instanceProperties = mock(InstanceProperties.class);
+        ServerMessage<?> message = createTestMessage(Collections.singletonMap("prop", false));
+
+        boolean bind = _exchange.bind(queue.getName(), bindingKey,
+                                      Collections.singletonMap(JMS_SELECTOR.toString(), "prop = True"),
+                                      false);
+        assertTrue("Bind operation should be successful", bind);
+
+        RoutingResult<ServerMessage<?>> result = _exchange.route(message, bindingKey, instanceProperties);
+        assertFalse("Message that does not match selector routed to queue", result.hasRoutes());
+
+
+        _exchange.replaceBinding(bindingKey, queue, Collections.emptyMap());
+
+        result = _exchange.route(message, bindingKey, instanceProperties);
+        assertTrue("Message not routed to queue after rebind", result.hasRoutes());
+    }
+
     public void testUpdateBindingAddingSelector() throws Exception
     {
-        Queue<?> queue = createQueue("queue1");
-        final String bindingKey = "a";
+        String bindingKey = "mybinding";
 
-        _exchange.bind(queue.getName(), bindingKey, null, false);
+        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
 
-        ServerMessage msg1 = mock(ServerMessage.class);
-        when(msg1.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
-        routeMessage(msg1, bindingKey, 1);
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
+        InstanceProperties instanceProperties = mock(InstanceProperties.class);
+        ServerMessage<?> message = createTestMessage(Collections.singletonMap("prop", false));
 
-        // Update the binding adding selector
-        Map<String, Object> newArgs = Collections.<String, Object>singletonMap(JMS_SELECTOR.toString(), "arg > 6");
-        _exchange.replaceBinding(bindingKey, queue, newArgs);
+        boolean bind = _exchange.bind(queue.getName(), bindingKey,
+                                      Collections.emptyMap(),
+                                      false);
+        assertTrue("Bind operation should be successful", bind);
 
-        // Message that does not match the new selector
-        AMQMessageHeader mgsHeader2 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 6));
-        ServerMessage msg2 = mock(ServerMessage.class);
-        when(msg2.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
-        when(msg2.getMessageHeader()).thenReturn(mgsHeader2);
+        RoutingResult<ServerMessage<?>> result = _exchange.route(message, bindingKey, instanceProperties);
+        assertTrue("Message not routed to queue", result.hasRoutes());
 
-        routeMessage(msg2, bindingKey, 2);
-        Assert.assertEquals(1, queue.getQueueDepthMessages());
 
-        // Message that matches the selector
-        AMQMessageHeader mgsHeader3 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 7));
-        ServerMessage msg3 = mock(ServerMessage.class);
-        when(msg3.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
+        _exchange.replaceBinding(bindingKey, queue, Collections.singletonMap(JMS_SELECTOR.toString(), "prop = false"));
 
-        when(msg3.getMessageHeader()).thenReturn(mgsHeader3);
+        result = _exchange.route(message, bindingKey, instanceProperties);
+        assertTrue("Message that matches selector not routed to queue after rebind", result.hasRoutes());
 
-        routeMessage(msg3, bindingKey, 2);
-        Assert.assertEquals(2, queue.getQueueDepthMessages());
 
-        _exchange.delete();
+        result = _exchange.route(message = createTestMessage(Collections.singletonMap("prop", true)), bindingKey, instanceProperties);
+        assertFalse("Message that does not match selector routed to queue after rebind", result.hasRoutes());
     }
 
-    private int routeMessage(String routingKey, long messageNumber)
+    public void testUpdateBindingChangeReplacementKey() throws Exception
     {
-        ServerMessage message = mock(ServerMessage.class);
+        String bindingKey = "mybinding";
+        String replacementKey = "key1";
+        String replacementKey2 = "key2";
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(Exchange.NAME, getTestName());
+        attributes.put(Exchange.TYPE, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
+
+        Exchange via = _vhost.createChild(Exchange.class, attributes);
+        Queue<?> queue =
+                _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
+
+        boolean exchToViaBind = _exchange.bind(via.getName(),
+                                               bindingKey,
+                                               Collections.emptyMap(),
+                                               false);
+        assertTrue("Exchange to exchange bind operation should be successful", exchToViaBind);
+
+        boolean viaToQueueBind = via.bind(queue.getName(), replacementKey, Collections.emptyMap(), false);
+        assertTrue("Exchange to queue bind operation should be successful", viaToQueueBind);
+
+        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
+                                                                                       bindingKey,
+                                                                                       _instanceProperties);
+        assertFalse("Message unexpectedly routed to queue", result.hasRoutes());
+
+
+        _exchange.bind(via.getName(),
+                       bindingKey,
+                       Collections.singletonMap(Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY, replacementKey),
+                       true);
+
+        result = _exchange.route(_messageWithNoHeaders, bindingKey, _instanceProperties);
+        assertTrue("Message was not routed", result.hasRoutes());
+        assertTrue("Message was not routed to queue", result.getRoutes().contains(queue));
+
+        Queue<?> queue2 =
+                _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue2"));
+        assertTrue("Binding of queue2 failed",
+                   via.bind(queue2.getName(), replacementKey2, Collections.emptyMap(), false));
+
+        _exchange.bind(via.getName(),
+                       bindingKey,
+                       Collections.singletonMap(Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY, replacementKey2),
+                       true);
+
+        result = _exchange.route(_messageWithNoHeaders, bindingKey, _instanceProperties);
+        assertTrue("Message was not routed", result.hasRoutes());
+        assertTrue("Message was not routed to queue2", result.getRoutes().contains(queue2));
+    }
+
+    private ServerMessage<?> createTestMessage(Map<String, Object> headerValues)
+    {
+        AMQMessageHeader header = mock(AMQMessageHeader.class);
+        headerValues.forEach((key, value) -> when(header.getHeader(key)).thenReturn(value));
+
+        @SuppressWarnings("unchecked")
+        ServerMessage<?> message = mock(ServerMessage.class);
         when(message.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
-        return routeMessage(message, routingKey, messageNumber);
+        when(message.getMessageHeader()).thenReturn(header);
+        return message;
     }
-
-    private int routeMessage(ServerMessage message, String routingKey, long messageNumber)
-    {
-        when(message.getInitialRoutingAddress()).thenReturn(routingKey);
-        List<? extends BaseQueue> queues = routeToQueues(message, routingKey, InstanceProperties.EMPTY);
-        MessageReference ref = mock(MessageReference.class);
-        when(ref.getMessage()).thenReturn(message);
-        when(message.newReference()).thenReturn(ref);
-        when(message.newReference(any(TransactionLogResource.class))).thenReturn(ref);
-        when(message.getMessageNumber()).thenReturn(messageNumber);
-        for(BaseQueue q : queues)
-        {
-            q.enqueue(message, null, null);
-        }
-
-        return queues.size();
-    }
-
-    private List<? extends BaseQueue> routeToQueues(final ServerMessage message,
-                                                    final String routingAddress,
-                                                    final InstanceProperties instanceProperties)
-    {
-        RoutingResult result = _exchange.route(message, routingAddress, instanceProperties);
-        final List<BaseQueue> resultQueues = new ArrayList<>();
-        result.send(new ServerTransaction()
-        {
-            @Override
-            public long getTransactionStartTime()
-            {
-                return 0;
-            }
-
-            @Override
-            public long getTransactionUpdateTime()
-            {
-                return 0;
-            }
-
-            @Override
-            public void addPostTransactionAction(final Action postTransactionAction)
-            {
-
-            }
-
-            @Override
-            public void dequeue(final MessageEnqueueRecord record, final Action postTransactionAction)
-            {
-
-            }
-
-            @Override
-            public void dequeue(final Collection<MessageInstance> messages, final Action postTransactionAction)
-            {
-
-            }
-
-            @Override
-            public void enqueue(final TransactionLogResource queue,
-                                final EnqueueableMessage message,
-                                final EnqueueAction postTransactionAction)
-            {
-                resultQueues.add((BaseQueue) queue);
-            }
-
-            @Override
-            public void enqueue(final Collection<? extends BaseQueue> queues,
-                                final EnqueueableMessage message,
-                                final EnqueueAction postTransactionAction)
-            {
-                resultQueues.addAll(queues);
-            }
-
-            @Override
-            public void commit()
-            {
-
-            }
-
-            @Override
-            public void commit(final Runnable immediatePostTransactionAction)
-            {
-
-            }
-
-            @Override
-            public void rollback()
-            {
-
-            }
-
-            @Override
-            public boolean isTransactional()
-            {
-                return false;
-            }
-        }, null);
-
-        return resultQueues;
-    }
-
-    private AMQMessageHeader createMessageHeader(Map<String, Object> headers)
-    {
-        AMQMessageHeader messageHeader = mock(AMQMessageHeader.class);
-        for(Map.Entry<String, Object> entry : headers.entrySet())
-        {
-            String key = entry.getKey();
-            Object value = entry.getValue();
-
-            when(messageHeader.containsHeader(key)).thenReturn(true);
-            when(messageHeader.getHeader(key)).thenReturn(value);
-        }
-        return messageHeader;
-    }
-
 
 }

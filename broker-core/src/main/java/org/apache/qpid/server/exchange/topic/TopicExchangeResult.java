@@ -20,105 +20,69 @@
  */
 package org.apache.qpid.server.exchange.topic;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.qpid.server.exchange.AbstractExchange;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.model.Binding;
 
 public final class TopicExchangeResult implements TopicMatcherResult
 {
-    private final List<AbstractExchange.BindingIdentifier> _bindings = new CopyOnWriteArrayList<>();
-    private final Map<MessageDestination, Integer> _unfilteredQueues = new ConcurrentHashMap<>();
-    private final ConcurrentMap<MessageDestination, Map<FilterManager,Integer>> _filteredQueues = new ConcurrentHashMap<>();
-    private volatile ArrayList<MessageDestination> _unfilteredQueueList = new ArrayList<>(0);
+    private final Map<MessageDestination, Integer> _unfilteredDestinations = new ConcurrentHashMap<>();
+    private final ConcurrentMap<MessageDestination, Map<FilterManager,Integer>> _filteredDestinations = new ConcurrentHashMap<>();
+    private final Map<MessageDestination, String> _replacementKeys = new ConcurrentHashMap<>();
 
-    public void addUnfilteredQueue(MessageDestination queue)
+    public void addUnfilteredDestination(MessageDestination destination)
     {
-        Integer instances = _unfilteredQueues.get(queue);
-        if(instances == null)
-        {
-            _unfilteredQueues.put(queue, 1);
-            ArrayList<MessageDestination> newList = new ArrayList<>(_unfilteredQueueList);
-            newList.add(queue);
-            _unfilteredQueueList = newList;
-        }
-        else
-        {
-            _unfilteredQueues.put(queue, instances + 1);
-        }
+        _unfilteredDestinations.merge(destination, 1, (oldCount, increment) -> oldCount + increment);
     }
 
-    public void removeUnfilteredQueue(MessageDestination queue)
+    public void removeUnfilteredDestination(MessageDestination destination)
     {
-        Integer instances = _unfilteredQueues.get(queue);
+        Integer instances = _unfilteredDestinations.get(destination);
         if(instances == 1)
         {
-            _unfilteredQueues.remove(queue);
-            ArrayList<MessageDestination> newList = new ArrayList<>(_unfilteredQueueList);
-            newList.remove(queue);
-            _unfilteredQueueList = newList;
-
+            _unfilteredDestinations.remove(destination);
         }
         else
         {
-            _unfilteredQueues.put(queue,instances - 1);
+            _unfilteredDestinations.put(destination, instances - 1);
         }
-
     }
 
-    public Collection<MessageDestination> getUnfilteredQueues()
+    public void addBinding(AbstractExchange.BindingIdentifier binding, Map<String, Object> bindingArguments)
     {
-        return _unfilteredQueues.keySet();
+        Object keyObject = bindingArguments.get(Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY);
+        if (keyObject == null)
+        {
+            _replacementKeys.remove(binding.getDestination());
+        }
+        else
+        {
+            _replacementKeys.put(binding.getDestination(), String.valueOf(keyObject));
+        }
     }
 
-    public void addBinding(AbstractExchange.BindingIdentifier binding)
-    {
-        _bindings.add(binding);
-    }
-    
     public void removeBinding(AbstractExchange.BindingIdentifier binding)
     {
-        _bindings.remove(binding);
-    }
-    
-    public List<AbstractExchange.BindingIdentifier> getBindings()
-    {
-        return new ArrayList<>(_bindings);
+        _replacementKeys.remove(binding.getDestination());
     }
 
-    public void addFilteredQueue(MessageDestination queue, FilterManager filter)
+    public void addFilteredDestination(MessageDestination destination, FilterManager filter)
     {
-        Map<FilterManager,Integer> filters = _filteredQueues.get(queue);
-        if(filters == null)
-        {
-            filters = new ConcurrentHashMap<>();
-            _filteredQueues.put(queue, filters);
-        }
-        Integer instances = filters.get(filter);
-        if(instances == null)
-        {
-            filters.put(filter,1);
-        }
-        else
-        {
-            filters.put(filter, instances + 1);
-        }
-
+        Map<FilterManager, Integer> filters =
+                _filteredDestinations.computeIfAbsent(destination, filterManagerMap -> new ConcurrentHashMap<>());
+        filters.merge(filter, 1, (oldCount, increment) -> oldCount + increment);
     }
 
-    public void removeFilteredQueue(MessageDestination queue, FilterManager filter)
+    public void removeFilteredDestination(MessageDestination destination, FilterManager filter)
     {
-        Map<FilterManager,Integer> filters = _filteredQueues.get(queue);
+        Map<FilterManager,Integer> filters = _filteredDestinations.get(destination);
         if(filters != null)
         {
             Integer instances = filters.get(filter);
@@ -129,7 +93,7 @@ public final class TopicExchangeResult implements TopicMatcherResult
                     filters.remove(filter);
                     if(filters.isEmpty())
                     {
-                        _filteredQueues.remove(queue);
+                        _filteredDestinations.remove(destination);
                     }
                 }
                 else
@@ -142,11 +106,11 @@ public final class TopicExchangeResult implements TopicMatcherResult
 
     }
 
-    public void replaceQueueFilter(MessageDestination queue,
-                                   FilterManager oldFilter,
-                                   FilterManager newFilter)
+    public void replaceDestinationFilter(MessageDestination queue,
+                                         FilterManager oldFilter,
+                                         FilterManager newFilter)
     {
-        Map<FilterManager,Integer> filters = _filteredQueues.get(queue);
+        Map<FilterManager,Integer> filters = _filteredDestinations.get(queue);
         Map<FilterManager,Integer> newFilters = new ConcurrentHashMap<>(filters);
         Integer oldFilterInstances = filters.get(oldFilter);
         if(oldFilterInstances == 1)
@@ -166,45 +130,35 @@ public final class TopicExchangeResult implements TopicMatcherResult
         {
             newFilters.put(newFilter, newFilterInstances+1);
         }
-        _filteredQueues.put(queue,newFilters);
+        _filteredDestinations.put(queue, newFilters);
     }
 
-    public Collection<MessageDestination> processMessage(Filterable msg, Collection<MessageDestination> queues)
+    public Map<MessageDestination, String> processMessage(Filterable msg)
     {
-        if(queues == null)
+        Map<MessageDestination, String> result = new HashMap<>();
+        for(MessageDestination unfilteredDestination: _unfilteredDestinations.keySet())
         {
-            if(_filteredQueues.isEmpty())
-            {
-                return _unfilteredQueueList;
-            }
-            else
-            {
-                queues = new HashSet<>();
-            }
-        }
-        else if(!(queues instanceof Set))
-        {
-            queues = new HashSet<>(queues);
+            result.put(unfilteredDestination, _replacementKeys.get(unfilteredDestination));
         }
 
-        queues.addAll(_unfilteredQueues.keySet());
-        if(!_filteredQueues.isEmpty())
+        if(!_filteredDestinations.isEmpty())
         {
-            for(Map.Entry<MessageDestination, Map<FilterManager, Integer>> entry : _filteredQueues.entrySet())
+            for(Map.Entry<MessageDestination, Map<FilterManager, Integer>> entry : _filteredDestinations.entrySet())
             {
-                if(!queues.contains(entry.getKey()))
+                MessageDestination destination = entry.getKey();
+                if(!_unfilteredDestinations.containsKey(destination))
                 {
                     for(FilterManager filter : entry.getValue().keySet())
                     {
                         if(filter.allAllow(msg))
                         {
-                            queues.add(entry.getKey());
+                            result.put(destination, _replacementKeys.get(destination));
                         }
                     }
                 }
             }
         }
-        return queues;
+        return result;
     }
 
 }

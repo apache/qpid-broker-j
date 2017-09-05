@@ -35,7 +35,7 @@ import org.apache.qpid.server.filter.FilterSupport;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.message.AMQMessageHeader;
-import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.Binding;
 
 /**
  * Defines binding and matching based on a set of headers.
@@ -46,8 +46,9 @@ class HeadersBinding
 
     private final Map<String,Object> _mappings;
     private final AbstractExchange.BindingIdentifier _binding;
-    private final Set<String> required = new HashSet<String>();
-    private final Map<String,Object> matches = new HashMap<String,Object>();
+    private final Set<String> required = new HashSet<>();
+    private final Map<String,Object> matches = new HashMap<>();
+    private final String _replacementRoutingKey;
     private boolean matchAny;
     private FilterManager _filter;
 
@@ -62,15 +63,18 @@ class HeadersBinding
     public HeadersBinding(AbstractExchange.BindingIdentifier binding, Map<String,Object> arguments)
     {
         _binding = binding;
-        if(_binding !=null)
+        arguments = arguments == null ? Collections.emptyMap() : arguments;
+        if(_binding != null)
         {
-            _mappings = arguments == null ? Collections.<String,Object>emptyMap() : arguments;
+            _mappings = arguments;
             initMappings();
         }
         else
         {
             _mappings = null;
         }
+        Object key = arguments.get(Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY);
+        _replacementRoutingKey = key == null ? null : String.valueOf(key);
     }
 
     private void initMappings()
@@ -79,7 +83,7 @@ class HeadersBinding
         {
             try
             {
-                _filter = FilterSupport.createMessageFilter(_mappings, (Queue<?>) _binding.getDestination());
+                _filter = FilterSupport.createMessageFilter(_mappings, _binding.getDestination());
             }
             catch (AMQInvalidArgumentException e)
             {
@@ -276,6 +280,11 @@ class HeadersBinding
     public int hashCode()
     {
         return _binding == null ? 0 : _binding.hashCode();
+    }
+
+    public String getReplacementRoutingKey()
+    {
+        return _replacementRoutingKey;
     }
 
     private static class ExcludeAllFilter implements MessageFilter

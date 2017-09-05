@@ -22,6 +22,7 @@ package org.apache.qpid.server.message;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -175,6 +176,16 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
             refusalMessages.append(reason.getReason());
         }
         return refusalMessages.toString();
+    }
+
+    public int getNumberOfRoutes()
+    {
+        return _queues.size();
+    }
+
+    public Collection<BaseQueue> getRoutes()
+    {
+        return Collections.unmodifiableCollection(_queues);
     }
 
     private static class RejectReason

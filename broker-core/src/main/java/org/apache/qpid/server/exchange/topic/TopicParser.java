@@ -35,7 +35,7 @@ public class TopicParser
     private static final String TOPIC_DELIMITER = "\\.";
 
     private final TopicWordDictionary _dictionary = new TopicWordDictionary();
-    private final AtomicReference<TopicMatcherDFAState> _stateMachine = new AtomicReference<TopicMatcherDFAState>();
+    private final AtomicReference<TopicMatcherDFAState> _stateMachine = new AtomicReference<>();
 
     private static class Position
     {
@@ -46,7 +46,7 @@ public class TopicParser
         private boolean _followedByAnyLoop;
 
 
-        public Position(final int position, final TopicWord word, final boolean selfTransition, final boolean endState)
+        private Position(final int position, final TopicWord word, final boolean selfTransition, final boolean endState)
         {
             _position = position;
             _word = word;
@@ -55,32 +55,32 @@ public class TopicParser
         }
 
 
-        public TopicWord getWord()
+        private TopicWord getWord()
         {
             return _word;
         }
 
-        public boolean isSelfTransition()
+        private boolean isSelfTransition()
         {
             return _selfTransition;
         }
 
-        public int getPosition()
+        private int getPosition()
         {
             return _position;
         }
 
-        public boolean isEndState()
+        private boolean isEndState()
         {
             return _endState;
         }
 
-        public boolean isFollowedByAnyLoop()
+        private boolean isFollowedByAnyLoop()
         {
             return _followedByAnyLoop;
         }
 
-        public void setFollowedByAnyLoop(boolean followedByAnyLoop)
+        private void setFollowedByAnyLoop(boolean followedByAnyLoop)
         {
             _followedByAnyLoop = followedByAnyLoop;
         }
@@ -123,7 +123,7 @@ public class TopicParser
         TopicMatcherDFAState stateMachine = _stateMachine.get();
         if(stateMachine == null)
         {
-            return Collections.EMPTY_SET;
+            return Collections.emptySet();
         }
         else
         {
@@ -132,7 +132,7 @@ public class TopicParser
     }
 
 
-    TopicMatcherDFAState createStateMachine(String bindingKey, TopicMatcherResult result)
+    private TopicMatcherDFAState createStateMachine(String bindingKey, TopicMatcherResult result)
     {
         List<TopicWord> wordList = createTopicWordList(bindingKey);
         int wildCards = 0;
@@ -146,17 +146,17 @@ public class TopicParser
         if(wildCards == 0)
         {
             TopicMatcherDFAState[] states = new TopicMatcherDFAState[wordList.size()+1];
-            states[states.length-1] = new TopicMatcherDFAState(Collections.EMPTY_MAP, Collections.singleton(result));
+            states[states.length-1] = new TopicMatcherDFAState(Collections.emptyMap(), Collections.singleton(result));
             for(int i = states.length-2; i >= 0; i--)
             {
-                states[i] = new TopicMatcherDFAState(Collections.singletonMap(wordList.get(i),states[i+1]),Collections.EMPTY_SET);
+                states[i] = new TopicMatcherDFAState(Collections.singletonMap(wordList.get(i),states[i+1]),Collections.emptySet());
 
             }
             return states[0];
         }
         else if(wildCards == wordList.size())
         {
-            Map<TopicWord,TopicMatcherDFAState> stateMap = new HashMap<TopicWord,TopicMatcherDFAState>();
+            Map<TopicWord,TopicMatcherDFAState> stateMap = new HashMap<>();
             TopicMatcherDFAState state = new TopicMatcherDFAState(stateMap, Collections.singleton(result));
             stateMap.put(TopicWord.ANY_WORD, state);
             return state;
@@ -232,7 +232,7 @@ public class TopicParser
         // we approach this by examining steps of increasing length - so we
         // look how far we can go from the start position in 1 word, 2 words, etc...
 
-        Map<Set<Position>,SimpleState> stateMap = new HashMap<Set<Position>,SimpleState>();
+        Map<Set<Position>,SimpleState> stateMap = new HashMap<>();
 
 
         SimpleState state = new SimpleState();
@@ -243,7 +243,7 @@ public class TopicParser
 
         SimpleState[] simpleStates = stateMap.values().toArray(new SimpleState[stateMap.size()]);
         HashMap<TopicWord, TopicMatcherDFAState>[] dfaStateMaps = new HashMap[simpleStates.length];
-        Map<SimpleState, TopicMatcherDFAState> simple2DFAMap = new HashMap<SimpleState, TopicMatcherDFAState>();
+        Map<SimpleState, TopicMatcherDFAState> simple2DFAMap = new HashMap<>();
 
         for(int i = 0; i < simpleStates.length; i++)
         {
@@ -266,10 +266,10 @@ public class TopicParser
             }
             else
             {
-                results = Collections.EMPTY_SET;
+                results = Collections.emptySet();
             }
 
-            dfaStateMaps[i] = new HashMap<TopicWord, TopicMatcherDFAState>();
+            dfaStateMaps[i] = new HashMap<>();
             simple2DFAMap.put(simpleStates[i], new TopicMatcherDFAState(dfaStateMaps[i],results));
 
         }
@@ -295,7 +295,7 @@ public class TopicParser
                                      final Map<Set<Position>, SimpleState> stateMap,
                                      final Position[] positions)
     {
-        Map<TopicWord, Set<Position>> transitions = new HashMap<TopicWord,Set<Position>>();
+        Map<TopicWord, Set<Position>> transitions = new HashMap<>();
 
         for(Position pos : state._positions)
         {
@@ -304,7 +304,7 @@ public class TopicParser
                 Set<Position> dest = transitions.get(TopicWord.ANY_WORD);
                 if(dest == null)
                 {
-                    dest = new HashSet<Position>();
+                    dest = new HashSet<>();
                     transitions.put(TopicWord.ANY_WORD,dest);
                 }
                 dest.add(pos);
@@ -316,7 +316,7 @@ public class TopicParser
             Set<Position> dest = transitions.get(pos.getWord());
             if(dest == null)
             {
-                dest = new HashSet<Position>();
+                dest = new HashSet<>();
                 transitions.put(pos.getWord(),dest);
             }
             dest.add(nextPosition);
@@ -332,7 +332,7 @@ public class TopicParser
             }
         }
 
-        state._nextState = new HashMap<TopicWord, SimpleState>();
+        state._nextState = new HashMap<>();
 
         for(Map.Entry<TopicWord,Set<Position>> dest : transitions.entrySet())
         {
@@ -370,7 +370,7 @@ public class TopicParser
                 }
                 if(anyLoop != null)
                 {
-                    Collection<Position> removals = new ArrayList<Position>();
+                    Collection<Position> removals = new ArrayList<>();
                     for(Position destPos : dest.getValue())
                     {
                         if(destPos.getPosition() < anyLoop.getPosition())
@@ -402,7 +402,7 @@ public class TopicParser
         SimpleState anyWordState = state._nextState.get(TopicWord.ANY_WORD);
         if(anyWordState != null)
         {
-            List<TopicWord> removeList = new ArrayList<TopicWord>();
+            List<TopicWord> removeList = new ArrayList<>();
             for(Map.Entry<TopicWord,SimpleState> entry : state._nextState.entrySet())
             {
                 if(entry.getValue() == anyWordState && entry.getKey() != TopicWord.ANY_WORD)
@@ -424,7 +424,7 @@ public class TopicParser
         String[] tokens = bindingKey.split(TOPIC_DELIMITER);
         TopicWord previousWord = null;
 
-        List<TopicWord> wordList = new ArrayList<TopicWord>();
+        List<TopicWord> wordList = new ArrayList<>();
 
         for(String token : tokens)
         {

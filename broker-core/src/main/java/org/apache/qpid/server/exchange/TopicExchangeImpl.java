@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -42,7 +43,6 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -53,8 +53,7 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
 
     private final TopicParser _parser = new TopicParser();
 
-    private final Map<String, TopicExchangeResult> _topicExchangeResults =
-            new ConcurrentHashMap<String, TopicExchangeResult>();
+    private final Map<String, TopicExchangeResult> _topicExchangeResults = new ConcurrentHashMap<>();
 
     private final Map<BindingIdentifier, Map<String,Object>> _bindings = new HashMap<>();
 
@@ -72,115 +71,48 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
 
         _logger.debug("Updating binding of queue {} with routing key {}", destination.getName(), bindingKey);
 
-
         String routingKey = TopicNormalizer.normalize(bindingKey);
 
         try
         {
-
             if (_bindings.containsKey(binding))
             {
-                Map<String, Object> oldArgs = _bindings.put(binding, newArguments);
                 TopicExchangeResult result = _topicExchangeResults.get(routingKey);
-
-                if (FilterSupport.argumentsContainFilter(newArguments))
-                {
-                    if (FilterSupport.argumentsContainFilter(oldArgs))
-                    {
-                        result.replaceQueueFilter(destination,
-                                                  FilterSupport.createMessageFilter(oldArgs, destination),
-                                                  FilterSupport.createMessageFilter(newArguments, destination));
-                    }
-                    else
-                    {
-                        result.addFilteredQueue(destination, FilterSupport.createMessageFilter(newArguments, destination));
-                        result.removeUnfilteredQueue(destination);
-                    }
-                }
-                else
-                {
-                    if (FilterSupport.argumentsContainFilter(oldArgs))
-                    {
-                        result.addUnfilteredQueue(destination);
-                        result.removeFilteredQueue(destination, FilterSupport.createMessageFilter(oldArgs, destination));
-                    }
-                    else
-                    {
-                        // TODO - fix control flow
-                        return;
-                    }
-                }
-
+                updateTopicExchangeResult(result, binding, newArguments);
             }
         }
         catch (AMQInvalidArgumentException e)
         {
             throw new ConnectionScopedRuntimeException(e);
         }
-
-
     }
 
-    protected synchronized void registerQueue(final BindingIdentifier binding, Map<String,Object> arguments) throws AMQInvalidArgumentException
+    private synchronized void bind(final BindingIdentifier binding, Map<String,Object> arguments) throws AMQInvalidArgumentException
     {
         final String bindingKey = binding.getBindingKey();
-        Queue<?> queue = (Queue<?>) binding.getDestination();
+        MessageDestination messageDestination = binding.getDestination();
 
-        _logger.debug("Registering queue {} with routing key {}", queue.getName(), bindingKey);
-
+        _logger.debug("Registering messageDestination {} with routing key {}", messageDestination.getName(), bindingKey);
 
         String routingKey = TopicNormalizer.normalize(bindingKey);
+        TopicExchangeResult result = _topicExchangeResults.get(routingKey);
 
         if(_bindings.containsKey(binding))
         {
-            Map<String,Object> oldArgs = _bindings.put(binding, arguments);
-            TopicExchangeResult result = _topicExchangeResults.get(routingKey);
-
-            if(FilterSupport.argumentsContainFilter(arguments))
-            {
-                if(FilterSupport.argumentsContainFilter(oldArgs))
-                {
-                    result.replaceQueueFilter(queue,
-                                              FilterSupport.createMessageFilter(oldArgs, queue),
-                                              FilterSupport.createMessageFilter(arguments, queue));
-                }
-                else
-                {
-                    result.addFilteredQueue(queue, FilterSupport.createMessageFilter(arguments, queue));
-                    result.removeUnfilteredQueue(queue);
-                }
-            }
-            else
-            {
-                if(FilterSupport.argumentsContainFilter(oldArgs))
-                {
-                    result.addUnfilteredQueue(queue);
-                    result.removeFilteredQueue(queue, FilterSupport.createMessageFilter(oldArgs, queue));
-                }
-                else
-                {
-                    // TODO - fix control flow
-                    return;
-                }
-            }
-
-            result.addBinding(binding);
-
+            updateTopicExchangeResult(result, binding, arguments);
         }
         else
         {
-
-            TopicExchangeResult result = _topicExchangeResults.get(routingKey);
             if(result == null)
             {
                 result = new TopicExchangeResult();
                 if(FilterSupport.argumentsContainFilter(arguments))
                 {
-                    result.addFilteredQueue(queue, FilterSupport.createMessageFilter(arguments, queue));
+                    result.addFilteredDestination(messageDestination, FilterSupport.createMessageFilter(arguments, messageDestination));
                 }
                 else
                 {
-                    result.addUnfilteredQueue(queue);
+                    result.addUnfilteredDestination(messageDestination);
                 }
                 _parser.addBinding(routingKey, result);
                 _topicExchangeResults.put(routingKey,result);
@@ -189,18 +121,17 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
             {
                 if(FilterSupport.argumentsContainFilter(arguments))
                 {
-                    result.addFilteredQueue(queue, FilterSupport.createMessageFilter(arguments, queue));
+                    result.addFilteredDestination(messageDestination, FilterSupport.createMessageFilter(arguments, messageDestination));
                 }
                 else
                 {
-                    result.addUnfilteredQueue(queue);
+                    result.addUnfilteredDestination(messageDestination);
                 }
             }
 
-            result.addBinding(binding);
             _bindings.put(binding, arguments);
+            result.addBinding(binding, arguments);
         }
-
     }
 
     @Override
@@ -213,17 +144,20 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
                 ? ""
                 : routingAddress;
 
-        final Collection<MessageDestination> matchedQueues =
-                getMatchedQueues(Filterable.Factory.newInstance(payload,instanceProperties), routingKey);
+        final Map<MessageDestination, Set<String>> matchedDestinations =
+                getMatchedDestinations(Filterable.Factory.newInstance(payload, instanceProperties), routingKey);
 
-        for(MessageDestination queue : matchedQueues)
+        for(Map.Entry<MessageDestination, Set<String>> entry : matchedDestinations.entrySet())
         {
-            result.add(queue.route(payload, routingAddress, instanceProperties));
+            MessageDestination destination = entry.getKey();
+            Set<String> replacementKeys = entry.getValue();
+            replacementKeys.forEach(replacementKey -> result.add(destination.route(payload, replacementKey == null ? routingAddress : replacementKey, instanceProperties)));
+
         }
     }
 
 
-    private synchronized boolean deregisterQueue(final BindingIdentifier binding)
+    private synchronized boolean unbind(final BindingIdentifier binding)
     {
         if(_bindings.containsKey(binding))
         {
@@ -240,8 +174,9 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
             {
                 try
                 {
-                    result.removeFilteredQueue((Queue<?>) binding.getDestination(), FilterSupport.createMessageFilter(bindingArgs,
-                                                                                                                      (Queue<?>) binding.getDestination()));
+                    result.removeFilteredDestination(binding.getDestination(),
+                                                     FilterSupport.createMessageFilter(bindingArgs,
+                                                                                       binding.getDestination()));
                 }
                 catch (AMQInvalidArgumentException e)
                 {
@@ -250,8 +185,10 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
             }
             else
             {
-                result.removeUnfilteredQueue((Queue<?>) binding.getDestination());
+                result.removeUnfilteredDestination(binding.getDestination());
             }
+
+            // shall we delete the result from _topicExchangeResults if result is empty?
             return true;
         }
         else
@@ -260,30 +197,37 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
         }
     }
 
-    private Collection<MessageDestination> getMatchedQueues(Filterable message, String routingKey)
+    private Map<MessageDestination, Set<String>> getMatchedDestinations(Filterable message, String routingKey)
     {
-
         Collection<TopicMatcherResult> results = _parser.parse(routingKey);
-        switch(results.size())
+        if (!results.isEmpty())
         {
-            case 0:
-                return Collections.EMPTY_SET;
-            case 1:
-                TopicMatcherResult[] resultQueues = new TopicMatcherResult[1];
-                results.toArray(resultQueues);
-                return ((TopicExchangeResult)resultQueues[0]).processMessage(message, null);
-            default:
-                Collection<MessageDestination> queues = new HashSet<>();
-                for(TopicMatcherResult result : results)
+            Map<MessageDestination, Set<String>> matchedDestinations = new HashMap<>();
+            for (TopicMatcherResult result : results)
+            {
+                TopicExchangeResult topicExchangeResult = (TopicExchangeResult) result;
+                Map<MessageDestination, String> destinations = topicExchangeResult.processMessage(message);
+                if (!destinations.isEmpty())
                 {
-                    TopicExchangeResult res = (TopicExchangeResult)result;
-
-                    queues = res.processMessage(message, queues);
+                    destinations.forEach((destination, replacementKey) ->
+                                 {
+                                     Set<String> currentKeys = matchedDestinations.get(destination);
+                                     if (currentKeys == null)
+                                     {
+                                         matchedDestinations.put(destination, Collections.singleton(replacementKey));
+                                     }
+                                     else if (!currentKeys.contains(replacementKey))
+                                     {
+                                         Set<String> newKeys = new HashSet<>(currentKeys);
+                                         newKeys.add(replacementKey);
+                                         matchedDestinations.put(destination, newKeys);
+                                     }
+                                 });
                 }
-                return queues;
+            }
+            return matchedDestinations;
         }
-
-
+        return Collections.emptyMap();
     }
 
     @Override
@@ -291,7 +235,7 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
     {
         try
         {
-            registerQueue(binding, arguments);
+            bind(binding, arguments);
         }
         catch (AMQInvalidArgumentException e)
         {
@@ -303,7 +247,36 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
     @Override
     protected void onUnbind(final BindingIdentifier binding)
     {
-        deregisterQueue(binding);
+        unbind(binding);
+    }
+
+    private void updateTopicExchangeResult(final TopicExchangeResult result, final BindingIdentifier binding,
+                                           final Map<String, Object> newArguments)
+            throws AMQInvalidArgumentException
+    {
+        Map<String, Object> oldArgs = _bindings.put(binding, newArguments);
+        MessageDestination destination = binding.getDestination();
+
+        if (FilterSupport.argumentsContainFilter(newArguments))
+        {
+            if (FilterSupport.argumentsContainFilter(oldArgs))
+            {
+                result.replaceDestinationFilter(destination,
+                                                FilterSupport.createMessageFilter(oldArgs, destination),
+                                                FilterSupport.createMessageFilter(newArguments, destination));
+            }
+            else
+            {
+                result.addFilteredDestination(destination, FilterSupport.createMessageFilter(newArguments, destination));
+                result.removeUnfilteredDestination(destination);
+            }
+        }
+        else if (FilterSupport.argumentsContainFilter(oldArgs))
+        {
+            result.addUnfilteredDestination(destination);
+            result.removeFilteredDestination(destination, FilterSupport.createMessageFilter(oldArgs, destination));
+        }
+        result.addBinding(binding, newArguments);
     }
 
 }

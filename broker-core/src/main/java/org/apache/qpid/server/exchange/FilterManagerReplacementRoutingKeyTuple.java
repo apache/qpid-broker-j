@@ -18,25 +18,29 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
+package org.apache.qpid.server.exchange;
 
-import java.util.Map;
+import org.apache.qpid.server.filter.FilterManager;
 
-@ManagedAttributeValueType
-public interface Binding extends PublishingLink
+final class FilterManagerReplacementRoutingKeyTuple
 {
-    String BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY = "x-replacement-routing-key";
+    private final FilterManager _filterManager;
+    private final String _replacementRoutingKey; // Nullable
 
-    String TYPE = "binding";
+    FilterManagerReplacementRoutingKeyTuple(final FilterManager filterManager,
+                                            final String replacementRoutingKey)
+    {
+        _filterManager = filterManager;
+        _replacementRoutingKey = replacementRoutingKey;
+    }
 
-    @Override
-    @ManagedAttributeValueTypeDerivedMethod("#getBindingKey()")
-    String getName();
+    FilterManager getFilterManager()
+    {
+        return _filterManager;
+    }
 
-    @Override
-    @ManagedAttributeValueTypeDerivedMethod(TYPE)
-    String getType();
-
-    String getBindingKey();
-    Map<String,Object> getArguments();
+    String getReplacementRoutingKey()
+    {
+        return _replacementRoutingKey;
+    }
 }

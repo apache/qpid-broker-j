@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.server.exchange;
 
+import static org.apache.qpid.server.model.Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY;
+
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -40,7 +40,6 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
@@ -51,45 +50,46 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
 
     private final class BindingSet
     {
-        private final Set<MessageDestination> _unfilteredQueues;
-        private final Map<MessageDestination, FilterManager> _filteredQueues;
+        private final Map<MessageDestination, String> _unfilteredDestinations;
+        private final Map<MessageDestination, FilterManagerReplacementRoutingKeyTuple> _filteredDestinations;
 
-        public BindingSet()
+        BindingSet()
         {
-            _unfilteredQueues = Collections.emptySet();
-            _filteredQueues = Collections.emptyMap();
+            _unfilteredDestinations = Collections.emptyMap();
+            _filteredDestinations = Collections.emptyMap();
         }
 
-        private BindingSet(final Set<MessageDestination> unfilteredQueues,
-                           final Map<MessageDestination, FilterManager> filteredQueues)
+        private BindingSet(final Map<MessageDestination, String> unfilteredDestinations,
+                           final Map<MessageDestination, FilterManagerReplacementRoutingKeyTuple> filteredDestinations)
         {
-            _unfilteredQueues = unfilteredQueues;
-            _filteredQueues = filteredQueues;
+            _unfilteredDestinations = unfilteredDestinations;
+            _filteredDestinations = filteredDestinations;
         }
 
-        public Set<MessageDestination> getUnfilteredQueues()
+        Map<MessageDestination, String> getUnfilteredDestinations()
         {
-            return _unfilteredQueues;
+            return _unfilteredDestinations;
         }
 
-        public boolean hasFilteredQueues()
+        boolean hasFilteredQueues()
         {
-            return !_filteredQueues.isEmpty();
+            return !_filteredDestinations.isEmpty();
         }
 
         boolean isEmpty()
         {
-            return _unfilteredQueues.isEmpty() && _filteredQueues.isEmpty();
+            return _unfilteredDestinations.isEmpty() && _filteredDestinations.isEmpty();
         }
 
-        public Map<MessageDestination,FilterManager> getFilteredQueues()
+        Map<MessageDestination, FilterManagerReplacementRoutingKeyTuple> getFilteredDestinations()
         {
-            return _filteredQueues;
+            return _filteredDestinations;
         }
 
         BindingSet putBinding(MessageDestination destination, Map<String, Object> arguments, boolean force)
         {
-            if(!force && (_unfilteredQueues.contains(destination) || _filteredQueues.containsKey(destination)))
+            if (!force && (_unfilteredDestinations.containsKey(destination) || _filteredDestinations.containsKey(
+                    destination)))
             {
                 return this;
             }
@@ -97,72 +97,81 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
             {
                 try
                 {
-                    Set<MessageDestination> unfilteredQueues;
-                    Map<MessageDestination, FilterManager> filteredQueues;
-                    if (_unfilteredQueues.contains(destination))
+                    Map<MessageDestination, String> unfilteredDestinations;
+                    Map<MessageDestination, FilterManagerReplacementRoutingKeyTuple> filteredDestinations;
+                    if (_unfilteredDestinations.containsKey(destination))
                     {
-                        unfilteredQueues = new HashSet<>(_unfilteredQueues);
-                        unfilteredQueues.remove(destination);
+                        unfilteredDestinations = new HashMap<>(_unfilteredDestinations);
+                        unfilteredDestinations.remove(destination);
                     }
                     else
                     {
-                        unfilteredQueues = _unfilteredQueues;
+                        unfilteredDestinations = _unfilteredDestinations;
                     }
 
-                    filteredQueues = new HashMap<>(_filteredQueues);
-                    filteredQueues.put(destination,
-                                       FilterSupport.createMessageFilter(arguments, (Queue<?>) destination));
+                    filteredDestinations = new HashMap<>(_filteredDestinations);
+                    FilterManager messageFilter = FilterSupport.createMessageFilter(arguments, destination);
+                    String replacementRoutingKey = arguments.containsKey(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY)
+                            ? String.valueOf(arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY))
+                            : null;
+                    filteredDestinations.put(destination,
+                                       new FilterManagerReplacementRoutingKeyTuple(messageFilter,
+                                                                                   replacementRoutingKey));
 
-                    return new BindingSet(Collections.unmodifiableSet(unfilteredQueues), Collections.unmodifiableMap(filteredQueues));
+                    return new BindingSet(Collections.unmodifiableMap(unfilteredDestinations),
+                                          Collections.unmodifiableMap(filteredDestinations));
 
                 }
                 catch (AMQInvalidArgumentException e)
                 {
-                    _logger.warn("Binding ignored: cannot parse filter on binding of queue '" + destination.getName()
-                                 + "' to exchange '" + DirectExchangeImpl.this.getName()
-                                 + "' with arguments: " + arguments, e);
+                    _logger.warn(
+                            "Binding ignored: cannot parse filter on binding of destination '{}' to exchange '{}' with arguments: {}",
+                            destination.getName(),
+                            DirectExchangeImpl.this.getName(),
+                            arguments,
+                            e);
                     return this;
                 }
 
             }
             else
             {
-                Set<MessageDestination> unfilteredQueues;
-                Map<MessageDestination, FilterManager> filteredQueues;
-                if (_filteredQueues.containsKey(destination))
+                Map<MessageDestination, String> unfilteredDestinations;
+                Map<MessageDestination, FilterManagerReplacementRoutingKeyTuple> filteredDestinations;
+                if (_filteredDestinations.containsKey(destination))
                 {
-                    filteredQueues = new HashMap<>(_filteredQueues);
-                    filteredQueues.remove(destination);
+                    filteredDestinations = new HashMap<>(_filteredDestinations);
+                    filteredDestinations.remove(destination);
                 }
                 else
                 {
-                    filteredQueues = _filteredQueues;
+                    filteredDestinations = _filteredDestinations;
                 }
 
-                unfilteredQueues = new HashSet<>(_unfilteredQueues);
-                unfilteredQueues.add(destination);
-
-                return new BindingSet(Collections.unmodifiableSet(unfilteredQueues), Collections.unmodifiableMap(filteredQueues));
+                unfilteredDestinations = new HashMap<>(_unfilteredDestinations);
+                Object replacementRoutingKey = arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY);
+                unfilteredDestinations.put(destination, replacementRoutingKey == null ? null : String.valueOf(replacementRoutingKey));
+                return new BindingSet(Collections.unmodifiableMap(unfilteredDestinations), Collections.unmodifiableMap(filteredDestinations));
 
             }
         }
 
-        public BindingSet removeBinding(final MessageDestination destination)
+        BindingSet removeBinding(final MessageDestination destination)
         {
-            Set<MessageDestination> unfilteredQueues;
-            Map<MessageDestination, FilterManager> filteredQueues;
-            if (_unfilteredQueues.contains(destination))
+            Map<MessageDestination, String> unfilteredDestinations;
+            Map<MessageDestination, FilterManagerReplacementRoutingKeyTuple> filteredDestinations;
+            if (_unfilteredDestinations.containsKey(destination))
             {
-                unfilteredQueues = new HashSet<>(_unfilteredQueues);
-                unfilteredQueues.remove(destination);
+                unfilteredDestinations = new HashMap<>(_unfilteredDestinations);
+                unfilteredDestinations.remove(destination);
 
-                return new BindingSet(Collections.unmodifiableSet(unfilteredQueues),_filteredQueues);
+                return new BindingSet(Collections.unmodifiableMap(unfilteredDestinations), _filteredDestinations);
             }
-            else if(_filteredQueues.containsKey(destination))
+            else if(_filteredDestinations.containsKey(destination))
             {
-                filteredQueues = new HashMap<>(_filteredQueues);
-                filteredQueues.remove(destination);
-                return new BindingSet(_unfilteredQueues, Collections.unmodifiableMap(filteredQueues));
+                filteredDestinations = new HashMap<>(_filteredDestinations);
+                filteredDestinations.remove(destination);
+                return new BindingSet(_unfilteredDestinations, Collections.unmodifiableMap(filteredDestinations));
             }
             else
             {
@@ -172,52 +181,54 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
         }
     }
 
-    private final ConcurrentMap<String, BindingSet> _bindingsByKey =
-            new ConcurrentHashMap<String, BindingSet>();
+    private final ConcurrentMap<String, BindingSet> _bindingsByKey = new ConcurrentHashMap<>();
 
     @ManagedObjectFactoryConstructor
-    public DirectExchangeImpl(final Map<String, Object> attributes, final QueueManagingVirtualHost<?> vhost)
+    DirectExchangeImpl(final Map<String, Object> attributes, final QueueManagingVirtualHost<?> vhost)
     {
         super(attributes, vhost);
     }
 
 
     @Override
-    public  <M extends ServerMessage<? extends StorableMessageMetaData>> void doRoute(final M payload,
-                                                                                      final String routingKey,
-                                                                                      final InstanceProperties instanceProperties,
-                                                                                      final RoutingResult<M> result)
+    public <M extends ServerMessage<? extends StorableMessageMetaData>> void doRoute(final M payload,
+                                                                                     final String routingKey,
+                                                                                     final InstanceProperties instanceProperties,
+                                                                                     final RoutingResult<M> result)
     {
-
         BindingSet bindings = _bindingsByKey.get(routingKey == null ? "" : routingKey);
-
-        if(bindings != null)
+        if (bindings != null)
         {
-            final Set<MessageDestination> unfilteredQueues = bindings.getUnfilteredQueues();
-            for(MessageDestination destination : unfilteredQueues)
+            final Map<MessageDestination, String> unfilteredDestinations = bindings.getUnfilteredDestinations();
+            for (MessageDestination destination : unfilteredDestinations.keySet())
             {
-                result.add(destination.route(payload, routingKey, instanceProperties));
+                String actualRoutingKey = unfilteredDestinations.get(destination) == null
+                        ? routingKey
+                        : unfilteredDestinations.get(destination);
+                result.add(destination.route(payload, actualRoutingKey, instanceProperties));
             }
 
-            if(bindings.hasFilteredQueues())
+            if (bindings.hasFilteredQueues())
             {
                 Filterable filterable = Filterable.Factory.newInstance(payload, instanceProperties);
 
-                Map<MessageDestination, FilterManager> filteredQueues = bindings.getFilteredQueues();
-                for(Map.Entry<MessageDestination, FilterManager> entry : filteredQueues.entrySet())
+                Map<MessageDestination, FilterManagerReplacementRoutingKeyTuple> filteredDestinations =
+                        bindings.getFilteredDestinations();
+                for (Map.Entry<MessageDestination, FilterManagerReplacementRoutingKeyTuple> entry : filteredDestinations
+                        .entrySet())
                 {
-                    if(!unfilteredQueues.contains(entry.getKey()))
+                    FilterManagerReplacementRoutingKeyTuple tuple = entry.getValue();
+                    String actualRoutingKey = tuple.getReplacementRoutingKey() == null
+                            ? routingKey
+                            : tuple.getReplacementRoutingKey();
+
+                    if (tuple.getFilterManager().allAllow(filterable))
                     {
-                        FilterManager filter = entry.getValue();
-                        if(filter.allAllow(filterable))
-                        {
-                            result.add(entry.getKey().route(payload, routingKey, instanceProperties));
-                        }
+                        result.add(entry.getKey().route(payload, actualRoutingKey, instanceProperties));
                     }
                 }
             }
         }
-
     }
 
     @Override
