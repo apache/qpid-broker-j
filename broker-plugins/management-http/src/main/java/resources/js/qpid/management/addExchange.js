@@ -118,6 +118,7 @@ define(["dojo/dom",
 
             if (effectiveData)
             {
+                this.effectiveData = effectiveData;
                 var afterLoad = lang.hitch(this, function (data)
                 {
                     var actualData = data.actual;
@@ -153,20 +154,21 @@ define(["dojo/dom",
         {
             this.alternateBindingLoadPromise.then(lang.hitch(this, function ()
             {
+                util.applyToWidgets(this.form.domNode,
+                    "Exchange",
+                    this.initialData.type || "direct",
+                    this.initialData,
+                    this.management.metadata,
+                    this.effectiveData);
+
                 var alternate = this.initialData.alternateBinding;
                 if (alternate && alternate.destination)
                 {
                     this.alternateBinding.set("value", alternate.destination);
                 }
+
+                registry.byId("addExchange").show();
             }));
-
-            util.applyToWidgets(this.form.domNode,
-                "Exchange",
-                this.initialData.type || "direct",
-                this.initialData,
-                this.management.metadata);
-
-            registry.byId("addExchange").show();
         },
 
          _submit : function (e)

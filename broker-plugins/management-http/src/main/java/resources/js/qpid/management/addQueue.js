@@ -215,24 +215,27 @@ define(["dojo/dom",
             {
                 this.alternateBindingLoadPromise.then(lang.hitch(this, function ()
                 {
+                    var validValues = this.management.metadata.getMetaData("Queue",
+                        this.initialData.type).attributes.overflowPolicy.validValues;
+                    var validValueStore = util.makeTypeStore(validValues);
+                    this.overflowPolicyWidget.set("store", validValueStore);
+
+                    util.applyToWidgets(this.form.domNode,
+                        "Queue",
+                        this.initialData.type,
+                        this.initialData,
+                        this.management.metadata,
+                        this.effectiveData
+                    );
+
                     var alternate = this.initialData.alternateBinding;
                     if (alternate && alternate.destination)
                     {
                         this.alternateBinding.set("value", alternate.destination);
                     }
+
+                    registry.byId("addQueue").show();
                 }));
-
-                util.applyToWidgets(this.form.domNode,
-                    "Queue",
-                    this.initialData.type,
-                    this.initialData,
-                    this.management.metadata);
-
-                var validValues = this.management.metadata.getMetaData("Queue",
-                    this.initialData.type).attributes.overflowPolicy.validValues;
-                var validValueStore = util.makeTypeStore(validValues);
-                this.overflowPolicyWidget.set("store", validValueStore);
-                registry.byId("addQueue").show();
             }
         };
 
