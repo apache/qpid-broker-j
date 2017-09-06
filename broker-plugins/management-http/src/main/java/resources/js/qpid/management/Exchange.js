@@ -219,7 +219,7 @@ define(["dojo/_base/xhr",
             that.exchangeData = {};
 
             that.bindingsGrid = new UpdatableStore([], findNode("bindings"), [{
-                name: "Queue",
+                name: "Destination",
                 field: "destination",
                 width: "40%"
             }, {

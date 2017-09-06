@@ -30,7 +30,7 @@ define(["dojo/_base/declare",
         "dojo/domReady!"],
     function (declare, lang, all, domClass, Memory, Deferred, ComboBox, util)
     {
-        return declare("qpid.common.AlternateBinding", [ComboBox],
+        return declare("qpid.common.DestinationChooser", [ComboBox],
             {
                 loadData: function (management, modelObj)
                 {

@@ -25,9 +25,17 @@
                 </div>
             </div>
             <div class="clear">
-                <div class="formLabel-labelCell tableContainer-labelCell">Queue Name*: </div>
+                <div class="formLabel-labelCell tableContainer-labelCell">Destination Name*: </div>
                 <div class="formLabel-controlCell tableContainer-valueCell">
-                    <div id="addBinding.selectQueueDiv"></div>
+                    <input type="select" id="formAddbinding.destinationChooser"
+                           data-dojo-type="qpid/common/DestinationChooser"
+                           data-dojo-props="
+                                      name: 'destination',
+                                      value: ' ',
+                                      required: true,
+                                      placeHolder: 'destination',
+                                      promptMessage: 'Destination of this binding',
+                                      title: 'Select a destination of this binding'"/>
                 </div>
             </div>
             <div class="clear">
