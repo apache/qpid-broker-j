@@ -113,7 +113,7 @@ From: 'The Apache Software Foundation' (https://www.apache.org/)
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'The Dojo Foundation' (http://dojotoolkit.org/foundation)
-  - Dojo Toolkit :: Bundles (http://dojotoolkit.org) org.dojotoolkit:dojo:pom:1.10.3
+  - Dojo Toolkit :: Bundles (http://dojotoolkit.org/dojo) org.dojotoolkit:dojo:pom:1.12.2
     License: Academic Free License v2.1  (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE)    License: BSD License  (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE)
 
 From: 'Webtide' (https://webtide.com)
