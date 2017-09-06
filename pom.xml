@@ -138,6 +138,10 @@
     <csvjdbc-version>1.0.8</csvjdbc-version>
     <jfreechart-version>1.0.13</jfreechart-version>
 
+    <dojo-version>1.12.2</dojo-version>
+    <dstore-version>1.1.1</dstore-version>
+    <dgrid-version>1.0.0</dgrid-version>
+
     <!-- test dependency version numbers -->
     <junit-version>4.11</junit-version>
     <mockito-version>1.9.5</mockito-version>
@@ -530,6 +534,23 @@
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
         <version>${httpclient-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.dojotoolkit</groupId>
+        <artifactId>dojo</artifactId>
+        <version>${dojo-version}</version>
+        <classifier>distribution</classifier>
+        <type>zip</type>
+      </dependency>
+      <dependency>
+        <groupId>org.webjars.bower</groupId>
+        <artifactId>dstore</artifactId>
+        <version>${dstore-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.webjars.bower</groupId>
+        <artifactId>dgrid</artifactId>
+        <version>${dgrid-version}</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
