@@ -32,19 +32,12 @@ define(["dojo/_base/array", "dojox/lang/functional/object"], function (array, fo
         return null;
     };
 
-    Metadata.prototype.getStatisticsMetadata = function (category, type, statisticType)
+    Metadata.prototype.getStatisticsMetadata = function (category, type)
     {
         var metadata = this.getMetaData(category, type);
         if (metadata && metadata.statistics)
         {
-            var filteredStatItems = [];
-            fobject.forIn(metadata.statistics, function(statItem) {
-               if (statItem.statisticType === statisticType)
-               {
-                   filteredStatItems.push(statItem);
-               }
-            }, this);
-            return filteredStatItems;
+            return metadata.statistics;
         }
         else
         {
@@ -75,16 +68,19 @@ define(["dojo/_base/array", "dojox/lang/functional/object"], function (array, fo
         var defaultValues = {};
         for (var attributeName in attributesForType)
         {
-            var attribute = attributesForType[attributeName];
-            if (attribute.defaultValue)
+            if (attributesForType.hasOwnProperty(attributeName))
             {
-                if (attribute.type == "Boolean")
+                var attribute = attributesForType[attributeName];
+                if (attribute.defaultValue)
                 {
-                    defaultValues[attributeName] = (attribute.defaultValue === "true");
-                }
-                else
-                {
-                    defaultValues[attributeName] = attribute.defaultValue;
+                    if (attribute.type === "Boolean")
+                    {
+                        defaultValues[attributeName] = (attribute.defaultValue === "true");
+                    }
+                    else
+                    {
+                        defaultValues[attributeName] = attribute.defaultValue;
+                    }
                 }
             }
         }
@@ -99,12 +95,12 @@ define(["dojo/_base/array", "dojox/lang/functional/object"], function (array, fo
     Metadata.prototype.extractUniqueListOfValues = function (data)
     {
         var values = [];
-        for (i = 0; i < data.length; i++)
+        for (var i = 0; i < data.length; i++)
         {
-            for (j = 0; j < data[i].length; j++)
+            for (var j = 0; j < data[i].length; j++)
             {
                 var current = data[i][j];
-                if (array.indexOf(values, current) == -1)
+                if (array.indexOf(values, current) === -1)
                 {
                     values.push(current);
                 }
@@ -134,9 +130,12 @@ define(["dojo/_base/array", "dojox/lang/functional/object"], function (array, fo
         var categoryLower = category ? category.toLowerCase() : null;
         for (var fieldName in this.metadata)
         {
-            if (new String(fieldName).toLowerCase() === categoryLower)
+            if (this.metadata.hasOwnProperty(fieldName))
             {
-                return true;
+                if (new String(fieldName).toLowerCase() === categoryLower)
+                {
+                    return true;
+                }
             }
         }
         return false;

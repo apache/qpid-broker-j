@@ -35,6 +35,7 @@ define(["dojo/parser",
         "qpid/management/query/QueryGrid",
         "dojox/grid/EnhancedGrid",
         "qpid/management/editVirtualHost",
+        "qpid/common/StatisticsWidget",
         "dojo/text!showVirtualHost.html",
         "dojo/domReady!"],
     function (parser,
@@ -54,6 +55,7 @@ define(["dojo/parser",
               QueryGrid,
               EnhancedGrid,
               editVirtualHost,
+              StatisticsWidget,
               template)
     {
 
@@ -236,17 +238,13 @@ define(["dojo/parser",
                 }
             }
 
+            this.virtualhostStatisticsNode = findNode("virtualhostStatistics");
+
             storeNodes(["name",
                         "type",
                         "state",
                         "durable",
                         "lifetimePolicy",
-                        "msgInRate",
-                        "bytesInRate",
-                        "bytesInRateUnits",
-                        "msgOutRate",
-                        "bytesOutRate",
-                        "bytesOutRateUnits",
                         "virtualHostDetailsContainer",
                         "connectionThreadPoolSize",
                         "housekeepingCheckPeriod",
@@ -458,14 +456,20 @@ define(["dojo/parser",
                 .then(function (data)
                 {
                     thisObj.vhostData = data[0] || {
-                            name: thisObj.modelObj.name,
-                            statistics: {
-                                messagesIn: 0,
-                                bytesIn: 0,
-                                messagesOut: 0,
-                                bytesOut: 0
-                            }
+                            name: thisObj.modelObj.name
                         };
+
+                    if (!thisObj.virtualhostStatistics)
+                    {
+                        thisObj.virtualhostStatistics = new StatisticsWidget({
+                            category:  "VirtualHost",
+                            type: thisObj.vhostData.type,
+                            management: thisObj.management,
+                            defaultStatistics: ["messagesIn", "messagesOut", "totalDepthOfQueuesMessages"]
+                        });
+                        thisObj.virtualhostStatistics.placeAt(thisObj.virtualhostStatisticsNode);
+                        thisObj.virtualhostStatistics.startup();
+                    }
 
                     if (callback)
                     {
@@ -498,53 +502,21 @@ define(["dojo/parser",
         Updater.prototype._update = function ()
         {
             var thisObj = this;
-            this.tabObject.startButton.set("disabled", !this.vhostData.state || this.vhostData.state != "STOPPED");
-            this.tabObject.stopButton.set("disabled", !this.vhostData.state || this.vhostData.state != "ACTIVE");
-            this.tabObject.editButton.set("disabled", !this.vhostData.state || this.vhostData.state == "UNAVAILABLE");
-            this.tabObject.downloadButton.set("disabled", !this.vhostData.state || this.vhostData.state != "ACTIVE");
+            this.tabObject.startButton.set("disabled", !this.vhostData.state || this.vhostData.state !== "STOPPED");
+            this.tabObject.stopButton.set("disabled", !this.vhostData.state || this.vhostData.state !== "ACTIVE");
+            this.tabObject.editButton.set("disabled", !this.vhostData.state || this.vhostData.state === "UNAVAILABLE");
+            this.tabObject.downloadButton.set("disabled", !this.vhostData.state || this.vhostData.state !== "ACTIVE");
             this.tabObject.deleteButton.set("disabled", !this.vhostData.state);
 
-            util.flattenStatistics(thisObj.vhostData);
             var queues = thisObj.vhostData["queues"];
             var exchanges = thisObj.vhostData["exchanges"];
 
+            thisObj.virtualhostStatistics.update(thisObj.vhostData.statistics);
+            thisObj.virtualhostStatistics.resize();
+
             thisObj.updateHeader();
 
-            var stats = thisObj.vhostData["statistics"];
-
-            var sampleTime = new Date();
-            var messageIn = stats["messagesIn"];
-            var bytesIn = stats["bytesIn"];
-            var messageOut = stats["messagesOut"];
-            var bytesOut = stats["bytesOut"];
-
-            if (thisObj.sampleTime)
-            {
-                var samplePeriod = sampleTime.getTime() - thisObj.sampleTime.getTime();
-
-                var msgInRate = (1000 * (messageIn - thisObj.messageIn)) / samplePeriod;
-                var msgOutRate = (1000 * (messageOut - thisObj.messageOut)) / samplePeriod;
-                var bytesInRate = (1000 * (bytesIn - thisObj.bytesIn)) / samplePeriod;
-                var bytesOutRate = (1000 * (bytesOut - thisObj.bytesOut)) / samplePeriod;
-
-                thisObj.msgInRate.innerHTML = msgInRate.toFixed(0);
-                var bytesInFormat = formatter.formatBytes(bytesInRate);
-                thisObj.bytesInRate.innerHTML = "(" + bytesInFormat.value;
-                thisObj.bytesInRateUnits.innerHTML = bytesInFormat.units + "/s)";
-
-                thisObj.msgOutRate.innerHTML = msgOutRate.toFixed(0);
-                var bytesOutFormat = formatter.formatBytes(bytesOutRate);
-                thisObj.bytesOutRate.innerHTML = "(" + bytesOutFormat.value;
-                thisObj.bytesOutRateUnits.innerHTML = bytesOutFormat.units + "/s)";
-            }
-
-            thisObj.sampleTime = sampleTime;
-            thisObj.messageIn = messageIn;
-            thisObj.bytesIn = bytesIn;
-            thisObj.messageOut = messageOut;
-            thisObj.bytesOut = bytesOut;
-
-            this._updateGrids(thisObj.vhostData)
+            this._updateGrids(thisObj.vhostData);
 
             if (thisObj.details)
             {
@@ -579,7 +551,7 @@ define(["dojo/parser",
                     var oldConnection = null;
                     for (var j = 0; j < this._previousConsumers.length; j++)
                     {
-                        if (this._previousConsumers[j].id == connection.id)
+                        if (this._previousConsumers[j].id === connection.id)
                         {
                             oldConnection = this._previousConsumers[j];
                             break;
@@ -614,8 +586,8 @@ define(["dojo/parser",
 
         Updater.prototype._updateGrids = function (data)
         {
-            this.virtualHostChildren.style.display = data.state == "ACTIVE" ? "block" : "none";
-            if (data.state == "ACTIVE")
+            this.virtualHostChildren.style.display = data.state === "ACTIVE" ? "block" : "none";
+            if (data.state === "ACTIVE")
             {
                 util.updateUpdatableStore(this.queuesGrid, data.queues);
                 util.updateUpdatableStore(this.exchangesGrid, data.exchanges);

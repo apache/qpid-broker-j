@@ -20,8 +20,16 @@
   -->
 <div>
     <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Statistics',  open: false" data-dojo-attach-point="statisticsPane">
-        <div data-dojo-attach-point="cumulativeStatisticsGridContainer"></div>
-        <br/>
-        <div data-dojo-attach-point="pointInTimeStatisticsGridContainer"></div>
+        <div data-dojo-attach-point="msgBytePairCumulativeStatisticsGridContainer"></div>
+        <div data-dojo-attach-point="otherCumulativeStatisticsGridContainer"></div>
+        <div data-dojo-attach-point="msgBytePairPointInTimeStatisticsGridContainer"></div>
+        <div data-dojo-attach-point="otherPointInTimeStatisticsGridContainer"></div>
+        <div class="alignRight">
+            <div data-dojo-attach-point="allStatsToggle" data-dojo-type="dijit/form/ToggleButton"
+                 data-dojo-props="label: 'Show more statistics',
+                                  iconClass: 'addIcon',
+                                  value: false"></div>
+        </div>
+        <div class="clear"/>
     </div>
 </div>

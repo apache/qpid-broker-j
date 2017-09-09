@@ -268,7 +268,7 @@ define(["dojo/parser",
                             {
                                 for (var i = 0; i < data.length; i++)
                                 {
-                                    if (data[i].type.indexOf("File") != -1)
+                                    if (data[i].type.indexOf("File") !== -1)
                                     {
                                         warning = "NOTE: provider deletion will also remove the group file on disk.\n\n"
                                         break;
@@ -381,9 +381,11 @@ define(["dojo/parser",
             this.brokerStatistics = new qpid.common.StatisticsWidget({
                 category:  "Broker",
                 type: null,
-                management: this.controller.management
+                management: this.controller.management,
+                defaultStatistics: ["messagesIn", "messagesOut"]
             });
             this.brokerStatistics.placeAt(dom.byId("showBroker.statistics"));
+            this.brokerStatistics.startup();
 
             this.accessControlProvidersWarn = query(".broker-access-control-providers-warning", node)[0];
             this.management = this.controller.management;
@@ -407,7 +409,7 @@ define(["dojo/parser",
 
             function isActiveVH(item)
             {
-                return item && item.vhId && item.vhState == "ACTIVE";
+                return item && item.vhId && item.vhState === "ACTIVE";
             }
 
             this.vhostsGrid =

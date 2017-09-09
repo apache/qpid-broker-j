@@ -37,6 +37,7 @@ define(["dojo/_base/xhr",
         "dojox/grid/EnhancedGrid",
         "dojox/html/entities",
         "dojo/text!showExchange.html",
+        "qpid/common/StatisticsWidget",
         "dojo/domReady!"],
     function (xhr,
               parser,
@@ -56,7 +57,8 @@ define(["dojo/_base/xhr",
               addExchange,
               EnhancedGrid,
               entities,
-              template)
+              template,
+              StatisticsWidget)
     {
 
         function Exchange(kwArgs)
@@ -202,19 +204,14 @@ define(["dojo/_base/xhr",
                     that[names[i]] = findNode(names[i]);
                 }
             }
+            this.exchangeStatisticsNode = findNode("exchangeStatistics");
 
             storeNodes(["name",
                         "type",
                         "state",
                         "durable",
                         "lifetimePolicy",
-                        "alternateBinding",
-                        "msgInRate",
-                        "bytesInRate",
-                        "bytesInRateUnits",
-                        "msgDropRate",
-                        "bytesDropRate",
-                        "bytesDropRateUnits"]);
+                        "alternateBinding"]);
 
             that.exchangeData = {};
 
@@ -279,12 +276,22 @@ define(["dojo/_base/xhr",
                 {
                     thisObj.exchangeData = data[0];
 
+                    if (!thisObj.exchangeStatistics)
+                    {
+                        thisObj.exchangeStatistics = new StatisticsWidget({
+                            category:  "Exchange",
+                            type: thisObj.exchangeData.type,
+                            management: thisObj.management,
+                            defaultStatistics: ["messagesIn", "messagesDropped"]
+                        });
+                        thisObj.exchangeStatistics.placeAt(thisObj.exchangeStatisticsNode);
+                        thisObj.exchangeStatistics.startup();
+                    }
+
                     if (callback)
                     {
                         callback();
                     }
-
-                    util.flattenStatistics(thisObj.exchangeData);
 
                     var bindings = thisObj.exchangeData.bindings || [];
                     for (var i = 0; i < bindings.length; i++)
@@ -293,41 +300,9 @@ define(["dojo/_base/xhr",
                         bindings[i].id = bindings[i].destination + "/" + bindings[i].bindingKey;
                     }
 
-                    var sampleTime = new Date();
-
+                    thisObj.exchangeStatistics.update(thisObj.exchangeData.statistics);
+                    thisObj.exchangeStatistics.resize();
                     thisObj.updateHeader();
-
-                    var messageIn = thisObj.exchangeData["messagesIn"];
-                    var bytesIn = thisObj.exchangeData["bytesIn"];
-                    var messageDrop = thisObj.exchangeData["messagesDropped"];
-                    var bytesDrop = thisObj.exchangeData["bytesDropped"];
-
-                    if (thisObj.sampleTime)
-                    {
-                        var samplePeriod = sampleTime.getTime() - thisObj.sampleTime.getTime();
-
-                        var msgInRate = (1000 * (messageIn - thisObj.messageIn)) / samplePeriod;
-                        var msgDropRate = (1000 * (messageDrop - thisObj.messageDrop)) / samplePeriod;
-                        var bytesInRate = (1000 * (bytesIn - thisObj.bytesIn)) / samplePeriod;
-                        var bytesDropRate = (1000 * (bytesDrop - thisObj.bytesDrop)) / samplePeriod;
-
-                        thisObj.msgInRate.innerHTML = msgInRate.toFixed(0);
-                        var bytesInFormat = formatter.formatBytes(bytesInRate);
-                        thisObj.bytesInRate.innerHTML = "(" + bytesInFormat.value;
-                        thisObj.bytesInRateUnits.innerHTML = bytesInFormat.units + "/s)";
-
-                        thisObj.msgDropRate.innerHTML = msgDropRate.toFixed(0);
-                        var bytesDropFormat = formatter.formatBytes(bytesDropRate);
-                        thisObj.bytesDropRate.innerHTML = "(" + bytesDropFormat.value;
-                        thisObj.bytesDropRateUnits.innerHTML = bytesDropFormat.units + "/s)"
-
-                    }
-
-                    thisObj.sampleTime = sampleTime;
-                    thisObj.messageIn = messageIn;
-                    thisObj.bytesIn = bytesIn;
-                    thisObj.messageDrop = messageDrop;
-                    thisObj.bytesDrop = bytesDrop;
 
                     // update bindings
                     if (thisObj.bindingsGrid.update(bindings))
@@ -355,7 +330,7 @@ define(["dojo/_base/xhr",
                 this.management.remove(this.modelObj)
                     .then(function (data)
                     {
-                        that.contentPane.onClose()
+                        that.contentPane.onClose();
                         that.controller.tabContainer.removeChild(that.contentPane);
                         that.contentPane.destroyRecursive();
                     }, util.xhrErrorHandler);

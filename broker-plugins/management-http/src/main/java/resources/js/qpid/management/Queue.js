@@ -39,6 +39,7 @@ define(["dojo/_base/declare",
         "qpid/common/JsonRest",
         "dojox/grid/EnhancedGrid",
         "qpid/management/query/QueryGrid",
+        "qpid/common/StatisticsWidget",
         "dojo/data/ObjectStore",
         "dojox/html/entities",
         "dojo/text!showQueue.html",
@@ -66,6 +67,7 @@ define(["dojo/_base/declare",
               JsonRest,
               EnhancedGrid,
               QueryGrid,
+              StatisticsWidget,
               ObjectStore,
               entities,
               template)
@@ -118,7 +120,7 @@ define(["dojo/_base/declare",
                         queryParams: {includeHeaders: false},
                         totalRetriever: function ()
                         {
-                            if (that.queueUpdater.queueData && that.queueUpdater.queueData.queueDepthMessages != undefined)
+                            if (that.queueUpdater.queueData && that.queueUpdater.queueData.queueDepthMessages !== undefined)
                             {
                                 return that.queueUpdater.queueData.queueDepthMessages;
                             }
@@ -313,7 +315,6 @@ define(["dojo/_base/declare",
             var data = this.grid.selection.getSelected();
             if (data.length)
             {
-                var that = this;
                 var i, putData = {messages: []};
                 if (move)
                 {
@@ -380,6 +381,8 @@ define(["dojo/_base/declare",
                 }
             }
 
+            this.queueStatisticsNode = findNode("queueStatistics");
+
             storeNodes(["name",
                         "state",
                         "durable",
@@ -409,21 +412,8 @@ define(["dojo/_base/declare",
                         "messageGroups",
                         "messageGroupKey",
                         "messageGroupSharedGroups",
-                        "queueDepthMessagesIncludingHeader",
-                        "queueDepthBytesIncludingHeader",
-                        "queueDepthBytesUnitsIncludingHeader",
-                        "unacknowledgedMessages",
-                        "unacknowledgedBytes",
-                        "unacknowledgedBytesUnits",
-                        "msgInRate",
-                        "bytesInRate",
-                        "bytesInRateUnits",
-                        "msgOutRate",
-                        "bytesOutRate",
-                        "bytesOutRateUnits",
                         "maximumDeliveryAttempts",
-                        "holdOnPublishEnabled",
-                        "oldestMessageAge"]);
+                        "holdOnPublishEnabled"]);
 
             that.queueData = {};
             that.bindingsGrid = new UpdatableStore([], findNode("bindings"), [{
@@ -564,17 +554,8 @@ define(["dojo/_base/declare",
                 this.queueData["alternateBinding"] && this.queueData["alternateBinding"]["destination"]
                     ? entities.encode(String(this.queueData["alternateBinding"]["destination"])) : "";
 
-            this.queueDepthMessagesIncludingHeader.innerHTML = entities.encode(String(this.queueData["queueDepthMessages"]));
-            bytesDepth = formatter.formatBytes(this.queueData["queueDepthBytesIncludingHeader"]);
-            this.queueDepthBytesIncludingHeader.innerHTML = "(" + bytesDepth.value;
-            this.queueDepthBytesUnitsIncludingHeader.innerHTML = bytesDepth.units + ")";
-
-            this.unacknowledgedMessages.innerHTML = entities.encode(String(this.queueData["unacknowledgedMessages"]));
-            bytesDepth = formatter.formatBytes(this.queueData["unacknowledgedBytes"]);
-            this.unacknowledgedBytes.innerHTML = "(" + bytesDepth.value;
-            this.unacknowledgedBytesUnits.innerHTML = bytesDepth.units + ")";
             this["type"].innerHTML = entities.encode(this.queueData["type"]);
-            if (this.queueData["type"] == "standard")
+            if (this.queueData["type"] === "standard")
             {
                 this.typeQualifier.style.display = "none";
             }
@@ -588,7 +569,7 @@ define(["dojo/_base/declare",
             var overflowPolicy = this.queueData["overflowPolicy"];
             this["overflowPolicy"].innerHTML = entities.encode(overflowPolicy);
 
-            if (overflowPolicy && overflowPolicy != "NONE")
+            if (overflowPolicy && overflowPolicy !== "NONE")
             {
                 this.maximumQueueDepth.style.display = "block";
                 renderMaximumQueueDepthBytes(this["maximumQueueDepthBytes"], this["maximumQueueDepthBytesUnits"], this.queueData.maximumQueueDepthBytes);
@@ -610,11 +591,13 @@ define(["dojo/_base/declare",
                 this.messageGroups.style.display = "none";
             }
 
-            this.oldestMessageAge.innerHTML = entities.encode(String(this.queueData["oldestMessageAge"] / 1000));
             var maximumDeliveryAttempts = this.queueData["maximumDeliveryAttempts"];
             this.maximumDeliveryAttempts.innerHTML =
-                entities.encode(String(maximumDeliveryAttempts == 0 ? "" : maximumDeliveryAttempts));
+                entities.encode(String(maximumDeliveryAttempts === 0 ? "" : maximumDeliveryAttempts));
             this.holdOnPublishEnabled.innerHTML = entities.encode(String(this.queueData["holdOnPublishEnabled"]));
+
+            this.queueStatistics.update(this.queueData.statistics);
+            this.queueStatistics.resize();
         };
 
         QueueUpdater.prototype.update = function (callback)
@@ -637,12 +620,26 @@ define(["dojo/_base/declare",
                 {
                     var i, j;
                     thisObj.queueData = data.queue[0];
-                    util.flattenStatistics(thisObj.queueData);
+
+                    if (!thisObj.queueStatistics)
+                    {
+                        thisObj.queueStatistics = new StatisticsWidget({
+                            category:  "Queue",
+                            type: thisObj.queueData.type,
+                            management: thisObj.management,
+                            defaultStatistics: ["totalEnqueuedMessages", "totalDequeuedMessages",
+                                                "unacknowledgedMessages", "queueDepthMessages",
+                                                "oldestMessageAge"]
+                        });
+                        thisObj.queueStatistics.placeAt(thisObj.queueStatisticsNode);
+                        thisObj.queueStatistics.startup();
+                    }
+
+
                     if (callback)
                     {
                         callback();
                     }
-                    var bindings = thisObj.queueData["bindings"];
                     var consumers = thisObj.queueData["consumers"];
 
                     var bindings = data.publishingLinks || [];
@@ -676,37 +673,6 @@ define(["dojo/_base/declare",
                     thisObj.alertThresholdQueueDepthMessages.innerHTML =
                         entities.encode(String(thisObj.queueData["alertThresholdQueueDepthMessages"]));
 
-                    var sampleTime = new Date();
-                    var messageIn = thisObj.queueData["totalEnqueuedMessages"];
-                    var bytesIn = thisObj.queueData["totalEnqueuedBytes"];
-                    var messageOut = thisObj.queueData["totalDequeuedMessages"];
-                    var bytesOut = thisObj.queueData["totalDequeuedBytes"];
-
-                    if (thisObj.sampleTime)
-                    {
-                        var samplePeriod = sampleTime.getTime() - thisObj.sampleTime.getTime();
-
-                        var msgInRate = (1000 * (messageIn - thisObj.messageIn)) / samplePeriod;
-                        var msgOutRate = (1000 * (messageOut - thisObj.messageOut)) / samplePeriod;
-                        var bytesInRate = (1000 * (bytesIn - thisObj.bytesIn)) / samplePeriod;
-                        var bytesOutRate = (1000 * (bytesOut - thisObj.bytesOut)) / samplePeriod;
-
-                        thisObj.msgInRate.innerHTML = msgInRate.toFixed(0);
-                        var bytesInFormat = formatter.formatBytes(bytesInRate);
-                        thisObj.bytesInRate.innerHTML = "(" + bytesInFormat.value;
-                        thisObj.bytesInRateUnits.innerHTML = bytesInFormat.units + "/s)";
-
-                        thisObj.msgOutRate.innerHTML = msgOutRate.toFixed(0);
-                        var bytesOutFormat = formatter.formatBytes(bytesOutRate);
-                        thisObj.bytesOutRate.innerHTML = "(" + bytesOutFormat.value;
-                        thisObj.bytesOutRateUnits.innerHTML = bytesOutFormat.units + "/s)";
-                    }
-
-                    thisObj.sampleTime = sampleTime;
-                    thisObj.messageIn = messageIn;
-                    thisObj.bytesIn = bytesIn;
-                    thisObj.messageOut = messageOut;
-                    thisObj.bytesOut = bytesOut;
                     thisObj.consumers = consumers;
 
                     // update bindings
@@ -736,7 +702,7 @@ define(["dojo/_base/declare",
                     var oldConsumer = null;
                     for (var j = 0; j < this._previousConsumers.length; j++)
                     {
-                        if (this._previousConsumers[j].id == consumer.id)
+                        if (this._previousConsumers[j].id === consumer.id)
                         {
                             oldConsumer = this._previousConsumers[j];
                             break;

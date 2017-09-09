@@ -344,7 +344,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Enqueued (Persistent)")
     long getPersistentEnqueuedMessages();
 
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth Including Header")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth")
     long getQueueDepthBytes();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Queue Depth")
@@ -367,7 +367,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     long getTotalEnqueuedMessages();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Prefetched")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Prefetched")
     long getUnacknowledgedBytes();
 
     @SuppressWarnings("unused")

@@ -61,52 +61,6 @@
                 </div>
             </div>
         </div>
-        <div class="alignRight">
-            <div class="clear">
-                <div class="formLabel-labelCell">Inbound:</div>
-                <div class="formValue-valueCell">
-                    <span class="msgInRate"></span>
-                    <span> msg/s</span>
-                    <span class="bytesInRate"></span>
-                    <span class="bytesInRateUnits"></span>
-                </div>
-            </div>
-            <div class="clear">
-                <div class="formLabel-labelCell">Outbound:</div>
-                <div class="formValue-valueCell">
-                    <span class="msgOutRate"></span>
-                    <span> msg/s</span>
-                    <span class="bytesOutRate"></span>
-                    <span class="bytesOutRateUnits"></span>
-                </div>
-            </div>
-            <div class="clear">
-                <div class="formLabel-labelCell">Queue Depth:</div>
-                <div class="formValue-valueCell">
-                    <span class="queueDepthMessagesIncludingHeader"></span>
-                    <span> msgs</span>
-                    <span class="queueDepthBytesIncludingHeader">(</span>
-                    <span class="queueDepthBytesUnitsIncludingHeader">)</span>
-                </div>
-            </div>
-            <div class="clear">
-                <div class="formLabel-labelCell">Pre-fetched:</div>
-                <div class="formValue-valueCell">
-                    <span class="unacknowledgedMessages"></span>
-                    <span> msgs</span>
-                    <span class="unacknowledgedBytes">(</span>
-                    <span class="unacknowledgedBytesUnits">)</span>
-                </div>
-            </div>
-            <div class="clear">
-                <div class="formLabel-labelCell">Oldest Message Age:</div>
-                <div class="formValue-valueCell">
-                    <span class="oldestMessageAge"></span>
-                    <span> secs</span>
-                </div>
-            </div>
-        </div>
-        <div class="clear"></div>
         <div class="clear">
             <div class="formLabel-labelCell">Enforced Max. Ttl(ms):</div>
             <div class="maximumMessageTtl"></div>
@@ -147,6 +101,8 @@
         </div>
         <div class="clear"></div>
     </div>
+    <br/>
+    <div class="queueStatistics"></div>
     <div class="dijitDialogPaneActionBar">
         <button data-dojo-type="dijit.form.Button" class="editQueueButton" type="button">Edit Queue</button>
         <button data-dojo-type="dijit.form.Button" class="deleteQueueButton" type="button">Delete Queue</button>
@@ -169,7 +125,6 @@
         <button data-dojo-type="dijit.form.Button" class="copyMessagesButton" type="button">Copy Messages</button>
         <button data-dojo-type="dijit.form.Button" class="refreshMessagesButton" type="button">Refresh</button>
     </div>
-
     <br/>
     <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Alerting Thresholds', open: false">
       <div class="clear">

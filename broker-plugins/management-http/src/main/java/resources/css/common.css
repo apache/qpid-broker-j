@@ -674,6 +674,14 @@ td.advancedSearchField, col.autoWidth {
     background-size: 1em;
 }
 
+.minusIcon
+{
+    background: url("../images/minus.svg") left center no-repeat;
+    width: 15px;
+    height: 15px;
+    background-size: 1em;
+}
+
 #message-content-preview
 {
     width: 100%;
@@ -752,4 +760,9 @@ td.advancedSearchField, col.autoWidth {
 .loadingBar
 {
     text-align: center;
+}
+
+.statisticGrid
+{
+    margin-bottom: 10px !important;
 }

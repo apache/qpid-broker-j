@@ -32,26 +32,6 @@
                 <div class="type formValue-valueCell"></div>
             </div>
         </div>
-        <div class="alignRight">
-            <div class="clear">
-                <div class="formLabel-labelCell">Inbound:</div>
-                <div class="formValue-valueCell">
-                    <span class="msgInRate"></span>
-                    <span> msg/s</span>
-                    <span class="bytesInRate"></span>
-                    <span class="bytesInRateUnits"></span>
-                </div>
-            </div>
-            <div class="clear">
-                <div class="formLabel-labelCell">Outbound:</div>
-                <div class="formValue-valueCell">
-                    <span class="msgOutRate"></span>
-                    <span> msg/s</span>
-                    <span class="bytesOutRate"></span>
-                    <span class="bytesOutRateUnits"></span>
-                </div>
-            </div>
-        </div>
         <div class="clear"></div>
         <div class="clear">
             <div class="formLabel-labelCell">State:</div>
@@ -109,7 +89,8 @@
         </div>
 
     </div>
-
+    <br/>
+    <div class="virtualhostStatistics"></div>
     <div class="dijitDialogPaneActionBar">
         <div class="alignRight">
             <button data-dojo-type="dijit.form.Button" class="startButton" type="button" data-dojo-props="disabled: true">Start</button>
@@ -120,7 +101,6 @@
         </div>
         <div class="clear"></div>
     </div>
-
     <br/>
     <div class="virtualHostChildren">
         <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Exchanges'">
