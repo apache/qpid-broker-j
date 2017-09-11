@@ -72,22 +72,27 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     CreatingLinkInfo getCreatingLinkInfo();
 
     // Statistics
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Bindings",
-                      description = "Number of bindings to this exchange.")
+                      description = "Current number of bindings to this exchange.")
     long getBindingCount();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Dropped",
                       description = "Total size of all unroutable messages dropped by this exchange.")
     long getBytesDropped();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound",
                       description = "Total size of messages received by this exchange.")
     long getBytesIn();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Dropped",
                       description = "Number of unroutable messages dropped by this exchange.")
     long getMessagesDropped();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Inbound",
                       description = "Number of messages received by this exchange.")
     long getMessagesIn();

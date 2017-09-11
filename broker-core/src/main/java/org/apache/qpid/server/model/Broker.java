@@ -183,16 +183,24 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @DerivedAttribute( persist = true )
     String getModelVersion();
 
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound")
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound",
+                      description = "Total size of all messages received by the Broker.")
     long getBytesIn();
 
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound")
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound",
+                      description = "Total size of all messages delivered by the Broker.")
     long getBytesOut();
 
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Inbound")
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Inbound",
+                      description = "Total number of messages received by the Broker.")
     long getMessagesIn();
 
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound")
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound",
+                      description = "Total number of messages delivered by the Broker.")
     long getMessagesOut();
 
     @ManagedOperation(nonModifying = true,
@@ -221,42 +229,49 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @DerivedAttribute(description = "URL to broker documentation")
     String getDocumentationUrl();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
                       units = StatisticUnit.COUNT,
                       label = "Live threads",
                       description = "Number of live threads")
     int getNumberOfLiveThreads();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
                       units = StatisticUnit.BYTES,
                       label = "Used Heap Memory Size",
                       description = "Size of used heap memory")
     long getUsedHeapMemorySize();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
                       units = StatisticUnit.BYTES,
                       label = "Used Direct Memory Size",
                       description = "Size of used direct memory")
     long getUsedDirectMemorySize();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
                       units = StatisticUnit.BYTES,
                       label = "Direct Memory Total Capacity",
                       description = "Total capacity of direct memory allocated for the Broker process")
     long getDirectMemoryTotalCapacity();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
                       units = StatisticUnit.COUNT,
                       label = "Number Of Object Pending Finalization",
                       description = "Number of objects pending finalization")
     int getNumberOfObjectsPendingFinalization();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
             units = StatisticUnit.COUNT,
             label = "Number of Active Pooled Buffers",
             description = "Number of pooled buffers in use.")
     long getNumberOfActivePooledBuffers();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
             units = StatisticUnit.COUNT,
             label = "Number of Pooled Buffers",

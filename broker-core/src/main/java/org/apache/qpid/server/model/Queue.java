@@ -317,89 +317,113 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     void setNotificationListener(QueueNotificationListener listener);
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Bindings")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Bindings",
+                      description = "Current number of bindings to this queue.")
     int getBindingCount();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Consumers")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Consumers",
+                      description = "Current number of consumers attached to this queue.")
     int getConsumerCount();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Consumers with credit")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Consumers with credit",
+                      description = "Current number of consumers attached to this queue with credit")
     int getConsumerCountWithCredit();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Delivered (Persistent)")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Delivered (Persistent)",
+                      description = "Total size of all persistent messages delivered by this queue.")
     long getPersistentDequeuedBytes();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Delivered (Persistent)")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Delivered (Persistent)",
+                      description = "Total number of persistent messages delivered by this queue.")
     long getPersistentDequeuedMessages();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Enqueued (Persistent)")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Enqueued (Persistent)",
+                      description = "Total size of all persistent messages received by this queue.")
     long getPersistentEnqueuedBytes();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Enqueued (Persistent)")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Enqueued (Persistent)",
+                      description = "Total number of persistent messages received by this queue.")
     long getPersistentEnqueuedMessages();
 
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth")
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth",
+                      description = "Current size of all messages enqueued by this queue.")
     long getQueueDepthBytes();
 
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Queue Depth")
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Queue Depth",
+                      description = "Current number of messages enqueued by this queue.")
     int getQueueDepthMessages();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Delivered")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Delivered",
+                      description = "Total size of all messages delivered by this queue.")
     long getTotalDequeuedBytes();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Delivered")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Delivered",
+                      description = "Total number of messages delivered by this queue.")
     long getTotalDequeuedMessages();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Enqueued")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Enqueued",
+                      description = "Total size of all messages received by this queue.")
     long getTotalEnqueuedBytes();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Enqueued")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Enqueued",
+                      description = "Total number of messages received by this queue.")
     long getTotalEnqueuedMessages();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Prefetched")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Prefetched",
+                      description = "Total size of all messages currently prefetched by consumers.")
     long getUnacknowledgedBytes();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Prefetched")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Prefetched",
+                      description = "Total number of messages currently prefetched by consumers.")
     long getUnacknowledgedMessages();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Available")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Available",
+                      description = "Total size of all messages currently available.")
     long getAvailableBytes();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Available")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Available",
+                      description = "Total number of messages currently available.")
     int getAvailableMessages();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Available HWM")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Available HWM",
+                      description = "Maximum recorded size of available messages.")
     long getAvailableBytesHighWatermark();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Available HWM")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Available HWM",
+                      description = "Maximum recorded number of available messages.")
     int getAvailableMessagesHighWatermark();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth HWM")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth HWM",
+                      description = "Maximum recorded size of enqueued messages.")
     long getQueueDepthBytesHighWatermark();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Queue Depth HWM")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Queue Depth HWM",
+                      description = "Maximum recorded number of enqueued messages.")
     int getQueueDepthMessagesHighWatermark();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Oldest Message")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Oldest Message",
+                      description = "Current age of oldest message on the queue.")
     long getOldestMessageAge();
 
     @ManagedOperation(description = "reset cumulative and high watermark statistics values", changesConfiguredObjectState = false)
