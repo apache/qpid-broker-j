@@ -382,6 +382,17 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     long getTotalEnqueuedMessages();
 
     @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Expired",
+            description = "Total size of all messages expired by message time-to-live on this queue.")
+    long getTotalExpiredBytes();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Expired",
+            description = "Total number of messages expired by message time-to-live on this queue.")
+    long getTotalExpiredMessages();
+
+
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Prefetched",
                       description = "Total size of all messages currently prefetched by consumers.")
     long getUnacknowledgedBytes();

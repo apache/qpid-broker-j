@@ -2128,6 +2128,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     expired = false;
                     if (node.acquire())
                     {
+                        _queueStatistics.addToExpired(node.getSizeWithHeader());
                         dequeueEntry(node);
                     }
                 }
@@ -2199,6 +2200,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 if (node.expired())
                 {
                     deleteEntry(node);
+                    _queueStatistics.addToExpired(node.getSizeWithHeader());
                 }
                 else
                 {
@@ -2639,6 +2641,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public int getMaximumDeliveryAttempts()
     {
         return _maximumDeliveryAttempts;
+    }
+
+    @Override
+    public long getTotalExpiredBytes()
+    {
+        return _queueStatistics.getEnqueueSize();
+    }
+
+    @Override
+    public long getTotalExpiredMessages()
+    {
+        return _queueStatistics.getExpiredCount();
     }
 
     private void checkForNotification(final ServerMessage<?> msg,

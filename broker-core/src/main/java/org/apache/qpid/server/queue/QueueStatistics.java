@@ -52,6 +52,9 @@ final class QueueStatistics
     private final AtomicInteger _availableCountHwm = new AtomicInteger();
     private final AtomicLong _availableSizeHwm = new AtomicLong();
 
+    private final AtomicInteger _expiredCount = new AtomicInteger();
+    private final AtomicLong _expiredSize = new AtomicLong();
+
     public final int getQueueCount()
     {
         return _queueCount.get();
@@ -142,6 +145,16 @@ final class QueueStatistics
         return _availableSizeHwm.get();
     }
 
+    public int getExpiredCount()
+    {
+        return _expiredCount.get();
+    }
+
+    public long getExpiredSize()
+    {
+        return _expiredSize.get();
+    }
+
     void addToQueue(long size)
     {
         int count = _queueCount.incrementAndGet();
@@ -222,6 +235,12 @@ final class QueueStatistics
         _persistentDequeueSize.addAndGet(size);
     }
 
+    void addToExpired(final long size)
+    {
+        _expiredCount.incrementAndGet();
+        _expiredSize.addAndGet(size);
+    }
+
     void reset()
     {
         _availableCountHwm.set(0);
@@ -236,6 +255,7 @@ final class QueueStatistics
         _persistentEnqueueSize.set(0L);
         _persistentDequeueCount.set(0L);
         _persistentDequeueSize.set(0L);
+        _expiredCount.set(0);
+        _expiredSize.set(0);
     }
-
 }
