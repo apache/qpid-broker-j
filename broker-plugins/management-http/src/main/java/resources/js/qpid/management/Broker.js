@@ -378,14 +378,6 @@ define(["dojo/parser",
             this.controller = brokerTab.controller;
             this.brokerObj = brokerTab.modelObj;
             this.contentPane = brokerTab.contentPane;
-            this.brokerStatistics = new qpid.common.StatisticsWidget({
-                category:  "Broker",
-                type: null,
-                management: this.controller.management,
-                defaultStatistics: ["messagesIn", "messagesOut"]
-            });
-            this.brokerStatistics.placeAt(dom.byId("showBroker.statistics"));
-            this.brokerStatistics.startup();
 
             this.accessControlProvidersWarn = query(".broker-access-control-providers-warning", node)[0];
             this.management = this.controller.management;
@@ -961,6 +953,23 @@ define(["dojo/parser",
                 .then(function (data)
                 {
                     that.brokerData = data.broker[0];
+
+                    if (!that.brokerStatistics)
+                    {
+                        that.brokerStatistics = new qpid.common.StatisticsWidget({
+                            category:  "Broker",
+                            type: null,
+                            management: that.controller.management,
+                            defaultStatistics: ["messagesIn", "messagesOut"]
+                        });
+                        that.brokerStatistics.placeAt(dom.byId("showBroker.statistics"));
+                        that.brokerStatistics.startup();
+                        var brokerPane = registry.byId("showBrokerPane");
+                        connect.connect(brokerPane, "toggle", lang.hitch(this, function()
+                        {
+                            that.brokerStatistics.resize();
+                        }));
+                    }
                     var virtualHostData = util.queryResultToObjects(data.virtualHosts);
                     var queryVirtualHostNodes = {};
                     for (var i = 0; i < virtualHostData.length; ++i)

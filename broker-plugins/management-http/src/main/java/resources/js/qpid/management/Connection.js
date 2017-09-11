@@ -28,6 +28,7 @@ define(["dojo/parser",
         "qpid/common/util",
         "qpid/common/formatter",
         "qpid/common/UpdatableStore",
+        "qpid/common/StatisticsWidget",
         "qpid/management/query/QueryGrid",
         "dojox/html/entities",
         "dojo/text!showConnection.html",
@@ -42,6 +43,7 @@ define(["dojo/parser",
               util,
               formatter,
               UpdatableStore,
+              StatisticsWidget,
               QueryGrid,
               entities,
               template)
@@ -126,6 +128,8 @@ define(["dojo/parser",
                 }
             }
 
+            this.connectionStatisticsNode = findNode("connectionStatistics");
+
             storeNodes(["name",
                         "clientVersion",
                         "clientId",
@@ -135,14 +139,7 @@ define(["dojo/parser",
                         "protocol",
                         "remoteProcessPid",
                         "createdTime",
-                        "sessionCountLimit",
-                        "lastIoTime",
-                        "msgInRate",
-                        "bytesInRate",
-                        "bytesInRateUnits",
-                        "msgOutRate",
-                        "bytesOutRate",
-                        "bytesOutRateUnits"]);
+                        "sessionCountLimit"]);
 
             var userPreferences = this.management.userPreferences;
 
@@ -272,10 +269,6 @@ define(["dojo/parser",
                 addOffset: true,
                 appendTimeZone: true
             });
-            this.lastIoTime.innerHTML = userPreferences.formatDateTime(this.connectionData["lastIoTime"], {
-                addOffset: true,
-                appendTimeZone: true
-            });
         };
 
         ConnectionUpdater.prototype.update = function (callback)
@@ -299,7 +292,18 @@ define(["dojo/parser",
                 {
                     that.connectionData = data[0];
 
-                    util.flattenStatistics(that.connectionData);
+
+                    if (!that.connectionStatistics)
+                    {
+                        that.connectionStatistics = new StatisticsWidget({
+                            category:  "Connection",
+                            type: null,
+                            management: that.management,
+                            defaultStatistics: ["messagesIn", "messagesOut", "lastIoTime"]
+                        });
+                        that.connectionStatistics.placeAt(that.connectionStatisticsNode);
+                        that.connectionStatistics.startup();
+                    }
 
                     if (callback)
                     {
@@ -311,29 +315,10 @@ define(["dojo/parser",
                     that.updateHeader();
 
                     var sampleTime = new Date();
-                    var messageIn = that.connectionData["messagesIn"];
-                    var bytesIn = that.connectionData["bytesIn"];
-                    var messageOut = that.connectionData["messagesOut"];
-                    var bytesOut = that.connectionData["bytesOut"];
 
                     if (that.sampleTime)
                     {
                         var samplePeriod = sampleTime.getTime() - that.sampleTime.getTime();
-
-                        var msgInRate = (1000 * (messageIn - that.messageIn)) / samplePeriod;
-                        var msgOutRate = (1000 * (messageOut - that.messageOut)) / samplePeriod;
-                        var bytesInRate = (1000 * (bytesIn - that.bytesIn)) / samplePeriod;
-                        var bytesOutRate = (1000 * (bytesOut - that.bytesOut)) / samplePeriod;
-
-                        that.msgInRate.innerHTML = msgInRate.toFixed(0);
-                        var bytesInFormat = formatter.formatBytes(bytesInRate);
-                        that.bytesInRate.innerHTML = "(" + bytesInFormat.value;
-                        that.bytesInRateUnits.innerHTML = bytesInFormat.units + "/s)";
-
-                        that.msgOutRate.innerHTML = msgOutRate.toFixed(0);
-                        var bytesOutFormat = formatter.formatBytes(bytesOutRate);
-                        that.bytesOutRate.innerHTML = "(" + bytesOutFormat.value;
-                        that.bytesOutRateUnits.innerHTML = bytesOutFormat.units + "/s)";
 
                         if (sessions && that.sessions)
                         {
@@ -343,7 +328,7 @@ define(["dojo/parser",
                                 for (var j = 0; j < that.sessions.length; j++)
                                 {
                                     var oldSession = that.sessions[j];
-                                    if (oldSession.id == session.id)
+                                    if (oldSession.id === session.id)
                                     {
                                         var msgRate = (1000 * (session.messagesOut - oldSession.messagesOut))
                                                       / samplePeriod;
@@ -363,11 +348,10 @@ define(["dojo/parser",
                     }
 
                     that.sampleTime = sampleTime;
-                    that.messageIn = messageIn;
-                    that.bytesIn = bytesIn;
-                    that.messageOut = messageOut;
-                    that.bytesOut = bytesOut;
                     that.sessions = sessions;
+
+                    that.connectionStatistics.update(that.connectionData.statistics);
+                    that.connectionStatistics.resize();
 
                     // update sessions
                     that.sessionsGrid.update(that.connectionData.sessions)
