@@ -92,7 +92,6 @@ import org.apache.qpid.server.message.MessageInfoImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSender;
-import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.RejectType;
 import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
@@ -1770,19 +1769,29 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public void deleteEntry(final QueueEntry entry)
     {
-        boolean acquiredForDequeueing = entry.acquireOrSteal(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                dequeueEntry(entry);
-            }
-        });
+        deleteEntry(entry, null);
+    }
 
-        if(acquiredForDequeueing)
+    private void deleteEntry(final QueueEntry entry, final Runnable postDequeueTask)
+    {
+        boolean acquiredForDequeueing = entry.acquireOrSteal(() ->
+                                                             {
+                                                                 _logger.debug("Dequeuing stolen node {}", entry);
+                                                                 dequeueEntry(entry);
+                                                                 if (postDequeueTask != null)
+                                                                 {
+                                                                     postDequeueTask.run();
+                                                                 }
+                                                             });
+
+        if (acquiredForDequeueing)
         {
             _logger.debug("Dequeuing node {}", entry);
             dequeueEntry(entry);
+            if (postDequeueTask != null)
+            {
+                postDequeueTask.run();
+            }
         }
     }
 
@@ -2128,8 +2137,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     expired = false;
                     if (node.acquire())
                     {
-                        _queueStatistics.addToExpired(node.getSizeWithHeader());
                         dequeueEntry(node);
+                        _queueStatistics.addToExpired(node.getSizeWithHeader());
                     }
                 }
 
@@ -2199,8 +2208,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 // If the node has expired then acquire it
                 if (node.expired())
                 {
-                    deleteEntry(node);
-                    _queueStatistics.addToExpired(node.getSizeWithHeader());
+                    deleteEntry(node, () -> _queueStatistics.addToExpired(node.getSizeWithHeader()));
                 }
                 else
                 {
