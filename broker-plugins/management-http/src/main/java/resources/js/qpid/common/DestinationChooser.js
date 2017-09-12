@@ -72,7 +72,7 @@ define(["dojo/_base/declare",
                                 }
                                 finally
                                 {
-                                    deferred.resolve(items);
+                                    deferred.resolve(data);
                                 }
                             }),
                             function (error)

@@ -379,7 +379,7 @@ define(["dojo/_base/connect",
             addBinding.destinationChooser = registry.byId("formAddbinding.destinationChooser");
 
             addBinding.destinationChooserLoadPromise =
-                addBinding.destinationChooser.loadData(management, addBinding.modelObj);
+                addBinding.destinationChooser.loadData(management, addBinding.modelObj.parent);
 
             registry.byId("formAddBinding")
                 .reset();
@@ -406,55 +406,41 @@ define(["dojo/_base/connect",
             });
             grid.store.save();
 
-            management.load({
-                    type: "exchange",
-                    parent: obj.parent
-                },
+            addBinding.destinationChooserLoadPromise.then(lang.hitch(this, function (data)
+            {
+
+                var exchangeStore = new Memory({data: util.queryResultToObjects(data.exchanges)});
+
+                if (that.exchangeChooser)
                 {
-                    depth: 0,
-                    excludeInheritedContext: true
-                })
-                .then(function (data)
+                    that.exchangeChooser.destroy(false);
+                }
+                var exchangeDiv = dom.byId("addBinding.selectExchangeDiv");
+                var input = construct.create("input", {id: "addBindingSelectExchange"}, exchangeDiv);
+
+                that.exchangeChooser = new FilteringSelect({
+                    id: "addBindingSelectExchange",
+                    name: "exchange",
+                    store: exchangeStore,
+                    searchAttr: "name",
+                    promptMessage: "Name of the exchange",
+                    title: "Select the name of the exchange"
+                }, input);
+
+                if (obj.type === "exchange")
                 {
+                    that.exchangeChooser.set("value", obj.name);
+                }
+                that.exchangeChooser.set("disabled", obj.type === "exchange");
 
-                    var exchanges = [];
-                    for (var i = 0; i < data.length; i++)
-                    {
-                        exchanges[i] = {
-                            id: data[i].name,
-                            name: data[i].name
-                        };
-                    }
-                    var exchangeStore = new Memory({data: exchanges});
+                if (obj.type === "queue")
+                {
+                    that.destinationChooser.set("value", obj.name);
+                }
+                that.destinationChooser.set("disabled", obj.type === "queue");
 
-                    if (that.exchangeChooser)
-                    {
-                        that.exchangeChooser.destroy(false);
-                    }
-                    var exchangeDiv = dom.byId("addBinding.selectExchangeDiv");
-                    var input = construct.create("input", {id: "addBindingSelectExchange"}, exchangeDiv);
-
-                    that.exchangeChooser = new FilteringSelect({
-                        id: "addBindingSelectExchange",
-                        name: "exchange",
-                        store: exchangeStore,
-                        searchAttr: "name",
-                        promptMessage: "Name of the exchange",
-                        title: "Select the name of the exchange"
-                    }, input);
-
-                    if (obj.type === "exchange")
-                    {
-                        that.exchangeChooser.set("value", obj.name);
-                        that.exchangeChooser.set("disabled", true);
-                    }
-
-                    addBinding.destinationChooserLoadPromise.then(lang.hitch(this, function ()
-                    {
-                        registry.byId("addBinding").show();
-                    }));
-
-                }, util.xhrErrorHandler);
+                registry.byId("addBinding").show();
+            }));
         };
 
         addBinding._init();
