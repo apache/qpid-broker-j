@@ -662,6 +662,12 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                         Map<String, Object> arguments,
                         boolean replaceExistingArguments)
     {
+        MessageDestination messageDestination = getAttainedMessageDestination(destination);
+        if (messageDestination == null)
+        {
+            throw new IllegalArgumentException(String.format("Destination '%s' is not found.", destination));
+        }
+
         if(bindingKey == null)
         {
             bindingKey = "";
@@ -670,8 +676,9 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         {
             arguments = Collections.emptyMap();
         }
+
         Binding newBinding = new BindingImpl(bindingKey, destination, arguments);
-        MessageDestination messageDestination = getAttainedMessageDestination(newBinding.getDestination());
+
         boolean modified = false;
         for(Binding b : _bindings)
         {
@@ -782,35 +789,38 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     public boolean unbind(@Param(name = "destination", mandatory = true) final String destination,
                           @Param(name = "bindingKey") String bindingKey)
     {
-        Iterator<Binding> bindingIterator = _bindings.iterator();
-        if(bindingKey == null)
-        {
-            bindingKey = "";
-        }
         MessageDestination messageDestination = getAttainedMessageDestination(destination);
-        while(bindingIterator.hasNext())
+        if (messageDestination != null)
         {
-            Binding binding = bindingIterator.next();
-            if(binding.getBindingKey().equals(bindingKey) && binding.getDestination().equals(destination))
+            Iterator<Binding> bindingIterator = _bindings.iterator();
+            if (bindingKey == null)
             {
-                _bindings.remove(binding);
-                messageDestination.linkRemoved(this, binding);
-                onUnbind(new BindingIdentifier(bindingKey, messageDestination));
-                if(!autoDeleteIfNecessary())
-                {
-                    if (isDurable() && messageDestination.isDurable())
-                    {
-                        final Collection<Binding> durableBindings = getDurableBindings();
-                        attributeSet(DURABLE_BINDINGS, durableBindings, durableBindings);
-                    }
-                }
-                final Map<String, Object> bindArguments =
-                        UNBIND_ARGUMENTS_CREATOR.createMap(bindingKey, destination);
-                getEventLogger().message(_logSubject, BindingMessages.DELETED(String.valueOf(bindArguments)));
-
-                return true;
+                bindingKey = "";
             }
 
+            while (bindingIterator.hasNext())
+            {
+                Binding binding = bindingIterator.next();
+                if (binding.getBindingKey().equals(bindingKey) && binding.getDestination().equals(destination))
+                {
+                    _bindings.remove(binding);
+                    messageDestination.linkRemoved(this, binding);
+                    onUnbind(new BindingIdentifier(bindingKey, messageDestination));
+                    if (!autoDeleteIfNecessary())
+                    {
+                        if (isDurable() && messageDestination.isDurable())
+                        {
+                            final Collection<Binding> durableBindings = getDurableBindings();
+                            attributeSet(DURABLE_BINDINGS, durableBindings, durableBindings);
+                        }
+                    }
+                    final Map<String, Object> bindArguments =
+                            UNBIND_ARGUMENTS_CREATOR.createMap(bindingKey, destination);
+                    getEventLogger().message(_logSubject, BindingMessages.DELETED(String.valueOf(bindArguments)));
+
+                    return true;
+                }
+            }
         }
         return false;
 
