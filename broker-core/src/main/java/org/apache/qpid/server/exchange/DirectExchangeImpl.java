@@ -111,7 +111,7 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
 
                     filteredDestinations = new HashMap<>(_filteredDestinations);
                     FilterManager messageFilter = FilterSupport.createMessageFilter(arguments, destination);
-                    String replacementRoutingKey = arguments.containsKey(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY)
+                    String replacementRoutingKey = arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY) != null
                             ? String.valueOf(arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY))
                             : null;
                     filteredDestinations.put(destination,
@@ -149,10 +149,9 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
                 }
 
                 unfilteredDestinations = new HashMap<>(_unfilteredDestinations);
-                Object replacementRoutingKey = arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY);
+                Object replacementRoutingKey = arguments == null ? null : arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY);
                 unfilteredDestinations.put(destination, replacementRoutingKey == null ? null : String.valueOf(replacementRoutingKey));
                 return new BindingSet(Collections.unmodifiableMap(unfilteredDestinations), Collections.unmodifiableMap(filteredDestinations));
-
             }
         }
 

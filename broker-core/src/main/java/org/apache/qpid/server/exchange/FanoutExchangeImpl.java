@@ -82,7 +82,7 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
                             new HashMap<>(filteredDestinations.get(destination));
 
                     FilterManager filterManager = FilterSupport.createMessageFilter(arguments, destination);
-                    String replacementRoutingKey = arguments.containsKey(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY)
+                    String replacementRoutingKey = arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY) != null
                             ? String.valueOf(arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY))
                             : null;
 
@@ -110,7 +110,7 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
                 unfilteredDestinations.computeIfAbsent(destination, messageDestination -> new HashMap<>());
 
                 String replacementRoutingKey = null;
-                if (arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY) != null)
+                if (arguments != null && arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY) != null)
                 {
                     replacementRoutingKey = String.valueOf(arguments.get(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY));
                 }

@@ -57,7 +57,7 @@ public final class TopicExchangeResult implements TopicMatcherResult
 
     public void addBinding(AbstractExchange.BindingIdentifier binding, Map<String, Object> bindingArguments)
     {
-        Object keyObject = bindingArguments.get(Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY);
+        Object keyObject = bindingArguments != null ? bindingArguments.get(Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY) : null;
         if (keyObject == null)
         {
             _replacementKeys.remove(binding.getDestination());
