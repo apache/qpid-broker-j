@@ -2654,7 +2654,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public long getTotalExpiredBytes()
     {
-        return _queueStatistics.getEnqueueSize();
+        return _queueStatistics.getExpiredSize();
     }
 
     @Override
