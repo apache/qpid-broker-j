@@ -26,6 +26,7 @@ define(["qpid/common/util", "dojo/query", "dojo/_base/array", "dojo/dom-construc
         function JDBC(data)
         {
             var that = this;
+            this.parent =  data.parent;
             util.buildUI(data.containerNode,
                 data.parent,
                 "virtualhostnode/jdbc/show.html",
@@ -59,7 +60,7 @@ define(["qpid/common/util", "dojo/query", "dojo/_base/array", "dojo/dom-construc
 
                         that.poolDetails = new PoolDetails({
                             containerNode: that.connectionPoolTypeAttributeContainer,
-                            parent: that
+                            parent: that.parent
                         });
                         that.poolDetails.update(data);
                     });

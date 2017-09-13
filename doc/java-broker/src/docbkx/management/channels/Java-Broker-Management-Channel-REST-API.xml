@@ -188,15 +188,9 @@
         </listitem>
       </varlistentry>
       <varlistentry>
-        <term>includeSysContext</term>
+        <term>excludeInheritedContext</term>
         <listitem>
-          <para>If set to "true" all system context variables are returned</para>
-        </listitem>
-      </varlistentry>
-      <varlistentry>
-        <term>inheritedActuals</term>
-        <listitem>
-          <para>If set to "true" actual values for all inherited context is returned.</para>
+          <para>If set to "false" the inherited context is included from the object's ancestors. Default is true.</para>
         </listitem>
       </varlistentry>
       <varlistentry>

@@ -63,7 +63,7 @@ define(["qpid/common/util", "dojo/query", "dojo/_base/array", "dojo/dom-construc
 
                         that.poolDetails = new PoolDetails({
                             containerNode: that.connectionPoolTypeAttributeContainer,
-                            parent: that
+                            parent: that.parent
                         });
                         that.poolDetails.update(data);
                     });

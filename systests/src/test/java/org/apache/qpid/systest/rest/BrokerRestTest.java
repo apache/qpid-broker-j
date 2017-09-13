@@ -165,23 +165,10 @@ public class BrokerRestTest extends QpidRestTestCase
 
     }
 
-    public void testActualInheritedContext() throws IOException
-    {
-        Map<String, Object> brokerDetails =
-                getRestTestHelper().getJsonAsSingletonList("broker?inheritedActuals=true&actuals=true");
-        Map<String, String> brokerContext = (Map<String, String>) brokerDetails.get(ConfiguredObject.CONTEXT);
-        assertEquals("Unexpected test context variable value",
-                     SYSTEM_PROPERTY_ACTUAL_VALUE,
-                     brokerContext.get(SYSTEM_PROPERTY_NAME));
-        assertEquals("Unexpected test context expression value",
-                     SYSTEM_PROPERTY2_ACTUAL_VALUE,
-                     brokerContext.get(SYSTEM_PROPERTY2_NAME));
-    }
-
     public void testEffectiveInheritedContext() throws IOException
     {
         Map<String, Object> brokerDetails =
-                getRestTestHelper().getJsonAsSingletonList("broker?inheritedActuals=false&actuals=false");
+                getRestTestHelper().getJsonAsSingletonList("broker?excludeInheritedContext=false&actuals=false");
         Map<String, String> brokerContext = (Map<String, String>) brokerDetails.get(ConfiguredObject.CONTEXT);
         assertEquals("Unexpected test context variable value",
                      SYSTEM_PROPERTY_ACTUAL_VALUE,

@@ -884,16 +884,16 @@ define(["dojo/_base/xhr",
         {
             var request = lang.mixin({depth: 0}, requestOptions);
 
-            var effectiveResponsePromise = management.load(modelObj, request);
-            var actualResponsePromise = management.load(modelObj, lang.mixin(lang.clone(request), {actuals: true}));
-            var inheritedActualResponsePromise = management.load(modelObj, lang.mixin(lang.clone(request), {
+            var inheritedEffectivePromise = management.load(modelObj, lang.mixin(lang.clone(request), {excludeInheritedContext: false, actuals: false}));
+            var localActualsPromise = management.load(modelObj, lang.mixin(lang.clone(request), {excludeInheritedContext: true, actuals: true}));
+            var inheritedActualsPromise = management.load(modelObj, lang.mixin(lang.clone(request), {
                 actuals: true,
                 excludeInheritedContext: false
             }));
             _loadData({
-                actual: actualResponsePromise,
-                inheritedActual: inheritedActualResponsePromise,
-                effective: effectiveResponsePromise
+                actual: localActualsPromise,
+                inheritedActual: inheritedActualsPromise,
+                effective: inheritedEffectivePromise
             }, callback);
         };
 
@@ -901,7 +901,7 @@ define(["dojo/_base/xhr",
         {
             var request = lang.mixin({depth: 0}, requestOptions);
 
-            var effectiveResponsePromise = management.load(modelObj, request);
+            var effectiveResponsePromise = management.load(modelObj, lang.mixin(lang.clone(request), {excludeInheritedContext: false}));
             var inheritedActualResponsePromise = management.load(modelObj, lang.mixin(lang.clone(request), {
                 actuals: true,
                 excludeInheritedContext: false

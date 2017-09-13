@@ -77,8 +77,6 @@ public class RestServlet extends AbstractServlet
     public static final String OVERSIZE_PARAM = "oversize";
     public static final String ACTUALS_PARAM = "actuals";
     public static final String SORT_PARAM = "sort";
-    public static final String INCLUDE_SYS_CONTEXT_PARAM = "includeSysContext";
-    public static final String INHERITED_ACTUALS_PARAM = "inheritedActuals";
     public static final String EXTRACT_INITIAL_CONFIG_PARAM = "extractInitialConfig";
     public static final String EXCLUDE_INHERITED_CONTEXT_PARAM = "excludeInheritedContext";
 
@@ -92,9 +90,7 @@ public class RestServlet extends AbstractServlet
                                         SORT_PARAM,
                                         OVERSIZE_PARAM,
                                         ACTUALS_PARAM,
-                                        INCLUDE_SYS_CONTEXT_PARAM,
                                         EXTRACT_INITIAL_CONFIG_PARAM,
-                                        INHERITED_ACTUALS_PARAM,
                                         CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM,
                                         EXCLUDE_INHERITED_CONTEXT_PARAM));
     public static final int DEFAULT_DEPTH = 0;
@@ -232,65 +228,14 @@ public class RestServlet extends AbstractServlet
                 depth = getIntParameterFromRequest(request, DEPTH_PARAM, DEFAULT_DEPTH);
                 oversizeThreshold = getIntParameterFromRequest(request, OVERSIZE_PARAM, DEFAULT_OVERSIZE);
                 actuals = getBooleanParameterFromRequest(request, ACTUALS_PARAM);
-                String includeSystemContextParameter = request.getParameter(INCLUDE_SYS_CONTEXT_PARAM);
-                String inheritedActualsParameter = request.getParameter(INHERITED_ACTUALS_PARAM);
                 String excludeInheritedContextParameter = request.getParameter(EXCLUDE_INHERITED_CONTEXT_PARAM);
 
                 if (excludeInheritedContextParameter == null)
                 {
-                    /* backward (pre v6.1) compatible behaviour */
-                    if (inheritedActualsParameter == null && includeSystemContextParameter == null)
-                    {
-                        excludeInheritedContext = actuals;
-                    }
-                    else if (inheritedActualsParameter != null && includeSystemContextParameter != null)
-                    {
-                        if (actuals)
-                        {
-                            excludeInheritedContext = !Boolean.parseBoolean(inheritedActualsParameter);
-                        }
-                        else
-                        {
-                            excludeInheritedContext = !Boolean.parseBoolean(includeSystemContextParameter);
-                        }
-                    }
-                    else if (inheritedActualsParameter != null)
-                    {
-                        if (actuals)
-                        {
-                            excludeInheritedContext = !Boolean.parseBoolean(inheritedActualsParameter);
-                        }
-                        else
-                        {
-                            excludeInheritedContext = false;
-                        }
-                    }
-                    else
-                    {
-                        if (actuals)
-                        {
-                            excludeInheritedContext = true;
-                        }
-                        else
-                        {
-                            excludeInheritedContext = !Boolean.parseBoolean(includeSystemContextParameter);
-                        }
-                    }
+                    excludeInheritedContext = true;
                 }
                 else
                 {
-                    if (inheritedActualsParameter != null || includeSystemContextParameter != null)
-                    {
-                        sendJsonErrorResponse(request,
-                                              response,
-                                              SC_UNPROCESSABLE_ENTITY,
-                                              String.format(
-                                                      "Parameter '%s' cannot be specified together with '%s' or '%s'",
-                                                      EXCLUDE_INHERITED_CONTEXT_PARAM,
-                                                      INHERITED_ACTUALS_PARAM,
-                                                      INCLUDE_SYS_CONTEXT_PARAM));
-                        return;
-                    }
                     excludeInheritedContext = Boolean.parseBoolean(excludeInheritedContextParameter);
                 }
 

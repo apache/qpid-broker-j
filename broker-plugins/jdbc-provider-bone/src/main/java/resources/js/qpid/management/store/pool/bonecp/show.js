@@ -18,8 +18,8 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr", "dojo/parser", "dojox/html/entities", "dojo/query", "dojo/domReady!"],
-    function (xhr, parser, entities, query)
+define(["dojo/_base/xhr", "dojo/parser", "dojox/html/entities", "dojo/query", "dojo/_base/lang", "dojo/domReady!"],
+    function (xhr, parser, entities, query, lang)
     {
         var fieldNames = ["maxConnectionsPerPartition", "minConnectionsPerPartition", "partitionCount"];
 
@@ -49,13 +49,24 @@ define(["dojo/_base/xhr", "dojo/parser", "dojox/html/entities", "dojo/query", "d
 
         BoneCP.prototype.update = function (data)
         {
-
-            for (var i = 0; i < fieldNames.length; i++)
+            this.parent.management.load(this.parent.modelObj,
+                {
+                    excludeInheritedContext: false,
+                    depth: 0
+                }).then(lang.hitch(this, function (inheritedData)
             {
-                var fieldName = fieldNames[i];
-                var value = data && data.context ? data.context["qpid.jdbcstore.bonecp." + fieldName] : "";
-                this[fieldName].innerHTML = value ? entities.encode(String(value)) : "";
-            }
+                if (inheritedData && inheritedData[0])
+                {
+                    var context = inheritedData[0].context;
+                    for (var i = 0; i < fieldNames.length; i++)
+                    {
+                        var fieldName = fieldNames[i];
+                        var value = context ? context["qpid.jdbcstore.bonecp." + fieldName] : "";
+                        this[fieldName].innerHTML = value ? entities.encode(String(value)) : "";
+                    }
+                }
+            }));
+
         };
 
         return BoneCP;
