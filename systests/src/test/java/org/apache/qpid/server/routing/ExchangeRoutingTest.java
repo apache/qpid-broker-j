@@ -31,6 +31,7 @@ import javax.jms.Session;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
@@ -55,12 +56,25 @@ public class ExchangeRoutingTest extends QpidBrokerTestCase
         _exchName1 = getTestQueueName() + "_exch1";
         _exchName2 = getTestQueueName() + "_exch2";
 
-        _connection = getConnection();
+        _connection = createConnection();
         _connection.start();
         _session = _connection.createSession(true, Session.SESSION_TRANSACTED);
 
         createEntityUsingAmqpManagement(_queueName, _session, AMQP_MNG_QPID_QUEUE_STANDARD);
+    }
 
+    private Connection createConnection() throws Exception
+    {
+        if (isBrokerPre010())
+        {
+            Map<String, String> options = new HashMap<>();
+            options.put(ConnectionURL.OPTIONS_CLOSE_WHEN_NO_ROUTE, Boolean.toString(false));
+            return getConnectionWithOptions(options);
+        }
+        else
+        {
+            return getConnection();
+        }
     }
 
     public void testExchangeToQueueRouting() throws Exception
