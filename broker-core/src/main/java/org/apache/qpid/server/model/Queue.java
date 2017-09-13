@@ -226,19 +226,31 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                           + "none is explicitly set")
     String DEFAULT_MESSAGE_DURABILTY = "DEFAULT";
 
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = "queue.minimumMessageTtl",
+            description = "the value to use for the minimumMessageTtl attribute of a queue where "
+                          + "none is explicitly set")
+    long DEFAULT_MINIMUM_MESSAGE_TTL = 0L;
 
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = "queue.maximumMessageTtl",
+            description = "the value to use for the maximumMessageTtl attribute of a queue where "
+                          + "none is explicitly set")
+    long DEFAULT_MAXIMUM_MESSAGE_TTL = 0L;
 
     @Override
     @ManagedAttribute( defaultValue = "${queue.defaultMessageDurability}" )
     MessageDurability getMessageDurability();
 
     @SuppressWarnings("unused")
-    @ManagedAttribute(description = "Minimum message time to live (TTL) in ms. Messages arriving with smaller TTL"
+    @ManagedAttribute( defaultValue = "${queue.minimumMessageTtl}",
+                       description = "Minimum message time to live (TTL) in ms. Messages arriving with smaller TTL"
                                     + " values will be overridden by this value")
     long getMinimumMessageTtl();
 
     @SuppressWarnings("unused")
-    @ManagedAttribute(description = "Maximum message time to live (TTL) in ms. Messages arriving with larger TTL"
+    @ManagedAttribute( defaultValue = "${queue.maximumMessageTtl}",
+                       description = "Maximum message time to live (TTL) in ms. Messages arriving with larger TTL"
                                     + " values (including those with no TTL, which are considered to have a TTL value of"
                                     + " infinity) will be overridden by this value.")
     long getMaximumMessageTtl();
