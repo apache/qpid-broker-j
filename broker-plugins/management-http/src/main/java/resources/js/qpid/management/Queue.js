@@ -424,9 +424,9 @@ define(["dojo/_base/declare",
                 name: "Arguments",
                 field: "arguments",
                 width: "40%",
-                formatter: function (arguments)
+                formatter: function (args)
                 {
-                    return arguments ? json.stringify(arguments) : ""
+                    return args ? json.stringify(args) : "";
                 }
             }]);
 

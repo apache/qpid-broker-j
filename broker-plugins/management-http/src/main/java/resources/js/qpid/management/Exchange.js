@@ -227,9 +227,9 @@ define(["dojo/_base/xhr",
                 name: "Arguments",
                 field: "arguments",
                 width: "30%",
-                formatter: function (arguments)
+                formatter: function (args)
                 {
-                    return arguments ? json.stringify(arguments) : ""
+                    return args ? json.stringify(args) : ""
                 }
             }], null, {
                 keepSelection: true,
@@ -305,9 +305,14 @@ define(["dojo/_base/xhr",
                     thisObj.updateHeader();
 
                     // update bindings
-                    if (thisObj.bindingsGrid.update(bindings))
+                    thisObj.bindingsGrid.grid.beginUpdate();
+                    try
                     {
-                        thisObj.bindingsGrid.grid._refresh();
+                        thisObj.bindingsGrid.update(bindings);
+                    }
+                    finally
+                    {
+                        thisObj.bindingsGrid.grid.endUpdate()
                     }
 
                 }, function (error)
