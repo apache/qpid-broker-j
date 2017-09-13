@@ -208,7 +208,8 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 final MessageDestination messageDestination = getOpenedMessageDestination(b.getDestination());
                 if (messageDestination != null)
                 {
-                    onBind(new BindingIdentifier(b.getBindingKey(), messageDestination), b.getArguments());
+                    Map<String, Object> arguments = b.getArguments() == null ? Collections.emptyMap() : b.getArguments();
+                    onBind(new BindingIdentifier(b.getBindingKey(), messageDestination), arguments);
                     messageDestination.linkAdded(this, b);
                 }
             }
