@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +66,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(QpidRestAPIQueueCreator.class);
     private static int _drainPollTimeout = Integer.getInteger(QUEUE_CREATOR_DRAIN_POLL_TIMEOUT, 500);
-    private static final TypeReference<List<HashMap<String, Object>>> MAP_TYPE_REFERENCE = new TypeReference<List<HashMap<String,Object>>>(){};
+    private static final TypeReference<HashMap<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<HashMap<String,Object>>(){};
 
     private final HttpHost _management;
     private final String _virtualhostnode;
@@ -244,8 +243,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
     private Map<String, Object> managementQueryBroker(final HttpClientContext context)
     {
         HttpGet get = new HttpGet(_brokerApiUrl);
-        final List<Map<String, Object>> maps = executeManagement(get, context);
-        return maps.isEmpty() ? Collections.emptyMap() : maps.get(0);
+        return executeManagement(get, context);
     }
 
     private void managementCreateQueue(final String name, final HttpClientContext context)
@@ -265,7 +263,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
         executeManagement(delete, context);
     }
 
-    private List<Map<String, Object>> executeManagement(final HttpRequest httpRequest, final HttpClientContext context)
+    private Map<String, Object> executeManagement(final HttpRequest httpRequest, final HttpClientContext context)
     {
         try(CloseableHttpClient httpClient = HttpClients.custom()
                                                         .setDefaultCredentialsProvider(_credentialsProvider)
