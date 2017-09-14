@@ -79,10 +79,10 @@ public class VirtualHostNodeRestTest  extends QpidRestTestCase
                                           HttpServletResponse.SC_CREATED);
 
 
-        Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsSingletonList("virtualhostnode/" + nodeName);
+        Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsMap("virtualhostnode/" + nodeName);
         Asserts.assertVirtualHostNode(nodeName, virtualhostNode);
 
-        Map<String, Object> virtualhost = getRestTestHelper().getJsonAsSingletonList("virtualhost/" + nodeName + "/" + nodeName);
+        Map<String, Object> virtualhost = getRestTestHelper().getJsonAsMap("virtualhost/" + nodeName + "/" + nodeName);
         Asserts.assertVirtualHost(nodeName, virtualhost);
     }
 
@@ -94,7 +94,7 @@ public class VirtualHostNodeRestTest  extends QpidRestTestCase
         createVirtualHostNode(nodeName, virtualhostNodeType);
 
         String restUrl = "virtualhostnode/" + nodeName;
-        Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsSingletonList(restUrl);
+        Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsMap(restUrl);
         Asserts.assertVirtualHostNode(nodeName, virtualhostNode);
         assertNull("Virtualhostnode should not automatically get a virtualhost child",
                 virtualhostNode.get("virtualhosts"));
@@ -134,7 +134,7 @@ public class VirtualHostNodeRestTest  extends QpidRestTestCase
     {
         String restUrl = "virtualhostnode/" + TEST3_VIRTUALHOST;
 
-        Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsSingletonList(restUrl);
+        Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsMap(restUrl);
         assertNull(virtualhostNode.get(VirtualHostNode.DESCRIPTION));
 
         String newDescription = "My virtualhost node";
@@ -143,7 +143,7 @@ public class VirtualHostNodeRestTest  extends QpidRestTestCase
 
         getRestTestHelper().submitRequest(restUrl, "PUT", newAttributes, HttpServletResponse.SC_OK);
 
-        virtualhostNode = getRestTestHelper().getJsonAsSingletonList(restUrl);
+        virtualhostNode = getRestTestHelper().getJsonAsMap(restUrl);
         assertEquals(newDescription, virtualhostNode.get(VirtualHostNode.DESCRIPTION));
     }
 
@@ -167,7 +167,7 @@ public class VirtualHostNodeRestTest  extends QpidRestTestCase
         String url = "virtualhostnode";
         getRestTestHelper().submitRequest(url, method, nodeData, HttpServletResponse.SC_CREATED);
 
-        Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsSingletonList(url + "/" + nodeName);
+        Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsMap(url + "/" + nodeName);
         Asserts.assertVirtualHostNode(nodeName, virtualhostNode);
     }
 
@@ -181,7 +181,7 @@ public class VirtualHostNodeRestTest  extends QpidRestTestCase
         assertTrue("Store should exist after creation of node", storePathAsFile.exists());
 
         String restUrl = "virtualhostnode/" + nodeName;
-        Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsSingletonList(restUrl);
+        Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsMap(restUrl);
         Asserts.assertVirtualHostNode(nodeName, virtualhostNode);
         assertNull("Virtualhostnode should not automatically get a virtualhost child",
                 virtualhostNode.get("virtualhosts"));
@@ -194,7 +194,7 @@ public class VirtualHostNodeRestTest  extends QpidRestTestCase
                                              final String expectedDesiredState,
                                              final String expectedActualState) throws IOException
     {
-        Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsSingletonList(restUrl);
+        Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsMap(restUrl);
         Asserts.assertActualAndDesiredState(expectedDesiredState, expectedActualState, virtualhostNode);
     }
 

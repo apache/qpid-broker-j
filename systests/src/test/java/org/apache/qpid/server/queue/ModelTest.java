@@ -195,7 +195,7 @@ public class ModelTest extends QpidBrokerTestCase
     private Map<String, Object> getQueueAttributes(final String queueName) throws IOException
     {
         String queueUrl = getQueueUrl(queueName);
-        return _restTestHelper.getJsonAsSingletonList(queueUrl);
+        return _restTestHelper.getJsonAsMap(queueUrl);
     }
 
     private String getQueueUrl(final String queueName)

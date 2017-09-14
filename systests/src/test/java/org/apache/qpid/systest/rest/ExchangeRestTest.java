@@ -65,8 +65,9 @@ public class ExchangeRestTest extends QpidRestTestCase
     {
         for (String exchangeName : EXPECTED_EXCHANGES)
         {
-            Map<String, Object> exchange = getRestTestHelper().getJsonAsSingletonList("exchange/test/test/"
-                    + getRestTestHelper().encodeAsUTF(exchangeName));
+            Map<String, Object> exchange = getRestTestHelper().getJsonAsMap("exchange/test/test/"
+                                                                            + getRestTestHelper().encodeAsUTF(
+                    exchangeName));
             assertExchange(exchangeName, exchange);
         }
     }
@@ -81,7 +82,7 @@ public class ExchangeRestTest extends QpidRestTestCase
         attributes.put(Exchange.TYPE, "direct");
         getRestTestHelper().submitRequest(exchangeUrl, "PUT", attributes, 201);
 
-        Map<String, Object> exchange = getRestTestHelper().getJsonAsSingletonList(exchangeUrl);
+        Map<String, Object> exchange = getRestTestHelper().getJsonAsMap(exchangeUrl);
         assertNotNull("Exchange not found", exchange);
 
         attributes = new HashMap<>();
@@ -90,7 +91,7 @@ public class ExchangeRestTest extends QpidRestTestCase
                        Collections.singletonMap(AlternateBinding.DESTINATION, "amq.direct"));
 
         getRestTestHelper().submitRequest(exchangeUrl, "PUT", attributes, 200);
-        exchange = getRestTestHelper().getJsonAsSingletonList(exchangeUrl);
+        exchange = getRestTestHelper().getJsonAsMap(exchangeUrl);
         assertNotNull("Exchange not found", exchange);
         assertEquals(new HashMap<>(Collections.singletonMap(AlternateBinding.DESTINATION, "amq.direct")),
                      new HashMap<>(((Map<String, Object>) exchange.get(Exchange.ALTERNATE_BINDING))));

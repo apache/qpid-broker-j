@@ -55,15 +55,12 @@ define(["dojo/_base/xhr", "dojo/parser", "dojox/html/entities", "dojo/query", "d
                     depth: 0
                 }).then(lang.hitch(this, function (inheritedData)
             {
-                if (inheritedData && inheritedData[0])
+                var context = inheritedData.context;
+                for (var i = 0; i < fieldNames.length; i++)
                 {
-                    var context = inheritedData[0].context;
-                    for (var i = 0; i < fieldNames.length; i++)
-                    {
-                        var fieldName = fieldNames[i];
-                        var value = context ? context["qpid.jdbcstore.bonecp." + fieldName] : "";
-                        this[fieldName].innerHTML = value ? entities.encode(String(value)) : "";
-                    }
+                    var fieldName = fieldNames[i];
+                    var value = context ? context["qpid.jdbcstore.bonecp." + fieldName] : "";
+                    this[fieldName].innerHTML = value ? entities.encode(String(value)) : "";
                 }
             }));
 

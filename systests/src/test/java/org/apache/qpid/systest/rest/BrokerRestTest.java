@@ -71,7 +71,7 @@ public class BrokerRestTest extends QpidRestTestCase
 
     public void testGet() throws Exception
     {
-        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsSingletonList("broker?depth=1");
+        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsMap("broker?depth=1");
 
         assertBrokerAttributes(brokerDetails);
 
@@ -123,7 +123,7 @@ public class BrokerRestTest extends QpidRestTestCase
         assertEquals("Unexpected update response", 200, response);
 
         restartDefaultBroker();
-        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsSingletonList("broker");
+        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsMap("broker");
         assertBrokerAttributes(brokerAttributes, brokerDetails);
     }
 
@@ -145,7 +145,7 @@ public class BrokerRestTest extends QpidRestTestCase
         int response = getRestTestHelper().submitRequest("broker", "PUT", attributes);
         assertEquals("Unexpected update response", 200, response);
 
-        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsSingletonList("broker");
+        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsMap("broker");
         assertBrokerAttributes(validAttributes, brokerDetails);
     }
 
@@ -168,7 +168,7 @@ public class BrokerRestTest extends QpidRestTestCase
     public void testEffectiveInheritedContext() throws IOException
     {
         Map<String, Object> brokerDetails =
-                getRestTestHelper().getJsonAsSingletonList("broker?excludeInheritedContext=false&actuals=false");
+                getRestTestHelper().getJsonAsMap("broker?excludeInheritedContext=false&actuals=false");
         Map<String, String> brokerContext = (Map<String, String>) brokerDetails.get(ConfiguredObject.CONTEXT);
         assertEquals("Unexpected test context variable value",
                      SYSTEM_PROPERTY_ACTUAL_VALUE,
@@ -181,7 +181,7 @@ public class BrokerRestTest extends QpidRestTestCase
     public void testActualNotInheritedContext() throws IOException
     {
         Map<String, Object> brokerDetails =
-                getRestTestHelper().getJsonAsSingletonList("broker?excludeInheritedContext=true&actuals=true");
+                getRestTestHelper().getJsonAsMap("broker?excludeInheritedContext=true&actuals=true");
 
         assertFalse("Unexpected context", brokerDetails.containsKey(ConfiguredObject.CONTEXT));
 
@@ -191,7 +191,7 @@ public class BrokerRestTest extends QpidRestTestCase
         getRestTestHelper().submitRequest("broker", "POST", attributes);
 
         brokerDetails =
-                getRestTestHelper().getJsonAsSingletonList("broker?excludeInheritedContext=true&actuals=true");
+                getRestTestHelper().getJsonAsMap("broker?excludeInheritedContext=true&actuals=true");
         Map<String, Object> brokerContext =
                 new HashMap<>((Map<String, Object>) brokerDetails.get(ConfiguredObject.CONTEXT));
         Map<String, String> expectedContext = new HashMap<>();
@@ -203,7 +203,7 @@ public class BrokerRestTest extends QpidRestTestCase
     public void testEffectiveNotInheritedContext() throws IOException
     {
         Map<String, Object> brokerDetails =
-                getRestTestHelper().getJsonAsSingletonList("broker?excludeInheritedContext=true&actuals=false");
+                getRestTestHelper().getJsonAsMap("broker?excludeInheritedContext=true&actuals=false");
 
         assertFalse("Unexpected context", brokerDetails.containsKey(ConfiguredObject.CONTEXT));
 
@@ -213,7 +213,7 @@ public class BrokerRestTest extends QpidRestTestCase
         getRestTestHelper().submitRequest("broker", "POST", attributes);
 
         brokerDetails =
-                getRestTestHelper().getJsonAsSingletonList("broker?excludeInheritedContext=true&actuals=false");
+                getRestTestHelper().getJsonAsMap("broker?excludeInheritedContext=true&actuals=false");
 
         Map<String, String> expectedContext = new HashMap<>();
         Map<String, Object> brokerContext =

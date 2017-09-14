@@ -290,7 +290,7 @@ define(["dojo/parser",
                 })
                 .then(function (data)
                 {
-                    that.connectionData = data[0];
+                    that.connectionData = data;
 
 
                     if (!that.connectionStatistics)

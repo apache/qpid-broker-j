@@ -123,7 +123,7 @@ public class BDBHAVirtualHostRestTest extends QpidRestTestCase
         Map<String, Object> newPolicy = Collections.<String, Object>singletonMap(LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY, "NO_SYNC");
         getRestTestHelper().submitRequest(_virtualhostUrl, "PUT", newPolicy, HttpServletResponse.SC_OK);
 
-        hostAttributes = getRestTestHelper().getJsonAsSingletonList(_virtualhostUrl);
+        hostAttributes = getRestTestHelper().getJsonAsMap(_virtualhostUrl);
         assertEquals("Unexpected synchronization policy after change", "NO_SYNC", hostAttributes.get(LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY));
     }
 
@@ -135,7 +135,7 @@ public class BDBHAVirtualHostRestTest extends QpidRestTestCase
         Map<String, Object> newPolicy = Collections.<String, Object>singletonMap(REMOTE_TRANSACTION_SYNCHRONIZATION_POLICY, "SYNC");
         getRestTestHelper().submitRequest(_virtualhostUrl, "PUT", newPolicy, HttpServletResponse.SC_OK);
 
-        hostAttributes = getRestTestHelper().getJsonAsSingletonList(_virtualhostUrl);
+        hostAttributes = getRestTestHelper().getJsonAsMap(_virtualhostUrl);
         assertEquals("Unexpected synchronization policy after change", "SYNC", hostAttributes.get(REMOTE_TRANSACTION_SYNCHRONIZATION_POLICY));
     }
 
@@ -161,7 +161,7 @@ public class BDBHAVirtualHostRestTest extends QpidRestTestCase
                                              final String expectedDesiredState,
                                              final String expectedActualState) throws IOException
     {
-        Map<String, Object> virtualhost = getRestTestHelper().getJsonAsSingletonList(restUrl);
+        Map<String, Object> virtualhost = getRestTestHelper().getJsonAsMap(restUrl);
         Asserts.assertActualAndDesiredState(expectedDesiredState, expectedActualState, virtualhost);
     }
 

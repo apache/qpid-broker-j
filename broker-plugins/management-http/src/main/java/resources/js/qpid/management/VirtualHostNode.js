@@ -260,7 +260,7 @@ define(["dojo/parser",
                 })
                 .then(function (data)
                 {
-                    that.nodeData = data[0] || {};
+                    that.nodeData = data || {};
                     that.updateUI(that.nodeData);
 
                     if (callback)

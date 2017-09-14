@@ -60,7 +60,7 @@ public class BrokerRestHttpsTest extends QpidRestTestCase
 
     public void testGetWithHttps() throws Exception
     {
-        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsSingletonList("broker");
+        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsMap("broker");
 
         Asserts.assertAttributesPresent(brokerDetails, BrokerModel.getInstance().getTypeRegistry().getAttributeNames(Broker.class),
                 Broker.PROCESS_PID,

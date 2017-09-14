@@ -79,7 +79,7 @@ define(["dojo/parser",
             this.management.load(that.modelObj, {excludeInheritedContext: true})
                 .then(function (data)
                 {
-                    that.pluginData = data[0];
+                    that.pluginData = data;
 
                     that.updateHeader();
 

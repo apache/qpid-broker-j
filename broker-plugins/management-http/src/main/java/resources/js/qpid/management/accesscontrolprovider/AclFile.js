@@ -125,11 +125,8 @@ define(["dojo/_base/xhr",
             this.management.load(this.modelObj, {excludeInheritedContext: true})
                 .then(function (data)
                 {
-                    if (data[0])
-                    {
-                        that.aclProviderData = data[0];
-                        that.path.innerHTML = entities.encode(String(that.aclProviderData.path));
-                    }
+                    that.aclProviderData = data;
+                    that.path.innerHTML = entities.encode(String(that.aclProviderData.path));
                 }, function (error)
                 {
                     util.tabErrorHandler(error, {

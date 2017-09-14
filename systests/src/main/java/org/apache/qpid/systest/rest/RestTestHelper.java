@@ -68,6 +68,9 @@ public class RestTestHelper
     private static final TypeReference<List<LinkedHashMap<String, Object>>> TYPE_LIST_OF_LINKED_HASH_MAPS = new TypeReference<List<LinkedHashMap<String, Object>>>()
     {
     };
+    private static final TypeReference<LinkedHashMap<String, Object>> TYPE_LINKED_HASH_MAPS = new TypeReference<LinkedHashMap<String, Object>>()
+    {
+    };
     public static final String API_BASE = "/api/latest/";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RestTestHelper.class);
@@ -257,11 +260,7 @@ public class RestTestHelper
         byte[] data = readConnectionInputStream(connection);
 
         ObjectMapper mapper = new ObjectMapper();
-
-        TypeReference<LinkedHashMap<String, Object>> typeReference = new TypeReference<LinkedHashMap<String, Object>>()
-        {
-        };
-        Map<String, Object> providedObject = mapper.readValue(new ByteArrayInputStream(data), typeReference);
+        Map<String, Object> providedObject = mapper.readValue(new ByteArrayInputStream(data), TYPE_LINKED_HASH_MAPS);
         return providedObject;
     }
 
@@ -344,15 +343,6 @@ public class RestTestHelper
         Assert.assertNotNull("Response cannot be null", response);
         Assert.assertEquals("Unexpected response from " + path, 1, response.size());
         return response.get(0);
-    }
-
-    public List<Map<String, Object>> postDataToPathAndGetList(String path, Map<String, Object> data) throws IOException
-    {
-        HttpURLConnection connection = openManagementConnection(path, "POST");
-        connection.connect();
-        writeJsonRequest(connection, data);
-        List<Map<String, Object>> response = readJsonResponseAsList(connection);
-        return response;
     }
 
     public Map<String, Object> postDataToPathAndGetObject(String path, Map<String, Object> data) throws IOException
@@ -672,29 +662,29 @@ public class RestTestHelper
                                                        String attributeName,
                                                        Object newValue) throws Exception
     {
-        List<Map<String, Object>> nodeAttributes = getAttributesIgnoringNotFound(url);
+        Map<String, Object> nodeAttributes = getAttributesIgnoringNotFound(url);
         int timeout = 30000;
         long limit = System.currentTimeMillis() + timeout;
-        while(System.currentTimeMillis() < limit && (nodeAttributes.size() == 0 || !newValue.equals(nodeAttributes.get(0).get(attributeName))))
+        while(System.currentTimeMillis() < limit && (nodeAttributes == null|| !newValue.equals(nodeAttributes.get(attributeName))))
         {
             Thread.sleep(100l);
             nodeAttributes = getAttributesIgnoringNotFound(url);
         }
-        Map<String, Object> nodeData = nodeAttributes.get(0);
-        Assert.assertEquals("Attribute " + attributeName + " did not reach expected value within permitted timeout " + timeout + "ms.", newValue, nodeData.get(attributeName));
-        return nodeData;
+        Assert.assertEquals("Attribute " + attributeName + " did not reach expected value within permitted timeout " + timeout + "ms.", newValue, nodeAttributes
+                .get(attributeName));
+        return nodeAttributes;
     }
 
-    private List<Map<String, Object>> getAttributesIgnoringNotFound(String url) throws IOException
+    private Map<String, Object> getAttributesIgnoringNotFound(String url) throws IOException
     {
-        List<Map<String, Object>> nodeAttributes;
+        Map<String, Object> nodeAttributes;
         try
         {
-            nodeAttributes = getJsonAsList(url);
+            nodeAttributes = getJsonAsMap(url);
         }
         catch(FileNotFoundException e)
         {
-            nodeAttributes = Collections.emptyList();
+            nodeAttributes = null;
         }
         return nodeAttributes;
     }

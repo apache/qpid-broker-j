@@ -32,8 +32,8 @@ public class HttpManagementRestTest extends QpidRestTestCase
 
     public void testGetHttpManagement() throws Exception
     {
-        Map<String, Object> details = getRestTestHelper().getJsonAsSingletonList(
-                "plugin/" + TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT);
+        Map<String, Object> details =
+                getRestTestHelper().getJsonAsMap("plugin/" + TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT);
 
         assertEquals("Unexpected session timeout", HttpManagement.DEFAULT_TIMEOUT_IN_SECONDS,
                 details.get(HttpManagement.TIME_OUT));
@@ -58,8 +58,8 @@ public class HttpManagementRestTest extends QpidRestTestCase
 
         getRestTestHelper().submitRequest("plugin/" + TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, "PUT", attributes);
 
-        Map<String, Object> details = getRestTestHelper().getJsonAsSingletonList(
-                "plugin/" + TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT);
+        Map<String, Object> details =
+                getRestTestHelper().getJsonAsMap("plugin/" + TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT);
 
         assertEquals("Unexpected session timeout", 10000, details.get(HttpManagement.TIME_OUT));
         assertEquals("Unexpected http basic auth enabled", true, details.get(HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED));

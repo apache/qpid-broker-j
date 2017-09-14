@@ -104,7 +104,7 @@ define(["dojo/parser",
                     })
                     .then(function (data)
                     {
-                        addLogger.show(that.management, that.modelObj, that.category, data[0]);
+                        addLogger.show(that.management, that.modelObj, that.category, data);
                     });
             });
 
@@ -189,7 +189,7 @@ define(["dojo/parser",
                 })
                 .then(function (data)
                 {
-                    addLogInclusionRule.show(that.management, ruleModelObj, that.logInclusionRuleCategory, data[0]);
+                    addLogInclusionRule.show(that.management, ruleModelObj, that.logInclusionRuleCategory, data);
                 });
         };
 
@@ -253,7 +253,7 @@ define(["dojo/parser",
                 })
                 .then(function (data)
                 {
-                    that.loggerData = data[0] || {};
+                    that.loggerData = data || {};
                     that.updateUI(that.loggerData);
 
                     if (callback)

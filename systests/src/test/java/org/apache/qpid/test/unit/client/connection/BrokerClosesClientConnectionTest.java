@@ -137,7 +137,8 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
             int connectionCount = 0;
             for (int i = 0; i < 20; ++i)
             {
-                Map<String, Object> portObject = restTestHelper.getJsonAsSingletonList("port/" + TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT);
+                Map<String, Object> portObject =
+                        restTestHelper.getJsonAsMap("port/" + TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT);
                 Map<String, Object> portStatistics = (Map<String, Object>) portObject.get("statistics");
                 connectionCount = (int) portStatistics.get("connectionCount");
                 if (connectionCount == 0)

@@ -208,7 +208,7 @@ define(["dojo/parser",
             management.load(this.modelObj, {excludeInheritedContext: true})
                 .then(function (data)
                 {
-                    that._update(data[0]);
+                    that._update(data);
                     if (callback)
                     {
                         callback();

@@ -619,7 +619,7 @@ define(["dojo/_base/declare",
                 .then(function (data)
                 {
                     var i, j;
-                    thisObj.queueData = data.queue[0];
+                    thisObj.queueData = data.queue;
 
                     if (!thisObj.queueStatistics)
                     {

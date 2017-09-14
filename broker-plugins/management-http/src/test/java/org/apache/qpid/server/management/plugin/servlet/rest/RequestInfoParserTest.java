@@ -65,6 +65,7 @@ public class RequestInfoParserTest extends QpidTestCase
 
         assertEquals("Unexpected request type", RequestInfo.RequestType.MODEL_OBJECT, info.getType());
         assertEquals("Unexpected model parts", Arrays.asList(vhnName, vhName), info.getModelParts());
+        assertTrue("Expected exact object request", info.isSingletonRequest());
     }
 
     public void testGetParent()
@@ -77,6 +78,7 @@ public class RequestInfoParserTest extends QpidTestCase
 
         assertEquals("Unexpected request type", RequestInfo.RequestType.MODEL_OBJECT, info.getType());
         assertEquals("Unexpected model parts", Arrays.asList(vhnName), info.getModelParts());
+        assertFalse("Expected exact object request", info.isSingletonRequest());
     }
 
     public void testGetTooManyParts()
@@ -335,5 +337,7 @@ public class RequestInfoParserTest extends QpidTestCase
         assertEquals("Unexpected request type", RequestInfo.RequestType.OPERATION, info.getType());
         assertEquals("Unexpected model parts", Arrays.asList(vhnName), info.getModelParts());
         assertEquals("Unexpected operation name", operationName, info.getOperationName());
+        assertTrue("Expected exact object request", info.isSingletonRequest());
+
     }
 }

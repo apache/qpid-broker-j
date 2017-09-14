@@ -952,7 +952,7 @@ define(["dojo/parser",
             })
                 .then(function (data)
                 {
-                    that.brokerData = data.broker[0];
+                    that.brokerData = data.broker;
 
                     if (!that.brokerStatistics)
                     {

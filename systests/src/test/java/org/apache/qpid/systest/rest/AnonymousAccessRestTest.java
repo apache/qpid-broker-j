@@ -71,7 +71,7 @@ public class AnonymousAccessRestTest extends QpidRestTestCase
     {
         startBrokerNow();
 
-        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsSingletonList("broker");
+        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsMap("broker");
         assertNotNull("Unexpected broker attributes", brokerDetails);
         assertNotNull("Unexpected value of attribute " + Broker.ID, brokerDetails.get(Broker.ID));
     }
@@ -86,7 +86,7 @@ public class AnonymousAccessRestTest extends QpidRestTestCase
 
         getRestTestHelper().submitRequest("broker", "PUT", brokerAttributes, HttpServletResponse.SC_OK);
 
-        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsSingletonList("broker");
+        Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsMap("broker");
         assertNotNull("Unexpected broker attributes", brokerDetails);
         assertNotNull("Unexpected value of attribute " + Broker.ID, brokerDetails.get(Broker.ID));
         assertEquals("Unexpected default virtual host", newBrokerName, brokerDetails.get(Broker.NAME));

@@ -30,47 +30,56 @@ public class RequestInfo
 {
     private final RequestType _type;
     private final List<String> _modelParts;
+    private final boolean _hierarchySatisfied;
     private final String _operationName;
     private final List<String> _preferencesParts;
     private final Map<String, List<String>> _queryParameters;
     private final boolean _hasWildcard;
 
-    public static RequestInfo createModelRequestInfo(final List<String> modelParts, Map<String, List<String>> queryParameters)
+    public static RequestInfo createModelRequestInfo(final List<String> modelParts,
+                                                     Map<String, List<String>> queryParameters,
+                                                     final boolean hierarchySatisfied)
     {
-        return new RequestInfo(RequestType.MODEL_OBJECT, modelParts, null, Collections.<String>emptyList(), queryParameters);
+        return new RequestInfo(RequestType.MODEL_OBJECT, modelParts, null, Collections.<String>emptyList(), queryParameters, hierarchySatisfied );
     }
 
     public static RequestInfo createOperationRequestInfo(final List<String> modelParts, final String operationName, Map<String, List<String>> queryParameters)
     {
-        return new RequestInfo(RequestType.OPERATION, modelParts, operationName, Collections.<String>emptyList(), queryParameters);
+        return new RequestInfo(RequestType.OPERATION, modelParts, operationName, Collections.<String>emptyList(), queryParameters,
+                               true);
     }
 
     public static RequestInfo createPreferencesRequestInfo(final List<String> modelParts, final List<String> preferencesParts)
     {
-        return new RequestInfo(RequestType.USER_PREFERENCES, modelParts, null, preferencesParts, Collections.<String, List<String>>emptyMap());
+        return new RequestInfo(RequestType.USER_PREFERENCES, modelParts, null, preferencesParts, Collections.<String,
+                List<String>>emptyMap(),
+                               true);
     }
 
     public static RequestInfo createPreferencesRequestInfo(final List<String> modelParts, final List<String> preferencesParts, Map<String, List<String>> queryParameters)
     {
-        return new RequestInfo(RequestType.USER_PREFERENCES, modelParts, null, preferencesParts, queryParameters);
+        return new RequestInfo(RequestType.USER_PREFERENCES, modelParts, null, preferencesParts, queryParameters,
+                               true);
     }
 
     public static RequestInfo createVisiblePreferencesRequestInfo(final List<String> modelParts,
                                                                   final List<String> preferencesParts,
                                                                   final Map<String, List<String>> queryParameters)
     {
-        return new RequestInfo(RequestType.VISIBLE_PREFERENCES, modelParts, null, preferencesParts, queryParameters);
+        return new RequestInfo(RequestType.VISIBLE_PREFERENCES, modelParts, null, preferencesParts, queryParameters,
+                               true);
     }
 
     private RequestInfo(final RequestType type,
                         final List<String> modelParts,
                         final String operationName,
                         final List<String> preferencesParts,
-                        final Map<String, List<String>> queryParameters)
+                        final Map<String, List<String>> queryParameters, final boolean hierarchySatisfied)
     {
         _type = type;
         _operationName = operationName;
         _modelParts = ImmutableList.copyOf(modelParts);
+        _hierarchySatisfied = hierarchySatisfied;
         _hasWildcard = _modelParts.contains("*");
         _preferencesParts = ImmutableList.copyOf(preferencesParts);
         _queryParameters = ImmutableMap.copyOf(queryParameters);
@@ -108,6 +117,11 @@ public class RequestInfo
     public boolean hasWildcard()
     {
         return _hasWildcard;
+    }
+
+    public boolean isSingletonRequest()
+    {
+        return _hierarchySatisfied && !_hasWildcard;
     }
 
     enum RequestType

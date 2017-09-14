@@ -267,7 +267,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
         createHANode(NODE1, _node1HaPort, _node1HaPort);
         assertNode(NODE1, _node1HaPort, _node1HaPort, NODE1);
 
-        Map<String,Object> nodeData = getRestTestHelper().getJsonAsSingletonList(_baseNodeRestUrl + NODE1);
+        Map<String,Object> nodeData = getRestTestHelper().getJsonAsMap(_baseNodeRestUrl + NODE1);
         String node1StorePath = (String)nodeData.get(BDBHAVirtualHostNode.STORE_PATH);
         long transactionId =  ((Number)nodeData.get(BDBHAVirtualHostNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID)).longValue();
 
@@ -286,7 +286,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
         long newTransactionId = transactionId;
         while(newTransactionId == transactionId && counter<50)
         {
-            nodeData = getRestTestHelper().getJsonAsSingletonList(_baseNodeRestUrl + NODE1);
+            nodeData = getRestTestHelper().getJsonAsMap(_baseNodeRestUrl + NODE1);
             newTransactionId =  ((Number)nodeData.get(BDBHAVirtualHostNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID)).longValue();
             if (newTransactionId != transactionId)
             {
@@ -365,7 +365,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
         String expectedRole = isMaster? "MASTER" : "REPLICA";
         _restTestHelper.waitForAttributeChanged(_baseNodeRestUrl + nodeName + "?depth=0", BDBHAVirtualHostNode.ROLE, expectedRole);
 
-        Map<String, Object> nodeData = getRestTestHelper().getJsonAsSingletonList(_baseNodeRestUrl + nodeName + "?depth=0");
+        Map<String, Object> nodeData = getRestTestHelper().getJsonAsMap(_baseNodeRestUrl + nodeName + "?depth=0");
         assertEquals("Unexpected name", nodeName, nodeData.get(BDBHAVirtualHostNode.NAME));
         assertEquals("Unexpected type", BDBHAVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE, nodeData.get(BDBHAVirtualHostNode.TYPE));
         assertEquals("Unexpected address", "localhost:" + nodePort, nodeData.get(BDBHAVirtualHostNode.ADDRESS));
@@ -423,7 +423,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
                                               final String expectedDesiredState,
                                               final String expectedActualState) throws IOException
     {
-        Map<String, Object> objectData = getRestTestHelper().getJsonAsSingletonList(restUrl);
+        Map<String, Object> objectData = getRestTestHelper().getJsonAsMap(restUrl);
         Asserts.assertActualAndDesiredState(expectedDesiredState, expectedActualState, objectData);
     }
 
@@ -459,7 +459,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
         {
             for(String nodeUrl: nodeUrls)
             {
-                Map<String, Object> nodeData = getRestTestHelper().getJsonAsSingletonList(nodeUrl);
+                Map<String, Object> nodeData = getRestTestHelper().getJsonAsMap(nodeUrl);
                 if ("MASTER".equals(nodeData.get(BDBHAVirtualHostNode.ROLE)))
                 {
                     newMasterData = nodeData;

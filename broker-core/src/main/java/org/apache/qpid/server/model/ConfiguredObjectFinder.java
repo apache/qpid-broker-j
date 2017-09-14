@@ -150,11 +150,9 @@ public class ConfiguredObjectFinder
         Collection<ConfiguredObject<?>> parents = new ArrayList<>();
         if (hierarchy.length == 0)
         {
-            return Collections.<ConfiguredObject<?>>singletonList(_root);
+            return Collections.singletonList(_root);
         }
 
-        Collection<Class<? extends ConfiguredObject>> ancestorCategories =
-                _model.getAncestorCategories(hierarchy[hierarchy.length - 1]);
         Map<Class<? extends ConfiguredObject>, String> filters = new HashMap<>();
         Collection<ConfiguredObject<?>> children = new ArrayList<>();
         boolean wildcard = false;
@@ -175,16 +173,21 @@ public class ConfiguredObjectFinder
                         && !path.get(i).equals("*")
                         && path.get(i).trim().length() != 0)
                     {
+                        List<ConfiguredObject<?>> childrenOfParent = new ArrayList<>();
                         for (ConfiguredObject<?> child : parent.getChildren(hierarchy[i]))
                         {
                             if (child.getName().equals(path.get(i)))
                             {
-                                children.add(child);
+                                childrenOfParent.add(child);
                             }
                         }
-                        if (children.isEmpty())
+                        if (childrenOfParent.isEmpty())
                         {
                             return null;
+                        }
+                        else
+                        {
+                            children.addAll(childrenOfParent);
                         }
                     }
                     else

@@ -173,7 +173,7 @@ public class UserRestACLTest extends QpidRestTestCase
     private void assertUserExists(String username) throws IOException
     {
         String path = "user/" + TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER + "/" + username;
-        Map<String, Object> userDetails = getRestTestHelper().getJsonAsSingletonList(path);
+        Map<String, Object> userDetails = getRestTestHelper().getJsonAsMap(path);
 
         assertEquals(
                 "User returned by " + path + " should have name=" + username + ". The returned JSON was: " + userDetails,

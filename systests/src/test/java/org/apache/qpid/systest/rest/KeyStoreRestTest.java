@@ -62,10 +62,8 @@ public class KeyStoreRestTest extends QpidRestTestCase
         createKeyStore(name, certAlias, TestSSLConstants.KEYSTORE, TestSSLConstants.KEYSTORE_PASSWORD);
         assertNumberOfKeyStores(2);
 
-        List<Map<String, Object>> keyStores = getRestTestHelper().getJsonAsList("keystore/" + name + "?actuals=true");
-        assertNotNull("details cannot be null", keyStores);
+        Map<String, Object> keystore = getRestTestHelper().getJsonAsMap("keystore/" + name + "?actuals=true");
 
-        Map<String, Object> keystore = keyStores.get(0);
         assertEquals("Unexpected name", name, keystore.get(KeyStore.NAME));
         assertEquals("unexpected path to key store", TestSSLConstants.KEYSTORE, keystore.get(FileKeyStore.STORE_URL));
         assertEquals("unexpected password", AbstractConfiguredObject.SECURED_STRING_VALUE, keystore.get(FileKeyStore.PASSWORD));
@@ -82,10 +80,8 @@ public class KeyStoreRestTest extends QpidRestTestCase
         createKeyStore(name, null, dataUrlForKeyStore, TestSSLConstants.KEYSTORE_PASSWORD);
         assertNumberOfKeyStores(2);
 
-        List<Map<String, Object>> keyStores = getRestTestHelper().getJsonAsList("keystore/" + name + "?actuals=true");
-        assertNotNull("details cannot be null", keyStores);
+        Map<String, Object> keystore = getRestTestHelper().getJsonAsMap("keystore/" + name + "?actuals=true");
 
-        Map<String, Object> keystore = keyStores.get(0);
         assertEquals("Unexpected name", name, keystore.get(KeyStore.NAME));
         assertEquals("unexpected data", AbstractConfiguredObject.SECURED_STRING_VALUE, keystore.get(FileKeyStore.STORE_URL));
         assertEquals("unexpected password", AbstractConfiguredObject.SECURED_STRING_VALUE, keystore.get(FileKeyStore.PASSWORD));
@@ -127,10 +123,8 @@ public class KeyStoreRestTest extends QpidRestTestCase
 
         getRestTestHelper().submitRequest("keystore/" + name, "PUT", attributes, HttpServletResponse.SC_OK);
 
-        List<Map<String, Object>> keyStores = getRestTestHelper().getJsonAsList("keystore/" + name + "?actuals=true");
-        assertNotNull("details should not be null", keyStores);
+        Map<String, Object> keystore = getRestTestHelper().getJsonAsMap("keystore/" + name + "?actuals=true");
 
-        Map<String, Object> keystore = keyStores.get(0);
         assertEquals("Unexpected name", name, keystore.get(KeyStore.NAME));
         assertEquals("unexpected data", TestSSLConstants.UNTRUSTED_KEYSTORE, keystore.get(FileKeyStore.STORE_URL));
         assertEquals("unexpected password", AbstractConfiguredObject.SECURED_STRING_VALUE, keystore.get(FileKeyStore.PASSWORD));

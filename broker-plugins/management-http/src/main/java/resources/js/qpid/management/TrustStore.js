@@ -80,7 +80,7 @@ define(["dojo/_base/lang",
                             .then(function (data)
                             {
                                 addStore.setupTypeStore(that.management, "TrustStore", that.modelObj);
-                                addStore.show(data[0], that.keyStoreUpdater.trustStoreData);
+                                addStore.show(data, that.keyStoreUpdater.trustStoreData);
                             }, util.xhrErrorHandler);
                     });
 
@@ -152,7 +152,7 @@ define(["dojo/_base/lang",
             this.management.load(this.modelObj, {excludeInheritedContext: true})
                 .then(function (data)
                 {
-                    that.trustStoreData = data[0];
+                    that.trustStoreData = data;
                     that.updateHeader();
                     that.tabObject.certificatesGrid.update(that.trustStoreData.certificateDetails);
 

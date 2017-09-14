@@ -131,7 +131,7 @@ public class QueueRestACLTest extends QpidRestTestCase
         responseCode = getRestTestHelper().submitRequest(_queueUrl, "PUT", attributes);
         assertEquals("Setting of queue attribites should be allowed", 200, responseCode);
 
-        Map<String, Object> queueData = getRestTestHelper().getJsonAsSingletonList(_queueUrl);
+        Map<String, Object> queueData = getRestTestHelper().getJsonAsMap(_queueUrl);
         assertEquals("Unexpected " + Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100000, queueData.get(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES));
     }
 
@@ -151,7 +151,7 @@ public class QueueRestACLTest extends QpidRestTestCase
         responseCode = getRestTestHelper().submitRequest(_queueUrl, "PUT", attributes);
         assertEquals("Setting of queue attribites should be allowed", 403, responseCode);
 
-        Map<String, Object> queueData = getRestTestHelper().getJsonAsSingletonList(_queueUrl);
+        Map<String, Object> queueData = getRestTestHelper().getJsonAsMap(_queueUrl);
         assertEquals("Unexpected " + Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, -1, queueData.get(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES));
     }
 

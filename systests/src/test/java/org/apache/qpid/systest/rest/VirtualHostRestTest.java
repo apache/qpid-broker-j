@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.systest.rest;
 
+import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
+import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet.SC_UNPROCESSABLE_ENTITY;
 
 import java.io.IOException;
@@ -83,7 +85,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         Session session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         createTestQueue(session);
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test");
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap("virtualhost/test/test");
         Asserts.assertVirtualHost("test", hostDetails);
 
         @SuppressWarnings("unchecked")
@@ -122,11 +124,11 @@ public class VirtualHostRestTest extends QpidRestTestCase
         Map<String, Object> requestData = submitVirtualHost(true, "PUT", HttpServletResponse.SC_CREATED);
         String hostName = (String)requestData.get(VirtualHost.NAME);
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/"
-                                                                                     + EMPTY_VIRTUALHOSTNODE_NAME
-                                                                                     + "/"
-                                                                                     + hostName
-                                                                                     + "?depth=1");
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap("virtualhost/"
+                                                                           + EMPTY_VIRTUALHOSTNODE_NAME
+                                                                           + "/"
+                                                                           + hostName
+                                                                           + "?depth=1");
         Asserts.assertVirtualHost(hostName, hostDetails);
 
         assertNewVirtualHost(hostDetails);
@@ -138,7 +140,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         String hostName = (String)data.get(VirtualHost.NAME);
 
         String url = "virtualhost/" + EMPTY_VIRTUALHOSTNODE_NAME + "/" + hostName + "?depth=1";
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList(url);
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap(url);
         Asserts.assertVirtualHost(hostName, hostDetails);
         assertNewVirtualHost(hostDetails);
     }
@@ -148,11 +150,11 @@ public class VirtualHostRestTest extends QpidRestTestCase
         Map<String, Object> data = submitVirtualHost(true, "POST", HttpServletResponse.SC_CREATED);
         String hostName = (String)data.get(VirtualHost.NAME);
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/"
-                                                                                     + EMPTY_VIRTUALHOSTNODE_NAME
-                                                                                     + "/"
-                                                                                     + hostName
-                                                                                     + "?depth=1");
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap("virtualhost/"
+                                                                           + EMPTY_VIRTUALHOSTNODE_NAME
+                                                                           + "/"
+                                                                           + hostName
+                                                                           + "?depth=1");
         Asserts.assertVirtualHost(hostName, hostDetails);
         assertNewVirtualHost(hostDetails);
     }
@@ -161,11 +163,11 @@ public class VirtualHostRestTest extends QpidRestTestCase
     {
         Map<String, Object> data = submitVirtualHost(false, "PUT", HttpServletResponse.SC_CREATED);
         String hostName = (String)data.get(VirtualHost.NAME);
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/"
-                                                                                     + EMPTY_VIRTUALHOSTNODE_NAME
-                                                                                     + "/"
-                                                                                     + hostName
-                                                                                     + "?depth=1");
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap("virtualhost/"
+                                                                           + EMPTY_VIRTUALHOSTNODE_NAME
+                                                                           + "/"
+                                                                           + hostName
+                                                                           + "?depth=1");
         Asserts.assertVirtualHost(hostName, hostDetails);
 
         assertNewVirtualHost(hostDetails);
@@ -174,18 +176,18 @@ public class VirtualHostRestTest extends QpidRestTestCase
 
     public void testCreateVirtualHostByPostUsingVirtualHostURI() throws Exception
     {
-        Map<String, Object> data = submitVirtualHost(false, "POST", HttpServletResponse.SC_NOT_FOUND);
+        Map<String, Object> data = submitVirtualHost(false, "POST", SC_NOT_FOUND);
 
         String hostName = (String)data.get(VirtualHost.NAME);
         getRestTestHelper().submitRequest("virtualhost/" + EMPTY_VIRTUALHOSTNODE_NAME + "/" + hostName,
-                "GET", HttpServletResponse.SC_NOT_FOUND);
+                "GET", SC_NOT_FOUND);
     }
 
     public void testDeleteHost() throws Exception
     {
         getRestTestHelper().submitRequest("virtualhost/" + TEST3_VIRTUALHOST + "/" + TEST3_VIRTUALHOST,
                                           "DELETE",
-                                          HttpServletResponse.SC_OK);
+                                          SC_OK);
 
         List<Map<String, Object>> hosts = getRestTestHelper().getJsonAsList("virtualhost/" + TEST3_VIRTUALHOST);
         assertEquals("Host should be deleted", 0, hosts.size());
@@ -206,13 +208,13 @@ public class VirtualHostRestTest extends QpidRestTestCase
         String hostToUpdate = TEST3_VIRTUALHOST;
         String restHostUrl = "virtualhost/" + hostToUpdate + "/" + hostToUpdate;
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList(restHostUrl);
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap(restHostUrl);
         Asserts.assertVirtualHost(hostToUpdate, hostDetails);
 
         Map<String, Object> newAttributes = Collections.<String, Object>singletonMap(VirtualHost.DESCRIPTION, "This is a virtual host");
-        getRestTestHelper().submitRequest(restHostUrl, method, newAttributes, HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest(restHostUrl, method, newAttributes, SC_OK);
 
-        Map<String, Object> rereadHostDetails = getRestTestHelper().getJsonAsSingletonList(restHostUrl);
+        Map<String, Object> rereadHostDetails = getRestTestHelper().getJsonAsMap(restHostUrl);
         Asserts.assertVirtualHost(hostToUpdate, rereadHostDetails);
         assertEquals("This is a virtual host", rereadHostDetails.get(VirtualHost.DESCRIPTION));
     }
@@ -222,7 +224,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         String hostToUpdate = TEST3_VIRTUALHOST;
         String restHostUrl = "virtualhost/" + hostToUpdate + "/" + hostToUpdate;
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList(restHostUrl);
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap(restHostUrl);
         Asserts.assertVirtualHost(hostToUpdate, hostDetails);
 
         NodeAutoCreationPolicy[] policies = new NodeAutoCreationPolicy[] {
@@ -293,8 +295,8 @@ public class VirtualHostRestTest extends QpidRestTestCase
         };
         Map<String, Object> newAttributes = Collections.<String, Object>singletonMap(QueueManagingVirtualHost.NODE_AUTO_CREATION_POLICIES,
                                                                                      Arrays.asList(policies));
-        getRestTestHelper().submitRequest(restHostUrl, "POST", newAttributes, HttpServletResponse.SC_OK);
-        Map<String, Object> rereadHostDetails = getRestTestHelper().getJsonAsSingletonList(restHostUrl);
+        getRestTestHelper().submitRequest(restHostUrl, "POST", newAttributes, SC_OK);
+        Map<String, Object> rereadHostDetails = getRestTestHelper().getJsonAsMap(restHostUrl);
 
         Object retrievedPolicies = rereadHostDetails.get(QueueManagingVirtualHost.NODE_AUTO_CREATION_POLICIES);
         assertNotNull("Retrieved node policies are null", retrievedPolicies);
@@ -320,7 +322,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         String hostToUpdate = TEST3_VIRTUALHOST;
         String restHostUrl = "virtualhost/" + hostToUpdate + "/" + hostToUpdate;
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList(restHostUrl);
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap(restHostUrl);
         Asserts.assertVirtualHost(hostToUpdate, hostDetails);
 
         NodeAutoCreationPolicy[] policies = new NodeAutoCreationPolicy[] {
@@ -361,7 +363,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
                                                                                      Arrays.asList(policies));
         getRestTestHelper().submitRequest(restHostUrl, "POST", newAttributes, 422);
 
-        Map<String, Object> rereadHostDetails = getRestTestHelper().getJsonAsSingletonList(restHostUrl);
+        Map<String, Object> rereadHostDetails = getRestTestHelper().getJsonAsMap(restHostUrl);
 
         Object retrievedPolicies = rereadHostDetails.get(QueueManagingVirtualHost.NODE_AUTO_CREATION_POLICIES);
         assertNotNull("Retrieved node policies are null", retrievedPolicies);
@@ -377,13 +379,13 @@ public class VirtualHostRestTest extends QpidRestTestCase
         assertActualAndDesireStates(restHostUrl, "ACTIVE", "ACTIVE");
 
         Map<String, Object> newAttributes = Collections.<String, Object>singletonMap(VirtualHost.DESIRED_STATE, "STOPPED");
-        getRestTestHelper().submitRequest(restHostUrl, "PUT", newAttributes, HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest(restHostUrl, "PUT", newAttributes, SC_OK);
 
         _restTestHelper.waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "STOPPED");
         assertActualAndDesireStates(restHostUrl, "STOPPED", "STOPPED");
 
         newAttributes = Collections.<String, Object>singletonMap(VirtualHost.DESIRED_STATE, "ACTIVE");
-        getRestTestHelper().submitRequest(restHostUrl, "PUT", newAttributes, HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest(restHostUrl, "PUT", newAttributes, SC_OK);
 
         _restTestHelper.waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "ACTIVE");
 
@@ -409,13 +411,13 @@ public class VirtualHostRestTest extends QpidRestTestCase
         assertQueueDepth(restQueueUrl, "Unexpected number of messages before stopped", 1);
 
         Map<String, Object> newAttributes = Collections.<String, Object>singletonMap(VirtualHost.DESIRED_STATE, "STOPPED");
-        getRestTestHelper().submitRequest(restHostUrl, "PUT", newAttributes, HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest(restHostUrl, "PUT", newAttributes, SC_OK);
 
         _restTestHelper.waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "STOPPED");
         assertActualAndDesireStates(restHostUrl, "STOPPED", "STOPPED");
 
         newAttributes = Collections.<String, Object>singletonMap(VirtualHost.DESIRED_STATE, "ACTIVE");
-        getRestTestHelper().submitRequest(restHostUrl, "PUT", newAttributes, HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest(restHostUrl, "PUT", newAttributes, SC_OK);
 
         _restTestHelper.waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "ACTIVE");
 
@@ -435,13 +437,13 @@ public class VirtualHostRestTest extends QpidRestTestCase
         newAttributes.put(VirtualHost.DESIRED_STATE, "STOPPED");
         newAttributes.put(VirtualHost.DESCRIPTION, "My description");
 
-        getRestTestHelper().submitRequest(restUrl, "PUT", newAttributes, HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest(restUrl, "PUT", newAttributes, SC_OK);
 
         assertActualAndDesireStates(restUrl, "STOPPED", "STOPPED");
 
         restartDefaultBroker();
 
-        Map<String, Object> rereadVirtualhost = getRestTestHelper().getJsonAsSingletonList(restUrl);
+        Map<String, Object> rereadVirtualhost = getRestTestHelper().getJsonAsMap(restUrl);
         Asserts.assertActualAndDesiredState("STOPPED", "STOPPED", rereadVirtualhost);
 
         assertEquals("Unexpected description after restart", "My description", rereadVirtualhost.get(VirtualHost.DESCRIPTION));
@@ -465,7 +467,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         lvqQueueAttributes.put(LastValueQueue.LVQ_KEY, "LVQ");
         createQueue(queueName + "-lvq", "lvq", lvqQueueAttributes);
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test?depth=1");
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap("virtualhost/test/test?depth=1");
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> queues = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_QUEUES_ATTRIBUTE);
@@ -498,7 +500,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         createExchange(exchangeName + "-headers", "headers");
         createExchange(exchangeName + "-fanout", "fanout");
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test?depth=1");
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap("virtualhost/test/test?depth=1");
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> exchanges = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_EXCHANGES_ATTRIBUTE);
@@ -523,7 +525,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         String queueName = getTestQueueName()+ "-lvq";
         createQueue(queueName, "lvq", null);
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test?depth=1");
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap("virtualhost/test/test?depth=1");
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> queues = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_QUEUES_ATTRIBUTE);
@@ -540,7 +542,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         int responseCode = tryCreateQueue(queueName, "sorted", null);
         assertEquals("Unexpected response code", SC_UNPROCESSABLE_ENTITY, responseCode);
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test?depth=1");
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap("virtualhost/test/test?depth=1");
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> queues = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_QUEUES_ATTRIBUTE);
@@ -554,7 +556,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         String queueName = getTestQueueName()+ "-priority";
         createQueue(queueName, "priority", null);
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test?depth=1");
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap("virtualhost/test/test?depth=1");
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> queues = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_QUEUES_ATTRIBUTE);
@@ -570,7 +572,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         String queueName = getTestQueueName();
         createQueue(queueName, null, null);
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test?depth=1");
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap("virtualhost/test/test?depth=1");
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> queues = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_QUEUES_ATTRIBUTE);
@@ -585,7 +587,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         int responseCode = tryCreateQueue(queueName, "unsupported", null);
         assertEquals("Unexpected response code", SC_UNPROCESSABLE_ENTITY, responseCode);
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test?depth=1");
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap("virtualhost/test/test?depth=1");
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> queues = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_QUEUES_ATTRIBUTE);
@@ -600,23 +602,21 @@ public class VirtualHostRestTest extends QpidRestTestCase
         createQueue(queueName, null, null);
 
         String queueUrl = "queue/test/test/" + queueName;
-        List<Map<String, Object>> queues = getRestTestHelper().getJsonAsList(queueUrl);
-        assertEquals("Queue should exist", 1, queues.size());
+        Map<String, Object> queueData = getRestTestHelper().getJsonAsMap(queueUrl);
+        assertEquals("Unexpected name", queueName, queueData.get(Queue.NAME));
 
-        int statusCode = getRestTestHelper().submitRequest(queueUrl, "DELETE");
-        assertEquals("Unexpected response code", 200, statusCode);
+        getRestTestHelper().submitRequest(queueUrl, "DELETE", SC_OK);
 
-        getRestTestHelper().submitRequest(queueUrl, "GET", HttpServletResponse.SC_NOT_FOUND);
+        getRestTestHelper().submitRequest(queueUrl, "GET", SC_NOT_FOUND);
     }
 
     public void testDeleteQueueById() throws Exception
     {
         String queueName = getTestQueueName();
         createQueue(queueName, null, null);
-        Map<String, Object> queueDetails = getRestTestHelper().getJsonAsSingletonList("queue/test/test/" + queueName);
-        int statusCode = getRestTestHelper().submitRequest("queue/test/test?id=" + queueDetails.get(Queue.ID), "DELETE");
-        assertEquals("Unexpected response code", 200, statusCode);
-        getRestTestHelper().submitRequest("queue/test/test/" + queueName, "GET", HttpServletResponse.SC_NOT_FOUND);
+        Map<String, Object> queueDetails = getRestTestHelper().getJsonAsMap("queue/test/test/" + queueName);
+        getRestTestHelper().submitRequest("queue/test/test?id=" + queueDetails.get(Queue.ID), "DELETE", SC_OK);
+        getRestTestHelper().submitRequest("queue/test/test/" + queueName, "GET", SC_NOT_FOUND);
     }
 
     public void testDeleteExchange() throws Exception
@@ -627,19 +627,19 @@ public class VirtualHostRestTest extends QpidRestTestCase
         int statusCode = getRestTestHelper().submitRequest("exchange/test/test/" + exchangeName, "DELETE");
 
         assertEquals("Unexpected response code", 200, statusCode);
-        getRestTestHelper().submitRequest("exchange/test/test/" + exchangeName, "GET", HttpServletResponse.SC_NOT_FOUND);
+        getRestTestHelper().submitRequest("exchange/test/test/" + exchangeName, "GET", SC_NOT_FOUND);
     }
 
     public void testDeleteExchangeById() throws Exception
     {
         String exchangeName = getTestName();
         createExchange(exchangeName, "direct");
-        Map<String, Object> echangeDetails = getRestTestHelper().getJsonAsSingletonList("exchange/test/test/" + exchangeName);
+        Map<String, Object> echangeDetails = getRestTestHelper().getJsonAsMap("exchange/test/test/" + exchangeName);
 
         int statusCode = getRestTestHelper().submitRequest("exchange/test/test?id=" + echangeDetails.get(Exchange.ID), "DELETE");
 
         assertEquals("Unexpected response code", 200, statusCode);
-        getRestTestHelper().submitRequest("exchange/test/test/" + exchangeName, "GET", HttpServletResponse.SC_NOT_FOUND);
+        getRestTestHelper().submitRequest("exchange/test/test/" + exchangeName, "GET", SC_NOT_FOUND);
     }
 
     public void testPutCreateQueueWithAttributes() throws Exception
@@ -671,7 +671,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         lvqQueueAttributes.put(LastValueQueue.LVQ_KEY, "LVQ");
         createQueue(queueName + "-lvq", "lvq", lvqQueueAttributes);
 
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test?depth=1");
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap("virtualhost/test/test?depth=1");
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> queues = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_QUEUES_ATTRIBUTE);
@@ -700,7 +700,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
 
         // Test creation
         createQueue(queueNameDoubleEncoded, "standard", null);
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test?depth=1");
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsMap("virtualhost/test/test?depth=1");
         List<Map<String, Object>> queues = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_QUEUES_ATTRIBUTE);
         Map<String, Object> queue = getRestTestHelper().find(Queue.NAME, queueName , queues);
         Asserts.assertQueue(queueName, "standard", queue);
@@ -708,7 +708,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         // Test deletion
         int statusCode = getRestTestHelper().submitRequest(queueUrl, "DELETE");
         assertEquals("Unexpected response code", 200, statusCode);
-        getRestTestHelper().submitRequest(queueUrl, "GET", HttpServletResponse.SC_NOT_FOUND);
+        getRestTestHelper().submitRequest(queueUrl, "GET", SC_NOT_FOUND);
     }
 
     private void createExchange(String exchangeName, String exchangeType) throws IOException
@@ -805,13 +805,13 @@ public class VirtualHostRestTest extends QpidRestTestCase
                                              final String expectedDesiredState,
                                              final String expectedActualState) throws IOException
     {
-        Map<String, Object> virtualhost = getRestTestHelper().getJsonAsSingletonList(restUrl);
+        Map<String, Object> virtualhost = getRestTestHelper().getJsonAsMap(restUrl);
         Asserts.assertActualAndDesiredState(expectedDesiredState, expectedActualState, virtualhost);
     }
 
     private void assertQueueDepth(String restQueueUrl, String message, int expectedDepth) throws IOException
     {
-        Map<String, Object> queueDetails = getRestTestHelper().getJsonAsSingletonList(restQueueUrl);
+        Map<String, Object> queueDetails = getRestTestHelper().getJsonAsMap(restQueueUrl);
         assertNotNull(queueDetails);
         Map<String, Object> statistics = (Map<String, Object>) queueDetails.get(Asserts.STATISTICS_ATTRIBUTE);
         assertNotNull(statistics);

@@ -873,9 +873,9 @@ define(["dojo/_base/xhr",
                 .then(function (data)
                 {
                     callback({
-                        actual: data.actual[0],
-                        inheritedActual: data.inheritedActual[0],
-                        effective: data.effective[0]
+                        actual: data.actual,
+                        inheritedActual: data.inheritedActual,
+                        effective: data.effective
                     });
                 });
         };

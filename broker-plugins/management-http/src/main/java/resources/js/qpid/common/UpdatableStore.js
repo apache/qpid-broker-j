@@ -196,7 +196,11 @@ define(["dojo/json",
 
     UpdatableStore.prototype.close = function ()
     {
-        this.dataStore.close();
+        if (this.dataStore !== null)
+        {
+            this.dataStore.close();
+        }
+
         this.dataStore = null;
         this.store = null;
         this.memoryStore = null;

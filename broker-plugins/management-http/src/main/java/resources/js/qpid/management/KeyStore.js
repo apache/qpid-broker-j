@@ -81,7 +81,7 @@ define(["dojo/dom",
                             .then(function (data)
                             {
                                 addStore.setupTypeStore(that.management, "KeyStore", that.modelObj);
-                                addStore.show(data[0], that.keyStoreUpdater.keyStoreData);
+                                addStore.show(data, that.keyStoreUpdater.keyStoreData);
                             }, util.xhrErrorHandler);
                     });
                 });
@@ -141,7 +141,7 @@ define(["dojo/dom",
                 })
                 .then(function (data)
                 {
-                    that.keyStoreData = data[0];
+                    that.keyStoreData = data;
                     that.updateHeader();
 
                     if (callback)

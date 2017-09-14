@@ -413,27 +413,13 @@ public class GroupCreator
     public Map<String, Object> getNodeAttributes(int localNodePort, int remoteNodePort) throws IOException
     {
         RestTestHelper restHelper = createRestTestHelper(localNodePort);
-        List<Map<String, Object>> results = null;
         try
         {
-            results = restHelper.getJsonAsList(getNodeRestUrl(localNodePort, remoteNodePort));
+            return restHelper.getJsonAsMap(getNodeRestUrl(localNodePort, remoteNodePort));
         }
         catch (FileNotFoundException e)
         {
-            // node does not exist yet
-        }
-        int size = results == null ? 0 : results.size();
-        if (size == 0)
-        {
             return Collections.emptyMap();
-        }
-        else if (size == 1)
-        {
-            return results.get(0);
-        }
-        else
-        {
-            throw new RuntimeException("Unexpected number of nodes " + size);
         }
     }
 

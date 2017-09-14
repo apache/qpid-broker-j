@@ -62,10 +62,8 @@ public class TrustStoreRestTest extends QpidRestTestCase
         createTrustStore(name, true, TestSSLConstants.TRUSTSTORE, TestSSLConstants.TRUSTSTORE_PASSWORD);
         assertNumberOfTrustStores(2);
 
-        List<Map<String, Object>> trustStores = getRestTestHelper().getJsonAsList("truststore/" + name);
-        assertNotNull("details cannot be null", trustStores);
+        Map<String, Object> truststore = getRestTestHelper().getJsonAsMap("truststore/" + name);
 
-        Map<String, Object> truststore = trustStores.get(0);
         assertEquals("unexpected trust store name", name, truststore.get(TrustStore.NAME));
         assertEquals("unexpected store URL", TestSSLConstants.TRUSTSTORE, truststore.get(FileTrustStore.STORE_URL));
         assertEquals("unexpected password value", AbstractConfiguredObject.SECURED_STRING_VALUE, truststore.get(FileTrustStore.PASSWORD));
@@ -85,10 +83,8 @@ public class TrustStoreRestTest extends QpidRestTestCase
 
         assertNumberOfTrustStores(2);
 
-        List<Map<String, Object>> trustStores = getRestTestHelper().getJsonAsList("truststore/" + name);
-        assertNotNull("details cannot be null", trustStores);
+        Map<String, Object> truststore = getRestTestHelper().getJsonAsMap("truststore/" + name);
 
-        Map<String, Object> truststore = trustStores.get(0);
         assertEquals("nexpected trust store name", name, truststore.get(TrustStore.NAME));
         assertEquals("unexpected store URL value",  ConfiguredObject.OVER_SIZED_ATTRIBUTE_ALTERNATIVE_TEXT, truststore.get(FileTrustStore.STORE_URL));
         assertEquals("unexpected password value", AbstractConfiguredObject.SECURED_STRING_VALUE, truststore.get(FileTrustStore.PASSWORD));
@@ -132,15 +128,13 @@ public class TrustStoreRestTest extends QpidRestTestCase
 
         getRestTestHelper().submitRequest("truststore/" + name , "PUT", attributes, HttpServletResponse.SC_OK);
 
-        List<Map<String, Object>> trustStore = getRestTestHelper().getJsonAsList("truststore/" + name);
-        assertNotNull("details should not be null", trustStore);
+        Map<String, Object> trustStore = getRestTestHelper().getJsonAsMap("truststore/" + name);
 
-        Map<String, Object> truststore = trustStore.get(0);
-        assertEquals("unexpected name", name, truststore.get(TrustStore.NAME));
-        assertEquals("unexpected path to trust store",  TestSSLConstants.TRUSTSTORE, truststore.get(FileTrustStore.STORE_URL));
-        assertEquals("unexpected password", AbstractConfiguredObject.SECURED_STRING_VALUE, truststore.get(FileTrustStore.PASSWORD));
-        assertEquals("unexpected type", java.security.KeyStore.getDefaultType(), truststore.get(FileTrustStore.TRUST_STORE_TYPE));
-        assertEquals("unexpected peersOnly value", false, truststore.get(FileTrustStore.PEERS_ONLY));
+        assertEquals("unexpected name", name, trustStore.get(TrustStore.NAME));
+        assertEquals("unexpected path to trust store",  TestSSLConstants.TRUSTSTORE, trustStore.get(FileTrustStore.STORE_URL));
+        assertEquals("unexpected password", AbstractConfiguredObject.SECURED_STRING_VALUE, trustStore.get(FileTrustStore.PASSWORD));
+        assertEquals("unexpected type", java.security.KeyStore.getDefaultType(), trustStore.get(FileTrustStore.TRUST_STORE_TYPE));
+        assertEquals("unexpected peersOnly value", false, trustStore.get(FileTrustStore.PEERS_ONLY));
     }
 
     private List<Map<String, Object>> assertNumberOfTrustStores(int numberOfTrustStores) throws Exception

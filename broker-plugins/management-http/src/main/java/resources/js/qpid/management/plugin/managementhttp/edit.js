@@ -83,7 +83,7 @@ define(["dojo/_base/event",
                 })
                 .then(function (actualData)
                 {
-                    that._show(actualData[0]);
+                    that._show(actualData);
                 });
         },
         destroy: function ()

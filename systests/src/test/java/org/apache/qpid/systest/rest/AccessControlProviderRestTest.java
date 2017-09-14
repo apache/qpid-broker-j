@@ -191,8 +191,12 @@ public class AccessControlProviderRestTest extends QpidRestTestCase
         startDefaultBroker(true);
 
         getRestTestHelper().setUsernameAndPassword(SystemConfig.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
-
-        Map<String, Object> acl = getRestTestHelper().getJsonAsSingletonList("accesscontrolprovider/" + TestBrokerConfiguration.ENTRY_NAME_ACL_FILE + "?" + RestServlet.OVERSIZE_PARAM + "=" + (file.getAbsolutePath().length()+10));
+        Map<String, Object> acl = getRestTestHelper().getJsonAsMap("accesscontrolprovider/"
+                                                                   + TestBrokerConfiguration.ENTRY_NAME_ACL_FILE
+                                                                   + "?"
+                                                                   + RestServlet.OVERSIZE_PARAM
+                                                                   + "="
+                                                                   + (file.getAbsolutePath().length() + 10));
         assertEquals("Unexpected id", id.toString(), acl.get(AccessControlProvider.ID));
         assertEquals("Unexpected path", file.getAbsolutePath() , acl.get(AclFileAccessControlProvider.PATH));
         assertEquals("Unexpected state", State.ERRORED.name(), acl.get(AccessControlProvider.STATE));

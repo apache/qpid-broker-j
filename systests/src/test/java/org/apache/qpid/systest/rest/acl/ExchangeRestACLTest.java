@@ -297,7 +297,7 @@ public class ExchangeRestACLTest extends QpidRestTestCase
     {
         String path = "exchange/test/test/amq.direct";
 
-        final Map<String, Object> exch = getRestTestHelper().getJsonAsSingletonList(path);
+        final Map<String, Object> exch = getRestTestHelper().getJsonAsMap(path);
         final Collection<Map<String, Object>> bindings = (Collection<Map<String, Object>>) exch.get("bindings");
         boolean found = false;
         if (bindings != null)

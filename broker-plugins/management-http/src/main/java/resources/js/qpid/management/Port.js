@@ -106,7 +106,7 @@ define(["dojo/dom",
             this.management.load(that.modelObj.parent, {excludeInheritedContext: true, depth: 1})
                 .then(function (data)
                 {
-                    var brokerData = data[0];
+                    var brokerData = data;
                     addPort.show(that.management,
                         that.modelObj,
                         that.portUpdater.portData.type,
@@ -260,7 +260,7 @@ define(["dojo/dom",
                 })
                 .then(function (data)
                 {
-                    thisObj.portData = data[0] || {};
+                    thisObj.portData = data || {};
                     thisObj.updateUI(thisObj.portData);
                     util.flattenStatistics(thisObj.portData);
                     if (callback)

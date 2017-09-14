@@ -64,9 +64,8 @@ define(["dojo/query",
             else
             {
                 this.management.load({type: "broker"}, {depth: 0, excludeInheritedContext: true})
-                    .then(function (data)
+                    .then(function (broker)
                     {
-                        var broker = data[0];
                         if (broker.documentationUrl)
                         {
                             documentationUrl = broker.documentationUrl;

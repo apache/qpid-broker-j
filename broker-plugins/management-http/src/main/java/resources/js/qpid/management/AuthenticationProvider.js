@@ -174,7 +174,7 @@ define(["dojo/parser",
                 })
                 .then(function (data)
                 {
-                    that._update(data[0]);
+                    that._update(data);
                     if (callback)
                     {
                         callback();

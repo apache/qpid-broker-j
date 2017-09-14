@@ -44,9 +44,7 @@ define(["dojo/query",
         var that = this;
         var gridProperties = {
             height: 400,
-            sortInfo: 2, /*
-             canSort: function(column) { return false; },
-             */
+            sortInfo: 2,
             plugins: {
                 indirectSelection: true,  // KW TODO checkme
                 pagination: {
@@ -111,25 +109,19 @@ define(["dojo/query",
                         })
                         .then(function (data)
                         {
-                            addVirtualHostAlias.show(that.management, aliasModelObj, data[0]);
+                            addVirtualHostAlias.show(that.management, aliasModelObj, data);
                         });
                 });
             }, gridProperties, EnhancedGrid);
-    }
+    };
 
     AmqpPort.prototype.update = function (restData)
     {
         if (this.virtualHostAliasesGrid)
         {
-            if (this.virtualHostAliasesGrid.update(restData.virtualhostaliases))
-            {
-                /*
-                 this.virtualHostAliasesGrid.grid.sort();
-                 this.virtualHostAliasesGrid.grid.update();
-                 */
-            }
+            this.virtualHostAliasesGrid.update(restData.virtualhostaliases);
         }
-    }
+    };
 
     return AmqpPort;
 });

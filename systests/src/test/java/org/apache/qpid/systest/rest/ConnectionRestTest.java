@@ -155,7 +155,7 @@ public class ConnectionRestTest extends QpidRestTestCase
     {
         List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session");
         assertEquals("Unexpected number of sessions", 1, sessions.size());
-        assertSession(sessions.get(0), (AMQSession<?, ?>) _session);
+        assertSession(sessions.get(0));
     }
 
     public void testGetPortSessions() throws Exception
@@ -164,7 +164,7 @@ public class ConnectionRestTest extends QpidRestTestCase
 
         List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/" + portName);
         assertEquals("Unexpected number of sessions", 1, sessions.size());
-        assertSession(sessions.get(0), (AMQSession<?, ?>) _session);
+        assertSession(sessions.get(0));
     }
 
     public void testGetConnectionSessions() throws Exception
@@ -175,7 +175,7 @@ public class ConnectionRestTest extends QpidRestTestCase
         List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/" + portName + "/"
                 + getRestTestHelper().encodeAsUTF(connectionName));
         assertEquals("Unexpected number of sessions", 1, sessions.size());
-        assertSession(sessions.get(0), (AMQSession<?, ?>) _session);
+        assertSession(sessions.get(0));
     }
 
     public void testGetSessionByName() throws Exception
@@ -183,10 +183,9 @@ public class ConnectionRestTest extends QpidRestTestCase
         String connectionName = getConnectionName();
         String portName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
 
-        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/" + portName + "/"
+        Map<String, Object> sessionDetails = getRestTestHelper().getJsonAsMap("session/" + portName + "/"
                 + getRestTestHelper().encodeAsUTF(connectionName) + "/" + ((AMQSession<?, ?>) _session).getChannelId());
-        assertEquals("Unexpected number of sessions", 1, sessions.size());
-        assertSession(sessions.get(0), (AMQSession<?, ?>) _session);
+        assertSession(sessionDetails);
     }
 
     public void testProducerSessionOpenHasTransactionStartAndUpdateTimes() throws Exception
@@ -199,12 +198,9 @@ public class ConnectionRestTest extends QpidRestTestCase
         String connectionName = getConnectionName();
         String portName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
 
-        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/" + portName + "/"
+        Map<String, Object> sessionData = getRestTestHelper().getJsonAsMap("session/" + portName + "/"
                                                                                + getRestTestHelper().encodeAsUTF(connectionName)
                                                                                + "/" + ((AMQSession<?, ?>) _session).getChannelId());
-        assertEquals("Unexpected number of sessions", 1, sessions.size());
-
-        final Map<String, Object> sessionData = sessions.get(0);
 
         @SuppressWarnings("unchecked")
         Map<String, Object> statistics = (Map<String, Object>) sessionData.get(Asserts.STATISTICS_ATTRIBUTE);
@@ -238,10 +234,10 @@ public class ConnectionRestTest extends QpidRestTestCase
         List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/amqp/" + encodedName);
         assertNotNull("Sessions cannot be found", sessions);
         assertEquals("Unexpected number of sessions", 1, sessions.size());
-        assertSession(sessions.get(0), (AMQSession<?, ?>) _session);
+        assertSession(sessions.get(0));
     }
 
-    private void assertSession(Map<String, Object> sessionData, AMQSession<?, ?> session)
+    private void assertSession(Map<String, Object> sessionData)
     {
         assertNotNull("Session map cannot be null", sessionData);
         Asserts.assertAttributesPresent(sessionData, BrokerModel.getInstance().getTypeRegistry().getAttributeNames(
@@ -257,12 +253,10 @@ public class ConnectionRestTest extends QpidRestTestCase
                                         Session.STATE,
                                         Session.DURABLE,
                                         Session.LIFETIME_POLICY);
-        assertEquals("Unexpected value of attribute " + Session.NAME, session.getChannelId() + "",
-                sessionData.get(Session.NAME));
         assertEquals("Unexpected value of attribute " + Session.PRODUCER_FLOW_BLOCKED, Boolean.FALSE,
                 sessionData.get(Session.PRODUCER_FLOW_BLOCKED));
-        assertEquals("Unexpected value of attribute " + Session.CHANNEL_ID, session.getChannelId(),
-                sessionData.get(Session.CHANNEL_ID));
+        assertNotNull("Unexpected value of attribute " + Session.NAME, sessionData.get(Session.NAME));
+        assertNotNull("Unexpected value of attribute " + Session.CHANNEL_ID , sessionData.get(Session.CHANNEL_ID));
 
         @SuppressWarnings("unchecked")
         Map<String, Object> statistics = (Map<String, Object>) sessionData.get(Asserts.STATISTICS_ATTRIBUTE);

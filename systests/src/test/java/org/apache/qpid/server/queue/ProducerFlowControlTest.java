@@ -268,7 +268,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         String queueUrl = String.format("queue/%1$s/%1$s/%2$s", TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, queueName);
 
         //check current attribute values are 0 as expected
-        Map<String, Object> queueAttributes = _restTestHelper.getJsonAsSingletonList(queueUrl);
+        Map<String, Object> queueAttributes = _restTestHelper.getJsonAsMap(queueUrl);
         assertEquals("Capacity was not the expected value", 0,
                      ((Number) queueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_QUEUE_DEPTH_BYTES)).intValue());
 
@@ -374,7 +374,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
 
     private boolean isFlowStopped(final String queueUrl) throws IOException
     {
-        Map<String, Object> queueAttributes2 = _restTestHelper.getJsonAsSingletonList(queueUrl);
+        Map<String, Object> queueAttributes2 = _restTestHelper.getJsonAsMap(queueUrl);
         return (boolean) queueAttributes2.get(org.apache.qpid.server.model.Queue.QUEUE_FLOW_STOPPED);
     }
 

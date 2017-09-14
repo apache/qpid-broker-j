@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.systest.rest;
 
+import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +32,8 @@ import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
+import javax.jms.TemporaryQueue;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -39,7 +43,6 @@ import org.apache.qpid.server.model.Queue;
 
 public class QueueRestTest extends QpidRestTestCase
 {
-    private static final String QUEUE_ATTRIBUTE_CONSUMERS = "consumers";
 
     /**
      * Message number to publish into queue
@@ -53,56 +56,98 @@ public class QueueRestTest extends QpidRestTestCase
     private static final int DEQUEUED_MESSAGES = 1;
 
     private Connection _connection;
+    private Session _session;
 
     @Override
     public void setUp() throws Exception
     {
         super.setUp();
         _connection = getConnection();
-        Session session = _connection.createSession(true, Session.SESSION_TRANSACTED);
-        Destination queue = createTestQueue(session);
-        session.commit();
-        MessageConsumer consumer = session.createConsumer(queue);
-        MessageProducer producer = session.createProducer(queue);
+        _session = _connection.createSession(true, Session.SESSION_TRANSACTED);
+        Destination queue = createTestQueue(_session);
+        _session.commit();
+        MessageConsumer consumer = _session.createConsumer(queue);
+        MessageProducer producer = _session.createProducer(queue);
 
         for (int i = 0; i < MESSAGE_NUMBER; i++)
         {
-            producer.send(session.createTextMessage("Test-" + i));
+            producer.send(_session.createTextMessage("Test-" + i));
         }
-        session.commit();
+        _session.commit();
         _connection.start();
-        Message m = consumer.receive(1000l);
+        Message m = consumer.receive(getReceiveTimeout());
         assertNotNull("Message is not received", m);
-        session.commit();
-    }
-
-    public void testGetVirtualHostQueues() throws Exception
-    {
-        String queueName = getTestQueueName();
-        List<Map<String, Object>> queues = getRestTestHelper().getJsonAsList("queue/test");
-        assertEquals("Unexpected number of queues", 1, queues.size());
-        String[] expectedQueues = new String[]{queueName};
-
-        for (String name : expectedQueues)
-        {
-            Map<String, Object> queueDetails = getRestTestHelper().find(Queue.NAME, name, queues);
-            Asserts.assertQueue(name, "standard", queueDetails);
-        }
+        _session.commit();
     }
 
     public void testGetByName() throws Exception
     {
         String queueName = getTestQueueName();
-        Map<String, Object> queueDetails =
-                getRestTestHelper().getJsonAsSingletonList("queue/test/test/" + queueName + "?depth=1");
-        Asserts.assertQueue(queueName, "standard", queueDetails);
-        assertStatistics(queueDetails);
 
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> consumers = (List<Map<String, Object>>) queueDetails.get(QUEUE_ATTRIBUTE_CONSUMERS);
-        assertNotNull("Queue consumers are not found", consumers);
-        assertEquals("Unexpected number of consumers", 1, consumers.size());
-        assertConsumer(consumers.get(0));
+        Map<String, Object> queueDetails =
+                getRestTestHelper().getJsonAsMap(String.format("queue/test/test/%s", queueName));
+        Asserts.assertQueue(queueName, "standard", queueDetails);
+    }
+
+    public void testGetByNameAsList() throws Exception
+    {
+        String queueName = getTestQueueName();
+
+        Map<String, Object> queueDetails =
+                getRestTestHelper().getJsonAsSingletonList(String.format("queue/test/test/%s?singletonModelObjectResponseAsList=true", queueName));
+        Asserts.assertQueue(queueName, "standard", queueDetails);
+    }
+
+    public void testGetById() throws Exception
+    {
+        String queueName = getTestQueueName();
+        Map<String, Object> queueDetails =
+                getRestTestHelper().getJsonAsMap(String.format("queue/test/test/%s", queueName));
+        String queueId = (String) queueDetails.get(Queue.ID);
+
+        List<Map<String, Object>> filteredResults = getRestTestHelper().getJsonAsList("queue/test/test?id=" + queueId);
+        assertEquals("Unexpected number of queues when querying by id filter", 1, filteredResults.size());
+    }
+
+    public void testGetByName_NotFound() throws Exception
+    {
+        String queueName = "notfound";
+        getRestTestHelper().submitRequest(String.format("queue/test/test/%s", queueName), "GET", SC_NOT_FOUND);
+    }
+
+    public void testGetAllQueues() throws Exception
+    {
+        List<Map<String, Object>> brokerQueues = getRestTestHelper().getJsonAsList("queue");
+        assertEquals("Unexpected number of queues queried broker-wide", 1, brokerQueues.size());
+
+        List<Map<String, Object>> vhnQueues = getRestTestHelper().getJsonAsList("queue/test");
+        assertEquals("Unexpected number of queues queried virtualhostnode scoped", 1, vhnQueues.size());
+
+        List<Map<String, Object>> vhQueues = getRestTestHelper().getJsonAsList("queue/test/test");
+        assertEquals("Unexpected number of queues queried virtualhost scoped", 1, vhQueues.size());
+
+        TemporaryQueue queue = _session.createTemporaryQueue();
+        queue.getQueueName();
+
+        vhQueues = getRestTestHelper().getJsonAsList("queue/test/test");
+        assertEquals("Unexpected number of queues", 2, vhQueues.size());
+    }
+
+    public void testGetAllQueuesWildcards() throws Exception
+    {
+        List<Map<String, Object>> vhnQueues = getRestTestHelper().getJsonAsList("queue/*");
+        assertEquals("Unexpected number of queues queried virtualhostnode scoped", 1, vhnQueues.size());
+
+        getRestTestHelper().submitRequest("queue/*/test", "GET", HttpServletResponse.SC_NOT_FOUND);
+    }
+
+    public void testGetAll_NotFound() throws Exception
+    {
+        List<Map<String, Object>> vhn2Queues = getRestTestHelper().getJsonAsList(String.format("queue/%s", TEST2_VIRTUALHOST));
+        assertEquals("Unexpected number of queues on vhn : " + TEST2_VIRTUALHOST  , 0, vhn2Queues.size());
+
+        List<Map<String, Object>> vh2Queues = getRestTestHelper().getJsonAsList(String.format("queue/%s/%s", TEST2_VIRTUALHOST, TEST2_VIRTUALHOST));
+        assertEquals("Unexpected number of queues on vhn " + TEST2_VIRTUALHOST, 0, vh2Queues.size());
     }
 
     public void testUpdateQueue() throws Exception
@@ -113,13 +158,12 @@ public class QueueRestTest extends QpidRestTestCase
         attributes.put(Queue.NAME, queueName);
 
         String queueUrl = "queue/test/test/" + queueName;
-        int responseCode =  getRestTestHelper().submitRequest(queueUrl, "PUT", attributes);
-        assertEquals("Queue was not created", 201, responseCode);
+        getRestTestHelper().submitRequest(queueUrl, "PUT", attributes, HttpServletResponse.SC_CREATED);
 
-        Map<String, Object> queueDetails = getRestTestHelper().getJsonAsSingletonList(queueUrl);
+        Map<String, Object> queueDetails = getRestTestHelper().getJsonAsMap(queueUrl);
         Asserts.assertQueue(queueName, "standard", queueDetails);
 
-        attributes = new HashMap<String, Object>();
+        attributes = new HashMap<>();
         attributes.put(Queue.NAME, queueName);
         attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100000);
         attributes.put(Queue.ALERT_REPEAT_GAP, 10000);
@@ -129,10 +173,9 @@ public class QueueRestTest extends QpidRestTestCase
         attributes.put(Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES, 50000);
         attributes.put(Queue.MAXIMUM_DELIVERY_ATTEMPTS, 10);
 
-        responseCode = getRestTestHelper().submitRequest(queueUrl, "PUT", attributes);
-        assertEquals("Setting of queue attributes should be allowed", 200, responseCode);
+        getRestTestHelper().submitRequest(queueUrl, "PUT", attributes, HttpServletResponse.SC_OK);
 
-        Map<String, Object> queueData = getRestTestHelper().getJsonAsSingletonList(queueUrl);
+        Map<String, Object> queueData = getRestTestHelper().getJson(queueUrl, Map.class);
         assertEquals("Unexpected " + Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100000, queueData.get(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES));
         assertEquals("Unexpected " + Queue.ALERT_REPEAT_GAP, 10000, queueData.get(Queue.ALERT_REPEAT_GAP) );
         assertEquals("Unexpected " + Queue.ALERT_THRESHOLD_MESSAGE_AGE, 20000, queueData.get(Queue.ALERT_THRESHOLD_MESSAGE_AGE) );

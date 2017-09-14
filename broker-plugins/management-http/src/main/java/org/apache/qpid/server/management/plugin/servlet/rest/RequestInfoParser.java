@@ -85,7 +85,7 @@ public class RequestInfoParser
         if (parts.size() <= _hierarchy.size())
         {
             return RequestInfo.createModelRequestInfo(parts,
-                                                      queryParameters);
+                                                      queryParameters, parts.size() == _hierarchy.size());
         }
         else if (parts.size() > _hierarchy.size())
         {
@@ -113,7 +113,8 @@ public class RequestInfoParser
         if (parts.size() <= _hierarchy.size())
         {
             return RequestInfo.createModelRequestInfo(parts,
-                                                      queryParameters);
+                                                      queryParameters,
+                                                      parts.size() == _hierarchy.size());
         }
         else if (parts.size() > _hierarchy.size())
         {
@@ -149,7 +150,7 @@ public class RequestInfoParser
     {
         if (parts.size() == _hierarchy.size() || parts.size() == _hierarchy.size() - 1)
         {
-            return RequestInfo.createModelRequestInfo(parts, queryParameters);
+            return RequestInfo.createModelRequestInfo(parts, queryParameters, parts.size() == _hierarchy.size());
         }
         else if (parts.size() > _hierarchy.size() && USER_PREFERENCES.equals(parts.get(_hierarchy.size())))
         {
@@ -173,7 +174,7 @@ public class RequestInfoParser
     {
         if (parts.size() == _hierarchy.size() || parts.size() == _hierarchy.size() - 1)
         {
-            return RequestInfo.createModelRequestInfo(parts, queryParameters);
+            return RequestInfo.createModelRequestInfo(parts, queryParameters, parts.size() == _hierarchy.size());
         }
         else if (parts.size() > _hierarchy.size())
         {

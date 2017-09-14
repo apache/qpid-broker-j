@@ -455,7 +455,7 @@ define(["dojo/parser",
                 })
                 .then(function (data)
                 {
-                    thisObj.vhostData = data[0] || {
+                    thisObj.vhostData = data || {
                             name: thisObj.modelObj.name
                         };
 

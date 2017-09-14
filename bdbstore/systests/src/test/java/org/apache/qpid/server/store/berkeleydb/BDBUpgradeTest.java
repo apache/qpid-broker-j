@@ -395,7 +395,7 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         String exchangeUrl = String.format("exchange/%1$s/%1$s/%2$s",
                                            TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST,
                                            exchangeName);
-        return _restTestHelper.getJsonAsSingletonList(exchangeUrl);
+        return _restTestHelper.getJsonAsMap(exchangeUrl);
     }
 
     private Map<String, Object> getQueueAttributes(final String queueName) throws IOException
@@ -403,7 +403,7 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         String queueUrl = String.format("queue/%1$s/%1$s/%2$s",
                                         TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST,
                                         queueName);
-        return _restTestHelper.getJsonAsSingletonList(queueUrl);
+        return _restTestHelper.getJsonAsMap(queueUrl);
     }
 
     private long getQueueDepth(final String queueName) throws org.apache.qpid.QpidException, IOException

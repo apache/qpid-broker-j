@@ -170,8 +170,7 @@ public class BrokerACLTest extends QpidRestTestCase
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
         String providerName = TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER;
-
-        Map<String, Object> providerData = getRestTestHelper().getJsonAsSingletonList("authenticationprovider/" + providerName);
+        Map<String, Object> providerData = getRestTestHelper().getJsonAsMap("authenticationprovider/" + providerName);
 
         File file = TestFileUtils.createTempFile(this, ".users", "guest:guest\n" + ALLOWED_USER + ":" + ALLOWED_USER + "\n"
                 + DENIED_USER + ":" + DENIED_USER);
@@ -186,7 +185,7 @@ public class BrokerACLTest extends QpidRestTestCase
         int responseCode = getRestTestHelper().submitRequest("authenticationprovider/" + providerName, "PUT", attributes);
         assertEquals("Setting of provider attribites should be allowed", 403, responseCode);
 
-        Map<String, Object> provider = getRestTestHelper().getJsonAsSingletonList("authenticationprovider/" + providerName);
+        Map<String, Object> provider = getRestTestHelper().getJsonAsMap("authenticationprovider/" + providerName);
         assertEquals("Unexpected STORE_URL attribute value",
                 providerData.get(ExternalFileBasedAuthenticationManager.PATH),
                 provider.get(ExternalFileBasedAuthenticationManager.PATH));
@@ -269,7 +268,7 @@ public class BrokerACLTest extends QpidRestTestCase
         responseCode = getRestTestHelper().submitRequest("port/" + portName, "PUT", attributes);
         assertEquals("Setting of port attribites should be denied", 403, responseCode);
 
-        Map<String, Object> port = getRestTestHelper().getJsonAsSingletonList("port/" + portName);
+        Map<String, Object> port = getRestTestHelper().getJsonAsMap("port/" + portName);
         assertEquals("Unexpected authentication provider attribute value",
                 TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER, port.get(Port.AUTHENTICATION_PROVIDER));
     }
@@ -360,7 +359,7 @@ public class BrokerACLTest extends QpidRestTestCase
         assertEquals("keyStore creation should be allowed", 201, responseCode);
 
         assertKeyStoreExistence(keyStoreName, true);
-        Map<String, Object> keyStore = getRestTestHelper().getJsonAsSingletonList("keystore/" + keyStoreName);
+        Map<String, Object> keyStore = getRestTestHelper().getJsonAsMap("keystore/" + keyStoreName);
         assertEquals("Unexpected certificateAlias attribute value", initialCertAlias, keyStore.get(FileKeyStore.CERTIFICATE_ALIAS));
 
         Map<String, Object> attributes = new HashMap<String, Object>();
@@ -369,7 +368,7 @@ public class BrokerACLTest extends QpidRestTestCase
         responseCode = getRestTestHelper().submitRequest("keystore/" + keyStoreName, "PUT", attributes);
         assertEquals("Setting of keystore attributes should be allowed", 200, responseCode);
 
-        keyStore = getRestTestHelper().getJsonAsSingletonList("keystore/" + keyStoreName);
+        keyStore = getRestTestHelper().getJsonAsMap("keystore/" + keyStoreName);
         assertEquals("Unexpected certificateAlias attribute value", updatedCertAlias, keyStore.get(FileKeyStore.CERTIFICATE_ALIAS));
     }
 
@@ -387,7 +386,7 @@ public class BrokerACLTest extends QpidRestTestCase
         assertEquals("keyStore creation should be allowed", 201, responseCode);
 
         assertKeyStoreExistence(keyStoreName, true);
-        Map<String, Object> keyStore = getRestTestHelper().getJsonAsSingletonList("keystore/" + keyStoreName);
+        Map<String, Object> keyStore = getRestTestHelper().getJsonAsMap("keystore/" + keyStoreName);
         assertEquals("Unexpected certificateAlias attribute value", initialCertAlias, keyStore.get(FileKeyStore.CERTIFICATE_ALIAS));
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
@@ -398,7 +397,7 @@ public class BrokerACLTest extends QpidRestTestCase
         responseCode = getRestTestHelper().submitRequest("keystore/" + keyStoreName, "PUT", attributes);
         assertEquals("Setting of keystore attributes should be denied", 403, responseCode);
 
-        keyStore = getRestTestHelper().getJsonAsSingletonList("keystore/" + keyStoreName);
+        keyStore = getRestTestHelper().getJsonAsMap("keystore/" + keyStoreName);
         assertEquals("Unexpected certificateAlias attribute value", initialCertAlias, keyStore.get(FileKeyStore.CERTIFICATE_ALIAS));
     }
 
@@ -488,7 +487,7 @@ public class BrokerACLTest extends QpidRestTestCase
         assertEquals("trustStore creation should be allowed", 201, responseCode);
 
         assertTrustStoreExistence(trustStoreName, true);
-        Map<String, Object> trustStore = getRestTestHelper().getJsonAsSingletonList("truststore/" + trustStoreName);
+        Map<String, Object> trustStore = getRestTestHelper().getJsonAsMap("truststore/" + trustStoreName);
         assertEquals("Unexpected peersOnly attribute value", initialPeersOnly, trustStore.get(FileTrustStore.PEERS_ONLY));
 
         Map<String, Object> attributes = new HashMap<String, Object>();
@@ -497,7 +496,7 @@ public class BrokerACLTest extends QpidRestTestCase
         responseCode = getRestTestHelper().submitRequest("truststore/" + trustStoreName, "PUT", attributes);
         assertEquals("Setting of truststore attributes should be allowed", 200, responseCode);
 
-        trustStore = getRestTestHelper().getJsonAsSingletonList("truststore/" + trustStoreName);
+        trustStore = getRestTestHelper().getJsonAsMap("truststore/" + trustStoreName);
         assertEquals("Unexpected peersOnly attribute value", updatedPeersOnly, trustStore.get(FileTrustStore.PEERS_ONLY));
     }
 
@@ -515,7 +514,7 @@ public class BrokerACLTest extends QpidRestTestCase
         assertEquals("trustStore creation should be allowed", 201, responseCode);
 
         assertTrustStoreExistence(trustStoreName, true);
-        Map<String, Object> trustStore = getRestTestHelper().getJsonAsSingletonList("truststore/" + trustStoreName);
+        Map<String, Object> trustStore = getRestTestHelper().getJsonAsMap("truststore/" + trustStoreName);
         assertEquals("Unexpected peersOnly attribute value", initialPeersOnly, trustStore.get(FileTrustStore.PEERS_ONLY));
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
@@ -526,7 +525,7 @@ public class BrokerACLTest extends QpidRestTestCase
         responseCode = getRestTestHelper().submitRequest("truststore/" + trustStoreName, "PUT", attributes);
         assertEquals("Setting of truststore attributes should be denied", 403, responseCode);
 
-        trustStore = getRestTestHelper().getJsonAsSingletonList("truststore/" + trustStoreName);
+        trustStore = getRestTestHelper().getJsonAsMap("truststore/" + trustStoreName);
         assertEquals("Unexpected peersOnly attribute value", initialPeersOnly, trustStore.get(FileTrustStore.PEERS_ONLY));
     }
 
@@ -536,7 +535,7 @@ public class BrokerACLTest extends QpidRestTestCase
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
-        Map<String, Object> brokerAttributes = getRestTestHelper().getJsonAsSingletonList("broker");
+        Map<String, Object> brokerAttributes = getRestTestHelper().getJsonAsMap("broker");
         assertEquals("Unexpected description", null,
                      brokerAttributes.get(Broker.DESCRIPTION));
 
@@ -547,7 +546,7 @@ public class BrokerACLTest extends QpidRestTestCase
                                           Collections.singletonMap(Broker.DESCRIPTION, descriptionValue),
                                           200);
 
-        brokerAttributes = getRestTestHelper().getJsonAsSingletonList("broker");
+        brokerAttributes = getRestTestHelper().getJsonAsMap("broker");
         assertEquals("Unexpected description", descriptionValue,
                      brokerAttributes.get(Broker.DESCRIPTION));
     }
@@ -556,7 +555,7 @@ public class BrokerACLTest extends QpidRestTestCase
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
-        Map<String, Object> brokerAttributes = getRestTestHelper().getJsonAsSingletonList("broker");
+        Map<String, Object> brokerAttributes = getRestTestHelper().getJsonAsMap("broker");
         assertEquals("Unexpected description", null, brokerAttributes.get(Broker.DESCRIPTION));
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
@@ -566,7 +565,7 @@ public class BrokerACLTest extends QpidRestTestCase
                                           Collections.singletonMap(Broker.DESCRIPTION, "test description"),
                                           403);
 
-        brokerAttributes = getRestTestHelper().getJsonAsSingletonList("broker");
+        brokerAttributes = getRestTestHelper().getJsonAsMap("broker");
         assertEquals("Unexpected description", null, brokerAttributes.get(Broker.DESCRIPTION));
     }
 
@@ -794,8 +793,8 @@ public class BrokerACLTest extends QpidRestTestCase
                 "plugin/" + TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, "PUT", attributes);
         assertEquals("Setting of http management should be allowed", 200, responseCode);
 
-        Map<String, Object> details = getRestTestHelper().getJsonAsSingletonList(
-                "plugin/" + TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT);
+        Map<String, Object> details =
+                getRestTestHelper().getJsonAsMap("plugin/" + TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT);
 
         assertEquals("Unexpected session timeout", 10000, details.get(HttpManagement.TIME_OUT));
         assertEquals("Unexpected http basic auth enabled", true, details.get(HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED));
@@ -819,8 +818,8 @@ public class BrokerACLTest extends QpidRestTestCase
                 "plugin/" + TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, "PUT", attributes);
         assertEquals("Setting of http management should be denied", 403, responseCode);
 
-        Map<String, Object> details = getRestTestHelper().getJsonAsSingletonList(
-                "plugin/" + TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT);
+        Map<String, Object> details =
+                getRestTestHelper().getJsonAsMap("plugin/" + TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT);
 
         assertEquals("Unexpected session timeout", HttpManagement.DEFAULT_TIMEOUT_IN_SECONDS,
                 details.get(HttpManagement.TIME_OUT));
@@ -960,14 +959,16 @@ public class BrokerACLTest extends QpidRestTestCase
         attributes.put(BrokerNameAndLevelLogInclusionRule.LEVEL, "DEBUG");
 
         getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1/rule1", "PUT", attributes, HttpServletResponse.SC_OK);
-        Map<String,Object> resultAfterUpdate = getRestTestHelper().getJsonAsSingletonList("brokerloginclusionrule/testLogger1/rule1");
+        Map<String,Object> resultAfterUpdate =
+                getRestTestHelper().getJsonAsMap("brokerloginclusionrule/testLogger1/rule1");
         assertEquals("Log level was not changed", "DEBUG", resultAfterUpdate.get(BrokerNameAndLevelLogInclusionRule.LEVEL));
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
         attributes.put(BrokerNameAndLevelLogInclusionRule.LEVEL, "INFO");
         getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1/rule1", "PUT", attributes, HttpServletResponse.SC_FORBIDDEN);
 
-        Map<String,Object> resultAfterDeniedUpdate = getRestTestHelper().getJsonAsSingletonList("brokerloginclusionrule/testLogger1/rule1");
+        Map<String,Object> resultAfterDeniedUpdate =
+                getRestTestHelper().getJsonAsMap("brokerloginclusionrule/testLogger1/rule1");
         assertEquals("Log level was changed by not allowed user", "DEBUG", resultAfterDeniedUpdate.get(BrokerNameAndLevelLogInclusionRule.LEVEL));
     }
 

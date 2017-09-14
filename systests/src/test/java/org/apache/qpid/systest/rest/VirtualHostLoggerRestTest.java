@@ -49,7 +49,7 @@ public class VirtualHostLoggerRestTest extends QpidRestTestCase
         virtualHostLoggerAttributes.put(ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE);
 
         getRestTestHelper().submitRequest(loggerRestUrlBase, "PUT", virtualHostLoggerAttributes, HttpServletResponse.SC_CREATED);
-        Map<String, Object> loggerData = getRestTestHelper().getJsonAsSingletonList(loggerRestUrl);
+        Map<String, Object> loggerData = getRestTestHelper().getJsonAsMap(loggerRestUrl);
 
         String loggerRuleName = "testRule";
         Map<String, Object> virtualHostRuleAttributes = new HashMap<>();

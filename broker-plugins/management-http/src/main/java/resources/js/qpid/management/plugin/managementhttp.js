@@ -136,7 +136,7 @@ define(["dojo/dom",
             this.management.load(this.modelObj, {excludeInheritedContext: true})
                 .then(function (data)
                 {
-                    that.pluginData = data[0];
+                    that.pluginData = data;
                     that.httpBasicAuthenticationEnabled.innerHTML =
                         showBoolean(that.pluginData.httpBasicAuthenticationEnabled);
                     that.httpsBasicAuthenticationEnabled.innerHTML =

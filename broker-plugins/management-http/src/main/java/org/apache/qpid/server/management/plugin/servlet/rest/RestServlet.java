@@ -79,7 +79,7 @@ public class RestServlet extends AbstractServlet
     public static final String SORT_PARAM = "sort";
     public static final String EXTRACT_INITIAL_CONFIG_PARAM = "extractInitialConfig";
     public static final String EXCLUDE_INHERITED_CONTEXT_PARAM = "excludeInheritedContext";
-
+    private static final String SINGLETON_MODEL_OBJECT_RESPONSE_AS_LIST = "singletonModelObjectResponseAsList";
     /**
      * Signifies that the agent wishes the servlet to set the Content-Disposition on the
      * response with the value attachment.  This filename will be derived from the parameter value.
@@ -92,7 +92,8 @@ public class RestServlet extends AbstractServlet
                                         ACTUALS_PARAM,
                                         EXTRACT_INITIAL_CONFIG_PARAM,
                                         CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM,
-                                        EXCLUDE_INHERITED_CONTEXT_PARAM));
+                                        EXCLUDE_INHERITED_CONTEXT_PARAM,
+                                        SINGLETON_MODEL_OBJECT_RESPONSE_AS_LIST));
     public static final int DEFAULT_DEPTH = 0;
     public static final int DEFAULT_OVERSIZE = 120;
 
@@ -125,11 +126,11 @@ public class RestServlet extends AbstractServlet
     {
         List<String> names = requestInfo.getModelParts();
 
-        Collection<ConfiguredObject<?>> parents = finder.findObjectsFromPath(names, finder.getHierarchy(configuredClass), true);
+        Collection<ConfiguredObject<?>> targetObjects = finder.findObjectsFromPath(names, finder.getHierarchy(configuredClass), true);
 
-        if (!(parents == null || filterPredicateList.isEmpty()))
+        if (!(targetObjects == null || filterPredicateList.isEmpty()))
         {
-            Iterator<ConfiguredObject<?>> iter = parents.iterator();
+            Iterator<ConfiguredObject<?>> iter = targetObjects.iterator();
             while (iter.hasNext())
             {
                 ConfiguredObject obj = iter.next();
@@ -144,7 +145,7 @@ public class RestServlet extends AbstractServlet
             }
 
         }
-        return parents;
+        return targetObjects;
     }
 
     private List<Predicate<ConfiguredObject<?>>> buildFilterPredicates(final HttpServletRequest request)
@@ -211,10 +212,13 @@ public class RestServlet extends AbstractServlet
                     setContentDispositionHeaderIfNecessary(response, attachmentFilename);
                 }
 
+                List<Predicate<ConfiguredObject<?>>> filterPredicateList = buildFilterPredicates(request);
                 Collection<ConfiguredObject<?>> allObjects =
-                        getTargetObjects(configuredClass, finder, requestInfo, buildFilterPredicates(request));
+                        getTargetObjects(configuredClass, finder, requestInfo, filterPredicateList);
 
-                if (allObjects == null || (allObjects.isEmpty() && isSingleObjectRequest(requestInfo, finder.getHierarchy(configuredClass))))
+                boolean singleObjectRequest = requestInfo.isSingletonRequest() && filterPredicateList.isEmpty();
+
+                if (allObjects == null || (allObjects.isEmpty() && singleObjectRequest))
                 {
                     sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
                     return;
@@ -230,31 +234,49 @@ public class RestServlet extends AbstractServlet
                 actuals = getBooleanParameterFromRequest(request, ACTUALS_PARAM);
                 String excludeInheritedContextParameter = request.getParameter(EXCLUDE_INHERITED_CONTEXT_PARAM);
 
-                if (excludeInheritedContextParameter == null)
+                excludeInheritedContext = excludeInheritedContextParameter == null || Boolean.parseBoolean(
+                        excludeInheritedContextParameter);
+
+                boolean responseAsList = Boolean.parseBoolean(request.getParameter(SINGLETON_MODEL_OBJECT_RESPONSE_AS_LIST));
+                final Object responseObject;
+                if (!responseAsList && singleObjectRequest)
                 {
-                    excludeInheritedContext = true;
+                    if (allObjects.size() != 1)
+                    {
+                        throw new IllegalStateException(String.format(
+                                "Unexpected number of objects found [%d] for singleton request URI '%s'",
+                                allObjects.size(), request.getRequestURI()));
+                    }
+                    ConfiguredObject<?> singletonObject = allObjects.iterator().next();
+                    responseObject = _objectConverter.convertObjectToMap(singletonObject, configuredClass,
+                                                                         new ConfiguredObjectToMapConverter
+                                                                                 .ConverterOptions(
+                                                                                 depth,
+                                                                                 actuals,
+                                                                                 oversizeThreshold,
+                                                                                 request.isSecure(),
+                                                                                 excludeInheritedContext));
                 }
                 else
                 {
-                    excludeInheritedContext = Boolean.parseBoolean(excludeInheritedContextParameter);
-                }
+                    final List<Object> outputList = new ArrayList<>();
+                    for (ConfiguredObject configuredObject : allObjects)
+                    {
 
+                        outputList.add(_objectConverter.convertObjectToMap(configuredObject, configuredClass,
+                                                                           new ConfiguredObjectToMapConverter.ConverterOptions(
+                                                                                   depth,
+                                                                                   actuals,
+                                                                                   oversizeThreshold,
+                                                                                   request.isSecure(),
+                                                                                   excludeInheritedContext)));
+                    }
 
-                List<Map<String, Object>> output = new ArrayList<>();
-                for (ConfiguredObject configuredObject : allObjects)
-                {
-
-                    output.add(_objectConverter.convertObjectToMap(configuredObject, configuredClass,
-                                                                   new ConfiguredObjectToMapConverter.ConverterOptions(
-                                                                           depth,
-                                                                           actuals,
-                                                                           oversizeThreshold,
-                                                                           request.isSecure(),
-                                                                           excludeInheritedContext)));
+                    responseObject = outputList;
                 }
 
                 boolean sendCachingHeaders = attachmentFilename == null;
-                sendJsonResponse(output,
+                sendJsonResponse(responseObject,
                                  request,
                                  response,
                                  HttpServletResponse.SC_OK,

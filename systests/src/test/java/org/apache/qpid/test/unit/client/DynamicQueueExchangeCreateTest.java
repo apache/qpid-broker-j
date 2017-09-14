@@ -276,21 +276,14 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
     private Map<String, Object> getExchangeAttributes(final String exchangeName) throws IOException
     {
         String exchangeUrl = "exchange/" + TEST_VHOST + "/" + TEST_VHOST + "/" + exchangeName;
-        List<Map<String, Object>> exchanges = _restTestHelper.getJsonAsList(exchangeUrl);
-        int exchangesSize = exchanges.size();
-        if (exchangesSize == 1)
+        try
         {
-            return exchanges.get(0);
+            return _restTestHelper.getJsonAsMap(exchangeUrl);
         }
-        else if (exchangesSize == 0)
+        catch (FileNotFoundException e)
         {
             return null;
         }
-        else
-        {
-            fail("Exchange REST service returned more then 1 exchange " + exchanges);
-        }
-        return null;
     }
 
     private boolean exchangeExists(final String exchangeName)

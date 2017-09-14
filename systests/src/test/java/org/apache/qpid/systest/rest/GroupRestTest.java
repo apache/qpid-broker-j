@@ -67,7 +67,8 @@ public class GroupRestTest extends QpidRestTestCase
 
     public void testGet() throws Exception
     {
-        Map<String, Object> group = getRestTestHelper().getJsonAsSingletonList("group/" + FILE_GROUP_MANAGER + "/myGroup?depth=1");
+        Map<String, Object> group =
+                getRestTestHelper().getJsonAsMap("group/" + FILE_GROUP_MANAGER + "/myGroup?depth=1");
         List<Map<String, Object>> groupmembers = (List<Map<String, Object>>) group.get("groupmembers");
         assertEquals(1, groupmembers.size());
 
@@ -77,26 +78,28 @@ public class GroupRestTest extends QpidRestTestCase
 
     public void testCreateNewMemberByPutUsingMemberURI() throws Exception
     {
-        Map<String, Object> group = getRestTestHelper().getJsonAsSingletonList("group/" + FILE_GROUP_MANAGER + "/myGroup?depth=1");
+        Map<String, Object> group =
+                getRestTestHelper().getJsonAsMap("group/" + FILE_GROUP_MANAGER + "/myGroup?depth=1");
         getRestTestHelper().assertNumberOfGroupMembers(group, 1);
 
         String url = "groupmember/" + FILE_GROUP_MANAGER + "/"+ GROUP_NAME + "/" +  NEW_MEMBER;
         getRestTestHelper().submitRequest(url, "PUT", Collections.<String, Object>emptyMap(), HttpServletResponse.SC_CREATED);
 
-        Map<String, Object> member = getRestTestHelper().getJsonAsSingletonList(url);
+        Map<String, Object> member = getRestTestHelper().getJsonAsMap(url);
         assertEquals("Unexpected group name", NEW_MEMBER, member.get(GroupMember.NAME));
     }
 
     public void testCreateNewMemberByPostUsingParentURI() throws Exception
     {
-        Map<String, Object> group = getRestTestHelper().getJsonAsSingletonList("group/" + FILE_GROUP_MANAGER + "/myGroup?depth=1");
+        Map<String, Object> group =
+                getRestTestHelper().getJsonAsMap("group/" + FILE_GROUP_MANAGER + "/myGroup?depth=1");
         getRestTestHelper().assertNumberOfGroupMembers(group, 1);
 
         String url = "groupmember/" + FILE_GROUP_MANAGER + "/"+ GROUP_NAME;
         Map<String, Object> data = Collections.<String, Object>singletonMap("name", NEW_MEMBER);
         getRestTestHelper().submitRequest(url, "POST", data, HttpServletResponse.SC_CREATED);
 
-        Map<String, Object> member = getRestTestHelper().getJsonAsSingletonList(url + "/" +  NEW_MEMBER);
+        Map<String, Object> member = getRestTestHelper().getJsonAsMap(url + "/" + NEW_MEMBER);
         assertEquals("Unexpected group name", NEW_MEMBER, member.get(GroupMember.NAME));
 
         // verify that second creation request fails
@@ -105,14 +108,15 @@ public class GroupRestTest extends QpidRestTestCase
 
     public void testCreateNewMemberByPutUsingParentURI() throws Exception
     {
-        Map<String, Object> group = getRestTestHelper().getJsonAsSingletonList("group/" + FILE_GROUP_MANAGER + "/myGroup?depth=1");
+        Map<String, Object> group =
+                getRestTestHelper().getJsonAsMap("group/" + FILE_GROUP_MANAGER + "/myGroup?depth=1");
         getRestTestHelper().assertNumberOfGroupMembers(group, 1);
 
         String url = "groupmember/" + FILE_GROUP_MANAGER + "/"+ GROUP_NAME;
         Map<String, Object> data = Collections.<String, Object>singletonMap("name", NEW_MEMBER);
         getRestTestHelper().submitRequest(url, "PUT", data, HttpServletResponse.SC_CREATED);
 
-        Map<String, Object> member = getRestTestHelper().getJsonAsSingletonList(url + "/" +  NEW_MEMBER);
+        Map<String, Object> member = getRestTestHelper().getJsonAsMap(url + "/" + NEW_MEMBER);
         assertEquals("Unexpected group name", NEW_MEMBER, member.get(GroupMember.NAME));
 
         // verify that second creation request fails
@@ -121,12 +125,13 @@ public class GroupRestTest extends QpidRestTestCase
 
     public void testRemoveMemberFromGroup() throws Exception
     {
-        Map<String, Object> group = getRestTestHelper().getJsonAsSingletonList("group/" + FILE_GROUP_MANAGER + "/myGroup?depth=1");
+        Map<String, Object> group =
+                getRestTestHelper().getJsonAsMap("group/" + FILE_GROUP_MANAGER + "/myGroup?depth=1");
         getRestTestHelper().assertNumberOfGroupMembers(group, 1);
 
         getRestTestHelper().removeMemberFromGroup(FILE_GROUP_MANAGER, GROUP_NAME, EXISTING_MEMBER);
 
-        group = getRestTestHelper().getJsonAsSingletonList("group/" + FILE_GROUP_MANAGER + "/myGroup");
+        group = getRestTestHelper().getJsonAsMap("group/" + FILE_GROUP_MANAGER + "/myGroup");
         getRestTestHelper().assertNumberOfGroupMembers(group, 0);
     }
 

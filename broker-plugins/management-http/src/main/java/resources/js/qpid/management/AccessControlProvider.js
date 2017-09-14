@@ -121,7 +121,7 @@ define(["dojo/parser",
             this.management.load(this.modelObj, {excludeInheritedContext: true})
                 .then(function (data)
                 {
-                    that.accessControlProviderData = data[0];
+                    that.accessControlProviderData = data;
 
                     util.flattenStatistics(that.accessControlProviderData);
 

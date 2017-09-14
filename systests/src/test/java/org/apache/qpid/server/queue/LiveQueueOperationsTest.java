@@ -127,7 +127,7 @@ public class LiveQueueOperationsTest extends QpidBrokerTestCase
 
     private Map<String, Object> getStatistics(final RestTestHelper restTestHelper, final String objectUrl) throws Exception
     {
-        Map<String, Object> object = restTestHelper.getJsonAsSingletonList(objectUrl);
+        Map<String, Object> object = restTestHelper.getJsonAsMap(objectUrl);
         @SuppressWarnings("unchecked")
         Map<String, Object> statistics = (Map<String, Object>) object.get("statistics");
         return statistics;
