@@ -20,42 +20,38 @@
  */
 define(["dojo/parser",
         "dojo/query",
-        "dojo/_base/connect",
         "dojo/_base/lang",
+        "dojo/_base/declare",
         "dijit/registry",
         "dojox/html/entities",
-        "qpid/common/properties",
         "qpid/common/updater",
         "qpid/common/util",
         "qpid/common/formatter",
-        "qpid/common/UpdatableStore",
         "qpid/management/addQueue",
         "qpid/management/addExchange",
         "qpid/management/addLogger",
         "qpid/management/query/QueryGrid",
-        "dojox/grid/EnhancedGrid",
         "qpid/management/editVirtualHost",
         "qpid/common/StatisticsWidget",
+        "dgrid/Selector",
         "dojo/text!showVirtualHost.html",
         "dojo/domReady!"],
     function (parser,
               query,
-              connect,
               lang,
+              declare,
               registry,
               entities,
-              properties,
               updater,
               util,
               formatter,
-              UpdatableStore,
               addQueue,
               addExchange,
               addLogger,
               QueryGrid,
-              EnhancedGrid,
               editVirtualHost,
               StatisticsWidget,
+              Selector,
               template)
     {
 
@@ -85,41 +81,27 @@ define(["dojo/parser",
                     that.vhostUpdater = new Updater(that);
 
                     var addQueueButton = query(".addQueueButton", containerNode)[0];
-                    connect.connect(registry.byNode(addQueueButton), "onClick", function (evt)
+                    registry.byNode(addQueueButton).on("click", function (evt)
                     {
                         addQueue.show(that.management, that.modelObj)
                     });
 
                     var deleteQueueButton = query(".deleteQueueButton", containerNode)[0];
-                    connect.connect(registry.byNode(deleteQueueButton), "onClick", function (evt)
+                    registry.byNode(deleteQueueButton).on("click", function (evt)
                     {
-                        util.deleteSelectedObjects(that.vhostUpdater.queuesGrid.grid,
-                            "Are you sure you want to delete queue",
-                            that.management,
-                            {
-                                type: "queue",
-                                parent: that.modelObj
-                            },
-                            that.vhostUpdater);
+                        that._deleteSelectedItems(that.vhostUpdater.queuesGrid, "queue", "queue");
                     });
 
                     var addExchangeButton = query(".addExchangeButton", containerNode)[0];
-                    connect.connect(registry.byNode(addExchangeButton), "onClick", function (evt)
+                    registry.byNode(addExchangeButton).on("click", function (evt)
                     {
                         addExchange.show(that.management, that.modelObj);
                     });
 
                     var deleteExchangeButton = query(".deleteExchangeButton", containerNode)[0];
-                    connect.connect(registry.byNode(deleteExchangeButton), "onClick", function (evt)
+                    registry.byNode(deleteExchangeButton).on("click", function (evt)
                     {
-                        util.deleteSelectedObjects(that.vhostUpdater.exchangesGrid.grid,
-                            "Are you sure you want to delete exchange",
-                            that.management,
-                            {
-                                type: "exchange",
-                                parent: that.modelObj
-                            },
-                            that.vhostUpdater);
+                        that._deleteSelectedItems(that.vhostUpdater.exchangesGrid, "exchange", "exchange");
                     });
 
                     var addLoggerButtonNode = query(".addVirtualHostLogger", contentPane.containerNode)[0];
@@ -133,14 +115,7 @@ define(["dojo/parser",
                     var deleteLoggerButton = registry.byNode(deleteLoggerButtonNode);
                     deleteLoggerButton.on("click", function (evt)
                     {
-                        util.deleteSelectedObjects(that.vhostUpdater.virtualHostLoggersGrid.grid,
-                            "Are you sure you want to delete virtual host logger",
-                            that.management,
-                            {
-                                type: "virtualhostlogger",
-                                parent: that.modelObj
-                            },
-                            that.vhostUpdater);
+                        that._deleteSelectedItems(that.vhostUpdater.virtualHostLoggersGrid, "virtualhostlogger", "virtual host logger");
                     });
 
                     that.stopButton = registry.byNode(query(".stopButton", containerNode)[0]);
@@ -200,6 +175,39 @@ define(["dojo/parser",
                 });
         };
 
+        VirtualHost.prototype._deleteSelectedItems = function(dgrid, category, friendlyCategoryName)
+        {
+            var selected = [];
+            var selection = dgrid.selection;
+            for(var item in selection)
+            {
+                if (selection.hasOwnProperty(item))
+                {
+                    selected.push(item);
+                }
+            }
+            if (selected.length > 0)
+            {
+                var ending = selected.length > 1 ? "s " : " ";
+                if (confirm(lang.replace("Are you sure you want to delete {0} {1}{2}from virtual host '{3}'?",
+                        [selected.length,
+                         entities.encode(String(friendlyCategoryName || category )),
+                         ending,
+                         entities.encode(String(this.modelObj.name))])))
+                {
+                    this.management
+                        .remove({
+                            type: category,
+                            parent: this.modelObj
+                        }, {"id": selected})
+                        .then(lang.hitch(this, function (responseData)
+                        {
+                            this.vhostUpdater.update();
+                        }));
+                }
+            }
+        };
+
         VirtualHost.prototype.close = function ()
         {
             updater.remove(this.vhostUpdater);
@@ -223,6 +231,7 @@ define(["dojo/parser",
             this.contentPane = virtualHost.contentPane;
             this.management = controller.management;
             this.modelObj = vhost;
+            this.vhostData = {};
             var that = this;
 
             function findNode(name)
@@ -256,85 +265,90 @@ define(["dojo/parser",
                         "virtualHostConnections",
                         "virtualHostChildren"]);
 
-            that.vhostData = {};
 
-            var gridProperties = {
-                keepSelection: true,
-                plugins: {
-                    pagination: {
-                        pageSizes: [10, 25, 50, 100],
-                        description: true,
-                        sizeSwitch: true,
-                        pageStepper: true,
-                        gotoButton: true,
-                        maxPageStep: 4,
-                        position: "bottom"
-                    },
-                    indirectSelection: true
 
-                }
-            };
+            var CustomGrid = declare([QueryGrid, Selector]);
 
-            that.queuesGrid = new UpdatableStore([], findNode("queues"), [{
-                name: "Name",
-                field: "name",
-                width: "30%"
-            }, {
-                name: "Type",
-                field: "type",
-                width: "20%"
-            }, {
-                name: "Consumers",
-                field: "consumerCount",
-                width: "10%"
-            }, {
-                name: "Depth (msgs)",
-                field: "queueDepthMessages",
-                width: "20%"
-            }, {
-                name: "Depth (bytes)",
-                field: "queueDepthBytes",
-                width: "20%",
-                get: function (rowIndex, item)
-                {
-                    if (!item)
+            this.queuesGrid = new CustomGrid({
+                detectChanges: true,
+                rowsPerPage: 10,
+                transformer: util.queryResultToObjects,
+                management: this.management,
+                parentObject: this.modelObj,
+                category: "Queue",
+                selectClause: "id, name, type, consumerCount, queueDepthMessages, queueDepthBytes",
+                orderBy: "name",
+                selectionMode: 'multiple',
+                deselectOnRefresh: false,
+                allowSelectAll: true,
+                columns: [
                     {
-                        return;
+                        field: "selected",
+                        label: 'All',
+                        selector: 'checkbox'
+                    }, {
+                        label: "Name",
+                        field: "name"
+                    }, {
+                        label: "Type",
+                        field: "type"
+                    }, {
+                        label: "Consumers",
+                        field: "consumerCount"
+                    }, {
+                        label: "Depth (msgs)",
+                        field: "queueDepthMessages"
+                    }, {
+                        label: "Depth (bytes)",
+                        field: "queueDepthBytes",
+                        formatter: function (value, object)
+                        {
+                            var bytesFormat = formatter.formatBytes(value);
+                            return bytesFormat.toString();
+                        }
                     }
-                    var store = this.grid.store;
-                    var qdb = store.getValue(item, "queueDepthBytes");
-                    var bytesFormat = formatter.formatBytes(qdb);
-                    return bytesFormat.value + " " + bytesFormat.units;
-                }
-            }], function (obj)
-            {
-                connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
-                {
-                    var theItem = this.getItem(evt.rowIndex);
-                    controller.showById(theItem.id);
-                });
-            }, gridProperties, EnhancedGrid);
+                ]
+            }, findNode("queues"));
+            this.queuesGrid.on('rowBrowsed', function(event){controller.showById(event.id);});
+            this.queuesGrid.startup();
 
-            that.exchangesGrid = new UpdatableStore([], findNode("exchanges"), [{
-                name: "Name",
-                field: "name",
-                width: "50%"
-            }, {
-                name: "Type",
-                field: "type",
-                width: "30%"
-            }, {
-                name: "Binding Count",
-                field: "bindingCount",
-                width: "20%"
-            }], function (obj)
-            {
-                connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
+            this.exchangesGrid = new CustomGrid({
+                detectChanges: true,
+                rowsPerPage: 10,
+                transformer: util.queryResultToObjects,
+                management: this.management,
+                parentObject: this.modelObj,
+                category: "Exchange",
+                selectClause: "id, name, type, bindingCount",
+                orderBy: "name",
+                selectionMode: 'multiple',
+                deselectOnRefresh: false,
+                allowSelectAll: true,
+                allowSelect: function (row)
                 {
-                    var theItem = this.getItem(evt.rowIndex);
-                    controller.showById(theItem.id);
-                });
-            }, gridProperties, EnhancedGrid);
+                    var item = row.data;
+                    var isStandard = item && item.name && util.isReservedExchangeName(item.name);
+                    return !isStandard;
+                },
+                columns: [
+                    {
+                        field: "selected",
+                        label: 'All',
+                        selector: 'checkbox'
+                    },  {
+                        label: "Name",
+                        field: "name"
+                    }, {
+                        label: "Type",
+                        field: "type"
+                    }, {
+                        label: "Binding Count",
+                        field: "bindingCount"
+                    }
+                ]
+            }, findNode("exchanges"));
+            this.exchangesGrid.on('rowBrowsed', function(event){controller.showById(event.id);});
+            this.exchangesGrid.startup();
 
             this.connectionsGrid = new QueryGrid({
                 detectChanges: true,
@@ -376,49 +390,148 @@ define(["dojo/parser",
                 ]
             }, findNode("connections"));
             this.connectionsGrid.on('rowBrowsed', function(event){controller.showById(event.id);});
-            that.connectionsGrid.startup();
+            this.connectionsGrid.startup();
 
-            // Add onShow handler to work around an issue with not rendering of grid columns before first update.
-            // It seems if dgrid is created when tab is not shown (not active) the grid columns are not rendered.
-            this.contentPane.on("show",
-                                function()
-                                {
-                                    that.connectionsGrid.resize();
-                                });
-
-
-            that.virtualHostLoggersGrid = new UpdatableStore([], findNode("loggers"), [{
-                name: "Name",
-                field: "name",
-                width: "40%"
-            }, {
-                name: "State",
-                field: "state",
-                width: "20%"
-            }, {
-                name: "Type",
-                field: "type",
-                width: "20%"
-            }, {
-                name: "Errors",
-                field: "errorCount",
-                width: "10%"
-            }, {
-                name: "Warnings",
-                field: "warnCount",
-                width: "10%"
-            }], function (obj)
-            {
-                connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
-                {
-                    var theItem = this.getItem(evt.rowIndex);
-                    controller.showById(theItem.id);
-                });
-            }, gridProperties, EnhancedGrid);
-
+            this.virtualHostLoggersGrid = new CustomGrid({
+                detectChanges: true,
+                rowsPerPage: 10,
+                transformer: util.queryResultToObjects,
+                management: this.management,
+                parentObject: this.modelObj,
+                category: "VirtualHostLogger",
+                selectClause: "id, name, type, errorCount, warnCount",
+                orderBy: "name",
+                selectionMode: 'multiple',
+                deselectOnRefresh: false,
+                allowSelectAll: true,
+                columns: [
+                    {
+                        field: "selected",
+                        label: 'All',
+                        selector: 'checkbox'
+                    },  {
+                        label: "Name",
+                        field: "name"
+                    }, {
+                        label: "Type",
+                        field: "type"
+                    }, {
+                        label: "Errors",
+                        field: "errorCount"
+                    }, {
+                        label: "Warnings",
+                        field: "warnCount"
+                    }
+                ]
+            }, findNode("loggers"));
+            this.virtualHostLoggersGrid.on('rowBrowsed', function(event){controller.showById(event.id);});
+            this.virtualHostLoggersGrid.startup();
         }
 
-        Updater.prototype.updateHeader = function ()
+        Updater.prototype.update = function (callback)
+        {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
+            this.management.load(this.modelObj,
+                {
+                    excludeInheritedContext: true,
+                    depth: 0
+                })
+                .then(lang.hitch(this, function (data)
+                {
+                    this._updateFromData(data, callback);
+                }), lang.hitch(this, function (error)
+                {
+                    util.tabErrorHandler(error,
+                        {
+                            updater: this,
+                            contentPane: this.tabObject.contentPane,
+                            tabContainer: this.tabObject.controller.tabContainer,
+                            name: this.modelObj.name,
+                            category: "Virtual Host"
+                        });
+                }));
+        };
+
+        Updater.prototype._updateFromData = function(data, callback)
+        {
+            this.vhostData = data || {name: this.modelObj.name};
+
+            if (!this.virtualhostStatistics)
+            {
+                this.virtualhostStatistics = new StatisticsWidget({
+                    category: "VirtualHost",
+                    type: this.vhostData.type,
+                    management: this.management,
+                    defaultStatistics: ["messagesIn", "messagesOut", "totalDepthOfQueuesMessages"]
+                });
+                this.virtualhostStatistics.placeAt(this.virtualhostStatisticsNode);
+                this.virtualhostStatistics.startup();
+            }
+
+            if (callback)
+            {
+                callback();
+            }
+
+            try
+            {
+                this._update();
+            }
+            catch (e)
+            {
+                if (console && console.error)
+                {
+                    console.error(e);
+                }
+            }
+        };
+
+        Updater.prototype._update = function ()
+        {
+            this.tabObject.startButton.set("disabled", !this.vhostData.state || this.vhostData.state !== "STOPPED");
+            this.tabObject.stopButton.set("disabled", !this.vhostData.state || this.vhostData.state !== "ACTIVE");
+            this.tabObject.editButton.set("disabled", !this.vhostData.state || this.vhostData.state === "UNAVAILABLE");
+            this.tabObject.downloadButton.set("disabled", !this.vhostData.state || this.vhostData.state !== "ACTIVE");
+            this.tabObject.deleteButton.set("disabled", !this.vhostData.state);
+
+            this.virtualhostStatistics.update(this.vhostData.statistics);
+            this.virtualhostStatistics.resize();
+
+            this._updateHeader();
+
+            this.virtualHostChildren.style.display = this.vhostData.state === "ACTIVE" ? "block" : "none";
+
+            if (this.vhostData.state === "ACTIVE")
+            {
+                this.connectionsGrid.updateData();
+                this.queuesGrid.updateData();
+                this.exchangesGrid.updateData();
+                this.virtualHostLoggersGrid.updateData();
+            }
+
+            if (this.details)
+            {
+                this.details.update(this.vhostData);
+            }
+            else
+            {
+                var thisObj = this;
+                require(["qpid/management/virtualhost/" + this.vhostData.type.toLowerCase() + "/show"],
+                    function (VirtualHostDetails)
+                    {
+                        thisObj.details = new VirtualHostDetails({
+                            containerNode: thisObj.virtualHostDetailsContainer,
+                            parent: thisObj
+                        });
+                        thisObj.details.update(thisObj.vhostData);
+                    });
+            }
+        };
+
+        Updater.prototype._updateHeader = function ()
         {
             this.name.innerHTML = entities.encode(String(this.vhostData["name"]));
             this.type.innerHTML = entities.encode(String(this.vhostData["type"]));
@@ -434,107 +547,6 @@ define(["dojo/parser",
                  "storeTransactionOpenTimeoutWarn",
                  "connectionThreadPoolSize"],
                 this)
-        };
-
-        Updater.prototype.update = function (callback)
-        {
-            if (!this.contentPane.selected && !callback)
-            {
-                return;
-            }
-
-            var thisObj = this;
-
-            thisObj.connectionsGrid.updateData();
-            thisObj.connectionsGrid.resize();
-
-            this.management.load(this.modelObj,
-                {
-                    excludeInheritedContext: true,
-                    depth: 1
-                })
-                .then(function (data)
-                {
-                    thisObj.vhostData = data || {
-                            name: thisObj.modelObj.name
-                        };
-
-                    if (!thisObj.virtualhostStatistics)
-                    {
-                        thisObj.virtualhostStatistics = new StatisticsWidget({
-                            category:  "VirtualHost",
-                            type: thisObj.vhostData.type,
-                            management: thisObj.management,
-                            defaultStatistics: ["messagesIn", "messagesOut", "totalDepthOfQueuesMessages"]
-                        });
-                        thisObj.virtualhostStatistics.placeAt(thisObj.virtualhostStatisticsNode);
-                        thisObj.virtualhostStatistics.startup();
-                    }
-
-                    if (callback)
-                    {
-                        callback();
-                    }
-
-                    try
-                    {
-                        thisObj._update();
-                    }
-                    catch (e)
-                    {
-                        if (console && console.error)
-                        {
-                            console.error(e);
-                        }
-                    }
-                }, function (error)
-                {
-                    util.tabErrorHandler(error, {
-                        updater: thisObj,
-                        contentPane: thisObj.tabObject.contentPane,
-                        tabContainer: thisObj.tabObject.controller.tabContainer,
-                        name: thisObj.modelObj.name,
-                        category: "Virtual Host"
-                    });
-                });
-        };
-
-        Updater.prototype._update = function ()
-        {
-            var thisObj = this;
-            this.tabObject.startButton.set("disabled", !this.vhostData.state || this.vhostData.state !== "STOPPED");
-            this.tabObject.stopButton.set("disabled", !this.vhostData.state || this.vhostData.state !== "ACTIVE");
-            this.tabObject.editButton.set("disabled", !this.vhostData.state || this.vhostData.state === "UNAVAILABLE");
-            this.tabObject.downloadButton.set("disabled", !this.vhostData.state || this.vhostData.state !== "ACTIVE");
-            this.tabObject.deleteButton.set("disabled", !this.vhostData.state);
-
-            var queues = thisObj.vhostData["queues"];
-            var exchanges = thisObj.vhostData["exchanges"];
-
-            thisObj.virtualhostStatistics.update(thisObj.vhostData.statistics);
-            thisObj.virtualhostStatistics.resize();
-
-            thisObj.updateHeader();
-
-            this._updateGrids(thisObj.vhostData);
-
-            if (thisObj.details)
-            {
-                thisObj.details.update(thisObj.vhostData);
-            }
-            else
-            {
-                require(["qpid/management/virtualhost/" + thisObj.vhostData.type.toLowerCase() + "/show"],
-                    function (VirtualHostDetails)
-                    {
-                        thisObj.details = new VirtualHostDetails({
-                            containerNode: thisObj.virtualHostDetailsContainer,
-                            parent: thisObj
-                        });
-                        thisObj.details.update(thisObj.vhostData);
-                    });
-            }
-
         };
 
         Updater.prototype._transformConnectionData = function (data)
@@ -584,24 +596,6 @@ define(["dojo/parser",
             return connections;
         };
 
-        Updater.prototype._updateGrids = function (data)
-        {
-            this.virtualHostChildren.style.display = data.state === "ACTIVE" ? "block" : "none";
-            if (data.state === "ACTIVE")
-            {
-                util.updateUpdatableStore(this.queuesGrid, data.queues);
-                util.updateUpdatableStore(this.exchangesGrid, data.exchanges);
-                util.updateUpdatableStore(this.virtualHostLoggersGrid, data.virtualhostloggers);
-
-                var exchangesGrid = this.exchangesGrid.grid;
-                for (var i = 0; i < data.exchanges.length; i++)
-                {
-                    var item = exchangesGrid.getItem(i);
-                    var isStandard = item && item.name && util.isReservedExchangeName(item.name);
-                    exchangesGrid.rowSelectCell.setDisabled(i, isStandard);
-                }
-            }
-        };
 
         return VirtualHost;
     });

@@ -532,6 +532,24 @@ td.advancedSearchField, col.autoWidth {
 .virtualHostConnections .field-msgOutRate { width: 10% }
 .virtualHostConnections .field-bytesOutRate { width: 10% }
 
+.virtualHostQueues .field-selected { width: 2em; }
+.virtualHostQueues .field-name { width: auto; }
+.virtualHostQueues .field-type { width: 10%; }
+.virtualHostQueues .field-consumerCount { width: 10% }
+.virtualHostQueues .field-queueDepthMessages { width: 10% }
+.virtualHostQueues .field-queueDepthBytes { width: 10% }
+
+.virtualHostExchanges .field-selected { width: 2em; }
+.virtualHostExchanges .field-name { width: auto; }
+.virtualHostExchanges .field-type { width: 10%; }
+.virtualHostExchanges .field-bindingCount { width: 10% }
+
+.virtualHostLoggers .field-selected { width: 2em; }
+.virtualHostLoggers .field-name { width: auto; }
+.virtualHostLoggers .field-type { width: 10%; }
+.virtualHostLoggers .field-warnCount { width: 10% }
+.virtualHostLoggers .field-errorCount { width: 10% }
+
 .queueConsumers .field-name { width: 30%; }
 .queueConsumers .field-distributionMode { width: 10% }
 .queueConsumers .field-connectionName { width: 10% }

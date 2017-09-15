@@ -61,6 +61,7 @@ define(["dojox/lang/functional/object",
                 //Strip out the apache comment header from the template html as comments unsupported.
                 templateString: template.replace(/<!--[\s\S]*?-->/g, ""),
 
+                // template fields
                 msgBytePairCumulativeStatisticsGridContainer: null,
                 otherCumulativeStatisticsGridContainer: null,
                 msgBytePairPointInTimeStatisticsGridContainer: null,
@@ -69,21 +70,23 @@ define(["dojox/lang/functional/object",
                 statisticsPane: null,
                 allStatsToggle: null,
 
+                // constructor arguments
                 category: null,
                 type: null,
                 management: null,
                 defaultStatistics: null,
 
+                // inner fields
                 _msgBytePairCumulativeStatisticsGrid: null,
                 _otherCumulativeStatisticsGrid: null,
                 _msgBytePairPointInTimeStatisticsGrid: null,
                 _otherPointInTimeStatisticsGrid: null,
-                _allGrids: [],
+                _allGrids: null,
 
                 _showAllStats : false,
                 _sampleTime: null,
                 _previousSampleTime: null,
-                _nodes: {},
+                _userPreferences: null,
 
                 postCreate: function ()
                 {
@@ -93,7 +96,7 @@ define(["dojox/lang/functional/object",
 
                     var type = this.type ? this.type : this.category;
 
-                    this.userPreferences = this.management.userPreferences;
+                    this._userPreferences = this.management.userPreferences;
                     var allStatistics = metadata.getStatisticsMetadata(this.category, type);
                     var allAugmentedStatistics = this._augmentStatistics(allStatistics);
                     var pairedByteMessageStatistic = [];
@@ -138,7 +141,7 @@ define(["dojox/lang/functional/object",
                     this._msgBytePairCumulativeStatisticsGrid =
                         new EnhancedGrid({
                             store: this._dataStore,
-                            class: "statisticGrid",
+                            "class": "statisticGrid",
                             autoHeight: true,
                             structure: [{
                                 name: "Name",
@@ -177,7 +180,7 @@ define(["dojox/lang/functional/object",
                     this._otherCumulativeStatisticsGrid =
                         new EnhancedGrid({
                             store: this._dataStore,
-                            class: "statisticGrid",
+                            "class": "statisticGrid",
                             autoHeight: true,
                             structure: [{
                                 name: "Name",
@@ -204,7 +207,7 @@ define(["dojox/lang/functional/object",
                     this._msgBytePairPointInTimeStatisticsGrid =
                         new EnhancedGrid({
                             store: this._dataStore,
-                            class: "statisticGrid",
+                            "class": "statisticGrid",
                             autoHeight: true,
                             structure: [{
                                 name: "Name",
@@ -233,7 +236,7 @@ define(["dojox/lang/functional/object",
                     this._otherPointInTimeStatisticsGrid =
                         new EnhancedGrid({
                             store: this._dataStore,
-                            class: "statisticGrid",
+                            "class": "statisticGrid",
                             autoHeight: true,
                             structure: [{
                                 name: "Name",
@@ -253,10 +256,10 @@ define(["dojox/lang/functional/object",
                                this._isStatItemShown(statItem);
                     });
 
-                    this._allGrids.push(this._msgBytePairCumulativeStatisticsGrid,
+                    this._allGrids = [this._msgBytePairCumulativeStatisticsGrid,
                                         this._otherCumulativeStatisticsGrid,
                                         this._msgBytePairPointInTimeStatisticsGrid,
-                                        this._otherPointInTimeStatisticsGrid);
+                                        this._otherPointInTimeStatisticsGrid];
 
                     connect.connect(this.statisticsPane, "toggle", lang.hitch(this, this.resize));
                     array.forEach(this._allGrids, function(grid)
@@ -375,7 +378,7 @@ define(["dojox/lang/functional/object",
                     }
                     else if (units === "ABSOLUTE_TIME")
                     {
-                        return this.userPreferences.formatDateTime(value, {
+                        return this._userPreferences.formatDateTime(value, {
                             addOffset: true,
                             appendTimeZone: true
                         });

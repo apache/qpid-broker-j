@@ -27,13 +27,13 @@
                 <div class="formLabel-labelCell">Name:</div>
                 <div class="name formValue-valueCell"></div>
             </div>
+        </div>
+        <div class="clear"></div>
+        <div class="alignLeft">
             <div class="clear">
                 <div class="formLabel-labelCell">Type:</div>
                 <div class="type formValue-valueCell"></div>
             </div>
-        </div>
-        <div class="clear"></div>
-        <div class="alignLeft">
             <div class="clear">
                 <div class="formLabel-labelCell">State:</div>
                 <div class="state formValue-valueCell"></div>
@@ -107,13 +107,13 @@
     </div>
     <br/>
     <div class="virtualHostChildren">
-        <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Exchanges'">
+        <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Exchanges'" class="virtualHostExchanges">
             <div class="exchanges"></div>
             <button data-dojo-type="dijit.form.Button" class="addExchangeButton">Add Exchange</button>
             <button data-dojo-type="dijit.form.Button" class="deleteExchangeButton">Delete Exchange</button>
         </div>
         <br/>
-        <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Queues'">
+        <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Queues'" class="virtualHostQueues">
             <div class="queues"></div>
             <button data-dojo-type="dijit.form.Button" class="addQueueButton">Add Queue</button>
             <button data-dojo-type="dijit.form.Button" class="deleteQueueButton">Delete Queue</button>
@@ -123,7 +123,7 @@
             <div class="connections"></div>
         </div>
         <br/>
-        <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Virtual Host Loggers'">
+        <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Virtual Host Loggers'"  class="virtualHostLoggers">
             <div class="loggers"></div>
             <button data-dojo-type="dijit.form.Button" class="addVirtualHostLogger">Add Virtual Host Logger</button>
             <button data-dojo-type="dijit.form.Button" class="deleteVirtualHostLogger">Delete Virtual Host Logger</button>
