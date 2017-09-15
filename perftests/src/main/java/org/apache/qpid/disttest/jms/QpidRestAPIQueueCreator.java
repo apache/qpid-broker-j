@@ -87,7 +87,8 @@ public class QpidRestAPIQueueCreator implements QueueCreator
 
         _management = HttpHost.create(System.getProperty("perftests.manangement-url", "http://localhost:8080"));
         _queueApiUrl = System.getProperty("perftests.manangement-api-queue", "/api/latest/queue/%s/%s/%s");
-        _brokerApiUrl = System.getProperty("perftests.manangement-api-broker", "/api/latest/broker");
+        // QPID-7773: singletonModelObjectResponseAsList caused Java Broker v7.0 to return lists, like older versions did.
+        _brokerApiUrl = System.getProperty("perftests.manangement-api-broker", "/api/latest/broker?singletonModelObjectResponseAsList=true");
 
         _credentialsProvider = getCredentialsProvider(managementUser, managementPassword);
     }
