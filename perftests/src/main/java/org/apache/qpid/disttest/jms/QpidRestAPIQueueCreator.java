@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +36,6 @@ import javax.jms.MessageConsumer;
 import javax.jms.QueueBrowser;
 import javax.jms.Session;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
@@ -67,7 +66,6 @@ public class QpidRestAPIQueueCreator implements QueueCreator
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(QpidRestAPIQueueCreator.class);
     private static int _drainPollTimeout = Integer.getInteger(QUEUE_CREATOR_DRAIN_POLL_TIMEOUT, 500);
-    private static final TypeReference<List<HashMap<String, Object>>> MAP_TYPE_REFERENCE = new TypeReference<List<HashMap<String,Object>>>(){};
 
     private final HttpHost _management;
     private final String _virtualhostnode;
@@ -87,8 +85,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
 
         _management = HttpHost.create(System.getProperty("perftests.manangement-url", "http://localhost:8080"));
         _queueApiUrl = System.getProperty("perftests.manangement-api-queue", "/api/latest/queue/%s/%s/%s");
-        // QPID-7773: singletonModelObjectResponseAsList caused Java Broker v7.0 to return lists, like older versions did.
-        _brokerApiUrl = System.getProperty("perftests.manangement-api-broker", "/api/latest/broker?singletonModelObjectResponseAsList=true");
+        _brokerApiUrl = System.getProperty("perftests.manangement-api-broker", "/api/latest/broker");
 
         _credentialsProvider = getCredentialsProvider(managementUser, managementPassword);
     }
@@ -242,11 +239,33 @@ public class QpidRestAPIQueueCreator implements QueueCreator
         }
     }
 
+    @SuppressWarnings("unchecked")
     private Map<String, Object> managementQueryBroker(final HttpClientContext context)
     {
         HttpGet get = new HttpGet(_brokerApiUrl);
-        final List<Map<String, Object>> maps = executeManagement(get, context);
-        return maps.isEmpty() ? Collections.emptyMap() : maps.get(0);
+        Object obj = executeManagement(get, context);
+        if (obj == null)
+        {
+            throw new IllegalStateException(String.format("Unexpected null response from management query '%s'", get));
+        }
+        else if (obj instanceof Collection)
+        {
+            Iterator itr = ((Collection) obj).iterator();
+            if (!itr.hasNext())
+            {
+                throw new IllegalStateException(String.format("Unexpected empty list response from management query '%s'", get));
+            }
+            obj = itr.next();
+        }
+
+        if (obj instanceof Map)
+        {
+            return (Map<String, Object>) obj;
+        }
+        else
+        {
+            throw new IllegalStateException(String.format("Unexpected response '%s' from management query '%s'", obj, get));
+        }
     }
 
     private void managementCreateQueue(final String name, final HttpClientContext context)
@@ -266,7 +285,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
         executeManagement(delete, context);
     }
 
-    private List<Map<String, Object>> executeManagement(final HttpRequest httpRequest, final HttpClientContext context)
+    private Object executeManagement(final HttpRequest httpRequest, final HttpClientContext context)
     {
         try(CloseableHttpClient httpClient = HttpClients.custom()
                                                         .setDefaultCredentialsProvider(_credentialsProvider)
@@ -287,7 +306,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
                     response.getEntity().writeTo(bos);
                     if (bos.size() > 0)
                     {
-                        return new ObjectMapper().readValue(bos.toByteArray(), MAP_TYPE_REFERENCE);
+                        return new ObjectMapper().readValue(bos.toByteArray(), Object.class);
                     }
                 }
             }
