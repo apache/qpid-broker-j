@@ -597,7 +597,6 @@ define(["dojo/_base/declare",
             this.holdOnPublishEnabled.innerHTML = entities.encode(String(this.queueData["holdOnPublishEnabled"]));
 
             this.queueStatistics.update(this.queueData.statistics);
-            this.queueStatistics.resize();
         };
 
         QueueUpdater.prototype.update = function (callback)

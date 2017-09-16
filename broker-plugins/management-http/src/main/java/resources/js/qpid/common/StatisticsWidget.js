@@ -22,14 +22,16 @@ define(["dojox/lang/functional/object",
         "dojo/_base/declare",
         "dojo/_base/array",
         "dojo/_base/lang",
-        "dojo/_base/connect",
+        "dojo/promise/all",
+        "dojo/Deferred",
+        "dojo/dom-style",
         "dojo/on",
         "dojo/mouse",
         "dojo/number",
-        "dojo/store/Memory",
-        "dojox/grid/EnhancedGrid",
-        "dojo/data/ObjectStore",
-        "dojo/store/Observable",
+        "dstore/Memory",
+        'dstore/Trackable',
+        "dojox/html/entities",
+        "dgrid/OnDemandGrid",
         "dijit/_WidgetBase",
         "dijit/Tooltip",
         "dijit/registry",
@@ -41,14 +43,16 @@ define(["dojox/lang/functional/object",
               declare,
               array,
               lang,
-              connect,
+              all,
+              Deferred,
+              domStyle,
               on,
               mouse,
               number,
               Memory,
-              EnhancedGrid,
-              ObjectStore,
-              Observable,
+              Trackable,
+              entities,
+              Grid,
               _WidgetBase,
               Tooltip,
               registry,
@@ -104,169 +108,101 @@ define(["dojox/lang/functional/object",
 
                     this._filterMessageByteStatisticPairs(allAugmentedStatistics, pairedByteMessageStatistic, otherStatistics);
 
-                    this._store = new Memory({
-                        data: allAugmentedStatistics,
+                    var TrackableMemory = declare([Memory, Trackable]);
+
+                    this._otherStatsStore = new TrackableMemory({
+                        data: otherStatistics,
                         idProperty: "id"
                     });
 
-                    this._dataStore = ObjectStore({objectStore: new Observable(this._store)});
+                    this._pairedStatsStore = new TrackableMemory({
+                        data: pairedByteMessageStatistic,
+                        idProperty: "id"
+                    });
 
-                    var formatRate = function (fields)
+                    var defaultFilter = function(item)
                     {
-                        var value = fields[0] ? fields[0] : 0;
-                        var previousValue = fields[1] ? fields[1] : 0;
-                        var units = fields[2];
-                        var rateWithUnit = this._formatRate(value, previousValue, units);
-                        return rateWithUnit ? rateWithUnit.toString() : "N/A";
+                        return this._showAllStats || item.defaultItem;
                     };
 
-                    var formatValue = function (fields) {
-                        var value = fields[0] ? fields[0] : 0;
-                        var units = fields[1];
-                        return this._formatValue(value, units);
-                    };
-
-                    var formatByteStatValueFromMsgStat = function (msgStatItem) {
-                        var byteStatItem = this._queryStatItem(msgStatItem, "BYTES");
-                        var value = this._formatValue(byteStatItem.value ? byteStatItem.value : 0, byteStatItem.units);
-                        return value;
-                    };
-
-                    var formatByteStatRateFromMsgStat = function (msgStatItem) {
-                        var byteStatItem = this._queryStatItem(msgStatItem, "BYTES");
-                        var rateWithUnit = this._formatRate(byteStatItem.value ? byteStatItem.value : 0, byteStatItem.previousValue ? byteStatItem.previousValue : 0, byteStatItem.units);
-                        return rateWithUnit ? rateWithUnit.toString() : "N/A";
+                    var gridProps = {
+                        className: "dgrid-autoheight statisticGrid",
+                        highlightRow : function() {return false}
                     };
 
                     this._msgBytePairCumulativeStatisticsGrid =
-                        new EnhancedGrid({
-                            store: this._dataStore,
-                            "class": "statisticGrid",
-                            autoHeight: true,
-                            structure: [{
-                                name: "Name",
-                                field: "label",
-                                width: "52%"
+                        new Grid(lang.mixin(gridProps, {
+                            collection: this._pairedStatsStore.filter({statisticType : "CUMULATIVE"})
+                                                              .filter(lang.hitch(this, defaultFilter)),
+                            columns: [{
+                                label: "Name",
+                                get: lang.hitch(this, function (obj) {return obj.msgItem.label})
                             }, {
-                                name: "Messages",
-                                fields: ["value", "units"],
-                                width: "12%",
-                                formatter: lang.hitch(this, formatValue)
+                                label: "Messages",
+                                get: lang.hitch(this, function(obj) {return this._formatValue(obj.msgItem)})
                             }, {
-                                name: "Message Rate",
-                                fields: ["value", "previousValue", "units"],
-                                width: "12%",
-                                formatter: lang.hitch(this, formatRate)
+                                label: "Message Rate",
+                                get: lang.hitch(this, function(obj) {return this._formatRate(obj.msgItem)})
                             }, {
-                                name: "Bytes",
-                                field: "_item",
-                                width: "12%",
-                                formatter: lang.hitch(this, formatByteStatValueFromMsgStat)
+                                label: "Bytes",
+                                get: lang.hitch(this, function(obj) {return this._formatValue(obj.byteItem)})
                             }, {
-                                name: "Byte Rate",
-                                field: "_item",
-                                width: "12%",
-                                formatter: lang.hitch(this, formatByteStatRateFromMsgStat)
+                                label: "Byte Rate",
+                                get: lang.hitch(this, function(obj) {return this._formatRate(obj.byteItem)})
                             }]
-                        }, this.msgBytePairCumulativeStatisticsGridContainer);
-
-                    this._msgBytePairCumulativeStatisticsGrid.query = lang.hitch(this, function (statItem) {
-                        return statItem.statisticType === "CUMULATIVE" &&
-                               statItem.units === "MESSAGES" &&
-                               array.indexOf(pairedByteMessageStatistic, statItem) > -1 &&
-                               this._isStatItemShown(statItem);
-                    });
+                        }), this.msgBytePairCumulativeStatisticsGridContainer);
 
                     this._otherCumulativeStatisticsGrid =
-                        new EnhancedGrid({
-                            store: this._dataStore,
-                            "class": "statisticGrid",
-                            autoHeight: true,
-                            structure: [{
-                                name: "Name",
-                                field: "label",
-                                width: "52%"
+                        new Grid(lang.mixin(gridProps, {
+                            collection: this._otherStatsStore.filter({statisticType: "CUMULATIVE"})
+                                                             .filter(lang.hitch(this, defaultFilter)),
+                            columns: [{
+                                label: "Name",
+                                field: "label"
                             }, {
-                                name: "Value",
-                                fields: ["value", "units"],
-                                width: "24%",
-                                formatter: lang.hitch(this, formatValue)
+                                label: "Value",
+                                get: lang.hitch(this, function(obj) {return this._formatValue(obj)})
                             }, {
-                                name: "Rate",
-                                fields: ["value", "previousValue", "units"],
-                                width: "24%",
-                                formatter: lang.hitch(this, formatRate)
+                                label: "Rate",
+                                get: lang.hitch(this, function(obj) {return this._formatRate(obj)})
                             }]
-                        }, this.otherCumulativeStatisticsGridContainer);
-                    this._otherCumulativeStatisticsGrid.query = lang.hitch(this, function (statItem) {
-                        return statItem.statisticType === "CUMULATIVE" &&
-                               array.indexOf(pairedByteMessageStatistic, statItem) === -1 &&
-                               this._isStatItemShown(statItem);
-                    });
+                        }), this.otherCumulativeStatisticsGridContainer);
 
                     this._msgBytePairPointInTimeStatisticsGrid =
-                        new EnhancedGrid({
-                            store: this._dataStore,
-                            "class": "statisticGrid",
-                            autoHeight: true,
-                            structure: [{
-                                name: "Name",
-                                field: "label",
-                                width: "52%"
+                        new Grid(lang.mixin(gridProps, {
+                            collection: this._pairedStatsStore.filter({statisticType : "POINT_IN_TIME"})
+                                                              .filter(lang.hitch(this, defaultFilter)),
+                            columns: [{
+                                label: "Name",
+                                get: lang.hitch(this, function (obj) {return obj.msgItem.label})
                             }, {
-                                name: "Message Value",
-                                fields: ["value", "units"],
-                                width: "24%",
-                                formatter: lang.hitch(this, formatValue)
+                                label: "Message Value",
+                                get: lang.hitch(this, function(obj) {return this._formatValue(obj)})
                             }, {
-                                name: "Byte Value",
-                                field: "_item",
-                                width: "24%",
-                                formatter: lang.hitch(this, formatByteStatValueFromMsgStat)
+                                label: "Byte Value",
+                                get: lang.hitch(this, function(obj) {return this._formatValue(obj)})
                             }]
-                        }, this.msgBytePairPointInTimeStatisticsGridContainer);
-
-                    this._msgBytePairPointInTimeStatisticsGrid.query = lang.hitch(this, function (statItem) {
-                        return statItem.statisticType === "POINT_IN_TIME" &&
-                               statItem.units === "MESSAGES" &&
-                               array.indexOf(pairedByteMessageStatistic, statItem) > -1 &&
-                               this._isStatItemShown(statItem);
-                    });
+                        }), this.msgBytePairPointInTimeStatisticsGridContainer);
 
                     this._otherPointInTimeStatisticsGrid =
-                        new EnhancedGrid({
-                            store: this._dataStore,
-                            "class": "statisticGrid",
-                            autoHeight: true,
-                            structure: [{
-                                name: "Name",
-                                field: "label",
-                                width: "52%"
+                        new Grid(lang.mixin(gridProps, {
+                            collection: this._otherStatsStore.filter({statisticType: "POINT_IN_TIME"})
+                                                             .filter(lang.hitch(this, defaultFilter)),
+                            columns: [{
+                                label: "Name",
+                                field: "label"
                             }, {
-                                name: "Value",
-                                fields: ["value", "units"],
-                                width: "48%",
-                                formatter: lang.hitch(this, formatValue)
+                                label: "Value",
+                                get: lang.hitch(this, function(obj) {return this._formatValue(obj)})
                             }]
-                        }, this.otherPointInTimeStatisticsGridContainer);
-
-                    this._otherPointInTimeStatisticsGrid.query = lang.hitch(this, function (statItem) {
-                        return statItem.statisticType === "POINT_IN_TIME" &&
-                               array.indexOf(pairedByteMessageStatistic, statItem) === -1 &&
-                               this._isStatItemShown(statItem);
-                    });
+                        }), this.otherPointInTimeStatisticsGridContainer);
 
                     this._allGrids = [this._msgBytePairCumulativeStatisticsGrid,
-                                        this._otherCumulativeStatisticsGrid,
-                                        this._msgBytePairPointInTimeStatisticsGrid,
-                                        this._otherPointInTimeStatisticsGrid];
+                                      this._otherCumulativeStatisticsGrid,
+                                      this._msgBytePairPointInTimeStatisticsGrid,
+                                      this._otherPointInTimeStatisticsGrid];
 
-                    connect.connect(this.statisticsPane, "toggle", lang.hitch(this, this.resize));
-                    array.forEach(this._allGrids, function(grid)
-                    {
-                        connect.connect(grid, "onCellMouseOver", lang.hitch(this, this._addDynamicTooltipToGridRow));
-                    }, this);
-
+                    //this.statisticsPane.on("toggle", lang.hitch(this, this.resize));
                     this.allStatsToggle.on("change", lang.hitch(this, this._onStatsToggleChange));
                 },
                 startup: function ()
@@ -275,65 +211,116 @@ define(["dojox/lang/functional/object",
                     {
                         this.inherited(arguments);
 
-                        array.forEach(this._allGrids, function (grid) {
+                        array.forEach(this._allGrids, function (grid)
+                        {
                             grid.startup();
+
+                            grid.on("dgrid-refresh-complete", lang.hitch(this, function (event)
+                            {
+                                var hide = event.grid.get("total") === 0;
+                                domStyle.set(event.grid.domNode, 'display', hide ? "none": "block");
+                                event.grid.resize();
+                            }));
+
+                            grid.on(".dgrid-content .dgrid-row:mouseover", lang.hitch(this, function(event)
+                            {
+                                var row = grid.row(event);
+                                var statItem = row.data;
+                                this._addDynamicTooltipToGridRow(statItem, row.element);
+
+                            }));
                         }, this);
                     }
                 },
                 resize: function ()
                 {
                     this.inherited(arguments);
-                    this._showHideGrids();
                     array.forEach(this._allGrids, function(grid)
                     {
                         grid.resize();
                     }, this);
-
                 },
                 update: function (statistics)
                 {
                     this._previousSampleTime = this._sampleTime;
                     this._sampleTime = new Date();
-
-                    array.forEach(this._allGrids, function(grid)
+                    this._updateStoreData(statistics);
+                },
+                _updateStoreData: function (statistics)
+                {
+                    function updateItem(storeItem)
                     {
-                        grid.beginUpdate();
+                        if (storeItem.id in statistics)
+                        {
+                            var newValue = statistics[storeItem.id];
+
+                            storeItem["previousValue"] = storeItem["value"];
+                            storeItem["value"] = newValue;
+                            return true;
+                        }
+                        return false;
+                    }
+
+                    this._otherStatsStore.forEach(function(storeItem)
+                    {
+                        if (updateItem(storeItem))
+                        {
+                            this._otherStatsStore.put(storeItem);
+                        }
                     }, this);
 
-                    this._updateStoreData(statistics, this._store.data);
-
-                    array.forEach(this._allGrids, function(grid)
+                    this._pairedStatsStore.forEach(function(pairedStatItem)
                     {
-                        grid.endUpdate();
+                        var updated = updateItem(pairedStatItem.msgItem);
+                        updated = updateItem(pairedStatItem.byteItem) || updated;
+
+                        if (updated)
+                        {
+                            this._pairedStatsStore.put(pairedStatItem);
+                        }
+
                     }, this);
-                },
-                uninitialize: function ()
-                {
-                    this.inherited(arguments);
-                    this._dataStore.close();
-                },
-                _isStatItemShown: function (statItem)
-                {
-                    return this._showAllStats || (!this.defaultStatistics || array.indexOf(this.defaultStatistics, statItem.name) > -1);
                 },
                 _onStatsToggleChange: function (value)
                 {
                     this.allStatsToggle.set("label", value ? "Show fewer statistics" : "Show more statistics");
                     this.allStatsToggle.set("iconClass", value ? "minusIcon" : "addIcon");
+                    this.allStatsToggle.set("disabled", true);
                     this._showAllStats = value;
 
-                    array.forEach(this._allGrids, function(grid)
+                    var refreshPromises = [];
+
+                    // Refresh the grids so they re-query the store thus taking account of the new showAllStats state.
+                    array.forEach(this._allGrids, function (grid)
                     {
-                        grid._refresh();
+                        var deferred = new Deferred();
+                        refreshPromises.push(deferred.promise);
+
+                        var handler = grid.on("dgrid-refresh-complete", lang.hitch(this, function ()
+                        {
+                            deferred.resolve();
+                            handler.remove();
+                        }));
+
+                        // grid.refresh();
+                        // It seems refreshing the grid is not a reliable way to of getting it to re-query the store,
+                        // bumping the collection seems to do the trick.
+                        grid.set("collection", grid.get("collection"));
                     }, this);
 
-                    this._showHideGrids();
-                    this.resize();
+                    all(refreshPromises).then(lang.hitch(this, function()
+                    {
+                        this.allStatsToggle.set("disabled", false);
+                    }));
                 },
-                _formatRate : function (value, previousValue, units)
+                _formatRate : function (statItem)
                 {
                     if (this._previousSampleTime)
                     {
+                        var value = statItem.value ? statItem.value : 0;
+                        var previousValue = statItem.previousValue ? statItem.previousValue : 0;
+                        var units = statItem.units;
+
                         var samplePeriod = this._sampleTime.getTime() - this._previousSampleTime.getTime();
 
                         var rate = number.round((1000 * (value - previousValue)) / samplePeriod);
@@ -359,15 +346,17 @@ define(["dojox/lang/functional/object",
                         }
                         else
                         {
-                            valueWithUnit.units = " &Delta;s"
+                            valueWithUnit.units = entities.decode("&Delta;") + "value/s";
                         }
                         return valueWithUnit;
                     }
 
                     return null;
                 },
-                _formatValue : function (value, units)
+                _formatValue : function (statItem)
                 {
+                    var value = statItem.value ? statItem.value : 0;
+                    var units = statItem.units;
                     if (units === "BYTES")
                     {
                         return formatter.formatBytes(value);
@@ -388,19 +377,6 @@ define(["dojox/lang/functional/object",
                         return value;
                     }
                 },
-                _showHideGrids: function ()
-                {
-                    array.forEach(this._allGrids, function(grid)
-                    {
-                        grid.set("hidden", grid.rowCount === 0);
-                    }, this);
-                },
-                _updateStoreData: function (statistics, data) {
-                    array.forEach(data, function (storeItem) {
-                        storeItem["previousValue"] = storeItem["value"];
-                        storeItem["value"] = statistics[storeItem.id];
-                    }, this);
-                },
                 _augmentStatistics : function(statItems)
                 {
                     var items = [];
@@ -408,7 +384,8 @@ define(["dojox/lang/functional/object",
                         var item = lang.mixin(statItem,
                             {id: statItem.name,
                                 value: null,
-                                previousValue: null});
+                                previousValue: null,
+                                defaultItem: array.indexOf(this.defaultStatistics, statItem.name) > -1});
                         items.push(item);
                     }, this);
                     items.sort(function(x,y) {return ((x.label === y.label) ? 0 : ((x.label > y.label) ? 1 : -1 ))});
@@ -427,7 +404,9 @@ define(["dojox/lang/functional/object",
                     {
                         var byteItemCandidates = array.filter(otherStatistics, function(item)
                         {
-                            return item.units === "BYTES" && item.label === msgItemCandidate.label;
+                            return item.units === "BYTES" &&
+                                   item.label === msgItemCandidate.label &&
+                                   item.statisticType === msgItemCandidate.statisticType;
                         });
 
                         if (byteItemCandidates.length === 1)
@@ -437,32 +416,26 @@ define(["dojox/lang/functional/object",
                             otherStatistics.splice(array.indexOf(otherStatistics, msgItemCandidate), 1);
                             otherStatistics.splice(array.indexOf(otherStatistics, byteItemCandidate), 1);
 
-                            byteMsgPairStatistics.push(msgItemCandidate);
-                            byteMsgPairStatistics.push(byteItemCandidate);
+                            byteMsgPairStatistics.push({id: msgItemCandidate.id,
+                                                        statisticType: msgItemCandidate.statisticType,
+                                                        msgItem: msgItemCandidate,
+                                                        byteItem: byteItemCandidate,
+                                                        defaultItem: msgItemCandidate.defaultItem,
+                                                        description: msgItemCandidate.description});
                         }
 
                     }, this);
                 },
-                _addDynamicTooltipToGridRow: function(e)
+                _addDynamicTooltipToGridRow: function(statItem, rowNode)
                 {
-                    var statItem = e.grid.getItem(e.rowIndex);
                     if (statItem && statItem.description)
                     {
-                        Tooltip.show(statItem.description, e.rowNode);
-                        on.once(e.rowNode, mouse.leave, function()
+                        Tooltip.show(statItem.description, rowNode);
+                        on.once(rowNode, mouse.leave, function()
                         {
-                            Tooltip.hide(e.rowNode);
+                            Tooltip.hide(rowNode);
                         });
                     }
-                },
-                _queryStatItem: function (statItem, units)
-                {
-                    var result = this._store.query({
-                        label: statItem.label,
-                        statisticType: statItem.statisticType,
-                        units: units
-                    });
-                    return result[0];
                 }
             });
     });

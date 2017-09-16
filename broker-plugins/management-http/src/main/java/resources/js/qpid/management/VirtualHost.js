@@ -498,7 +498,6 @@ define(["dojo/parser",
             this.tabObject.deleteButton.set("disabled", !this.vhostData.state);
 
             this.virtualhostStatistics.update(this.vhostData.statistics);
-            this.virtualhostStatistics.resize();
 
             this._updateHeader();
 

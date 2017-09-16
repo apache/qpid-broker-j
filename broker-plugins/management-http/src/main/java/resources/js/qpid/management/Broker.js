@@ -1002,7 +1002,6 @@ define(["dojo/parser",
                         }
                     }
                     that.brokerStatistics.update(that.brokerData.statistics);
-                    that.brokerStatistics.resize();
 
                     util.flattenStatistics(that.brokerData);
 

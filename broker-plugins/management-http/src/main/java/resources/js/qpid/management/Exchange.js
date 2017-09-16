@@ -301,7 +301,6 @@ define(["dojo/_base/xhr",
                     }
 
                     thisObj.exchangeStatistics.update(thisObj.exchangeData.statistics);
-                    thisObj.exchangeStatistics.resize();
                     thisObj.updateHeader();
 
                     // update bindings

@@ -351,7 +351,6 @@ define(["dojo/parser",
                     that.sessions = sessions;
 
                     that.connectionStatistics.update(that.connectionData.statistics);
-                    that.connectionStatistics.resize();
 
                     // update sessions
                     that.sessionsGrid.update(that.connectionData.sessions)
