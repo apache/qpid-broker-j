@@ -202,6 +202,7 @@ define(["dojo/parser",
                         }, {"id": selected})
                         .then(lang.hitch(this, function (responseData)
                         {
+                            dgrid.clearSelection();
                             this.vhostUpdater.update();
                         }));
                 }
