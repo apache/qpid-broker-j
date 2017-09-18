@@ -567,6 +567,12 @@ td.advancedSearchField, col.autoWidth {
 .connectionConsumers .field-msgOutRate { width: 10% }
 .connectionConsumers .field-bytesOutRate { width: 10% }
 
+.connectionSessions .field-name { width: 30%; }
+.connectionSessions .field-consumerCount { width: 10% }
+.connectionSessions .field-unacknowledgedMessages { width: 20% }
+.connectionSessions .field-transactionStartTime { width: 20% }
+.connectionSessions .field-transactionUpdateTime { width: 20% }
+
 .radioButtonIndent {
     padding-left: 20px;
     padding-top: 5px;
