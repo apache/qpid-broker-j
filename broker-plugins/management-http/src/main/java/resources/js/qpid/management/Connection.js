@@ -21,13 +21,10 @@
 define(["dojo/parser",
         "dojo/query",
         "dojo/_base/lang",
-        "dojo/_base/connect",
         "dijit/registry",
-        "qpid/common/properties",
         "qpid/common/updater",
         "qpid/common/util",
         "qpid/common/formatter",
-        "qpid/common/UpdatableStore",
         "qpid/common/StatisticsWidget",
         "qpid/management/query/QueryGrid",
         "dojox/html/entities",
@@ -36,13 +33,10 @@ define(["dojo/parser",
     function (parser,
               query,
               lang,
-              connect,
               registry,
-              properties,
               updater,
               util,
               formatter,
-              UpdatableStore,
               StatisticsWidget,
               QueryGrid,
               entities,
@@ -143,58 +137,57 @@ define(["dojo/parser",
 
             var userPreferences = this.management.userPreferences;
 
-            that.connectionData = {};
-            that.sessionsGrid = new UpdatableStore([], findNode("sessions"), [{
-                name: "Name",
-                field: "name",
-                width: "20%"
-            }, {
-                name: "Consumers",
-                field: "consumerCount",
-                width: "15%"
-            }, {
-                name: "Unacknowledged messages",
-                field: "unacknowledgedMessages",
-                width: "15%"
-            }, {
-                name: "Current store transaction start",
-                field: "transactionStartTime",
-                width: "25%",
-                formatter: function (transactionStartTime)
+            this.connectionData = {};
+
+            var transactionTimeFormatter = function (value, object)
+            {
+                if (value > 0)
                 {
-                    if (transactionStartTime > 0)
-                    {
-                        return userPreferences.formatDateTime(transactionStartTime, {
-                            selector: "time",
-                            addOffset: true,
-                            appendTimeZone: true
-                        });
-                    }
-                    else
-                    {
-                        return "N/A";
-                    }
+                    return userPreferences.formatDateTime(value, {
+                        selector: "time",
+                        addOffset: true,
+                        appendTimeZone: true
+                    });
                 }
-            }, {
-                name: "Current store transaction update",
-                field: "transactionUpdateTime",
-                width: "25%",
-                formatter: function (transactionUpdateTime)
+                else
                 {
-                    if (transactionUpdateTime > 0)
-                    {
-                        return userPreferences.formatDateTime(transactionUpdateTime, {
-                            selector: "time",
-                            addOffset: true,
-                            appendTimeZone: true
-                        });
-                    }
-                    else
-                    {
-                        return "N/A";
-                    }
+                    return "N/A";
                 }
-            }]);
+            };
+
+            this.sessionsGrid = new QueryGrid({
+                detectChanges: true,
+                rowsPerPage: 10,
+                transformer: util.queryResultToObjects,
+                management: this.management,
+                parentObject: this.modelObj,
+                category: "Session",
+                selectClause: "id,name,consumerCount,unacknowledgedMessages,transactionStartTime,transactionUpdateTime",
+                where: "to_string($parent.id) = '" + this.modelObj.id + "'",
+                orderBy: "name",
+                columns: [
+                    {
+                        label: "Name",
+                        field: "name"
+                    }, {
+                        label: "Consumers",
+                        field: "consumerCount"
+                    }, {
+                        label: "Unacknowledged messages",
+                        field: "unacknowledgedMessages"
+                    }, {
+                        label: "Current store transaction start",
+                        field: "transactionStartTime",
+                        formatter: transactionTimeFormatter
+                    }, {
+                        label: "Current store transaction update",
+                        field: "transactionUpdateTime",
+                        formatter:transactionTimeFormatter
+                    }
+                ]
+            }, findNode("sessions"));
+            this.sessionsGrid.on('rowBrowsed', lang.hitch(this, function(event){this.controller.showById(event.id);}));
+            this.sessionsGrid.startup();
 
             this.consumersGrid = new QueryGrid({
                 detectChanges: true,
@@ -244,13 +237,61 @@ define(["dojo/parser",
             // Add onShow handler to work around an issue with not rendering of grid columns before first update.
             // It seems if dgrid is created when tab is not shown (not active) the grid columns are not rendered.
             this.contentPane.on("show",
-                function()
+                lang.hitch(this, function()
                 {
-                    that.consumersGrid.resize();
-                });
+                    this.consumersGrid.resize();
+                    this.sessionsGrid.resize();
+                }));
         }
 
-        ConnectionUpdater.prototype.updateHeader = function ()
+        ConnectionUpdater.prototype.update = function (callback)
+        {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
+
+            this.management.load(this.modelObj, { excludeInheritedContext: true, depth: 0})
+                .then(lang.hitch(this, function (data)
+                {
+                    this.connectionData = data;
+
+                    if (!this.connectionStatistics)
+                    {
+                        this.connectionStatistics = new StatisticsWidget({
+                            category:  "Connection",
+                            type: null,
+                            management: this.management,
+                            defaultStatistics: ["messagesIn", "messagesOut", "lastIoTime"]
+                        });
+                        this.connectionStatistics.placeAt(this.connectionStatisticsNode);
+                        this.connectionStatistics.startup();
+                    }
+
+                    if (callback)
+                    {
+                        callback();
+                    }
+
+                    this._updateHeader();
+                    this.connectionStatistics.update(this.connectionData.statistics);
+                    this.connectionStatistics.resize();
+                    this.consumersGrid.updateData();
+                    this.sessionsGrid.updateData();
+                }), lang.hitch(this, function (error)
+                {
+                    util.tabErrorHandler(error, {
+                        updater: this,
+                        contentPane: this.tabObject.contentPane,
+                        tabContainer: this.tabObject.controller.tabContainer,
+                        name: this.modelObj.name,
+                        category: "Connection"
+                    });
+                }));
+        };
+
+
+        ConnectionUpdater.prototype._updateHeader = function ()
         {
             this.name.innerHTML = entities.encode(String(this.connectionData["name"]));
             this.clientId.innerHTML = entities.encode(String(this.connectionData["clientId"]));
@@ -261,7 +302,6 @@ define(["dojo/parser",
             this.protocol.innerHTML = entities.encode(String(this.connectionData["protocol"]));
             var remoteProcessPid = this.connectionData["remoteProcessPid"];
             this.remoteProcessPid.innerHTML = entities.encode(String(remoteProcessPid ? remoteProcessPid : "N/A"));
-
             this.sessionCountLimit.innerHTML = entities.encode(String(this.connectionData["sessionCountLimit"]));
 
             var userPreferences = this.management.userPreferences;
@@ -269,101 +309,6 @@ define(["dojo/parser",
                 addOffset: true,
                 appendTimeZone: true
             });
-        };
-
-        ConnectionUpdater.prototype.update = function (callback)
-        {
-            if (!this.contentPane.selected && !callback)
-            {
-                return;
-            }
-
-            var that = this;
-
-            this.consumersGrid.updateData();
-            this.consumersGrid.resize();
-
-            that.management.load(this.modelObj,
-                {
-                    excludeInheritedContext: true,
-                    depth: 1
-                })
-                .then(function (data)
-                {
-                    that.connectionData = data;
-
-
-                    if (!that.connectionStatistics)
-                    {
-                        that.connectionStatistics = new StatisticsWidget({
-                            category:  "Connection",
-                            type: null,
-                            management: that.management,
-                            defaultStatistics: ["messagesIn", "messagesOut", "lastIoTime"]
-                        });
-                        that.connectionStatistics.placeAt(that.connectionStatisticsNode);
-                        that.connectionStatistics.startup();
-                    }
-
-                    if (callback)
-                    {
-                        callback();
-                    }
-
-                    var sessions = that.connectionData["sessions"];
-
-                    that.updateHeader();
-
-                    var sampleTime = new Date();
-
-                    if (that.sampleTime)
-                    {
-                        var samplePeriod = sampleTime.getTime() - that.sampleTime.getTime();
-
-                        if (sessions && that.sessions)
-                        {
-                            for (var i = 0; i < sessions.length; i++)
-                            {
-                                var session = sessions[i];
-                                for (var j = 0; j < that.sessions.length; j++)
-                                {
-                                    var oldSession = that.sessions[j];
-                                    if (oldSession.id === session.id)
-                                    {
-                                        var msgRate = (1000 * (session.messagesOut - oldSession.messagesOut))
-                                                      / samplePeriod;
-                                        session.msgRate = msgRate.toFixed(0) + "msg/s";
-
-                                        var bytesRate = (1000 * (session.bytesOut - oldSession.bytesOut))
-                                                        / samplePeriod;
-                                        var bytesRateFormat = formatter.formatBytes(bytesRate);
-                                        session.bytesRate = bytesRateFormat.value + bytesRateFormat.units + "/s";
-                                    }
-
-                                }
-
-                            }
-                        }
-
-                    }
-
-                    that.sampleTime = sampleTime;
-                    that.sessions = sessions;
-
-                    that.connectionStatistics.update(that.connectionData.statistics);
-
-                    // update sessions
-                    that.sessionsGrid.update(that.connectionData.sessions)
-                }, function (error)
-                {
-                    util.tabErrorHandler(error, {
-                        updater: that,
-                        contentPane: that.tabObject.contentPane,
-                        tabContainer: that.tabObject.controller.tabContainer,
-                        name: that.modelObj.name,
-                        category: "Connection"
-                    });
-                });
         };
 
         ConnectionUpdater.prototype._transformConsumerData = function (data)
@@ -379,7 +324,7 @@ define(["dojo/parser",
                     var oldConsumer = null;
                     for (var j = 0; j < this._previousConsumers.length; j++)
                     {
-                        if (this._previousConsumers[j].id == consumer.id)
+                        if (this._previousConsumers[j].id === consumer.id)
                         {
                             oldConsumer = this._previousConsumers[j];
                             break;
