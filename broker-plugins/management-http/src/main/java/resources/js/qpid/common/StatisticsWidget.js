@@ -131,7 +131,7 @@ define(["dojox/lang/functional/object",
                     };
 
                     this._msgBytePairCumulativeStatisticsGrid =
-                        new Grid(lang.mixin(gridProps, {
+                        new Grid(lang.mixin(lang.clone(gridProps), {
                             collection: this._pairedStatsStore.filter({statisticType : "CUMULATIVE"})
                                                               .filter(lang.hitch(this, defaultFilter)),
                             columns: [{
@@ -153,7 +153,7 @@ define(["dojox/lang/functional/object",
                         }), this.msgBytePairCumulativeStatisticsGridContainer);
 
                     this._otherCumulativeStatisticsGrid =
-                        new Grid(lang.mixin(gridProps, {
+                        new Grid(lang.mixin(lang.clone(gridProps), {
                             collection: this._otherStatsStore.filter({statisticType: "CUMULATIVE"})
                                                              .filter(lang.hitch(this, defaultFilter)),
                             columns: [{
@@ -169,7 +169,7 @@ define(["dojox/lang/functional/object",
                         }), this.otherCumulativeStatisticsGridContainer);
 
                     this._msgBytePairPointInTimeStatisticsGrid =
-                        new Grid(lang.mixin(gridProps, {
+                        new Grid(lang.mixin(lang.clone(gridProps), {
                             collection: this._pairedStatsStore.filter({statisticType : "POINT_IN_TIME"})
                                                               .filter(lang.hitch(this, defaultFilter)),
                             columns: [{
@@ -177,15 +177,15 @@ define(["dojox/lang/functional/object",
                                 get: lang.hitch(this, function (obj) {return obj.msgItem.label})
                             }, {
                                 label: "Message Value",
-                                get: lang.hitch(this, function(obj) {return this._formatValue(obj)})
+                                get: lang.hitch(this, function(obj) {return this._formatValue(obj.msgItem)})
                             }, {
                                 label: "Byte Value",
-                                get: lang.hitch(this, function(obj) {return this._formatValue(obj)})
+                                get: lang.hitch(this, function(obj) {return this._formatValue(obj.byteItem)})
                             }]
                         }), this.msgBytePairPointInTimeStatisticsGridContainer);
 
                     this._otherPointInTimeStatisticsGrid =
-                        new Grid(lang.mixin(gridProps, {
+                        new Grid(lang.mixin(lang.clone(gridProps), {
                             collection: this._otherStatsStore.filter({statisticType: "POINT_IN_TIME"})
                                                              .filter(lang.hitch(this, defaultFilter)),
                             columns: [{
@@ -385,11 +385,12 @@ define(["dojox/lang/functional/object",
                 {
                     var items = [];
                     fobject.forIn(statItems, function(statItem) {
-                        var item = lang.mixin(statItem,
-                            {id: statItem.name,
+                        var copy = lang.clone(statItem);
+                        var item = lang.mixin(copy,
+                            {id: copy.name,
                                 value: null,
                                 previousValue: null,
-                                defaultItem: array.indexOf(this.defaultStatistics, statItem.name) > -1});
+                                defaultItem: array.indexOf(this.defaultStatistics, copy.name) > -1});
                         items.push(item);
                     }, this);
                     items.sort(function(x,y) {return ((x.label === y.label) ? 0 : ((x.label > y.label) ? 1 : -1 ))});
