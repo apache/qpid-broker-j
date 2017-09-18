@@ -374,7 +374,7 @@ define(["dojox/lang/functional/object",
                     }
                     else if (units === "TIME_DURATION")
                     {
-                        return value < 0 ? "-" : (number.round(value/1000) + "s");
+                        return value < 0 ? "-" : (number.round(value/1000) + " s");
                     }
                     else
                     {
