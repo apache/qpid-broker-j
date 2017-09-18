@@ -202,7 +202,7 @@ define(["dojox/lang/functional/object",
                                       this._msgBytePairPointInTimeStatisticsGrid,
                                       this._otherPointInTimeStatisticsGrid];
 
-                    //this.statisticsPane.on("toggle", lang.hitch(this, this.resize));
+                    this.statisticsPane.on("toggle", lang.hitch(this, this.resize));
                     this.allStatsToggle.on("change", lang.hitch(this, this._onStatsToggleChange));
                 },
                 startup: function ()
