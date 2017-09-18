@@ -167,7 +167,7 @@
       <id>addQpidJmsClientIfNecessary</id>
       <activation>
         <property>
-          <name>enableAmqp1-0</name>
+          <name>!enableAmqp0-x</name>
         </property>
       </activation>
       <dependencies>
@@ -182,7 +182,7 @@
       <id>addJms11IfNecessary</id>
       <activation>
         <property>
-          <name>!enableAmqp1-0</name>
+          <name>enableAmqp0-x</name>
         </property>
       </activation>
       <dependencies>

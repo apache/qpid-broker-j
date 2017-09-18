@@ -91,7 +91,7 @@
     <!-- Directory used for per test log file output -->
     <test.output.dir>${basedir}${file.separator}target${file.separator}surefire-reports${file.separator}${profile}</test.output.dir>
 
-    <profile>java-mms.0-10</profile>
+    <profile>java-mms.1-0</profile>
     <profile.broker.language>java</profile.broker.language>
     <profile.broker.type>internal</profile.broker.type>
     <profile.broker.stopped>Exception</profile.broker.stopped>
@@ -817,7 +817,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>enforce-enableAmqp10</id>
+            <id>enforce-enableAmqp0x</id>
             <goals>
               <goal>enforce</goal>
             </goals>
@@ -825,21 +825,21 @@
               <rules>
                 <evaluateBeanshell>
                   <condition><![CDATA[
-                    boolean enableAmqp10Set = System.getProperties().stringPropertyNames().contains("enableAmqp1-0");
-                    boolean amqp10Profile = java.util.regex.Pattern.matches("java-.*\\.1-0", "${profile}");
+                    boolean enableAmqp0xSet = System.getProperties().stringPropertyNames().contains("enableAmqp0-x");
+                    boolean amqp0xProfile = java.util.regex.Pattern.matches("java-.*\\.0-.*", "${profile}");
 
-                    if (amqp10Profile && !enableAmqp10Set)
+                    if (amqp0xProfile && !enableAmqp0xSet)
                     {
                       return false;
                     }
-                    else if (!amqp10Profile && enableAmqp10Set)
+                    else if (!amqp0xProfile && enableAmqp0xSet)
                     {
                       return false;
                     }
                     return true;
                   ]]>
                   </condition>
-                  <message>System property 'enableAmqp1-0' must be set only when running a 1-0 test profile. You appear to be running '${profile}'.</message>
+                  <message>System property 'enableAmqp0-x' must be set only when running on of the older 0-x test profiles. You appear to be running '${profile}'.</message>
                 </evaluateBeanshell>
               </rules>
               <fail>true</fail>
@@ -959,7 +959,6 @@
     <profile>
       <id>java-mms.0-10</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
         <property>
           <name>profile</name>
           <value>java-mms.0-10</value>
@@ -1194,6 +1193,7 @@
     <profile>
       <id>java-mms.1-0</id>
       <activation>
+        <activeByDefault>true</activeByDefault>
         <property>
           <name>profile</name>
           <value>java-mms.1-0</value>
