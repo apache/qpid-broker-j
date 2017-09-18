@@ -25,7 +25,8 @@ public enum StatisticUnit
     COUNT("count"),
     BYTES("byte"),
     MESSAGES("message"),
-    ABSOLUTE_TIME("time");
+    ABSOLUTE_TIME("time"),
+    TIME_DURATION("time duration");
 
 
     private String _name;

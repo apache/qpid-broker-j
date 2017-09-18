@@ -445,7 +445,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     int getQueueDepthMessagesHighWatermark();
 
     @SuppressWarnings("unused")
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Oldest Message",
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.TIME_DURATION, label = "Oldest Message",
                       description = "Current age of oldest message on the queue.")
     long getOldestMessageAge();
 
