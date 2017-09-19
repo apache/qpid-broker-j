@@ -210,6 +210,12 @@ org.apache.qpid.test.unit.client.MaxDeliveryCountTest#testAsynchronousClientAckS
 org.apache.qpid.test.unit.client.MaxDeliveryCountTest#testAsynchronousDupsOkSession
 org.apache.qpid.test.unit.client.MaxDeliveryCountTest#testAsynchronousAutoAckSession
 
+//ACL tests not applicable for AMQP 1.0
+org.apache.qpid.server.security.acl.MessagingACLTest#testPublishToDefaultExchangeSuccess
+org.apache.qpid.server.security.acl.MessagingACLTest#testPublishToDefaultExchangeFailure
+org.apache.qpid.server.security.acl.Amqp0xMessagingACLTest#*
 
+// QPID-7904 : Temporary exclude temporary queue creation test
+org.apache.qpid.server.security.acl.MessagingACLTest#testCreateTemporaryQueueFailed
 
 

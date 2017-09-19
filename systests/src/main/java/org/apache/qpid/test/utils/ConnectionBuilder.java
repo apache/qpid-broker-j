@@ -20,8 +20,6 @@
 
 package org.apache.qpid.test.utils;
 
-import java.util.Map;
-
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.naming.NamingException;
@@ -38,6 +36,8 @@ public interface ConnectionBuilder
     ConnectionBuilder setFailover(boolean enableFailover);
     ConnectionBuilder setFailoverReconnectAttempts(int reconnectAttempts);
     ConnectionBuilder setTls(boolean enableTls);
+    ConnectionBuilder setSyncPublish(boolean syncPublish);
 
     Connection build() throws NamingException, JMSException, URLSyntaxException;
+
 }

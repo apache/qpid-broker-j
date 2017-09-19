@@ -109,6 +109,13 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
+    public ConnectionBuilder setSyncPublish(final boolean syncPublish)
+    {
+        _options.put("jms.forceSyncSend", syncPublish);
+        return this;
+    }
+
+    @Override
     public Connection build() throws NamingException, JMSException
     {
         final Hashtable<Object, Object> initialContextEnvironment = new Hashtable<>();

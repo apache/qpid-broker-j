@@ -33,6 +33,7 @@ import javax.naming.NamingException;
 
 import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQConnectionURL;
+import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.url.URLSyntaxException;
 
 public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
@@ -99,6 +100,20 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     public ConnectionBuilder setTls(final boolean enableTls)
     {
         _enableTls = enableTls;
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setSyncPublish(final boolean syncPublish)
+    {
+        if (syncPublish)
+        {
+            _options.put(ConnectionURL.OPTIONS_SYNC_PUBLISH, "all");
+        }
+        else
+        {
+            _options.remove(ConnectionURL.OPTIONS_SYNC_PUBLISH);
+        }
         return this;
     }
 

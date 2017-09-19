@@ -24,19 +24,19 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.jms.Connection;
-import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
+import javax.jms.Session;
 
-import org.apache.qpid.AMQException;
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.jms.ConnectionListener;
-import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.util.AMQExceptionTestUtil;
 
 /**
  * Abstract test case for ACLs.
@@ -44,13 +44,12 @@ import org.apache.qpid.util.AMQExceptionTestUtil;
  * This base class contains convenience methods to manage ACL files and implements a mechanism that allows each
  * test method to run its own setup code before the broker starts.
  *
- * @see ExternalACLTest
- * @see ExhaustiveACLTest
+ * @see MessagingACLTest
  */
-public abstract class AbstractACLTestCase extends QpidBrokerTestCase implements ConnectionListener
+public abstract class AbstractACLTestCase extends QpidBrokerTestCase
 {
-    /** Used to synchronise {@link #tearDown()} when exceptions are thrown */
-    protected CountDownLatch _exceptionReceived;
+    private Connection _adminConnection;
+    private Session _adminSession;
 
     @Override
     public void setUp() throws Exception
@@ -74,20 +73,20 @@ public abstract class AbstractACLTestCase extends QpidBrokerTestCase implements 
         }
 
         super.setUp();
+
+        _adminConnection = getConnection("test", "admin", "admin");
+        _adminSession = _adminConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        _adminConnection.start();
     }
 
-    @Override
-    public void tearDown() throws Exception
+    public Connection getAdminConnection()
     {
-        try
-        {
-            super.tearDown();
-        }
-        catch (JMSException e)
-        {
-            //we're throwing this away as it can happen in this test as the state manager remembers exceptions
-            //that we provoked with authentication failures, where the test passes - we can ignore on con close
-        }
+        return _adminConnection;
+    }
+
+    public Session getAdminSession()
+    {
+        return _adminSession;
     }
 
     public void writeACLFile(final String...rules) throws IOException
@@ -112,82 +111,59 @@ public abstract class AbstractACLTestCase extends QpidBrokerTestCase implements 
         return aclFile.getCanonicalPath();
     }
 
-    /**
-     * Creates a connection to the broker, and sets a connection listener to prevent failover and an exception listener
-     * with a {@link CountDownLatch} to synchronise in the {@link #check403Exception(Throwable)} method and allow the
-     * {@link #tearDown()} method to complete properly.
-     */
     public Connection getConnection(String vhost, String username, String password) throws Exception
     {
-        AMQConnection connection = (AMQConnection) getConnection(createConnectionURL(vhost, username, password));
+        return getConnectionBuilder().setFailover(false)
+                                     .setVirtualHost(vhost)
+                                     .setSyncPublish(true)
+                                     .setPassword(password)
+                                     .setUsername(username)
+                                     .build();
+    }
 
-        //Prevent Failover
-        connection.setConnectionListener(this);
+    public void writeACLFileWithAdminSuperUser(String... rules) throws IOException
+    {
+        List<String> newRules = new ArrayList<>(Arrays.asList(rules));
+        newRules.add(0, "ACL ALLOW-LOG admin ALL ALL");
+        writeACLFile(newRules.toArray(new String[newRules.size()]));
+    }
 
-        //QPID-2081: use a latch to sync on exception causing connection close, to work
-        //around the connection close race during tearDown() causing sporadic failures
-        _exceptionReceived = new CountDownLatch(1);
+    protected void createQueue(final String queueName) throws JMSException
+    {
+        createEntityUsingAmqpManagement(queueName, getAdminSession(), "org.apache.qpid.Queue");
+    }
 
-        connection.setExceptionListener(new ExceptionListener()
+    protected void bindExchangeToQueue(final String exchangeName, final String queueName) throws JMSException
+    {
+        final Map<String, Object> bindingArguments = new HashMap<>();
+        bindingArguments.put("destination", queueName);
+        bindingArguments.put("bindingKey", queueName);
+
+        performOperationUsingAmqpManagement(exchangeName,
+                                            "bind",
+                                            getAdminSession(),
+                                            "org.apache.qpid.Exchange",
+                                            bindingArguments);
+    }
+
+    protected void assertJMSExceptionMessageContains(final JMSException e, final String expectedMessage)
+    {
+        Set<Throwable> examined = new HashSet<>();
+        Throwable current = e;
+        do
         {
-            @Override
-            public void onException(JMSException e)
+            if (current.getMessage().contains(expectedMessage))
             {
-                _exceptionReceived.countDown();
+                return;
             }
-        });
-
-        return (Connection) connection;
-    }
-
-    // Connection Listener Interface - Used here to block failover
-
-    @Override
-    public void bytesSent(long count)
-    {
-    }
-
-    @Override
-    public void bytesReceived(long count)
-    {
-    }
-
-    @Override
-    public boolean preFailover(boolean redirect)
-    {
-        //Prevent failover.
-        return false;
-    }
-
-    @Override
-    public boolean preResubscribe()
-    {
-        return false;
-    }
-
-    @Override
-    public void failoverComplete()
-    {
-    }
-
-    private String createConnectionURL(String vhost, String username, String password)
-    {
-        String url = "amqp://" + username + ":" + password + "@clientid/" + vhost + "?brokerlist='" + getBrokerDetailsFromDefaultConnectionUrl()
-                     + "?retries='0''";
-        return url;
-    }
-
-    /**
-     * Convenience method to validate a JMS exception with a linked {@link ErrorCodes#ACCESS_REFUSED} 403 error code exception.
-     */
-    public void check403Exception(Throwable t) throws Exception
-    {
-        assertNotNull("There was no linked exception", t);
-        assertTrue("Wrong linked exception type : " + t.getClass(), t instanceof AMQException);
-        AMQExceptionTestUtil.assertAMQException("Incorrect error code received", 403, ((AMQException) t));
-
-        //use the latch to ensure the control thread waits long enough for the exception thread
-        //to have done enough to mark the connection closed before teardown commences
-        assertTrue("Timed out waiting for connection to report close", _exceptionReceived.await(2, TimeUnit.SECONDS));
+            examined.add(current);
+            current = current.getCause();
+        }
+        while (current != null && !examined.contains(current));
+        e.printStackTrace();
+        fail("Unexpected message. Root exception : "
+             + e.getMessage()
+             + " expected root or underlyings to contain : "
+             + expectedMessage);
     }
 }

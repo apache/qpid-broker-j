@@ -99,7 +99,7 @@ public class AnonymousRelayDestination implements ReceivingDestination
             }
             else
             {
-                outcome = createdRejectedOutcome(AmqpError.NOT_FOUND, "Unknown destination '" + routingAddress + '"');
+                outcome = createdRejectedOutcome(AmqpError.NOT_FOUND, "Unknown destination '" + routingAddress + "'");
             }
         }
         else

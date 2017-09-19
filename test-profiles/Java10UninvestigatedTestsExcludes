@@ -21,8 +21,6 @@
 // working, defined as broken, or excluded as they test version specific functionality
 
 org.apache.qpid.client.prefetch.PrefetchBehaviourTest#*
-org.apache.qpid.server.security.acl.ExternalACLTest#*
-org.apache.qpid.server.security.acl.ExhaustiveACLTest#*
 
 
 
