@@ -183,10 +183,28 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     }
                 }
 
-                ServerTransaction transaction = null;
+                final ServerTransaction transaction;
+                boolean setRollbackOnly = true;
                 if (transactionId != null)
                 {
                     transaction = getSession().getTransaction(transactionId);
+                    if (!(transaction instanceof AutoCommitTransaction))
+                    {
+                        transaction.addPostTransactionAction(new ServerTransaction.Action()
+                        {
+                            @Override
+                            public void postCommit()
+                            {
+                                updateDisposition(delivery.getDeliveryTag(), null, true);
+                            }
+
+                            @Override
+                            public void onRollback()
+                            {
+                                updateDisposition(delivery.getDeliveryTag(), null, true);
+                            }
+                        });
+                    }
                 }
                 else
                 {
@@ -216,6 +234,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                         }
                         else
                         {
+                            // TODO - disposition not updated for the non-transaction case
                             return preconditionFailedError;
                         }
                     }
@@ -269,32 +288,21 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     getSession().getAMQPConnection()
                                 .registerMessageReceived(serverMessage.getSize(), arrivalTime);
 
-                    if (!(transaction instanceof AutoCommitTransaction))
-                    {
-                        ServerTransaction.Action a;
-                        transaction.addPostTransactionAction(new ServerTransaction.Action()
-                        {
-                            @Override
-                            public void postCommit()
-                            {
-                                updateDisposition(delivery.getDeliveryTag(), null, true);
-                            }
-
-                            @Override
-                            public void onRollback()
-                            {
-                                updateDisposition(delivery.getDeliveryTag(), null, true);
-                            }
-                        });
-                    }
+                    setRollbackOnly = false;
                 }
                 catch (AccessControlException e)
                 {
                     final Error err = new Error();
                     err.setCondition(AmqpError.NOT_ALLOWED);
                     err.setDescription(e.getMessage());
-                    close(err);
-
+                    return err;
+                }
+                finally
+                {
+                    if (setRollbackOnly && transaction instanceof LocalTransaction)
+                    {
+                        ((LocalTransaction) transaction).setRollbackOnly();
+                    }
                 }
             }
             finally

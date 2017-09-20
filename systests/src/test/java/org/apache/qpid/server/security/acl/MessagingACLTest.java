@@ -36,7 +36,6 @@ import javax.jms.TextMessage;
 
 public class MessagingACLTest extends AbstractACLTestCase
 {
-
     public void setUpAccessAuthorizedSuccess() throws Exception
     {
         writeACLFileWithAdminSuperUser("ACL ALLOW-LOG client ACCESS VIRTUALHOST");
@@ -493,6 +492,105 @@ public class MessagingACLTest extends AbstractACLTestCase
         catch (JMSException e)
         {
             assertJMSExceptionMessageContains(e, "Access denied to publish to default exchange");
+        }
+    }
+
+    public void setUpAnonymousProducerFailsToSendMessageIntoDeniedDestination() throws Exception
+    {
+        List<String> rules = new ArrayList<>();
+        rules.add("ACL ALLOW-LOG client ACCESS VIRTUALHOST");
+
+        if (isBroker10())
+        {
+            rules.add("ACL ALLOW-LOG client PUBLISH EXCHANGE name=\"\" routingKey=\"example.RequestQueue\"");
+        }
+        else
+        {
+            rules.add("ACL ALLOW-LOG client PUBLISH EXCHANGE name=\"amq.direct\" routingKey=\"example.RequestQueue\"");
+        }
+        rules.add("ACL DENY-LOG client PUBLISH EXCHANGE name=\"*\" routingKey=\"deniedQueue\"");
+        writeACLFileWithAdminSuperUser(rules.toArray(new String[rules.size()]));
+    }
+
+    public void testAnonymousProducerFailsToSendMessageIntoDeniedDestination() throws Exception
+    {
+        final String allowedDestinationName =  "example.RequestQueue";
+        final String deniedDestinationName = "deniedQueue";
+        createQueue(allowedDestinationName);
+        createQueue(deniedDestinationName);
+
+        if (!isBroker10())
+        {
+            bindExchangeToQueue("amq.direct", allowedDestinationName);
+            bindExchangeToQueue("amq.direct", deniedDestinationName);
+        }
+
+        Connection connection = getConnection("test", "client", "guest");
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+        MessageProducer producer = session.createProducer(null);
+        producer.send(session.createQueue(allowedDestinationName), session.createTextMessage("test1"));
+
+        try
+        {
+            producer.send(session.createQueue(deniedDestinationName), session.createTextMessage("test2"));
+
+            fail("Sending should fail");
+        }
+        catch (JMSException e)
+        {
+            assertJMSExceptionMessageContains(e,
+                                              "Permission ACTION(publish) is denied for : " + (isBroker10()
+                                                      ? "Queue"
+                                                      : "Exchange"));
+        }
+
+        try
+        {
+            session.commit();
+            fail("Commit should fail");
+        }
+        catch (JMSException e)
+        {
+            // pass
+        }
+    }
+
+    public void setUpPublishIntoDeniedDestinationFails() throws Exception
+    {
+        List<String> rules = new ArrayList<>();
+        rules.add("ACL ALLOW-LOG client ACCESS VIRTUALHOST");
+        rules.add("ACL DENY-LOG client PUBLISH EXCHANGE name=\"*\" routingKey=\"deniedQueue\"");
+        writeACLFileWithAdminSuperUser(rules.toArray(new String[rules.size()]));
+    }
+
+    public void testPublishIntoDeniedDestinationFails() throws Exception
+    {
+        final String deniedDestinationName = "deniedQueue";
+        createQueue(deniedDestinationName);
+
+        if (!isBroker10())
+        {
+            bindExchangeToQueue("amq.direct", deniedDestinationName);
+        }
+
+        try
+        {
+            Connection connection = getConnection("test", "client", "guest");
+            Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+            MessageProducer producer = session.createProducer(session.createQueue(deniedDestinationName));
+
+            producer.send(session.createTextMessage("test"));
+
+            fail("Sending should fail");
+        }
+        catch (JMSException e)
+        {
+            assertJMSExceptionMessageContains(e,
+                                              "Permission ACTION(publish) is denied for : " + (isBroker10()
+                                                      ? "Queue"
+                                                      : "Exchange"));
         }
     }
 }
