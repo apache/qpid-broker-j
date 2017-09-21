@@ -106,6 +106,44 @@ function createTest(name, numberOfParticipantPairs, acknowledgeMode, deliveryMod
     return test;
 }
 
+function createCompetingConsumerTest(name, numberOfParticipantPairs, transport)
+{
+    var destination = "testQueue_competing";
+    var test = {
+        "_name": name,
+        "_queues": [{
+            "_name": destination,
+            "_durable": true
+        }],
+        "_clients": []
+    };
+
+    var connectionFactory;
+    if (transport.toLowerCase() === "plain")
+    {
+        connectionFactory = "connectionfactory_noprefetch";
+    }
+    else if (transport.toLowerCase() === "ssl")
+    {
+        connectionFactory = "sslconnectionfactory_noprefetch";
+    }
+
+    test._clients.push({
+        "_name": "producingClient",
+        "_connections": [createProducerConnection(0, connectionFactory, destination, ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE, DELIVERY_MODE_TRANSIENT)]
+    });
+
+    for (var i = 0; i < numberOfParticipantPairs; i++)
+    {
+        test._clients.push({
+            "_name": "consumingClient_" + i,
+            "_connections": [createConsumerConnection(i, connectionFactory, destination, ACKNOWLEDGE_MODE_SESSION_TRANSACTED)]
+        });
+    }
+
+    return test;
+}
+
 var jsonObject = {
     _tests: [
         createTest("persistent_transaction_plain",
@@ -137,7 +175,10 @@ var jsonObject = {
             numberOfParticipantPairs,
             ACKNOWLEDGE_MODE_SESSION_TRANSACTED,
             DELIVERY_MODE_TRANSIENT,
-            "SSL")
+            "SSL"),
+        createCompetingConsumerTest("competing_consumers_plain",
+            numberOfParticipantPairs,
+            "PLAIN")
     ]
 };
 
