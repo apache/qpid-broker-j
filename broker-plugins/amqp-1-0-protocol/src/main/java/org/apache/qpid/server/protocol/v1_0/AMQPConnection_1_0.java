@@ -51,7 +51,7 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
 
     String SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE = "connection.sendSaslFinalResponseAsChallenge";
     @ManagedContextDefault(name = SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE)
-    boolean DEFAULT_SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE = true;
+    boolean DEFAULT_SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE = false;
 
     Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
     Symbol SHARED_SUBSCRIPTIONS = Symbol.valueOf("SHARED-SUBS");
