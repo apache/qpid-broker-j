@@ -215,7 +215,8 @@ org.apache.qpid.server.security.acl.MessagingACLTest#testPublishToDefaultExchang
 org.apache.qpid.server.security.acl.MessagingACLTest#testPublishToDefaultExchangeFailure
 org.apache.qpid.server.security.acl.Amqp0xMessagingACLTest#*
 
-// QPID-7904 : Temporary exclude temporary queue creation test
+// QPID-7919 : We can't currently ACL the ability to create temporary queues (or exchanges) as these need to
+// run as system as so avoid the ACL check.
 org.apache.qpid.server.security.acl.MessagingACLTest#testCreateTemporaryQueueFailed
 
 
