@@ -826,7 +826,7 @@
                 <evaluateBeanshell>
                   <condition><![CDATA[
                     boolean enableAmqp0xSet = System.getProperties().stringPropertyNames().contains("enableAmqp0-x");
-                    boolean amqp0xProfile = java.util.regex.Pattern.matches("java-.*\\.0-.*", "${profile}");
+                    boolean amqp0xProfile = java.util.regex.Pattern.matches("java-.*\\.0-.*|cpp", "${profile}");
 
                     if (amqp0xProfile && !enableAmqp0xSet)
                     {
@@ -839,7 +839,7 @@
                     return true;
                   ]]>
                   </condition>
-                  <message>System property 'enableAmqp0-x' must be set only when running on of the older 0-x test profiles. You appear to be running '${profile}'.</message>
+                  <message>System property 'enableAmqp0-x' is required when running one of the older 0-x test profiles. It must not be set otherwise. You appear to be running '${profile}'.</message>
                 </evaluateBeanshell>
               </rules>
               <fail>true</fail>
