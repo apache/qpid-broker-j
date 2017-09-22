@@ -23,7 +23,6 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -84,23 +83,24 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
     }
 
 
-    private class LazyConstructor implements TypeConstructor<DataSection>
+    private class LazyConstructor extends AbstractLazyConstructor<DataSection>
     {
-
         private final int _sizeBytes;
-        private final int[] _originalPositions;
 
-        public LazyConstructor(final int sizeBytes,
-                               final int[] originalPositions)
+        public LazyConstructor(final int sizeBytes, final int[] originalPositions)
         {
-
+            super(originalPositions);
             _sizeBytes = sizeBytes;
-            _originalPositions = originalPositions;
         }
 
         @Override
-        public DataSection construct(final List<QpidByteBuffer> in, final ValueHandler handler)
-                throws AmqpErrorException
+        protected DataSection createObject(final List<QpidByteBuffer> encoding, final ValueHandler handler)
+        {
+            return new DataSection(encoding);
+        }
+
+        @Override
+        protected void skipValue(final List<QpidByteBuffer> in) throws AmqpErrorException
         {
             int size;
             switch(_sizeBytes)
@@ -115,34 +115,6 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
                     throw new AmqpErrorException(AmqpError.INVALID_FIELD, "Unexpected constructor type, can only be 1 or 4");
             }
             QpidByteBufferUtils.skip(in, size);
-
-            List<QpidByteBuffer> encoding = new ArrayList<>();
-            int offset = in.size() - _originalPositions.length;
-            for(int i = offset; i < in.size(); i++)
-            {
-                QpidByteBuffer buf = in.get(i);
-                if(buf.position() == _originalPositions[i-offset])
-                {
-                    if(buf.hasRemaining())
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    QpidByteBuffer dup = buf.duplicate();
-                    dup.position(_originalPositions[i-offset]);
-                    dup.limit(buf.position());
-                    encoding.add(dup);
-                }
-            }
-            DataSection object = new DataSection(encoding);
-            for (QpidByteBuffer buffer: encoding)
-            {
-                buffer.dispose();
-            }
-            return object;
-
         }
     }
 }
