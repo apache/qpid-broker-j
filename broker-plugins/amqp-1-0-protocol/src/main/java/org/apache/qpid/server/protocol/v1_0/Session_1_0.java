@@ -696,8 +696,15 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
         if (Boolean.TRUE.equals(source.getDynamic()))
         {
-            MessageSource tempQueue = createDynamicSource(link, source.getDynamicNodeProperties());
-            source.setAddress(tempQueue.getName()); // todo : temporary topic
+            MessageSource tempSource = createDynamicSource(link, source.getDynamicNodeProperties());
+            if(tempSource != null)
+            {
+                source.setAddress(_primaryDomain + tempSource.getName());
+            }
+            else
+            {
+                throw new AmqpErrorException(AmqpError.INTERNAL_ERROR, "Cannot create dynamic source");
+            }
         }
 
         String address = source.getAddress();
@@ -763,10 +770,10 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         return exchangeDestination;
     }
 
-    private MessageSource createDynamicSource(final Link_1_0<?, ?> link,
-                                              Map properties)
+    private MessageSource createDynamicSource(final Link_1_0<?, ?> link, Map properties) throws AmqpErrorException
     {
-        final String queueName = _primaryDomain + "TempQueue" + UUID.randomUUID().toString();
+        // TODO temporary topics?
+        final String queueName = "TempQueue" + UUID.randomUUID().toString();
         try
         {
             Map<String, Object> attributes = convertDynamicNodePropertiesToAttributes(link, properties, queueName);
@@ -776,12 +783,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
         catch (AccessControlException e)
         {
-            Error error = new Error();
-            error.setCondition(AmqpError.UNAUTHORIZED_ACCESS);
-            error.setDescription(e.getMessage());
-
-            _connection.close(error);
-            return null;
+            throw new AmqpErrorException(AmqpError.UNAUTHORIZED_ACCESS, e.getMessage());
         }
         catch (AbstractConfiguredObject.DuplicateNameException e)
         {
