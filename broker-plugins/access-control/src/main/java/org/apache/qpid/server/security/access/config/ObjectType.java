@@ -25,6 +25,7 @@ import static org.apache.qpid.server.security.access.config.LegacyOperation.CONF
 import static org.apache.qpid.server.security.access.config.LegacyOperation.CONSUME;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.CREATE;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.DELETE;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.INVOKE;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.PUBLISH;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.PURGE;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.SHUTDOWN;
@@ -43,15 +44,15 @@ import java.util.Set;
 public enum ObjectType
 {
     ALL(EnumSet.allOf(LegacyOperation.class)),
-    VIRTUALHOSTNODE(LegacyOperation.ALL, CREATE, DELETE, UPDATE),
-    VIRTUALHOST(LegacyOperation.ALL, ACCESS, CREATE, DELETE, UPDATE, ACCESS_LOGS),
+    VIRTUALHOSTNODE(LegacyOperation.ALL, CREATE, DELETE, UPDATE, INVOKE),
+    VIRTUALHOST(LegacyOperation.ALL, ACCESS, CREATE, DELETE, UPDATE, ACCESS_LOGS, INVOKE),
     MANAGEMENT(LegacyOperation.ALL, ACCESS),
-    QUEUE(LegacyOperation.ALL, CREATE, DELETE, PURGE, CONSUME, UPDATE),
-    EXCHANGE(LegacyOperation.ALL, ACCESS, CREATE, DELETE, BIND, UNBIND, PUBLISH, UPDATE),
+    QUEUE(LegacyOperation.ALL, CREATE, DELETE, PURGE, CONSUME, UPDATE, INVOKE),
+    EXCHANGE(LegacyOperation.ALL, ACCESS, CREATE, DELETE, BIND, UNBIND, PUBLISH, UPDATE, INVOKE),
     METHOD(LegacyOperation.ALL, ACCESS, UPDATE),
-    USER(LegacyOperation.ALL, CREATE, DELETE, UPDATE),
-    GROUP(LegacyOperation.ALL, CREATE, DELETE, UPDATE),
-    BROKER(LegacyOperation.ALL, CONFIGURE, ACCESS_LOGS, SHUTDOWN);
+    USER(LegacyOperation.ALL, CREATE, DELETE, UPDATE, INVOKE),
+    GROUP(LegacyOperation.ALL, CREATE, DELETE, UPDATE, INVOKE),
+    BROKER(LegacyOperation.ALL, CONFIGURE, ACCESS_LOGS, SHUTDOWN, INVOKE);
 
     private EnumSet<LegacyOperation> _operations;
 

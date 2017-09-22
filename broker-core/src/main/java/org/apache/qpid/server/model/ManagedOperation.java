@@ -36,4 +36,5 @@ public @interface ManagedOperation
     boolean changesConfiguredObjectState();
     boolean associateAsIfChildren() default false;
     boolean log() default false;
+    boolean skipAclCheck() default false;
 }

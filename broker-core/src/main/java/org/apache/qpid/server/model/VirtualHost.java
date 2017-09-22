@@ -48,7 +48,10 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     String getProductVersion();
 
     @Override
-    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false, associateAsIfChildren = true)
+    @ManagedOperation(nonModifying = true,
+            changesConfiguredObjectState = false,
+            associateAsIfChildren = true,
+            skipAclCheck = true)
     Collection<? extends Connection<?>> getConnections();
 
 }

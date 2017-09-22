@@ -81,15 +81,15 @@ public final class Operation
         return READ;
     }
 
-    public static Operation METHOD(String name)
+    public static Operation INVOKE_METHOD(String name)
     {
-        return new Operation(OperationType.METHOD, name);
+        return new Operation(OperationType.INVOKE_METHOD, name);
     }
 
 
-    public static Operation ACTION(String name)
+    public static Operation PERFORM_ACTION(String name)
     {
-        return new Operation(OperationType.ACTION, name);
+        return new Operation(OperationType.PERFORM_ACTION, name);
     }
 
     @Override

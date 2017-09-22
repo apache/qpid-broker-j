@@ -68,7 +68,7 @@ public class MessagingACLTest extends AbstractACLTestCase
     private void assertAccessDeniedException(JMSException e) throws Exception
     {
         assertTrue("Unexpected exception message:" + e.getMessage(),
-                   e.getMessage().contains("Permission ACTION(connect) is denied"));
+                   e.getMessage().contains("Permission PERFORM_ACTION(connect) is denied"));
     }
 
     public void setUpAccessVirtualHostWithName() throws Exception
@@ -540,7 +540,7 @@ public class MessagingACLTest extends AbstractACLTestCase
         catch (JMSException e)
         {
             assertJMSExceptionMessageContains(e,
-                                              "Permission ACTION(publish) is denied for : " + (isBroker10()
+                                              "Permission PERFORM_ACTION(publish) is denied for : " + (isBroker10()
                                                       ? "Queue"
                                                       : "Exchange"));
         }
@@ -588,7 +588,7 @@ public class MessagingACLTest extends AbstractACLTestCase
         catch (JMSException e)
         {
             assertJMSExceptionMessageContains(e,
-                                              "Permission ACTION(publish) is denied for : " + (isBroker10()
+                                              "Permission PERFORM_ACTION(publish) is denied for : " + (isBroker10()
                                                       ? "Queue"
                                                       : "Exchange"));
         }

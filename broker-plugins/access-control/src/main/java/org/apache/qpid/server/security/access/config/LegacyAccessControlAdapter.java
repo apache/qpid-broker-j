@@ -20,16 +20,15 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import static org.apache.qpid.server.security.access.config.LegacyOperation.ACCESS_LOGS;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.BIND;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.INVOKE;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.PUBLISH;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.PURGE;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.UNBIND;
 import static org.apache.qpid.server.security.access.config.ObjectType.EXCHANGE;
 import static org.apache.qpid.server.security.access.config.ObjectType.METHOD;
 import static org.apache.qpid.server.security.access.config.ObjectType.QUEUE;
-import static org.apache.qpid.server.security.access.config.ObjectType.USER;
-import static org.apache.qpid.server.security.access.config.LegacyOperation.ACCESS_LOGS;
-import static org.apache.qpid.server.security.access.config.LegacyOperation.PUBLISH;
-import static org.apache.qpid.server.security.access.config.LegacyOperation.PURGE;
-import static org.apache.qpid.server.security.access.config.LegacyOperation.UPDATE;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,7 +41,6 @@ import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 class LegacyAccessControlAdapter
@@ -56,29 +54,6 @@ class LegacyAccessControlAdapter
             Collections.unmodifiableSet(new HashSet<>(Arrays.asList("moveMessages",
                                                                     "copyMessages",
                                                                     "deleteMessages")));
-
-    private static final Set<String> LEGACY_PREFERENCES_METHOD_NAMES =
-            Collections.unmodifiableSet(new HashSet<>(Arrays.asList("getPreferences",
-                                                                    "setPreferences",
-                                                                    "deletePreferences")));
-
-    private static final Set<String> BDB_VIRTUAL_HOST_NODE_OPERATIONS =
-            Collections.unmodifiableSet(new HashSet<>(Arrays.asList("updateMutableConfig",
-                                                                    "cleanLog",
-                                                                    "checkpoint")));
-
-    private static final Set<String> BROKER_CONFIGURE_OPERATIONS =
-            Collections.unmodifiableSet(new HashSet<>(Arrays.asList("setJVMOptions",
-                                                                    "dumpHeap",
-                                                                    "performGC",
-                                                                    "getThreadStackTraces",
-                                                                    "findThreadStackTraces",
-                                                                    "extractConfig",
-                                                                    "restart")));
-
-    private static final Set<String> VIRTUALHOST_UPDATE_OPERATIONS =
-            Collections.unmodifiableSet(new HashSet<>(Arrays.asList("importMessageStore",
-                                                                    "extractMessageStore")));
 
     private final LegacyAccessControl _accessControl;
     private final Model _model;
@@ -231,7 +206,7 @@ class LegacyAccessControlAdapter
             properties.put(ObjectProperties.Property.DURABLE, (Boolean) exchange.getAttribute(ConfiguredObject.DURABLE));
             properties.put(ObjectProperties.Property.TYPE, (String) exchange.getAttribute(Exchange.TYPE));
             VirtualHost virtualHost = (VirtualHost) exchange.getParent();
-            properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(virtualHost.NAME));
+            properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(VirtualHost.NAME));
         }
         else if (configuredObject instanceof QueueConsumer)
         {
@@ -249,7 +224,7 @@ class LegacyAccessControlAdapter
         else if (isVirtualHostType(configuredObjectType))
         {
             ConfiguredObject<?> virtualHost = getModel().getAncestor(VirtualHost.class, (ConfiguredObject<?>)configuredObject);
-            properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(virtualHost.NAME));
+            properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(VirtualHost.NAME));
         }
         return properties;
     }
@@ -277,7 +252,7 @@ class LegacyAccessControlAdapter
             properties.put(ObjectProperties.Property.OWNER, owner);
         }
         VirtualHost virtualHost = (VirtualHost) queue.getParent();
-        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(virtualHost.NAME));
+        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(VirtualHost.NAME));
     }
 
 
@@ -375,7 +350,17 @@ class LegacyAccessControlAdapter
                            final String methodName,
                            final Map<String, Object> arguments)
     {
+
         Class<? extends ConfiguredObject> categoryClass = configuredObject.getCategoryClass();
+        Result invokeResult =  _accessControl.authorise(INVOKE,
+                                                        getACLObjectTypeManagingConfiguredObjectOfCategory(categoryClass),
+                                                        createObjectPropertiesForMethod(configuredObject, methodName));
+        if (invokeResult == Result.ALLOWED)
+        {
+            return invokeResult;
+        }
+
+        // Otherwise fallback to the older rule-style
         if(categoryClass == Queue.class)
         {
             Queue queue = (Queue) configuredObject;
@@ -393,102 +378,61 @@ class LegacyAccessControlAdapter
                 properties.put(ObjectProperties.Property.COMPONENT, "VirtualHost.Queue");
                 properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualHostName);
                 return _accessControl.authorise(LegacyOperation.UPDATE, METHOD, properties);
-
-            }
-            else if("publish".equals(methodName))
-            {
-
-                final ObjectProperties _props =
-                        new ObjectProperties(queue.getParent().getName(), "", queue.getName());
-                return _accessControl.authorise(PUBLISH, EXCHANGE, _props);
             }
         }
-        else if(categoryClass == BrokerLogger.class)
+        else if ((categoryClass == BrokerLogger.class || categoryClass == VirtualHostLogger.class) && LOG_ACCESS_METHOD_NAMES.contains(methodName))
         {
-            if(LOG_ACCESS_METHOD_NAMES.contains(methodName))
-            {
-                return _accessControl.authorise(ACCESS_LOGS, ObjectType.BROKER, ObjectProperties.EMPTY);
-            }
+            ObjectProperties empty = categoryClass == BrokerLogger.class ? ObjectProperties.EMPTY : new ObjectProperties(
+                    ((ConfiguredObject) configuredObject).getParent().getName());
+            return _accessControl.authorise(ACCESS_LOGS, categoryClass == BrokerLogger.class ? ObjectType.BROKER : ObjectType.VIRTUALHOST,
+                                            empty);
         }
-        else if(categoryClass == VirtualHostLogger.class)
+        else if(categoryClass == Broker.class && "initiateShutdown".equals(methodName))
         {
-            VirtualHostLogger logger = (VirtualHostLogger)configuredObject;
-            if(LOG_ACCESS_METHOD_NAMES.contains(methodName))
-            {
-                return _accessControl.authorise(ACCESS_LOGS,
-                                                ObjectType.VIRTUALHOST,
-                                                new ObjectProperties(logger.getParent().getName()));
-            }
-        }
-        else if(categoryClass == AuthenticationProvider.class)
-        {
-            if(LEGACY_PREFERENCES_METHOD_NAMES.contains(methodName))
-            {
-                if(arguments.get("userId") instanceof String)
-                {
-                    String userName = (String) arguments.get("userId");
-                    AuthenticatedPrincipal principal = AuthenticatedPrincipal.getCurrentUser();
-                    if (principal != null && principal.getName().equals(userName))
-                    {
-                        // allow user to update its own data
-                        return Result.ALLOWED;
-                    }
-                    else
-                    {
-                        return _accessControl.authorise(UPDATE,
-                                                        USER,
-                                                        new ObjectProperties(userName));
-                    }
-                }
-            }
-        }
-        else if(categoryClass == VirtualHostNode.class)
-        {
-            if(BDB_VIRTUAL_HOST_NODE_OPERATIONS.contains(methodName))
-            {
-                ObjectProperties properties = getACLObjectProperties(((ConfiguredObject)configuredObject).getParent(), LegacyOperation.UPDATE);
-                return _accessControl.authorise(LegacyOperation.UPDATE, ObjectType.BROKER, properties);
-            }
-        }
-        else if(categoryClass == Broker.class)
-        {
-            if(BROKER_CONFIGURE_OPERATIONS.contains(methodName))
-            {
-                _accessControl.authorise(LegacyOperation.CONFIGURE, ObjectType.BROKER, ObjectProperties.EMPTY);
-            }
-            else if("initiateShutdown".equals(methodName))
-            {
-                _accessControl.authorise(LegacyOperation.SHUTDOWN, ObjectType.BROKER, ObjectProperties.EMPTY);
-            }
-
-        }
-        else if(categoryClass == VirtualHost.class)
-        {
-            if(VIRTUALHOST_UPDATE_OPERATIONS.contains(methodName))
-            {
-                authorise(LegacyOperation.UPDATE, configuredObject);
-            }
+            _accessControl.authorise(LegacyOperation.SHUTDOWN, ObjectType.BROKER, ObjectProperties.EMPTY);
         }
         else if (categoryClass == Exchange.class)
         {
             if ("bind".equals(methodName))
             {
-                final ObjectProperties properties = createArgsForExchangeBind(arguments, configuredObject);
+                final ObjectProperties properties = createObjectPropertiesForExchangeBind(arguments, configuredObject);
                 return _accessControl.authorise(BIND, EXCHANGE, properties);
             }
             else if ("unbind".equals(methodName))
             {
-                final ObjectProperties properties = createArgsForExchangeBind(arguments, configuredObject);
+                final ObjectProperties properties = createObjectPropertiesForExchangeBind(arguments, configuredObject);
                 return _accessControl.authorise(UNBIND, EXCHANGE, properties);
             }
-
         }
-        return Result.ALLOWED;
 
+        //TODO: add check for VH#messagePublish
+        return Result.DENIED;
     }
 
-    private ObjectProperties createArgsForExchangeBind(final Map<String, Object> arguments,
-                                           final PermissionedObject configuredObject)
+    private ObjectProperties createObjectPropertiesForMethod(final PermissionedObject permissionedObject,
+                                                             final String methodName)
+    {
+        ObjectProperties properties = new ObjectProperties(permissionedObject.getName());
+        properties.put(ObjectProperties.Property.METHOD_NAME, methodName);
+
+        if (permissionedObject instanceof ConfiguredObject<?>)
+        {
+            ConfiguredObject<?> configuredObject = ((ConfiguredObject) permissionedObject);
+            VirtualHost virtualHost = configuredObject.getModel()
+                                                      .getAncestor(VirtualHost.class,
+                                                                   configuredObject.getCategoryClass(),
+                                                                   configuredObject);
+            if (virtualHost != null)
+            {
+                properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualHost.getName());
+            }
+        }
+
+        return properties;
+    }
+
+    private ObjectProperties createObjectPropertiesForExchangeBind(final Map<String, Object> arguments,
+                                                                   final PermissionedObject configuredObject)
     {
         ObjectProperties properties = new ObjectProperties();
         Exchange<?> exchange = (Exchange<?>) configuredObject;
@@ -529,9 +473,9 @@ class LegacyAccessControlAdapter
                 return authorise(LegacyOperation.UPDATE, configuredObject);
             case DELETE:
                 return authorise(LegacyOperation.DELETE, configuredObject);
-            case METHOD:
+            case INVOKE_METHOD:
                 return authoriseMethod(configuredObject, operation.getName(), arguments);
-            case ACTION:
+            case PERFORM_ACTION:
                 return authoriseAction(configuredObject, operation.getName(), arguments);
             case DISCOVER:
             case READ:

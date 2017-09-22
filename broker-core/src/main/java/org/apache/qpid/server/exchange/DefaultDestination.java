@@ -42,7 +42,7 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 public class DefaultDestination implements MessageDestination, PermissionedObject
 {
 
-    private static final Operation PUBLISH_ACTION = Operation.ACTION("publish");
+    private static final Operation PUBLISH_ACTION = Operation.PERFORM_ACTION("publish");
     private final AccessControl _accessControl;
     private QueueManagingVirtualHost<?> _virtualHost;
 

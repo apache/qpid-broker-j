@@ -35,7 +35,8 @@ public enum LegacyOperation
     UPDATE,
     CONFIGURE,
     ACCESS_LOGS,
-    SHUTDOWN;
+    SHUTDOWN,
+    INVOKE;
 
     @Override
     public String toString()

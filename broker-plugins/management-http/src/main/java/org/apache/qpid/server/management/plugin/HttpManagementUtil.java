@@ -81,7 +81,7 @@ public class HttpManagementUtil
     public static final String GZIP_CONTENT_ENCODING = "gzip";
 
     private static final Collection<HttpRequestPreemptiveAuthenticator> AUTHENTICATORS;
-    private static final Operation MANAGE_ACTION = Operation.ACTION("manage");
+    private static final Operation MANAGE_ACTION = Operation.PERFORM_ACTION("manage");
 
     static
     {

@@ -271,7 +271,8 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
     @ManagedOperation(nonModifying = true,
             description = "Returns metadata concerning the current connection",
-            changesConfiguredObjectState = false)
+            changesConfiguredObjectState = false,
+            skipAclCheck = true)
     SocketConnectionMetaData getConnectionMetaData();
 
     Queue<?> getSubscriptionQueue(final String exchangeName,

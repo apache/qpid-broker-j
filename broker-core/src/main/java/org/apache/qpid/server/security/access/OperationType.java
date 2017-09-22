@@ -27,6 +27,6 @@ public enum OperationType
     DELETE,
     DISCOVER,
     READ,
-    METHOD,
-    ACTION
+    INVOKE_METHOD,
+    PERFORM_ACTION
 }

@@ -57,7 +57,8 @@ public class ObjectProperties
         CLASS,
         FROM_NETWORK,
         FROM_HOSTNAME,
-        VIRTUALHOST_NAME;
+        VIRTUALHOST_NAME,
+        METHOD_NAME;
 
         private static final Map<String, Property> _canonicalNameToPropertyMap = new HashMap<String, ObjectProperties.Property>();
 

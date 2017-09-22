@@ -147,7 +147,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     };
 
     private static final String UTF8 = StandardCharsets.UTF_8.name();
-    private static final Operation PUBLISH_ACTION = Operation.ACTION("publish");
+    private static final Operation PUBLISH_ACTION = Operation.PERFORM_ACTION("publish");
 
     private final QueueManagingVirtualHost<?> _virtualHost;
     private final DeletedChildListener _deletedChildListener = new DeletedChildListener();

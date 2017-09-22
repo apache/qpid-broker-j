@@ -128,7 +128,7 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
             pw.print(packageElement.getQualifiedName());
             pw.println(";");
             pw.println();
-            pw.println("import static org.apache.qpid.server.security.access.Operation.METHOD;");
+            pw.println("import static org.apache.qpid.server.security.access.Operation.INVOKE_METHOD;");
             pw.println();
             pw.println("import java.util.Map;");
             pw.println("import java.util.concurrent.ExecutionException;");
@@ -283,8 +283,28 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
 
     private void processManagedOperation(final PrintWriter pw, final String className, final ExecutableElement methodElement, final AnnotationMirror annotationMirror)
     {
+        final Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues =
+                processingEnv.getElementUtils().getElementValuesWithDefaults(annotationMirror);
+        boolean wrapCallToSuper = false;
+        boolean log = false;
+        boolean  skipAclCheck = false;
+        for (ExecutableElement executableElement : elementValues.keySet())
+        {
+            if ("changesConfiguredObjectState".contentEquals(executableElement.getSimpleName()))
+            {
+                wrapCallToSuper = (Boolean) elementValues.get(executableElement).getValue();
+            }
+            else if("log".contentEquals(executableElement.getSimpleName()))
+            {
+                log = (Boolean) elementValues.get(executableElement).getValue();
+            }
+            else if("skipAclCheck".contentEquals(executableElement.getSimpleName()))
+            {
+                skipAclCheck = (Boolean) elementValues.get(executableElement).getValue();
+            }
+        }
 
-        if(!methodElement.getParameters().isEmpty())
+        if(!(methodElement.getParameters().isEmpty() || skipAclCheck))
         {
             pw.print("    private static final FixedKeyMapCreator ");
             pw.print(methodElement.getSimpleName().toString().replaceAll("([A-Z])", "_$1").toUpperCase() + "_MAP_CREATOR");
@@ -326,34 +346,25 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
         }
         pw.println(")");
         pw.println("    {");
-        pw.print("        authorise(METHOD(\"");
-        pw.print(methodElement.getSimpleName().toString());
-        pw.print("\")");
+
         final String parameterList = getParameterList(methodElement);
 
-        if(!methodElement.getParameters().isEmpty())
+        if (!skipAclCheck)
         {
-            pw.print(", ");
-            pw.print(methodElement.getSimpleName().toString().replaceAll("([A-Z])", "_$1").toUpperCase() + "_MAP_CREATOR");
-            pw.print(".createMap" + parameterList);
-        }
-        pw.println(");");
-        pw.println();
+            pw.print("        authorise(INVOKE_METHOD(\"");
+            pw.print(methodElement.getSimpleName().toString());
+            pw.print("\")");
 
-        final Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues =
-                processingEnv.getElementUtils().getElementValuesWithDefaults(annotationMirror);
-        boolean wrapCallToSuper = false;
-        boolean log = false;
-        for (ExecutableElement executableElement : elementValues.keySet())
-        {
-            if ("changesConfiguredObjectState".contentEquals(executableElement.getSimpleName()))
+
+            if (!methodElement.getParameters().isEmpty())
             {
-                wrapCallToSuper = (Boolean) elementValues.get(executableElement).getValue();
+                pw.print(", ");
+                pw.print(methodElement.getSimpleName().toString().replaceAll("([A-Z])", "_$1").toUpperCase()
+                         + "_MAP_CREATOR");
+                pw.print(".createMap" + parameterList);
             }
-            else if("log".contentEquals(executableElement.getSimpleName()))
-            {
-                log = (Boolean) elementValues.get(executableElement).getValue();
-            }
+            pw.println(");");
+            pw.println();
         }
 
         if(log)

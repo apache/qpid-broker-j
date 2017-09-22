@@ -252,7 +252,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
     @Override
     public boolean authoriseCreateConnection(final AMQPConnection<?> connection)
     {
-        _broker.authorise(Operation.ACTION("manage"));
+        _broker.authorise(Operation.PERFORM_ACTION("manage"));
         return true;
     }
 

@@ -306,18 +306,21 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @ManagedOperation(nonModifying = true,
             description = "Returns the principal of the currently authenticated user",
-            changesConfiguredObjectState = false)
+            changesConfiguredObjectState = false,
+            skipAclCheck = true)
     Principal getUser();
 
     @ManagedOperation(nonModifying = true,
             description = "Returns metadata concerning the current connection",
-            changesConfiguredObjectState = false)
+            changesConfiguredObjectState = false,
+            skipAclCheck = true)
     SocketConnectionMetaData getConnectionMetaData();
 
 
     @ManagedOperation(nonModifying = true,
             description = "Returns the groups to which the currently authenticated user belongs",
-            changesConfiguredObjectState = false)
+            changesConfiguredObjectState = false,
+            skipAclCheck = true)
     Set<Principal> getGroups();
 
     @ManagedOperation(description = "Removes a user and all associated preferences from the broker's configuration",

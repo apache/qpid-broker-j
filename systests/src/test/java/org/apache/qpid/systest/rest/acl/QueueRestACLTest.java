@@ -20,10 +20,14 @@
  */
 package org.apache.qpid.systest.rest.acl;
 
+import static javax.servlet.http.HttpServletResponse.SC_CREATED;
+import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
+import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
+import static javax.servlet.http.HttpServletResponse.SC_OK;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.security.acl.AbstractACLTestCase;
@@ -59,6 +63,8 @@ public class QueueRestACLTest extends QpidRestTestCase
                 "ACL DENY-LOG " + DENIED_USER + " UPDATE QUEUE",
                 "ACL ALLOW-LOG " + ALLOWED_USER + " DELETE QUEUE",
                 "ACL DENY-LOG " + DENIED_USER + " DELETE QUEUE",
+                "ACL ALLOW-LOG " + ALLOWED_USER + " INVOKE QUEUE method_name=\"clearQueue\"",
+                "ACL ALLOW-LOG " + ALLOWED_USER + " INVOKE QUEUE method_name=\"get*\"",
                 "ACL DENY-LOG ALL ALL");
 
     }
@@ -67,8 +73,7 @@ public class QueueRestACLTest extends QpidRestTestCase
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
-        int responseCode = createQueue();
-        assertEquals("Queue creation should be allowed", 201, responseCode);
+        createQueue(SC_CREATED);
 
         assertQueueExists();
     }
@@ -77,8 +82,7 @@ public class QueueRestACLTest extends QpidRestTestCase
     {
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
 
-        int responseCode = createQueue();
-        assertEquals("Queue creation should be denied", 403, responseCode);
+        createQueue(SC_FORBIDDEN);
 
         assertQueueDoesNotExist();
     }
@@ -87,13 +91,11 @@ public class QueueRestACLTest extends QpidRestTestCase
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
-        int responseCode = createQueue();
-        assertEquals("Queue creation should be allowed", 201, responseCode);
+        createQueue(SC_CREATED);
 
         assertQueueExists();
 
-        responseCode = getRestTestHelper().submitRequest(_queueUrl, "DELETE");
-        assertEquals("Queue deletion should be allowed", 200, responseCode);
+        getRestTestHelper().submitRequest(_queueUrl, "DELETE", SC_OK);
 
         assertQueueDoesNotExist();
     }
@@ -102,14 +104,12 @@ public class QueueRestACLTest extends QpidRestTestCase
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
-        int responseCode = createQueue();
-        assertEquals("Queue creation should be allowed", 201, responseCode);
+        createQueue(SC_CREATED);
 
         assertQueueExists();
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
-        responseCode = getRestTestHelper().submitRequest(_queueUrl, "DELETE");
-        assertEquals("Queue deletion should be denied", 403, responseCode);
+        getRestTestHelper().submitRequest(_queueUrl, "DELETE", SC_FORBIDDEN);
 
         assertQueueExists();
     }
@@ -120,15 +120,15 @@ public class QueueRestACLTest extends QpidRestTestCase
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
-        int responseCode = createQueue();
+        createQueue(SC_CREATED);
 
         assertQueueExists();
 
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put(Queue.NAME, _queueName);
         attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100000);
 
-        getRestTestHelper().submitRequest(_queueUrl, "PUT", attributes, HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest(_queueUrl, "PUT", attributes, SC_OK);
 
         Map<String, Object> queueData = getRestTestHelper().getJsonAsMap(_queueUrl);
         assertEquals("Unexpected " + Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100000, queueData.get(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES));
@@ -138,27 +138,40 @@ public class QueueRestACLTest extends QpidRestTestCase
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
-        int responseCode = createQueue();
+        createQueue(SC_CREATED);
         assertQueueExists();
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
 
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put(Queue.NAME, _queueName);
         attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 100000);
 
-        getRestTestHelper().submitRequest(_queueUrl, "PUT", attributes, HttpServletResponse.SC_FORBIDDEN);
+        getRestTestHelper().submitRequest(_queueUrl, "PUT", attributes, SC_FORBIDDEN);
 
         Map<String, Object> queueData = getRestTestHelper().getJsonAsMap(_queueUrl);
         assertEquals("Unexpected " + Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, -1, queueData.get(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES));
     }
 
-    private int createQueue() throws Exception
+    public void testInvokeQueueOperation() throws Exception
     {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Queue.NAME, _queueName);
+        getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
-        return getRestTestHelper().submitRequest(_queueUrl, "PUT", attributes);
+        createQueue(SC_CREATED);
+
+        getRestTestHelper().submitRequest(_queueUrl + "/clearQueue", "POST", Collections.emptyMap(), SC_OK);
+        getRestTestHelper().submitRequest(_queueUrl + "/getStatistics", "POST", Collections.emptyMap(), SC_OK);
+
+        getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
+
+        getRestTestHelper().submitRequest(_queueUrl + "/clearQueue", "POST", Collections.emptyMap(), SC_FORBIDDEN);
+    }
+
+    private void createQueue(final int expectedResponseCode) throws Exception
+    {
+        Map<String, Object> attributes = Collections.singletonMap(Queue.NAME, _queueName);
+
+        getRestTestHelper().submitRequest(_queueUrl, "PUT", attributes, expectedResponseCode);
     }
 
     private void assertQueueDoesNotExist() throws Exception
@@ -173,7 +186,7 @@ public class QueueRestACLTest extends QpidRestTestCase
 
     private void assertQueueExistence(boolean exists) throws Exception
     {
-        int expectedResponseCode = exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND;
+        int expectedResponseCode = exists ? SC_OK : SC_NOT_FOUND;
         getRestTestHelper().submitRequest(_queueUrl, "GET", expectedResponseCode);
     }
 }

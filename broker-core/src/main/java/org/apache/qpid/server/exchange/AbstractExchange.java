@@ -99,7 +99,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     private static final FixedKeyMapCreator UNBIND_ARGUMENTS_CREATOR =
             new FixedKeyMapCreator("bindingKey", "destination");
 
-    private static final Operation PUBLISH_ACTION = Operation.ACTION("publish");
+    private static final Operation PUBLISH_ACTION = Operation.PERFORM_ACTION("publish");
     private final AtomicBoolean _closed = new AtomicBoolean();
 
     @ManagedAttributeField(beforeSet = "preSetAlternateBinding", afterSet = "postSetAlternateBinding" )

@@ -313,7 +313,7 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
                 }
                 return null;
             }
-        }).when(mockBroker).authorise(eq(Operation.ACTION("manage")));
+        }).when(mockBroker).authorise(eq(Operation.PERFORM_ACTION("manage")));
 
         when(authenticationProvider.getAuthorizationEndpointURI(any())).thenReturn(new URI(TEST_AUTHORIZATION_ENDPOINT));
         when(authenticationProvider.getClientId()).thenReturn(TEST_CLIENT_ID);

@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,15 +49,10 @@ public class RuleSet implements EventLoggerProvider
 {
     private static final Logger _logger = LoggerFactory.getLogger(RuleSet.class);
 
-    public static final String DEFAULT_ALLOW = "defaultallow";
-    public static final String DEFAULT_DENY = "defaultdeny";
-
-    private static final Integer _increment = 10;
-
     private final List<Rule> _rules;
     private final Map<Subject, Map<LegacyOperation, Map<ObjectType, List<Rule>>>> _cache =
                         Collections.synchronizedMap(new WeakHashMap<Subject, Map<LegacyOperation, Map<ObjectType, List<Rule>>>>());
-    private final Map<String, Boolean> _config = new HashMap<String, Boolean>();
+
     private final EventLoggerProvider _eventLogger;
     private Result _defaultResult = Result.DENIED;
 
@@ -91,7 +85,7 @@ public class RuleSet implements EventLoggerProvider
         {
             final Set<Principal> principals = subject.getPrincipals();
             boolean controlled = false;
-            List<Rule> filtered = new LinkedList<Rule>();
+            List<Rule> filtered = new LinkedList<>();
             for (Rule rule : _rules)
             {
                 final Action ruleAction = rule.getAction();
@@ -205,16 +199,6 @@ public class RuleSet implements EventLoggerProvider
     {
         return _defaultResult;
 
-    }
-
-    /**
-     * Configure properties for the plugin instance.
-     *
-     * @param properties
-     */
-    public void configure(Map<String, Boolean> properties)
-    {
-        _config.putAll(properties);
     }
 
     /**
