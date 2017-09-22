@@ -21,8 +21,8 @@ chartType=TIMELINE
 chartTitle=Competing Consumers AMQP ${qpid.charting.protocolVersion} plain
 chartDescription=1 Auto-Ack Producer 10 Transacted Competing Consumers (no prefetch), transient, 1kB message, plain, ${qpid.charting.brokerVersionA} / ${qpid.charting.brokerVersionB} / ${qpid.charting.brokerVersionC} / ${qpid.charting.brokerVersionD}
 
-yAxisLowerBound=5000
-yAxisUpperBound=100000
+yAxisLowerBound=0
+yAxisUpperBound=30000
 
 xAxisTitle=Date
 yAxisTitle=Messages Per Second
