@@ -32,6 +32,7 @@ define(["dojox/lang/functional/object",
         'dstore/Trackable',
         "dojox/html/entities",
         "dgrid/OnDemandGrid",
+        "dgrid/extensions/ColumnResizer",
         "dijit/_WidgetBase",
         "dijit/Tooltip",
         "dijit/registry",
@@ -52,7 +53,8 @@ define(["dojox/lang/functional/object",
               Memory,
               Trackable,
               entities,
-              Grid,
+              OnDemandGrid,
+              ColumnResizer,
               _WidgetBase,
               Tooltip,
               registry,
@@ -130,6 +132,8 @@ define(["dojox/lang/functional/object",
                         highlightRow : function() {return false}
                     };
 
+                    var Grid =  declare([OnDemandGrid, ColumnResizer]);
+
                     this._msgBytePairCumulativeStatisticsGrid =
                         new Grid(lang.mixin(lang.clone(gridProps), {
                             collection: this._pairedStatsStore.filter({statisticType : "CUMULATIVE"})
@@ -202,7 +206,7 @@ define(["dojox/lang/functional/object",
                                       this._msgBytePairPointInTimeStatisticsGrid,
                                       this._otherPointInTimeStatisticsGrid];
 
-                    this.statisticsPane.on("toggle", lang.hitch(this, this.resize));
+                    this.statisticsPane.on("show", lang.hitch(this, this.resize));
                     this.allStatsToggle.on("change", lang.hitch(this, this._onStatsToggleChange));
                 },
                 startup: function ()

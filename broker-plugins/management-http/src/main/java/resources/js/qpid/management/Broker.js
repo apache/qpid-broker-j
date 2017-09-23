@@ -964,11 +964,6 @@ define(["dojo/parser",
                         });
                         that.brokerStatistics.placeAt(dom.byId("showBroker.statistics"));
                         that.brokerStatistics.startup();
-                        var brokerPane = registry.byId("showBrokerPane");
-                        connect.connect(brokerPane, "toggle", lang.hitch(this, function()
-                        {
-                            that.brokerStatistics.resize();
-                        }));
                     }
                     var virtualHostData = util.queryResultToObjects(data.virtualHosts);
                     var queryVirtualHostNodes = {};
