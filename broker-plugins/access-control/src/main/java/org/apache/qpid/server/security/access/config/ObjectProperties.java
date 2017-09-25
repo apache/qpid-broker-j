@@ -21,15 +21,18 @@ package org.apache.qpid.server.security.access.config;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
+import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * An set of properties for an access control v2 rule {@link ObjectType}.
  *
- * The {@link #matches(ObjectProperties)} method is intended to be used when determining precedence of rules, and
+ * The {@link #propertiesMatch(ObjectProperties)} method is intended to be used when determining precedence of rules, and
  * {@link #equals(Object)} and {@link #hashCode()} are intended for use in maps. This is due to the wildcard matching
  * described above.
  */
@@ -39,6 +42,7 @@ public class ObjectProperties
     static final String WILD_CARD = "*";
 
     static final ObjectProperties EMPTY = new ObjectProperties();
+    private Set<String> _attributeNames;
 
     public enum Property
     {
@@ -58,7 +62,8 @@ public class ObjectProperties
         FROM_NETWORK,
         FROM_HOSTNAME,
         VIRTUALHOST_NAME,
-        METHOD_NAME;
+        METHOD_NAME,
+        ATTRIBUTES;
 
         private static final Map<String, Property> _canonicalNameToPropertyMap = new HashMap<String, ObjectProperties.Property>();
 
@@ -155,6 +160,16 @@ public class ObjectProperties
         _properties.put(Property.NAME, name);
     }
 
+    Set<String> getAttributeNames()
+    {
+        return _attributeNames;
+    }
+
+    void setAttributeNames(Set<String> attributeNames)
+    {
+        _attributeNames = attributeNames == null ? null : new HashSet<>(attributeNames);
+    }
+
     public String put(Property key, String value)
     {
         return _properties.put(key, value == null ? "" : value.trim());
@@ -168,19 +183,19 @@ public class ObjectProperties
         }
     }
 
-    public boolean matches(ObjectProperties properties)
+    boolean propertiesMatch(ObjectProperties other)
     {
-        if (properties._properties.keySet().isEmpty())
+        if (other._properties.keySet().isEmpty())
         {
             return true;
         }
 
-        if (!_properties.keySet().containsAll(properties._properties.keySet()))
+        if (!_properties.keySet().containsAll(other._properties.keySet()))
         {
             return false;
         }
 
-        for (Map.Entry<Property,String> entry : properties._properties.entrySet())
+        for (Map.Entry<Property,String> entry : other._properties.entrySet())
         {
             Property key = entry.getKey();
             String ruleValue = entry.getValue();
@@ -194,6 +209,12 @@ public class ObjectProperties
         }
 
         return true;
+    }
+
+    boolean attributesMatch(final ObjectProperties other)
+    {
+        return !(other._attributeNames != null
+                 && (_attributeNames == null || !other._attributeNames.containsAll(_attributeNames)));
     }
 
     private boolean valueMatches(String thisValue, String ruleValue)
@@ -222,20 +243,38 @@ public class ObjectProperties
 
         final ObjectProperties that = (ObjectProperties) o;
 
-        return !(_properties != null ? !_properties.equals(that._properties) : that._properties != null);
-
+        if (_attributeNames != null ? !_attributeNames.equals(that._attributeNames) : that._attributeNames != null)
+        {
+            return false;
+        }
+        return _properties != null ? _properties.equals(that._properties) : that._properties == null;
     }
 
     @Override
     public int hashCode()
     {
-        return _properties != null ? _properties.hashCode() : 0;
+        int result = _attributeNames != null ? _attributeNames.hashCode() : 0;
+        result = 31 * result + (_properties != null ? _properties.hashCode() : 0);
+        return result;
     }
 
     @Override
     public String toString()
     {
-        return _properties.toString();
+        StringBuilder sb = new StringBuilder();
+        Joiner joiner = Joiner.on(",");
+        joiner.withKeyValueSeparator("=").appendTo(sb, _properties);
+        if (_attributeNames != null && !_attributeNames.isEmpty())
+        {
+            if (!_properties.isEmpty())
+            {
+                sb.append(",");
+            }
+            sb.append("ATTRIBUTES=[");
+            joiner.appendTo(sb, _attributeNames);
+            sb.append("]");
+        }
+        return sb.toString();
     }
 
     public boolean isEmpty()

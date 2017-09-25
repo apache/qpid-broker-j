@@ -1,19 +1,22 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
+
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.DEFAULT_PREFERENCE_OPERATION_TIMEOUT;
@@ -405,9 +408,8 @@ public class RestServlet extends AbstractServlet
 
                 if (isFullObjectURL)
                 {
-                    providedObject.put("name", names.get(names.size() - 1));
-                    ConfiguredObject<?> configuredObject =
-                            findObjectToUpdateInParent(objClass, providedObject, theParent);
+                    String name = names.get(names.size() - 1);
+                    ConfiguredObject<?> configuredObject = theParent.getChildByName(objClass, name);
 
                     if (configuredObject != null)
                     {
@@ -417,11 +419,14 @@ public class RestServlet extends AbstractServlet
                     }
                     else if ("POST".equalsIgnoreCase(request.getMethod()))
                     {
-                        sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Object with "
-                                                                                                   + (providedObject.containsKey(
-                                "id") ? " id '" + providedObject.get("id") : " name '" + providedObject.get("name"))
-                                                                                                   + "' does not exist!");
+                        sendJsonErrorResponse(request, response,
+                                              HttpServletResponse.SC_NOT_FOUND,
+                                              String.format("%s '%s' not found", configuredClass.getSimpleName(), name));
                         return;
+                    }
+                    else
+                    {
+                        providedObject.put(ConfiguredObject.NAME, name);
                     }
                 }
 
@@ -683,10 +688,8 @@ public class RestServlet extends AbstractServlet
                         finder.findObjectParentsFromPath(names, hierarchy, configuredClass);
                 theParent = parent;
             }
-            Class<? extends ConfiguredObject> objClass = configuredClass;
-            Map<String, Object> objectName =
-                    Collections.<String, Object>singletonMap("name", names.get(names.size() - 1));
-            target = findObjectToUpdateInParent(objClass, objectName, theParent);
+            String name = names.get(names.size() - 1);
+            target = theParent.getChildByName(configuredClass, name);
             if (target == null)
             {
 
@@ -819,23 +822,6 @@ public class RestServlet extends AbstractServlet
             }
         }
         return providedObject;
-    }
-
-    private ConfiguredObject<?> findObjectToUpdateInParent(Class<? extends ConfiguredObject> objClass,
-                                                           Map<String, Object> providedObject,
-                                                           ConfiguredObject theParent)
-    {
-        Collection<? extends ConfiguredObject> existingChildren = theParent.getChildren(objClass);
-
-        for (ConfiguredObject obj : existingChildren)
-        {
-            if ((providedObject.containsKey("id") && String.valueOf(providedObject.get("id")).equals(obj.getId().toString()))
-                    || (obj.getName().equals(providedObject.get("name")) ))
-            {
-                return obj;
-            }
-        }
-        return null;
     }
 
     private void setResponseStatus(HttpServletRequest request, HttpServletResponse response, Throwable e)

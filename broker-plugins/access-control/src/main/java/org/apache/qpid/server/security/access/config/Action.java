@@ -83,7 +83,7 @@ public class Action
 
     public boolean matches(Action a)
     {
-        return operationsMatch(a) && objectTypesMatch(a) && propertiesMatch(a);
+        return operationsMatch(a) && objectTypesMatch(a) && propertiesMatch(a) && attributesMatch(a);
     }
 
     private boolean operationsMatch(Action a)
@@ -101,13 +101,18 @@ public class Action
         boolean propertiesMatch = false;
         if (_properties != null)
         {
-            propertiesMatch = _properties.matches(a.getProperties());
+            propertiesMatch = _properties.propertiesMatch(a.getProperties());
         }
         else if (a.getProperties() == null)
         {
             propertiesMatch = true;
         }
         return propertiesMatch;
+    }
+
+    private boolean attributesMatch(final Action action)
+    {
+        return getOperation() != LegacyOperation.UPDATE || getProperties().attributesMatch(action.getProperties());
     }
 
     @Override

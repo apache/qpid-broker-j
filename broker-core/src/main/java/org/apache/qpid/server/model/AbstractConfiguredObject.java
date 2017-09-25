@@ -1697,14 +1697,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 }
                 else
                 {
-                    ConfiguredObject<?> proxyForValidation =
-                            createProxyForValidation(Collections.<String, Object>singletonMap(
-                                    ConfiguredObject.DESIRED_STATE,
-                                    desiredState));
-                    Set<String> desiredStateOnlySet = Collections.unmodifiableSet(
-                            Collections.singleton(ConfiguredObject.DESIRED_STATE));
-                    authoriseSetAttributes(proxyForValidation, desiredStateOnlySet);
-                    validateChange(proxyForValidation, desiredStateOnlySet);
+                    Map<String, Object> attributes = Collections.singletonMap(ConfiguredObject.DESIRED_STATE, desiredState);
+                    ConfiguredObject<?> proxyForValidation = createProxyForValidation(attributes);
+                    authoriseSetAttributes(proxyForValidation, attributes);
+                    validateChange(proxyForValidation, attributes.keySet());
 
                     if (desiredState == State.DELETED)
                     {
@@ -2668,7 +2664,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             @Override
             public Void execute()
             {
-                authoriseSetAttributes(createProxyForValidation(attributes), attributes.keySet());
+                authoriseSetAttributes(createProxyForValidation(attributes), attributes);
                 if (!isSystemProcess())
                 {
                     validateChange(createProxyForValidation(attributes), attributes.keySet());
@@ -2911,13 +2907,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected final <C extends ConfiguredObject<?>> void authoriseCreateChild(Class<C> childClass, Map<String, Object> attributes) throws AccessControlException
     {
         ConfiguredObject<?> configuredObject = createProxyForAuthorisation(childClass, attributes, this);
-        authorise(configuredObject, null, Operation.CREATE, Collections.<String,Object>emptyMap());
+        authorise(configuredObject, null, Operation.CREATE, Collections.emptyMap());
     }
 
     @Override
     public final void authorise(Operation operation) throws AccessControlException
     {
-        authorise(this, null, operation, Collections.<String,Object>emptyMap());
+        authorise(this, null, operation, Collections.emptyMap());
     }
 
     @Override
@@ -2989,10 +2985,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     }
 
 
-    protected final void authoriseSetAttributes(final ConfiguredObject<?> proxyForValidation,
-                                                               final Set<String> modifiedAttributes)
+    private final void authoriseSetAttributes(final ConfiguredObject<?> proxyForValidation,
+                                                               final Map<String, Object> modifiedAttributes)
     {
-        if (modifiedAttributes.contains(DESIRED_STATE) && State.DELETED.equals(proxyForValidation.getDesiredState()))
+        if (modifiedAttributes.containsKey(DESIRED_STATE) && State.DELETED.equals(proxyForValidation.getDesiredState()))
         {
             authorise(Operation.DELETE);
             if (modifiedAttributes.size() == 1)
@@ -3001,7 +2997,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 return;
             }
         }
-        authorise(Operation.UPDATE);
+
+        authorise(this, null, Operation.UPDATE, modifiedAttributes);
     }
 
     protected Principal getSystemPrincipal()

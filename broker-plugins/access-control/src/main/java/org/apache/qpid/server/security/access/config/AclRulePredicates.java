@@ -20,6 +20,7 @@ package org.apache.qpid.server.security.access.config;
 
 import java.util.Map;
 
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +79,10 @@ public class AclRulePredicates
         {
             checkFirewallRuleNotAlreadyDefined(property.name(), value);
             _firewallRule = _firewallRuleFactory.createForNetwork(value.split(SEPARATOR));
+        }
+        else if (property == Property.ATTRIBUTES)
+        {
+            _properties.setAttributeNames(Sets.newHashSet((value.split(SEPARATOR))));
         }
         else
         {

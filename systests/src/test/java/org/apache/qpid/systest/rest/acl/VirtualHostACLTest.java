@@ -20,6 +20,7 @@
 package org.apache.qpid.systest.rest.acl;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,16 +43,18 @@ public class VirtualHostACLTest extends QpidRestTestCase
 
     private static final String ALLOWED_USER = "user1";
     private static final String DENIED_USER = "user2";
+    private static final String RESTRICTED_USER = "restricted";
 
     @Override
     protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
         final TestBrokerConfiguration defaultBrokerConfiguration = getDefaultBrokerConfiguration();
-        defaultBrokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER);
+        defaultBrokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER, RESTRICTED_USER);
 
         AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
                 "ACL ALLOW-LOG " + ALLOWED_USER + " ALL VIRTUALHOST",
+                "ACL ALLOW-LOG " + RESTRICTED_USER + " ALL VIRTUALHOST attributes=\"description\"",
                 "ACL DENY-LOG " + DENIED_USER + " ALL VIRTUALHOST",
                 "ACL DENY-LOG ALL ALL");
 
@@ -94,6 +97,23 @@ public class VirtualHostACLTest extends QpidRestTestCase
         getRestTestHelper().submitRequest("virtualhost/" + TEST2_VIRTUALHOST + "/" + TEST2_VIRTUALHOST, "DELETE", HttpServletResponse.SC_FORBIDDEN);
 
         assertVirtualHostExists(TEST2_VIRTUALHOST, TEST2_VIRTUALHOST);
+    }
+
+    public void testUpdateRestrictedAttributes() throws Exception
+    {
+        getRestTestHelper().setUsernameAndPassword(RESTRICTED_USER, RESTRICTED_USER);
+
+        String virtualHostUrl = "virtualhost/" + TEST2_VIRTUALHOST + "/" + TEST2_VIRTUALHOST;
+        getRestTestHelper().submitRequest(virtualHostUrl,
+                                          "PUT",
+                                          Collections.singletonMap(VirtualHost.CONTEXT,
+                                                                   Collections.singletonMap("test1", "test2")),
+                                          HttpServletResponse.SC_FORBIDDEN);
+
+        getRestTestHelper().submitRequest(virtualHostUrl,
+                                          "PUT",
+                                          Collections.singletonMap(VirtualHost.DESCRIPTION, "Test Description"),
+                                          HttpServletResponse.SC_OK);
     }
 
     public void testUpdateVirtualHostDenied() throws Exception

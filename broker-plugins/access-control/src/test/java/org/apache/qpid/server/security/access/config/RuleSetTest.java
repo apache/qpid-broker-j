@@ -23,6 +23,8 @@ package org.apache.qpid.server.security.access.config;
 
 import static org.mockito.Mockito.mock;
 
+import java.util.Collections;
+
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -484,4 +486,24 @@ public class RuleSetTest extends QpidTestCase
 
         assertEquals(Result.ALLOWED, ruleSet.check(subjectInAllowedGroupAndOneOther, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY));
     }
+
+    public void testUpdatedAllowedAttribute()
+    {
+        final ObjectProperties ruleProperties = new ObjectProperties();
+        ruleProperties.setAttributeNames(Collections.singleton("attribute1"));
+        _ruleSetCreator.addRule(1, TEST_USER, RuleOutcome.ALLOW,  LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, ruleProperties);
+        _ruleSetCreator.addRule(2, TEST_USER, RuleOutcome.DENY,  LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        RuleSet ruleSet = createRuleSet();
+
+        final ObjectProperties updateProperties = new ObjectProperties();
+        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, updateProperties));
+
+        updateProperties.setAttributeNames(Collections.singleton("attribute2"));
+
+        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, updateProperties));
+
+        updateProperties.setAttributeNames(Collections.singleton("attribute1"));
+        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, updateProperties));
+    }
+
 }

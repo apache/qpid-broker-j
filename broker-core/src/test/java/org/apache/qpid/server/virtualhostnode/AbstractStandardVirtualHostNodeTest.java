@@ -21,6 +21,8 @@
 package org.apache.qpid.server.virtualhostnode;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -287,7 +289,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.open();
         node.start();
 
-        when(mockAccessControl.authorise(null, Operation.UPDATE, node, Collections.<String,Object>emptyMap())).thenReturn(Result.DENIED);
+        when(mockAccessControl.authorise(eq(null), eq(Operation.UPDATE), same(node), any())).thenReturn(Result.DENIED);
 
         assertNull(node.getDescription());
         try
@@ -350,7 +352,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.open();
         node.start();
 
-        when(mockAccessControl.authorise(null, Operation.UPDATE, node, Collections.<String,Object>emptyMap())).thenReturn(Result.DENIED);
+        when(mockAccessControl.authorise(eq(null), eq(Operation.UPDATE), same(node), any())).thenReturn(Result.DENIED);
 
         try
         {

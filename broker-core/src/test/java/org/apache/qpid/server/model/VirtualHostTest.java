@@ -24,6 +24,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -347,7 +348,7 @@ public class VirtualHostTest extends QpidTestCase
         String virtualHostName = getName();
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
-        when(_mockAccessControl.authorise(null, Operation.UPDATE, virtualHost, Collections.<String,Object>emptyMap())).thenReturn(Result.DENIED);
+        when(_mockAccessControl.authorise(eq(null), eq(Operation.UPDATE), eq(virtualHost), any(Map.class))).thenReturn(Result.DENIED);
 
         assertNull(virtualHost.getDescription());
 
@@ -366,12 +367,13 @@ public class VirtualHostTest extends QpidTestCase
 
     public void testStopDeniedByACL()
     {
-
         String virtualHostName = getName();
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
-        when(_mockAccessControl.authorise(null, Operation.UPDATE,
-                virtualHost, Collections.<String,Object>emptyMap())).thenReturn(Result.DENIED);
+        when(_mockAccessControl.authorise(eq(null),
+                                          eq(Operation.UPDATE),
+                                          same(virtualHost),
+                                          any(Map.class))).thenReturn(Result.DENIED);
 
         try
         {
@@ -391,8 +393,10 @@ public class VirtualHostTest extends QpidTestCase
         String virtualHostName = getName();
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
-        when(_mockAccessControl.authorise(null,
-                Operation.DELETE, virtualHost, Collections.<String,Object>emptyMap())).thenReturn(Result.DENIED);
+        when(_mockAccessControl.authorise(eq(null),
+                                          eq(Operation.DELETE),
+                                          same(virtualHost),
+                                          any(Map.class))).thenReturn(Result.DENIED);
 
         try
         {

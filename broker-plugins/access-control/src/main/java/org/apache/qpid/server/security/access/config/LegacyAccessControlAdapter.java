@@ -70,7 +70,9 @@ class LegacyAccessControlAdapter
         return _model;
     }
 
-    Result authorise(final LegacyOperation operation, final PermissionedObject configuredObject)
+    Result authorise(final LegacyOperation operation,
+                     final PermissionedObject configuredObject,
+                     final Map<String, Object> arguments)
     {
         if (isAllowedOperation(operation, configuredObject))
         {
@@ -85,6 +87,10 @@ class LegacyAccessControlAdapter
         }
 
         ObjectProperties properties = getACLObjectProperties(configuredObject, operation);
+        if (operation == LegacyOperation.UPDATE)
+        {
+            properties.setAttributeNames(arguments.keySet());
+        }
         LegacyOperation authoriseOperation = validateAuthoriseOperation(operation, categoryClass);
         return _accessControl.authorise(authoriseOperation, objectType, properties);
 
@@ -468,11 +474,11 @@ class LegacyAccessControlAdapter
         switch(operation.getType())
         {
             case CREATE:
-                return authorise(LegacyOperation.CREATE, configuredObject);
+                return authorise(LegacyOperation.CREATE, configuredObject, Collections.emptyMap());
             case UPDATE:
-                return authorise(LegacyOperation.UPDATE, configuredObject);
+                return authorise(LegacyOperation.UPDATE, configuredObject, arguments);
             case DELETE:
-                return authorise(LegacyOperation.DELETE, configuredObject);
+                return authorise(LegacyOperation.DELETE, configuredObject, Collections.emptyMap());
             case INVOKE_METHOD:
                 return authoriseMethod(configuredObject, operation.getName(), arguments);
             case PERFORM_ACTION:

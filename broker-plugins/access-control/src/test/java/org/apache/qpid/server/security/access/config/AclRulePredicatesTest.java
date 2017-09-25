@@ -18,13 +18,22 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.*;
+import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.ATTRIBUTES;
+import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.CLASS;
+import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.FROM_HOSTNAME;
+import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.FROM_NETWORK;
+import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.NAME;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Set;
+
+import org.mockito.internal.util.collections.Sets;
 
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
-
-import static org.mockito.Mockito.*;
-
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AclRulePredicatesTest extends QpidTestCase
@@ -38,8 +47,8 @@ public class AclRulePredicatesTest extends QpidTestCase
         super.setUp();
         _aclRulePredicates.setFirewallRuleFactory(_firewallRuleFactory);
 
-        when(_firewallRuleFactory.createForHostname((String[]) any())).thenReturn(mock(FirewallRule.class));
-        when(_firewallRuleFactory.createForNetwork((String[]) any())).thenReturn(mock(FirewallRule.class));
+        when(_firewallRuleFactory.createForHostname(any())).thenReturn(mock(FirewallRule.class));
+        when(_firewallRuleFactory.createForNetwork(any())).thenReturn(mock(FirewallRule.class));
     }
 
     public void testParse()
@@ -84,5 +93,16 @@ public class AclRulePredicatesTest extends QpidTestCase
         {
             // pass
         }
+    }
+
+    public void testParseAttributesRule()
+    {
+        String attributes = "attribute1,attribute2";
+        _aclRulePredicates.parse(ATTRIBUTES.name(), attributes);
+
+        final Set<String> attributesSet = Sets.newSet(attributes.split(","));
+        assertEquals("Unexpected attributes",
+                     attributesSet,
+                     _aclRulePredicates.getObjectProperties().getAttributeNames());
     }
 }

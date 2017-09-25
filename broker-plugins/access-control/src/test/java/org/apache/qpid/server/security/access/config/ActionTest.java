@@ -20,6 +20,8 @@ package org.apache.qpid.server.security.access.config;
 
 import static org.mockito.Mockito.*;
 
+import java.util.Collections;
+
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class ActionTest extends QpidTestCase
@@ -29,7 +31,7 @@ public class ActionTest extends QpidTestCase
 
     public void testMatchesReturnsTrueForMatchingActions()
     {
-        when(_properties1.matches(_properties2)).thenReturn(true);
+        when(_properties1.propertiesMatch(_properties2)).thenReturn(true);
 
         assertMatches(
                 new Action(LegacyOperation.CONSUME, ObjectType.QUEUE, _properties1),
@@ -76,6 +78,36 @@ public class ActionTest extends QpidTestCase
         assertMatches(
                 new Action(LegacyOperation.CREATE, ObjectType.QUEUE, (ObjectProperties)null),
                 new Action(LegacyOperation.CREATE, ObjectType.QUEUE, (ObjectProperties)null));
+    }
+
+    public void testAttributesIgnoredForCreate()
+    {
+        final ObjectProperties objectProperties1 = new ObjectProperties();
+        objectProperties1.setAttributeNames(Collections.singleton("test1"));
+        final ObjectProperties objectProperties2 = new ObjectProperties();
+        objectProperties2.setAttributeNames(Collections.singleton("test2"));
+        assertMatches(new Action(LegacyOperation.CREATE, ObjectType.QUEUE, objectProperties1),
+                      new Action(LegacyOperation.CREATE, ObjectType.QUEUE, objectProperties2));
+    }
+
+    public void testAttributesDifferForUpdate()
+    {
+        final ObjectProperties objectProperties1 = new ObjectProperties();
+        objectProperties1.setAttributeNames(Collections.singleton("test1"));
+        final ObjectProperties objectProperties2 = new ObjectProperties();
+        objectProperties2.setAttributeNames(Collections.singleton("test2"));
+        assertDoesntMatch(new Action(LegacyOperation.UPDATE, ObjectType.QUEUE, objectProperties1),
+                          new Action(LegacyOperation.UPDATE, ObjectType.QUEUE, objectProperties2));
+    }
+
+    public void testAttributesMatchForUpdate()
+    {
+        final ObjectProperties objectProperties1 = new ObjectProperties();
+        objectProperties1.setAttributeNames(Collections.singleton("test1"));
+        final ObjectProperties objectProperties2 = new ObjectProperties();
+        objectProperties2.setAttributeNames(Collections.singleton("test1"));
+        assertMatches(new Action(LegacyOperation.UPDATE, ObjectType.QUEUE, objectProperties1),
+                      new Action(LegacyOperation.UPDATE, ObjectType.QUEUE, objectProperties2));
     }
 
     private void assertMatches(Action action1, Action action2)
