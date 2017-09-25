@@ -23,9 +23,7 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +37,6 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
@@ -66,6 +63,7 @@ import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.StateChangeListener;
 
 class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
@@ -145,6 +143,14 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         {
             converter =
                     (MessageConverter<? super ServerMessage, Message_1_0>) MessageConverterRegistry.getConverter(serverMessage.getClass(), Message_1_0.class);
+            if (converter == null)
+            {
+                throw new ServerScopedRuntimeException(String.format(
+                        "Could not find message converter from '%s' to '%s'."
+                        + " This is unexpected since we should not try to send if the converter is not present.",
+                        serverMessage.getClass(),
+                        Message_1_0.class));
+            }
             message = converter.convert(serverMessage, _linkEndpoint.getAddressSpace());
         }
 
@@ -497,7 +503,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                     }
                 });
             }
-
             else if(outcome instanceof Modified)
             {
                 txn.addPostTransactionAction(new ServerTransaction.Action()
