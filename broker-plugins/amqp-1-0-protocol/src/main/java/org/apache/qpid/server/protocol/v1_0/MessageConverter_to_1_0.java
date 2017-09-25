@@ -366,7 +366,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         }
         byte[] uncompressed;
 
-        if(Symbol.valueOf(GZIPUtils.GZIP_CONTENT_ENCODING).equals(serverMessage.getMessageHeader().getEncoding())
+        if(GZIPUtils.GZIP_CONTENT_ENCODING.equals(serverMessage.getMessageHeader().getEncoding())
            && (uncompressed = GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data))) != null)
         {
             data = uncompressed;
