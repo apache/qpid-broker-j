@@ -20,21 +20,28 @@
 
 package org.apache.qpid.tests.protocol.v1_0.messaging;
 
+import static org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError.DECODE_ERROR;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.codec.StringWriter;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DeliveryAnnotations;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DeliveryAnnotationsSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
@@ -45,12 +52,12 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-import org.apache.qpid.tests.protocol.v1_0.Utils;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.protocol.v1_0.Response;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
+import org.apache.qpid.tests.protocol.v1_0.Utils;
+import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class MessageFormat extends BrokerAdminUsingTestBase
 {
@@ -119,6 +126,46 @@ public class MessageFormat extends BrokerAdminUsingTestBase
             }
 
             assertThat(error, is(notNullValue()));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "3.2",
+            description = "Altogether a message consists of the following sections: Zero or one header,"
+                          + " Zero or one delivery-annotations, [...]")
+    public void illegalMessageFormatPayload() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+
+            List<QpidByteBuffer> combinedPayload = new ArrayList<>();
+            final HeaderSection headerSection = new Header().createEncodingRetainingSection();
+            combinedPayload.addAll(headerSection.getEncodedForm());
+            headerSection.dispose();
+            final StringWriter stringWriter = new StringWriter("string in between annotation sections");
+            QpidByteBuffer encodedString = QpidByteBuffer.allocate(stringWriter.getEncodedSize());
+            stringWriter.writeToBuffer(encodedString);
+            encodedString.flip();
+            combinedPayload.add(encodedString);
+            final DeliveryAnnotationsSection deliveryAnnotationsSection = new DeliveryAnnotations(Collections.emptyMap()).createEncodingRetainingSection();
+            combinedPayload.addAll(deliveryAnnotationsSection.getEncodedForm());
+            deliveryAnnotationsSection.dispose();
+
+            final Detach detachResponse = transport.newInteraction()
+                                                   .negotiateProtocol().consumeResponse()
+                                                   .open().consumeResponse(Open.class)
+                                                   .begin().consumeResponse(Begin.class)
+                                                   .attachRole(Role.SENDER)
+                                                   .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                                   .attach().consumeResponse(Attach.class)
+                                                   .consumeResponse(Flow.class)
+                                                   .transferMessageFormat(UnsignedInteger.ZERO)
+                                                   .transferPayload(combinedPayload)
+                                                   .transfer()
+                                                   .consumeResponse()
+                                                   .getLatestResponse(Detach.class);
+            assertThat(detachResponse.getError(), is(notNullValue()));
+            assertThat(detachResponse.getError().getCondition(), is(equalTo(DECODE_ERROR)));
         }
     }
 }

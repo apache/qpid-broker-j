@@ -28,6 +28,8 @@ import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 
 public class SectionDecoderImpl implements SectionDecoder
 {
@@ -47,8 +49,19 @@ public class SectionDecoderImpl implements SectionDecoder
         List<EncodingRetainingSection<?>> obj = new ArrayList<>();
         while(QpidByteBufferUtils.hasRemaining(buf))
         {
-            EncodingRetainingSection<?> section = (EncodingRetainingSection<?>) _valueHandler.parse(buf);
-            obj.add(section);
+
+            final Object parsedObject = _valueHandler.parse(buf);
+            if (parsedObject instanceof EncodingRetainingSection)
+            {
+                EncodingRetainingSection<?> section = (EncodingRetainingSection<?>) parsedObject;
+                obj.add(section);
+            }
+            else
+            {
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR,
+                                             String.format("Invalid Message: Expected type \"section\" but found \"%s\"",
+                                                           parsedObject.getClass().getSimpleName()));
+            }
         }
 
         return obj;

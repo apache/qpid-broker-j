@@ -33,6 +33,7 @@ import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorRuntimeException;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
@@ -94,7 +95,17 @@ public class MessageFormat_1_0 implements MessageFormat<Message_1_0>
     {
         List<EncodingRetainingSection<?>> dataSections = new ArrayList<>();
 
-        MessageMetaData_1_0 mmd = createMessageMetaData(buf, dataSections);
+        List<EncodingRetainingSection<?>> allSections;
+        try
+        {
+            allSections = getSectionDecoder().parseAll(buf);
+        }
+        catch (AmqpErrorException e)
+        {
+            throw new AmqpErrorRuntimeException(e);
+        }
+        MessageMetaData_1_0 mmd = createMessageMetaData(allSections, dataSections);
+
         MessageHandle<MessageMetaData_1_0> handle = store.addMessage(mmd);
 
         for (EncodingRetainingSection<?> dataSection : dataSections)
@@ -112,22 +123,9 @@ public class MessageFormat_1_0 implements MessageFormat<Message_1_0>
         return message;
     }
 
-    private MessageMetaData_1_0 createMessageMetaData(final List<QpidByteBuffer> fragments,
+    private MessageMetaData_1_0 createMessageMetaData(final List<EncodingRetainingSection<?>> allSections,
                                                       final List<EncodingRetainingSection<?>> dataSections)
     {
-
-        List<EncodingRetainingSection<?>> sections;
-        try
-        {
-            sections = getSectionDecoder().parseAll(fragments);
-        }
-        catch (AmqpErrorException e)
-        {
-            LOGGER.error("Decoding read section error", e);
-            // TODO - fix error handling
-            throw new IllegalArgumentException(e);
-        }
-
         long contentSize = 0L;
 
         HeaderSection headerSection = null;
@@ -137,7 +135,7 @@ public class MessageFormat_1_0 implements MessageFormat<Message_1_0>
         ApplicationPropertiesSection applicationPropertiesSection = null;
         FooterSection footerSection = null;
 
-        Iterator<EncodingRetainingSection<?>> iter = sections.iterator();
+        Iterator<EncodingRetainingSection<?>> iter = allSections.iterator();
         EncodingRetainingSection<?> s = iter.hasNext() ? iter.next() : null;
         if (s instanceof HeaderSection)
         {

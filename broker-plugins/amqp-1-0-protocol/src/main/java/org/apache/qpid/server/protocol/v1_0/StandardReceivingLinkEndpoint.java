@@ -40,6 +40,7 @@ import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.protocol.MessageFormatRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorRuntimeException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -151,11 +152,28 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
             ServerMessage<?> serverMessage;
             UnsignedInteger messageFormat = delivery.getMessageFormat();
             DeliveryState xfrState = delivery.getState();
-            List<QpidByteBuffer> fragments = delivery.getPayload();
             MessageFormat format = MessageFormatRegistry.getFormat(messageFormat.intValue());
             if(format != null)
             {
-                serverMessage = format.createMessage(fragments, getAddressSpace().getMessageStore(), getSession().getConnection().getReference());
+                List<QpidByteBuffer> fragments = delivery.getPayload();
+                try
+                {
+                    serverMessage = format.createMessage(fragments,
+                                                         getAddressSpace().getMessageStore(),
+                                                         getSession().getConnection().getReference());
+                }
+                catch (AmqpErrorRuntimeException e)
+                {
+                    return e.getCause().getError();
+                }
+                finally
+                {
+                    for(QpidByteBuffer fragment: fragments)
+                    {
+                        fragment.dispose();
+                    }
+                    fragments = null;
+                }
             }
             else
             {
@@ -165,11 +183,6 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                 return err;
             }
 
-            for(QpidByteBuffer fragment: fragments)
-            {
-                fragment.dispose();
-            }
-            fragments = null;
 
             MessageReference<?> reference = serverMessage.newReference();
             try
