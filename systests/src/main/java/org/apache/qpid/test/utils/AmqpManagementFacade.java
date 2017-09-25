@@ -80,6 +80,34 @@ public class AmqpManagementFacade
         {
             session.commit();
         }
+        producer.close();
+    }
+
+    public void updateEntityUsingAmqpManagement(final String name,
+                                                final Session session,
+                                                final String type,
+                                                Map<String, Object> attributes)
+            throws JMSException
+    {
+        MessageProducer producer = session.createProducer(session.createQueue(_qpidBrokerTestCase.isBroker10()
+                                                                                      ? "$management"
+                                                                                      : "ADDR:$management"));
+
+        MapMessage createMessage = session.createMapMessage();
+        createMessage.setStringProperty("type", type);
+        createMessage.setStringProperty("operation", "UPDATE");
+        createMessage.setStringProperty("index", "object-path");
+        createMessage.setStringProperty("key", name);
+        for (Map.Entry<String, Object> entry : attributes.entrySet())
+        {
+            createMessage.setObject(entry.getKey(), entry.getValue());
+        }
+        producer.send(createMessage);
+        if (session.getTransacted())
+        {
+            session.commit();
+        }
+        producer.close();
     }
 
     public void deleteEntityUsingAmqpManagement(final String name, final Session session, final String type)

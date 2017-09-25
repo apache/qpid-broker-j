@@ -104,10 +104,9 @@ public class BrokerRecovererTest extends QpidTestCase
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Broker.NAME, getName());
         attributes.put(Broker.STATISTICS_REPORTING_PERIOD, 4000);
-        attributes.put(Broker.STATISTICS_REPORTING_RESET_ENABLED, true);
         attributes.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
 
-        Map<String, Object> entryAttributes = new HashMap<String, Object>();
+        Map<String, Object> entryAttributes = new HashMap<>();
         for (Map.Entry<String, Object> attribute : attributes.entrySet())
         {
             String value = convertToString(attribute.getValue());

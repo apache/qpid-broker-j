@@ -45,6 +45,11 @@
       "type" : "NameAndLevel",
       "level" : "INFO",
       "loggerName" : "qpid.message.*"
+    }, {
+      "name" : "Statistics",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "qpid.statistics.*"
     } ]
   }, {
     "name" : "memory",

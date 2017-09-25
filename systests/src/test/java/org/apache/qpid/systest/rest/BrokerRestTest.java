@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.configuration.CommonProperties;
-import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -149,22 +148,6 @@ public class BrokerRestTest extends QpidRestTestCase
         assertBrokerAttributes(validAttributes, brokerDetails);
     }
 
-    public void testPutToUpdateWithInvalidAttributeValues() throws Exception
-    {
-        Map<String, Object> invalidAttributes = new HashMap<String, Object>();
-        invalidAttributes.put(Broker.STATISTICS_REPORTING_PERIOD, -12000);
-
-        for (Map.Entry<String, Object> entry : invalidAttributes.entrySet())
-        {
-            Map<String, Object> brokerAttributes = getValidBrokerAttributes();
-            brokerAttributes.put(entry.getKey(), entry.getValue());
-            int response = getRestTestHelper().submitRequest("broker", "PUT", brokerAttributes);
-            assertEquals("Unexpected update response for invalid attribute " + entry.getKey() + "=" + entry.getValue(),
-                         AbstractServlet.SC_UNPROCESSABLE_ENTITY, response);
-        }
-
-    }
-
     public void testEffectiveInheritedContext() throws IOException
     {
         Map<String, Object> brokerDetails =
@@ -226,9 +209,8 @@ public class BrokerRestTest extends QpidRestTestCase
 
     private Map<String, Object> getValidBrokerAttributes()
     {
-        Map<String, Object> brokerAttributes = new HashMap<String, Object>();
+        Map<String, Object> brokerAttributes = new HashMap<>();
         brokerAttributes.put(Broker.STATISTICS_REPORTING_PERIOD, 12000);
-        brokerAttributes.put(Broker.STATISTICS_REPORTING_RESET_ENABLED, true);
         return brokerAttributes;
     }
 

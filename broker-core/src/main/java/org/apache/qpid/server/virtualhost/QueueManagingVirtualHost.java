@@ -71,10 +71,11 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     String CONNECTION_THREAD_POOL_SIZE          = "connectionThreadPoolSize";
     String GLOBAL_ADDRESS_DOMAINS               = "globalAddressDomains";
     String NODE_AUTO_CREATION_POLICIES = "nodeAutoCreationPolicies";
+    String STATISTICS_REPORTING_PERIOD = "statisticsReportingPeriod";
 
 
     @ManagedContextDefault( name = "virtualhost.housekeepingCheckPeriod")
-    long DEFAULT_HOUSEKEEPING_CHECK_PERIOD = 30000l;
+    long DEFAULT_HOUSEKEEPING_CHECK_PERIOD = 30000L;
 
     String FLOW_TO_DISK_CHECK_PERIOD = "virtualhost.flowToDiskCheckPeriod";
     @ManagedContextDefault(name = FLOW_TO_DISK_CHECK_PERIOD)
@@ -90,6 +91,13 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     public static final long DEFAULT_STORE_TRANSACTION_IDLE_TIMEOUT_CLOSE = 0l;
     @ManagedContextDefault( name = "virtualhost.housekeepingThreadCount")
     int DEFAULT_HOUSEKEEPING_THREAD_COUNT = 4;
+
+    String VIRTUALHOST_STATISTICS_REPORING_PERIOD = "virtualhost.statisticsReportingPeriod";
+    @ManagedContextDefault(name = VIRTUALHOST_STATISTICS_REPORING_PERIOD)
+    int DEFAULT_STATISTICS_REPORTING_PERIOD = 0;
+
+    @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_STATISTICS_REPORING_PERIOD + "}", description = "Period (in seconds) of the statistic report.")
+    int getStatisticsReportingPeriod();
 
     @ManagedAttribute( defaultValue = "${virtualhost.storeTransactionIdleTimeoutClose}",
             description = "The maximum length of time, in milliseconds, that an open store transaction may "

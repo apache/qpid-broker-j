@@ -33,8 +33,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -61,9 +59,7 @@ import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
-import org.apache.qpid.server.logging.messages.VirtualHostMessages;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
@@ -83,6 +79,7 @@ import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
 import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
+import org.apache.qpid.server.stats.StatisticsReportingTask;
 import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
@@ -116,18 +113,12 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private final BrokerPrincipal _principal;
 
-    private String[] POSITIVE_NUMERIC_ATTRIBUTES = { STATISTICS_REPORTING_PERIOD };
-
-
     private AuthenticationProvider<?> _managementModeAuthenticationProvider;
 
-    private Timer _reportingTimer;
     private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
 
     @ManagedAttributeField
     private int _statisticsReportingPeriod;
-    @ManagedAttributeField
-    private boolean _statisticsReportingResetEnabled;
     @ManagedAttributeField
     private boolean _messageCompressionEnabled;
 
@@ -147,6 +138,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private double _sparsityFraction;
     private long _lastDisposalCounter;
     private ScheduledFuture<?> _assignTargetSizeSchedulingFuture;
+    private volatile ScheduledFuture<?> _statisticsReportingFuture;
     private long _housekeepingCheckPeriod;
 
     @ManagedObjectFactoryConstructor
@@ -280,20 +272,15 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         {
             throw new IllegalConfigurationException("Cannot change the model version");
         }
+    }
 
-        for (String attributeName : POSITIVE_NUMERIC_ATTRIBUTES)
+    @Override
+    protected void changeAttributes(final Map<String, Object> attributes)
+    {
+        super.changeAttributes(attributes);
+        if (attributes.containsKey(STATISTICS_REPORTING_PERIOD))
         {
-            if(changedAttributes.contains(attributeName))
-            {
-                Number value = (Number) updated.getAttribute(attributeName);
-
-                if (value != null && value.longValue() < 0)
-                {
-                    throw new IllegalConfigurationException(
-                            "Only positive integer value can be specified for the attribute "
-                            + attributeName);
-                }
-            }
+            initialiseStatisticsReporting();
         }
     }
 
@@ -409,11 +396,10 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         }
         updateAccessControl();
 
-        initialiseStatisticsReporting();
-
         _houseKeepingTaskExecutor = new HousekeepingExecutor("broker-" + getName() + "-pool",
                                                              getHousekeepingThreadCount(),
                                                              getSystemTaskSubject("Housekeeping", _principal));
+        initialiseStatisticsReporting();
 
         scheduleDirectMemoryCheck();
         _assignTargetSizeSchedulingFuture = scheduleHouseKeepingTask(getHousekeepingCheckPeriod(),
@@ -488,15 +474,16 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private void initialiseStatisticsReporting()
     {
-        long report = getStatisticsReportingPeriod() * 1000L; // convert to ms
-        final boolean reset = getStatisticsReportingResetEnabled();
+        long report = getStatisticsReportingPeriod() * 1000L;
 
-        /* add a timer task to report statistics if generation is enabled for broker or virtualhosts */
+        ScheduledFuture<?> previousStatisticsReportingFuture = _statisticsReportingFuture;
+        if (previousStatisticsReportingFuture != null)
+        {
+            previousStatisticsReportingFuture.cancel(false);
+        }
         if (report > 0L)
         {
-            _reportingTimer = new Timer("Statistics-Reporting", true);
-            StatisticsReportingTask task = new StatisticsReportingTask(reset, _eventLogger);
-            _reportingTimer.scheduleAtFixedRate(task, report / 2, report);
+            _statisticsReportingFuture = _houseKeepingTaskExecutor.scheduleAtFixedRate(new StatisticsReportingTask(this, getSystemTaskSubject("Statistics")), report, report, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -504,12 +491,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     public int getStatisticsReportingPeriod()
     {
         return _statisticsReportingPeriod;
-    }
-
-    @Override
-    public boolean getStatisticsReportingResetEnabled()
-    {
-        return _statisticsReportingResetEnabled;
     }
 
     @Override
@@ -709,11 +690,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @Override
     protected ListenableFuture<Void> onClose()
     {
-        if (_reportingTimer != null)
-        {
-            _reportingTimer.cancel();
-        }
-
         if (_assignTargetSizeSchedulingFuture != null)
         {
             _assignTargetSizeSchedulingFuture.cancel(true);
@@ -929,91 +905,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         }
     }
 
-    private class StatisticsReportingTask extends TimerTask
-    {
-        private final int DELIVERED = 0;
-        private final int RECEIVED = 1;
-
-        private final boolean _reset;
-        private final EventLogger _logger;
-        private final Subject _subject;
-
-        public StatisticsReportingTask(boolean reset, EventLogger logger)
-        {
-            _reset = reset;
-            _logger = logger;
-            _subject = getSystemTaskSubject("Statistics");
-        }
-
-        @Override
-        public void run()
-        {
-            Subject.doAs(_subject, new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    reportStatistics();
-                    return null;
-                }
-            });
-        }
-
-        protected void reportStatistics()
-        {
-            try
-            {
-                _eventLogger.message(BrokerMessages.STATS_DATA(DELIVERED, _dataDelivered.getPeak() / 1024.0, _dataDelivered.getTotal()));
-                _eventLogger.message(BrokerMessages.STATS_MSGS(DELIVERED, _messagesDelivered.getPeak(), _messagesDelivered.getTotal()));
-                _eventLogger.message(BrokerMessages.STATS_DATA(RECEIVED, _dataReceived.getPeak() / 1024.0, _dataReceived.getTotal()));
-                _eventLogger.message(BrokerMessages.STATS_MSGS(RECEIVED,
-                                                               _messagesReceived.getPeak(),
-                                                               _messagesReceived.getTotal()));
-
-                for (VirtualHostNode<?> virtualHostNode : getChildren(VirtualHostNode.class))
-                {
-                    VirtualHost<?> virtualHost = virtualHostNode.getVirtualHost();
-                    if (virtualHost instanceof QueueManagingVirtualHost)
-                    {
-                        QueueManagingVirtualHost queueVhost = (QueueManagingVirtualHost) virtualHost;
-                        String name = virtualHost.getName();
-                        StatisticsCounter dataDelivered = queueVhost.getDataDeliveryStatistics();
-                        StatisticsCounter messagesDelivered = queueVhost.getMessageDeliveryStatistics();
-                        StatisticsCounter dataReceived = queueVhost.getDataReceiptStatistics();
-                        StatisticsCounter messagesReceived = queueVhost.getMessageReceiptStatistics();
-                        EventLogger logger = queueVhost.getEventLogger();
-                        logger.message(VirtualHostMessages.STATS_DATA(name,
-                                                                      DELIVERED,
-                                                                      dataDelivered.getPeak() / 1024.0,
-                                                                      dataDelivered.getTotal()));
-                        logger.message(VirtualHostMessages.STATS_MSGS(name,
-                                                                      DELIVERED,
-                                                                      messagesDelivered.getPeak(),
-                                                                      messagesDelivered.getTotal()));
-                        logger.message(VirtualHostMessages.STATS_DATA(name,
-                                                                      RECEIVED,
-                                                                      dataReceived.getPeak() / 1024.0,
-                                                                      dataReceived.getTotal()));
-                        logger.message(VirtualHostMessages.STATS_MSGS(name,
-                                                                      RECEIVED,
-                                                                      messagesReceived.getPeak(),
-                                                                      messagesReceived.getTotal()));
-
-                    }
-                }
-
-                if (_reset)
-                {
-                    resetStatistics();
-                }
-            }
-            catch(Exception e)
-            {
-                LOGGER.warn("Unexpected exception occurred while reporting the statistics", e);
-            }
-        }
-    }
-
     @Override
     public boolean isVirtualHostPropertiesNodeEnabled()
     {
@@ -1179,7 +1070,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         }
     }
 
-    protected void shutdownHouseKeeping()
+    private void shutdownHouseKeeping()
     {
         if(_houseKeepingTaskExecutor != null)
         {

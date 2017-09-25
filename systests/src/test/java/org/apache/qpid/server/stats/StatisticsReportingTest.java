@@ -20,134 +20,93 @@
  */
 package org.apache.qpid.server.stats;
 
-import java.util.List;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.jms.Connection;
-import javax.jms.Destination;
-import javax.jms.MessageProducer;
+import javax.jms.Queue;
 import javax.jms.Session;
-import javax.jms.TextMessage;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.util.LogMonitor;
 
-/**
- * Test generation of message/data statistics reporting and the ability
- * to control from the configuration file.
- */
 public class StatisticsReportingTest extends QpidBrokerTestCase
 {
-    private static final String VHOST_NAME1 = "vhost1";
-    private static final String VHOST_NAME2 = "vhost2";
-    private static final String VHOST_NAME3 = "vhost3";
-    private static long STATISTICS_REPORTING_PERIOD_IN_SECONDS = 10l;
+    private static final long STATISTICS_REPORTING_PERIOD_IN_SEC = 1L;
+    private static final long LOG_TIMEOUT_IN_MS = STATISTICS_REPORTING_PERIOD_IN_SEC * 1000 * 10;
 
-    protected LogMonitor _monitor;
-
-    protected Connection _conToVhost1, _conToVhost2, _conToVhost3;
-    protected String _queueName = "statistics";
-    protected Destination _queue;
-    private long _startTestTime;
+    private LogMonitor _monitor;
 
     @Override
     public void setUp() throws Exception
     {
-        createTestVirtualHostNode(VHOST_NAME1);
-        createTestVirtualHostNode(VHOST_NAME2);
-        createTestVirtualHostNode(VHOST_NAME3);
-
-        if (getName().equals("testEnabledStatisticsReporting"))
-        {
-            TestBrokerConfiguration config = getDefaultBrokerConfiguration();
-            config.removeObjectConfiguration(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST);
-            config.setBrokerAttribute(Broker.STATISTICS_REPORTING_PERIOD, STATISTICS_REPORTING_PERIOD_IN_SECONDS);
-        }
-
-        _startTestTime = System.currentTimeMillis();
-
         super.setUp();
         _monitor = new LogMonitor(getOutputFile());
-
-        _conToVhost1 = getConnectionForVHost(VHOST_NAME1);
-        _conToVhost2 = getConnectionForVHost(VHOST_NAME2);
-        _conToVhost3 = getConnectionForVHost(VHOST_NAME3);
-
-        _conToVhost1.start();
-        _conToVhost2.start();
-        _conToVhost3.start();
     }
 
-
-    /**
-     * Test enabling reporting.
-     */
-    public void testEnabledStatisticsReporting() throws Exception
+    public void testBrokerStatistics() throws Exception
     {
-        sendUsing(_conToVhost1, 10, 100);
-        sendUsing(_conToVhost2, 20, 100);
-        sendUsing(_conToVhost3, 15, 100);
+        Connection conn = getConnectionForVHost("$management");
+        conn.start();
+        Session session = conn.createSession(true, Session.SESSION_TRANSACTED);
 
-        Thread.sleep(STATISTICS_REPORTING_PERIOD_IN_SECONDS * 1000);
+        // Enable Broker Statistics Reporting for the Broker
+        Map<String, String> context = Collections.singletonMap("qpid.broker.statisticsReportPattern", "messagesIn=${messagesIn}");
 
-        Map<String, List<String>> brokerStatsData = _monitor.findMatches("BRK-1008", "BRK-1009", "VHT-1003", "VHT-1004");
-        long endTestTime = System.currentTimeMillis();
+        final Map<String, Object> arguments = new HashMap<>();
+        arguments.put(Broker.STATISTICS_REPORTING_PERIOD, STATISTICS_REPORTING_PERIOD_IN_SEC);
+        arguments.put(ConfiguredObject.CONTEXT, new ObjectMapper().writeValueAsString(context));
 
-        int maxNumberOfReports = (int)((endTestTime - _startTestTime)/STATISTICS_REPORTING_PERIOD_IN_SECONDS);
+        updatenEntityUsingAmqpManagement("Broker", session, "org.apache.qpid.Broker", arguments);
 
-        int brk1008LinesNumber = brokerStatsData.get("BRK-1008").size();
-        int brk1009LinesNumber = brokerStatsData.get("BRK-1009").size();
-        int vht1003LinesNumber = brokerStatsData.get("VHT-1003").size();
-        int vht1004LinesNumber = brokerStatsData.get("VHT-1004").size();
-
-        assertTrue("Incorrect number of broker data stats log messages:" + brk1008LinesNumber, 2 <= brk1008LinesNumber
-                && brk1008LinesNumber <= maxNumberOfReports * 2);
-        assertTrue("Incorrect number of broker message stats log messages:" + brk1009LinesNumber, 2 <= brk1009LinesNumber
-                && brk1009LinesNumber <= maxNumberOfReports * 2);
-        assertTrue("Incorrect number of virtualhost data stats log messages:" + vht1003LinesNumber, 6 <= vht1003LinesNumber
-                && vht1003LinesNumber <= maxNumberOfReports * 6);
-        assertTrue("Incorrect number of virtualhost message stats log messages: " + vht1004LinesNumber, 6 <= vht1004LinesNumber
-                && vht1004LinesNumber <= maxNumberOfReports * 6);
+        // The broker will count the management message.
+        boolean found = _monitor.waitForMessage("messagesIn=1", LOG_TIMEOUT_IN_MS);
+        assertTrue(String.format("Statistics message not found in log file within timeout %d", LOG_TIMEOUT_IN_MS), found);
     }
 
-    /**
-     * Test not enabling reporting.
-     */
-    public void testNotEnabledStatisticsReporting() throws Exception
+    public void testVirtualHostStatistics() throws Exception
     {
-        sendUsing(_conToVhost1, 10, 100);
-        sendUsing(_conToVhost2, 20, 100);
-        sendUsing(_conToVhost3, 15, 100);
+        Connection conn = getConnection();
+        conn.start();
+        Session session = conn.createSession(true, Session.SESSION_TRANSACTED);
 
-        Thread.sleep(10 * 1000); // 15s
+        // Enable Virtual Host Statistics Reporting
+        final Map<String, Object> arguments = new HashMap<>();
+        arguments.put(Broker.STATISTICS_REPORTING_PERIOD, STATISTICS_REPORTING_PERIOD_IN_SEC);
+        Map<String, String> context = Collections.singletonMap("qpid.queue.statisticsReportPattern",
+                                                                  "${ancestor:virtualhost:name}/${ancestor:queue:name}: queueDepthMessages=${queueDepthMessages}, queueDepthBytes=${queueDepthBytes:byteunit}");
+        arguments.put(ConfiguredObject.CONTEXT, new ObjectMapper().writeValueAsString(context));
 
-        List<String> brokerStatsData = _monitor.findMatches("BRK-1008");
-        List<String> brokerStatsMessages = _monitor.findMatches("BRK-1009");
-        List<String> vhostStatsData = _monitor.findMatches("VHT-1003");
-        List<String> vhostStatsMessages = _monitor.findMatches("VHT-1004");
+        updatenEntityUsingAmqpManagement("test", session, "org.apache.qpid.VirtualHost", arguments);
 
-        assertEquals("Incorrect number of broker data stats log messages", 0, brokerStatsData.size());
-        assertEquals("Incorrect number of broker message stats log messages", 0, brokerStatsMessages.size());
-        assertEquals("Incorrect number of virtualhost data stats log messages", 0, vhostStatsData.size());
-        assertEquals("Incorrect number of virtualhost message stats log messages", 0, vhostStatsMessages.size());
+        Queue queue1 = createTestQueue(session, "queue1");
+
+        assertTrue("Initial queue1 statistics report not found",
+                   _monitor.waitForMessage("test/queue1: queueDepthMessages=0, queueDepthBytes=0 B", LOG_TIMEOUT_IN_MS));
+
+        // Enqueue a single message to queue 1
+        sendMessage(session, queue1, 1);
+        assertTrue("Post-enqeue queue1 statistics report not found",
+                   _monitor.waitForMessage("test/queue1: queueDepthMessages=1", LOG_TIMEOUT_IN_MS));
+
+        Queue queue2 = createTestQueue(session, "queue2");
+
+        assertTrue("Initial queue2 statistics report not found",
+                   _monitor.waitForMessage("test/queue2: queueDepthMessages=0, queueDepthBytes=0 B", LOG_TIMEOUT_IN_MS));
+
+        // Override the statistic report for queue2 only
+        Map<String, String> queueContext = Collections.singletonMap("qpid.queue.statisticsReportPattern",
+                                                                    "${ancestor:virtualhost:name}/${ancestor:queue:name}: oldestMessageAge=${oldestMessageAge:duration}");
+        updatenEntityUsingAmqpManagement("queue2", session, "org.apache.qpid.Queue", Collections.singletonMap(ConfiguredObject.CONTEXT, new ObjectMapper().writeValueAsString(queueContext)));
+
+        sendMessage(session, queue1, 1);
+
+        assertTrue("Post-enqueue queue2 statistics report not found",
+                   _monitor.waitForMessage("test/queue2: oldestMessageAge=PT", LOG_TIMEOUT_IN_MS));
     }
-
-    private void sendUsing(Connection con, int number, int size) throws Exception
-    {
-        Session session = con.createSession(true, Session.SESSION_TRANSACTED);
-        _queue = createTestQueue(session, _queueName);
-        MessageProducer producer = session.createProducer(_queue);
-        String content = new String(new byte[size]);
-        TextMessage msg = session.createTextMessage(content);
-        for (int i = 0; i < number; i++)
-        {
-            producer.send(msg);
-        }
-        session.commit();
-        session.close();
-    }
-
 }

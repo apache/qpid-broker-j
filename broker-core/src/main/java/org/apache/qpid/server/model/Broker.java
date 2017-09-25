@@ -47,7 +47,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String PROCESS_PID = "processPid";
     String PRODUCT_VERSION = "productVersion";
     String STATISTICS_REPORTING_PERIOD = "statisticsReportingPeriod";
-    String STATISTICS_REPORTING_RESET_ENABLED = "statisticsReportingResetEnabled";
     String STORE_PATH = "storePath";
     String MODEL_VERSION = "modelVersion";
     String PREFERENCE_STORE_ATTRIBUTES   = "preferenceStoreAttributes";
@@ -62,6 +61,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String QPID_AMQP_PORT = "qpid.amqp_port";
     String QPID_HTTP_PORT = "qpid.http_port";
     String QPID_DOCUMENTATION_URL = "qpid.helpURL";
+    String BROKER_STATISTICS_REPORING_PERIOD = "broker.statisticsReportingPeriod";
 
     String NETWORK_BUFFER_SIZE = "qpid.broker.networkBufferSize";
     // network buffer should at least hold a SSL/TLS frame which in jdk1.8 is 33305 bytes
@@ -117,6 +117,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault(name = QPID_DOCUMENTATION_URL)
     String DEFAULT_DOCUMENTATION_URL = "http://qpid.apache.org/releases/qpid-java-${qpid.version}/java-broker/book/";
 
+    @ManagedContextDefault(name = BROKER_STATISTICS_REPORING_PERIOD)
+    int DEFAULT_STATISTICS_REPORTING_PERIOD = 0;
+
     String PROPERTY_DISABLED_FEATURES = "qpid.broker_disabled_features";
 
     @DerivedAttribute
@@ -137,12 +140,8 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @DerivedAttribute
     int getNumberOfCores();
 
-    @ManagedAttribute( defaultValue = "0", description = "Period (in seconds) of the statistic report.")
+    @ManagedAttribute( defaultValue = "${" + BROKER_STATISTICS_REPORING_PERIOD + "}", description = "Period (in seconds) of the statistic report.")
     int getStatisticsReportingPeriod();
-
-    @ManagedAttribute( defaultValue = "false", description = "If enabled, statistics are automatically reset to zero after each statistics report is made.")
-    boolean getStatisticsReportingResetEnabled();
-
 
     @ManagedContextDefault( name = "broker.housekeepingThreadCount")
     public static final int DEFAULT_HOUSEKEEPING_THREAD_COUNT = 2;

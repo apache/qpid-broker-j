@@ -116,6 +116,7 @@ import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
 import org.apache.qpid.server.stats.StatisticsCounter;
+import org.apache.qpid.server.stats.StatisticsReportingTask;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.Event;
@@ -168,6 +169,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private static final int HOUSEKEEPING_SHUTDOWN_TIMEOUT = 5;
 
     private volatile ScheduledThreadPoolExecutor _houseKeepingTaskExecutor;
+    private volatile ScheduledFuture<?> _statisticsReportingFuture;
 
     private final Broker<?> _broker;
 
@@ -255,6 +257,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @ManagedAttributeField
     private List<NodeAutoCreationPolicy> _nodeAutoCreationPolicies;
 
+    @ManagedAttributeField
+    private volatile int _statisticsReportingPeriod;
+    
     private boolean _useAsyncRecoverer;
 
     private MessageDestination _defaultDestination;
@@ -419,6 +424,16 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         if (changedAttributes.contains(CONNECTION_THREAD_POOL_SIZE) || changedAttributes.contains(NUMBER_OF_SELECTORS))
         {
             validateConnectionThreadPoolSettings(virtualHost);
+        }
+    }
+
+    @Override
+    protected void changeAttributes(final Map<String, Object> attributes)
+    {
+        super.changeAttributes(attributes);
+        if (attributes.containsKey(STATISTICS_REPORTING_PERIOD))
+        {
+            initialiseStatisticsReporting();
         }
     }
 
@@ -1136,6 +1151,26 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
         }
         return true;
+    }
+
+    private void initialiseStatisticsReporting()
+    {
+        long report = getStatisticsReportingPeriod() * 1000L;
+
+        ScheduledFuture<?> previousStatisticsReportingFuture = _statisticsReportingFuture;
+        if (previousStatisticsReportingFuture != null)
+        {
+            previousStatisticsReportingFuture.cancel(false);
+        }
+        if (report > 0L)
+        {
+            _statisticsReportingFuture = _houseKeepingTaskExecutor.scheduleAtFixedRate(new StatisticsReportingTask(this,
+                                                                                                                   getSystemTaskSubject(
+                                                                                                                           "Statistics")),
+                                                                                       report,
+                                                                                       report,
+                                                                                       TimeUnit.MILLISECONDS);
+        }
     }
 
     private void initialiseHouseKeeping()
@@ -2215,6 +2250,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
+    public int getStatisticsReportingPeriod()
+    {
+        return _statisticsReportingPeriod;
+    }
+
+    @Override
     public int getConnectionThreadPoolSize()
     {
         return _connectionThreadPoolSize;
@@ -2514,6 +2555,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _networkConnectionScheduler.start();
 
         updateAccessControl();
+        initialiseStatisticsReporting();
 
         MessageStore messageStore = getMessageStore();
         messageStore.openMessageStore(this);

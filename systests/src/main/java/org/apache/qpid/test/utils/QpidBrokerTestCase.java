@@ -362,6 +362,12 @@ public class QpidBrokerTestCase extends QpidTestCase
         _managementFacade.createEntityUsingAmqpManagement(name, session, type, attributes);
     }
 
+    protected void updatenEntityUsingAmqpManagement(final String name, final Session session, final String type, Map<String, Object> attributes)
+            throws JMSException
+    {
+        _managementFacade.updateEntityUsingAmqpManagement(name, session, type, attributes);
+    }
+
     protected void deleteEntityUsingAmqpManagement(final String name, final Session session, final String type)
             throws JMSException
     {
