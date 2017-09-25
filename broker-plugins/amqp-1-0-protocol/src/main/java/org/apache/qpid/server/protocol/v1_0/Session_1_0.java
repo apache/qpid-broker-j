@@ -400,8 +400,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             final End end = new End();
             end.setError(new Error(SessionError.WINDOW_VIOLATION,
                                    String.format("Next incoming id '%d' exceeds next outgoing id '%d'",
-                                                 flowNextIncomingId,
-                                                 _nextOutgoingId)));
+                                                 flowNextIncomingId.longValue(),
+                                                 _nextOutgoingId.longValue())));
             end(end);
         }
         else
