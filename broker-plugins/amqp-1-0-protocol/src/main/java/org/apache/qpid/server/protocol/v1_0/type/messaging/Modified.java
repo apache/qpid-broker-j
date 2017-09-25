@@ -26,22 +26,24 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import java.util.Map;
 
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
+@CompositeType( symbolicDescriptor = "amqp:modified:list", numericDescriptor = 0x0000000000000027L)
 public class Modified implements Outcome
 {
     public static final Symbol MODIFIED_SYMBOL = Symbol.valueOf("amqp:modified:list");
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 0)
     private Boolean _deliveryFailed;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 1)
     private Boolean _undeliverableHere;
 
-    @CompositeTypeField
-    private Map _messageAnnotations;
+    @CompositeTypeField(index = 2)
+    private Map<Symbol, Object> _messageAnnotations;
 
     public Boolean getDeliveryFailed()
     {
@@ -63,12 +65,12 @@ public class Modified implements Outcome
         _undeliverableHere = undeliverableHere;
     }
 
-    public Map getMessageAnnotations()
+    public Map<Symbol, Object> getMessageAnnotations()
     {
         return _messageAnnotations;
     }
 
-    public void setMessageAnnotations(Map messageAnnotations)
+    public void setMessageAnnotations(Map<Symbol, Object> messageAnnotations)
     {
         _messageAnnotations = messageAnnotations;
     }

@@ -24,30 +24,22 @@
 package org.apache.qpid.server.protocol.v1_0.type.security;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class SaslCode
-  implements RestrictedType<UnsignedByte>
-  
-  {
-
-
-
+public class SaslCode implements RestrictedType<UnsignedByte>
+{
     private final UnsignedByte _val;
 
-    
     public static final SaslCode OK = new SaslCode(UnsignedByte.valueOf((byte) 0));
-    
-    public static final SaslCode AUTH = new SaslCode(UnsignedByte.valueOf((byte) 1));
-    
-    public static final SaslCode SYS = new SaslCode(UnsignedByte.valueOf((byte) 2));
-    
-    public static final SaslCode SYS_PERM = new SaslCode(UnsignedByte.valueOf((byte) 3));
-    
-    public static final SaslCode SYS_TEMP = new SaslCode(UnsignedByte.valueOf((byte) 4));
-    
 
+    public static final SaslCode AUTH = new SaslCode(UnsignedByte.valueOf((byte) 1));
+
+    public static final SaslCode SYS = new SaslCode(UnsignedByte.valueOf((byte) 2));
+
+    public static final SaslCode SYS_PERM = new SaslCode(UnsignedByte.valueOf((byte) 3));
+
+    public static final SaslCode SYS_TEMP = new SaslCode(UnsignedByte.valueOf((byte) 4));
 
     private SaslCode(UnsignedByte val)
     {
@@ -63,32 +55,31 @@ public class SaslCode
     @Override
     public String toString()
     {
-        
-        if(this == OK)
+        if (this == OK)
         {
             return "ok";
         }
-        
-        if(this == AUTH)
+
+        if (this == AUTH)
         {
             return "auth";
         }
-        
-        if(this == SYS)
+
+        if (this == SYS)
         {
             return "sys";
         }
-        
-        if(this == SYS_PERM)
+
+        if (this == SYS_PERM)
         {
             return "sys-perm";
         }
-        
-        if(this == SYS_TEMP)
+
+        if (this == SYS_TEMP)
         {
             return "sys-temp";
         }
-        
+
         else
         {
             return String.valueOf(_val);
@@ -99,35 +90,32 @@ public class SaslCode
     {
         UnsignedByte val = (UnsignedByte) obj;
 
-        if(OK._val.equals(val))
+        if (OK._val.equals(val))
         {
             return OK;
         }
-    
-        if(AUTH._val.equals(val))
+
+        if (AUTH._val.equals(val))
         {
             return AUTH;
         }
-    
-        if(SYS._val.equals(val))
+
+        if (SYS._val.equals(val))
         {
             return SYS;
         }
-    
-        if(SYS_PERM._val.equals(val))
+
+        if (SYS_PERM._val.equals(val))
         {
             return SYS_PERM;
         }
-    
-        if(SYS_TEMP._val.equals(val))
+
+        if (SYS_TEMP._val.equals(val))
         {
             return SYS_TEMP;
         }
-    
+
         // TODO ERROR
         return null;
     }
-
-
-
-  }
+}

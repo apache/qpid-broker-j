@@ -25,3 +25,4 @@ org.apache.qpid.server.model.validation.AttributeFieldValidation
 org.apache.qpid.server.model.validation.ManagedAnnotationValidator
 org.apache.qpid.server.model.validation.OperationAnnotationValidator
 org.apache.qpid.server.model.validation.ContentHeaderAnnotationValidator
+org.apache.qpid.server.protocol.v1_0.CompositeTypeConstructorGenerator

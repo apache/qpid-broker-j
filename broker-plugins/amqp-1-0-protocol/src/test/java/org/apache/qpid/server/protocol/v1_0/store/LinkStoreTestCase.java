@@ -64,7 +64,7 @@ public abstract class LinkStoreTestCase extends QpidTestCase
         _source.setDurable(TerminusDurability.UNSETTLED_STATE);
         _source.setDynamic(Boolean.TRUE);
         _source.setExpiryPolicy(TerminusExpiryPolicy.CONNECTION_CLOSE);
-        _source.setFilter(Collections.singletonMap("foo", NoLocalFilter.INSTANCE));
+        _source.setFilter(Collections.singletonMap(Symbol.valueOf("foo"), NoLocalFilter.INSTANCE));
         _source.setOutcomes(new Accepted().getSymbol());
         _source.setDynamicNodeProperties(Collections.singletonMap(Symbol.valueOf("dynamicProperty"),
                                                                   "dynamicPropertyValue"));

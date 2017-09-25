@@ -24,49 +24,51 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 import java.util.Date;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
+@CompositeType( symbolicDescriptor = "amqp:properties:list", numericDescriptor = 0x0000000000000073L)
 public class Properties implements NonEncodingRetainingSection<Properties>
 {
-    @CompositeTypeField
+    @CompositeTypeField(index = 0)
     private Object _messageId;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 1)
     private Binary _userId;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 2)
     private String _to;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 3)
     private String _subject;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 4)
     private String _replyTo;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 5)
     private Object _correlationId;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 6)
     private Symbol _contentType;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 7)
     private Symbol _contentEncoding;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 8)
     private Date _absoluteExpiryTime;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 9)
     private Date _creationTime;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 10)
     private String _groupId;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 11)
     private UnsignedInteger _groupSequence;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 12)
     private String _replyToGroupId;
 
     public Object getMessageId()

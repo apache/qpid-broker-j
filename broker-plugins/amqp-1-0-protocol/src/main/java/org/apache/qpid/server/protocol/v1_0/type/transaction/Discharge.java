@@ -24,17 +24,17 @@
 package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
+@CompositeType( symbolicDescriptor = "amqp:discharge:list", numericDescriptor = 0x0000000000000032L)
 public class Discharge
-  {
-
-
-    @CompositeTypeField(mandatory = true)
+{
+    @CompositeTypeField(index = 0, mandatory = true)
     private Binary _txnId;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 1)
     private Boolean _fail;
 
     public Binary getTxnId()
@@ -63,18 +63,18 @@ public class Discharge
         StringBuilder builder = new StringBuilder("Discharge{");
         final int origLength = builder.length();
 
-        if(_txnId != null)
+        if (_txnId != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("txnId=").append(_txnId);
         }
 
-        if(_fail != null)
+        if (_fail != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -84,6 +84,4 @@ public class Discharge
         builder.append('}');
         return builder.toString();
     }
-
-
-  }
+}

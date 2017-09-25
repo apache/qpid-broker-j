@@ -70,10 +70,8 @@ public class ValueHandler implements DescribedTypeConstructorRegistry.Source
                       StringTypeConstructor.getInstance(4),
                       null,
                       SymbolTypeConstructor.getInstance(4)                                         },
-                    { CompoundTypeConstructor.getInstance(1, CompoundTypeConstructor.LIST_ASSEMBLER_FACTORY),
-                      CompoundTypeConstructor.getInstance(1, CompoundTypeConstructor.MAP_ASSEMBLER_FACTORY)  },
-                    { CompoundTypeConstructor.getInstance(4, CompoundTypeConstructor.LIST_ASSEMBLER_FACTORY),
-                      CompoundTypeConstructor.getInstance(4, CompoundTypeConstructor.MAP_ASSEMBLER_FACTORY)  },
+                    { ListConstructor.getInstance(1), MapConstructor.getInstance(1)  },
+                    { ListConstructor.getInstance(4), MapConstructor.getInstance(4)  },
                     {
                       ArrayTypeConstructor.getOneByteSizeTypeConstructor()
                     },

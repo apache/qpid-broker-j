@@ -74,7 +74,6 @@ public class LinkError implements ErrorCondition, RestrictedType<Symbol>
             return STOLEN;
         }
 
-        // TODO ERROR
         return null;
     }
 

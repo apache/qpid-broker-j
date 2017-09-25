@@ -24,28 +24,21 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class TerminusExpiryPolicy
-  implements RestrictedType<Symbol>
-  
-  {
-
-
-
+public class TerminusExpiryPolicy implements RestrictedType<Symbol>
+{
     private final Symbol _val;
 
-    
     public static final TerminusExpiryPolicy LINK_DETACH = new TerminusExpiryPolicy(Symbol.valueOf("link-detach"));
-    
-    public static final TerminusExpiryPolicy SESSION_END = new TerminusExpiryPolicy(Symbol.valueOf("session-end"));
-    
-    public static final TerminusExpiryPolicy CONNECTION_CLOSE = new TerminusExpiryPolicy(Symbol.valueOf("connection-close"));
-    
-    public static final TerminusExpiryPolicy NEVER = new TerminusExpiryPolicy(Symbol.valueOf("never"));
-    
 
+    public static final TerminusExpiryPolicy SESSION_END = new TerminusExpiryPolicy(Symbol.valueOf("session-end"));
+
+    public static final TerminusExpiryPolicy CONNECTION_CLOSE =
+            new TerminusExpiryPolicy(Symbol.valueOf("connection-close"));
+
+    public static final TerminusExpiryPolicy NEVER = new TerminusExpiryPolicy(Symbol.valueOf("never"));
 
     private TerminusExpiryPolicy(Symbol val)
     {
@@ -61,27 +54,27 @@ public class TerminusExpiryPolicy
     @Override
     public String toString()
     {
-        
-        if(this == LINK_DETACH)
+
+        if (this == LINK_DETACH)
         {
             return "link-detach";
         }
-        
-        if(this == SESSION_END)
+
+        if (this == SESSION_END)
         {
             return "session-end";
         }
-        
-        if(this == CONNECTION_CLOSE)
+
+        if (this == CONNECTION_CLOSE)
         {
             return "connection-close";
         }
-        
-        if(this == NEVER)
+
+        if (this == NEVER)
         {
             return "never";
         }
-        
+
         else
         {
             return String.valueOf(_val);
@@ -92,30 +85,27 @@ public class TerminusExpiryPolicy
     {
         Symbol val = (Symbol) obj;
 
-        if(LINK_DETACH._val.equals(val))
+        if (LINK_DETACH._val.equals(val))
         {
             return LINK_DETACH;
         }
-    
-        if(SESSION_END._val.equals(val))
+
+        if (SESSION_END._val.equals(val))
         {
             return SESSION_END;
         }
-    
-        if(CONNECTION_CLOSE._val.equals(val))
+
+        if (CONNECTION_CLOSE._val.equals(val))
         {
             return CONNECTION_CLOSE;
         }
-    
-        if(NEVER._val.equals(val))
+
+        if (NEVER._val.equals(val))
         {
             return NEVER;
         }
-    
+
         // TODO ERROR
         return null;
     }
-
-
-
-  }
+}

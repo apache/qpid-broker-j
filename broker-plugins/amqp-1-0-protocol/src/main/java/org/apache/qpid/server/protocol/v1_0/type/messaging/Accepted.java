@@ -23,9 +23,11 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
+@CompositeType( symbolicDescriptor = "amqp:accepted:list", numericDescriptor = 0x0000000000000024L)
 public class Accepted implements Outcome
 {
     public static final Symbol ACCEPTED_SYMBOL = Symbol.valueOf("amqp:accepted:list");

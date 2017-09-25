@@ -24,13 +24,14 @@
 package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
 
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.GlobalTxId;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
+@CompositeType( symbolicDescriptor = "amqp:declare:list", numericDescriptor = 0x0000000000000031L)
 public class Declare
-  {
-
-
+{
+    @CompositeTypeField(index = 0)
     private GlobalTxId _globalId;
 
     public GlobalTxId getGlobalId()
@@ -49,9 +50,9 @@ public class Declare
         StringBuilder builder = new StringBuilder("Declare{");
         final int origLength = builder.length();
 
-        if(_globalId != null)
+        if (_globalId != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -61,6 +62,4 @@ public class Declare
         builder.append('}');
         return builder.toString();
     }
-
-
-  }
+}

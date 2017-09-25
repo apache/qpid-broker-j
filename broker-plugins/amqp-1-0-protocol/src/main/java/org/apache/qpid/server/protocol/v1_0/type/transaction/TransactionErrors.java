@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -19,31 +18,25 @@
 * under the License.
 *
 */
-
-
 package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
+import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class TransactionErrors
-  implements ErrorCondition, RestrictedType<Symbol>
-  
-  {
-
-
-
+public class TransactionErrors implements ErrorCondition, RestrictedType<Symbol>
+{
     private final Symbol _val;
 
-    
-    public static final TransactionErrors UNKNOWN_ID = new TransactionErrors(Symbol.valueOf("amqp:transaction:unknown-id"));
-    
-    public static final TransactionErrors TRANSACTION_ROLLBACK = new TransactionErrors(Symbol.valueOf("amqp:transaction:rollback"));
-    
-    public static final TransactionErrors TRANSACTION_TIMEOUT = new TransactionErrors(Symbol.valueOf("amqp:transaction:timeout"));
-    
+    public static final TransactionErrors UNKNOWN_ID =
+            new TransactionErrors(Symbol.valueOf("amqp:transaction:unknown-id"));
 
+    public static final TransactionErrors TRANSACTION_ROLLBACK =
+            new TransactionErrors(Symbol.valueOf("amqp:transaction:rollback"));
+
+    public static final TransactionErrors TRANSACTION_TIMEOUT =
+            new TransactionErrors(Symbol.valueOf("amqp:transaction:timeout"));
 
     private TransactionErrors(Symbol val)
     {
@@ -59,22 +52,21 @@ public class TransactionErrors
     @Override
     public String toString()
     {
-        
-        if(this == UNKNOWN_ID)
+        if (this == UNKNOWN_ID)
         {
             return "unknown-id";
         }
-        
-        if(this == TRANSACTION_ROLLBACK)
+
+        if (this == TRANSACTION_ROLLBACK)
         {
             return "transaction-rollback";
         }
-        
-        if(this == TRANSACTION_TIMEOUT)
+
+        if (this == TRANSACTION_TIMEOUT)
         {
             return "transaction-timeout";
         }
-        
+
         else
         {
             return String.valueOf(_val);
@@ -85,25 +77,21 @@ public class TransactionErrors
     {
         Symbol val = (Symbol) obj;
 
-        if(UNKNOWN_ID._val.equals(val))
+        if (UNKNOWN_ID._val.equals(val))
         {
             return UNKNOWN_ID;
         }
-    
-        if(TRANSACTION_ROLLBACK._val.equals(val))
+
+        if (TRANSACTION_ROLLBACK._val.equals(val))
         {
             return TRANSACTION_ROLLBACK;
         }
-    
-        if(TRANSACTION_TIMEOUT._val.equals(val))
+
+        if (TRANSACTION_TIMEOUT._val.equals(val))
         {
             return TRANSACTION_TIMEOUT;
         }
-    
-        // TODO ERROR
+
         return null;
     }
-
-
-
-  }
+}

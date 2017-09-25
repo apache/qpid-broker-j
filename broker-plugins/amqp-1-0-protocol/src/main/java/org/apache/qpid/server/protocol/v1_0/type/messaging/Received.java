@@ -24,17 +24,19 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 
+@CompositeType( symbolicDescriptor = "amqp:received:list", numericDescriptor = 0x0000000000000023L)
 public class Received implements DeliveryState
 {
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 0, mandatory = true)
     private UnsignedInteger _sectionNumber;
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 1, mandatory = true)
     private UnsignedLong _sectionOffset;
 
     public UnsignedInteger getSectionNumber()

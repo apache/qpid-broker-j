@@ -29,46 +29,48 @@ import java.util.List;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
+@CompositeType( symbolicDescriptor = "amqp:transfer:list", numericDescriptor = 0x0000000000000014L)
 public class Transfer implements FrameBody
 {
     private volatile List<QpidByteBuffer> _payload;
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 0, mandatory = true)
     private UnsignedInteger _handle;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 1)
     private UnsignedInteger _deliveryId;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 2)
     private Binary _deliveryTag;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 3)
     private UnsignedInteger _messageFormat;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 4)
     private Boolean _settled;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 5)
     private Boolean _more;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 6)
     private ReceiverSettleMode _rcvSettleMode;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 7)
     private DeliveryState _state;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 8)
     private Boolean _resume;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 9)
     private Boolean _aborted;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 10)
     private Boolean _batchable;
 
     public UnsignedInteger getHandle()

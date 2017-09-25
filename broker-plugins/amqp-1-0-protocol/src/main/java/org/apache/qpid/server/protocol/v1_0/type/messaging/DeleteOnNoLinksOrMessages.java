@@ -24,8 +24,10 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.type.LifetimePolicy;
 
+@CompositeType( symbolicDescriptor = "amqp:delete-on-no-links-or-messages:list", numericDescriptor = 0x000000000000002eL)
 public class DeleteOnNoLinksOrMessages implements LifetimePolicy
 {
     @Override

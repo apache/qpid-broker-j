@@ -24,37 +24,37 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
-
 import java.util.Arrays;
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class Target
-        implements BaseTarget
-  {
-
-
-    @CompositeTypeField
+@CompositeType( symbolicDescriptor = "amqp:target:list", numericDescriptor = 0x0000000000000029L)
+public class Target implements BaseTarget
+{
+    @CompositeTypeField(index = 0)
     private String _address;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 1)
     private TerminusDurability _durable;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 2)
     private TerminusExpiryPolicy _expiryPolicy;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 3)
     private UnsignedInteger _timeout;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 4)
     private Boolean _dynamic;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 5, deserializationConverter = "org.apache.qpid.server.protocol.v1_0.DeserializationFactories.convertToNodeProperties")
     private Map<Symbol, Object> _dynamicNodeProperties;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 6)
     private Symbol[] _capabilities;
 
     public String getAddress()
@@ -163,8 +163,8 @@ public class Target
             return false;
         }
         if (_dynamicNodeProperties != null
-              ? !_dynamicNodeProperties.equals(target._dynamicNodeProperties)
-              : target._dynamicNodeProperties != null)
+                ? !_dynamicNodeProperties.equals(target._dynamicNodeProperties)
+                : target._dynamicNodeProperties != null)
         {
             return false;
         }
@@ -191,63 +191,63 @@ public class Target
         StringBuilder builder = new StringBuilder("Target{");
         final int origLength = builder.length();
 
-        if(_address != null)
+        if (_address != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("address=").append(_address);
         }
 
-        if(_durable != null)
+        if (_durable != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("durable=").append(_durable);
         }
 
-        if(_expiryPolicy != null)
+        if (_expiryPolicy != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("expiryPolicy=").append(_expiryPolicy);
         }
 
-        if(_timeout != null)
+        if (_timeout != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("timeout=").append(_timeout);
         }
 
-        if(_dynamic != null)
+        if (_dynamic != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("dynamic=").append(_dynamic);
         }
 
-        if(_dynamicNodeProperties != null)
+        if (_dynamicNodeProperties != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("dynamicNodeProperties=").append(_dynamicNodeProperties);
         }
 
-        if(_capabilities != null)
+        if (_capabilities != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -257,6 +257,4 @@ public class Target
         builder.append('}');
         return builder.toString();
     }
-
-
-  }
+}

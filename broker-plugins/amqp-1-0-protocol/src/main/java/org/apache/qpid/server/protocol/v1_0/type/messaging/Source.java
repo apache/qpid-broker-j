@@ -24,48 +24,51 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
-
 import java.util.Arrays;
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
+import org.apache.qpid.server.protocol.v1_0.type.DistributionMode;
+import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
+@CompositeType( symbolicDescriptor = "amqp:source:list", numericDescriptor = 0x0000000000000028L)
 public class Source implements BaseSource
-  {
-
-
-    @CompositeTypeField
+{
+    @CompositeTypeField(index = 0)
     private String _address;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 1)
     private TerminusDurability _durable;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 2)
     private TerminusExpiryPolicy _expiryPolicy;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 3)
     private UnsignedInteger _timeout;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 4)
     private Boolean _dynamic;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 5, deserializationConverter = "org.apache.qpid.server.protocol.v1_0.DeserializationFactories.convertToNodeProperties")
     private Map<Symbol, Object> _dynamicNodeProperties;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 6, deserializationConverter = "org.apache.qpid.server.protocol.v1_0.DeserializationFactories.convertToDistributionMode")
     private DistributionMode _distributionMode;
 
-    @CompositeTypeField
-    private Map _filter;
+    @CompositeTypeField(index = 7)
+    private Map<Symbol, Filter> _filter;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 8)
     private Outcome _defaultOutcome;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 9)
     private Symbol[] _outcomes;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 10)
     private Symbol[] _capabilities;
 
     public String getAddress()
@@ -138,12 +141,12 @@ public class Source implements BaseSource
         _distributionMode = distributionMode;
     }
 
-    public Map getFilter()
+    public Map<Symbol, Filter> getFilter()
     {
         return _filter;
     }
 
-    public void setFilter(Map filter)
+    public void setFilter(Map<Symbol, Filter> filter)
     {
         _filter = filter;
     }
@@ -385,4 +388,4 @@ public class Source implements BaseSource
         result = 31 * result + Arrays.hashCode(_capabilities);
         return result;
     }
-  }
+}

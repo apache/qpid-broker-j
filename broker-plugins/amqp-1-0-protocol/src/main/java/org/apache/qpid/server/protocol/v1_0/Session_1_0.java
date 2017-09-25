@@ -988,15 +988,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     @Override
     public void block(final Queue<?> queue)
     {
-        getAMQPConnection().doOnIOThreadAsync(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        doBlock(queue);
-                    }
-                });
+        getAMQPConnection().doOnIOThreadAsync(() -> doBlock(queue));
     }
 
     private void doBlock(final Queue<?> queue)
@@ -1025,15 +1017,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     @Override
     public void unblock(final Queue<?> queue)
     {
-        getAMQPConnection().doOnIOThreadAsync(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        doUnblock(queue);
-                    }
-                });
+        getAMQPConnection().doOnIOThreadAsync(() -> doUnblock(queue));
     }
 
     private void doUnblock(final Queue<?> queue)
@@ -1058,15 +1042,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     @Override
     public void block()
     {
-        getAMQPConnection().doOnIOThreadAsync(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        doBlock();
-                    }
-                });
+        getAMQPConnection().doOnIOThreadAsync(this::doBlock);
     }
 
     private void doBlock()
@@ -1088,15 +1064,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     @Override
     public void unblock()
     {
-        getAMQPConnection().doOnIOThreadAsync(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        doUnblock();
-                    }
-                });
+        getAMQPConnection().doOnIOThreadAsync(this::doUnblock);
     }
 
     private void doUnblock()
@@ -1388,38 +1356,32 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         @Override
         public void onSuccess(final T endpoint)
         {
-            doOnIOThreadAsync(new Runnable()
-            {
-                @Override
-                public void run()
+            doOnIOThreadAsync(() -> {
+                _associatedLinkEndpoints.add(endpoint);
+                endpoint.setLocalHandle(findNextAvailableOutputHandle());
+                if (endpoint instanceof ErrantLinkEndpoint)
                 {
-                    _associatedLinkEndpoints.add(endpoint);
-                    endpoint.setLocalHandle(findNextAvailableOutputHandle());
-                    if (endpoint instanceof ErrantLinkEndpoint)
+                    endpoint.sendAttach();
+                    ((ErrantLinkEndpoint) endpoint).closeWithError();
+                }
+                else
+                {
+                    if (endpoint instanceof StandardReceivingLinkEndpoint
+                        && (_blockingEntities.contains(Session_1_0.this)
+                            || _blockingEntities.contains(((StandardReceivingLinkEndpoint) endpoint).getReceivingDestination())))
                     {
+                        endpoint.setStopped(true);
+                    }
+                    _inputHandleToEndpoint.put(_attach.getHandle(), endpoint);
+                    if (!_endpointToOutputHandle.containsKey(endpoint))
+                    {
+                        _endpointToOutputHandle.put(endpoint, endpoint.getLocalHandle());
                         endpoint.sendAttach();
-                        ((ErrantLinkEndpoint) endpoint).closeWithError();
+                        endpoint.start();
                     }
                     else
                     {
-                        if (endpoint instanceof StandardReceivingLinkEndpoint
-                            && (_blockingEntities.contains(Session_1_0.this)
-                                || _blockingEntities.contains(((StandardReceivingLinkEndpoint) endpoint).getReceivingDestination())))
-                        {
-                            endpoint.setStopped(true);
-                        }
-                        _inputHandleToEndpoint.put(_attach.getHandle(), endpoint);
-                        if (!_endpointToOutputHandle.containsKey(endpoint))
-                        {
-                            _endpointToOutputHandle.put(endpoint, endpoint.getLocalHandle());
-                            endpoint.sendAttach();
-                            endpoint.start();
-                        }
-                        else
-                        {
-                            // TODO - link stealing???
-                        }
-
+                        // TODO - link stealing???
                     }
                 }
             });

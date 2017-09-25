@@ -18,7 +18,7 @@
  *
  */
 
-package org.apache.qpid.server.protocol.v1_0.type;
+package org.apache.qpid.server.protocol.v1_0;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -26,8 +26,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface CompositeTypeField
+@Target(ElementType.TYPE)
+public @interface CompositeType
 {
-    boolean mandatory() default false;
+    String symbolicDescriptor();
+    long numericDescriptor();
 }

@@ -25,19 +25,18 @@ package org.apache.qpid.server.protocol.v1_0.type.security;
 
 
 import org.apache.qpid.server.protocol.v1_0.SASLEndpoint;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
 
-
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class SaslOutcome
-  implements SaslFrameBody
-  {
-
-
-    @CompositeTypeField(mandatory = true)
+@CompositeType( symbolicDescriptor = "amqp:sasl-outcome:list", numericDescriptor = 0x0000000000000044L)
+public class SaslOutcome implements SaslFrameBody
+{
+    @CompositeTypeField(index = 0, mandatory = true)
     private SaslCode _code;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 1)
     private Binary _additionalData;
 
     public SaslCode getCode()
@@ -66,18 +65,18 @@ public class SaslOutcome
         StringBuilder builder = new StringBuilder("SaslOutcome{");
         final int origLength = builder.length();
 
-        if(_code != null)
+        if (_code != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("code=").append(_code);
         }
 
-        if(_additionalData != null)
+        if (_additionalData != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -93,6 +92,4 @@ public class SaslOutcome
     {
         conn.receiveSaslOutcome(this);
     }
-
-
-  }
+}

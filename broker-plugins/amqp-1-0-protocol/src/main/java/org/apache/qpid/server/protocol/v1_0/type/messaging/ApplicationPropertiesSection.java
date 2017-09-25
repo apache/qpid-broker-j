@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.ApplicationPropertiesConstructor;
 
 public class ApplicationPropertiesSection extends AbstractSection<Map<String,Object>, ApplicationProperties>
@@ -53,7 +53,7 @@ public class ApplicationPropertiesSection extends AbstractSection<Map<String,Obj
     }
 
     @Override
-    protected AbstractDescribedTypeConstructor<ApplicationProperties> createNonEncodingRetainingSectionConstructor()
+    protected DescribedTypeConstructor<ApplicationProperties> createNonEncodingRetainingSectionConstructor()
     {
         return  new ApplicationPropertiesConstructor();
     }

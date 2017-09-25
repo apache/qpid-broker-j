@@ -350,7 +350,7 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
             }
             else if(value.getClass().isArray())
             {
-                if(RestrictedType.class.isAssignableFrom(value.getClass().getComponentType()))
+                if(RestrictedType.class.isAssignableFrom(value.getClass().getComponentType()) && Array.getLength(value) > 0)
                 {
                     RestrictedType[] restrictedTypes = (RestrictedType[]) value;
                     Object[] newVals = (Object[]) Array.newInstance(restrictedTypes[0].getValue().getClass(),

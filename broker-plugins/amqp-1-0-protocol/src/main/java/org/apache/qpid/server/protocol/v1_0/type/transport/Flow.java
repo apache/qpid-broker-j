@@ -26,45 +26,47 @@ package org.apache.qpid.server.protocol.v1_0.type.transport;
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
+@CompositeType( symbolicDescriptor = "amqp:flow:list", numericDescriptor = 0x0000000000000013L)
 public class Flow implements FrameBody
 {
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 0)
     private UnsignedInteger _nextIncomingId;
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 1, mandatory = true)
     private UnsignedInteger _incomingWindow;
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 2, mandatory = true)
     private UnsignedInteger _nextOutgoingId;
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 3, mandatory = true)
     private UnsignedInteger _outgoingWindow;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 4)
     private UnsignedInteger _handle;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 5)
     private UnsignedInteger _deliveryCount;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 6)
     private UnsignedInteger _linkCredit;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 7)
     private UnsignedInteger _available;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 8)
     private Boolean _drain;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 9)
     private Boolean _echo;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 10)
     private Map<Symbol, Object> _properties;
 
     public UnsignedInteger getNextIncomingId()

@@ -25,22 +25,23 @@ package org.apache.qpid.server.protocol.v1_0.type.security;
 
 
 import org.apache.qpid.server.protocol.v1_0.SASLEndpoint;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
+@CompositeType( symbolicDescriptor = "amqp:sasl-init:list", numericDescriptor = 0x0000000000000041L)
+public class SaslInit implements SaslFrameBody
+{
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class SaslInit
-  implements SaslFrameBody
-  {
-
-
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 0, mandatory = true)
     private Symbol _mechanism;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 1)
     private Binary _initialResponse;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 2)
     private String _hostname;
 
     public Symbol getMechanism()
@@ -79,27 +80,27 @@ public class SaslInit
         StringBuilder builder = new StringBuilder("SaslInit{");
         final int origLength = builder.length();
 
-        if(_mechanism != null)
+        if (_mechanism != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("mechanism=").append(_mechanism);
         }
 
-        if(_initialResponse != null)
+        if (_initialResponse != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("initialResponse=").append(_initialResponse);
         }
 
-        if(_hostname != null)
+        if (_hostname != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -115,6 +116,4 @@ public class SaslInit
     {
         conn.receiveSaslInit(this);
     }
-
-
-  }
+}

@@ -24,20 +24,22 @@ package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
+@CompositeType( symbolicDescriptor = "amqp:detach:list", numericDescriptor = 0x0000000000000016L)
 public class Detach implements ErrorCarryingFrameBody
 {
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 0, mandatory = true)
     private UnsignedInteger _handle;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 1)
     private Boolean _closed;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 2)
     private Error _error;
 
     public UnsignedInteger getHandle()

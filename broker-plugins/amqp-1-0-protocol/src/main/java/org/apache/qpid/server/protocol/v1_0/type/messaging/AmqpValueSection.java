@@ -24,7 +24,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.AmqpValueConstructor;
 
 public class AmqpValueSection extends AbstractSection<Object, AmqpValue>
@@ -51,7 +51,7 @@ public class AmqpValueSection extends AbstractSection<Object, AmqpValue>
     }
 
     @Override
-    protected AbstractDescribedTypeConstructor<AmqpValue> createNonEncodingRetainingSectionConstructor()
+    protected DescribedTypeConstructor<AmqpValue> createNonEncodingRetainingSectionConstructor()
     {
         return new AmqpValueConstructor();
     }

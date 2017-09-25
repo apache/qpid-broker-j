@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.MessageAnnotationsConstructor;
 
@@ -53,7 +53,7 @@ public class MessageAnnotationsSection extends AbstractSection<Map<Symbol,Object
     }
 
     @Override
-    protected AbstractDescribedTypeConstructor<MessageAnnotations> createNonEncodingRetainingSectionConstructor()
+    protected DescribedTypeConstructor<MessageAnnotations> createNonEncodingRetainingSectionConstructor()
     {
         return new MessageAnnotationsConstructor();
     }

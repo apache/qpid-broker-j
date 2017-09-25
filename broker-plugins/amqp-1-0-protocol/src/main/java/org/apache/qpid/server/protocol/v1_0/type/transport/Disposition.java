@@ -24,30 +24,32 @@ package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
+@CompositeType( symbolicDescriptor = "amqp:disposition:list", numericDescriptor = 0x0000000000000015L)
 public class Disposition implements FrameBody
 {
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 0, mandatory = true)
     private Role _role;
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 1, mandatory = true)
     private UnsignedInteger _first;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 2)
     private UnsignedInteger _last;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 3)
     private Boolean _settled;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 4)
     private DeliveryState _state;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 5)
     private Boolean _batchable;
 
     public Role getRole()

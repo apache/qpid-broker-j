@@ -27,43 +27,45 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 
+@CompositeType( symbolicDescriptor = "amqp:open:list", numericDescriptor = 0x0000000000000010L)
 public class Open implements FrameBody
 {
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 0, mandatory = true)
     private String _containerId;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 1)
     private String _hostname;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 2)
     private UnsignedInteger _maxFrameSize;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 3)
     private UnsignedShort _channelMax;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 4)
     private UnsignedInteger _idleTimeOut;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 5)
     private Symbol[] _outgoingLocales;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 6)
     private Symbol[] _incomingLocales;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 7)
     private Symbol[] _offeredCapabilities;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 8)
     private Symbol[] _desiredCapabilities;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 9)
     private Map<Symbol, Object> _properties;
 
     public String getContainerId()

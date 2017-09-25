@@ -25,16 +25,15 @@ package org.apache.qpid.server.protocol.v1_0.type.security;
 
 
 import org.apache.qpid.server.protocol.v1_0.SASLEndpoint;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
 
-
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class SaslChallenge
-  implements SaslFrameBody
-  {
-
-
-    @CompositeTypeField(mandatory = true)
+@CompositeType( symbolicDescriptor = "amqp:sasl-challenge:list", numericDescriptor = 0x0000000000000042L)
+public class SaslChallenge implements SaslFrameBody
+{
+    @CompositeTypeField(index = 0, mandatory = true)
     private Binary _challenge;
 
     public Binary getChallenge()
@@ -53,9 +52,9 @@ public class SaslChallenge
         StringBuilder builder = new StringBuilder("SaslChallenge{");
         final int origLength = builder.length();
 
-        if(_challenge != null)
+        if (_challenge != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -71,6 +70,4 @@ public class SaslChallenge
     {
         conn.receiveSaslChallenge(this);
     }
-
-
-  }
+}

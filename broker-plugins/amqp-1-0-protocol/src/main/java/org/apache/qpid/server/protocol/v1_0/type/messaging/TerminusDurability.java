@@ -24,26 +24,18 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class TerminusDurability
-  implements RestrictedType<UnsignedInteger>
-  
-  {
-
-
-
+public class TerminusDurability implements RestrictedType<UnsignedInteger>
+{
     private final UnsignedInteger _val;
 
-    
     public static final TerminusDurability NONE = new TerminusDurability(UnsignedInteger.valueOf(0));
-    
-    public static final TerminusDurability CONFIGURATION = new TerminusDurability(UnsignedInteger.valueOf(1));
-    
-    public static final TerminusDurability UNSETTLED_STATE = new TerminusDurability(UnsignedInteger.valueOf(2));
-    
 
+    public static final TerminusDurability CONFIGURATION = new TerminusDurability(UnsignedInteger.valueOf(1));
+
+    public static final TerminusDurability UNSETTLED_STATE = new TerminusDurability(UnsignedInteger.valueOf(2));
 
     private TerminusDurability(UnsignedInteger val)
     {
@@ -59,22 +51,21 @@ public class TerminusDurability
     @Override
     public String toString()
     {
-        
-        if(this == NONE)
+        if (this == NONE)
         {
             return "none";
         }
-        
-        if(this == CONFIGURATION)
+
+        if (this == CONFIGURATION)
         {
             return "configuration";
         }
-        
-        if(this == UNSETTLED_STATE)
+
+        if (this == UNSETTLED_STATE)
         {
             return "unsettled-state";
         }
-        
+
         else
         {
             return String.valueOf(_val);
@@ -85,21 +76,21 @@ public class TerminusDurability
     {
         UnsignedInteger val = (UnsignedInteger) obj;
 
-        if(NONE._val.equals(val))
+        if (NONE._val.equals(val))
         {
             return NONE;
         }
-    
-        if(CONFIGURATION._val.equals(val))
+
+        if (CONFIGURATION._val.equals(val))
         {
             return CONFIGURATION;
         }
-    
-        if(UNSETTLED_STATE._val.equals(val))
+
+        if (UNSETTLED_STATE._val.equals(val))
         {
             return UNSETTLED_STATE;
         }
-    
+
         // TODO ERROR
         return null;
     }
@@ -110,5 +101,4 @@ public class TerminusDurability
         int durabilityBValue = durabilityB != null ? durabilityB._val.intValue() : 0;
         return TerminusDurability.valueOf(new UnsignedInteger(Math.min(durabilitAValue, durabilityBValue)));
     }
-
-  }
+}

@@ -69,7 +69,6 @@ public class ConnectionError implements ErrorCondition, RestrictedType<Symbol>
             return SOCKET_ERROR;
         }
 
-        // TODO ERROR
         return null;
     }
 

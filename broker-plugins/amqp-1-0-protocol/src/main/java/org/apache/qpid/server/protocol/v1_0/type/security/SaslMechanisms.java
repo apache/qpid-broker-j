@@ -25,17 +25,17 @@ package org.apache.qpid.server.protocol.v1_0.type.security;
 
 
 import java.util.Arrays;
+
 import org.apache.qpid.server.protocol.v1_0.SASLEndpoint;
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-public class SaslMechanisms
-  implements SaslFrameBody
-  {
-
-
-    @CompositeTypeField(mandatory = true)
+@CompositeType( symbolicDescriptor = "amqp:sasl-mechanisms:list", numericDescriptor = 0x0000000000000040L)
+public class SaslMechanisms implements SaslFrameBody
+{
+    @CompositeTypeField(index = 0, mandatory = true)
     private Symbol[] _saslServerMechanisms;
 
     public Symbol[] getSaslServerMechanisms()
@@ -54,9 +54,9 @@ public class SaslMechanisms
         StringBuilder builder = new StringBuilder("SaslMechanisms{");
         final int origLength = builder.length();
 
-        if(_saslServerMechanisms != null)
+        if (_saslServerMechanisms != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -72,6 +72,4 @@ public class SaslMechanisms
     {
         conn.receiveSaslMechanisms(this);
     }
-
-
-  }
+}

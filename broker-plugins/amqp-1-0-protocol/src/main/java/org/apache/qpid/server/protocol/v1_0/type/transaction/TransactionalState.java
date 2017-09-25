@@ -25,16 +25,18 @@ package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 
+@CompositeType( symbolicDescriptor = "amqp:transactional-state:list", numericDescriptor = 0x0000000000000034L)
 public class TransactionalState implements DeliveryState
 {
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 0, mandatory = true)
     private Binary _txnId;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 1)
     private Outcome _outcome;
 
     public Binary getTxnId()

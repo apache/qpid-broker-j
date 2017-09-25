@@ -121,7 +121,6 @@ public class AmqpError implements ErrorCondition, RestrictedType<Symbol>
             return FRAME_SIZE_TOO_SMALL;
         }
 
-        // TODO ERROR
         return null;
     }
 

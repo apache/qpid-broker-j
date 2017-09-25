@@ -27,37 +27,39 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 
+@CompositeType( symbolicDescriptor = "amqp:begin:list", numericDescriptor = 0x0000000000000011L)
 public class Begin implements FrameBody
 {
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 0)
     private UnsignedShort _remoteChannel;
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 1, mandatory = true)
     private UnsignedInteger _nextOutgoingId;
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 2, mandatory = true)
     private UnsignedInteger _incomingWindow;
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 3, mandatory = true)
     private UnsignedInteger _outgoingWindow;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 4)
     private UnsignedInteger _handleMax;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 5)
     private Symbol[] _offeredCapabilities;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 6)
     private Symbol[] _desiredCapabilities;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 7)
     private Map<Symbol, Object> _properties;
 
     public UnsignedShort getRemoteChannel()

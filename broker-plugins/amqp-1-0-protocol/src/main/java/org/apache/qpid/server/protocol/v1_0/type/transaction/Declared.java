@@ -25,15 +25,17 @@ package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
+@CompositeType( symbolicDescriptor = "amqp:declared:list", numericDescriptor = 0x0000000000000033L)
 public class Declared implements Outcome
 {
     public static final Symbol DECLARED_SYMBOL = Symbol.valueOf("amqp:declared:list");
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 0, mandatory = true)
     private Binary _txnId;
 
     public Binary getTxnId()

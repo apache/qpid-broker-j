@@ -24,17 +24,17 @@
 package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
 
-
 import java.util.Arrays;
 
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
+import org.apache.qpid.server.protocol.v1_0.type.TxnCapability;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class Coordinator
-        implements BaseTarget
-  {
-
-
+@CompositeType(symbolicDescriptor = "amqp:coordinator:list", numericDescriptor = 0x0000000000000030L)
+public class Coordinator implements BaseTarget
+{
+    @CompositeTypeField(index = 0, deserializationConverter = "org.apache.qpid.server.protocol.v1_0.DeserializationFactories.convertToTxnCapability")
     private TxnCapability[] _capabilities;
 
     public TxnCapability[] getCapabilities()
@@ -53,9 +53,9 @@ public class Coordinator
         StringBuilder builder = new StringBuilder("Coordinator{");
         final int origLength = builder.length();
 
-        if(_capabilities != null)
+        if (_capabilities != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -65,6 +65,4 @@ public class Coordinator
         builder.append('}');
         return builder.toString();
     }
-
-
-  }
+}

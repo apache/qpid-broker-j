@@ -24,30 +24,24 @@
 package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class TxnCapability
-  implements org.apache.qpid.server.protocol.v1_0.type.TxnCapability, RestrictedType<Symbol>
-  
-  {
-
-
-
+public class TxnCapability implements org.apache.qpid.server.protocol.v1_0.type.TxnCapability, RestrictedType<Symbol>
+{
     private final Symbol _val;
 
-    
     public static final TxnCapability LOCAL_TXN = new TxnCapability(Symbol.valueOf("amqp:local-transactions"));
-    
-    public static final TxnCapability DISTRIBUTED_TXN = new TxnCapability(Symbol.valueOf("amqp:distributed-transactions"));
-    
-    public static final TxnCapability PROMOTABLE_TXN = new TxnCapability(Symbol.valueOf("amqp:promotable-transactions"));
-    
-    public static final TxnCapability MULTI_TXNS_PER_SSN = new TxnCapability(Symbol.valueOf("amqp:multi-txns-per-ssn"));
-    
-    public static final TxnCapability MULTI_SSNS_PER_TXN = new TxnCapability(Symbol.valueOf("amqp:multi-ssns-per-txn"));
-    
 
+    public static final TxnCapability DISTRIBUTED_TXN =
+            new TxnCapability(Symbol.valueOf("amqp:distributed-transactions"));
+
+    public static final TxnCapability PROMOTABLE_TXN =
+            new TxnCapability(Symbol.valueOf("amqp:promotable-transactions"));
+
+    public static final TxnCapability MULTI_TXNS_PER_SSN = new TxnCapability(Symbol.valueOf("amqp:multi-txns-per-ssn"));
+
+    public static final TxnCapability MULTI_SSNS_PER_TXN = new TxnCapability(Symbol.valueOf("amqp:multi-ssns-per-txn"));
 
     private TxnCapability(Symbol val)
     {
@@ -63,32 +57,32 @@ public class TxnCapability
     @Override
     public String toString()
     {
-        
-        if(this == LOCAL_TXN)
+
+        if (this == LOCAL_TXN)
         {
             return "local-txn";
         }
-        
-        if(this == DISTRIBUTED_TXN)
+
+        if (this == DISTRIBUTED_TXN)
         {
             return "distributed-txn";
         }
-        
-        if(this == PROMOTABLE_TXN)
+
+        if (this == PROMOTABLE_TXN)
         {
             return "promotable-txn";
         }
-        
-        if(this == MULTI_TXNS_PER_SSN)
+
+        if (this == MULTI_TXNS_PER_SSN)
         {
             return "multi-txns-per-ssn";
         }
-        
-        if(this == MULTI_SSNS_PER_TXN)
+
+        if (this == MULTI_SSNS_PER_TXN)
         {
             return "multi-ssns-per-txn";
         }
-        
+
         else
         {
             return String.valueOf(_val);
@@ -99,35 +93,32 @@ public class TxnCapability
     {
         Symbol val = (Symbol) obj;
 
-        if(LOCAL_TXN._val.equals(val))
+        if (LOCAL_TXN._val.equals(val))
         {
             return LOCAL_TXN;
         }
-    
-        if(DISTRIBUTED_TXN._val.equals(val))
+
+        if (DISTRIBUTED_TXN._val.equals(val))
         {
             return DISTRIBUTED_TXN;
         }
-    
-        if(PROMOTABLE_TXN._val.equals(val))
+
+        if (PROMOTABLE_TXN._val.equals(val))
         {
             return PROMOTABLE_TXN;
         }
-    
-        if(MULTI_TXNS_PER_SSN._val.equals(val))
+
+        if (MULTI_TXNS_PER_SSN._val.equals(val))
         {
             return MULTI_TXNS_PER_SSN;
         }
-    
-        if(MULTI_SSNS_PER_TXN._val.equals(val))
+
+        if (MULTI_SSNS_PER_TXN._val.equals(val))
         {
             return MULTI_SSNS_PER_TXN;
         }
-    
+
         // TODO ERROR
         return null;
     }
-
-
-
-  }
+}

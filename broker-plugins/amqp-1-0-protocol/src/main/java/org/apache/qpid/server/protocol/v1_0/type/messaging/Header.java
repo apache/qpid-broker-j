@@ -24,26 +24,28 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
+@CompositeType( symbolicDescriptor = "amqp:header:list", numericDescriptor = 0x0000000000000070L)
 public class Header implements NonEncodingRetainingSection<Header>
 {
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 0)
     private Boolean _durable;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 1)
     private UnsignedByte _priority;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 2)
     private UnsignedInteger _ttl;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 3)
     private Boolean _firstAcquirer;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 4)
     private UnsignedInteger _deliveryCount;
 
     public Boolean getDurable()

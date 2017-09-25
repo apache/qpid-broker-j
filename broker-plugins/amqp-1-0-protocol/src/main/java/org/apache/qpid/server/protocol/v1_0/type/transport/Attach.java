@@ -30,56 +30,58 @@ import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 
+@CompositeType( symbolicDescriptor = "amqp:attach:list", numericDescriptor = 0x0000000000000012L)
 public class Attach implements FrameBody
 {
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 0, mandatory = true)
     private String _name;
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 1, mandatory = true)
     private UnsignedInteger _handle;
 
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 2, mandatory = true)
     private Role _role;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 3)
     private SenderSettleMode _sndSettleMode;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 4)
     private ReceiverSettleMode _rcvSettleMode;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 5)
     private BaseSource _source;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 6)
     private BaseTarget _target;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 7)
     private Map<Binary, DeliveryState> _unsettled;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 8)
     private Boolean _incompleteUnsettled;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 9)
     private UnsignedInteger _initialDeliveryCount;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 10)
     private UnsignedLong _maxMessageSize;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 11)
     private Symbol[] _offeredCapabilities;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 12)
     private Symbol[] _desiredCapabilities;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 13)
     private Map<Symbol, Object> _properties;
 
     public String getName()

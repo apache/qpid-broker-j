@@ -25,8 +25,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
+import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
@@ -74,7 +74,7 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
         _encodedSize = QpidByteBufferUtils.remaining(_encodedForm);
     }
 
-    protected abstract AbstractDescribedTypeConstructor<S> createNonEncodingRetainingSectionConstructor();
+    protected abstract DescribedTypeConstructor<S> createNonEncodingRetainingSectionConstructor();
 
     @Override
     public synchronized T getValue()
@@ -169,7 +169,7 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
         }
     }
 
-    private S decode(AbstractDescribedTypeConstructor<S> constructor)
+    private S decode(DescribedTypeConstructor<S> constructor)
     {
         List<QpidByteBuffer> input = getEncodedForm();
         int[] originalPositions = new int[input.size()];

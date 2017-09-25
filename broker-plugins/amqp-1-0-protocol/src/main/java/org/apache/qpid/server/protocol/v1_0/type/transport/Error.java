@@ -25,19 +25,23 @@ package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 import java.util.Map;
 
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
+@CompositeType( symbolicDescriptor = "amqp:error:list", numericDescriptor = 0x000000000000001DL)
 public class Error
 {
-    @CompositeTypeField(mandatory = true)
+    @CompositeTypeField(index = 0, mandatory = true,
+            deserializationConverter = "org.apache.qpid.server.protocol.v1_0.DeserializationFactories.convertToErrorCondition")
     private ErrorCondition _condition;
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 1)
     private String _description;
 
-    @CompositeTypeField
-    private Map _info;
+    @CompositeTypeField(index = 2)
+    private Map<Symbol, Object> _info;
 
     public Error()
     {
@@ -69,12 +73,12 @@ public class Error
         _description = description;
     }
 
-    public Map getInfo()
+    public Map<Symbol, Object> getInfo()
     {
         return _info;
     }
 
-    public void setInfo(Map info)
+    public void setInfo(Map<Symbol, Object> info)
     {
         _info = info;
     }

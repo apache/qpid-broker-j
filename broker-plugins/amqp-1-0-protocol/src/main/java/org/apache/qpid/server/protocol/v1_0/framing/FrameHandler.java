@@ -38,6 +38,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ChannelFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class FrameHandler implements ProtocolHandler
 {
@@ -206,6 +207,10 @@ public class FrameHandler implements ProtocolHandler
         }
         catch (RuntimeException e)
         {
+            if (e instanceof ServerScopedRuntimeException)
+            {
+                throw e;
+            }
             LOGGER.warn("Unexpected exception handling frame", e);
             // This exception is unexpected. The up layer should handle error condition gracefully
             _connectionHandler.handleError(this.createError(ConnectionError.CONNECTION_FORCED, e.toString()));

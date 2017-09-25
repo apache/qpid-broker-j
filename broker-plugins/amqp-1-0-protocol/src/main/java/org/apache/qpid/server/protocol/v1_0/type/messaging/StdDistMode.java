@@ -24,24 +24,17 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.DistributionMode;
+import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class StdDistMode
-  implements DistributionMode, RestrictedType<Symbol>
-  
-  {
-
-
-
+public class StdDistMode implements DistributionMode, RestrictedType<Symbol>
+{
     private final Symbol _val;
 
-    
     public static final StdDistMode MOVE = new StdDistMode(Symbol.valueOf("move"));
-    
-    public static final StdDistMode COPY = new StdDistMode(Symbol.valueOf("copy"));
-    
 
+    public static final StdDistMode COPY = new StdDistMode(Symbol.valueOf("copy"));
 
     private StdDistMode(Symbol val)
     {
@@ -57,17 +50,16 @@ public class StdDistMode
     @Override
     public String toString()
     {
-        
-        if(this == MOVE)
+        if (this == MOVE)
         {
             return "move";
         }
-        
-        if(this == COPY)
+
+        if (this == COPY)
         {
             return "copy";
         }
-        
+
         else
         {
             return String.valueOf(_val);
@@ -78,20 +70,16 @@ public class StdDistMode
     {
         Symbol val = (Symbol) obj;
 
-        if(MOVE._val.equals(val))
+        if (MOVE._val.equals(val))
         {
             return MOVE;
         }
-    
-        if(COPY._val.equals(val))
+
+        if (COPY._val.equals(val))
         {
             return COPY;
         }
-    
-        // TODO ERROR
+
         return null;
     }
-
-
-
-  }
+}

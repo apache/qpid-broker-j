@@ -24,13 +24,15 @@ package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 
+@CompositeType( symbolicDescriptor = "amqp:close:list", numericDescriptor = 0x0000000000000018L)
 public class Close implements ErrorCarryingFrameBody
 {
 
-    @CompositeTypeField
+    @CompositeTypeField(index = 0)
     private Error _error;
 
     @Override

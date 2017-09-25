@@ -68,7 +68,6 @@ public class SessionError implements ErrorCondition, RestrictedType<Symbol>
             return UNATTACHED_HANDLE;
         }
 
-        // TODO ERROR
         return null;
     }
 

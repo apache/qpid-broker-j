@@ -24,9 +24,11 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
+import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
+@CompositeType( symbolicDescriptor = "amqp:released:list", numericDescriptor = 0x0000000000000026L)
 public class Released implements Outcome
 {
     public static final Symbol RELEASED_SYMBOL = Symbol.valueOf("amqp:released:list");
