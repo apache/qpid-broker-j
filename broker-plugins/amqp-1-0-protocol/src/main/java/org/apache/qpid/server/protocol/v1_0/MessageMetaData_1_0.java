@@ -23,7 +23,6 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -698,7 +697,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         public Map<String, Object> getHeadersAsMap()
         {
-            return _applicationPropertiesSection == null ? new HashMap<String, Object>() : new HashMap<>(
+            return _applicationPropertiesSection == null ? new HashMap<>() : new HashMap<>(
                     _applicationPropertiesSection.getValue());
         }
     }

@@ -154,7 +154,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                       "Force detach the link because the session is remotely ended.");
 
     private final String _primaryDomain;
-    private final Set<Object> _blockingEntities = Collections.newSetFromMap(new ConcurrentHashMap<Object,Boolean>());
+    private final Set<Object> _blockingEntities = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private volatile long _startedTransactions;
     private volatile long _committedTransactions;
     private volatile long _rolledBackTransactions;
@@ -944,7 +944,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
         if(_closed.compareAndSet(false, true))
         {
-            List<Action<? super Session_1_0>> taskList = new ArrayList<Action<? super Session_1_0>>(_taskList);
+            List<Action<? super Session_1_0>> taskList = new ArrayList<>(_taskList);
             _taskList.clear();
             for(Action<? super Session_1_0> task : taskList)
             {

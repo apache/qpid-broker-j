@@ -37,7 +37,7 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor<Symbol>
     private static final Charset ASCII = Charset.forName("US-ASCII");
 
     private static final ConcurrentMap<BinaryString, Symbol> SYMBOL_MAP =
-            new ConcurrentHashMap<BinaryString, Symbol>(2048);
+            new ConcurrentHashMap<>(2048);
 
     public static SymbolTypeConstructor getInstance(int i)
     {

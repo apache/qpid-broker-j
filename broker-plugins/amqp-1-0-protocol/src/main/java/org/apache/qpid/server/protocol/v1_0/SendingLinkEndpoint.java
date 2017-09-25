@@ -133,7 +133,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 
             Map<Symbol,Filter> filters = source.getFilter();
 
-            Map<Symbol,Filter> actualFilters = new HashMap<Symbol,Filter>();
+            Map<Symbol,Filter> actualFilters = new HashMap<>();
 
             if(filters != null)
             {

@@ -70,8 +70,8 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.codec.*;
 public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegistry, ValueWriter.Registry
 {
 
-    private final Map<Object, DescribedTypeConstructor> _constructorRegistry = new HashMap<Object, DescribedTypeConstructor>();
-    private final Map<Object, DescribedTypeConstructor> _sectionDecoderRegistryMap = new HashMap<Object, DescribedTypeConstructor>();
+    private final Map<Object, DescribedTypeConstructor> _constructorRegistry = new HashMap<>();
+    private final Map<Object, DescribedTypeConstructor> _sectionDecoderRegistryMap = new HashMap<>();
 
 
 
@@ -320,7 +320,7 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
     }
 
 
-    private final Map<Class, ValueWriter.Factory> _writerMap = new HashMap<Class, ValueWriter.Factory>();
+    private final Map<Class, ValueWriter.Factory> _writerMap = new HashMap<>();
 
 
     @Override
