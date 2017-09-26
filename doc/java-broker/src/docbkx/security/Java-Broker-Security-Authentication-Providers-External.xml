@@ -40,6 +40,6 @@
         be configured. If attribute "Use the full DN as the Username" is set to "true" the full DN is
         used as an authenticated principal name. If attribute "Use the full DN as the Username" is set
         to "false" the user name CN part is used as the authenticated principal name. Setting the
-        field to "false" is particular useful when <link linkend="Java-Broker-Security-ACLs">ACL</link> is required, as at the moment, ACL does not support commas in the user name.
+        field to "false" is particular useful when <link linkend="Java-Broker-Security-AccessControlProviders">ACL</link> is required, as at the moment, ACL does not support commas in the user name.
     </para>
 </section>

@@ -24,6 +24,6 @@
   <title>Security</title>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="security/Java-Broker-Security-Authentication-Providers.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="security/Java-Broker-Security-Group-Providers.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="security/Java-Broker-Security-ACLs.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="security/Java-Broker-Security-AccessControlProviders.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="security/Java-Broker-Security-Configuration-Encryption.xml"/>
 </chapter>

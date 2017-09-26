@@ -30,7 +30,7 @@
     <section xml:id="Java-Broker-Concepts-Access-Control-Providers">
         <title>Access Control Providers</title>
         <para><emphasis>Access Control Providers</emphasis> are used to authorize various operations relating to Broker objects.</para>
-        <para>Access Control Provider configuration and management details are covered in <xref linkend="Java-Broker-Security-ACLs"/>.</para>
+        <para>Access Control Provider configuration and management details are covered in <xref linkend="Java-Broker-Security-AccessControlProviders"/>.</para>
     </section>
 
     <section xml:id="Java-Broker-Concepts-Group-Providers">

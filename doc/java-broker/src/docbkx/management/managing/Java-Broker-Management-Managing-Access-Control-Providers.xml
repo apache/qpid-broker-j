@@ -25,5 +25,5 @@
     <para>An <link linkend="Java-Broker-Concepts-Access-Control-Providers">Access Control
             Provider</link> governs who may do what within the Broker. It governs both messaging and
         management.</para>
-    <para>See <xref linkend="Java-Broker-Security-ACLs"/></para>
+    <para>See <xref linkend="Java-Broker-Security-AccessControlProviders"/></para>
 </section>

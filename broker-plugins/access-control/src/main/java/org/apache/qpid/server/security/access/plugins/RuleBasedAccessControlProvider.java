@@ -38,7 +38,7 @@ public interface RuleBasedAccessControlProvider<X extends RuleBasedAccessControl
     String DEFAULT_RESULT= "defaultResult";
     String RULES = "rules";
 
-    @ManagedAttribute( mandatory = true, defaultValue = "DENIED", validValues = { "ALLOWED", "DENIED" }, description = "the default resil to use if no rules match the requested operation")
+    @ManagedAttribute( mandatory = true, defaultValue = "DENIED", validValues = { "ALLOWED", "DENIED" }, description = "the default result to use if no rules match the requested operation")
     Result getDefaultResult();
 
     @ManagedAttribute( mandatory = true, defaultValue = "[ { \"identity\" : \"ALL\", \"objectType\" : \"ALL\", \"operation\" : \"ALL\", \"attributes\" : {}, \"outcome\" : \"ALLOW\"} ]", description = "the ordered list of ACL rules")
