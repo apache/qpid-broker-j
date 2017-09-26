@@ -31,10 +31,10 @@ From: 'an unknown organization'
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - bcel  org.apache.bcel:bcel:jar:5.2
 
-  - dgrid (http://webjars.org) org.webjars.bower:dgrid:jar:1.0.0
-    License: BSD-3-Clause  (https://spdx.org/licenses/BSD-3-Clause#licenseText)
-  - dstore (http://webjars.org) org.webjars.bower:dstore:jar:1.1.1
-    License: AFL-2.1  (https://spdx.org/licenses/AFL-2.1#licenseText)    License: BSD-3-Clause  (https://spdx.org/licenses/BSD-3-Clause#licenseText)
+  - dgrid (http://webjars.org) org.webjars.bower:dgrid:jar:1.2.1
+    License: BSD 3-Clause  (https://spdx.org/licenses/BSD 3-Clause#licenseText)
+  - dstore (http://webjars.org) org.webjars.bower:dstore:jar:1.1.2
+    License: BSD 3-Clause  (https://spdx.org/licenses/BSD 3-Clause#licenseText)
 
 From: 'Apache Software Foundation' (http://db.apache.org/)
   - Apache Derby Database Engine and Embedded JDBC Driver (http://db.apache.org/derby/) org.apache.derby:derby:jar:10.13.1.1
