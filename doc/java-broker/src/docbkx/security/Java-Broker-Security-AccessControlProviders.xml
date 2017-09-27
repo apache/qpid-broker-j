@@ -26,18 +26,18 @@
     The Access Control Provider governs the actions that a user may perform.
   </para>
   <para>There are two points within the hierarchy that enforce access control: the Broker itself and at each Virtual
-    Host. When an access decision needs to be made, the nearest control point configure with a provider is consulted
+    Host. When an access decision needs to be made, the nearest control point configured with a provider is consulted
     for a decision.  The example, when making a decision about the ability to say, consume from, a Queue, if the
     Virtual Host is configured with Access Control Provider it is consulted.  Unless a decision is made, the decision
     is delegated to the Access Control Provider configured at the Broker.
   </para>
-  <para>Access Control Providers are configured with a list of ACL rules. The rules determine to which object
+  <para>Access Control Providers are configured with a list of ACL rules. The rules determine to which objects
     the user has access and what actions the user may perform on those objects.  Rules are ordered and are considered
     top to bottom.  The first matching rule makes the access decision.
   </para>
   <para>
-    ACL rules may be written in terms of group names. A rule written in terms of a group name applies to the user if
-    he is a member of that group. Groups information is obtained from the
+    ACL rules may be written in terms of user or group names. A rule written in terms of a group name applies to the
+    user if he is a member of that group. Groups information is obtained from the
     <link linkend="Java-Broker-Security-Authentication-Providers">Authentication Providers</link>
     and
     <link linkend="Java-Broker-Security-Group-Providers">Group Providers</link>.  Writing ACL in terms of groups is
@@ -55,7 +55,7 @@
         <listitem>
           <para><emphasis>RulesBased</emphasis> - a provider that stores the rules-set within
            the Broker's or VirtualHost's configuration.  When used with HA, the Virtualhost
-           rules automatically apply to all nodes participating within the HA group.</para>
+           rules automatically propagated to all nodes participating within the HA group.</para>
         </listitem>
         <listitem>
           <para>
@@ -72,13 +72,13 @@
     </title>
     <para>
       An ACL rule-set is an ordered list of ACL rules.</para>
-    <para>An ACL rule comrprises matching criteria that determine if a rule will fire for a given action and a decision
-      outcome. If the rule matches the rule makes an access decision outcome. Decision outcomes are final: no regard is given
-      to rules that appear later once a decision is made.
+    <para>An ACL rule comprises matching criteria that determines if a rule applies to a situation and a decision
+      outcome. The rule produces an outcome only if the all matching criteria are satisfied.
     </para>
-    <para>Matching criteria is composed of an ACL object type (e.g. QUEUE), an ACL action (e.g. UPDATE) and other
-      properties that further refine if a match is made.  These properties restrict the match based on criteria such
-      as name or IP address.
+    <para>Matching criteria is composed of an ACL object type (e.g. <literal>QUEUE</literal>), an ACL action
+      (e.g. <literal>UPDATE</literal>) and other properties that further refine if a match is made. These properties
+      restrict the match based on additional criteria such as name or IP address. ACL Object type <literal>ALL</literal>
+      matches any object.  Likewise ACL Action <literal>ALL</literal> matches any action.
     </para>
     <para>Let's look at some examples.</para>
     <programlisting>
@@ -86,7 +86,7 @@
       ACL DENY bob CREATE QUEUE name="myqueue"  # Denies bob permission to create a queue called "myqueue"
     </programlisting>
     <para>
-      As dicussed, ACL rule-set is considered in order with the first matching rule taking precedence over all those
+      As discussed, the ACL rule-set is considered in order with the first matching rule taking precedence over all those
       that follow. In the following example, if the user bob tries to create an exchange "myexch", the action
       will be allowed by the first rule. The second rule will never be considered.
     </para>
@@ -102,10 +102,10 @@
       ACL ALLOW bob ALL EXCHANGE
     </programlisting>
     <para>
-      If a rule-set fails to make a decision, the result is configurable. By default, the RulesBased provider defers
-      the decision allowing another provider further up the hierarchy to make a decision (i.e. allowing the VirtualHost
-      control point to delegate to the Broker). In the case of the ACLFile provider, by default, its rule-sets implicit
-      have a rule denying all operations to all users. It is as if the rule-set ends with
+      If a rule-set fails to make a decision, the result is configurable. By default, the <literal>RuleBased</literal>
+      provider defers the decision allowing another provider further up the hierarchy to make a decision (i.e. allowing
+      the VirtualHost control point to delegate to the Broker). In the case of the ACLFile provider, by default, its
+      rule-set implicit have a rule denying all operations to all users. It is as if the rule-set ends with
       <literal>ACL DENY ALL ALL</literal>.   If no access control provider makes a decision the default is to
       deny the action.
     </para>
