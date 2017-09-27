@@ -69,9 +69,6 @@ public abstract class AbstractAccessControlProvider<X extends AbstractAccessCont
     }
 
     @Override
-    public abstract AccessControl getAccessControl();
-
-    @Override
     public int compareTo(final Y o)
     {
         return ACCESS_CONTROL_PROVIDER_COMPARATOR.compare((Y)this, o);

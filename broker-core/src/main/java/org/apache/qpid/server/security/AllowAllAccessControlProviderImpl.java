@@ -55,7 +55,7 @@ public class AllowAllAccessControlProviderImpl extends AbstractConfiguredObject<
     }
 
     @Override
-    public AccessControl getAccessControl()
+    public AccessControl getControl()
     {
         return AccessControl.ALWAYS_ALLOWED;
     }

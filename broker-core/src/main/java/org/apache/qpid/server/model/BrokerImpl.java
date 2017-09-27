@@ -770,7 +770,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                 }
                 else if(prov.getState() == State.ACTIVE)
                 {
-                    accessControls.add(prov.getAccessControl());
+                    accessControls.add(prov.getControl());
                 }
 
             }
