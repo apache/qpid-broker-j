@@ -61,22 +61,23 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     {
         super.setUp();
         _accessControl = mock(LegacyAccessControl.class);
+        _model = BrokerModel.getInstance();
+        _broker = mock(Broker.class);
+        _virtualHostNode = getMockVirtualHostNode();
         _virtualHost = mock(QueueManagingVirtualHost.class);
-
+        when(_virtualHost.getParent()).thenReturn(_broker);
 
         when(_virtualHost.getName()).thenReturn(TEST_VIRTUAL_HOST);
         when(_virtualHost.getAttribute(VirtualHost.NAME)).thenReturn(TEST_VIRTUAL_HOST);
-        _model = BrokerModel.getInstance();
         when(_virtualHost.getModel()).thenReturn(_model);
+        doReturn(_virtualHostNode).when(_virtualHost).getParent();
         doReturn(VirtualHost.class).when(_virtualHost).getCategoryClass();
 
-        _broker = mock(Broker.class);
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getName()).thenReturn("My Broker");
         when(_broker.getAttribute(Broker.NAME)).thenReturn("My Broker");
         when(_broker.getModel()).thenReturn(BrokerModel.getInstance());
 
-        _virtualHostNode = getMockVirtualHostNode();
 
         _adapter = new LegacyAccessControlAdapter(_accessControl, BrokerModel.getInstance());
     }
@@ -665,6 +666,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         properties.put(ObjectProperties.Property.NAME, TEST_QUEUE);
         properties.put(ObjectProperties.Property.METHOD_NAME, methodName);
         properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, _virtualHost.getName());
+        properties.put(ObjectProperties.Property.COMPONENT, "VirtualHost.Queue");
 
         when(_accessControl.authorise(same(LegacyOperation.INVOKE),
                                       same(ObjectType.QUEUE),
@@ -681,10 +683,10 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         String methodName = "getStatistics";
         VirtualHostNode<?> virtualHostNode = _virtualHostNode;
 
-
         ObjectProperties properties = new ObjectProperties();
         properties.put(ObjectProperties.Property.NAME, virtualHostNode.getName());
         properties.put(ObjectProperties.Property.METHOD_NAME, methodName);
+        properties.put(ObjectProperties.Property.COMPONENT, "Broker.VirtualHostNode");
 
         when(_accessControl.authorise(same(LegacyOperation.INVOKE),
                                       same(ObjectType.VIRTUALHOSTNODE),

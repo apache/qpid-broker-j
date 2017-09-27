@@ -33,8 +33,10 @@ import static org.apache.qpid.server.security.access.config.ObjectType.QUEUE;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.*;
@@ -331,10 +333,6 @@ class LegacyAccessControlAdapter
             {
                 return _accessControl.authorise(LegacyOperation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
             }
-            else if("CONFIGURE".equals(actionName) || "SHUTDOWN".equals(actionName))
-            {
-                return _accessControl.authorise(LegacyOperation.valueOf(actionName), ObjectType.BROKER, ObjectProperties.EMPTY);
-            }
         }
         else if(categoryClass == Queue.class)
         {
@@ -381,7 +379,7 @@ class LegacyAccessControlAdapter
                 VirtualHost virtualHost = queue.getVirtualHost();
                 final String virtualHostName = virtualHost.getName();
                 properties.setName(methodName);
-                properties.put(ObjectProperties.Property.COMPONENT, "VirtualHost.Queue");
+                properties.put(ObjectProperties.Property.COMPONENT, buildHierarchicalCategoryName(queue, virtualHost));
                 properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualHostName);
                 return _accessControl.authorise(LegacyOperation.UPDATE, METHOD, properties);
             }
@@ -411,8 +409,7 @@ class LegacyAccessControlAdapter
             }
         }
 
-        //TODO: add check for VH#messagePublish
-        return Result.DENIED;
+        return invokeResult;
     }
 
     private ObjectProperties createObjectPropertiesForMethod(final PermissionedObject permissionedObject,
@@ -424,17 +421,39 @@ class LegacyAccessControlAdapter
         if (permissionedObject instanceof ConfiguredObject<?>)
         {
             ConfiguredObject<?> configuredObject = ((ConfiguredObject) permissionedObject);
-            VirtualHost virtualHost = configuredObject.getModel()
-                                                      .getAncestor(VirtualHost.class,
-                                                                   configuredObject.getCategoryClass(),
-                                                                   configuredObject);
+            Model model = configuredObject.getModel();
+            VirtualHost<?> virtualHost = model.getAncestor(VirtualHost.class, configuredObject);
+
+            final String componentName;
             if (virtualHost != null)
             {
                 properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualHost.getName());
+                componentName = buildHierarchicalCategoryName(configuredObject, virtualHost);
             }
+            else
+            {
+                componentName = buildHierarchicalCategoryName(configuredObject, model.getAncestor(Broker.class, configuredObject));
+            }
+            properties.put(ObjectProperties.Property.COMPONENT, componentName);
         }
 
         return properties;
+    }
+
+    private String buildHierarchicalCategoryName(final ConfiguredObject<?> configuredObject, final ConfiguredObject<?> significantAncestor)
+    {
+        LinkedList<String> hierarchicalName = new LinkedList<>();
+
+        ConfiguredObject<?> current = configuredObject;
+        hierarchicalName.add(configuredObject.getCategoryClass().getSimpleName());
+
+        while (current != null && significantAncestor != current)
+        {
+            ConfiguredObject<?> parent = configuredObject.getParent();
+            hierarchicalName.add(0, parent.getCategoryClass().getSimpleName());
+            current = parent;
+        }
+        return hierarchicalName.stream().collect(Collectors.joining("."));
     }
 
     private ObjectProperties createObjectPropertiesForExchangeBind(final Map<String, Object> arguments,
