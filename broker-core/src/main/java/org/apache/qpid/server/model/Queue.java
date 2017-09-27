@@ -309,12 +309,12 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
             mandatory = true)
     OverflowPolicy getOverflowPolicy();
 
-    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
+    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false, skipAclCheck = true)
     Collection<PublishingLink> getPublishingLinks();
 
 
     @Override
-    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
+    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false, skipAclCheck = true)
     Collection<QueueConsumer<?,?>> getConsumers();
 
     //operations
