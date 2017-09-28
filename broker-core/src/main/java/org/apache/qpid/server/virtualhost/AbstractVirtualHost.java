@@ -328,7 +328,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
                 else if(prov.getState() == State.ACTIVE)
                 {
-                    accessControls.add(prov.getControl());
+                    accessControls.add(prov.getController());
                 }
 
             }

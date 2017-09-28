@@ -118,7 +118,7 @@ abstract class AbstractLegacyAccessControlProvider<X extends AbstractLegacyAcces
 
 
     @Override
-    public AccessControl<?> getControl()
+    public AccessControl<?> getController()
     {
         return _accessControl;
     }

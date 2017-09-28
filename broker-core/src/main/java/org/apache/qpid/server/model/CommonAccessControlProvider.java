@@ -51,5 +51,5 @@ public interface CommonAccessControlProvider<X> extends Comparable<X>
     String getName();
     int getPriority();
 
-    AccessControl<?> getControl();
+    AccessControl<?> getController();
 }
