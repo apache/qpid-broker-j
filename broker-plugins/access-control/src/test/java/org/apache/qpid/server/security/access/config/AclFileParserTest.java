@@ -28,6 +28,7 @@ import java.util.List;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.config.ObjectProperties.Property;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -39,18 +40,24 @@ public class AclFileParserTest extends QpidTestCase
         acl.deleteOnExit();
 
         // Write ACL file
-        PrintWriter aclWriter = new PrintWriter(new FileWriter(acl));
-        for (String line : aclData)
+        try (PrintWriter aclWriter = new PrintWriter(new FileWriter(acl)))
         {
-            aclWriter.println(line);
+            for (String line : aclData)
+            {
+                aclWriter.println(line);
+            }
         }
-        aclWriter.close();
 
         // Load ruleset
         return AclFileParser.parse(new FileReader(acl), mock(EventLoggerProvider.class));
-
     }
 
+    public void testEmptyRuleSetDefaults() throws Exception
+    {
+        RuleSet ruleSet = writeACLConfig();
+        assertEquals(0, ruleSet.getRuleCount());
+        assertEquals(Result.DENIED, ruleSet.getDefault());
+    }
     public void testACLFileSyntaxContinuation() throws Exception
     {
         try
@@ -155,6 +162,13 @@ public class AclFileParserTest extends QpidTestCase
         {
             assertEquals(String.format(AclFileParser.PROPERTY_NO_VALUE_MSG, 1), ce.getMessage());
         }
+    }
+
+    public void testValidConfig() throws Exception
+    {
+        RuleSet ruleSet = writeACLConfig("CONFIG defaultdefer=true");
+        assertEquals("Unexpected number of rules", 0, ruleSet.getRuleCount());
+        assertEquals("Unexpected number of rules", Result.DEFER, ruleSet.getDefault());
     }
 
     /**

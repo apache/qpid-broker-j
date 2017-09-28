@@ -45,8 +45,9 @@ import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 public final class AclFileParser
 {
     private static final Logger _logger = LoggerFactory.getLogger(AclFileParser.class);
-    private static final String DEFAULT_ALLOW = "defaultallow";
-    private static final String DEFAULT_DENY = "defaultdeny";
+    public static final String DEFAULT_ALLOW = "defaultallow";
+    public static final String DEFAULT_DEFER = "defaultdefer";
+    public static final String DEFAULT_DENY = "defaultdeny";
 
     private static final Character COMMENT = '#';
     private static final Character CONTINUATION = '\\';
@@ -138,7 +139,7 @@ public final class AclFileParser
             tokenizer.wordChars(':', ':'); // colon
 
             // parse the acl file lines
-            Stack<String> stack = new Stack<String>();
+            Stack<String> stack = new Stack<>();
             int current;
             do {
                 current = tokenizer.nextToken();
@@ -301,6 +302,10 @@ public final class AclFileParser
         {
             ruleSetCreator.setDefaultResult(Result.ALLOWED);
         }
+        if (Boolean.TRUE.equals(properties.get(DEFAULT_DEFER)))
+        {
+            ruleSetCreator.setDefaultResult(Result.DEFER);
+        }
         if (Boolean.TRUE.equals(properties.get(DEFAULT_DENY)))
         {
             ruleSetCreator.setDefaultResult(Result.DENIED);
@@ -337,7 +342,7 @@ public final class AclFileParser
     /** Converts a {@link List} of "name", "=", "value" tokens into a {@link Map}. */
     private static Map<String, Boolean> toPluginProperties(List<String> args, final int line)
     {
-        Map<String, Boolean> properties = new HashMap<String, Boolean>();
+        Map<String, Boolean> properties = new HashMap<>();
         Iterator<String> i = args.iterator();
         while (i.hasNext())
         {

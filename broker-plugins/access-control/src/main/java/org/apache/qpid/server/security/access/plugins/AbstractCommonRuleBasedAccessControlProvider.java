@@ -159,6 +159,16 @@ abstract class AbstractCommonRuleBasedAccessControlProvider<X extends AbstractCo
     public Content extractRules()
     {
         StringBuilder sb = new StringBuilder();
+        switch (_defaultResult)
+        {
+            case DENIED:
+                // This is the default assumed by ResultSet for ACL files without a CONFIG directive
+                break;
+            case ALLOWED:
+            case DEFER:
+                sb.append(String.format("CONFIG %s=true\n", _defaultResult == Result.ALLOWED ? AclFileParser.DEFAULT_ALLOW : AclFileParser.DEFAULT_DEFER));
+                break;
+        }
         for(AclRule rule : _rules)
         {
             sb.append("ACL ");
