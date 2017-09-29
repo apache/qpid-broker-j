@@ -32,7 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 
 public class ValueHandler implements DescribedTypeConstructorRegistry.Source
 {
-    private static final byte DESCRIBED_TYPE = (byte)0;
+    public static final byte DESCRIBED_TYPE = (byte)0;
 
     private final DescribedTypeConstructorRegistry _describedTypeConstructorRegistry;
 
@@ -91,6 +91,7 @@ public class ValueHandler implements DescribedTypeConstructorRegistry.Source
     {
         return parse(new ArrayList<>(Arrays.asList(in)));
     }
+
     public Object parse(final List<QpidByteBuffer> in) throws AmqpErrorException
     {
         TypeConstructor constructor = readConstructor(in);

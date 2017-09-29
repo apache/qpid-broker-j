@@ -28,7 +28,7 @@ import java.util.List;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public class StringTypeConstructor extends VariableWidthTypeConstructor<String>
 {
@@ -52,7 +52,7 @@ public class StringTypeConstructor extends VariableWidthTypeConstructor<String>
         QpidByteBuffer dup = in.duplicate();
         try
         {
-            dup.limit(dup.position()+size);
+            dup.limit(dup.position() + size);
             CharBuffer charBuf = dup.decode(UTF_8);
 
             String str = charBuf.toString();
@@ -61,9 +61,14 @@ public class StringTypeConstructor extends VariableWidthTypeConstructor<String>
 
             return str;
         }
-        catch(IllegalArgumentException e)
+        catch (IllegalArgumentException e)
         {
-            throw new IllegalArgumentException("position: " + dup.position() + "size: " + size + " capacity: " + dup.capacity());
+            throw new IllegalArgumentException("position: "
+                                               + dup.position()
+                                               + "size: "
+                                               + size
+                                               + " capacity: "
+                                               + dup.capacity());
         }
         finally
         {
@@ -76,7 +81,12 @@ public class StringTypeConstructor extends VariableWidthTypeConstructor<String>
     {
         int size;
 
-        if(getSize() == 1)
+        if (!QpidByteBufferUtils.hasRemaining(in, getSize()))
+        {
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct string: insufficient input data");
+        }
+
+        if (getSize() == 1)
         {
             size = QpidByteBufferUtils.get(in) & 0xFF;
         }
@@ -85,20 +95,17 @@ public class StringTypeConstructor extends VariableWidthTypeConstructor<String>
             size = QpidByteBufferUtils.getInt(in);
         }
 
-        if(!QpidByteBufferUtils.hasRemaining(in, size))
+        if (!QpidByteBufferUtils.hasRemaining(in, size))
         {
-            org.apache.qpid.server.protocol.v1_0.type.transport.Error error = new org.apache.qpid.server.protocol.v1_0.type.transport.Error();
-            error.setCondition(ConnectionError.FRAMING_ERROR);
-            error.setDescription("Cannot construct string: insufficient input data");
-            throw new AmqpErrorException(error);
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct string: insufficient input data");
         }
 
-        for(int i = 0; i<in.size(); i++)
+        for (int i = 0; i < in.size(); i++)
         {
             QpidByteBuffer buf = in.get(i);
-            if(buf.hasRemaining())
+            if (buf.hasRemaining())
             {
-                if(buf.remaining() >= size)
+                if (buf.remaining() >= size)
                 {
                     return constructFromSingleBuffer(buf, size);
                 }

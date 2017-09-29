@@ -46,6 +46,7 @@ import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.server.store.serializer.MessageStoreSerializer;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 @PluggableService
 public class MessageStoreSerializer_v1 implements MessageStoreSerializer
@@ -307,8 +308,15 @@ public class MessageStoreSerializer_v1 implements MessageStoreSerializer
             final MessageMetaDataType metaDataType =
                     MessageMetaDataTypeRegistry.fromOrdinal(metaData[0] & 0xff);
             QpidByteBuffer buf = QpidByteBuffer.wrap(metaData, 1, metaData.length - 1);
-            final StorableMessageMetaData storableMessageMetaData =
-                    metaDataType.createMetaData(Collections.singletonList(buf));
+            final StorableMessageMetaData storableMessageMetaData;
+            try
+            {
+                storableMessageMetaData = metaDataType.createMetaData(Collections.singletonList(buf));
+            }
+            catch (ConnectionScopedRuntimeException e)
+            {
+                throw new IllegalArgumentException("Could not deserialize message metadata", e);
+            }
             buf.dispose();
             final MessageHandle<StorableMessageMetaData> handle =
                     store.addMessage(storableMessageMetaData);

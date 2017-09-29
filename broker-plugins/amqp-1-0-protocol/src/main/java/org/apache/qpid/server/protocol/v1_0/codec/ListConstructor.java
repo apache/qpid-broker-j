@@ -41,7 +41,7 @@ public class ListConstructor extends VariableWidthTypeConstructor<List>
         int size;
         int count;
         long remaining = QpidByteBufferUtils.remaining(in);
-        if (remaining < getSize())
+        if (remaining < getSize() * 2)
         {
             throw new AmqpErrorException(AmqpError.DECODE_ERROR,
                                          String.format("Not sufficient data for deserialization of 'list'."

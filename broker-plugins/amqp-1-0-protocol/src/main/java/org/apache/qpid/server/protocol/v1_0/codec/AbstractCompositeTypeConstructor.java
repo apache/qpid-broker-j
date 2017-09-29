@@ -62,13 +62,13 @@ public abstract class AbstractCompositeTypeConstructor<T> implements DescribedTy
 
         private T constructType() throws AmqpErrorException
         {
+            int size;
             final TypeConstructor typeConstructor = _valueHandler.readConstructor(_in);
+            long remaining = QpidByteBufferUtils.remaining(_in);
             if (typeConstructor instanceof ListConstructor)
             {
                 ListConstructor listConstructor = (ListConstructor) typeConstructor;
-                int size;
-                long remaining = QpidByteBufferUtils.remaining(_in);
-                if (remaining < listConstructor.getSize())
+                if (remaining < listConstructor.getSize() * 2)
                 {
                     throw new AmqpErrorException(AmqpError.DECODE_ERROR,
                                                  String.format("Not sufficient data for deserialization of '%s'."
@@ -102,6 +102,7 @@ public abstract class AbstractCompositeTypeConstructor<T> implements DescribedTy
             }
             else if (typeConstructor instanceof ZeroListConstructor)
             {
+                size = 0;
                 _count = 0;
             }
             else
@@ -110,7 +111,28 @@ public abstract class AbstractCompositeTypeConstructor<T> implements DescribedTy
                                              String.format("Unexpected format when deserializing of '%s'",
                                                            getTypeName()));
             }
-            return AbstractCompositeTypeConstructor.this.construct(this);
+
+            final T constructedObject = AbstractCompositeTypeConstructor.this.construct(this);
+
+            long expectedRemaining = remaining - size;
+            long unconsumedBytes = QpidByteBufferUtils.remaining(_in) - expectedRemaining;
+            if(unconsumedBytes > 0)
+            {
+                final String msg =
+                        String.format("%s incorrectly encoded, %d bytes remaining after decoding %d elements",
+                                      getTypeName(), unconsumedBytes, _count);
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
+            }
+            else if (unconsumedBytes < 0)
+            {
+                final String msg = String.format(
+                        "%s incorrectly encoded, %d bytes beyond provided size consumed after decoding %d elements",
+                        getTypeName(),
+                        -unconsumedBytes,
+                        _count);
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
+            }
+            return constructedObject;
         }
 
 

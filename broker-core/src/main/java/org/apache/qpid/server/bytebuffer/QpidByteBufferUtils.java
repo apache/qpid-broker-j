@@ -267,5 +267,10 @@ public class QpidByteBufferUtils
             }
             i++;
         }
+
+        if (skipped != length)
+        {
+            throw new BufferUnderflowException();
+        }
     }
 }

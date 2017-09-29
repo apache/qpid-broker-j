@@ -34,6 +34,7 @@ import org.apache.qpid.server.protocol.v1_0.codec.ProtocolHandler;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ChannelFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
@@ -213,7 +214,7 @@ public class FrameHandler implements ProtocolHandler
             }
             LOGGER.warn("Unexpected exception handling frame", e);
             // This exception is unexpected. The up layer should handle error condition gracefully
-            _connectionHandler.handleError(this.createError(ConnectionError.CONNECTION_FORCED, e.toString()));
+            _connectionHandler.handleError(this.createError(AmqpError.INTERNAL_ERROR, e.toString()));
         }
         return this;
     }

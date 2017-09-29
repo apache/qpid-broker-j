@@ -438,6 +438,10 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
                 long contentSize = 0;
                 if (versionByte == 1)
                 {
+                    if (!QpidByteBufferUtils.hasRemaining(bufs, 17))
+                    {
+                        throw new ConnectionScopedRuntimeException("Cannot decode stored message meta data.");
+                    }
                     // we can discard the first byte
                     QpidByteBufferUtils.get(bufs);
                     arrivalTime = QpidByteBufferUtils.getLong(bufs);
@@ -479,7 +483,6 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
             catch (AmqpErrorException e)
             {
-                //TODO
                 throw new ConnectionScopedRuntimeException(e);
             }
         }

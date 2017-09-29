@@ -22,10 +22,10 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 import java.util.List;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
-import org.apache.qpid.server.protocol.v1_0.type.*;
-import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public class LongTypeConstructor implements TypeConstructor<Long>
 {
@@ -50,11 +50,7 @@ public class LongTypeConstructor implements TypeConstructor<Long>
         }
         else
         {
-            org.apache.qpid.server.protocol.v1_0.type.transport.Error error = new org.apache.qpid.server.protocol.v1_0.type.transport.Error();
-            error.setCondition(ConnectionError.FRAMING_ERROR);
-            error.setDescription("Cannot construct long: insufficient input data");
-            throw new AmqpErrorException(error);
-
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct long: insufficient input data");
         }
     }
 }

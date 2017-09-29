@@ -35,7 +35,6 @@ class ZeroUIntConstructor implements TypeConstructor<UnsignedInteger>
 
     @Override
     public UnsignedInteger construct(final List<QpidByteBuffer> in, final ValueHandler handler)
-            throws AmqpErrorException
     {
         return UnsignedInteger.ZERO;
     }

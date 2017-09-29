@@ -64,6 +64,10 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
                                                         final ValueHandler valueHandler)
             throws AmqpErrorException
     {
+        if (!QpidByteBufferUtils.hasRemaining(in))
+        {
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode data section.");
+        }
         int constructorByte = QpidByteBufferUtils.get(in) & 0xff;
         int sizeBytes;
         switch(constructorByte)
@@ -102,6 +106,10 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
         @Override
         protected void skipValue(final List<QpidByteBuffer> in) throws AmqpErrorException
         {
+            if (!QpidByteBufferUtils.hasRemaining(in, _sizeBytes))
+            {
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode data section.");
+            }
             int size;
             switch(_sizeBytes)
             {
@@ -112,7 +120,11 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
                     size = QpidByteBufferUtils.getInt(in);
                     break;
                 default:
-                    throw new AmqpErrorException(AmqpError.INVALID_FIELD, "Unexpected constructor type, can only be 1 or 4");
+                    throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Unexpected constructor type, can only be 1 or 4");
+            }
+            if (!QpidByteBufferUtils.hasRemaining(in, size))
+            {
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode data section.");
             }
             QpidByteBufferUtils.skip(in, size);
         }

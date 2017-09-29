@@ -25,7 +25,7 @@ import java.util.List;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
 {
@@ -44,7 +44,7 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
             }
             else
             {
-                throw new AmqpErrorException(ConnectionError.FRAMING_ERROR, "Cannot construct decimal32: insufficient input data");
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct decimal32: insufficient input data");
             }
 
             return constructFrom32(val);
@@ -67,7 +67,7 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
             }
             else
             {
-                throw new AmqpErrorException(ConnectionError.FRAMING_ERROR, "Cannot construct decimal64: insufficient input data");
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct decimal64: insufficient input data");
             }
 
             return constructFrom64(val);
@@ -93,7 +93,7 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
             }
             else
             {
-                throw new AmqpErrorException(ConnectionError.FRAMING_ERROR, "Cannot construct decimal128: insufficient input data");
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct decimal128: insufficient input data");
             }
 
             return constructFrom128(high, low);

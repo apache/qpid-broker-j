@@ -34,7 +34,7 @@ class ZeroULongConstructor implements TypeConstructor<UnsignedLong>
     }
 
     @Override
-    public UnsignedLong construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    public UnsignedLong construct(final List<QpidByteBuffer> in, final ValueHandler handler)
     {
         return UnsignedLong.ZERO;
     }

@@ -42,15 +42,16 @@ public class MapConstructor extends VariableWidthTypeConstructor<Map>
         return construct(in, handler, Object.class, Object.class);
     }
 
-    public <T,S> Map<T, S> construct(final List<QpidByteBuffer> in, final ValueHandler handler,
-                         Class<T> keyType,
-                         Class<S> valueType) throws AmqpErrorException
+    public <T, S> Map<T, S> construct(final List<QpidByteBuffer> in,
+                                      final ValueHandler handler,
+                                      Class<T> keyType,
+                                      Class<S> valueType) throws AmqpErrorException
     {
         int size;
         int count;
 
         long remaining = QpidByteBufferUtils.remaining(in);
-        if (remaining < getSize())
+        if (remaining < getSize() * 2)
         {
             throw new AmqpErrorException(AmqpError.DECODE_ERROR,
                                          String.format("Not sufficient data for deserialization of 'map'."
@@ -59,7 +60,7 @@ public class MapConstructor extends VariableWidthTypeConstructor<Map>
                                                        remaining));
         }
 
-        if(getSize() == 1)
+        if (getSize() == 1)
         {
             size = QpidByteBufferUtils.get(in) & 0xFF;
             count = QpidByteBufferUtils.get(in) & 0xFF;
@@ -83,12 +84,12 @@ public class MapConstructor extends VariableWidthTypeConstructor<Map>
     }
 
 
-    private <T, S> Map<T,S> construct(final List<QpidByteBuffer> in,
-                            final ValueHandler handler,
-                            final int size,
-                            final int count,
-                            Class<T> keyType,
-                            Class<S> valueType)
+    private <T, S> Map<T, S> construct(final List<QpidByteBuffer> in,
+                                       final ValueHandler handler,
+                                       final int size,
+                                       final int count,
+                                       Class<T> keyType,
+                                       Class<S> valueType)
             throws AmqpErrorException
     {
 
@@ -102,7 +103,7 @@ public class MapConstructor extends VariableWidthTypeConstructor<Map>
         Map<T, S> map = new LinkedHashMap<>(count);
 
         final int mapSize = count / 2;
-        for(int i = 0; i < mapSize; i++)
+        for (int i = 0; i < mapSize; i++)
         {
             Object key = handler.parse(in);
             if (key != null && !keyType.isAssignableFrom(key.getClass()))
@@ -123,7 +124,7 @@ public class MapConstructor extends VariableWidthTypeConstructor<Map>
             }
 
             Object oldValue;
-            if ((oldValue = map.put((T)key, (S)value)) != null)
+            if ((oldValue = map.put((T) key, (S) value)) != null)
             {
                 String message = String.format("Map cannot have duplicate keys: %s has values (%s, %s)",
                                                key,
@@ -131,7 +132,6 @@ public class MapConstructor extends VariableWidthTypeConstructor<Map>
                                                value);
                 throw new AmqpErrorException(AmqpError.DECODE_ERROR, message);
             }
-
         }
         return map;
     }

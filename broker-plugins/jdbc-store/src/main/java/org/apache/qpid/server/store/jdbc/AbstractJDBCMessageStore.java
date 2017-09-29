@@ -964,7 +964,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             }
             return metaData;
         }
-        catch (IOException e)
+        catch (IOException | RuntimeException e)
         {
             throw new StoreException("Failed to stream metadata for message with id " + messageId, e);
         }

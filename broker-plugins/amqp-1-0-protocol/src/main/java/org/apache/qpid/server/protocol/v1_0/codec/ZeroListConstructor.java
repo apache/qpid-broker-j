@@ -34,7 +34,7 @@ class ZeroListConstructor implements TypeConstructor<List>
     }
 
     @Override
-    public List construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    public List construct(final List<QpidByteBuffer> in, final ValueHandler handler)
     {
         return Collections.EMPTY_LIST;
     }

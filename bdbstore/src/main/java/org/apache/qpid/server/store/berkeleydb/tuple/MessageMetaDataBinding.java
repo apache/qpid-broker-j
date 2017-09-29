@@ -71,7 +71,7 @@ public class MessageMetaDataBinding implements EntryBinding<StorableMessageMetaD
             }
             return metaData;
         }
-        catch (IOException e)
+        catch (IOException | RuntimeException e)
         {
             throw new StoreException(String.format("Unable to convert entry %s to metadata", entry));
         }

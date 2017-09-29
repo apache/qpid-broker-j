@@ -32,6 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T>> implements EncodingRetainingSection<T>
@@ -178,6 +179,12 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
             originalPositions[i] = input.get(i).position();
         }
         int describedByte = QpidByteBufferUtils.get(input);
+        if (describedByte != ValueHandler.DESCRIBED_TYPE)
+        {
+            throw new ConnectionScopedRuntimeException("Cannot decode section",
+                                                       new AmqpErrorException(AmqpError.DECODE_ERROR,
+                                                                              "Not a described type."));
+        }
         ValueHandler handler = new ValueHandler(TYPE_REGISTRY);
         try
         {

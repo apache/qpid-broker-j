@@ -62,10 +62,7 @@ public class BooleanConstructor
             }
             else
             {
-                org.apache.qpid.server.protocol.v1_0.type.transport.Error error = new Error();
-                error.setCondition(ConnectionError.FRAMING_ERROR);
-                error.setDescription("Cannot construct boolean: insufficient input data");
-                throw new AmqpErrorException(error);
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct boolean: insufficient input data");
             }
         }
     };

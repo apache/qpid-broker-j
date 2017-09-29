@@ -65,12 +65,4 @@ public class SectionDecoderImpl implements SectionDecoder
 
         return obj;
     }
-
-
-    @Override
-    public EncodingRetainingSection<?> readSection(List<QpidByteBuffer> buf) throws AmqpErrorException
-    {
-        return (EncodingRetainingSection<?>) _valueHandler.parse(buf);
-    }
-
 }

@@ -26,11 +26,11 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public class SymbolTypeConstructor extends VariableWidthTypeConstructor<Symbol>
 {
@@ -55,7 +55,7 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor<Symbol>
         BinaryString binaryStr;
         if (in.hasArray())
         {
-            binaryStr = new BinaryString(in.array(), in.arrayOffset()+in.position(), size);
+            binaryStr = new BinaryString(in.array(), in.arrayOffset() + in.position(), size);
         }
         else
         {
@@ -67,10 +67,10 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor<Symbol>
         }
 
         Symbol symbolVal = SYMBOL_MAP.get(binaryStr);
-        if(symbolVal == null)
+        if (symbolVal == null)
         {
             QpidByteBuffer dup = in.duplicate();
-            dup.limit(in.position()+size);
+            dup.limit(in.position() + size);
             CharBuffer charBuf = dup.decode(ASCII);
             dup.dispose();
 
@@ -83,7 +83,7 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor<Symbol>
         }
         else
         {
-            in.position(in.position()+size);
+            in.position(in.position() + size);
         }
 
         return symbolVal;
@@ -95,7 +95,12 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor<Symbol>
 
         int size;
 
-        if(getSize() == 1)
+        if (!QpidByteBufferUtils.hasRemaining(in, getSize()))
+        {
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct symbol: insufficient input data");
+        }
+
+        if (getSize() == 1)
         {
             size = QpidByteBufferUtils.get(in) & 0xFF;
         }
@@ -104,20 +109,17 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor<Symbol>
             size = QpidByteBufferUtils.getInt(in);
         }
 
-        if(!QpidByteBufferUtils.hasRemaining(in, size))
+        if (!QpidByteBufferUtils.hasRemaining(in, size))
         {
-            org.apache.qpid.server.protocol.v1_0.type.transport.Error error = new org.apache.qpid.server.protocol.v1_0.type.transport.Error();
-            error.setCondition(ConnectionError.FRAMING_ERROR);
-            error.setDescription("Cannot construct symbol: insufficient input data");
-            throw new AmqpErrorException(error);
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct symbol: insufficient input data");
         }
 
-        for(int i = 0; i<in.size(); i++)
+        for (int i = 0; i < in.size(); i++)
         {
             QpidByteBuffer buf = in.get(i);
-            if(buf.hasRemaining())
+            if (buf.hasRemaining())
             {
-                if(buf.remaining() >= size)
+                if (buf.remaining() >= size)
                 {
                     return constructFromSingleBuffer(buf, size);
                 }
@@ -130,7 +132,7 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor<Symbol>
         final BinaryString binaryStr = new BinaryString(data);
 
         Symbol symbolVal = SYMBOL_MAP.get(binaryStr);
-        if(symbolVal == null)
+        if (symbolVal == null)
         {
             symbolVal = Symbol.valueOf(new String(data, ASCII));
             SYMBOL_MAP.putIfAbsent(binaryStr, symbolVal);

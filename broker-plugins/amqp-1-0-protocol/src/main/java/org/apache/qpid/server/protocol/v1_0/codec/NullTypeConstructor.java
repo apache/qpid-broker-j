@@ -33,7 +33,7 @@ class NullTypeConstructor implements TypeConstructor<Void>
     }
 
     @Override
-    public Void construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    public Void construct(final List<QpidByteBuffer> in, final ValueHandler handler)
     {
         return null;
     }

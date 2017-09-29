@@ -51,19 +51,23 @@ public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
         {
             rval.add(t.construct(in, handler));
         }
-        long unconsumedBytes = remaining - (QpidByteBufferUtils.remaining(in) + (long) size);
 
+        long expectedRemaining = remaining - size;
+        long unconsumedBytes = QpidByteBufferUtils.remaining(in) - expectedRemaining;
         if(unconsumedBytes > 0)
         {
-            throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                         "Array incorrectly encoded, %d bytes remaining after decoding %d elements",
-                                         unconsumedBytes, count);
+            final String msg = String.format("Array incorrectly encoded, %d bytes remaining after decoding %d elements",
+                                             unconsumedBytes,
+                                             count);
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
         }
         else if (unconsumedBytes < 0)
         {
-            throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                         "Array incorrectly encoded, %d bytes beyond provided size consumed after decoding %d elements",
-                                         -unconsumedBytes, count);
+            final String msg = String.format(
+                    "Array incorrectly encoded, %d bytes beyond provided size consumed after decoding %d elements",
+                    -unconsumedBytes,
+                    count);
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
         }
         if(rval.size() == 0)
         {

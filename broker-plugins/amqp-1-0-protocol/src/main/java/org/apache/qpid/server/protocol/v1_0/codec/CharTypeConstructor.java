@@ -52,11 +52,7 @@ public class CharTypeConstructor implements TypeConstructor<String>
         }
         else
         {
-            org.apache.qpid.server.protocol.v1_0.type.transport.Error error = new org.apache.qpid.server.protocol.v1_0.type.transport.Error();
-            error.setCondition(ConnectionError.FRAMING_ERROR);
-            error.setDescription("Cannot construct char: insufficient input data");
-            throw new AmqpErrorException(error);
-
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct char: insufficient input data");
         }
     }
 }
