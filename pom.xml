@@ -117,7 +117,7 @@
     <dollar.sign>$</dollar.sign>
     <at.sign>@</at.sign>
 
-    <bdb-version>7.3.7</bdb-version>
+    <bdb-version>7.4.5</bdb-version>
     <derby-version>10.13.1.1</derby-version>
     <logback-version>1.2.2</logback-version>
     <guava-version>22.0</guava-version>
@@ -1428,8 +1428,7 @@
               <outputDirectory>${license-maven-plugin-output-dir}</outputDirectory>
               <!-- Exclude logback from being checked, it is dual licensed and lists both licenses in META-INF Bundle-License   -->
               <!-- Exclude BCEL from being checked, it is ALv2 but doesnt have the necessary metadata -->
-              <!-- Exclude BDB JE from being checked, it is ALv2 but doesnt have the necessary metadata -->
-              <excludedGroups>org.apache.bcel|ch.qos.logback|com.sleepycat</excludedGroups>
+              <excludedGroups>org.apache.bcel|ch.qos.logback</excludedGroups>
               <includedLicenses>
                 <includedLicense>Apache Software License, Version 2.0</includedLicense>
                 <includedLicense>The MIT License</includedLicense>
