@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.CommonAccessControlProvider;
@@ -65,11 +66,11 @@ abstract class AbstractCommonRuleBasedAccessControlProvider<X extends AbstractCo
     }
 
     @Override
-    protected void changeAttributes(final Map<String, Object> attributes)
+    protected void postSetAttributes(final Set<String> actualUpdatedAttributes)
     {
-        super.changeAttributes(attributes);
-        if(attributes.containsKey(RuleBasedVirtualHostAccessControlProvider.DEFAULT_RESULT) || attributes.containsKey(
-                RuleBasedVirtualHostAccessControlProvider.RULES))
+        super.postSetAttributes(actualUpdatedAttributes);
+        if (actualUpdatedAttributes.contains(RuleBasedVirtualHostAccessControlProvider.DEFAULT_RESULT)
+            || actualUpdatedAttributes.contains(RuleBasedVirtualHostAccessControlProvider.RULES))
         {
             recreateAccessController();
         }

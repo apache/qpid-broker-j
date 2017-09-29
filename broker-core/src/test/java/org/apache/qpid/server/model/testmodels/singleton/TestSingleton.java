@@ -126,5 +126,5 @@ public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObj
 
     <T> T doAsSystem(PrivilegedAction<T> action);
 
-
+    Set<String> takeLastReportedSetAttributes();
 }

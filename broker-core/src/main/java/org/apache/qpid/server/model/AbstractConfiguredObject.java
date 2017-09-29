@@ -1930,7 +1930,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
-    protected boolean changeAttribute(final String name, final Object desired)
+    private boolean changeAttribute(final String name, final Object desired)
     {
         synchronized (_attributes)
         {
@@ -2390,6 +2390,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         doSync(setAttributesAsync(attributes));
     }
 
+    protected void postSetAttributes(final Set<String> actualUpdatedAttributes)
+    {
+    }
+
     protected final ChainedListenableFuture<Void> doAfter(ListenableFuture<?> first, final Runnable second)
     {
         return doAfter(getTaskExecutor(), first, second);
@@ -2799,6 +2803,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected void changeAttributes(final Map<String, Object> attributes)
     {
         Collection<String> names = getAttributeNames();
+        Set<String> updatedAttributes = new HashSet<>(attributes.size());
         try
         {
             bulkChangeStart();
@@ -2812,13 +2817,21 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     if (changeAttribute(attributeName, desired))
                     {
                         attributeSet(attributeName, expected, desired);
+                        updatedAttributes.add(attributeName);
                     }
                 }
             }
         }
         finally
         {
-            bulkChangeEnd();
+            try
+            {
+                postSetAttributes(updatedAttributes);
+            }
+            finally
+            {
+                bulkChangeEnd();
+            }
         }
     }
 

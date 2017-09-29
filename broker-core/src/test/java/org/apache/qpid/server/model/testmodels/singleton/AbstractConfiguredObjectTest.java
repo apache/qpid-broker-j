@@ -28,10 +28,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
+
+import com.google.common.collect.Sets;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
@@ -1084,6 +1087,30 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected recovered object updated time", object.getLastUpdatedTime(), recovered.getLastUpdatedTime());
     }
 
+    public void testPostSetAttributesReportsChanges()
+    {
+        final String objectName = "myName";
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(TestSingleton.NAME, objectName);
+
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                attributes, null);
+
+        assertEquals(objectName, object.getName());
+
+
+        object.setAttributes(Collections.emptyMap());
+        assertTrue("Unexpected member of update set for empty update", object.takeLastReportedSetAttributes().isEmpty());
+
+        Map<String, Object> update = new HashMap<>();
+        update.put(TestSingleton.NAME, objectName);
+        update.put(TestSingleton.DESCRIPTION, "an update");
+
+        object.setAttributes(update);
+        assertEquals("Unexpected member of update set", Sets.newHashSet(TestSingleton.DESCRIPTION),
+                     object.takeLastReportedSetAttributes());
+    }
     private Subject createTestAuthenticatedSubject(final String username)
     {
         return new Subject(true,

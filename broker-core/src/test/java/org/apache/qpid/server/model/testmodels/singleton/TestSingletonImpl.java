@@ -20,13 +20,18 @@ package org.apache.qpid.server.model.testmodels.singleton;
 
 import java.security.Principal;
 import java.security.PrivilegedAction;
+import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.security.auth.Subject;
+
+import com.google.common.collect.Sets;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -109,6 +114,8 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
 
     @ManagedAttributeField
     private String _attrWithDefaultFromContextMaterializeInit;
+
+    private Deque<HashSet<String>> _lastReportedSetAttributes = new ArrayDeque<>();
 
     @ManagedObjectFactoryConstructor
     public TestSingletonImpl(final Map<String, Object> attributes)
@@ -260,5 +267,18 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     public <T> T doAsSystem(PrivilegedAction<T> action)
     {
         return Subject.doAs(SYSTEM_SUBJECT, action);
+    }
+
+    @Override
+    protected void postSetAttributes(final Set<String> actualUpdatedAttributes)
+    {
+        super.postSetAttributes(actualUpdatedAttributes);
+        _lastReportedSetAttributes.add(Sets.newHashSet(actualUpdatedAttributes));
+    }
+
+    @Override
+    public Set<String> takeLastReportedSetAttributes()
+    {
+        return _lastReportedSetAttributes.removeFirst();
     }
 }

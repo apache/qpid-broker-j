@@ -142,7 +142,6 @@ import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.HousekeepingExecutor;
 import org.apache.qpid.server.util.Strings;
 
@@ -439,6 +438,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         super.postResolveChildren();
         addChangeListener(_accessControlProviderListener);
+        Collection<VirtualHostAccessControlProvider> accessControlProviders = getChildren(VirtualHostAccessControlProvider.class);
+        if (!accessControlProviders.isEmpty())
+        {
+            accessControlProviders.forEach(child -> child.addChangeListener(_accessControlProviderListener));
+        }
     }
 
     private void validateNodeAutoCreationPolicy(final NodeAutoCreationPolicy policy)
@@ -2624,53 +2628,43 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         // Transitioning to STOPPED will have closed all our children.  Now we are transition
         // back to ACTIVE, we need to recover and re-open them.
 
-        getDurableConfigurationStore().reload(new ConfiguredObjectRecordHandler()
-        {
-
-            @Override
-            public void handle(final ConfiguredObjectRecord record)
-            {
-                records.add(record);
-            }
-
-        });
+        getDurableConfigurationStore().reload(records::add);
 
         new GenericRecoverer(this).recover(records, false);
 
+        final Collection<VirtualHostAccessControlProvider> accessControlProviders = getChildren(VirtualHostAccessControlProvider.class);
+        if (!accessControlProviders.isEmpty())
+        {
+            accessControlProviders.forEach(child -> child.addChangeListener(_accessControlProviderListener));
+        }
+
         final List<ListenableFuture<Void>> childOpenFutures = new ArrayList<>();
 
-        Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
+        Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                applyToChildren(new Action<ConfiguredObject<?>>()
-                {
-                    @Override
-                    public void performAction(final ConfiguredObject<?> child)
-                    {
-                        final ListenableFuture<Void> childOpenFuture = child.openAsync();
-                        childOpenFutures.add(childOpenFuture);
-
-                        addFutureCallback(childOpenFuture, new FutureCallback<Void>()
-                        {
-                            @Override
-                            public void onSuccess(final Void result)
+            applyToChildren(child ->
                             {
-                            }
+                                final ListenableFuture<Void> childOpenFuture = child.openAsync();
+                                childOpenFutures.add(childOpenFuture);
 
-                            @Override
-                            public void onFailure(final Throwable t)
-                            {
-                                _logger.error("Exception occurred while opening {} : {}",
-                                              child.getClass().getSimpleName(), child.getName(), t);
-                            }
+                                addFutureCallback(childOpenFuture, new FutureCallback<Void>()
+                                {
+                                    @Override
+                                    public void onSuccess(final Void result)
+                                    {
+                                        updateAccessControl();
+                                    }
 
-                        }, getTaskExecutor());
-                    }
-                });
-                return null;
-            }
+                                    @Override
+                                    public void onFailure(final Throwable t)
+                                    {
+                                        _logger.error("Exception occurred while opening {} : {}",
+                                                      child.getClass().getSimpleName(), child.getName(), t);
+                                    }
+
+                                }, getTaskExecutor());
+                            });
+            return null;
         });
 
         ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(childOpenFutures);

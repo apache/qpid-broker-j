@@ -28,19 +28,21 @@ import static org.apache.qpid.server.security.access.config.ObjectType.*;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHostAccessControlProvider;
-import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.server.security.access.config.LegacyOperation;
 import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.ObjectType;
 import org.apache.qpid.server.security.access.plugins.AclRule;
 import org.apache.qpid.server.security.access.plugins.RuleBasedVirtualHostAccessControlProvider;
+import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.systest.rest.QpidRestTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
@@ -58,6 +60,7 @@ public class VirtualHostAccessControlProviderRestTest extends QpidRestTestCase
 
     private String _queueUrl;
     private String _queueName;
+    private String _virtualHostRuleProviderUrl;
 
     @Override
     public void setUp() throws Exception
@@ -65,6 +68,7 @@ public class VirtualHostAccessControlProviderRestTest extends QpidRestTestCase
         super.setUp();
         _queueName = getTestName();
         _queueUrl = "queue/test/test/" + _queueName;
+        _virtualHostRuleProviderUrl = VirtualHostAccessControlProvider.class.getSimpleName().toLowerCase() + "/test/test/rules";
 
         getRestTestHelper().setUsernameAndPassword(ADMIN, ADMIN);
         final Map<String, Object> attributes = new HashMap<>();
@@ -85,7 +89,7 @@ public class VirtualHostAccessControlProviderRestTest extends QpidRestTestCase
 
         };
         attributes.put(RuleBasedVirtualHostAccessControlProvider.RULES, rules);
-        getRestTestHelper().submitRequest(VirtualHostAccessControlProvider.class.getSimpleName().toLowerCase() + "/test/test/rules", "PUT", attributes);
+        getRestTestHelper().submitRequest(_virtualHostRuleProviderUrl, "PUT", attributes);
 
     }
 
@@ -150,36 +154,67 @@ public class VirtualHostAccessControlProviderRestTest extends QpidRestTestCase
         assertCreateQueueDenied(USER6);
     }
 
-    public void assertCreateAndDeleteQueueSucceeds(final String username) throws Exception
+    @SuppressWarnings("unchecked")
+    public void testUpdateVirtualHostRule() throws Exception
+    {
+        // Denied by virtualhost rule
+        assertCreateQueueDenied(USER1);
+
+        Map<String, Object> providerDetails = getRestTestHelper().getJsonAsMap(_virtualHostRuleProviderUrl);
+
+        List<Map<String, Object>> currentRules = ((List<Map<String, Object>>) providerDetails.get(RuleBasedVirtualHostAccessControlProvider.RULES));
+
+        List<Map<String, Object>> filteredRulesWithoutUser1 = currentRules.stream()
+                                                         .filter(rule ->
+                                                                         !rule.get("identity").equals(USER1))
+                                                         .collect(Collectors.toList());
+
+        Map<String, Object> update = Collections.singletonMap(RuleBasedVirtualHostAccessControlProvider.RULES, filteredRulesWithoutUser1);
+        getRestTestHelper().setUsernameAndPassword(ADMIN, ADMIN);
+        getRestTestHelper().submitRequest(_virtualHostRuleProviderUrl, "PUT", update, HttpServletResponse.SC_OK);
+
+        // Now allowed by the rule at the broker
+        assertCreateQueueAllowed(USER1);
+    }
+
+    private void assertCreateAndDeleteQueueSucceeds(final String username) throws Exception
     {
         getRestTestHelper().setUsernameAndPassword(username, username);
 
         int responseCode = createQueue();
-        assertEquals("Queue creation should be allowed", 201, responseCode);
+        assertEquals("Queue creation should be allowed", HttpServletResponse.SC_CREATED, responseCode);
 
         assertQueueExists();
 
         responseCode = getRestTestHelper().submitRequest(_queueUrl, "DELETE");
-        assertEquals("Queue deletion should be allowed", 200, responseCode);
+        assertEquals("Queue deletion should be allowed", HttpServletResponse.SC_OK, responseCode);
 
         assertQueueDoesNotExist();
     }
 
 
 
-    public void assertCreateQueueDenied(String username) throws Exception
+    private void assertCreateQueueDenied(String username) throws Exception
     {
         getRestTestHelper().setUsernameAndPassword(username, username);
 
         int responseCode = createQueue();
-        assertEquals("Queue creation should be denied", 403, responseCode);
+        assertEquals("Queue creation should be denied", HttpServletResponse.SC_FORBIDDEN, responseCode);
 
         assertQueueDoesNotExist();
     }
 
+    private void assertCreateQueueAllowed(String username) throws Exception
+    {
+        getRestTestHelper().setUsernameAndPassword(username, username);
+
+        int responseCode = createQueue();
+        assertEquals("Queue creation should be allowed", HttpServletResponse.SC_CREATED, responseCode);
+    }
+
     private int createQueue() throws Exception
     {
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put(Queue.NAME, _queueName);
 
         return getRestTestHelper().submitRequest(_queueUrl, "PUT", attributes);
@@ -208,10 +243,10 @@ public class VirtualHostAccessControlProviderRestTest extends QpidRestTestCase
         private LegacyOperation _operation;
         private RuleOutcome _outcome;
 
-        public TestAclRule(final String identity,
-                           final ObjectType objectType,
-                           final LegacyOperation operation,
-                           final RuleOutcome outcome)
+        TestAclRule(final String identity,
+                    final ObjectType objectType,
+                    final LegacyOperation operation,
+                    final RuleOutcome outcome)
         {
             _identity = identity;
             _objectType = objectType;
