@@ -506,11 +506,15 @@ ACL ALLOW operator INVOKE QUEUE method_name="getMessage*"]]>
       </example>
       <para>
         And the following ACL rule-set is applied to the Virtualhost.  The default outcome of the
-        Access Control Provider must be <literal>DEFERED</literal>.
+        Access Control Provider must be <literal>DEFERED</literal>.  This means that if a request for
+        access is made for which there are no matching rules, the decision will be deferred to the
+        Broker so it can make a decision instead.
       </para>
       <example>
         <title>Worked example 2 - Simple Messaging - Virtualhost ACL rules</title>
         <programlisting><![CDATA[
+# Configure the rule-set to DEFER decisions that have no matching rules.
+CONFIG DEFAULTDEFER=TRUE
 # Allow client and server to connect to the virtual host.
 ACL ALLOW publisher ACCESS VIRTUALHOST
 ACL ALLOW consumer ACCESS VIRTUALHOST
