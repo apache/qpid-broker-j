@@ -21,7 +21,10 @@
 package org.apache.qpid.server.security.auth.manager;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+
+import javax.security.auth.login.AccountNotFoundException;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -81,17 +84,19 @@ class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<
     }
 
     @Override
-    protected boolean changeAttribute(String name, Object desired)
+    protected void changeAttributes(Map<String, Object> attributes)
     {
-        if (User.PASSWORD.equals(name))
+        if(attributes.containsKey(PASSWORD))
         {
-            String storedPassword = _authenticationManager.createStoredPassword((String)desired);
+            String desiredPassword = (String) attributes.get(PASSWORD);
+            String storedPassword = _authenticationManager.createStoredPassword(desiredPassword);
             if (!storedPassword.equals(getActualAttributes().get(User.PASSWORD)))
             {
-                desired = storedPassword;
+                attributes = new HashMap<>(attributes);
+                attributes.put(PASSWORD, storedPassword);
             }
         }
-        return super.changeAttribute(name, desired);
+        super.changeAttributes(attributes);
     }
 
     @Override

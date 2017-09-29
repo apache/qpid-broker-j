@@ -25,7 +25,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.AccessControlException;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
@@ -423,27 +422,25 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         }
 
         @Override
-        public boolean changeAttribute(String name, Object desired)
-                throws IllegalStateException, AccessControlException, IllegalArgumentException
+        protected void changeAttributes(final Map<String, Object> attributes)
         {
-            if(name.equals(PASSWORD))
+            if(attributes.containsKey(PASSWORD))
             {
                 try
                 {
-                    String desiredPassword = (String) desired;
+                    String desiredPassword = (String) attributes.get(PASSWORD);
                     boolean changed = getPrincipalDatabase().updatePassword(_user, desiredPassword.toCharArray());
-                    if (changed)
+                    if (!changed)
                     {
-                        return super.changeAttribute(name, desired);
+                        throw new IllegalStateException(String.format("Failed to user password for user : '%s'", getName()));
                     }
-                    return false;
                 }
                 catch(AccountNotFoundException e)
                 {
                     throw new IllegalStateException(e);
                 }
             }
-            return super.changeAttribute(name, desired);
+            super.changeAttributes(attributes);
         }
 
         @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)

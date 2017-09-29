@@ -3088,52 +3088,39 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    protected boolean changeAttribute(String name, Object desired) throws IllegalStateException, AccessControlException, IllegalArgumentException
-    {
-        if(EXCLUSIVE.equals(name))
-        {
-            ExclusivityPolicy existingPolicy = getExclusive();
-            if(super.changeAttribute(name, desired))
-            {
-                try
-                {
-                    if(existingPolicy != _exclusive)
-                    {
-                        ExclusivityPolicy newPolicy = _exclusive;
-                        _exclusive = existingPolicy;
-                        updateExclusivityPolicy(newPolicy);
-                    }
-                    return true;
-                }
-                catch (ExistingConsumerPreventsExclusive existingConsumerPreventsExclusive)
-                {
-                    throw new IllegalArgumentException("Unable to set exclusivity policy to " + desired + " as an existing combinations of consumers prevents this");
-                }
-            }
-            return false;
-        }
-
-        return super.changeAttribute(name, desired);
-    }
-
-    @Override
     protected void changeAttributes(final Map<String, Object> attributes)
     {
-        OverflowPolicy existingPolicy = getOverflowPolicy();
+        final OverflowPolicy existingOverflowPolicy = getOverflowPolicy();
+        final ExclusivityPolicy existingExclusivePolicy = getExclusive();
+
         super.changeAttributes(attributes);
 
         // Overflow policies depend on queue depth attributes.
         // Thus, we need to create and invoke  overflow policy handler
         // after all required attributes are changed.
-        if (attributes.containsKey(OVERFLOW_POLICY) && existingPolicy != _overflowPolicy)
+        if (attributes.containsKey(OVERFLOW_POLICY) && existingOverflowPolicy != _overflowPolicy)
         {
-            if (existingPolicy == OverflowPolicy.REJECT)
+            if (existingOverflowPolicy == OverflowPolicy.REJECT)
             {
                 _rejectPolicyHandler = null;
             }
             createOverflowPolicyHandlers(_overflowPolicy);
 
             _postEnqueueOverflowPolicyHandler.checkOverflow(null);
+        }
+
+        if (attributes.containsKey(EXCLUSIVE) && existingExclusivePolicy != _exclusive)
+        {
+            ExclusivityPolicy newPolicy = _exclusive;
+            try
+            {
+                _exclusive = existingExclusivePolicy;
+                updateExclusivityPolicy(newPolicy);
+            }
+            catch (ExistingConsumerPreventsExclusive existingConsumerPreventsExclusive)
+            {
+                throw new IllegalArgumentException("Unable to set exclusivity policy to " + newPolicy + " as an existing combinations of consumers prevents this");
+            }
         }
     }
 
