@@ -34,7 +34,15 @@ public interface TestCar<X extends TestCar<X>> extends ConfiguredObject<X>
 
     String TEST_CONTEXT_VAR = "TEST_CONTEXT_VAR";
     @ManagedContextDefault(name = TEST_CONTEXT_VAR)
-    String testGlobalDefault = "a value ${ancestor:testcar:name}";
+    String testContextVar = "a value";
+
+    String TEST_CONTEXT_VAR_WITH_ANCESTOR_REF = "TEST_CONTEXT_VAR_WITH_ANCESTOR_REF";
+    @ManagedContextDefault(name = TEST_CONTEXT_VAR_WITH_ANCESTOR_REF)
+    String testContextVarWithAncestorRef = "a value ${ancestor:testcar:name}";
+
+    String TEST_CONTEXT_VAR_WITH_THIS_REF = "TEST_CONTEXT_VAR_WITH_THIS_REF";
+    @ManagedContextDefault(name = TEST_CONTEXT_VAR_WITH_THIS_REF)
+    String testContextVarWithThisRef = "a value ${this:name}";
 
     @ManagedAttribute
     Colour getBodyColour();

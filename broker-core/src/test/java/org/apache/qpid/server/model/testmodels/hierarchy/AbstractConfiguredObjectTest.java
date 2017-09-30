@@ -51,7 +51,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
     public void testCreateCategoryDefault()
     {
         final String objectName = "testCreateCategoryDefault";
-        Map<String, Object> attributes = Collections.<String, Object>singletonMap(ConfiguredObject.NAME, objectName);
+        Map<String, Object> attributes = Collections.singletonMap(ConfiguredObject.NAME, objectName);
 
         TestCar object = _model.getObjectFactory().create(TestCar.class, attributes, null);
 
@@ -210,9 +210,9 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
     public void testCreateAwaitsAttainState()
     {
-        SettableFuture stateChangeFuture = SettableFuture.create();
+        SettableFuture<Void> stateChangeFuture = SettableFuture.create();
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"), null);
+        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.singletonMap(ConfiguredObject.NAME, "myCar"), null);
 
         Map<String, Object> engineAttributes = new HashMap<>();
         engineAttributes.put(ConfiguredObject.NAME, "myEngine");
@@ -288,8 +288,8 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         SettableFuture<Void> engineCloseControllingFuture = SettableFuture.create();
 
         TestCar car = _model.getObjectFactory().create(TestCar.class,
-                                                       Collections.<String, Object>singletonMap(ConfiguredObject.NAME,
-                                                                                                "myCar"), null);
+                                                       Collections.singletonMap(ConfiguredObject.NAME,
+                                                                                "myCar"), null);
 
         String engineName = "myEngine";
         Map<String, Object> engineAttributes = new HashMap<>();
@@ -308,7 +308,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertNull("engine not deregistered", car.getChildById(TestEngine.class, engine.getId()));
     }
 
-    public void testDefaultContextVariableWhichRefersToAncestor()
+    public void testGlobalContextDefault()
     {
         final String carName = "myCar";
         Map<String, Object> carAttributes = new HashMap<>();
@@ -317,12 +317,25 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        assertEquals(carName, car.getName());
+        assertTrue("context var not in contextKeys",
+                   car.getContextKeys(true).contains(TestCar.TEST_CONTEXT_VAR));
 
-        assertEquals(0, car.getChildren(TestEngine.class).size());
+        String expected = "a value";
+        assertEquals("Context variable has unexpected value", expected, car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR));
+    }
+
+    public void testGlobalContextDefaultWithThisRef()
+    {
+        final String carName = "myCar";
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, carName);
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+
+        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+
+        assertEquals("Context variable has unexpected value", "a value myCar", car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_THIS_REF));
 
         String engineName = "myEngine";
-
         Map<String, Object> engineAttributes = new HashMap<>();
         engineAttributes.put(ConfiguredObject.NAME, engineName);
         engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
@@ -330,16 +343,76 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
-        assertTrue("context var not in contextKeys",
-                   car.getContextKeys(true).contains(TestCar.TEST_CONTEXT_VAR));
+        assertEquals("Context variable has unexpected value", "a value myEngine", engine.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_THIS_REF));
+    }
+
+    public void testHierarchyContextVariableWithThisRef()
+    {
+        final String contentVarName = "contentVar";
+        final String carName = "myCar";
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, carName);
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        carAttributes.put(ConfiguredObject.CONTEXT, Collections.singletonMap(contentVarName, "name ${this:name}"));
+
+        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+
+        assertEquals("Context variable has unexpected value", "name myCar", car.getContextValue(String.class, contentVarName));
+
+        String engineName = "myEngine";
+        Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, engineName);
+        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+
+        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+
+        // TODO: we have different behaviour depending on whether the variable is a  global context default or hierarchy context variable.
+        assertEquals("Context variable has unexpected value", "name myCar", engine.getContextValue(String.class, contentVarName));
+    }
+
+    public void testGlobalContextDefaultWithAncestorRef()
+    {
+        final String carName = "myCar";
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, carName);
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+
+        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
         String expected = "a value " + carName;
-        assertEquals(expected, car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR));
+        assertEquals("Context variable has unexpected value", expected, car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_ANCESTOR_REF));
 
-        assertTrue("context var not in contextKeys",
-                   engine.getContextKeys(true).contains(TestCar.TEST_CONTEXT_VAR));
-        assertEquals(expected, engine.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR));
+        String engineName = "myEngine";
+        Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, engineName);
+        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
 
+        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+
+        assertEquals("Context variable has unexpected value", expected, engine.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_ANCESTOR_REF));
+    }
+
+    public void testHierarchyContextVariableWithAncestorRef()
+    {
+        final String contentVarName = "contentVar";
+        final String carName = "myCar";
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, carName);
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        carAttributes.put(ConfiguredObject.CONTEXT, Collections.singletonMap(contentVarName, "name ${ancestor:testcar:name}"));
+
+        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+
+        assertEquals("Context variable has unexpected value", "name myCar", car.getContextValue(String.class, contentVarName));
+
+        String engineName = "myEngine";
+        Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, engineName);
+        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+
+        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+
+        assertEquals("Context variable has unexpected value", "name myCar", engine.getContextValue(String.class, contentVarName));
     }
 
     public void testUserPreferencesCreatedOnEngineCreation()
