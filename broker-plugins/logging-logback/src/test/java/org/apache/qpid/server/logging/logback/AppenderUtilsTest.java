@@ -162,14 +162,16 @@ public class AppenderUtilsTest extends QpidTestCase
         Path unwriteableLogTargetPath = Files.createTempDirectory(getTestName());
         File unwriteableLogTarget = unwriteableLogTargetPath.toFile();
 
-        try
+        if(unwriteableLogTarget.setWritable(false))
         {
-            assertTrue("could not set log target permissions for test", unwriteableLogTarget.setWritable(false));
-            doValidateLogTarget(new File(unwriteableLogTarget.getAbsolutePath(), "nonExistingFile.log"));
-        }
-        finally
-        {
-            unwriteableLogTarget.delete();
+            try
+            {
+                doValidateLogTarget(new File(unwriteableLogTarget.getAbsolutePath(), "nonExistingFile.log"));
+            }
+            finally
+            {
+                unwriteableLogTarget.delete();
+            }
         }
     }
 
