@@ -18,44 +18,11 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.message;
+package org.apache.qpid.server.queue;
 
-import java.util.Collection;
-import java.util.Set;
-
-public interface AMQMessageHeader
+public enum MessageGroupType
 {
-    String getCorrelationId();
-
-    long getExpiration();
-
-    String getUserId();
-
-    String getAppId();
-
-    String getGroupId();
-
-    String getMessageId();
-
-    String getMimeType();
-
-    String getEncoding();
-
-    byte getPriority();
-
-    long getTimestamp();
-
-    long getNotValidBefore();
-
-    String getType();
-
-    String getReplyTo();
-
-    Object getHeader(String name);
-
-    boolean containsHeaders(Set<String> names);
-
-    boolean containsHeader(String name);
-
-    Collection<String> getHeaderNames();
+    NONE,
+    STANDARD,
+    SHARED_GROUPS
 }

@@ -1800,6 +1800,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
 
         @Override
+        public String getGroupId()
+        {
+            Object jmsXGroupId = getHeader("JMSXGroupID");
+            return jmsXGroupId == null ? null : String.valueOf(jmsXGroupId);
+        }
+
+        @Override
         public String getMessageId()
         {
             return _message.getMessageId();

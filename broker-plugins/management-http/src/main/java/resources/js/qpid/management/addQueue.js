@@ -92,6 +92,7 @@ define(["dojo/dom",
                 this.queueType = registry.byId("formAddQueue.type");
                 this.context = registry.byId("formAddQueue.context");
                 this.overflowPolicyWidget = registry.byId("formAddQueue.overflowPolicy");
+                this.messageGroupTypeWidget = registry.byId("formAddQueue.messageGroupType");
                 this.editNodeBanner = dom.byId("addQueue.editNoteBanner");
 
 
@@ -215,10 +216,16 @@ define(["dojo/dom",
             {
                 this.alternateBindingLoadPromise.then(lang.hitch(this, function ()
                 {
-                    var validValues = this.management.metadata.getMetaData("Queue",
+                    var validOverflowValues = this.management.metadata.getMetaData("Queue",
                         this.initialData.type).attributes.overflowPolicy.validValues;
-                    var validValueStore = util.makeTypeStore(validValues);
-                    this.overflowPolicyWidget.set("store", validValueStore);
+                    var validOverflowValueStore = util.makeTypeStore(validOverflowValues);
+                    this.overflowPolicyWidget.set("store", validOverflowValueStore);
+
+                    var validGroupingValues = this.management.metadata.getMetaData("Queue",
+                        this.initialData.type).attributes.messageGroupType.validValues;
+                    var validGroupingValueStore = util.makeTypeStore(validGroupingValues);
+                    this.messageGroupTypeWidget.set("store", validGroupingValueStore);
+
 
                     util.applyToWidgets(this.form.domNode,
                         "Queue",

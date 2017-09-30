@@ -1859,6 +1859,12 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         }
 
         @Override
+        public String getGroupId()
+        {
+            return null;
+        }
+
+        @Override
         public String getMessageId()
         {
             return _messageId;

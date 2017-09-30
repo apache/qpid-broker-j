@@ -27,6 +27,8 @@ import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.message.AMQMessageHeader;
+
 
 public class AssignedConsumerMessageGroupManager implements MessageGroupManager
 {
@@ -56,7 +58,8 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
     @Override
     public boolean mightAssign(final QueueEntry entry, QueueConsumer sub)
     {
-        Object groupVal = entry.getMessage().getMessageHeader().getHeader(_groupId);
+        final AMQMessageHeader messageHeader = entry.getMessage().getMessageHeader();
+        Object groupVal = _groupId == null ? messageHeader.getGroupId() : messageHeader.getHeader(_groupId);
 
         if(groupVal == null)
         {
@@ -77,7 +80,8 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
 
     private boolean assignMessage(QueueConsumer<?,?> sub, QueueEntry entry)
     {
-        Object groupVal = entry.getMessage().getMessageHeader().getHeader(_groupId);
+        final AMQMessageHeader messageHeader = entry.getMessage().getMessageHeader();
+        Object groupVal = _groupId == null ? messageHeader.getGroupId() : messageHeader.getHeader(_groupId);
         if(groupVal == null)
         {
             return true;
@@ -132,13 +136,14 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
                 return false;
             }
 
-            Object groupId = entry.getMessage().getMessageHeader().getHeader(_groupId);
-            if(groupId == null)
+            final AMQMessageHeader messageHeader = entry.getMessage().getMessageHeader();
+            Object groupVal = _groupId == null ? messageHeader.getGroupId() : messageHeader.getHeader(_groupId);
+            if(groupVal == null)
             {
                 return false;
             }
 
-            Integer group = groupId.hashCode() & _groupMask;
+            Integer group = groupVal.hashCode() & _groupMask;
             QueueConsumer<?,?> assignedSub = _groupMap.get(group);
             if(assignedSub == _sub)
             {

@@ -42,7 +42,6 @@ class MessageTransferHeader implements AMQMessageHeader
     private final DeliveryProperties _deliveryProps;
     private final MessageProperties _messageProps;
     private final long _arrivalTime;
-    private long _notValidBefore;
 
     public MessageTransferHeader(DeliveryProperties deliveryProps,
                                  MessageProperties messageProps,
@@ -97,6 +96,13 @@ class MessageTransferHeader implements AMQMessageHeader
     {
         byte[] appIdBytes = _messageProps == null ? null : _messageProps.getAppId();
         return appIdBytes == null ? null : new String(appIdBytes, UTF_8);
+    }
+
+    @Override
+    public String getGroupId()
+    {
+        Object jmsXGroupId = getHeader("JMSXGroupID");
+        return jmsXGroupId == null ? null : String.valueOf(jmsXGroupId);
     }
 
     @Override

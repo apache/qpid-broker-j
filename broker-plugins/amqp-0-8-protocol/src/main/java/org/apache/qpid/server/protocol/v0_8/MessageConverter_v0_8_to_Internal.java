@@ -28,7 +28,6 @@ import static org.apache.qpid.server.message.mimecontentconverter.ConversionUtil
 
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -229,6 +228,12 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
         public String getAppId()
         {
             return _delegate.getAppId();
+        }
+
+        @Override
+        public String getGroupId()
+        {
+            return _delegate.getGroupId();
         }
 
         @Override

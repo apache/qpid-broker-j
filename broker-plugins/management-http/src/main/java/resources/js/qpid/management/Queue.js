@@ -411,7 +411,7 @@ define(["dojo/_base/declare",
                         "alternateBinding",
                         "messageGroups",
                         "messageGroupKey",
-                        "messageGroupSharedGroups",
+                        "messageGroupType",
                         "maximumDeliveryAttempts",
                         "holdOnPublishEnabled"]);
 
@@ -579,11 +579,11 @@ define(["dojo/_base/declare",
             {
                 this.maximumQueueDepth.style.display = "none";
             }
-            if (this.queueData["messageGroupKey"])
+            var messageGroupType = this.queueData["messageGroupType"];
+            this["messageGroupType"].innerHTML = entities.encode(messageGroupType);
+            if (this.queueData["messageGroupKey"] || (messageGroupType && messageGroupType !== "NONE"))
             {
                 this.messageGroupKey.innerHTML = entities.encode(String(this.queueData["messageGroupKey"]));
-                this.messageGroupSharedGroups.innerHTML =
-                    entities.encode(String(this.queueData["messageGroupSharedGroups"]));
                 this.messageGroups.style.display = "block";
             }
             else

@@ -132,6 +132,13 @@ public final class InternalMessageHeader implements AMQMessageHeader, Serializab
     }
 
     @Override
+    public String getGroupId()
+    {
+        final Object jmsxGroupId = _headers.get("JMSXGroupID");
+        return jmsxGroupId == null ? null : String.valueOf(jmsxGroupId);
+    }
+
+    @Override
     public String getMessageId()
     {
         return _messageId;

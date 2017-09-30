@@ -185,6 +185,12 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
         }
 
         @Override
+        public String getGroupId()
+        {
+            return _delegate.getGroupId();
+        }
+
+        @Override
         public String getMessageId()
         {
             return _delegate.getMessageId();

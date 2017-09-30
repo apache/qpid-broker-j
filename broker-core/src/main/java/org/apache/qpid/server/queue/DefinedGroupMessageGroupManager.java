@@ -20,21 +20,24 @@
  */
 package org.apache.qpid.server.queue;
 
-import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.message.MessageInstance.ConsumerAcquiredState;
-import org.apache.qpid.server.message.MessageInstance.EntryState;
-import org.apache.qpid.server.util.StateChangeListener;
-
-import org.apache.qpid.server.message.AMQMessageHeader;
-import org.apache.qpid.server.message.ServerMessage;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstance.ConsumerAcquiredState;
+import org.apache.qpid.server.message.MessageInstance.EntryState;
+import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.util.StateChangeListener;
+
 public class DefinedGroupMessageGroupManager implements MessageGroupManager
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefinedGroupMessageGroupManager.class);
     private final String _groupId;
     private final String _defaultGroup;
     private final Map<Object, Group> _groupMap = new HashMap<>();
@@ -250,7 +253,11 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
     {
         ServerMessage message = entry.getMessage();
         AMQMessageHeader messageHeader = message == null ? null : message.getMessageHeader();
-        Object groupVal = messageHeader == null ? _defaultGroup : messageHeader.getHeader(_groupId);
+        Object groupVal = messageHeader == null
+                ? _defaultGroup
+                : _groupId == null
+                        ? messageHeader.getGroupId()
+                        : messageHeader.getHeader(_groupId);
         if(groupVal == null)
         {
             groupVal = _defaultGroup;

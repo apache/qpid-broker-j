@@ -316,6 +316,19 @@
                     <div class="infoMessage">Configuring maximum delivery retries on a queue which has no alternate binding (DLQ or exchange) <br/> will result in messages being discarded after the limit is reached.</div>
 
                     <div class="clear">
+                        <div class="formLabel-labelCell">Message Group Type:</div>
+                        <div class="formLabel-controlCell">
+                            <input type="text" id="formAddQueue.messageGroupType"
+                                   data-dojo-type="dijit/form/FilteringSelect"
+                                   data-dojo-props="
+                          name: 'messageGroupType',
+                          required: false,
+                          promptMessage: 'Select message grouping type',
+                          title: 'Select message grouping type'"/>
+                        </div>
+
+                    </div>
+                    <div class="clear">
                         <div class="formLabel-labelCell">Message Group Key:</div>
                         <div class="formLabel-controlCell">
                             <input type="text" id="formAddQueue.messageGroupKey"
@@ -326,18 +339,6 @@
                                       promptMessage: 'Name of the message property used for message grouping',
                                       title: 'Enter the name of the message property used for message grouping',
                                       trim: true"/>
-                        </div>
-                    </div>
-                    <div class="clear">
-                        <div class="formLabel-labelCell">Shared Message Groups?</div>
-                        <div class="formLabel-controlCell">
-                            <input type="checkbox" id="formAddQueue.messageGroupSharedGroups"
-                                   dojoType="dijit.form.CheckBox"
-                                   data-dojo-props="
-                                  name: 'messageGroupSharedGroups',
-                                  value: 'messageGroupSharedGroups',
-                                  checked: false,
-                                  title: 'Controls where a shared groups feature is enabled'"/>
                         </div>
                     </div>
                     <div class="clear">

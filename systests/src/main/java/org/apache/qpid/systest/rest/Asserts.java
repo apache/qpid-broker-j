@@ -123,7 +123,7 @@ public class Asserts
                                         LastValueQueue.LVQ_KEY,
                                         SortedQueue.SORT_KEY,
                                         Queue.MESSAGE_GROUP_KEY,
-                                        Queue.MESSAGE_GROUP_SHARED_GROUPS,
+                                        Queue.MESSAGE_GROUP_TYPE,
                                         PriorityQueue.PRIORITIES,
                                         ConfiguredObject.CONTEXT,
                                         ConfiguredObject.DESIRED_STATE,

@@ -629,6 +629,19 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         }
 
         @Override
+        public String getGroupId()
+        {
+            if (_propertiesSection == null || _propertiesSection.getValue().getGroupId() == null)
+            {
+                return null;
+            }
+            else
+            {
+                return _propertiesSection.getValue().getGroupId();
+            }
+        }
+
+        @Override
         public String getUserId()
         {
             if (_propertiesSection == null || _propertiesSection.getValue().getUserId() == null)

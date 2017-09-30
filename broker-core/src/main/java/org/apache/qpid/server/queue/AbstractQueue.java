@@ -133,8 +133,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private static final Logger _logger = LoggerFactory.getLogger(AbstractQueue.class);
 
-    public static final String SHARED_MSG_GROUP_ARG_VALUE = "1";
-
     private static final QueueNotificationListener NULL_NOTIFICATION_LISTENER = new QueueNotificationListener()
     {
         @Override
@@ -228,6 +226,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private String _messageGroupKey;
     @ManagedAttributeField
     private boolean _messageGroupSharedGroups;
+    @ManagedAttributeField
+    private MessageGroupType _messageGroupType;
     @ManagedAttributeField
     private String _messageGroupDefaultGroup;
     @ManagedAttributeField
@@ -486,21 +486,20 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         getEventLogger().message(_logSubject,
                                  getCreatedLogMessage());
 
-        if(getMessageGroupKey() != null)
+        switch(getMessageGroupType())
         {
-            if(isMessageGroupSharedGroups())
-            {
+            case NONE:
+                _messageGroupManager = null;
+                break;
+            case STANDARD:
+                _messageGroupManager = new AssignedConsumerMessageGroupManager(getMessageGroupKey(), getMaximumDistinctGroups());
+                break;
+            case SHARED_GROUPS:
                 _messageGroupManager =
                         new DefinedGroupMessageGroupManager(getMessageGroupKey(), getMessageGroupDefaultGroup(), this);
-            }
-            else
-            {
-                _messageGroupManager = new AssignedConsumerMessageGroupManager(getMessageGroupKey(), getMaximumDistinctGroups());
-            }
-        }
-        else
-        {
-            _messageGroupManager = null;
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown messageGroupType type " + _messageGroupType);
         }
 
         _mimeTypeToFileExtension = getContextValue(Map.class, MAP_OF_STRING_STRING, MIME_TYPE_TO_FILE_EXTENSION);
@@ -3048,9 +3047,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public boolean isMessageGroupSharedGroups()
+    public MessageGroupType getMessageGroupType()
     {
-        return _messageGroupSharedGroups;
+        return _messageGroupType;
     }
 
     @Override

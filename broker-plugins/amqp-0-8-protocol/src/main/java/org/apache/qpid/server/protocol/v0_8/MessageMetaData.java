@@ -241,6 +241,13 @@ public class MessageMetaData implements StorableMessageMetaData
         }
 
         @Override
+        public String getGroupId()
+        {
+            String jmsXGroupId = getProperties().getHeaders().getString("JMSXGroupID");
+            return jmsXGroupId == null ? null : jmsXGroupId;
+        }
+
+        @Override
         public String getCorrelationId()
         {
             return getProperties().getCorrelationIdAsString();

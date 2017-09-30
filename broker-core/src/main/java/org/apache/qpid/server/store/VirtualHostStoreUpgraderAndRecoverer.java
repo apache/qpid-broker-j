@@ -745,6 +745,25 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                     attributes.remove("bindings");
                 }
 
+                if(attributes.containsKey("messageGroupKey"))
+                {
+                    if(attributes.containsKey("messageGroupSharedGroups")
+                       && convertAttributeValueToBoolean("messageGroupSharedGroups",
+                                                         attributes.remove("messageGroupSharedGroups")))
+                    {
+                        attributes.put("messageGroupType", "SHARED_GROUPS");
+
+                    }
+                    else
+                    {
+                        attributes.put("messageGroupType", "STANDARD");
+                    }
+                }
+                else
+                {
+                    attributes.put("messageGroupType", "NONE");
+                }
+
                 _queues.put(record.getId(), (String) attributes.get("name"));
 
                 if (!attributes.equals(new HashMap<>(record.getAttributes())) || addToUpdateMap)
@@ -787,6 +806,43 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
             }
             return value;
         }
+
+        private boolean convertAttributeValueToBoolean(final String attributeName,
+                                                       final Object attributeValue)
+        {
+            boolean value;
+            if (attributeValue instanceof Boolean)
+            {
+                value = (Boolean) attributeValue;
+            }
+            else if (attributeValue instanceof String)
+            {
+                String strValue = (String)attributeValue;
+                if(strValue.equalsIgnoreCase("true"))
+                {
+                    value = true;
+                }
+                else if(strValue.equalsIgnoreCase("false"))
+                {
+                    value = false;
+                }
+                else
+                {
+                    throw new IllegalConfigurationException(String.format(
+                            "Cannot evaluate '%s': %s",
+                            attributeName, attributeValue));
+                }
+
+            }
+            else
+            {
+                throw new IllegalConfigurationException(String.format("Cannot evaluate '%s': %s",
+                                                                      attributeName,
+                                                                      String.valueOf(attributeValue)));
+            }
+            return value;
+        }
+
 
         @Override
         public void complete()

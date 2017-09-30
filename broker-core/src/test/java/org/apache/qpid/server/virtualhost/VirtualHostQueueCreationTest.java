@@ -40,6 +40,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.queue.MessageGroupType;
 import org.apache.qpid.server.queue.PriorityQueue;
 import org.apache.qpid.server.queue.PriorityQueueImpl;
 import org.apache.qpid.server.queue.StandardQueueImpl;
@@ -178,11 +179,11 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(Queue.ID, UUID.randomUUID());
         attributes.put(Queue.NAME, getTestName());
         attributes.put(Queue.MESSAGE_GROUP_KEY,"mykey");
-        attributes.put(Queue.MESSAGE_GROUP_SHARED_GROUPS, true);
+        attributes.put(Queue.MESSAGE_GROUP_TYPE, MessageGroupType.SHARED_GROUPS);
 
         Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
         assertEquals("mykey", queue.getAttribute(Queue.MESSAGE_GROUP_KEY));
-        assertEquals(Boolean.TRUE, queue.getAttribute(Queue.MESSAGE_GROUP_SHARED_GROUPS));
+        assertEquals(MessageGroupType.SHARED_GROUPS, queue.getAttribute(Queue.MESSAGE_GROUP_TYPE));
     }
 
 

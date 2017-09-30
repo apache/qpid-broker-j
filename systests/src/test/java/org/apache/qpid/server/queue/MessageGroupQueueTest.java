@@ -77,14 +77,24 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
 
     public void testSimpleGroupAssignment() throws Exception
     {
-        simpleGroupAssignment(false);
+        simpleGroupAssignment(false, false);
     }
 
     public void testSharedGroupSimpleGroupAssignment() throws Exception
     {
-        simpleGroupAssignment(true);
+        simpleGroupAssignment(true, false);
     }
 
+
+    public void testSimpleGroupAssignmentWithJMSXGroupID() throws Exception
+    {
+        simpleGroupAssignment(false, true);
+    }
+
+    public void testSharedGroupSimpleGroupAssignmentWithJMSXGroupID() throws Exception
+    {
+        simpleGroupAssignment(true, true);
+    }
 
     /**
      * Pre populate the queue with messages with groups as follows
@@ -113,15 +123,15 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
      *  c1 ack --->
      *
      */
-    private void simpleGroupAssignment(boolean sharedGroups) throws QpidException, JMSException
+    private void simpleGroupAssignment(boolean sharedGroups, final boolean useDefaultGroup) throws QpidException, JMSException
     {
-        createQueueAndProducer(sharedGroups);
+        createQueueAndProducer(sharedGroups, useDefaultGroup);
 
         String[] groups = { "ONE", "TWO"};
 
         for (int msg = 0; msg < 4; msg++)
         {
-            producer.send(createMessage(msg, groups[msg % groups.length]));
+            producer.send(createMessage(msg, groups[msg % groups.length], useDefaultGroup));
         }
         producerSession.commit();
         producer.close();
@@ -149,15 +159,15 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         Message cs2Received2 = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received second message", cs2Received2);
-        assertEquals("Differing groups", cs2Received2.getStringProperty("group"),
-                     cs2Received.getStringProperty("group"));
+        assertEquals("Differing groups", cs2Received2.getStringProperty(useDefaultGroup ? "JMSXGroupID" :"group"),
+                     cs2Received.getStringProperty(useDefaultGroup ? "JMSXGroupID" :"group"));
 
         cs1Received.acknowledge();
         Message cs1Received2 = consumer1.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 1 should have received second message", cs1Received2);
-        assertEquals("Differing groups", cs1Received2.getStringProperty("group"),
-                     cs1Received.getStringProperty("group"));
+        assertEquals("Differing groups", cs1Received2.getStringProperty(useDefaultGroup ? "JMSXGroupID" :"group"),
+                     cs1Received.getStringProperty(useDefaultGroup ? "JMSXGroupID" : "group"));
 
         cs1Received2.acknowledge();
         cs2Received2.acknowledge();
@@ -166,20 +176,21 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         assertNull(consumer2.receive(getShortReceiveTimeout()));
     }
 
-    private void createQueueAndProducer(final boolean sharedGroups) throws QpidException, JMSException
+    private void createQueueAndProducer(final boolean sharedGroups, final boolean useDefaultKey) throws QpidException, JMSException
     {
-        if(isBroker10())
+        if(isBroker10() || useDefaultKey)
         {
             final Map<String, Object> arguments = new HashMap<>();
-            arguments.put(org.apache.qpid.server.model.Queue.MESSAGE_GROUP_KEY, "group");
+            if(!useDefaultKey)
+            {
+                arguments.put(org.apache.qpid.server.model.Queue.MESSAGE_GROUP_KEY, "group");
+            }
             arguments.put(ConfiguredObject.DURABLE, "false");
             arguments.put(ConfiguredObject.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS.toString());
-            if(sharedGroups)
-            {
-                arguments.put(org.apache.qpid.server.model.Queue.MESSAGE_GROUP_SHARED_GROUPS, "true");
-            }
+            arguments.put(org.apache.qpid.server.model.Queue.MESSAGE_GROUP_TYPE, sharedGroups ? MessageGroupType.SHARED_GROUPS.name() : MessageGroupType.STANDARD.name());
+
             createEntityUsingAmqpManagement(QUEUE, producerSession, "org.apache.qpid.Queue", arguments);
-            queue = producerSession.createQueue(QUEUE);
+            queue = producerSession.createQueue(isBroker10() ? QUEUE : "ADDR:"+QUEUE+" ; {assert : never, node: { type: queue } }");
         }
         else
         {
@@ -204,12 +215,12 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
 
     public void testConsumerCloseGroupAssignment() throws Exception
     {
-        consumerCloseGroupAssignment(false);
+        consumerCloseGroupAssignment(false, false);
     }
 
     public void testSharedGroupConsumerCloseGroupAssignment() throws Exception
     {
-        consumerCloseGroupAssignment(true);
+        consumerCloseGroupAssignment(true, false);
     }
 
     /**
@@ -229,14 +240,14 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
      * requires c2 to go "backwards" in the queue).
      *
      **/
-    private void consumerCloseGroupAssignment(boolean sharedGroups) throws QpidException, JMSException
+    private void consumerCloseGroupAssignment(boolean sharedGroups, final boolean useDefaultGroup) throws QpidException, JMSException
     {
-        createQueueAndProducer(sharedGroups);
+        createQueueAndProducer(sharedGroups, false);
 
-        producer.send(createMessage(1, "ONE"));
-        producer.send(createMessage(2, "ONE"));
-        producer.send(createMessage(3, "TWO"));
-        producer.send(createMessage(4, "ONE"));
+        producer.send(createMessage(1, "ONE", useDefaultGroup));
+        producer.send(createMessage(2, "ONE", useDefaultGroup));
+        producer.send(createMessage(3, "TWO", useDefaultGroup));
+        producer.send(createMessage(4, "ONE", useDefaultGroup));
 
         producerSession.commit();
         producer.close();
@@ -285,7 +296,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         Message cs2Received3 = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received second message", cs2Received3);
-        assertEquals("Unexpected group", "ONE", cs2Received3.getStringProperty("group"));
+        assertEquals("Unexpected group", "ONE", cs2Received3.getStringProperty(useDefaultGroup ? "JMSXGroupID" : "group"));
         assertEquals("incorrect message received", 2, cs2Received3.getIntProperty("msg"));
 
         if(is010)
@@ -301,7 +312,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         Message cs2Received4 = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received third message", cs2Received4);
-        assertEquals("Unexpected group", "ONE", cs2Received4.getStringProperty("group"));
+        assertEquals("Unexpected group", "ONE", cs2Received4.getStringProperty(useDefaultGroup ? "JMSXGroupID" : "group"));
         assertEquals("incorrect message received", 4, cs2Received4.getIntProperty("msg"));
         if(is010)
         {
@@ -320,12 +331,12 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
     
     public void testConsumerCloseWithRelease() throws Exception
     {
-        consumerCloseWithRelease(false);
+        consumerCloseWithRelease(false, false);
     }
 
     public void testSharedGroupConsumerCloseWithRelease() throws Exception
     {
-        consumerCloseWithRelease(true);
+        consumerCloseWithRelease(true, false);
     }
 
 
@@ -346,14 +357,14 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
      * requires c2 to go "backwards" in the queue). The first such message should be marked as redelivered
      *
      */
-    private void consumerCloseWithRelease(boolean sharedGroups) throws QpidException, JMSException
+    private void consumerCloseWithRelease(boolean sharedGroups, final boolean useDefaultGroup) throws QpidException, JMSException
     {
-        createQueueAndProducer(sharedGroups);
+        createQueueAndProducer(sharedGroups, false);
 
-        producer.send(createMessage(1, "ONE"));
-        producer.send(createMessage(2, "ONE"));
-        producer.send(createMessage(3, "TWO"));
-        producer.send(createMessage(4, "ONE"));
+        producer.send(createMessage(1, "ONE", useDefaultGroup));
+        producer.send(createMessage(2, "ONE", useDefaultGroup));
+        producer.send(createMessage(3, "TWO", useDefaultGroup));
+        producer.send(createMessage(4, "ONE", useDefaultGroup));
 
         producerSession.commit();
         producer.close();
@@ -398,7 +409,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         received = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should now have received second message", received);
-        assertEquals("Unexpected group", "ONE", received.getStringProperty("group"));
+        assertEquals("Unexpected group", "ONE", received.getStringProperty(useDefaultGroup ? "JMSXGroupID" : "group"));
         assertEquals("incorrect message received", 1, received.getIntProperty("msg"));
         assertTrue("Expected second message to be marked as redelivered " + received.getIntProperty("msg"),
                    received.getJMSRedelivered());
@@ -415,7 +426,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         received = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received a third message", received);
-        assertEquals("Unexpected group", "ONE", received.getStringProperty("group"));
+        assertEquals("Unexpected group", "ONE", received.getStringProperty(useDefaultGroup ? "JMSXGroupID" : "group"));
         assertEquals("incorrect message received", 2, received.getIntProperty("msg"));
 
         if(is010)
@@ -430,7 +441,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         received = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received a fourth message", received);
-        assertEquals("Unexpected group", "ONE", received.getStringProperty("group"));
+        assertEquals("Unexpected group", "ONE", received.getStringProperty(useDefaultGroup ? "JMSXGroupID" : "group"));
         assertEquals("incorrect message received", 4, received.getIntProperty("msg"));
 
         if(is010)
@@ -447,22 +458,22 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
 
     public void testGroupAssignmentSurvivesEmpty() throws JMSException, QpidException
     {
-        groupAssignmentOnEmpty(false);
+        groupAssignmentOnEmpty(false, false);
     }
 
     public void testSharedGroupAssignmentDoesNotSurviveEmpty() throws JMSException, QpidException
     {
-        groupAssignmentOnEmpty(true);
+        groupAssignmentOnEmpty(true, false);
     }
 
-    private void groupAssignmentOnEmpty(boolean sharedGroups) throws QpidException, JMSException
+    private void groupAssignmentOnEmpty(boolean sharedGroups, final boolean useDefaultGroup) throws QpidException, JMSException
     {
-        createQueueAndProducer(sharedGroups);
+        createQueueAndProducer(sharedGroups, useDefaultGroup);
 
-        producer.send(createMessage(1, "ONE"));
-        producer.send(createMessage(2, "TWO"));
-        producer.send(createMessage(3, "THREE"));
-        producer.send(createMessage(4, "ONE"));
+        producer.send(createMessage(1, "ONE", useDefaultGroup));
+        producer.send(createMessage(2, "TWO", useDefaultGroup));
+        producer.send(createMessage(3, "THREE", useDefaultGroup));
+        producer.send(createMessage(4, "ONE", useDefaultGroup));
 
         producerSession.commit();
         producer.close();
@@ -561,11 +572,11 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
 
     }
 
-    private Message createMessage(int msg, String group) throws JMSException
+    private Message createMessage(int msg, String group, final boolean useDefaultGroup) throws JMSException
     {
         Message send = producerSession.createTextMessage("Message: " + msg);
         send.setIntProperty("msg", msg);
-        send.setStringProperty("group", group);
+        send.setStringProperty(useDefaultGroup ? "JMSXGroupID" : "group", group);
 
         return send;
     }
@@ -580,7 +591,8 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
 
         consumerConnection = getConnectionWithPrefetch(1);
 
-        createQueueAndProducer(true);
+        final boolean useDefaultGroup = false;
+        createQueueAndProducer(true, useDefaultGroup);
 
         int numMessages = 100;
         SharedGroupTestMessageListener groupingTestMessageListener = new SharedGroupTestMessageListener(numMessages);
@@ -602,7 +614,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
 
         for(int i = 1; i <= numMessages; i++)
         {
-            producer.send(createMessage(i, "GROUP"));
+            producer.send(createMessage(i, "GROUP", useDefaultGroup));
         }
         producerSession.commit();
         producer.close();

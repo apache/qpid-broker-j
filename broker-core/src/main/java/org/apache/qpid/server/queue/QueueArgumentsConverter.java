@@ -38,56 +38,57 @@ public class QueueArgumentsConverter
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueueArgumentsConverter.class);
 
-    public static final String X_QPID_FLOW_RESUME_CAPACITY = "x-qpid-flow-resume-capacity";
-    public static final String X_QPID_CAPACITY = "x-qpid-capacity";
-    public static final String X_QPID_MINIMUM_ALERT_REPEAT_GAP = "x-qpid-minimum-alert-repeat-gap";
-    public static final String X_QPID_MAXIMUM_MESSAGE_COUNT = "x-qpid-maximum-message-count";
-    public static final String X_QPID_MAXIMUM_MESSAGE_SIZE = "x-qpid-maximum-message-size";
-    public static final String X_QPID_MAXIMUM_MESSAGE_AGE = "x-qpid-maximum-message-age";
-    public static final String X_QPID_MAXIMUM_QUEUE_DEPTH = "x-qpid-maximum-queue-depth";
+    private static final String SHARED_MSG_GROUP_ARG_VALUE = "1";
+    private static final String X_QPID_FLOW_RESUME_CAPACITY = "x-qpid-flow-resume-capacity";
+    private static final String X_QPID_CAPACITY = "x-qpid-capacity";
+    private static final String X_QPID_MINIMUM_ALERT_REPEAT_GAP = "x-qpid-minimum-alert-repeat-gap";
+    private static final String X_QPID_MAXIMUM_MESSAGE_COUNT = "x-qpid-maximum-message-count";
+    private static final String X_QPID_MAXIMUM_MESSAGE_SIZE = "x-qpid-maximum-message-size";
+    private static final String X_QPID_MAXIMUM_MESSAGE_AGE = "x-qpid-maximum-message-age";
+    private static final String X_QPID_MAXIMUM_QUEUE_DEPTH = "x-qpid-maximum-queue-depth";
 
-    public static final String QPID_ALERT_COUNT = "qpid.alert_count";
-    public static final String QPID_ALERT_SIZE = "qpid.alert_size";
-    public static final String QPID_ALERT_REPEAT_GAP = "qpid.alert_repeat_gap";
+    private static final String QPID_ALERT_COUNT = "qpid.alert_count";
+    private static final String QPID_ALERT_SIZE = "qpid.alert_size";
+    private static final String QPID_ALERT_REPEAT_GAP = "qpid.alert_repeat_gap";
 
     public static final String X_QPID_PRIORITIES = "x-qpid-priorities";
 
     public static final String X_QPID_DESCRIPTION = "x-qpid-description";
 
-    public static final String QPID_LAST_VALUE_QUEUE_KEY = "qpid.last_value_queue_key";
+    private static final String QPID_LAST_VALUE_QUEUE_KEY = "qpid.last_value_queue_key";
 
-    public static final String QPID_QUEUE_SORT_KEY = "qpid.queue_sort_key";
-    public static final String X_QPID_DLQ_ENABLED = "x-qpid-dlq-enabled";
-    public static final String X_QPID_MAXIMUM_DELIVERY_COUNT = "x-qpid-maximum-delivery-count";
-    public static final String QPID_GROUP_HEADER_KEY = "qpid.group_header_key";
-    public static final String QPID_SHARED_MSG_GROUP = "qpid.shared_msg_group";
-    public static final String QPID_DEFAULT_MESSAGE_GROUP_ARG = "qpid.default-message-group";
+    private static final String QPID_QUEUE_SORT_KEY = "qpid.queue_sort_key";
+    static final String X_QPID_DLQ_ENABLED = "x-qpid-dlq-enabled";
+    private static final String X_QPID_MAXIMUM_DELIVERY_COUNT = "x-qpid-maximum-delivery-count";
+    static final String QPID_GROUP_HEADER_KEY = "qpid.group_header_key";
+    static final String QPID_SHARED_MSG_GROUP = "qpid.shared_msg_group";
+    private static final String QPID_DEFAULT_MESSAGE_GROUP_ARG = "qpid.default-message-group";
 
-    public static final String QPID_MESSAGE_DURABILITY = "qpid.message_durability";
+    private static final String QPID_MESSAGE_DURABILITY = "qpid.message_durability";
 
-    public static final String QPID_LAST_VALUE_QUEUE = "qpid.last_value_queue";
+    private static final String QPID_LAST_VALUE_QUEUE = "qpid.last_value_queue";
 
-    public static final String QPID_DEFAULT_FILTERS = "qpid.default_filters";
+    private static final String QPID_DEFAULT_FILTERS = "qpid.default_filters";
 
-    public static final String QPID_ENSURE_NONDESTRUCTIVE_CONSUMERS = "qpid.ensure_nondestructive_consumers";
+    private static final String QPID_ENSURE_NONDESTRUCTIVE_CONSUMERS = "qpid.ensure_nondestructive_consumers";
 
-    public static final String QPID_EXCLUSIVITY_POLICY = "qpid.exclusivity_policy";
-    public static final String QPID_LIFETIME_POLICY = "qpid.lifetime_policy";
+    private static final String QPID_EXCLUSIVITY_POLICY = "qpid.exclusivity_policy";
+    private static final String QPID_LIFETIME_POLICY = "qpid.lifetime_policy";
 
-    public static final String QPID_POLICY_TYPE = "qpid.policy_type";
-    public static final String QPID_MAX_COUNT = "qpid.max_count";
-    public static final String QPID_MAX_SIZE = "qpid.max_size";
+    private static final String QPID_POLICY_TYPE = "qpid.policy_type";
+    private static final String QPID_MAX_COUNT = "qpid.max_count";
+    private static final String QPID_MAX_SIZE = "qpid.max_size";
 
     /**
      * No-local queue argument is used to support the no-local feature of Durable Subscribers.
      */
-    public static final String QPID_NO_LOCAL = "no-local";
+    private static final String QPID_NO_LOCAL = "no-local";
 
-    static final Map<String, String> ATTRIBUTE_MAPPINGS = new LinkedHashMap<String, String>();
+    private static final Map<String, String> ATTRIBUTE_MAPPINGS = new LinkedHashMap<String, String>();
 
     private static final String ALTERNATE_EXCHANGE = "alternateExchange";
     private static final String DEFAULT_DLQ_NAME_SUFFIX = "_DLQ";
-    private static String PROPERTY_DEAD_LETTER_QUEUE_SUFFIX = "qpid.broker_dead_letter_queue_suffix";
+    private static final String PROPERTY_DEAD_LETTER_QUEUE_SUFFIX = "qpid.broker_dead_letter_queue_suffix";
 
     static
     {
@@ -150,10 +151,14 @@ public class QueueArgumentsConverter
                 modelArguments.put(Queue.OVERFLOW_POLICY, OverflowPolicy.valueOf(String.valueOf(wireArguments.get(QPID_POLICY_TYPE)).toUpperCase()));
             }
 
-            if(wireArguments.containsKey(QPID_SHARED_MSG_GROUP))
+            if(wireArguments.containsKey(QPID_SHARED_MSG_GROUP)
+               && SHARED_MSG_GROUP_ARG_VALUE.equals(String.valueOf(wireArguments.get(QPID_SHARED_MSG_GROUP))))
             {
-                modelArguments.put(Queue.MESSAGE_GROUP_SHARED_GROUPS,
-                                   AbstractQueue.SHARED_MSG_GROUP_ARG_VALUE.equals(String.valueOf(wireArguments.get(QPID_SHARED_MSG_GROUP))));
+                modelArguments.put(Queue.MESSAGE_GROUP_TYPE, MessageGroupType.SHARED_GROUPS);
+            }
+            else if(wireArguments.containsKey(QPID_GROUP_HEADER_KEY))
+            {
+                modelArguments.put(Queue.MESSAGE_GROUP_TYPE, MessageGroupType.STANDARD);
             }
 
 
@@ -224,9 +229,9 @@ public class QueueArgumentsConverter
             }
         }
 
-        if(Boolean.TRUE.equals(modelArguments.get(Queue.MESSAGE_GROUP_SHARED_GROUPS)))
+        if(MessageGroupType.SHARED_GROUPS.equals(modelArguments.get(Queue.MESSAGE_GROUP_TYPE)))
         {
-            wireArguments.put(QPID_SHARED_MSG_GROUP, AbstractQueue.SHARED_MSG_GROUP_ARG_VALUE);
+            wireArguments.put(QPID_SHARED_MSG_GROUP, SHARED_MSG_GROUP_ARG_VALUE);
         }
 
         return wireArguments;
