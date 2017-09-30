@@ -404,7 +404,10 @@ public final class Strings
                 if (variable.startsWith(_prefix))
                 {
                     currentStack.add(variable);
-                    String expanded = resolver.resolve(variable.substring(_prefix.length()), resolver);
+                    final Stack<String> stack = new Stack<>();
+                    stack.add(variable);
+                    String expanded = Strings.expand("${" + variable.substring(_prefix.length()) + "}", resolver,
+                                                     stack, false);
                     currentStack.remove(variable);
                     if(expanded != null)
                     {

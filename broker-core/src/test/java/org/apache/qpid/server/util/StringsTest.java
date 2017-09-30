@@ -21,7 +21,9 @@
 package org.apache.qpid.server.util;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -43,6 +45,28 @@ public class StringsTest extends QpidTestCase
 
         assertEquals("{ \"path\" : \"C:\\\\TEMP\\\\\\\"Hello World\\\"\\foo\" }",
                      Strings.expand("{ \"path\" : \"${json:test}\\foo\" }",Strings.chain(jsonResolver,mapResolver)));
+
+    }
+
+    public void testNestedSubstitutionResolver()
+    {
+        Map<String,String> context = new HashMap<>();
+        context.put("test", "C:\\TEMP\\\"Hello World\"");
+        context.put("nestedTest", "${test}");
+        Strings.MapResolver mapResolver =
+                new Strings.MapResolver(context);
+
+        Strings.Resolver jsonResolver = Strings.createSubstitutionResolver("json:",
+                                                                           new LinkedHashMap<String, String>()
+                                                                           {
+                                                                               {
+                                                                                   put("\\", "\\\\");
+                                                                                   put("\"", "\\\"");
+                                                                               }
+                                                                           });
+
+        assertEquals("{ \"path\" : \"C:\\\\TEMP\\\\\\\"Hello World\\\"\\foo\" }",
+                     Strings.expand("{ \"path\" : \"${json:nestedTest}\\foo\" }",Strings.chain(jsonResolver,mapResolver)));
 
     }
 }

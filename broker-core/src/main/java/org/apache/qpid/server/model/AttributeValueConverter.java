@@ -1359,7 +1359,7 @@ abstract class AttributeValueConverter<T>
                 }
                 catch (IOException e)
                 {
-
+                    throw new IllegalArgumentException("Cannot convert type " + value.getClass() + " to a " + _klazz.getName(), e);
                 }
 
             }
