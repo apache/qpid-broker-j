@@ -40,7 +40,7 @@ import org.apache.qpid.server.store.StoreException;
 
 public class DerbyUtils
 {
-    static final String MEMORY_STORE_LOCATION = ":memory:";
+    static final String MEMORY_STORE_LOCATION = "memory:";
     private static final String DERBY_SINGLE_DB_SHUTDOWN_CODE = "08006";
     private static final String SQL_DRIVER_NAME = "org.apache.derby.jdbc.EmbeddedDriver";
     private static final String TABLE_EXISTENCE_QUERY = "SELECT 1 FROM SYS.SYSTABLES WHERE TABLENAME = ?";
