@@ -26,7 +26,3 @@ org.apache.qpid.disttest.results.ResultsXmlWriterTest#*
 # https://www.ibm.com/support/knowledgecenter/en/SSYKE2_8.0.0/com.ibm.java.security.component.80.doc/security-component/jsse2Docs/knowndiffsun.html
 org.apache.qpid.server.security.FileTrustStoreTest#testUseOfExpiredTrustAnchorAllowed
 
-# Temporarily exclude SSL based tests until a newer IBM JDK (>=20160505) is available on the Apache CI nodes.
-org.apache.qpid.systest.management.amqp.AmqpManagementTest#*
-org.apache.qpid.client.ssl.SSLTest#*
-org.apache.qpid.server.security.auth.manager.ExternalAuthenticationTest#*
