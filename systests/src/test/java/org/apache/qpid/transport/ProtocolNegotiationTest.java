@@ -49,6 +49,7 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.v0_10.ServerDisassembler;
+import org.apache.qpid.server.util.SystemUtils;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.server.protocol.v0_10.transport.Frame;
@@ -198,6 +199,9 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             int len = inputStream.read(receivedHeader);
             assertEquals("Unexpected number of bytes available from socket", receivedHeader.length, len);
 
+            // read the server start / sasl mechanisms
+            inputStream.read(new byte[1024]);
+
             // Send heartbeat frames to simulate a client that, although active, fails to
             // authenticate within the allowed period
 
@@ -211,6 +215,13 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
                     break;
                 }
                 Thread.sleep(100);
+            }
+            // If AMQP 1.0 we won't have sent anything (heartbeats not valid until after SASL)
+            // Windows also seems to allow writes to a socket which has actually been closed.
+            if(!brokenPipe && (SystemUtils.isWindows() || isBroker10()))
+            {
+                final int read = inputStream.read(new byte[10]);
+                brokenPipe = -1 == read;
             }
             assertTrue("Expected pipe to become broken within "
                        + Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY + " timeout", brokenPipe);
@@ -300,10 +311,9 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             ServerDisassembler serverDisassembler = new ServerDisassembler(sender, Frame.HEADER_SIZE + 1);
             serverDisassembler.command(null, heartbeat);
         }
-        else
+        else if(isBroker08())
         {
             HeartbeatBody.FRAME.writePayload(sender);
-
         }
 
         return sender.hasSuccess();
