@@ -38,7 +38,6 @@ import ch.qos.logback.core.rolling.RollingPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.TriggeringPolicy;
 import ch.qos.logback.core.rolling.helper.CompressionMode;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,15 +153,8 @@ public class AppenderUtilsTest extends QpidTestCase
 
         try
         {
-            if(unwriteableFile.setWritable(false))
-            {
-                doValidateLogTarget(unwriteableFile);
-            }
-            else
-            {
-                _logger.warn("could not set permissions on temporary directory - test skipped");
-
-            }
+            assertTrue("could not set log target permissions for test", unwriteableFile.setWritable(false));
+            doValidateLogTarget(unwriteableFile);
         }
         finally
         {
@@ -177,8 +169,14 @@ public class AppenderUtilsTest extends QpidTestCase
 
         try
         {
-            assumeTrue(unwriteableLogTarget.setWritable(false));
-            doValidateLogTarget(new File(unwriteableLogTarget.getAbsolutePath(), "nonExistingFile.log"));
+            if(unwriteableLogTarget.setWritable(false))
+            {
+                doValidateLogTarget(new File(unwriteableLogTarget.getAbsolutePath(), "nonExistingFile.log"));
+            }
+            else
+            {
+                _logger.warn("could not set permissions on temporary directory - test skipped");
+            }
         }
         finally
         {
