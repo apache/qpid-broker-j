@@ -38,12 +38,17 @@ import ch.qos.logback.core.rolling.RollingPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.TriggeringPolicy;
 import ch.qos.logback.core.rolling.helper.CompressionMode;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AppenderUtilsTest extends QpidTestCase
 {
+    private static final Logger _logger = LoggerFactory.getLogger(AppenderUtilsTest.class);
+
     public static final String LAYOUT = "%d %-5p [%t] \\(%c{2}\\) # %m%n";
     public static final int MAX_FILE_SIZE = 101;
     public static final int MAX_HISTORY = 13;
@@ -143,14 +148,21 @@ public class AppenderUtilsTest extends QpidTestCase
         }
     }
 
-    public void testUnwritableLogFileTarget() throws Exception
+\    public void testUnwritableLogFileTarget() throws Exception
     {
         File unwriteableFile = File.createTempFile(getTestName(), null);
 
         try
         {
-            assertTrue("could not set log target permissions for test", unwriteableFile.setWritable(false));
-            doValidateLogTarget(unwriteableFile);
+            if(unwriteableFile.setWritable(false))
+            {
+                doValidateLogTarget(unwriteableFile);
+            }
+            else
+            {
+                _logger.warn("could not set permissions on temporary directory - test skipped");
+
+            }
         }
         finally
         {
