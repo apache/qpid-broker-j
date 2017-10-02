@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -162,16 +163,14 @@ public class AppenderUtilsTest extends QpidTestCase
         Path unwriteableLogTargetPath = Files.createTempDirectory(getTestName());
         File unwriteableLogTarget = unwriteableLogTargetPath.toFile();
 
-        if(unwriteableLogTarget.setWritable(false))
+        try
         {
-            try
-            {
-                doValidateLogTarget(new File(unwriteableLogTarget.getAbsolutePath(), "nonExistingFile.log"));
-            }
-            finally
-            {
-                unwriteableLogTarget.delete();
-            }
+            assumeTrue(unwriteableLogTarget.setWritable(false));
+            doValidateLogTarget(new File(unwriteableLogTarget.getAbsolutePath(), "nonExistingFile.log"));
+        }
+        finally
+        {
+            unwriteableLogTarget.delete();
         }
     }
 
