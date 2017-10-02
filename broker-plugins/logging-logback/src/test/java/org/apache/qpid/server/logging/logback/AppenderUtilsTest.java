@@ -148,7 +148,7 @@ public class AppenderUtilsTest extends QpidTestCase
         }
     }
 
-\    public void testUnwritableLogFileTarget() throws Exception
+    public void testUnwritableLogFileTarget() throws Exception
     {
         File unwriteableFile = File.createTempFile(getTestName(), null);
 
