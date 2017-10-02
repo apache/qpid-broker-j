@@ -46,29 +46,33 @@ public class SessionError implements ErrorCondition, RestrictedType<Symbol>
 
     public static SessionError valueOf(Object obj)
     {
-        Symbol val = (Symbol) obj;
-
-        if (WINDOW_VIOLATION._val.equals(val))
+        if (obj instanceof Symbol)
         {
-            return WINDOW_VIOLATION;
+            Symbol val = (Symbol) obj;
+
+            if (WINDOW_VIOLATION._val.equals(val))
+            {
+                return WINDOW_VIOLATION;
+            }
+
+            if (ERRANT_LINK._val.equals(val))
+            {
+                return ERRANT_LINK;
+            }
+
+            if (HANDLE_IN_USE._val.equals(val))
+            {
+                return HANDLE_IN_USE;
+            }
+
+            if (UNATTACHED_HANDLE._val.equals(val))
+            {
+                return UNATTACHED_HANDLE;
+            }
         }
 
-        if (ERRANT_LINK._val.equals(val))
-        {
-            return ERRANT_LINK;
-        }
-
-        if (HANDLE_IN_USE._val.equals(val))
-        {
-            return HANDLE_IN_USE;
-        }
-
-        if (UNATTACHED_HANDLE._val.equals(val))
-        {
-            return UNATTACHED_HANDLE;
-        }
-
-        return null;
+        final String message = String.format("Cannot convert '%s' into 'session-error'", obj);
+        throw new IllegalArgumentException(message);
     }
 
     @Override

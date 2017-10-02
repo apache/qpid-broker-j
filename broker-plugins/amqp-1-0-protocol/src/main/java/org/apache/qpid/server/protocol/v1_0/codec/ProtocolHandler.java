@@ -24,7 +24,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public interface ProtocolHandler
 {
-    // TODO rv is unused
+
     ProtocolHandler parse(QpidByteBuffer in);
 
     boolean isDone();

@@ -47,34 +47,38 @@ public class LinkError implements ErrorCondition, RestrictedType<Symbol>
 
     public static LinkError valueOf(Object obj)
     {
-        Symbol val = (Symbol) obj;
-
-        if (DETACH_FORCED._val.equals(val))
+        if (obj instanceof Symbol)
         {
-            return DETACH_FORCED;
+            Symbol val = (Symbol) obj;
+
+            if (DETACH_FORCED._val.equals(val))
+            {
+                return DETACH_FORCED;
+            }
+
+            if (TRANSFER_LIMIT_EXCEEDED._val.equals(val))
+            {
+                return TRANSFER_LIMIT_EXCEEDED;
+            }
+
+            if (MESSAGE_SIZE_EXCEEDED._val.equals(val))
+            {
+                return MESSAGE_SIZE_EXCEEDED;
+            }
+
+            if (REDIRECT._val.equals(val))
+            {
+                return REDIRECT;
+            }
+
+            if (STOLEN._val.equals(val))
+            {
+                return STOLEN;
+            }
         }
 
-        if (TRANSFER_LIMIT_EXCEEDED._val.equals(val))
-        {
-            return TRANSFER_LIMIT_EXCEEDED;
-        }
-
-        if (MESSAGE_SIZE_EXCEEDED._val.equals(val))
-        {
-            return MESSAGE_SIZE_EXCEEDED;
-        }
-
-        if (REDIRECT._val.equals(val))
-        {
-            return REDIRECT;
-        }
-
-        if (STOLEN._val.equals(val))
-        {
-            return STOLEN;
-        }
-
-        return null;
+        final String message = String.format("Cannot convert '%s' into 'link-error'", obj);
+        throw new IllegalArgumentException(message);
     }
 
     @Override

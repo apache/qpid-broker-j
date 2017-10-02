@@ -91,34 +91,37 @@ public class TxnCapability implements org.apache.qpid.server.protocol.v1_0.type.
 
     public static TxnCapability valueOf(Object obj)
     {
-        Symbol val = (Symbol) obj;
-
-        if (LOCAL_TXN._val.equals(val))
+        if (obj instanceof Symbol)
         {
-            return LOCAL_TXN;
+            Symbol val = (Symbol) obj;
+
+            if (LOCAL_TXN._val.equals(val))
+            {
+                return LOCAL_TXN;
+            }
+
+            if (DISTRIBUTED_TXN._val.equals(val))
+            {
+                return DISTRIBUTED_TXN;
+            }
+
+            if (PROMOTABLE_TXN._val.equals(val))
+            {
+                return PROMOTABLE_TXN;
+            }
+
+            if (MULTI_TXNS_PER_SSN._val.equals(val))
+            {
+                return MULTI_TXNS_PER_SSN;
+            }
+
+            if (MULTI_SSNS_PER_TXN._val.equals(val))
+            {
+                return MULTI_SSNS_PER_TXN;
+            }
         }
 
-        if (DISTRIBUTED_TXN._val.equals(val))
-        {
-            return DISTRIBUTED_TXN;
-        }
-
-        if (PROMOTABLE_TXN._val.equals(val))
-        {
-            return PROMOTABLE_TXN;
-        }
-
-        if (MULTI_TXNS_PER_SSN._val.equals(val))
-        {
-            return MULTI_TXNS_PER_SSN;
-        }
-
-        if (MULTI_SSNS_PER_TXN._val.equals(val))
-        {
-            return MULTI_SSNS_PER_TXN;
-        }
-
-        // TODO ERROR
-        return null;
+        final String message = String.format("Cannot convert '%s' into 'txn-capability'", obj);
+        throw new IllegalArgumentException(message);
     }
 }

@@ -75,23 +75,27 @@ public class TransactionErrors implements ErrorCondition, RestrictedType<Symbol>
 
     public static TransactionErrors valueOf(Object obj)
     {
-        Symbol val = (Symbol) obj;
-
-        if (UNKNOWN_ID._val.equals(val))
+        if (obj instanceof Symbol)
         {
-            return UNKNOWN_ID;
+            Symbol val = (Symbol) obj;
+
+            if (UNKNOWN_ID._val.equals(val))
+            {
+                return UNKNOWN_ID;
+            }
+
+            if (TRANSACTION_ROLLBACK._val.equals(val))
+            {
+                return TRANSACTION_ROLLBACK;
+            }
+
+            if (TRANSACTION_TIMEOUT._val.equals(val))
+            {
+                return TRANSACTION_TIMEOUT;
+            }
         }
 
-        if (TRANSACTION_ROLLBACK._val.equals(val))
-        {
-            return TRANSACTION_ROLLBACK;
-        }
-
-        if (TRANSACTION_TIMEOUT._val.equals(val))
-        {
-            return TRANSACTION_TIMEOUT;
-        }
-
-        return null;
+        final String message = String.format("Cannot convert '%s' into 'transaction-error'", obj);
+        throw new IllegalArgumentException(message);
     }
 }

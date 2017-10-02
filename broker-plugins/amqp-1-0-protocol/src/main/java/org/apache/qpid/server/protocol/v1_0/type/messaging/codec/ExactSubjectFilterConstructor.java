@@ -25,8 +25,10 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ExactSubjectFilter;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public class ExactSubjectFilterConstructor extends AbstractDescribedTypeConstructor<ExactSubjectFilter>
 {
@@ -47,7 +49,7 @@ public class ExactSubjectFilterConstructor extends AbstractDescribedTypeConstruc
 
 
     @Override
-    public ExactSubjectFilter construct(Object underlying)
+    public ExactSubjectFilter construct(Object underlying) throws AmqpErrorException
     {
 
         if(underlying instanceof String)
@@ -56,8 +58,9 @@ public class ExactSubjectFilterConstructor extends AbstractDescribedTypeConstruc
         }
         else
         {
-            // TODO - error
-            return null;
+            final String msg = String.format("Cannot decode 'apache.org:legacy-amqp-direct-binding' from '%s'",
+                                             underlying == null ? null : underlying.getClass().getSimpleName());
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
         }
     }
 

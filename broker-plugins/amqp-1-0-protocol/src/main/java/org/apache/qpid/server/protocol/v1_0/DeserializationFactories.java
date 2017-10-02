@@ -42,177 +42,169 @@ public class DeserializationFactories
     @SuppressWarnings("unused")
     public static Map<Symbol, Object> convertToNodeProperties(final Object value) throws AmqpErrorException
     {
-        if (value != null)
+        if (!(value instanceof Map))
         {
-            if (!(value instanceof Map))
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR,
+                                         String.format("Cannot construct 'node-properties' from type '%s'",
+                                                       value == null ? null : value.getClass().getSimpleName()));
+        }
+        Map<Symbol, Object> nodeProperties = new LinkedHashMap<>();
+        Map<?, ?> map = (Map<?, ?>) value;
+        for (Map.Entry<?, ?> entry : map.entrySet())
+        {
+            Object key = entry.getKey();
+            if (!(key instanceof Symbol))
             {
                 throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                             String.format("Cannot construct 'node-properties' from type '%s'",
-                                                           value.getClass().getSimpleName()));
+                                             String.format(
+                                                     "'node-properties' must have only keys of type 'symbol' but got '%s'",
+                                                     key.getClass().getSimpleName()));
             }
-            Map<Symbol, Object> nodeProperties = new LinkedHashMap<>();
-            Map<?, ?> map = (Map<?, ?>) value;
-            for (Map.Entry<?,?> entry : map.entrySet())
+            if (Session_1_0.LIFETIME_POLICY.equals(key))
             {
-                Object key = entry.getKey();
-                if (!(key instanceof Symbol))
+                final Object lifetimePolicy = entry.getValue();
+                if (!(lifetimePolicy instanceof LifetimePolicy))
                 {
+                    String typeName = lifetimePolicy == null ? null : lifetimePolicy.getClass().getSimpleName();
                     throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                                 String.format("'node-properties' must have only keys of type 'symbol' but got '%s'",
-                                                               key.getClass().getSimpleName()));
+                                                 String.format("Cannot construct 'lifetime-policy' from type '%s'",
+                                                               typeName));
                 }
-                if (Session_1_0.LIFETIME_POLICY.equals(key))
+                nodeProperties.put((Symbol) key, lifetimePolicy);
+            }
+            else if (Symbol.valueOf("supported-dist-modes").equals(key))
+            {
+                final Object distributionMode = entry.getValue();
+                final DistributionMode[] converted;
+                if (distributionMode == null)
                 {
-                    final Object lifetimePolicy = entry.getValue();
-                    if (!(lifetimePolicy instanceof LifetimePolicy))
-                    {
-                        String typeName = lifetimePolicy == null ? null : lifetimePolicy.getClass().getSimpleName();
-                        throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                                     String.format("Cannot construct 'lifetime-policy' from type '%s'",
-                                                                   typeName));
-                    }
-                    nodeProperties.put((Symbol) key, lifetimePolicy);
+                    converted = null;
                 }
-                else if (Symbol.valueOf("supported-dist-modes").equals(key))
+                else if (distributionMode.getClass().isArray())
                 {
-                    final Object distributionMode = entry.getValue();
-                    final DistributionMode[] converted;
-                    if (distributionMode == null)
+                    converted = new DistributionMode[Array.getLength(distributionMode)];
+                    for (int i = 0; i < converted.length; ++i)
                     {
-                        converted = null;
-
-                    }
-                    else if (distributionMode.getClass().isArray())
-                    {
-                        converted = new DistributionMode[Array.getLength(distributionMode)];
-                        for (int i = 0; i < converted.length; ++i)
+                        final Object item = Array.get(distributionMode, i);
+                        if (item == null)
                         {
-                            final Object item = Array.get(distributionMode, i);
-                            if (item == null)
-                            {
-                                throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                                             "'null' not allowed in 'supported-distribution-modes'");
-                            }
-                            converted[i] = convertToDistributionMode(item);
+                            throw new AmqpErrorException(AmqpError.DECODE_ERROR,
+                                                         "'null' not allowed in 'supported-distribution-modes'");
                         }
+                        converted[i] = convertToDistributionMode(item);
                     }
-                    else
-                    {
-                        converted = new DistributionMode[] {convertToDistributionMode(distributionMode)};
-                    }
-                    nodeProperties.put((Symbol) key, converted);
                 }
                 else
                 {
-                    nodeProperties.put((Symbol) key, entry.getValue());
+                    converted = new DistributionMode[]{convertToDistributionMode(distributionMode)};
                 }
+                nodeProperties.put((Symbol) key, converted);
             }
-            return nodeProperties;
+            else
+            {
+                nodeProperties.put((Symbol) key, entry.getValue());
+            }
         }
-        else
-        {
-            return null;
-        }
+        return nodeProperties;
     }
 
     @SuppressWarnings("unused")
     public static DistributionMode convertToDistributionMode(final Object value) throws AmqpErrorException
     {
-        DistributionMode distributionMode = null;
-        if (value != null)
+        if (value instanceof DistributionMode)
         {
-            if (value instanceof DistributionMode)
+            return (DistributionMode) value;
+        }
+        else if (value instanceof Symbol)
+        {
+            try
             {
-                distributionMode = (DistributionMode) value;
+                return StdDistMode.valueOf(value);
             }
-            else if (value instanceof Symbol)
+            catch (IllegalArgumentException e)
             {
-                distributionMode = StdDistMode.valueOf(value);
-                if (distributionMode == null)
-                {
-                    distributionMode = new UnknownDistributionMode((Symbol) value);
-                }
-            }
-            else
-            {
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                             String.format("Cannot construct 'distribution-mode' from type '%s'",
-                                                           value.getClass().getSimpleName()));
+                return new UnknownDistributionMode((Symbol) value);
             }
         }
-        return distributionMode;
+
+        final String message = String.format("Cannot construct 'distribution-mode' from type '%s'",
+                                             value == null ? null : value.getClass().getSimpleName());
+        throw new AmqpErrorException(AmqpError.DECODE_ERROR, message);
     }
 
     @SuppressWarnings("unused")
     public static TxnCapability convertToTxnCapability(final Object value) throws AmqpErrorException
     {
-        TxnCapability capability = null;
-        if (value != null)
+        if (value instanceof TxnCapability)
         {
-            if (value instanceof TxnCapability)
+            return (TxnCapability) value;
+        }
+        else if (value instanceof Symbol)
+        {
+            try
             {
-                capability = (TxnCapability) value;
+                return org.apache.qpid.server.protocol.v1_0.type.transaction.TxnCapability.valueOf(value);
             }
-            else if (value instanceof Symbol)
+            catch (IllegalArgumentException e)
             {
-                capability = org.apache.qpid.server.protocol.v1_0.type.transaction.TxnCapability.valueOf(value);
-                if (capability == null)
-                {
-                    capability = new UnknownTxnCapability((Symbol) value);
-                }
-            }
-            else
-            {
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                             String.format("Cannot construct 'txn-capability' from type '%s'",
-                                                           value.getClass().getSimpleName()));
+                return new UnknownTxnCapability((Symbol) value);
             }
         }
-        return capability;
+
+        final String message = String.format("Cannot construct 'txn-capability' from type '%s'",
+                                             value == null ? null : value.getClass().getSimpleName());
+        throw new AmqpErrorException(AmqpError.DECODE_ERROR, message);
     }
 
     @SuppressWarnings("unsued")
     public static ErrorCondition convertToErrorCondition(final Object value) throws AmqpErrorException
     {
-        ErrorCondition condition = null;
-        if (value != null)
+        if (value instanceof ErrorCondition)
         {
-            if (value instanceof ErrorCondition)
+            return (ErrorCondition) value;
+        }
+        else if (value instanceof Symbol)
+        {
+            try
             {
-                condition = (ErrorCondition) value;
+                return AmqpError.valueOf(value);
             }
-            else if (value instanceof Symbol)
+            catch (IllegalArgumentException e)
             {
-                condition = AmqpError.valueOf(value);
-                if (condition == null)
+                try
                 {
-                    condition = ConnectionError.valueOf(value);
-                    if (condition == null)
+                    return ConnectionError.valueOf(value);
+                }
+                catch (IllegalArgumentException e1)
+                {
+                    try
                     {
-                        condition = SessionError.valueOf(value);
-                        if (condition == null)
+                        return SessionError.valueOf(value);
+                    }
+                    catch (IllegalArgumentException e2)
+                    {
+                        try
                         {
-                            condition = LinkError.valueOf(value);
-                            if (condition == null)
+                            return LinkError.valueOf(value);
+                        }
+                        catch (IllegalArgumentException e3)
+                        {
+                            try
                             {
-                                condition = TransactionErrors.valueOf(value);
-                                if (condition == null)
-                                {
-                                    condition = new UnknownErrorCondition((Symbol) value);
-                                }
+                                return TransactionErrors.valueOf(value);
+                            }
+                            catch (IllegalArgumentException e4)
+                            {
+                                return new UnknownErrorCondition((Symbol) value);
                             }
                         }
                     }
                 }
             }
-            else
-            {
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                             String.format("Cannot construct 'error-condition' from type '%s'",
-                                                           value.getClass().getSimpleName()));
-            }
         }
-        return condition;
+        final String message = String.format("Cannot construct 'error-condition' from type '%s'",
+                                             value == null ? null : value.getClass().getSimpleName());
+        throw new AmqpErrorException(AmqpError.DECODE_ERROR, message);
     }
 
     private static final class UnknownErrorCondition implements ErrorCondition

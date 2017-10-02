@@ -27,9 +27,11 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public class ApplicationPropertiesConstructor extends AbstractDescribedTypeConstructor<ApplicationProperties>
 {
@@ -50,7 +52,7 @@ public class ApplicationPropertiesConstructor extends AbstractDescribedTypeConst
 
 
     @Override
-    public ApplicationProperties construct(Object underlying)
+    public ApplicationProperties construct(Object underlying) throws AmqpErrorException
     {
 
         if(underlying instanceof Map)
@@ -59,8 +61,9 @@ public class ApplicationPropertiesConstructor extends AbstractDescribedTypeConst
         }
         else
         {
-            // TODO - error
-            return null;
+            final String msg = String.format("Cannot decode 'application-properties' from '%s'",
+                                             underlying == null ? null : underlying.getClass().getSimpleName());
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
         }
     }
 

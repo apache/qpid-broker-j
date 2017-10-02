@@ -718,7 +718,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                     }
                 }
 
-                // TODO: Handle rejected and modified outcome
+                // TODO: QPID-7845: Handle rejected and modified outcome
 
                 remoteUnsettled.remove(deliveryTag);
                 _resumeAcceptedTransfers.add(deliveryTag);
@@ -727,7 +727,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             {
                 _resumeFullTransfers.add(queueEntry);
 
-                // TODO: exists in receivers map, but not yet got an outcome ... should resend with resume = true
+                // TODO:PID-7845: exists in receivers map, but not yet got an outcome ... should resend with resume = true
             }
         }
 

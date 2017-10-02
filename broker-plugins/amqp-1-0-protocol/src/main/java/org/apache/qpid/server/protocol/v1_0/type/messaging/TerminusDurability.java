@@ -74,25 +74,27 @@ public class TerminusDurability implements RestrictedType<UnsignedInteger>
 
     public static TerminusDurability valueOf(Object obj)
     {
-        UnsignedInteger val = (UnsignedInteger) obj;
-
-        if (NONE._val.equals(val))
+        if (obj instanceof UnsignedInteger)
         {
-            return NONE;
-        }
+            UnsignedInteger val = (UnsignedInteger) obj;
 
-        if (CONFIGURATION._val.equals(val))
-        {
-            return CONFIGURATION;
-        }
+            if (NONE._val.equals(val))
+            {
+                return NONE;
+            }
 
-        if (UNSETTLED_STATE._val.equals(val))
-        {
-            return UNSETTLED_STATE;
-        }
+            if (CONFIGURATION._val.equals(val))
+            {
+                return CONFIGURATION;
+            }
 
-        // TODO ERROR
-        return null;
+            if (UNSETTLED_STATE._val.equals(val))
+            {
+                return UNSETTLED_STATE;
+            }
+        }
+        final String message = String.format("Cannot convert '%s' into 'terminus-durability'", obj);
+        throw new IllegalArgumentException(message);
     }
 
     public static TerminusDurability min(TerminusDurability durabilityA, TerminusDurability durabilityB)

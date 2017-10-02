@@ -54,74 +54,78 @@ public class AmqpError implements ErrorCondition, RestrictedType<Symbol>
 
     public static AmqpError valueOf(Object obj)
     {
-        Symbol val = (Symbol) obj;
-
-        if (INTERNAL_ERROR._val.equals(val))
+        if (obj instanceof Symbol)
         {
-            return INTERNAL_ERROR;
+            Symbol val = (Symbol) obj;
+
+            if (INTERNAL_ERROR._val.equals(val))
+            {
+                return INTERNAL_ERROR;
+            }
+
+            if (NOT_FOUND._val.equals(val))
+            {
+                return NOT_FOUND;
+            }
+
+            if (UNAUTHORIZED_ACCESS._val.equals(val))
+            {
+                return UNAUTHORIZED_ACCESS;
+            }
+
+            if (DECODE_ERROR._val.equals(val))
+            {
+                return DECODE_ERROR;
+            }
+
+            if (RESOURCE_LIMIT_EXCEEDED._val.equals(val))
+            {
+                return RESOURCE_LIMIT_EXCEEDED;
+            }
+
+            if (NOT_ALLOWED._val.equals(val))
+            {
+                return NOT_ALLOWED;
+            }
+
+            if (INVALID_FIELD._val.equals(val))
+            {
+                return INVALID_FIELD;
+            }
+
+            if (NOT_IMPLEMENTED._val.equals(val))
+            {
+                return NOT_IMPLEMENTED;
+            }
+
+            if (RESOURCE_LOCKED._val.equals(val))
+            {
+                return RESOURCE_LOCKED;
+            }
+
+            if (PRECONDITION_FAILED._val.equals(val))
+            {
+                return PRECONDITION_FAILED;
+            }
+
+            if (RESOURCE_DELETED._val.equals(val))
+            {
+                return RESOURCE_DELETED;
+            }
+
+            if (ILLEGAL_STATE._val.equals(val))
+            {
+                return ILLEGAL_STATE;
+            }
+
+            if (FRAME_SIZE_TOO_SMALL._val.equals(val))
+            {
+                return FRAME_SIZE_TOO_SMALL;
+            }
         }
 
-        if (NOT_FOUND._val.equals(val))
-        {
-            return NOT_FOUND;
-        }
-
-        if (UNAUTHORIZED_ACCESS._val.equals(val))
-        {
-            return UNAUTHORIZED_ACCESS;
-        }
-
-        if (DECODE_ERROR._val.equals(val))
-        {
-            return DECODE_ERROR;
-        }
-
-        if (RESOURCE_LIMIT_EXCEEDED._val.equals(val))
-        {
-            return RESOURCE_LIMIT_EXCEEDED;
-        }
-
-        if (NOT_ALLOWED._val.equals(val))
-        {
-            return NOT_ALLOWED;
-        }
-
-        if (INVALID_FIELD._val.equals(val))
-        {
-            return INVALID_FIELD;
-        }
-
-        if (NOT_IMPLEMENTED._val.equals(val))
-        {
-            return NOT_IMPLEMENTED;
-        }
-
-        if (RESOURCE_LOCKED._val.equals(val))
-        {
-            return RESOURCE_LOCKED;
-        }
-
-        if (PRECONDITION_FAILED._val.equals(val))
-        {
-            return PRECONDITION_FAILED;
-        }
-
-        if (RESOURCE_DELETED._val.equals(val))
-        {
-            return RESOURCE_DELETED;
-        }
-
-        if (ILLEGAL_STATE._val.equals(val))
-        {
-            return ILLEGAL_STATE;
-        }
-
-        if (FRAME_SIZE_TOO_SMALL._val.equals(val))
-        {
-            return FRAME_SIZE_TOO_SMALL;
-        }
-
-        return null;
+        final String message = String.format("Cannot convert '%s' into 'amqp-error'", obj);
+        throw new IllegalArgumentException(message);
     }
 
     @Override

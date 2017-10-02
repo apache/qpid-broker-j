@@ -1381,7 +1381,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                     }
                     else
                     {
-                        // TODO - link stealing???
+                        // TODO - close connection or session with internal error
                     }
                 }
             });

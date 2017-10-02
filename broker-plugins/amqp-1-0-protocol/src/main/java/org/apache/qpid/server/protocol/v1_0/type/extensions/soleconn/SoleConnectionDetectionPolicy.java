@@ -45,20 +45,23 @@ public class SoleConnectionDetectionPolicy implements RestrictedType<UnsignedInt
 
     public static SoleConnectionDetectionPolicy valueOf(Object obj)
     {
-        UnsignedInteger val = (UnsignedInteger) obj;
-
-        if (STRONG._val.equals(val))
+        if (obj instanceof UnsignedInteger)
         {
-            return STRONG;
+            UnsignedInteger val = (UnsignedInteger) obj;
+
+            if (STRONG._val.equals(val))
+            {
+                return STRONG;
+            }
+
+            if (WEAK._val.equals(val))
+            {
+                return WEAK;
+            }
         }
 
-        if (WEAK._val.equals(val))
-        {
-            return WEAK;
-        }
-
-        throw new IllegalArgumentException(String.format(
-                "SoleConnectionDetectionPolicy must be either 0 or 1. Got '%s'", obj));
+        final String message = String.format("Cannot convert '%s' into 'sole-connection-detection-policy'", obj);
+        throw new IllegalArgumentException(message);
     }
 
     @Override

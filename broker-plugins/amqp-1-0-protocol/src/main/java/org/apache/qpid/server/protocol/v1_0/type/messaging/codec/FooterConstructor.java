@@ -27,9 +27,11 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Footer;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public class FooterConstructor extends AbstractDescribedTypeConstructor<Footer>
 {
@@ -50,7 +52,7 @@ public class FooterConstructor extends AbstractDescribedTypeConstructor<Footer>
 
 
     @Override
-    public Footer construct(Object underlying)
+    public Footer construct(Object underlying) throws AmqpErrorException
     {
 
         if(underlying instanceof Map)
@@ -59,8 +61,9 @@ public class FooterConstructor extends AbstractDescribedTypeConstructor<Footer>
         }
         else
         {
-            // TODO - error
-            return null;
+            final String msg = String.format("Cannot decode 'footer' from '%s'",
+                                             underlying == null ? null : underlying.getClass().getSimpleName());
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
         }
     }
 

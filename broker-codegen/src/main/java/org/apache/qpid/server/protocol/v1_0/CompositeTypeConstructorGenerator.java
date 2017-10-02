@@ -347,7 +347,7 @@ public class CompositeTypeConstructorGenerator  extends AbstractProcessor
         {
             pw.println(indent + "if (" + fieldName + " != null)");
             pw.println(indent + "{");
-            indent += "    ";
+            indent = "    " + indent;
         }
         f.accept(indent);
         if (wrap)

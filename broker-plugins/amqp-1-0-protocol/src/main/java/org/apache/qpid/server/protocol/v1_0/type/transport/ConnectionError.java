@@ -47,29 +47,33 @@ public class ConnectionError implements ErrorCondition, RestrictedType<Symbol>
 
     public static ConnectionError valueOf(Object obj)
     {
-        Symbol val = (Symbol) obj;
-
-        if (CONNECTION_FORCED._val.equals(val))
+        if (obj instanceof Symbol)
         {
-            return CONNECTION_FORCED;
+            Symbol val = (Symbol) obj;
+
+            if (CONNECTION_FORCED._val.equals(val))
+            {
+                return CONNECTION_FORCED;
+            }
+
+            if (FRAMING_ERROR._val.equals(val))
+            {
+                return FRAMING_ERROR;
+            }
+
+            if (REDIRECT._val.equals(val))
+            {
+                return REDIRECT;
+            }
+
+            if (SOCKET_ERROR._val.equals(val))
+            {
+                return SOCKET_ERROR;
+            }
         }
 
-        if (FRAMING_ERROR._val.equals(val))
-        {
-            return FRAMING_ERROR;
-        }
-
-        if (REDIRECT._val.equals(val))
-        {
-            return REDIRECT;
-        }
-
-        if (SOCKET_ERROR._val.equals(val))
-        {
-            return SOCKET_ERROR;
-        }
-
-        return null;
+        final String message = String.format("Cannot convert '%s' into 'connection-error'", obj);
+        throw new IllegalArgumentException(message);
     }
 
     @Override

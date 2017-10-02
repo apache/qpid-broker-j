@@ -653,8 +653,6 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
                 if (_decodedUserId.get() == null)
                 {
                     Binary encodededUserId = _propertiesSection.getValue().getUserId();
-                    // TODO the specification does not state the encoding of the binary.
-                    // Trying to convert to UTF-8 is guaranteed not to throw an exception.
                     _decodedUserId.set(new String(encodededUserId.getArray(), StandardCharsets.UTF_8));
                 }
                 return _decodedUserId.get();

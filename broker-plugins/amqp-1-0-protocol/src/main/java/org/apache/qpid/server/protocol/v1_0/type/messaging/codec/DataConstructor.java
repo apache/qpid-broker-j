@@ -25,10 +25,12 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public class DataConstructor extends AbstractDescribedTypeConstructor<Data>
 {
@@ -49,7 +51,7 @@ public class DataConstructor extends AbstractDescribedTypeConstructor<Data>
 
 
     @Override
-    public Data construct(Object underlying)
+    public Data construct(Object underlying) throws AmqpErrorException
     {
 
         if(underlying instanceof Binary)
@@ -58,8 +60,9 @@ public class DataConstructor extends AbstractDescribedTypeConstructor<Data>
         }
         else
         {
-            // TODO - error
-            return null;
+            final String msg = String.format("Cannot decode 'data' from '%s'",
+                                             underlying == null ? null : underlying.getClass().getSimpleName());
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
         }
     }
 

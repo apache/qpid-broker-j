@@ -27,9 +27,11 @@ import java.util.List;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequence;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public class AmqpSequenceConstructor extends AbstractDescribedTypeConstructor<AmqpSequence>
 {
@@ -50,17 +52,17 @@ public class AmqpSequenceConstructor extends AbstractDescribedTypeConstructor<Am
 
 
     @Override
-    public AmqpSequence construct(Object underlying)
+    public AmqpSequence construct(Object underlying) throws AmqpErrorException
     {
-
         if(underlying instanceof List)
         {
             return new AmqpSequence((List)underlying);
         }
         else
         {
-            // TODO - error
-            return null;
+            final String msg = String.format("Cannot decode 'amqp-sequence' from '%s'",
+                                             underlying == null ? null : underlying.getClass().getSimpleName());
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
         }
     }
 

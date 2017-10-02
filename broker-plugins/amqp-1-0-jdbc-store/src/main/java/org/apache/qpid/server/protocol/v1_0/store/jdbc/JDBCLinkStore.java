@@ -345,6 +345,10 @@ public class JDBCLinkStore extends AbstractLinkStore
                 links.add(new LinkDefinitionImpl<>(remoteContainerId, linkName, role, source, target));
             }
         }
+        catch (IllegalArgumentException e)
+        {
+            throw new StoreException("Cannot load links from store", e);
+        }
         return links;
     }
 

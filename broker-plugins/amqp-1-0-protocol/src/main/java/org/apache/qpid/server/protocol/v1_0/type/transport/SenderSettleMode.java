@@ -42,25 +42,28 @@ public class SenderSettleMode implements RestrictedType<UnsignedByte>
 
     public static SenderSettleMode valueOf(Object obj)
     {
-        UnsignedByte val = (UnsignedByte) obj;
-
-        if (UNSETTLED._val.equals(val))
+        if (obj instanceof UnsignedByte)
         {
-            return UNSETTLED;
+            UnsignedByte val = (UnsignedByte) obj;
+
+            if (UNSETTLED._val.equals(val))
+            {
+                return UNSETTLED;
+            }
+
+            if (SETTLED._val.equals(val))
+            {
+                return SETTLED;
+            }
+
+            if (MIXED._val.equals(val))
+            {
+                return MIXED;
+            }
         }
 
-        if (SETTLED._val.equals(val))
-        {
-            return SETTLED;
-        }
-
-        if (MIXED._val.equals(val))
-        {
-            return MIXED;
-        }
-
-        // TODO ERROR
-        return null;
+        final String message = String.format("Cannot convert '%s' into 'sender-settle-mode'", obj);
+        throw new IllegalArgumentException(message);
     }
 
     @Override

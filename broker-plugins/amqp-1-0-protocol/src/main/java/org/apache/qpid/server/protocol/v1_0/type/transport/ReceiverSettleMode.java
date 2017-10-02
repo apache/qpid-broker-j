@@ -41,20 +41,22 @@ public class ReceiverSettleMode implements RestrictedType<UnsignedByte>
 
     public static ReceiverSettleMode valueOf(Object obj)
     {
-        UnsignedByte val = (UnsignedByte) obj;
-
-        if (FIRST._val.equals(val))
+        if (obj instanceof UnsignedByte)
         {
-            return FIRST;
+            UnsignedByte val = (UnsignedByte) obj;
+            if (FIRST._val.equals(val))
+            {
+                return FIRST;
+            }
+
+            if (SECOND._val.equals(val))
+            {
+                return SECOND;
+            }
         }
 
-        if (SECOND._val.equals(val))
-        {
-            return SECOND;
-        }
-
-        // TODO ERROR
-        return null;
+        final String message = String.format("Cannot convert '%s' into 'receiver-settle-mode'", obj);
+        throw new IllegalArgumentException(message);
     }
 
     @Override

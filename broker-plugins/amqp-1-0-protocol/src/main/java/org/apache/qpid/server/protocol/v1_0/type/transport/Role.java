@@ -40,20 +40,22 @@ public class Role implements RestrictedType<Boolean>
 
     public static Role valueOf(Object obj)
     {
-        boolean val = (Boolean) obj;
-
-        if (SENDER._val == (val))
+        if (obj instanceof Boolean)
         {
-            return SENDER;
-        }
+            boolean val = (Boolean) obj;
 
-        if (RECEIVER._val == (val))
-        {
-            return RECEIVER;
-        }
+            if (SENDER._val == (val))
+            {
+                return SENDER;
+            }
 
-        // TODO ERROR
-        return null;
+            if (RECEIVER._val == (val))
+            {
+                return RECEIVER;
+            }
+        }
+        final String message = String.format("Cannot convert '%s' into 'role'", obj);
+        throw new IllegalArgumentException(message);
     }
 
     @Override

@@ -57,6 +57,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.common.ServerPropertyNames;
 import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
@@ -71,7 +72,6 @@ import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ProtocolHandler;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
@@ -848,7 +848,16 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         {
             if (_remoteProperties != null && _remoteProperties.containsKey(SOLE_CONNECTION_ENFORCEMENT_POLICY))
             {
-                _soleConnectionEnforcementPolicy = SoleConnectionEnforcementPolicy.valueOf(_remoteProperties.get(SOLE_CONNECTION_ENFORCEMENT_POLICY));
+                try
+                {
+                    _soleConnectionEnforcementPolicy = SoleConnectionEnforcementPolicy.valueOf(_remoteProperties.get(
+                            SOLE_CONNECTION_ENFORCEMENT_POLICY));
+                }
+                catch (IllegalArgumentException e)
+                {
+                    closeConnection(AmqpError.INVALID_FIELD, e.getMessage());
+                    return;
+                }
             }
             else
             {

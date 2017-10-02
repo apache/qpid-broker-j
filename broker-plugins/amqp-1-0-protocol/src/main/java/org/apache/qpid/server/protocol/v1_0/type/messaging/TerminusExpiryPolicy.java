@@ -83,29 +83,32 @@ public class TerminusExpiryPolicy implements RestrictedType<Symbol>
 
     public static TerminusExpiryPolicy valueOf(Object obj)
     {
-        Symbol val = (Symbol) obj;
-
-        if (LINK_DETACH._val.equals(val))
+        if (obj instanceof Symbol)
         {
-            return LINK_DETACH;
+            Symbol val = (Symbol) obj;
+
+            if (LINK_DETACH._val.equals(val))
+            {
+                return LINK_DETACH;
+            }
+
+            if (SESSION_END._val.equals(val))
+            {
+                return SESSION_END;
+            }
+
+            if (CONNECTION_CLOSE._val.equals(val))
+            {
+                return CONNECTION_CLOSE;
+            }
+
+            if (NEVER._val.equals(val))
+            {
+                return NEVER;
+            }
         }
 
-        if (SESSION_END._val.equals(val))
-        {
-            return SESSION_END;
-        }
-
-        if (CONNECTION_CLOSE._val.equals(val))
-        {
-            return CONNECTION_CLOSE;
-        }
-
-        if (NEVER._val.equals(val))
-        {
-            return NEVER;
-        }
-
-        // TODO ERROR
-        return null;
+        final String message = String.format("Cannot convert '%s' into 'terminus-expiry-policy'", obj);
+        throw new IllegalArgumentException(message);
     }
 }

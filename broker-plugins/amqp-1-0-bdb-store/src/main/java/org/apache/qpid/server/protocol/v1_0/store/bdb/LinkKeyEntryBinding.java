@@ -26,6 +26,7 @@ import com.sleepycat.bind.tuple.TupleOutput;
 
 import org.apache.qpid.server.protocol.v1_0.LinkKey;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.store.StoreException;
 
 public class LinkKeyEntryBinding extends TupleBinding<LinkKey>
 {
@@ -41,7 +42,15 @@ public class LinkKeyEntryBinding extends TupleBinding<LinkKey>
     {
         String remoteContainerId =  input.readString();
         String linkName = input.readString();
-        Role role = Role.valueOf(input.readBoolean());
+        Role role = null;
+        try
+        {
+            role = Role.valueOf(input.readBoolean());
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new StoreException("Cannot load link from store", e);
+        }
 
         final String remoteContainerId1 = remoteContainerId;
         final String linkName1 = linkName;

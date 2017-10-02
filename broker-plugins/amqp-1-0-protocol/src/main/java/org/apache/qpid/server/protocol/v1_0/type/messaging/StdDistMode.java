@@ -68,18 +68,22 @@ public class StdDistMode implements DistributionMode, RestrictedType<Symbol>
 
     public static StdDistMode valueOf(Object obj)
     {
-        Symbol val = (Symbol) obj;
-
-        if (MOVE._val.equals(val))
+        if (obj instanceof Symbol)
         {
-            return MOVE;
+            Symbol val = (Symbol) obj;
+
+            if (MOVE._val.equals(val))
+            {
+                return MOVE;
+            }
+
+            if (COPY._val.equals(val))
+            {
+                return COPY;
+            }
         }
 
-        if (COPY._val.equals(val))
-        {
-            return COPY;
-        }
-
-        return null;
+        final String message = String.format("Cannot convert '%s' into 'std-dist-mode'", obj);
+        throw new IllegalArgumentException(message);
     }
 }

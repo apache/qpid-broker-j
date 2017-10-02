@@ -88,34 +88,37 @@ public class SaslCode implements RestrictedType<UnsignedByte>
 
     public static SaslCode valueOf(Object obj)
     {
-        UnsignedByte val = (UnsignedByte) obj;
-
-        if (OK._val.equals(val))
+        if (obj instanceof UnsignedByte)
         {
-            return OK;
+            UnsignedByte val = (UnsignedByte) obj;
+
+            if (OK._val.equals(val))
+            {
+                return OK;
+            }
+
+            if (AUTH._val.equals(val))
+            {
+                return AUTH;
+            }
+
+            if (SYS._val.equals(val))
+            {
+                return SYS;
+            }
+
+            if (SYS_PERM._val.equals(val))
+            {
+                return SYS_PERM;
+            }
+
+            if (SYS_TEMP._val.equals(val))
+            {
+                return SYS_TEMP;
+            }
         }
 
-        if (AUTH._val.equals(val))
-        {
-            return AUTH;
-        }
-
-        if (SYS._val.equals(val))
-        {
-            return SYS;
-        }
-
-        if (SYS_PERM._val.equals(val))
-        {
-            return SYS_PERM;
-        }
-
-        if (SYS_TEMP._val.equals(val))
-        {
-            return SYS_TEMP;
-        }
-
-        // TODO ERROR
-        return null;
+        final String message = String.format("Cannot convert '%s' into 'sasl-code'", obj);
+        throw new IllegalArgumentException(message);
     }
 }

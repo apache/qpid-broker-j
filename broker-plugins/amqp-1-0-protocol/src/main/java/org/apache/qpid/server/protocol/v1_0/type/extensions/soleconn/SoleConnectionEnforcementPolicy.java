@@ -45,20 +45,23 @@ public class SoleConnectionEnforcementPolicy implements RestrictedType<UnsignedI
 
     public static SoleConnectionEnforcementPolicy valueOf(Object obj)
     {
-        UnsignedInteger val = (UnsignedInteger) obj;
-
-        if (REFUSE_CONNECTION._val.equals(val))
+        if (obj instanceof UnsignedInteger)
         {
-            return REFUSE_CONNECTION;
+            UnsignedInteger val = (UnsignedInteger) obj;
+
+            if (REFUSE_CONNECTION._val.equals(val))
+            {
+                return REFUSE_CONNECTION;
+            }
+
+            if (CLOSE_EXISTING._val.equals(val))
+            {
+                return CLOSE_EXISTING;
+            }
         }
 
-        if (CLOSE_EXISTING._val.equals(val))
-        {
-            return CLOSE_EXISTING;
-        }
-
-        throw new IllegalArgumentException(String.format(
-                "SoleConnectionEnforcementPolicy must be either 0 or 1. Got '%s'", obj));
+        final String message = String.format("Cannot convert '%s' into 'sole-connection-enforcement-policy'", obj);
+        throw new IllegalArgumentException(message);
     }
 
     @Override
