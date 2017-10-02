@@ -122,7 +122,7 @@ public class Asserts
                                         Queue.NO_LOCAL,
                                         LastValueQueue.LVQ_KEY,
                                         SortedQueue.SORT_KEY,
-                                        Queue.MESSAGE_GROUP_KEY,
+                                        Queue.MESSAGE_GROUP_KEY_OVERRIDE,
                                         Queue.MESSAGE_GROUP_TYPE,
                                         PriorityQueue.PRIORITIES,
                                         ConfiguredObject.CONTEXT,

@@ -758,6 +758,11 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                     {
                         attributes.put("messageGroupType", "STANDARD");
                     }
+                    Object oldMessageGroupKey = attributes.remove("messageGroupKey");
+                    if (!"JMSXGroupId".equals(oldMessageGroupKey))
+                    {
+                        attributes.put("messageGroupKeyOverride", oldMessageGroupKey);
+                    }
                 }
                 else
                 {

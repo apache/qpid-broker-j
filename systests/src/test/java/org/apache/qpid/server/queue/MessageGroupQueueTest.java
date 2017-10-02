@@ -36,8 +36,6 @@ import javax.jms.Queue;
 import javax.jms.Session;
 
 import org.apache.qpid.QpidException;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
@@ -46,31 +44,31 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
 {
     protected final String QUEUE = "MessageGroupQueue";
 
-    private Connection producerConnection;
-    private MessageProducer producer;
-    private Session producerSession;
-    private Queue queue;
-    private Connection consumerConnection;
+    private Connection _producerConnection;
+    private MessageProducer _producer;
+    private Session _producerSession;
+    private Queue _queue;
+    private Connection _consumerConnection;
 
     @Override
     public void setUp() throws Exception
     {
         super.setUp();
 
-        producerConnection = getConnection();
-        producerSession = producerConnection.createSession(true, Session.AUTO_ACKNOWLEDGE);
+        _producerConnection = getConnection();
+        _producerSession = _producerConnection.createSession(true, Session.AUTO_ACKNOWLEDGE);
 
-        producerConnection.start();
+        _producerConnection.start();
 
-        consumerConnection = getConnectionWithPrefetch(0);
+        _consumerConnection = getConnectionWithPrefetch(0);
 
     }
 
     @Override
     public void tearDown() throws Exception
     {
-        producerConnection.close();
-        consumerConnection.close();
+        _producerConnection.close();
+        _consumerConnection.close();
         super.tearDown();
     }
 
@@ -131,22 +129,22 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
 
         for (int msg = 0; msg < 4; msg++)
         {
-            producer.send(createMessage(msg, groups[msg % groups.length], useDefaultGroup));
+            _producer.send(createMessage(msg, groups[msg % groups.length], useDefaultGroup));
         }
-        producerSession.commit();
-        producer.close();
-        producerSession.close();
-        producerConnection.close();
+        _producerSession.commit();
+        _producer.close();
+        _producerSession.close();
+        _producerConnection.close();
 
-        Session cs1 = consumerConnection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        Session cs2 = consumerConnection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-
-
-        MessageConsumer consumer1 = cs1.createConsumer(queue);
-        MessageConsumer consumer2 = cs2.createConsumer(queue);
+        Session cs1 = _consumerConnection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+        Session cs2 = _consumerConnection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
 
 
-        consumerConnection.start();
+        MessageConsumer consumer1 = cs1.createConsumer(_queue);
+        MessageConsumer consumer2 = cs2.createConsumer(_queue);
+
+
+        _consumerConnection.start();
         Message cs1Received = consumer1.receive(getReceiveTimeout());
         assertNotNull("Consumer 1 should have received first message", cs1Received);
 
@@ -183,33 +181,29 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
             final Map<String, Object> arguments = new HashMap<>();
             if(!useDefaultKey)
             {
-                arguments.put(org.apache.qpid.server.model.Queue.MESSAGE_GROUP_KEY, "group");
+                arguments.put(org.apache.qpid.server.model.Queue.MESSAGE_GROUP_KEY_OVERRIDE, "group");
             }
             arguments.put(ConfiguredObject.DURABLE, "false");
             arguments.put(ConfiguredObject.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS.toString());
             arguments.put(org.apache.qpid.server.model.Queue.MESSAGE_GROUP_TYPE, sharedGroups ? MessageGroupType.SHARED_GROUPS.name() : MessageGroupType.STANDARD.name());
 
-            createEntityUsingAmqpManagement(QUEUE, producerSession, "org.apache.qpid.Queue", arguments);
-            queue = producerSession.createQueue(isBroker10() ? QUEUE : "ADDR:"+QUEUE+" ; {assert : never, node: { type: queue } }");
+            createEntityUsingAmqpManagement(QUEUE, _producerSession, "org.apache.qpid.Queue", arguments);
+            _queue = _producerSession.createQueue(isBroker10() ? QUEUE : "ADDR:" + QUEUE + " ; {assert : never, node: { type: queue } }");
         }
         else
         {
-            final Map<String, Object> arguments = new HashMap<>();
-            arguments.put(QueueArgumentsConverter.QPID_GROUP_HEADER_KEY, "group");
+            StringBuilder sb = new StringBuilder();
+            sb.append("ADDR:");
+            sb.append(QUEUE);
+            sb.append(" ; {create : always, node: { type: queue, x-declare: { arguments: {'qpid.group_header_key' : group");
             if (sharedGroups)
             {
-                arguments.put(QueueArgumentsConverter.QPID_SHARED_MSG_GROUP, "1");
+                sb.append(", 'qpid.shared_msg_group' : 1");
             }
-            ((AMQSession) producerSession).createQueue(QUEUE, true, false, false, arguments);
-            queue = (Queue) producerSession.createQueue("direct://amq.direct/"
-                                                        + QUEUE
-                                                        + "/"
-                                                        + QUEUE
-                                                        + "?durable='false'&autodelete='true'");
-
-            ((AMQSession) producerSession).declareAndBind((AMQDestination) queue);
+            sb.append("} } } }");
+            _queue = _producerSession.createQueue(sb.toString());
         }
-        producer = producerSession.createProducer(queue);
+        _producer = _producerSession.createProducer(_queue);
     }
 
 
@@ -244,23 +238,23 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
     {
         createQueueAndProducer(sharedGroups, false);
 
-        producer.send(createMessage(1, "ONE", useDefaultGroup));
-        producer.send(createMessage(2, "ONE", useDefaultGroup));
-        producer.send(createMessage(3, "TWO", useDefaultGroup));
-        producer.send(createMessage(4, "ONE", useDefaultGroup));
+        _producer.send(createMessage(1, "ONE", useDefaultGroup));
+        _producer.send(createMessage(2, "ONE", useDefaultGroup));
+        _producer.send(createMessage(3, "TWO", useDefaultGroup));
+        _producer.send(createMessage(4, "ONE", useDefaultGroup));
 
-        producerSession.commit();
-        producer.close();
-        producerSession.close();
-        producerConnection.close();
+        _producerSession.commit();
+        _producer.close();
+        _producerSession.close();
+        _producerConnection.close();
         boolean is010 = isBroker010();
-        Session cs1 = consumerConnection.createSession(!is010, is010 ? Session.CLIENT_ACKNOWLEDGE : Session.SESSION_TRANSACTED);
-        Session cs2 = consumerConnection.createSession(!is010, is010 ? Session.CLIENT_ACKNOWLEDGE : Session.SESSION_TRANSACTED);
+        Session cs1 = _consumerConnection.createSession(!is010, is010 ? Session.CLIENT_ACKNOWLEDGE : Session.SESSION_TRANSACTED);
+        Session cs2 = _consumerConnection.createSession(!is010, is010 ? Session.CLIENT_ACKNOWLEDGE : Session.SESSION_TRANSACTED);
 
-        MessageConsumer consumer1 = cs1.createConsumer(queue);
+        MessageConsumer consumer1 = cs1.createConsumer(_queue);
 
-        consumerConnection.start();
-        MessageConsumer consumer2 = cs2.createConsumer(queue);
+        _consumerConnection.start();
+        MessageConsumer consumer2 = cs2.createConsumer(_queue);
 
         Message cs1Received = consumer1.receive(getReceiveTimeout());
         assertNotNull("Consumer 1 should have received first message", cs1Received);
@@ -361,26 +355,26 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
     {
         createQueueAndProducer(sharedGroups, false);
 
-        producer.send(createMessage(1, "ONE", useDefaultGroup));
-        producer.send(createMessage(2, "ONE", useDefaultGroup));
-        producer.send(createMessage(3, "TWO", useDefaultGroup));
-        producer.send(createMessage(4, "ONE", useDefaultGroup));
+        _producer.send(createMessage(1, "ONE", useDefaultGroup));
+        _producer.send(createMessage(2, "ONE", useDefaultGroup));
+        _producer.send(createMessage(3, "TWO", useDefaultGroup));
+        _producer.send(createMessage(4, "ONE", useDefaultGroup));
 
-        producerSession.commit();
-        producer.close();
-        producerSession.close();
-        producerConnection.close();
+        _producerSession.commit();
+        _producer.close();
+        _producerSession.close();
+        _producerConnection.close();
 
         boolean is010 = isBroker010();
-        Session cs1 = consumerConnection.createSession(!is010, is010 ? Session.CLIENT_ACKNOWLEDGE : Session.SESSION_TRANSACTED);
-        Session cs2 = consumerConnection.createSession(!is010, is010 ? Session.CLIENT_ACKNOWLEDGE : Session.SESSION_TRANSACTED);
+        Session cs1 = _consumerConnection.createSession(!is010, is010 ? Session.CLIENT_ACKNOWLEDGE : Session.SESSION_TRANSACTED);
+        Session cs2 = _consumerConnection.createSession(!is010, is010 ? Session.CLIENT_ACKNOWLEDGE : Session.SESSION_TRANSACTED);
 
 
-        MessageConsumer consumer1 = cs1.createConsumer(queue);
+        MessageConsumer consumer1 = cs1.createConsumer(_queue);
 
-        consumerConnection.start();
+        _consumerConnection.start();
 
-        MessageConsumer consumer2 = cs2.createConsumer(queue);
+        MessageConsumer consumer2 = cs2.createConsumer(_queue);
 
         Message cs1Received = consumer1.receive(getReceiveTimeout());
         assertNotNull("Consumer 1 should have received its first message", cs1Received);
@@ -470,26 +464,26 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
     {
         createQueueAndProducer(sharedGroups, useDefaultGroup);
 
-        producer.send(createMessage(1, "ONE", useDefaultGroup));
-        producer.send(createMessage(2, "TWO", useDefaultGroup));
-        producer.send(createMessage(3, "THREE", useDefaultGroup));
-        producer.send(createMessage(4, "ONE", useDefaultGroup));
+        _producer.send(createMessage(1, "ONE", useDefaultGroup));
+        _producer.send(createMessage(2, "TWO", useDefaultGroup));
+        _producer.send(createMessage(3, "THREE", useDefaultGroup));
+        _producer.send(createMessage(4, "ONE", useDefaultGroup));
 
-        producerSession.commit();
-        producer.close();
-        producerSession.close();
-        producerConnection.close();
+        _producerSession.commit();
+        _producer.close();
+        _producerSession.close();
+        _producerConnection.close();
 
         boolean is010 = isBroker010();
-        Session cs1 = consumerConnection.createSession(!is010, is010 ? Session.CLIENT_ACKNOWLEDGE : Session.SESSION_TRANSACTED);
-        Session cs2 = consumerConnection.createSession(!is010, is010 ? Session.CLIENT_ACKNOWLEDGE : Session.SESSION_TRANSACTED);
+        Session cs1 = _consumerConnection.createSession(!is010, is010 ? Session.CLIENT_ACKNOWLEDGE : Session.SESSION_TRANSACTED);
+        Session cs2 = _consumerConnection.createSession(!is010, is010 ? Session.CLIENT_ACKNOWLEDGE : Session.SESSION_TRANSACTED);
 
 
-        MessageConsumer consumer1 = cs1.createConsumer(queue);
+        MessageConsumer consumer1 = cs1.createConsumer(_queue);
 
-        consumerConnection.start();
+        _consumerConnection.start();
 
-        MessageConsumer consumer2 = cs2.createConsumer(queue);
+        MessageConsumer consumer2 = cs2.createConsumer(_queue);
 
         Message cs1Received = consumer1.receive(getReceiveTimeout());
         assertNotNull("Consumer 1 should have received its first message", cs1Received);
@@ -574,7 +568,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
 
     private Message createMessage(int msg, String group, final boolean useDefaultGroup) throws JMSException
     {
-        Message send = producerSession.createTextMessage("Message: " + msg);
+        Message send = _producerSession.createTextMessage("Message: " + msg);
         send.setIntProperty("msg", msg);
         send.setStringProperty(useDefaultGroup ? "JMSXGroupID" : "group", group);
 
@@ -589,7 +583,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
     public void testSingleSharedGroupWithMultipleConsumers() throws Exception
     {
 
-        consumerConnection = getConnectionWithPrefetch(1);
+        _consumerConnection = getConnectionWithPrefetch(1);
 
         final boolean useDefaultGroup = false;
         createQueueAndProducer(true, useDefaultGroup);
@@ -597,29 +591,29 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         int numMessages = 100;
         SharedGroupTestMessageListener groupingTestMessageListener = new SharedGroupTestMessageListener(numMessages);
 
-        Session cs1 = consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Session cs2 = consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Session cs3 = consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Session cs4 = consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Session cs1 = _consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Session cs2 = _consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Session cs3 = _consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Session cs4 = _consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-        MessageConsumer consumer1 = cs1.createConsumer(queue);
+        MessageConsumer consumer1 = cs1.createConsumer(_queue);
         consumer1.setMessageListener(groupingTestMessageListener);
-        MessageConsumer consumer2 = cs2.createConsumer(queue);
+        MessageConsumer consumer2 = cs2.createConsumer(_queue);
         consumer2.setMessageListener(groupingTestMessageListener);
-        MessageConsumer consumer3 = cs3.createConsumer(queue);
+        MessageConsumer consumer3 = cs3.createConsumer(_queue);
         consumer3.setMessageListener(groupingTestMessageListener);
-        MessageConsumer consumer4 = cs4.createConsumer(queue);
+        MessageConsumer consumer4 = cs4.createConsumer(_queue);
         consumer4.setMessageListener(groupingTestMessageListener);
-        consumerConnection.start();
+        _consumerConnection.start();
 
         for(int i = 1; i <= numMessages; i++)
         {
-            producer.send(createMessage(i, "GROUP", useDefaultGroup));
+            _producer.send(createMessage(i, "GROUP", useDefaultGroup));
         }
-        producerSession.commit();
-        producer.close();
-        producerSession.close();
-        producerConnection.close();
+        _producerSession.commit();
+        _producer.close();
+        _producerSession.close();
+        _producerConnection.close();
 
         assertTrue("Mesages not all received in the allowed timeframe", groupingTestMessageListener.waitForLatch(30));
         assertEquals("Unexpected concurrent processing of messages for the group", 0, groupingTestMessageListener.getConcurrentProcessingCases());

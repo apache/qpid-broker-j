@@ -32,7 +32,7 @@ import org.apache.qpid.server.message.AMQMessageHeader;
 
 public class AssignedConsumerMessageGroupManager implements MessageGroupManager
 {
-    private static final Logger _logger = LoggerFactory.getLogger(AssignedConsumerMessageGroupManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AssignedConsumerMessageGroupManager.class);
 
 
     private final String _groupId;
@@ -58,8 +58,7 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
     @Override
     public boolean mightAssign(final QueueEntry entry, QueueConsumer sub)
     {
-        final AMQMessageHeader messageHeader = entry.getMessage().getMessageHeader();
-        Object groupVal = _groupId == null ? messageHeader.getGroupId() : messageHeader.getHeader(_groupId);
+        Object groupVal = getGroupValue(entry);
 
         if(groupVal == null)
         {
@@ -78,10 +77,15 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
         return assignMessage(sub, entry) && entry.acquire(sub);
     }
 
-    private boolean assignMessage(QueueConsumer<?,?> sub, QueueEntry entry)
+    private Object getGroupValue(final QueueEntry entry)
     {
         final AMQMessageHeader messageHeader = entry.getMessage().getMessageHeader();
-        Object groupVal = _groupId == null ? messageHeader.getGroupId() : messageHeader.getHeader(_groupId);
+        return _groupId == null ? messageHeader.getGroupId() : messageHeader.getHeader(_groupId);
+    }
+
+    private boolean assignMessage(QueueConsumer<?,?> sub, QueueEntry entry)
+    {
+        Object groupVal = getGroupValue(entry);
         if(groupVal == null)
         {
             return true;
@@ -98,7 +102,7 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
             {
                 if(assignedSub == null)
                 {
-                    _logger.debug("Assigning group {} to sub {}", groupVal, sub);
+                    LOGGER.debug("Assigning group {} to sub {}", groupVal, sub);
                     assignedSub = _groupMap.putIfAbsent(group, sub);
                     return assignedSub == null || assignedSub == sub;
                 }
@@ -109,7 +113,7 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
             }
         }
     }
-    
+
     @Override
     public QueueEntry findEarliestAssignedAvailableEntry(QueueConsumer<?,?> sub)
     {
@@ -136,8 +140,7 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
                 return false;
             }
 
-            final AMQMessageHeader messageHeader = entry.getMessage().getMessageHeader();
-            Object groupVal = _groupId == null ? messageHeader.getGroupId() : messageHeader.getHeader(_groupId);
+            Object groupVal = getGroupValue(entry);
             if(groupVal == null)
             {
                 return false;

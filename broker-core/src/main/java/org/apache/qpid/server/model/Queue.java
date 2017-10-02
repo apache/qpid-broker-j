@@ -33,7 +33,14 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.queue.*;
+import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.queue.CreatingLinkInfo;
+import org.apache.qpid.server.queue.MessageGroupType;
+import org.apache.qpid.server.queue.NotificationCheck;
+import org.apache.qpid.server.queue.QueueConsumer;
+import org.apache.qpid.server.queue.QueueEntry;
+import org.apache.qpid.server.queue.QueueEntryIterator;
+import org.apache.qpid.server.queue.QueueEntryVisitor;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.util.Deletable;
@@ -63,7 +70,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     String ALTERNATE_BINDING = "alternateBinding";
     String EXCLUSIVE = "exclusive";
     String MESSAGE_DURABILITY = "messageDurability";
-    String MESSAGE_GROUP_KEY = "messageGroupKey";
+    String MESSAGE_GROUP_KEY_OVERRIDE = "messageGroupKeyOverride";
     String MESSAGE_GROUP_TYPE = "messageGroupType";
     String MESSAGE_GROUP_DEFAULT_GROUP = "messageGroupDefaultGroup";
     String MAXIMUM_DELIVERY_ATTEMPTS = "maximumDeliveryAttempts";
@@ -135,22 +142,26 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedAttribute
     boolean isNoLocal();
 
-
-    @ManagedAttribute
-    String getMessageGroupKey();
+    @ManagedAttribute(description = "Specifies the name of the message header that provides the value for message "
+                                    + "grouping purposes. If not set, for AMQP 1.0 the value of the group-id field "
+                                    + "within the message properties is used. For AMQP 0-8..0-10, the value of the "
+                                    + "message header JMSXGroupId is used.")
+    String getMessageGroupKeyOverride();
 
     @SuppressWarnings("unused")
     @ManagedContextDefault( name = "qpid.broker_default-shared-message-group")
     String DEFAULT_SHARED_MESSAGE_GROUP = "qpid.no-group";
 
-    @ManagedAttribute( defaultValue = "${qpid.broker_default-shared-message-group}")
+    @ManagedAttribute( defaultValue = "${qpid.broker_default-shared-message-group}",
+                       description = "Fallback group used for messages without a group identifier. Used by SHARED_GROUPS only.")
     String getMessageGroupDefaultGroup();
 
     @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.maximumDistinctGroups")
     int DEFAULT_MAXIMUM_DISTINCT_GROUPS = 255;
 
-    @ManagedAttribute( defaultValue = "${queue.maximumDistinctGroups}")
+    @ManagedAttribute( defaultValue = "${queue.maximumDistinctGroups}",
+                       description = "Maximum number of distinct groups.  Used by STANDARD groups only")
     int getMaximumDistinctGroups();
 
     @SuppressWarnings("unused")

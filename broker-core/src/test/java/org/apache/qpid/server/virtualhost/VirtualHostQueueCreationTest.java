@@ -178,11 +178,11 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(Queue.ID, UUID.randomUUID());
         attributes.put(Queue.NAME, getTestName());
-        attributes.put(Queue.MESSAGE_GROUP_KEY,"mykey");
+        attributes.put(Queue.MESSAGE_GROUP_KEY_OVERRIDE, "mykey");
         attributes.put(Queue.MESSAGE_GROUP_TYPE, MessageGroupType.SHARED_GROUPS);
 
         Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
-        assertEquals("mykey", queue.getAttribute(Queue.MESSAGE_GROUP_KEY));
+        assertEquals("mykey", queue.getAttribute(Queue.MESSAGE_GROUP_KEY_OVERRIDE));
         assertEquals(MessageGroupType.SHARED_GROUPS, queue.getAttribute(Queue.MESSAGE_GROUP_TYPE));
     }
 

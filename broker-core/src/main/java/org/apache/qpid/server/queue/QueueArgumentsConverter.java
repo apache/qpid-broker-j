@@ -84,7 +84,7 @@ public class QueueArgumentsConverter
      */
     private static final String QPID_NO_LOCAL = "no-local";
 
-    private static final Map<String, String> ATTRIBUTE_MAPPINGS = new LinkedHashMap<String, String>();
+    private static final Map<String, String> ATTRIBUTE_MAPPINGS = new LinkedHashMap<>();
 
     private static final String ALTERNATE_EXCHANGE = "alternateExchange";
     private static final String DEFAULT_DLQ_NAME_SUFFIX = "_DLQ";
@@ -112,7 +112,7 @@ public class QueueArgumentsConverter
 
         ATTRIBUTE_MAPPINGS.put(X_QPID_DESCRIPTION, Queue.DESCRIPTION);
 
-        ATTRIBUTE_MAPPINGS.put(QPID_GROUP_HEADER_KEY, Queue.MESSAGE_GROUP_KEY);
+        ATTRIBUTE_MAPPINGS.put(QPID_GROUP_HEADER_KEY, Queue.MESSAGE_GROUP_KEY_OVERRIDE);
         ATTRIBUTE_MAPPINGS.put(QPID_DEFAULT_MESSAGE_GROUP_ARG, Queue.MESSAGE_GROUP_DEFAULT_GROUP);
 
         ATTRIBUTE_MAPPINGS.put(QPID_NO_LOCAL, Queue.NO_LOCAL);
@@ -132,7 +132,7 @@ public class QueueArgumentsConverter
     public static Map<String,Object> convertWireArgsToModel(final String queueName,
                                                             Map<String, Object> wireArguments)
     {
-        Map<String,Object> modelArguments = new HashMap<String, Object>();
+        Map<String,Object> modelArguments = new HashMap<>();
         if(wireArguments != null)
         {
             for(Map.Entry<String,String> entry : ATTRIBUTE_MAPPINGS.entrySet())
@@ -159,6 +159,10 @@ public class QueueArgumentsConverter
             else if(wireArguments.containsKey(QPID_GROUP_HEADER_KEY))
             {
                 modelArguments.put(Queue.MESSAGE_GROUP_TYPE, MessageGroupType.STANDARD);
+                if ("JMSXGroupId".equals(wireArguments.get(QPID_GROUP_HEADER_KEY)))
+                {
+                    modelArguments.remove(Queue.MESSAGE_GROUP_KEY_OVERRIDE);
+                }
             }
 
 
@@ -211,7 +215,7 @@ public class QueueArgumentsConverter
 
     public static Map<String,Object> convertModelArgsToWire(Map<String,Object> modelArguments)
     {
-        Map<String,Object> wireArguments = new HashMap<String, Object>();
+        Map<String,Object> wireArguments = new HashMap<>();
         for(Map.Entry<String,String> entry : ATTRIBUTE_MAPPINGS.entrySet())
         {
             if(modelArguments.containsKey(entry.getValue()))

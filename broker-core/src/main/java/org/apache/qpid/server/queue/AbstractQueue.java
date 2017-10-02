@@ -223,7 +223,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final long[] _lastNotificationTimes = new long[NotificationCheck.values().length];
 
     @ManagedAttributeField
-    private String _messageGroupKey;
+    private String _messageGroupKeyOverride;
     @ManagedAttributeField
     private boolean _messageGroupSharedGroups;
     @ManagedAttributeField
@@ -492,11 +492,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 _messageGroupManager = null;
                 break;
             case STANDARD:
-                _messageGroupManager = new AssignedConsumerMessageGroupManager(getMessageGroupKey(), getMaximumDistinctGroups());
+                _messageGroupManager = new AssignedConsumerMessageGroupManager(getMessageGroupKeyOverride(), getMaximumDistinctGroups());
                 break;
             case SHARED_GROUPS:
                 _messageGroupManager =
-                        new DefinedGroupMessageGroupManager(getMessageGroupKey(), getMessageGroupDefaultGroup(), this);
+                        new DefinedGroupMessageGroupManager(getMessageGroupKeyOverride(), getMessageGroupDefaultGroup(), this);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown messageGroupType type " + _messageGroupType);
@@ -3041,9 +3041,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public String getMessageGroupKey()
+    public String getMessageGroupKeyOverride()
     {
-        return _messageGroupKey;
+        return _messageGroupKeyOverride;
     }
 
     @Override

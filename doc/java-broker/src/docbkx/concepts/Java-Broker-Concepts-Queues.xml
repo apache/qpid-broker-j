@@ -149,14 +149,17 @@
       performed before the <emphasis>add</emphasis> operation. </para>
     <section xml:id="Java-Broker-Concepts-Queues-GroupingMessages">
       <title>Grouping Messages</title>
-      <para> In order to group messages, the application would designate a particular message header
-        as containing a message's <emphasis>group identifier</emphasis>. The group identifier stored
-        in that header field would be a string value set by the message producer. Messages from the
-        same group would have the same group identifier value. The key that identifies the header
-        must also be known to the message consumers. This allows the consumers to determine a
-        message's assigned group. </para>
-      <para> The header that is used to hold the group identifier, as well as the values used as
-        group identifiers, are totally under control of the application. </para>
+        <para>In order to group messages, JMS applications can set the JMS standard header
+            <literal>JMSXGroupId</literal> to specify the <emphasis>group identifier</emphasis>
+            when publishing messages.
+        </para>
+        <para>Alternatively, the application may designate a particular message header
+            as containing a message's <emphasis>group identifier</emphasis>. The group identifier stored
+            in that header field would be a string value set by the message producer. Messages from the
+            same group would have the same group identifier value. The key that identifies the header
+            must also be known to the message consumers. This allows the consumers to determine a
+            message's assigned group.
+        </para>
     </section>
         <section xml:id="Java-Broker-Concepts-Queues-BrokerRole">
       <title> The Role of the Broker in Message Grouping </title>
@@ -197,7 +200,7 @@
           <listitem>
             <para> In default mode, failure for a message to specify a group is treated as a desire
               for the message not to be grouped at all. Such messages will be distributed to any
-              available consumer, without the ordering quarantees imposed by grouping. </para>
+              available consumer, without the ordering guarantees imposed by grouping. </para>
           </listitem>
           <listitem>
             <para> In 'shared groups' mode (which gives the same behaviour as the Qpid C++ Broker)

@@ -410,7 +410,7 @@ define(["dojo/_base/declare",
                         "alertThresholdQueueDepthMessages",
                         "alternateBinding",
                         "messageGroups",
-                        "messageGroupKey",
+                        "messageGroupKeyOverride",
                         "messageGroupType",
                         "maximumDeliveryAttempts",
                         "holdOnPublishEnabled"]);
@@ -583,8 +583,8 @@ define(["dojo/_base/declare",
             this["messageGroupType"].innerHTML = entities.encode(messageGroupType);
             if (this.queueData["messageGroupKey"] || (messageGroupType && messageGroupType !== "NONE"))
             {
-                this.messageGroupKey.innerHTML = entities.encode(String(this.queueData["messageGroupKey"]));
-                this.messageGroups.style.display = "block";
+                this.messageGroupKeyOverride.innerHTML = entities.encode(String(this.queueData["messageGroupKeyOverride"]));
+                this.messageGroupKeyOverride.style.display = "block";
             }
             else
             {

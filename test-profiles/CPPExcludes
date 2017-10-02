@@ -248,15 +248,19 @@ org.apache.qpid.tests.protocol.v1_0.*
 
 org.apache.qpid.server.queue.FlowToDiskTest#*
 
-// QPID-7818: Messages published into non existing queue are discarded on 0-10 path
+# QPID-7818: Messages published into non existing queue are discarded on 0-10 path
 org.apache.qpid.systest.AnonymousProducerTest#testPublishIntoNonExistingQueue
 org.apache.qpid.systest.AnonymousProducerTest#testSyncPublishIntoNonExistingQueue
 
-// Tests require AMQP management
+# Tests require AMQP management
 org.apache.qpid.server.routing.AlternateBindingRoutingTest#*
 
-// Tests AMQP 1.0 specific routing semantics
+# Tests AMQP 1.0 specific routing semantics
 org.apache.qpid.systest.MessageRoutingTest#*
 
-// Exchange to Exchange bindings not support by CPP Broker.
+# Exchange to Exchange bindings not support by CPP Broker.
 org.apache.qpid.server.routing.ExchangeRoutingTest#*
+
+# For 0-8..0-10 these tests assume that the Broker defaults to use header JMSXGroupID which is not true for the CPP Broker.
+org.apache.qpid.server.queue.MessageGroupQueueTest#testSharedGroupSimpleGroupAssignmentWithJMSXGroupID
+org.apache.qpid.server.queue.MessageGroupQueueTest#testSimpleGroupAssignmentWithJMSXGroupID

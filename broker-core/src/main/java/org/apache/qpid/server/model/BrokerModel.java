@@ -55,6 +55,7 @@ public final class BrokerModel extends Model
      *     Remove PreferencesProvider
      * 7.0 Remove bindings, Consumer sole parent is Queue
      *     Remodelled alternateExchange as alternateBindings
+     *     Remodelled Queue grouping attributes
      */
     public static final int MODEL_MAJOR_VERSION = 7;
     public static final int MODEL_MINOR_VERSION = 0;

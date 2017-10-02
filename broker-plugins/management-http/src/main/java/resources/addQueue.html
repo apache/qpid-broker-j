@@ -313,7 +313,7 @@
                     </div>
 
                     <div class="clear"></div>
-                    <div class="infoMessage">Configuring maximum delivery retries on a queue which has no alternate binding (DLQ or exchange) <br/> will result in messages being discarded after the limit is reached.</div>
+                    <div class="infoMessage">Configuring maximum delivery retries on a queue which has no alternate binding (DLQ or exchange) will result in messages being discarded after the limit is reached.</div>
 
                     <div class="clear">
                         <div class="formLabel-labelCell">Message Group Type:</div>
@@ -329,14 +329,14 @@
 
                     </div>
                     <div class="clear">
-                        <div class="formLabel-labelCell">Message Group Key:</div>
+                        <div class="formLabel-labelCell">Message Group Key Override:</div>
                         <div class="formLabel-controlCell">
-                            <input type="text" id="formAddQueue.messageGroupKey"
+                            <input type="text" id="formAddQueue.messageGroupKeyOverride"
                                    data-dojo-type="dijit/form/ValidationTextBox"
                                    data-dojo-props="
-                                      name: 'messageGroupKey',
-                                      placeHolder: 'message group key',
-                                      promptMessage: 'Name of the message property used for message grouping',
+                                      name: 'messageGroupKeyOverride',
+                                      placeHolder: 'message group key override',
+                                      promptMessage: 'Specifies the name of the message header that provides the value for message grouping purposes. If not set, for AMQP 1.0 the value of the group-id field within the message properties is used. For AMQP 0-8..0-10, the value of the message header JMSXGroupId is used.',
                                       title: 'Enter the name of the message property used for message grouping',
                                       trim: true"/>
                         </div>
