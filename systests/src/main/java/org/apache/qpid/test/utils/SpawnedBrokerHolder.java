@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +96,19 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
             cmd = newCmd;
         }
 
+        // bat files will treat = as an argument separator, so if an argument contains = it needs to be quoted
+        if(cmd[0].endsWith(".bat"))
+        {
+            for(int i = 1 ; i < cmd.length; i++)
+            {
+                String orig = cmd[i];
+                if(orig.contains("=") && !orig.contains("\""))
+                {
+                    cmd[i] = "\"" + orig + "\"";
+                }
+            }
+        }
+        
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Map<String, String> processEnv = pb.environment();
