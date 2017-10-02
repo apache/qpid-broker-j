@@ -72,12 +72,6 @@ public class FrameHandler implements ProtocolHandler
             {
 
                 size = in.getInt();
-                if(remaining < size)
-                {
-                    in.position(in.position()-4);
-                    break;
-                }
-                int dataOffset = (in.get() << 2) & 0x3FF;
 
                 if (size < 8)
                 {
@@ -96,6 +90,13 @@ public class FrameHandler implements ProtocolHandler
                             _connectionHandler.getMaxFrameSize());
                     break;
                 }
+
+                if(remaining < size)
+                {
+                    in.position(in.position()-4);
+                    break;
+                }
+                int dataOffset = (in.get() << 2) & 0x3FF;
 
                 if (dataOffset < 8)
                 {
@@ -154,25 +155,40 @@ public class FrameHandler implements ProtocolHandler
 
                 try
                 {
-                    Object val = dup.hasRemaining() ? _valueHandler.parse(dup) : null;
-
-                    if (dup.hasRemaining())
+                    final boolean hasFrameBody = dup.hasRemaining();
+                    Object frameBody;
+                    if (hasFrameBody)
                     {
-                        if (val instanceof Transfer)
+                        frameBody = _valueHandler.parse(dup);
+                        if (dup.hasRemaining())
                         {
-                            final QpidByteBuffer payload = dup.slice();
-                            ((Transfer) val).setPayload(Collections.singletonList(payload));
-                            payload.dispose();
+                            if (frameBody instanceof Transfer)
+                            {
+                                final QpidByteBuffer payload = dup.slice();
+                                ((Transfer) frameBody).setPayload(Collections.singletonList(payload));
+                                payload.dispose();
+                            }
+                            else
+                            {
+                                frameParsingError = createFramingError(
+                                        "Frame length %d larger than contained frame body %s.",
+                                        size,
+                                        frameBody);
+                                break;
+                            }
                         }
-                        else
+                    }
+                    else
+                    {
+                        frameBody = null;
+                        if(_isSasl)
                         {
                             frameParsingError = createFramingError(
-                                    "Frame length %d larger than contained frame body %s.",
-                                    size,
-                                    val);
+                                    "Empty (heartbeat) frames are not permitted during SASL negotiation");
                             break;
                         }
                     }
+
                     channelFrameBodies.add(new ChannelFrameBody()
                     {
                         @Override
@@ -184,7 +200,7 @@ public class FrameHandler implements ProtocolHandler
                         @Override
                         public Object getFrameBody()
                         {
-                            return val;
+                            return frameBody;
                         }
                     });
                 }
