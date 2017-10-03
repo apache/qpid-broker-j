@@ -177,7 +177,7 @@ var jsonObject = {
             DELIVERY_MODE_TRANSIENT,
             "SSL"),
         createCompetingConsumerTest("competing_consumers_plain",
-            20,
+            30,
             "PLAIN")
     ]
 };
