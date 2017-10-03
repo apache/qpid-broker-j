@@ -167,7 +167,8 @@ public class MemoryConsumptionTestClient
 
         // Load JNDI properties
         Properties properties = new Properties();
-        try(InputStream is = this.getClass().getClassLoader().getResourceAsStream("stress-test-client.properties"))
+        try(InputStream is = this.getClass().getClassLoader().getResourceAsStream(
+                "stress-test-client-qpid-jms-client-0-x.properties"))
         {
             properties.load(is);
         }

@@ -20,10 +20,12 @@
  */
 package org.apache.qpid.tools;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -33,7 +35,6 @@ import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
-import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -41,52 +42,52 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import javax.naming.NamingException;
 
 public class StressTestClient
 {
-    private static final String QUEUE_NAME_PREFIX = "BURL:direct://amq.direct//stress-test-queue";
-    private static final String DURABLE_SUFFIX = "?durable='true'";
+    private static final String JNDI_PROPERTIES_ARG = "jndiProperties";
+    private static final String JNDI_DESTINATION_ARG = "jndiDestination";
+    private static final String CONNECTIONS_ARG = "connections";
+    private static final String SESSIONS_ARG = "sessions";
+    private static final String CONSUME_IMMEDIATELY_ARG = "consumeImmediately";
+    private static final String CONSUMERS_ARG = "consumers";
+    private static final String CLOSE_CONSUMERS_ARG = "closeconsumers";
+    private static final String PRODUCERS_ARG = "producers";
+    private static final String MESSAGE_COUNT_ARG = "messagecount";
+    private static final String MESSAGE_SIZE_ARG = "size";
+    private static final String REPETITIONS_ARG = "repetitions";
+    private static final String PERSISTENT_ARG = "persistent";
+    private static final String RANDOM_ARG = "random";
+    private static final String TIMEOUT_ARG = "timeout";
+    private static final String DELAYCLOSE_ARG = "delayclose";
+    private static final String REPORT_MOD_ARG = "reportmod";
+    private static final String LOW_PREFETCH_ARG = "lowprefetch";
+    private static final String TRANSACTED_ARG = "transacted";
+    private static final String TX_BATCH_ARG = "txbatch";
+    private static final String ITERATIONS = "iterations";
+    private static final String CONSUMER_MESSAGE_COUNT = "consumerMessageCount";
+    private static final String CONSUMER_SELECTOR = "selector";
 
-    public static final String CONNECTIONS_ARG = "connections";
-    public static final String SESSIONS_ARG = "sessions";
-    public static final String CONSUME_IMMEDIATELY_ARG = "consumeImmediately";
-    public static final String CONSUMERS_ARG = "consumers";
-    public static final String CLOSE_CONSUMERS_ARG = "closeconsumers";
-    public static final String PRODUCERS_ARG = "producers";
-    public static final String MESSAGE_COUNT_ARG = "messagecount";
-    public static final String MESSAGE_SIZE_ARG = "size";
-    public static final String SUFFIX_ARG = "suffix";
-    public static final String REPETITIONS_ARG = "repetitions";
-    public static final String PERSISTENT_ARG = "persistent";
-    public static final String RANDOM_ARG = "random";
-    public static final String TIMEOUT_ARG = "timeout";
-    public static final String DELAYCLOSE_ARG = "delayclose";
-    public static final String REPORT_MOD_ARG = "reportmod";
-    public static final String LOW_PREFETCH_ARG = "lowprefetch";
-    public static final String TRANSACTED_ARG = "transacted";
-    public static final String TX_BATCH_ARG = "txbatch";
-    public static final String ITERATIONS = "iterations";
-    public static final String CONSUMER_MESSAGE_COUNT = "consumerMessageCount";
-    public static final String CONSUMER_SELECTOR = "selector";
-
-    public static final String CONNECTIONS_DEFAULT = "1";
-    public static final String SESSIONS_DEFAULT = "1";
-    public static final String CONSUME_IMMEDIATELY_DEFAULT = "true";
-    public static final String CLOSE_CONSUMERS_DEFAULT = "true";
-    public static final String PRODUCERS_DEFAULT = "1";
-    public static final String CONSUMERS_DEFAULT = "1";
-    public static final String MESSAGE_COUNT_DEFAULT = "1";
-    public static final String MESSAGE_SIZE_DEFAULT = "256";
-    public static final String SUFFIX_DEFAULT = "";
-    public static final String REPETITIONS_DEFAULT = "1";
-    public static final String PERSISTENT_DEFAULT = "false";
-    public static final String RANDOM_DEFAULT = "true";
-    public static final String TIMEOUT_DEFAULT = "30000";
-    public static final String DELAYCLOSE_DEFAULT = "0";
-    public static final String REPORT_MOD_DEFAULT = "1";
-    public static final String LOW_PREFETCH_DEFAULT = "false";
-    public static final String TRANSACTED_DEFAULT = "false";
-    public static final String TX_BATCH_DEFAULT = "1";
+    private static final String JNDI_PROPERTIES_DEFAULT = "stress-test-client-qpid-jms-client-0-x.properties";
+    private static final String JNDI_DESTINATION_DEFAULT = "stressTestQueue";
+    private static final String CONNECTIONS_DEFAULT = "1";
+    private static final String SESSIONS_DEFAULT = "1";
+    private static final String CONSUME_IMMEDIATELY_DEFAULT = "true";
+    private static final String CLOSE_CONSUMERS_DEFAULT = "true";
+    private static final String PRODUCERS_DEFAULT = "1";
+    private static final String CONSUMERS_DEFAULT = "1";
+    private static final String MESSAGE_COUNT_DEFAULT = "1";
+    private static final String MESSAGE_SIZE_DEFAULT = "256";
+    private static final String REPETITIONS_DEFAULT = "1";
+    private static final String PERSISTENT_DEFAULT = "false";
+    private static final String RANDOM_DEFAULT = "true";
+    private static final String TIMEOUT_DEFAULT = "30000";
+    private static final String DELAYCLOSE_DEFAULT = "0";
+    private static final String REPORT_MOD_DEFAULT = "1";
+    private static final String LOW_PREFETCH_DEFAULT = "false";
+    private static final String TRANSACTED_DEFAULT = "false";
+    private static final String TX_BATCH_DEFAULT = "1";
     private static final String ITERATIONS_DEFAULT = "1";
     private static final String CONSUMERS_SELECTOR_DEFAULT = "";
     private static final String CLASS = "StressTestClient";
@@ -94,6 +95,8 @@ public class StressTestClient
     public static void main(String[] args)
     {
         Map<String,String> options = new HashMap<>();
+        options.put(JNDI_PROPERTIES_ARG, JNDI_PROPERTIES_DEFAULT);
+        options.put(JNDI_DESTINATION_ARG, JNDI_DESTINATION_DEFAULT);
         options.put(CONNECTIONS_ARG, CONNECTIONS_DEFAULT);
         options.put(SESSIONS_ARG, SESSIONS_DEFAULT);
         options.put(CONSUME_IMMEDIATELY_ARG, CONSUME_IMMEDIATELY_DEFAULT);
@@ -102,7 +105,6 @@ public class StressTestClient
         options.put(CLOSE_CONSUMERS_ARG, CLOSE_CONSUMERS_DEFAULT);
         options.put(MESSAGE_COUNT_ARG, MESSAGE_COUNT_DEFAULT);
         options.put(MESSAGE_SIZE_ARG, MESSAGE_SIZE_DEFAULT);
-        options.put(SUFFIX_ARG, SUFFIX_DEFAULT);
         options.put(REPETITIONS_ARG, REPETITIONS_DEFAULT);
         options.put(PERSISTENT_ARG, PERSISTENT_DEFAULT);
         options.put(RANDOM_ARG, RANDOM_DEFAULT);
@@ -129,7 +131,7 @@ public class StressTestClient
         testClient.runTest(options);
     }
 
-    public static void parseArgumentsIntoConfig(Map<String, String> initialValues, String[] args)
+    private static void parseArgumentsIntoConfig(Map<String, String> initialValues, String[] args)
     {
         for(String arg: args)
         {
@@ -146,9 +148,9 @@ public class StressTestClient
         }
     }
 
-
     private void runTest(Map<String,String> options)
     {
+        String jndiProperties = options.get(JNDI_PROPERTIES_ARG);
         int numConnections = Integer.parseInt(options.get(CONNECTIONS_ARG));
         int numSessions = Integer.parseInt(options.get(SESSIONS_ARG));
         int numProducers = Integer.parseInt(options.get(PRODUCERS_ARG));
@@ -158,7 +160,7 @@ public class StressTestClient
         int numMessage = Integer.parseInt(options.get(MESSAGE_COUNT_ARG));
         int messageSize = Integer.parseInt(options.get(MESSAGE_SIZE_ARG));
         int repetitions = Integer.parseInt(options.get(REPETITIONS_ARG));
-        String queueString = QUEUE_NAME_PREFIX + options.get(SUFFIX_ARG) + DURABLE_SUFFIX;
+        String destinationString = options.get(JNDI_DESTINATION_ARG);
         int deliveryMode = Boolean.valueOf(options.get(PERSISTENT_ARG)) ? DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT;
         boolean random = Boolean.valueOf(options.get(RANDOM_ARG));
         long recieveTimeout = Long.parseLong(options.get(TIMEOUT_ARG));
@@ -180,12 +182,7 @@ public class StressTestClient
         try
         {
             // Load JNDI properties
-            Properties properties = new Properties();
-            try(InputStream is = this.getClass().getClassLoader().getResourceAsStream("stress-test-client.properties"))
-            {
-                properties.load(is);
-            }
-            Context ctx = new InitialContext(properties);
+            Context ctx = getInitialContext(jndiProperties);
 
             ConnectionFactory conFac;
             if(lowPrefetch)
@@ -199,18 +196,30 @@ public class StressTestClient
             }
 
             //ensure the queue to be used exists and is bound
-            System.out.println(CLASS + ": Creating queue: " + queueString);
-            Connection startupConn = conFac.createConnection();
-            Session startupSess = startupConn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            Destination startupDestination = startupSess.createQueue(queueString);
-            MessageConsumer startupConsumer = startupSess.createConsumer(startupDestination);
-            startupConsumer.close();
-            startupSess.close();
-            startupConn.close();
+            Destination destination = (Destination) ctx.lookup(destinationString);
+
+            System.out.println(CLASS + ": Destination: " + destination);
+
+            Connection startupConn = null;
+            try
+            {
+                startupConn = conFac.createConnection();
+                Session startupSess = startupConn.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                MessageConsumer startupConsumer = startupSess.createConsumer(destination);
+                startupConsumer.close();
+                startupSess.close();
+            }
+            finally
+            {
+                if (startupConn != null)
+                {
+                    startupConn.close();
+                }
+            }
 
             for(int rep = 1 ; rep <= repetitions; rep++)
             {
-                ArrayList<Connection> connectionList = new ArrayList<>();
+                List<Connection> connectionList = new ArrayList<>();
 
                 for (int co= 1; co<= numConnections ; co++)
                 {
@@ -219,16 +228,12 @@ public class StressTestClient
                         System.out.println(CLASS + ": Creating connection " + co);
                     }
                     Connection conn = conFac.createConnection();
-                    conn.setExceptionListener(new ExceptionListener()
-                    {
-                        @Override
-                        public void onException(JMSException jmse)
-                        {
-                            System.err.println(CLASS + ": The sample received an exception through the ExceptionListener");
-                            jmse.printStackTrace();
-                            System.exit(0);
-                        }
-                    });
+                    conn.setExceptionListener(jmse ->
+                                              {
+                                                  System.err.println(CLASS + ": The sample received an exception through the ExceptionListener");
+                                                  jmse.printStackTrace();
+                                                  System.exit(0);
+                                              });
 
                     connectionList.add(conn);
                     conn.start();
@@ -259,8 +264,6 @@ public class StressTestClient
                                 //null the array to save memory
                                 sentBytes = null;
                             }
-
-                            Destination destination = sess.createQueue(queueString);
 
                             MessageConsumer consumer = null;
                             for(int cns = 1 ; cns <= numConsumers ; cns++)
@@ -357,7 +360,6 @@ public class StressTestClient
 
                     Connection conn = conFac.createConnection();
                     Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-                    Destination destination = sess.createQueue(queueString);
                     MessageConsumer consumer = sess.createConsumer(destination);
                     conn.start();
 
@@ -413,6 +415,22 @@ public class StressTestClient
             System.err.println(CLASS + ": Caught an Exception: " + exp);
             exp.printStackTrace();
         }
+    }
+
+    private Context getInitialContext(final String jndiProperties) throws IOException, NamingException
+    {
+        Properties properties = new Properties();
+        try(InputStream is = this.getClass().getClassLoader().getResourceAsStream(jndiProperties))
+        {
+            if (is != null)
+            {
+                properties.load(is);
+                return new InitialContext(properties);
+            }
+        }
+
+        System.out.printf(CLASS + ": Failed to find '%s' on classpath, using fallback\n", jndiProperties);
+        return new InitialContext();
     }
 
 
