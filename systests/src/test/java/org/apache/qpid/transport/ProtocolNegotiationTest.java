@@ -311,7 +311,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             ServerDisassembler serverDisassembler = new ServerDisassembler(sender, Frame.HEADER_SIZE + 1);
             serverDisassembler.command(null, heartbeat);
         }
-        else if(isBroker08())
+        else if(isBrokerPre010())
         {
             HeartbeatBody.FRAME.writePayload(sender);
         }
