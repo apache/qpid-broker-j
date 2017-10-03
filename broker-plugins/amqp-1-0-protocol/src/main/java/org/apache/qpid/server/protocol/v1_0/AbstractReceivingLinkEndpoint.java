@@ -35,6 +35,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
@@ -76,18 +77,16 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
     {
         if(isAttached())
         {
-            if (!ReceiverSettleMode.SECOND.equals(getReceivingSettlementMode())
-                && ReceiverSettleMode.SECOND.equals(transfer.getRcvSettleMode()))
+            Error error = validateTransfer(transfer);
+            if (error != null)
             {
-                Error error = new Error(AmqpError.INVALID_FIELD,
-                                  "Transfer \"rcv-settle-mode\" cannot be \"first\" when link \"rcv-settle-mode\" is set to \"second\".");
                 close(error);
                 return;
             }
 
             if (_currentDelivery == null)
             {
-                Error error = validateNewTransfer(transfer);
+                error = validateNewTransfer(transfer);
                 if (error != null)
                 {
                     close(error);
@@ -104,7 +103,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
             }
             else
             {
-                Error error = validateSubsequentTransfer(transfer);
+                error = validateSubsequentTransfer(transfer);
                 if (error != null)
                 {
                     close(error);
@@ -136,7 +135,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                         _unsettled.remove(_currentDelivery.getDeliveryTag());
                         getSession().getIncomingDeliveryRegistry().removeDelivery(_currentDelivery.getDeliveryId());
                     }
-                    Error error = receiveDelivery(_currentDelivery);
+                    error = receiveDelivery(_currentDelivery);
                     if (error != null)
                     {
                         close(error);
@@ -153,6 +152,31 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
             // TODO: it is wrong
             getSession().updateDisposition(Role.RECEIVER, transfer.getDeliveryId(), transfer.getDeliveryId(),null, true);
         }
+    }
+
+    private Error validateTransfer(final Transfer transfer)
+    {
+        Error error = null;
+        if (!ReceiverSettleMode.SECOND.equals(getReceivingSettlementMode())
+            && ReceiverSettleMode.SECOND.equals(transfer.getRcvSettleMode()))
+        {
+            error = new Error(AmqpError.INVALID_FIELD,
+                              "Transfer \"rcv-settle-mode\" cannot be \"first\" when link \"rcv-settle-mode\" is set to \"second\".");
+        }
+        else if (transfer.getState() instanceof TransactionalState)
+        {
+            final Binary txnId = ((TransactionalState) transfer.getState()).getTxnId();
+            try
+            {
+                getSession().getTransaction(txnId);
+            }
+            catch (UnknownTransactionException e)
+            {
+                error = new Error(TransactionError.UNKNOWN_ID,
+                                  String.format("Transfer has an unknown transaction-id '%s'.", txnId));
+            }
+        }
+        return error;
     }
 
     private Error validateNewTransfer(final Transfer transfer)
@@ -221,6 +245,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
             error = new Error(AmqpError.INVALID_FIELD,
                               "Transfer \"message-format\" is set to different value than on previous transfer.");
         }
+
         return error;
     }
 

@@ -46,7 +46,7 @@ import org.apache.qpid.server.protocol.v1_0.type.security.codec.SaslOutcomeConst
 import org.apache.qpid.server.protocol.v1_0.type.security.codec.SaslOutcomeWriter;
 import org.apache.qpid.server.protocol.v1_0.type.security.codec.SaslResponseConstructor;
 import org.apache.qpid.server.protocol.v1_0.type.security.codec.SaslResponseWriter;
-import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionErrors;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TxnCapability;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.codec.CoordinatorConstructor;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.codec.CoordinatorWriter;
@@ -235,7 +235,7 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
         DeclaredWriter.register(registry);
         TransactionalStateWriter.register(registry);
         RestrictedTypeValueWriter.register(registry,TxnCapability.class);
-        RestrictedTypeValueWriter.register(registry,TransactionErrors.class);
+        RestrictedTypeValueWriter.register(registry,TransactionError.class);
     }
 
     private static void registerSecurityWriters(final AMQPDescribedTypeRegistry registry)

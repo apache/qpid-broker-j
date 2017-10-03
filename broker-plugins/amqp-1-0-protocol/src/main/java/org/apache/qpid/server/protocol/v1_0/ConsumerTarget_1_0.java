@@ -54,7 +54,9 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -267,12 +269,12 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                     state.setTxnId(_transactionId);
                     transfer.setState(state);
                 }
-                // TODO - need to deal with failure here
                 if (_acquires && _transactionId != null)
                 {
-                    ServerTransaction txn = _linkEndpoint.getTransaction(_transactionId);
-                    if (txn != null)
+                    try
                     {
+                        ServerTransaction txn = _linkEndpoint.getTransaction(_transactionId);
+
                         txn.addPostTransactionAction(new ServerTransaction.Action()
                         {
                             @Override
@@ -288,9 +290,11 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                             }
                         });
                     }
-                    else
+                    catch (UnknownTransactionException e)
                     {
-                        // TODO - deal with the case of an invalid txn id
+                        entry.release(consumer);
+                        getEndpoint().close(new Error(TransactionError.UNKNOWN_ID, e.getMessage()));
+                        return;
                     }
 
                 }
@@ -415,10 +419,15 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
             {
                 transactionId = ((TransactionalState)state).getTxnId();
                 outcome = ((TransactionalState)state).getOutcome();
-                txn = _linkEndpoint.getTransaction(transactionId);
-                if(txn == null)
+                try
                 {
-                    // TODO - invalid txn id supplied
+                    txn = _linkEndpoint.getTransaction(transactionId);
+                }
+                catch (UnknownTransactionException e)
+                {
+                    getEndpoint().close(new Error(TransactionError.UNKNOWN_ID, e.getMessage()));
+                    applyModifiedOutcome();
+                    return false;
                 }
             }
             else if (state instanceof Outcome)

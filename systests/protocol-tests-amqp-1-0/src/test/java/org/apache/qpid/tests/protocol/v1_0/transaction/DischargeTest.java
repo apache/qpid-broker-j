@@ -22,14 +22,19 @@ package org.apache.qpid.tests.protocol.v1_0.transaction;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -40,7 +45,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declare;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declared;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
-import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionErrors;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
@@ -48,7 +53,10 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.tests.protocol.v1_0.InteractionTransactionalState;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
@@ -104,7 +112,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
             assertThat(dischargeDisposition.getState(), is(instanceOf(Rejected.class)));
             final Error error = ((Rejected) dischargeDisposition.getState()).getError();
             assertThat(error, is(notNullValue()));
-            assertThat(error.getCondition(), is(equalTo(TransactionErrors.UNKNOWN_ID)));
+            assertThat(error.getCondition(), is(equalTo(TransactionError.UNKNOWN_ID)));
         }
     }
 
@@ -147,7 +155,58 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                                                                 .getLatestResponse(Detach.class);
             Error error = detachResponse.getError();
             assertThat(error, is(notNullValue()));
-            assertThat(error.getCondition(), is(equalTo(TransactionErrors.UNKNOWN_ID)));
+            assertThat(error.getCondition(), is(equalTo(TransactionError.UNKNOWN_ID)));
         }
     }
+
+    @Test
+    @Ignore("QPID-7950")
+    @SpecificationTest(section = "4.4.2",
+            description = "Transactional Retirement [...]"
+                          + " To associate an outcome with a transaction the controller sends a disposition"
+                          + " performative which sets the state of the delivery to a transactional-state with the"
+                          + " desired transaction identifier and the outcome to be applied upon a successful discharge.")
+    public void commitAfterDetach() throws Exception
+    {
+        assumeThat(getBrokerAdmin().isQueueDepthSupported(), is(true));
+
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "test message");
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
+            List<Transfer> transfers = interaction.negotiateProtocol().consumeResponse()
+                                                  .open().consumeResponse(Open.class)
+                                                  .begin().consumeResponse(Begin.class)
+
+                                                  .txnAttachCoordinatorLink(txnState)
+                                                  .txnDeclare(txnState)
+
+                                                  .attachRole(Role.RECEIVER)
+                                                  .attachHandle(UnsignedInteger.ONE)
+                                                  .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                                  .attachRcvSettleMode(ReceiverSettleMode.FIRST)
+                                                  .attach().consumeResponse(Attach.class)
+
+                                                  .flowIncomingWindow(UnsignedInteger.ONE)
+                                                  .flowLinkCredit(UnsignedInteger.ONE)
+                                                  .flowHandleFromLinkHandle()
+                                                  .flow()
+
+                                                  .receiveDelivery()
+                                                  .getLatestDelivery();
+            assertThat(transfers, is(notNullValue()));
+            assertThat(transfers, is(not(empty())));
+            final UnsignedInteger deliveryId = transfers.get(0).getDeliveryId();
+            interaction.detach().consumeResponse(Detach.class)
+                       .dispositionFirst(deliveryId)
+                       .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
+                       .dispositionRole(Role.RECEIVER)
+                       .disposition()
+                       .txnDischarge(txnState, false);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+        }
+    }
+
 }

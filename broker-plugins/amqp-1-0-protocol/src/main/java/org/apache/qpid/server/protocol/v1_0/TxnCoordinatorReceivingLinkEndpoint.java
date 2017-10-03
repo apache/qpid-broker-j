@@ -39,7 +39,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declare;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declared;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
-import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionErrors;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
@@ -97,7 +97,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
 
                         session.incrementStartedTransactions();
 
-                        state.setTxnId(session.integerToBinary(txn.getId()));
+                        state.setTxnId(session.integerToTransactionId(txn.getId()));
                         updateDisposition(delivery.getDeliveryTag(), state, true);
 
                     }
@@ -162,12 +162,12 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
         ServerTransaction txn = null;
         try
         {
-            transactionId = getSession().binaryToInteger(transactionIdAsBinary);
+            transactionId = getSession().transactionIdToInteger(transactionIdAsBinary);
             txn = _createdTransactions.get(transactionId);
         }
-        catch (IllegalArgumentException e)
+        catch (UnknownTransactionException | IllegalArgumentException e)
         {
-           // pass
+           // handle error below
         }
 
         if(txn != null)
@@ -187,7 +187,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
                 txn.rollback();
                 getSession().incrementRolledBackTransactions();
                 error = new Error();
-                error.setCondition(TransactionErrors.TRANSACTION_ROLLBACK);
+                error.setCondition(TransactionError.TRANSACTION_ROLLBACK);
                 error.setDescription("The transaction was marked as rollback only due to an earlier issue (e.g. a published message was sent settled but could not be enqueued)");
             }
             _createdTransactions.remove(transactionId);
@@ -196,7 +196,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
         else
         {
             error = new Error();
-            error.setCondition(TransactionErrors.UNKNOWN_ID);
+            error.setCondition(TransactionError.UNKNOWN_ID);
             error.setDescription("Unknown transactionId " + transactionIdAsBinary.toString());
         }
         return error;

@@ -871,8 +871,16 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     ServerTransaction getTransaction(Binary transactionId)
     {
-        // TODO - deal with the case where the txn id is invalid
-        return _connection.getTransaction(binaryToInteger(transactionId));
+        final int txnId;
+        try
+        {
+            txnId = transactionIdToInteger(transactionId);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new UnknownTransactionException(e.getMessage());
+        }
+        return _connection.getTransaction(txnId);
     }
 
     void remoteEnd(End end)
@@ -894,31 +902,30 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     }
 
-    Integer binaryToInteger(final Binary txnId)
+    static Integer transactionIdToInteger(final Binary txnId)
     {
-        if(txnId == null)
+        if (txnId == null)
         {
-            return null;
+            throw new UnknownTransactionException("'null' is not a valid transaction-id.");
         }
 
         byte[] data = txnId.getArray();
-        if(data.length > 4)
+        if (data.length > 4)
         {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("transaction-id cannot have more than 32-bit.");
         }
 
         int id = 0;
-        for(int i = 0; i < data.length; i++)
+        for (int i = 0; i < data.length; i++)
         {
             id <<= 8;
-            id |= ((int)data[i] & 0xff);
+            id |= ((int) data[i] & 0xff);
         }
 
         return id;
-
     }
 
-    Binary integerToBinary(final int txnId)
+    static Binary integerToTransactionId(final int txnId)
     {
         byte[] data = new byte[4];
         data[3] = (byte) (txnId & 0xff);

@@ -53,11 +53,13 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
+import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.LocalTransaction;
@@ -97,7 +99,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         @Override
         public void destinationRemoved(final MessageDestination destination)
         {
-            // TODO - we should probably schedule a link closure here!
+            // TODO - we should probably schedule a link closure here! (QPID-7541)
         }
 
         @Override
@@ -200,7 +202,15 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                 boolean setRollbackOnly = true;
                 if (transactionId != null)
                 {
-                    transaction = getSession().getTransaction(transactionId);
+                    try
+                    {
+                        transaction = getSession().getTransaction(transactionId);
+                    }
+                    catch (UnknownTransactionException e)
+                    {
+                        return new Error(TransactionError.UNKNOWN_ID,
+                                         String.format("transaction-id '%s' is unknown.", transactionId));
+                    }
                     if (!(transaction instanceof AutoCommitTransaction))
                     {
                         transaction.addPostTransactionAction(new ServerTransaction.Action()

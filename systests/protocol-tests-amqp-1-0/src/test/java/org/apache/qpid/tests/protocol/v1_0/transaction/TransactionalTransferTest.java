@@ -21,9 +21,11 @@
 package org.apache.qpid.tests.protocol.v1_0.transaction;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
@@ -34,25 +36,32 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
+import org.apache.qpid.server.protocol.v1_0.type.transport.End;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.InteractionTransactionalState;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
+import org.apache.qpid.tests.protocol.v1_0.Response;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
+import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 {
@@ -214,6 +223,44 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
     }
 
     @Test
+    @SpecificationTest(section = "4.4.1",
+            description = "If the transaction controller wishes to associate an outgoing transfer with a transaction,"
+                          + " it MUST set the state of the transfer with a transactional-state carrying the appropriate"
+                          + " transaction identifier.")
+    public void sendTransactionalPostingTransferFailsDueToUnknownTransactionId() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final UnsignedInteger linkHandle = UnsignedInteger.ONE;
+
+            final Interaction interaction = transport.newInteraction();
+            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
+            Response<?> response = interaction.negotiateProtocol().consumeResponse()
+                                              .open().consumeResponse(Open.class)
+                                              .begin().consumeResponse(Begin.class)
+
+                                              .txnAttachCoordinatorLink(txnState)
+                                              .txnDeclare(txnState)
+
+                                              .attachRole(Role.SENDER)
+                                              .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                              .attachHandle(linkHandle)
+                                              .attach().consumeResponse(Attach.class)
+                                              .consumeResponse(Flow.class)
+
+                                              .transferHandle(linkHandle)
+                                              .transferPayloadData(TEST_MESSAGE_CONTENT)
+                                              .transferTransactionalState(integerToBinary(Integer.MAX_VALUE))
+                                              .transfer()
+                                              .consumeResponse()
+                                              .getLatestResponse();
+
+            assertUnknownTransactionIdError(response);
+        }
+    }
+
+
+    @Test
     @SpecificationTest(section = "4.4.2", description = "Transactional Retirement[...] The transaction controller might"
                                                         + "wish to associate the outcome of a delivery with a transaction.")
     public void receiveTransactionalRetirementReceiverSettleFirst() throws Exception
@@ -311,6 +358,61 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 
             Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
             assertThat(receivedMessage, is(equalTo(TEST_MESSAGE_CONTENT)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "4.4.2", description = "Transactional Retirement[...]"
+                                                        + " To associate an outcome with a transaction the controller"
+                                                        + " sends a disposition performative which sets the state"
+                                                        + " of the delivery to a transactional-state with the desired"
+                                                        + " transaction identifier and the outcome to be applied"
+                                                        + " upon a successful discharge.")
+    public void receiveTransactionalRetirementDispositionFailsDueToUnknownTransactionId() throws Exception
+    {
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
+            List<Transfer> transfers = interaction.negotiateProtocol().consumeResponse()
+                                                  .open().consumeResponse(Open.class)
+                                                  .begin().consumeResponse(Begin.class)
+
+                                                  .txnAttachCoordinatorLink(txnState)
+                                                  .txnDeclare(txnState)
+
+                                                  .attachRole(Role.RECEIVER)
+                                                  .attachHandle(UnsignedInteger.ONE)
+                                                  .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                                  .attachRcvSettleMode(ReceiverSettleMode.FIRST)
+                                                  .attach().consumeResponse(Attach.class)
+
+                                                  .flowIncomingWindow(UnsignedInteger.ONE)
+                                                  .flowNextIncomingId(UnsignedInteger.ZERO)
+                                                  .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                                  .flowNextOutgoingId(UnsignedInteger.ZERO)
+                                                  .flowLinkCredit(UnsignedInteger.ONE)
+                                                  .flowHandleFromLinkHandle()
+                                                  .flow()
+
+                                                  .receiveDelivery()
+                                                  .getLatestDelivery();
+
+            UnsignedInteger deliveryId = transfers.get(0).getDeliveryId();
+            assertThat(deliveryId, is(notNullValue()));
+
+            Object data = interaction.decodeLatestDelivery().getDecodedLatestDelivery();
+            assertThat(data, is(equalTo(TEST_MESSAGE_CONTENT)));
+
+            Response<?> response = interaction.dispositionSettled(true)
+                                              .dispositionRole(Role.RECEIVER)
+                                              .dispositionTransactionalState(integerToBinary(Integer.MAX_VALUE),
+                                                                             new Accepted())
+                                              .dispositionFirst(deliveryId)
+                                              .disposition()
+                                              .consumeResponse().getLatestResponse();
+            assertUnknownTransactionIdError(response);
         }
     }
 
@@ -435,7 +537,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    @SpecificationTest(section = "4.4.2", description = "Transactional Acquisition[...]In the case of the flow frame,"
+    @SpecificationTest(section = "4.4.3", description = "Transactional Acquisition[...]In the case of the flow frame,"
                                                         + " the transactional work is not necessarily directly"
                                                         + " initiated or entirely determined when the flow frame"
                                                         + " arrives at the resource, but can in fact occur at some "
@@ -494,5 +596,88 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             assumeThat(getBrokerAdmin().isQueueDepthSupported(), is(true));
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
         }
+    }
+
+    @Test
+    @Ignore("QPID-7951")
+    @SpecificationTest(section = "4.4.3", description = "Transactional Acquisition[...]"
+                                                        + " the resource associates an additional piece of state with"
+                                                        + " outgoing link endpoints, a txn-id that identifies"
+                                                        + " the transaction with which acquired messages"
+                                                        + " will be associated. This state is determined by"
+                                                        + " the controller by specifying a txn-id entry in the"
+                                                        + " properties map of the flow frame.")
+    public void receiveTransactionalAcquisitionFlowFailsDueToUnknownTransactionId() throws Exception
+    {
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
+            Response<?> response = interaction.negotiateProtocol()
+                                              .consumeResponse()
+                                              .open()
+                                              .consumeResponse(Open.class)
+                                              .begin()
+                                              .consumeResponse(Begin.class)
+
+                                              .txnAttachCoordinatorLink(txnState)
+                                              .txnDeclare(txnState)
+
+                                              .attachRole(Role.RECEIVER)
+                                              .attachHandle(UnsignedInteger.ONE)
+                                              .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                              .attachRcvSettleMode(ReceiverSettleMode.FIRST)
+                                              .attach()
+                                              .consumeResponse(Attach.class)
+
+                                              .flowIncomingWindow(UnsignedInteger.ONE)
+                                              .flowLinkCredit(UnsignedInteger.ONE)
+                                              .flowHandleFromLinkHandle()
+                                              .flowProperties(Collections.singletonMap(Symbol.valueOf("txn-id"),
+                                                                                       integerToBinary(Integer.MAX_VALUE)))
+                                              .flow()
+                                              .consumeResponse()
+                                              .getLatestResponse();
+
+            assertUnknownTransactionIdError(response);
+        }
+    }
+
+    private void assertUnknownTransactionIdError(final Response<?> response)
+    {
+        assertThat(response, is(notNullValue()));
+        final Object body = response.getBody();
+        assertThat(body, is(notNullValue()));
+        Error error = null;
+        if (body instanceof Close)
+        {
+            error = ((Close) body).getError();
+        }
+        else if (body instanceof End)
+        {
+            error = ((End) body).getError();
+        }
+        else if (body instanceof Detach)
+        {
+            error = ((Detach) body).getError();
+        }
+        else
+        {
+            fail(String.format("Unexpected response %s", body.getClass().getSimpleName()));
+        }
+
+        assertThat(error, is(notNullValue()));
+        assertThat(error.getCondition(), equalTo(TransactionError.UNKNOWN_ID));
+    }
+
+    Binary integerToBinary(final int txnId)
+    {
+        byte[] data = new byte[4];
+        data[3] = (byte) (txnId & 0xff);
+        data[2] = (byte) ((txnId & 0xff00) >> 8);
+        data[1] = (byte) ((txnId & 0xff0000) >> 16);
+        data[0] = (byte) ((txnId & 0xff000000) >> 24);
+        return new Binary(data);
     }
 }

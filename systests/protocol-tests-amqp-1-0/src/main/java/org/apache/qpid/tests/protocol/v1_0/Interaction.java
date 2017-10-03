@@ -838,6 +838,12 @@ public class Interaction
         return this;
     }
 
+    public Interaction dispositionFirst(final UnsignedInteger deliveryId)
+    {
+        _disposition.setFirst(deliveryId);
+        return this;
+    }
+
     public Interaction disposition() throws Exception
     {
         sendPerformativeAndChainFuture(copyDisposition(_disposition), _sessionChannel);

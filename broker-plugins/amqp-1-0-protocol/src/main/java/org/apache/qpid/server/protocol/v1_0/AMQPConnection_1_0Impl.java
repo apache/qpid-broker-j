@@ -1901,15 +1901,27 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public ServerTransaction getTransaction(final int txnId)
     {
-        // TODO - bounds check
-        return _openTransactions[txnId];
+        try
+        {
+            return _openTransactions[txnId];
+        }
+        catch (ArrayIndexOutOfBoundsException e)
+        {
+            throw new UnknownTransactionException(txnId);
+        }
     }
 
     @Override
     public void removeTransaction(final int txnId)
     {
-        // TODO - bounds check
-        _openTransactions[txnId] = null;
+        try
+        {
+            _openTransactions[txnId] = null;
+        }
+        catch (ArrayIndexOutOfBoundsException e)
+        {
+            throw new UnknownTransactionException(txnId);
+        }
     }
 
     @Override

@@ -25,20 +25,20 @@ import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
 import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-public class TransactionErrors implements ErrorCondition, RestrictedType<Symbol>
+public class TransactionError implements ErrorCondition, RestrictedType<Symbol>
 {
     private final Symbol _val;
 
-    public static final TransactionErrors UNKNOWN_ID =
-            new TransactionErrors(Symbol.valueOf("amqp:transaction:unknown-id"));
+    public static final TransactionError UNKNOWN_ID =
+            new TransactionError(Symbol.valueOf("amqp:transaction:unknown-id"));
 
-    public static final TransactionErrors TRANSACTION_ROLLBACK =
-            new TransactionErrors(Symbol.valueOf("amqp:transaction:rollback"));
+    public static final TransactionError TRANSACTION_ROLLBACK =
+            new TransactionError(Symbol.valueOf("amqp:transaction:rollback"));
 
-    public static final TransactionErrors TRANSACTION_TIMEOUT =
-            new TransactionErrors(Symbol.valueOf("amqp:transaction:timeout"));
+    public static final TransactionError TRANSACTION_TIMEOUT =
+            new TransactionError(Symbol.valueOf("amqp:transaction:timeout"));
 
-    private TransactionErrors(Symbol val)
+    private TransactionError(Symbol val)
     {
         _val = val;
     }
@@ -73,7 +73,7 @@ public class TransactionErrors implements ErrorCondition, RestrictedType<Symbol>
         }
     }
 
-    public static TransactionErrors valueOf(Object obj)
+    public static TransactionError valueOf(Object obj)
     {
         if (obj instanceof Symbol)
         {

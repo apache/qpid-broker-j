@@ -63,6 +63,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.StdDistMode;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
@@ -108,7 +109,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 
     private void prepareConsumerOptionsAndFilters(final SendingDestination destination) throws AmqpErrorException
     {
-        // TODO FIXME: this method might modify the source. this is not good encapsulation. furthermore if it does so then it should inform the link/linkregistry about it!
+        // TODO QPID-7952: this method might modify the source. this is not good encapsulation. furthermore if it does so then it should inform the link/linkregistry about it!
         _destination = destination;
         final Source source = getSource();
 
@@ -415,7 +416,21 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         Map<Symbol, Object> properties = flow.getProperties();
         if (properties != null)
         {
-             _transactionId = (Binary) properties.get(Symbol.valueOf("txn-id"));
+            final Binary transactionId = (Binary) properties.get(Symbol.valueOf("txn-id"));
+            if (transactionId != null)
+            {
+                try
+                {
+                    getSession().getTransaction(transactionId);
+                }
+                catch (UnknownTransactionException e)
+                {
+                    close(new Error(TransactionError.UNKNOWN_ID, e.getMessage()));
+                    return;
+                }
+            }
+
+            _transactionId = transactionId;
         }
 
         if(receiverDeliveryCount == null)
@@ -526,7 +541,6 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 
             // TODO: QPID-7845 : Resuming links is unsupported at the moment. Destroying link unconditionally.
             destroy();
-
             getConsumerTarget().updateNotifyWorkDesired();
         }
     }

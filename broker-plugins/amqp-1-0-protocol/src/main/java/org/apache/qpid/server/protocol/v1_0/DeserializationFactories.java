@@ -31,7 +31,7 @@ import org.apache.qpid.server.protocol.v1_0.type.LifetimePolicy;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.TxnCapability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.StdDistMode;
-import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionErrors;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
@@ -191,7 +191,7 @@ public class DeserializationFactories
                         {
                             try
                             {
-                                return TransactionErrors.valueOf(value);
+                                return TransactionError.valueOf(value);
                             }
                             catch (IllegalArgumentException e4)
                             {
