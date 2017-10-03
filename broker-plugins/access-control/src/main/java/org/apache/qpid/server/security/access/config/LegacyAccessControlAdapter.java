@@ -312,9 +312,16 @@ class LegacyAccessControlAdapter
             if("publish".equals(actionName))
             {
 
-                final ObjectProperties _props =
+                final ObjectProperties props =
                         new ObjectProperties(exchange.getAddressSpace().getName(), exchange.getName(), (String)arguments.get("routingKey"));
-                return _accessControl.authorise(PUBLISH, EXCHANGE, _props);
+                props.put(ObjectProperties.Property.DURABLE, exchange.isDurable());
+                if (exchange instanceof Exchange<?>)
+                {
+                    LifetimePolicy lifetimePolicy = ((Exchange) exchange).getLifetimePolicy();
+                    props.put(ObjectProperties.Property.AUTO_DELETE, lifetimePolicy != LifetimePolicy.PERMANENT);
+                    props.put(ObjectProperties.Property.TEMPORARY, lifetimePolicy != LifetimePolicy.PERMANENT);
+                }
+                return _accessControl.authorise(PUBLISH, EXCHANGE, props);
             }
         }
         else if(categoryClass == VirtualHost.class)

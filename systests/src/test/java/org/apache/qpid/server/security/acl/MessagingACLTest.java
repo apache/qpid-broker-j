@@ -31,6 +31,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TemporaryQueue;
+import javax.jms.TemporaryTopic;
 import javax.jms.TextMessage;
 
 
@@ -155,6 +156,34 @@ public class MessagingACLTest extends AbstractACLTestCase
         }
     }
 
+    public void setUpConsumeFromTempTopicSuccess() throws Exception
+    {
+        List<String> rules = new ArrayList<>(Arrays.asList("ACL ALLOW-LOG client ACCESS VIRTUALHOST",
+                                                           "ACL ALLOW-LOG client CREATE QUEUE temporary=\"true\"",
+                                                           "ACL ALLOW-LOG client CONSUME QUEUE temporary=\"true\""));
+
+        if (isBroker10())
+        {
+            rules.add("ACL ALLOW-LOG client BIND EXCHANGE temporary=\"true\"");
+        }
+        else
+        {
+            rules.add("ACL ALLOW-LOG client BIND EXCHANGE name=\"amq.topic\"");
+        }
+        writeACLFileWithAdminSuperUser(rules.toArray(new String[rules.size()]));
+    }
+
+    public void testConsumeFromTempTopicSuccess() throws Exception
+    {
+        Connection conn = getConnection("test", "client", "guest");
+
+        Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        conn.start();
+
+        TemporaryTopic temporaryTopic = sess.createTemporaryTopic();
+        sess.createConsumer(temporaryTopic);
+    }
+
     public void setUpConsumeFromNamedQueueValid() throws Exception
     {
         List<String> rules = new ArrayList<>(Arrays.asList("ACL ALLOW-LOG client ACCESS VIRTUALHOST",
@@ -222,7 +251,6 @@ public class MessagingACLTest extends AbstractACLTestCase
         }
     }
 
-
     public void setUpCreateTemporaryQueueSuccess() throws Exception
     {
         List<String> rules = new ArrayList<>(Arrays.asList("ACL ALLOW-LOG client ACCESS VIRTUALHOST",
@@ -240,6 +268,26 @@ public class MessagingACLTest extends AbstractACLTestCase
         Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
         sess.createTemporaryQueue();
+        conn.close();
+    }
+
+    public void setUpCreateTempTopicSuccess() throws Exception
+    {
+        List<String> rules = new ArrayList<>(Arrays.asList("ACL ALLOW-LOG client ACCESS VIRTUALHOST"));
+        writeACLFileWithAdminSuperUser(rules.toArray(new String[rules.size()]));
+    }
+
+    /* For AMQP 1.0 the server causes a temporary instance of the fanout exchange to come into being.  For early AMQP
+       version, there are no server side objects created as amq.topic is used.
+     */
+    public void testCreateTempTopicSuccess() throws Exception
+    {
+        Connection conn = getConnection("test", "client", "guest");
+
+        Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        conn.start();
+
+        TemporaryTopic temporaryTopic = sess.createTemporaryTopic();
         conn.close();
     }
 
@@ -407,6 +455,35 @@ public class MessagingACLTest extends AbstractACLTestCase
         assertNotNull("Client did not receive response message,", clientResponseMsg);
         assertEquals("Incorrect message received", "Response", ((TextMessage) clientResponseMsg).getText());
     }
+
+    public void setUpPublishToTempTopicSuccess() throws Exception
+    {
+        List<String> rules = new ArrayList<>(Arrays.asList("ACL ALLOW-LOG client ACCESS VIRTUALHOST"));
+
+        if (isBroker10())
+        {
+            rules.add("ACL ALLOW-LOG client PUBLISH EXCHANGE temporary=\"true\"");
+        }
+        else
+        {
+            rules.add("ACL ALLOW-LOG client PUBLISH EXCHANGE name=\"amq.topic\"");
+        }
+        writeACLFileWithAdminSuperUser(rules.toArray(new String[rules.size()]));
+    }
+
+    public void testPublishToTempTopicSuccess() throws Exception
+    {
+        Connection conn = getConnection("test", "client", "guest");
+
+        Session sess = conn.createSession(true, Session.SESSION_TRANSACTED);
+        conn.start();
+
+        TemporaryTopic temporaryTopic = sess.createTemporaryTopic();
+        MessageProducer producer = sess.createProducer(temporaryTopic);
+        producer.send(sess.createMessage());
+        sess.commit();
+    }
+
 
     public void setUpFirewallAllow() throws Exception
     {

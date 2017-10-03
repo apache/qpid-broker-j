@@ -808,17 +808,21 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         String routingKey = "routingKey";
         String exchangeName = "exchangeName";
         ObjectProperties properties = new ObjectProperties(TEST_VIRTUAL_HOST, exchangeName, routingKey);
+        properties.put(ObjectProperties.Property.DURABLE, true);
+        properties.put(ObjectProperties.Property.AUTO_DELETE, false);
+        properties.put(ObjectProperties.Property.TEMPORARY, false);
 
         Exchange exchange = mock(Exchange.class);
         when(exchange.getCategoryClass()).thenReturn(Exchange.class);
         when(exchange.getAddressSpace()).thenReturn(_virtualHost);
         when(exchange.getName()).thenReturn(exchangeName);
+        when(exchange.getLifetimePolicy()).thenReturn(LifetimePolicy.PERMANENT);
+        when(exchange.isDurable()).thenReturn(true);
         Map<String,Object> args = new HashMap<>();
         args.put("routingKey",routingKey);
         _adapter.authoriseAction(exchange, "publish", args);
 
         verify(_accessControl).authorise(eq(LegacyOperation.PUBLISH), eq(ObjectType.EXCHANGE), eq(properties));
-
     }
 
     public void testAuthoriseCreateConnection()

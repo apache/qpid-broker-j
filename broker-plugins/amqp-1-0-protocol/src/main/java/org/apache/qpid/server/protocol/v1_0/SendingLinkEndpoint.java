@@ -634,13 +634,6 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             source.setCapabilities(attachSource.getCapabilities());
             final SendingDestination destination = getSession().getSendingDestination(getLink(), source);
             source.setCapabilities(destination.getCapabilities());
-            if (destination instanceof ExchangeSendingDestination)
-            {
-                ExchangeSendingDestination exchangeDestination = (ExchangeSendingDestination) destination;
-                exchangeDestination.getQueue()
-                                   .setAttributes(Collections.<String, Object>singletonMap(Queue.DESIRED_STATE,
-                                                                                           org.apache.qpid.server.model.State.ACTIVE));
-            }
             getLink().setSource(source);
             prepareConsumerOptionsAndFilters(destination);
         }
