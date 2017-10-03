@@ -40,6 +40,8 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.sleepycat.je.rep.ReplicationConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
@@ -65,15 +67,17 @@ import org.apache.qpid.server.util.FileUtils;
  */
 public class BDBHAVirtualHostNodeTestHelper
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BDBHAVirtualHostNodeTestHelper.class);
+
     private final String _testName;
-    private Broker<?> _broker;
-    private File _bdbStorePath;
-    private TaskExecutor _taskExecutor;
+    private final Broker<?> _broker;
+    private final File _bdbStorePath;
+    private final TaskExecutor _taskExecutor;
     private final ConfiguredObjectFactory _objectFactory = BrokerModel.getInstance().getObjectFactory();
     private final Set<BDBHAVirtualHostNode<?>> _nodes = new HashSet<>();
-    private int _numberOfSleeps;
+    private final int _numberOfSleeps;
     private final int _sleepInterval;
-    private int _waitForVirtualhostInterval;
+    private final int _waitForVirtualhostInterval;
 
     public BDBHAVirtualHostNodeTestHelper(String testName) throws Exception
     {
@@ -125,6 +129,7 @@ public class BDBHAVirtualHostNodeTestHelper
             }
             if (_bdbStorePath != null)
             {
+                LOGGER.debug("Deleting '{}'", _bdbStorePath);
                 FileUtils.delete(_bdbStorePath, true);
             }
         }
@@ -280,7 +285,7 @@ public class BDBHAVirtualHostNodeTestHelper
                                                     String helperAddress, String helperNodeNode, int... ports)
             throws Exception
     {
-        Map<String, Object> node1Attributes = new HashMap<String, Object>();
+        Map<String, Object> node1Attributes = new HashMap<>();
         node1Attributes.put(BDBHAVirtualHostNode.ID, UUID.randomUUID());
         node1Attributes.put(BDBHAVirtualHostNode.TYPE, BDBHAVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE);
         node1Attributes.put(BDBHAVirtualHostNode.NAME, nodeName);
@@ -297,7 +302,7 @@ public class BDBHAVirtualHostNodeTestHelper
             node1Attributes.put(BDBHAVirtualHostNode.HELPER_NODE_NAME, helperNodeNode);
         }
 
-        Map<String, String> context = new HashMap<String, String>();
+        Map<String, String> context = new HashMap<>();
         context.put(ReplicationConfig.REPLICA_ACK_TIMEOUT, "2 s");
         context.put(ReplicationConfig.INSUFFICIENT_REPLICAS_TIMEOUT, "2 s");
 
@@ -326,7 +331,7 @@ public class BDBHAVirtualHostNodeTestHelper
 
     public static List<String> getPermittedNodes(int[] ports)
     {
-        List<String> permittedNodes = new ArrayList<String>();
+        List<String> permittedNodes = new ArrayList<>();
         for (int port:ports)
         {
             permittedNodes.add("localhost:" + port);
