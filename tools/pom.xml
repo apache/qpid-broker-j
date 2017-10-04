@@ -96,13 +96,64 @@
       </dependencies>
     </profile>
     <profile>
-      <id>jms-client-0-x</id>
+      <id>jms-client-0-9</id>
       <activation>
         <property>
             <name>stresstest</name>
-            <value>qpid-jms-client-0-x</value>
+            <value>jms-client-0-9</value>
         </property>
       </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <configuration>
+              <systemProperties>
+                <systemProperty>
+                  <key>qpid.amqp.version</key><value>0-9</value>
+                </systemProperty>
+              </systemProperties>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.qpid</groupId>
+          <artifactId>qpid-client</artifactId>
+          <scope>compile</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.geronimo.specs</groupId>
+          <artifactId>geronimo-jms_1.1_spec</artifactId>
+          <scope>compile</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>jms-client-0-10</id>
+      <activation>
+        <property>
+            <name>stresstest</name>
+            <value>jms-client-0-10</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <configuration>
+              <systemProperties>
+                <systemProperty>
+                  <key>qpid.amqp.version</key><value>0-10</value>
+                </systemProperty>
+              </systemProperties>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
       <dependencies>
         <dependency>
           <groupId>org.apache.qpid</groupId>
