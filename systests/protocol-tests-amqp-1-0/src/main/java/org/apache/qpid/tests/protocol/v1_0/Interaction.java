@@ -567,6 +567,12 @@ public class Interaction
         return this;
     }
 
+    public Interaction detachHandle(UnsignedInteger handle)
+    {
+        _detach.setHandle(handle);
+        return this;
+    }
+
     public Interaction detach() throws Exception
     {
         sendPerformativeAndChainFuture(copyDetach(_detach), _sessionChannel);

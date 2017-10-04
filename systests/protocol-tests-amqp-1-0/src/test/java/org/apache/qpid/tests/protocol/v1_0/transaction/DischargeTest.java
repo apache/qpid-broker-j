@@ -34,7 +34,6 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -56,12 +55,12 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
-import org.apache.qpid.tests.protocol.v1_0.InteractionTransactionalState;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
+import org.apache.qpid.tests.protocol.v1_0.InteractionTransactionalState;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
+import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class DischargeTest extends BrokerAdminUsingTestBase
 {
@@ -165,7 +164,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                           + " To associate an outcome with a transaction the controller sends a disposition"
                           + " performative which sets the state of the delivery to a transactional-state with the"
                           + " desired transaction identifier and the outcome to be applied upon a successful discharge.")
-    public void commitAfterDetach() throws Exception
+    public void dischargeSettledAfterReceiverDetach() throws Exception
     {
         assumeThat(getBrokerAdmin().isQueueDepthSupported(), is(true));
 
@@ -205,6 +204,97 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                        .txnDischarge(txnState, false);
 
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "4.4.4.1",
+            description = "Transactional Posting [...]"
+                          + " Delivery Sent Unsettled By Controller; Resource Settles [...]"
+                          + " The resource MUST determine the outcome of the delivery before committing the"
+                          + " transaction, and this MUST be communicated to the controller before the acceptance"
+                          + " of a successful discharge. The outcome communicated by the resource MUST be associated"
+                          + " with the same transaction with which the transfer from controller to resource"
+                          + " was associated.")
+    public void dischargeSettledAfterSenderDetach() throws Exception
+    {
+        assumeThat(getBrokerAdmin().isQueueDepthSupported(), is(true));
+
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
+            interaction.negotiateProtocol().consumeResponse()
+                       .open().consumeResponse(Open.class)
+                       .begin().consumeResponse(Begin.class)
+
+                       .txnAttachCoordinatorLink(txnState)
+                       .txnDeclare(txnState)
+
+                       .attachRole(Role.SENDER)
+                       .attachHandle(UnsignedInteger.ONE)
+                       .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                       .attach().consumeResponse(Attach.class)
+                       .consumeResponse(Flow.class)
+
+                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferPayloadData("test message")
+                       .transferHandle(UnsignedInteger.ONE)
+                       .transfer().consumeResponse(Disposition.class)
+
+                       .detachHandle(UnsignedInteger.ONE)
+                       .detach().consumeResponse(Detach.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+
+            interaction.txnDischarge(txnState, false);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "4.4.4.1",
+            description = "Transactional Posting [...]"
+                          + " Delivery Sent Unsettled By Controller; Resource Does Not Settle [...]"
+                          + " After a successful discharge, the state of unsettled deliveries at the resource MUST"
+                          + " reflect the outcome that was applied.")
+    public void dischargeUnsettledAfterSenderClose() throws Exception
+    {
+        assumeThat(getBrokerAdmin().isQueueDepthSupported(), is(true));
+
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
+            interaction.negotiateProtocol().consumeResponse()
+                       .open().consumeResponse(Open.class)
+                       .begin().consumeResponse(Begin.class)
+
+                       .txnAttachCoordinatorLink(txnState)
+                       .txnDeclare(txnState)
+
+                       .attachRole(Role.SENDER)
+                       .attachHandle(UnsignedInteger.ONE)
+                       .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                       .attachRcvSettleMode(ReceiverSettleMode.SECOND)
+                       .attach().consumeResponse(Attach.class)
+                       .consumeResponse(Flow.class)
+
+                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferPayloadData("test message")
+                       .transferHandle(UnsignedInteger.ONE)
+                       .transfer().consumeResponse(Disposition.class)
+
+                       .detachHandle(UnsignedInteger.ONE)
+                       .detachClose(true)
+                       .detach().consumeResponse(Detach.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+
+            interaction.txnDischarge(txnState, false);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
         }
     }
 
