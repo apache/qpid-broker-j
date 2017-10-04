@@ -53,6 +53,8 @@ public class StressTestClient
     private static final String CONSUME_IMMEDIATELY_ARG = "consumeImmediately";
     private static final String CONSUMERS_ARG = "consumers";
     private static final String CLOSE_CONSUMERS_ARG = "closeconsumers";
+    private static final String DISABLE_MESSAGE_ID_ARG = "disableMessageId";
+    private static final String DISABLE_MESSAGE_TIMESTAMP_ARG = "disableMessageTimestamp";
     private static final String PRODUCERS_ARG = "producers";
     private static final String MESSAGE_COUNT_ARG = "messagecount";
     private static final String MESSAGE_SIZE_ARG = "size";
@@ -91,6 +93,9 @@ public class StressTestClient
     private static final String ITERATIONS_DEFAULT = "1";
     private static final String CONSUMERS_SELECTOR_DEFAULT = "";
     private static final String CLASS = "StressTestClient";
+    private static final String DISABLE_MESSAGE_ID_DEFAULT = Boolean.FALSE.toString();
+    private static final String DISABLE_MESSAGE_TIMESTAMP_DEFAULT = Boolean.FALSE.toString();
+
 
     public static void main(String[] args)
     {
@@ -102,6 +107,8 @@ public class StressTestClient
         options.put(CONSUME_IMMEDIATELY_ARG, CONSUME_IMMEDIATELY_DEFAULT);
         options.put(PRODUCERS_ARG, PRODUCERS_DEFAULT);
         options.put(CONSUMERS_ARG, CONSUMERS_DEFAULT);
+        options.put(DISABLE_MESSAGE_ID_ARG, DISABLE_MESSAGE_ID_DEFAULT);
+        options.put(DISABLE_MESSAGE_TIMESTAMP_ARG, DISABLE_MESSAGE_TIMESTAMP_DEFAULT);
         options.put(CLOSE_CONSUMERS_ARG, CLOSE_CONSUMERS_DEFAULT);
         options.put(MESSAGE_COUNT_ARG, MESSAGE_COUNT_DEFAULT);
         options.put(MESSAGE_SIZE_ARG, MESSAGE_SIZE_DEFAULT);
@@ -156,6 +163,8 @@ public class StressTestClient
         int numProducers = Integer.parseInt(options.get(PRODUCERS_ARG));
         int numConsumers = Integer.parseInt(options.get(CONSUMERS_ARG));
         boolean closeConsumers = Boolean.valueOf(options.get(CLOSE_CONSUMERS_ARG));
+        boolean disableMessageTimestamp = Boolean.valueOf(options.get(DISABLE_MESSAGE_TIMESTAMP_ARG));
+        boolean disableMessageID = Boolean.valueOf(options.get(DISABLE_MESSAGE_ID_ARG));
         boolean consumeImmediately = Boolean.valueOf(options.get(CONSUME_IMMEDIATELY_ARG));
         int numMessage = Integer.parseInt(options.get(MESSAGE_COUNT_ARG));
         int messageSize = Integer.parseInt(options.get(MESSAGE_SIZE_ARG));
@@ -255,9 +264,17 @@ public class StressTestClient
                                 sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
                             }
 
-                            BytesMessage message = sess.createBytesMessage();
+                            final Message message;
+                            if (messageSize > 0)
+                            {
+                                message = sess.createBytesMessage();
+                                ((BytesMessage) message).writeBytes(sentBytes);
+                            }
+                            else
+                            {
+                                message = sess.createMessage();
+                            }
 
-                            message.writeBytes(sentBytes);
 
                             if(!random && numMessage == 1 && numSessions == 1 && numConnections == 1 && repetitions == 1)
                             {
@@ -283,6 +300,16 @@ public class StressTestClient
                                     System.out.println(CLASS + ": Creating Producer " + pr);
                                 }
                                 producers[pr-1] = sess.createProducer(destination);
+
+                                if (disableMessageID)
+                                {
+                                    producers[pr-1].setDisableMessageID(true);
+                                }
+
+                                if (disableMessageTimestamp)
+                                {
+                                    producers[pr-1].setDisableMessageTimestamp(true);
+                                }
                             }
 
                             for (int iteration = 1; iteration <= iterations; iteration++)
@@ -322,7 +349,7 @@ public class StressTestClient
                                         {
                                             System.out.println(CLASS + ": Consuming Message " + cs);
                                         }
-                                        BytesMessage msg = (BytesMessage) consumer.receive(recieveTimeout);
+                                        Message msg = consumer.receive(recieveTimeout);
 
                                         if(sess.getTransacted() && cs % txBatch == 0)
                                         {
@@ -334,7 +361,11 @@ public class StressTestClient
                                             throw new RuntimeException("Expected message not received in allowed time: " + recieveTimeout);
                                         }
 
-                                        validateReceivedMessageContent(sentBytes, msg, random, messageSize);
+                                        if (messageSize > 0)
+                                        {
+                                            validateReceivedMessageContent(sentBytes,
+                                                                           (BytesMessage) msg, random, messageSize);
+                                        }
                                     }
                                 }
                             }
@@ -356,7 +387,7 @@ public class StressTestClient
 
                 if(numConsumers == -1 && !consumeImmediately)
                 {
-                    System.out.println(CLASS + ": Consuming left over messages, using recieve timeout:" + recieveTimeout);
+                    System.out.println(CLASS + ": Consuming left over messages, using receive timeout:" + recieveTimeout);
 
                     Connection conn = conFac.createConnection();
                     Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -366,7 +397,7 @@ public class StressTestClient
                     int count = 0;
                     while(true)
                     {
-                        BytesMessage msg = (BytesMessage) consumer.receive(recieveTimeout);
+                        Message msg = consumer.receive(recieveTimeout);
 
                         if(msg == null)
                         {
@@ -378,7 +409,10 @@ public class StressTestClient
                             count++;
                         }
 
-                        validateReceivedMessageContent(sentBytes, msg, random, messageSize);
+                        if (messageSize > 0)
+                        {
+                            validateReceivedMessageContent(sentBytes, (BytesMessage) msg, random, messageSize);
+                        }
                     }
 
                     consumer.close();
