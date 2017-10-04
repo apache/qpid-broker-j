@@ -39,10 +39,12 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.protocol.v1_0.type.transport.SessionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extends AbstractLinkEndpoint<Source, T>
@@ -75,7 +77,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
 
     void receiveTransfer(final Transfer transfer)
     {
-        if(isAttached())
+        if (!isErrored())
         {
             Error error = validateTransfer(transfer);
             if (error != null)
@@ -149,8 +151,11 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
         }
         else
         {
-            // TODO: it is wrong
-            getSession().updateDisposition(Role.RECEIVER, transfer.getDeliveryId(), transfer.getDeliveryId(),null, true);
+            End end = new End();
+            end.setError(new Error(SessionError.ERRANT_LINK,
+                                   String.format("Received TRANSFER for link handle %s which is in errored state.",
+                                                 transfer.getHandle())));
+            getSession().end(end);
         }
     }
 

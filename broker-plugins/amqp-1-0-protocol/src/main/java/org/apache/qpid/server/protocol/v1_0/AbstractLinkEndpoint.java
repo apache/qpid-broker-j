@@ -73,6 +73,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
     private volatile UnsignedInteger _localHandle;
     private volatile Map<Symbol, Object> _properties;
     private volatile State _state = State.ATTACH_RECVD;
+    private volatile boolean _errored = false;
 
     protected boolean _remoteIncompleteUnsettled;
     protected boolean _localIncompleteUnsettled;
@@ -105,6 +106,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
     @Override
     public void receiveAttach(final Attach attach) throws AmqpErrorException
     {
+        _errored = false;
         boolean isAttachingLocalTerminusNull = (attach.getRole() == Role.SENDER ? attach.getTarget() == null : attach.getSource() == null);
         boolean isLocalTerminusNull = (attach.getRole() == Role.SENDER ? getTarget() == null : getSource() == null);
 
@@ -433,6 +435,11 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
 
     protected void detach(Error error, boolean close)
     {
+        if (error != null && !getSession().isSyntheticError(error))
+        {
+            _errored = true;
+        }
+
         //TODO: QPID-7954: improve detach
         switch (_state)
         {
@@ -562,6 +569,11 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
     public void setCapabilities(Collection<Symbol> capabilities)
     {
         _capabilities = capabilities == null ? null : capabilities.toArray(new Symbol[capabilities.size()]);
+    }
+
+    public boolean isErrored()
+    {
+        return _errored;
     }
 
     @Override
