@@ -160,7 +160,6 @@ public class DischargeTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    @Ignore("QPID-7950")
     @SpecificationTest(section = "4.4.2",
             description = "Transactional Retirement [...]"
                           + " To associate an outcome with a transaction the controller sends a disposition"

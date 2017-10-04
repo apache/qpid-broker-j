@@ -73,6 +73,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
@@ -84,6 +85,9 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     private final List<Binary> _resumeAcceptedTransfers = new ArrayList<>();
     private final List<MessageInstance> _resumeFullTransfers = new ArrayList<>();
     private final Map<Binary, OutgoingDelivery> _unsettled = new ConcurrentHashMap<>();
+
+    // TODO: QPID-7845 : remove after implementation of link resuming
+    private final Action<Session_1_0> _cleanUpUnsettledDeliveryTask = object -> cleanUpUnsettledDeliveries();
 
     private volatile Binary _transactionId;
     private volatile Integer _priority;
@@ -100,6 +104,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         setDeliveryCount(new SequenceNumber(0));
         setAvailable(UnsignedInteger.valueOf(0));
         setCapabilities(Arrays.asList(AMQPConnection_1_0.SHARED_SUBSCRIPTIONS));
+        session.addDeleteTask(_cleanUpUnsettledDeliveryTask);
     }
 
     @Override
@@ -493,17 +498,14 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     {
         getConsumerTarget().close();
 
-        // TODO: QPID-7845 : Resuming links is unsupported at the moment. Thus, cleaning up unsettled deliveries unconditionally.
-        cleanUpUnsettledDeliveries();
-
         TerminusExpiryPolicy expiryPolicy = (getSource()).getExpiryPolicy();
         if (Boolean.TRUE.equals(detach.getClosed())
             || TerminusExpiryPolicy.LINK_DETACH.equals(expiryPolicy)
             || ((expiryPolicy == null || TerminusExpiryPolicy.SESSION_END.equals(expiryPolicy)) && getSession().isClosing())
             || (TerminusExpiryPolicy.CONNECTION_CLOSE.equals(expiryPolicy) && getSession().getConnection().isClosing()))
         {
-
-
+            cleanUpUnsettledDeliveries();
+            getSession().removeDeleteTask(_cleanUpUnsettledDeliveryTask);
             Error closingError = null;
             if (getDestination() instanceof ExchangeSendingDestination
                 && getSession().getConnection().getAddressSpace() instanceof QueueManagingVirtualHost)
@@ -531,6 +533,8 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         }
         else if (detach.getError() != null)
         {
+            cleanUpUnsettledDeliveries();
+            getSession().removeDeleteTask(_cleanUpUnsettledDeliveryTask);
             detach();
             destroy();
             getConsumerTarget().updateNotifyWorkDesired();
@@ -559,6 +563,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                 delivery.setAction(null);
             }
         }
+        _unsettled.clear();
     }
 
     void addUnsettled(final Binary tag, final UnsettledAction unsettledAction, final MessageInstance messageInstance)
@@ -660,6 +665,10 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         _resumeAcceptedTransfers.clear();
         _resumeFullTransfers.clear();
         final NamedAddressSpace addressSpace = getSession().getConnection().getAddressSpace();
+
+        // TODO: QPID-7845 : Resuming links is unsupported at the moment. Thus, cleaning up unsettled deliveries unconditionally.
+        cleanUpUnsettledDeliveries();
+
         Map<Binary, OutgoingDelivery> unsettledCopy = new HashMap<>(_unsettled);
         Map<Binary, DeliveryState> remoteUnsettled =
                 attach.getUnsettled() == null ? Collections.emptyMap() : new HashMap<>(attach.getUnsettled());
@@ -734,7 +743,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             {
                 _resumeFullTransfers.add(queueEntry);
 
-                // TODO:PID-7845: exists in receivers map, but not yet got an outcome ... should resend with resume = true
+                // TODO:QPID-7845: exists in receivers map, but not yet got an outcome ... should resend with resume = true
             }
         }
 

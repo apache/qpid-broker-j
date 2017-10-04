@@ -121,8 +121,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private final AMQPConnection_1_0<?> _connection;
     private AtomicBoolean _closed = new AtomicBoolean();
 
-    private Session<?> _modelObject = this;
-
     private SessionState _sessionState;
 
     private final Map<LinkEndpoint<? extends BaseSource, ? extends BaseTarget>, UnsignedInteger> _endpointToOutputHandle = new HashMap<>();
@@ -343,6 +341,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         switch (_sessionState)
         {
             case END_SENT:
+                remoteEnd(end);
                 _sessionState = SessionState.ENDED;
                 break;
             case ACTIVE:
@@ -895,11 +894,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
         _connection.sessionEnded(this);
         performCloseTasks();
-        if(_modelObject != null)
-        {
-            _modelObject.delete();
-        }
-
     }
 
     static Integer transactionIdToInteger(final Binary txnId)
@@ -940,10 +934,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     {
         performCloseTasks();
         end();
-        if(_modelObject != null)
-        {
-            _modelObject.delete();
-        }
     }
 
     private void performCloseTasks()
@@ -1365,6 +1355,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         {
             doOnIOThreadAsync(() -> {
                 _associatedLinkEndpoints.add(endpoint);
+                _inputHandleToEndpoint.put(_attach.getHandle(), endpoint);
                 endpoint.setLocalHandle(findNextAvailableOutputHandle());
                 if (endpoint instanceof ErrantLinkEndpoint)
                 {
