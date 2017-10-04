@@ -572,8 +572,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         if (linkEndpoint == null)
         {
             Error error = new Error();
-            error.setCondition(AmqpError.ILLEGAL_STATE);
-            error.setDescription("TRANSFER called on Session for link handle " + inputHandle + " which is not attached");
+            error.setCondition(SessionError.UNATTACHED_HANDLE);
+            error.setDescription("TRANSFER called on Session for link handle " + inputHandle + " which is not attached.");
             _connection.close(error);
 
         }
@@ -581,8 +581,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         {
 
             Error error = new Error();
-            error.setCondition(ConnectionError.FRAMING_ERROR);
-            error.setDescription("TRANSFER called on Session for link handle " + inputHandle + " which is a sending ink not a receiving link");
+            error.setCondition(AmqpError.PRECONDITION_FAILED);
+            error.setDescription("Received TRANSFER for link handle " + inputHandle + " which is a sending link not a receiving link.");
             _connection.close(error);
 
         }
