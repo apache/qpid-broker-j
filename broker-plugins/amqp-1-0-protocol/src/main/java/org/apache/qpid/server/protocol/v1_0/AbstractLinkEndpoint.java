@@ -433,7 +433,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
 
     protected void detach(Error error, boolean close)
     {
-        //TODO
+        //TODO: QPID-7954: improve detach
         switch (_state)
         {
             case ATTACHED:

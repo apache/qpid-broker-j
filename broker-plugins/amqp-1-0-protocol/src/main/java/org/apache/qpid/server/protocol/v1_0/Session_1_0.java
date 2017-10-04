@@ -1264,7 +1264,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
         else
         {
-            // TODO
+            //TODO: QPID-7954
         }
     }
 

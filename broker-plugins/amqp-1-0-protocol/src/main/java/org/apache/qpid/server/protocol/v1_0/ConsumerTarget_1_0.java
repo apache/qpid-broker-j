@@ -324,6 +324,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     }
 
     /*
+        QPID-7541
         Currently if a queue is deleted the consumer sits there withiout being closed, but
         obviously not receiving any new messages
 
@@ -339,6 +340,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         linkReg.unregisterSendingLink(getEndpoint().getName());
     }
       */
+
     @Override
     public boolean allocateCredit(final ServerMessage msg)
     {
