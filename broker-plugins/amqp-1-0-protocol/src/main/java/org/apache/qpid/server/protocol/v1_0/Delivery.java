@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -47,9 +48,11 @@ public class Delivery
     private volatile DeliveryState _state;
     private volatile ReceiverSettleMode _receiverSettleMode;
     private volatile boolean _resume;
+    private volatile long _totalPayloadSize;
 
     public Delivery(Transfer transfer, final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> endpoint)
     {
+        _totalPayloadSize = 0L;
         _deliveryId = transfer.getDeliveryId();
         _deliveryTag = transfer.getDeliveryTag();
         _linkEndpoint = endpoint;
@@ -97,10 +100,14 @@ public class Delivery
         return _messageFormat;
     }
 
-
     public boolean getResume()
     {
         return _resume;
+    }
+
+    public long getTotalPayloadSize()
+    {
+        return _totalPayloadSize;
     }
 
     final void addTransfer(Transfer transfer)
@@ -162,7 +169,13 @@ public class Delivery
             {
                 _receiverSettleMode = transfer.getRcvSettleMode();
             }
+        }
 
+        final List<QpidByteBuffer> payload = transfer.getPayload();
+        if (payload != null)
+        {
+            _totalPayloadSize += QpidByteBufferUtils.remaining(payload);
+            QpidByteBufferUtils.dispose(payload);
         }
     }
 

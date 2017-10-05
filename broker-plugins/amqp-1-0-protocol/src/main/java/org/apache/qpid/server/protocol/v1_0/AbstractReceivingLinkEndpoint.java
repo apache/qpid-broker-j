@@ -34,6 +34,7 @@ import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
@@ -42,6 +43,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
+import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SessionError;
@@ -112,6 +114,16 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                     return;
                 }
                 _currentDelivery.addTransfer(transfer);
+            }
+
+            if (_currentDelivery.getTotalPayloadSize() > getSession().getConnection().getMaxMessageSize())
+            {
+                error = new Error(LinkError.MESSAGE_SIZE_EXCEEDED,
+                                  String.format("delivery '%s' exceeds max-message-size %d",
+                                                _currentDelivery.getDeliveryTag(),
+                                                getSession().getConnection().getMaxMessageSize()));
+                close(error);
+                return;
             }
 
             if (!_currentDelivery.getResume())

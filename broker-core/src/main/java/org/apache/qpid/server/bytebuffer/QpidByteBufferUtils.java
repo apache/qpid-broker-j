@@ -24,6 +24,15 @@ import java.util.List;
 
 public class QpidByteBufferUtils
 {
+    public static void dispose(List<QpidByteBuffer> in)
+    {
+        for (int i = 0, inSize = in.size(); i < inSize; i++)
+        {
+            final QpidByteBuffer qpidByteBuffer = in.get(i);
+            qpidByteBuffer.dispose();
+        }
+    }
+
     public static boolean hasRemaining(List<QpidByteBuffer> in)
     {
         if (in.isEmpty())

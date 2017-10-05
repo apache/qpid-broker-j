@@ -24,10 +24,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
@@ -64,23 +66,25 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
+import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.MessageDecoder;
 import org.apache.qpid.tests.protocol.v1_0.MessageEncoder;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.protocol.v1_0.Response;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
+import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class TransferTest extends BrokerAdminUsingTestBase
 {
     private static final String TEST_MESSAGE_DATA = "foo";
+    private static final long MAX_MAX_MESSAGE_SIZE_WE_ARE_WILLING_TO_TEST = 200 * 1024 * 1024L;
     private InetSocketAddress _brokerAddress;
     private String _originalMmsMessageStorePersistence;
 
@@ -793,5 +797,86 @@ public class TransferTest extends BrokerAdminUsingTestBase
             assumeThat(getBrokerAdmin().isQueueDepthSupported(), is(true));
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(2)));
         }
+    }
+
+    @Test
+    @SpecificationTest(section = "2.7.3",
+            description = "max-message-size: This field indicates the maximum message size supported by the link"
+                          + " endpoint. Any attempt to deliver a message larger than this results in a"
+                          + " message-size-exceeded link-error. If this field is zero or unset, there is no maximum"
+                          + " size imposed by the link endpoint.")
+    public void exceedMaxMessageSizeLimit() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Binary deliveryTag = new Binary("testDeliveryTag".getBytes(UTF_8));
+
+            Interaction interaction = transport.newInteraction();
+            Open open = interaction.negotiateProtocol().consumeResponse()
+                                   .open().consumeResponse(Open.class)
+                                   .getLatestResponse(Open.class);
+
+            long maxFrameSize = open.getMaxFrameSize() == null ? Integer.MAX_VALUE : open.getMaxFrameSize().longValue();
+
+            Attach attach = interaction.begin().consumeResponse(Begin.class)
+                                       .attachRole(Role.SENDER)
+                                       .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                       .attach().consumeResponse(Attach.class)
+                                       .getLatestResponse(Attach.class);
+
+            final UnsignedLong maxMessageSizeLimit = attach.getMaxMessageSize();
+            assumeThat(maxMessageSizeLimit, is(notNullValue()));
+            assumeThat(maxMessageSizeLimit.longValue(),
+                       is(both(greaterThan(0L)).and(lessThan(MAX_MAX_MESSAGE_SIZE_WE_ARE_WILLING_TO_TEST))));
+
+            Flow flow = interaction.consumeResponse(Flow.class)
+                                   .getLatestResponse(Flow.class);
+            assertThat(flow.getLinkCredit().intValue(), is(greaterThan(1)));
+
+            final long chunkSize = Math.min(1024 * 1024, maxFrameSize - 100);
+            byte[] payloadChunk = createTestPaload(chunkSize);
+            interaction.transferDeliveryId(UnsignedInteger.ZERO)
+                       .transferDeliveryTag(deliveryTag)
+                       .transferPayloadData(payloadChunk)
+                       .transferSettled(true)
+                       .transferMore(true);
+            int payloadSize = 0;
+            while (payloadSize < maxMessageSizeLimit.longValue())
+            {
+                payloadSize += chunkSize;
+                interaction.transfer();
+            }
+
+            while (true)
+            {
+                Response<?> response = interaction.consumeResponse(Flow.class, Disposition.class, Detach.class).getLatestResponse();
+                if (response != null)
+                {
+                    if (response.getBody() instanceof Detach)
+                    {
+                        break;
+                    }
+                    else if (response.getBody() instanceof Disposition)
+                    {
+                        assertThat(((Disposition) response.getBody()).getState(), is(instanceOf(Rejected.class)));
+                        assertThat(((Rejected) ((Disposition) response.getBody()).getState()).getError(), is(notNullValue()));
+                        assertThat(((Rejected) ((Disposition) response.getBody()).getState()).getError().getCondition(), is(equalTo(LinkError.MESSAGE_SIZE_EXCEEDED)));
+                    }
+                }
+            }
+            Detach detach = interaction.getLatestResponse(Detach.class);
+
+            assertThat(detach.getError(), is(notNullValue()));
+            assertThat(detach.getError().getCondition(), is(equalTo(LinkError.MESSAGE_SIZE_EXCEEDED)));
+        }
+    }
+
+    private byte[] createTestPaload(final long payloadSize)
+    {
+        if (payloadSize > 1024*1024*1024)
+        {
+            throw new IllegalArgumentException(String.format("Payload size (%.2f MB) too big", payloadSize / (1024. * 1024.)));
+        }
+        return new byte[(int) payloadSize];
     }
 }

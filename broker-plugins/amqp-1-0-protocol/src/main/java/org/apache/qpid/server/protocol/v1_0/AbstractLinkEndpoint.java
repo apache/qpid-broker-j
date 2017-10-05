@@ -41,6 +41,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
@@ -325,6 +326,14 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
         if (getRole() == Role.SENDER)
         {
             attachToSend.setInitialDeliveryCount(_deliveryCount.unsignedIntegerValue());
+        }
+        else
+        {
+            final long maxMessageSize = getSession().getConnection().getMaxMessageSize();
+            if (maxMessageSize != Long.MAX_VALUE)
+            {
+                attachToSend.setMaxMessageSize(UnsignedLong.valueOf(maxMessageSize));
+            }
         }
 
         attachToSend = handleOversizedUnsettledMapIfNecessary(attachToSend);
