@@ -361,10 +361,8 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             throw new AmqpErrorException(new Error(AmqpError.NOT_FOUND, ""));
         }
 
-        final SendingDestination destination = getSession().getSendingDestination(getLink(), getSource());
-        prepareConsumerOptionsAndFilters(destination);
-
-        attachReceived(attach);
+        attach.setSource(getSource());
+        receiveAttach(attach);
     }
 
     @Override

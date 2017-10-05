@@ -485,18 +485,8 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                                                    String.format("Link '%s' not found", getLinkName())));
         }
 
-        Source source = (Source) attach.getSource();
-        Target target = getTarget();
-
-        // TODO: This seems a bit weird. Similar code is in attachReceived.
-        // We also seem to send back a different target than we are using.
-        final ReceivingDestination destination = getSession().getReceivingDestination(getLink(), getTarget());
-        target.setCapabilities(destination.getCapabilities());
-        setCapabilities(Arrays.asList(destination.getCapabilities()));
-        setDestination(destination);
-        attachReceived(attach);
-
-        getLink().setTermini(source, target);
+        attach.setTarget(getTarget());
+        receiveAttach(attach);
     }
 
 
