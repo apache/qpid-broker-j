@@ -104,7 +104,6 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         setDeliveryCount(new SequenceNumber(0));
         setAvailable(UnsignedInteger.valueOf(0));
         setCapabilities(Arrays.asList(AMQPConnection_1_0.SHARED_SUBSCRIPTIONS));
-        session.addDeleteTask(_cleanUpUnsettledDeliveryTask);
     }
 
     @Override
@@ -494,45 +493,19 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     @Override
     protected void remoteDetachedPerformDetach(final Detach detach)
     {
-        getConsumerTarget().close();
-
-        TerminusExpiryPolicy expiryPolicy = (getSource()).getExpiryPolicy();
+        TerminusExpiryPolicy expiryPolicy = getSource().getExpiryPolicy();
         if (Boolean.TRUE.equals(detach.getClosed())
             || TerminusExpiryPolicy.LINK_DETACH.equals(expiryPolicy)
             || ((expiryPolicy == null || TerminusExpiryPolicy.SESSION_END.equals(expiryPolicy)) && getSession().isClosing())
             || (TerminusExpiryPolicy.CONNECTION_CLOSE.equals(expiryPolicy) && getSession().getConnection().isClosing()))
         {
             cleanUpUnsettledDeliveries();
-            getSession().removeDeleteTask(_cleanUpUnsettledDeliveryTask);
-            Error closingError = null;
-            if (getDestination() instanceof ExchangeSendingDestination
-                && getSession().getConnection().getAddressSpace() instanceof QueueManagingVirtualHost)
-            {
-                try
-                {
-                    ((QueueManagingVirtualHost) getSession().getConnection().getAddressSpace()).removeSubscriptionQueue(
-                            ((ExchangeSendingDestination) getDestination()).getQueue().getName());
-                }
-                catch (AccessControlException e)
-                {
-                    LOGGER.error("Error unregistering subscription", e);
-                    closingError = new Error(AmqpError.NOT_ALLOWED, "Error unregistering subscription");
-                }
-                catch (IllegalStateException e)
-                {
-                    closingError = new Error(AmqpError.RESOURCE_LOCKED, e.getMessage());
-                }
-                catch (NotFoundException e)
-                {
-                    closingError = new Error(AmqpError.NOT_FOUND, e.getMessage());
-                }
-            }
-            close(closingError);
+
+            close();
         }
         else if (detach.getError() != null)
         {
             cleanUpUnsettledDeliveries();
-            getSession().removeDeleteTask(_cleanUpUnsettledDeliveryTask);
             detach();
             destroy();
             getConsumerTarget().updateNotifyWorkDesired();
@@ -549,6 +522,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 
     private void cleanUpUnsettledDeliveries()
     {
+        getSession().removeDeleteTask(_cleanUpUnsettledDeliveryTask);
         Modified state = new Modified();
         state.setDeliveryFailed(true);
 
@@ -666,6 +640,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 
         // TODO: QPID-7845 : Resuming links is unsupported at the moment. Thus, cleaning up unsettled deliveries unconditionally.
         cleanUpUnsettledDeliveries();
+        getSession().addDeleteTask(_cleanUpUnsettledDeliveryTask);
 
         Map<Binary, OutgoingDelivery> unsettledCopy = new HashMap<>(_unsettled);
         Map<Binary, DeliveryState> remoteUnsettled =
@@ -777,6 +752,57 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     public void setDestination(final SendingDestination destination)
     {
         _destination = destination;
+    }
+
+    @Override
+    protected void detach(Error error, final boolean close)
+    {
+        if (_consumerTarget != null)
+        {
+            _consumerTarget.close();
+        }
+
+        TerminusExpiryPolicy expiryPolicy = (getSource()).getExpiryPolicy();
+        if (close
+            || TerminusExpiryPolicy.LINK_DETACH.equals(expiryPolicy)
+            || ((expiryPolicy == null || TerminusExpiryPolicy.SESSION_END.equals(expiryPolicy)) && getSession().isClosing())
+            || (TerminusExpiryPolicy.CONNECTION_CLOSE.equals(expiryPolicy) && getSession().getConnection().isClosing()))
+        {
+
+            Error closingError = null;
+            if (getDestination() instanceof ExchangeSendingDestination
+                && getSession().getConnection().getAddressSpace() instanceof QueueManagingVirtualHost)
+            {
+                cleanUpUnsettledDeliveries();
+                try
+                {
+                    ((QueueManagingVirtualHost) getSession().getConnection().getAddressSpace()).removeSubscriptionQueue(
+                            ((ExchangeSendingDestination) getDestination()).getQueue().getName());
+                }
+                catch (AccessControlException e)
+                {
+                    LOGGER.error("Error unregistering subscription", e);
+                    closingError = new Error(AmqpError.NOT_ALLOWED, "Error unregistering subscription");
+                }
+                catch (IllegalStateException e)
+                {
+                    closingError = new Error(AmqpError.RESOURCE_LOCKED, e.getMessage());
+                }
+                catch (NotFoundException e)
+                {
+                    closingError = new Error(AmqpError.NOT_FOUND, e.getMessage());
+                }
+            }
+            if (error == null)
+            {
+                error = closingError;
+            }
+            else
+            {
+                LOGGER.warn("Unexpected error on detaching endpoint {}: {}", getLinkName(), error);
+            }
+        }
+        super.detach(error, close);
     }
 
     private static class OutgoingDelivery
