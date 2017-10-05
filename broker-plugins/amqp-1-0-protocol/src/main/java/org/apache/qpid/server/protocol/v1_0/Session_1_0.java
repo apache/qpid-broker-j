@@ -1294,8 +1294,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
         while(++i != 0);
 
-        // TODO
-        throw new RuntimeException();
+        return null;
     }
 
 
@@ -1353,33 +1352,50 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         @Override
         public void onSuccess(final T endpoint)
         {
-            doOnIOThreadAsync(() -> {
+            doOnIOThreadAsync(() ->
+            {
                 _associatedLinkEndpoints.add(endpoint);
                 _inputHandleToEndpoint.put(_attach.getHandle(), endpoint);
-                endpoint.setLocalHandle(findNextAvailableOutputHandle());
-                if (endpoint instanceof ErrantLinkEndpoint)
+                UnsignedInteger nextAvailableOutputHandle = findNextAvailableOutputHandle();
+                if (nextAvailableOutputHandle == null)
                 {
-                    endpoint.sendAttach();
-                    ((ErrantLinkEndpoint) endpoint).closeWithError();
+                    endpoint.close(new Error(AmqpError.RESOURCE_LIMIT_EXCEEDED,
+                                             String.format(
+                                                     "Cannot find free handle for endpoint '%d' on session '%s'",
+                                                     _attach.getHandle(),
+                                                     endpoint.getSession().toLogString())));
                 }
                 else
                 {
-                    if (endpoint instanceof StandardReceivingLinkEndpoint
-                        && (_blockingEntities.contains(Session_1_0.this)
-                            || _blockingEntities.contains(((StandardReceivingLinkEndpoint) endpoint).getReceivingDestination())))
+                    endpoint.setLocalHandle(nextAvailableOutputHandle);
+                    if (endpoint instanceof ErrantLinkEndpoint)
                     {
-                        endpoint.setStopped(true);
-                    }
-                    _inputHandleToEndpoint.put(_attach.getHandle(), endpoint);
-                    if (!_endpointToOutputHandle.containsKey(endpoint))
-                    {
-                        _endpointToOutputHandle.put(endpoint, endpoint.getLocalHandle());
                         endpoint.sendAttach();
-                        endpoint.start();
+                        ((ErrantLinkEndpoint) endpoint).closeWithError();
                     }
                     else
                     {
-                        // TODO - close connection or session with internal error
+                        if (endpoint instanceof StandardReceivingLinkEndpoint
+                            && (_blockingEntities.contains(Session_1_0.this)
+                                || _blockingEntities.contains(((StandardReceivingLinkEndpoint) endpoint)
+                                                                      .getReceivingDestination())))
+                        {
+                            endpoint.setStopped(true);
+                        }
+
+                        if (!_endpointToOutputHandle.containsKey(endpoint))
+                        {
+                            _endpointToOutputHandle.put(endpoint, endpoint.getLocalHandle());
+                            endpoint.sendAttach();
+                            endpoint.start();
+                        }
+                        else
+                        {
+                            final End end = new End();
+                            end.setError(new Error(AmqpError.INTERNAL_ERROR,
+                                                   "Endpoint is already registered with session."));
+                            endpoint.getSession().end(end);
+                        }
                     }
                 }
             });
