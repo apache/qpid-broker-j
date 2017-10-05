@@ -293,7 +293,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
                 break;
             }
             counter++;
-            Thread.sleep(100l);
+            Thread.sleep(100L);
         }
 
         //connect intruder node
@@ -337,7 +337,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
 
     private Map<String, Object> createNodeAttributeMap(String nodeName, int nodePort, int helperPort) throws Exception
     {
-        Map<String, Object> nodeData = new HashMap<String, Object>();
+        Map<String, Object> nodeData = new HashMap<>();
         nodeData.put(BDBHAVirtualHostNode.NAME, nodeName);
         nodeData.put(BDBHAVirtualHostNode.TYPE, BDBHAVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE);
         nodeData.put(BDBHAVirtualHostNode.GROUP_NAME, _hostName);
@@ -390,34 +390,25 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
 
     private void assertRemoteNodes(String masterNode, String... replicaNodes) throws Exception
     {
-        List<String> clusterNodes = new ArrayList<String>(Arrays.asList(replicaNodes));
+        List<String> clusterNodes = new ArrayList<>(Arrays.asList(replicaNodes));
         clusterNodes.add(masterNode);
 
         for (String clusterNodeName : clusterNodes)
         {
-            List<String> remotes = new ArrayList<String>(clusterNodes);
+            List<String> remotes = new ArrayList<>(clusterNodes);
             remotes.remove(clusterNodeName);
             for (String remote : remotes)
             {
                 String remoteUrl = "remotereplicationnode/" + clusterNodeName + "/" + remote;
-                Map<String, Object> nodeData = _restTestHelper.waitForAttributeChanged(remoteUrl, BDBHARemoteReplicationNode.ROLE, remote.equals(masterNode) ? "MASTER" : "REPLICA");
-                assertRemoteNodeData(remote, nodeData);
+                String desiredNodeState = remote.equals(masterNode) ? "MASTER" : "REPLICA";
+                _restTestHelper.waitForAttributeChanged(remoteUrl,
+                                                        node -> desiredNodeState.equals(node.get(
+                                                                BDBHARemoteReplicationNode.ROLE))
+                                                                && (Integer) node.get(BDBHAVirtualHostNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID) > 0
+                                                                && ((Number) node.get(BDBHAVirtualHostNode.JOIN_TIME)).longValue() > 0L);
             }
         }
     }
-
-    private void assertRemoteNodeData(String name, Map<String, Object> nodeData)
-    {
-        assertEquals("Remote node " + name + " has unexpected name", name, nodeData.get(BDBHAVirtualHostNode.NAME));
-
-        Integer lastKnownTransactionId = (Integer) nodeData.get(BDBHAVirtualHostNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID);
-        assertNotNull("Node " + name + " has unexpected lastKnownReplicationId", lastKnownTransactionId);
-        assertTrue("Node " + name + " has unexpected lastKnownReplicationId " + lastKnownTransactionId, lastKnownTransactionId > 0);
-
-        Number joinTime = (Number) nodeData.get(BDBHAVirtualHostNode.JOIN_TIME);
-        assertNotNull("Node " + name + " has unexpected joinTime", joinTime);
-        assertTrue("Node " + name + " has unexpected joinTime " + joinTime, joinTime.longValue() > 0);
-     }
 
     private void assertActualAndDesiredStates(final String restUrl,
                                               final String expectedDesiredState,
@@ -429,7 +420,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
 
     private void mutateDesiredState(final String restUrl, final String newState) throws IOException
     {
-        Map<String, Object> newAttributes = new HashMap<String, Object>();
+        Map<String, Object> newAttributes = new HashMap<>();
         newAttributes.put(VirtualHostNode.DESIRED_STATE, newState);
 
         getRestTestHelper().submitRequest(restUrl, "PUT", newAttributes, HttpServletResponse.SC_OK);
@@ -468,7 +459,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
             }
             if (newMasterData == null)
             {
-                Thread.sleep(100l);
+                Thread.sleep(100L);
                 counter++;
             }
         }

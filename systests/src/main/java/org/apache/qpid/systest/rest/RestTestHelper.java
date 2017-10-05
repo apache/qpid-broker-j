@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManager;
@@ -662,16 +663,24 @@ public class RestTestHelper
                                                        String attributeName,
                                                        Object newValue) throws Exception
     {
+        return waitForAttributeChanged(url, (attr -> newValue.equals(attr.get(attributeName))));
+
+    }
+
+    public Map<String, Object> waitForAttributeChanged(String url,
+                                                       Predicate<Map<String, Object>> attributePredicate) throws Exception
+    {
         Map<String, Object> nodeAttributes = getAttributesIgnoringNotFound(url);
         int timeout = 30000;
         long limit = System.currentTimeMillis() + timeout;
-        while(System.currentTimeMillis() < limit && (nodeAttributes == null|| !newValue.equals(nodeAttributes.get(attributeName))))
+        while(System.currentTimeMillis() < limit && (nodeAttributes == null || !attributePredicate.test(nodeAttributes)))
         {
-            Thread.sleep(100l);
+            Thread.sleep(100L);
             nodeAttributes = getAttributesIgnoringNotFound(url);
         }
-        Assert.assertEquals("Attribute " + attributeName + " did not reach expected value within permitted timeout " + timeout + "ms.", newValue, nodeAttributes
-                .get(attributeName));
+        Assert.assertTrue(String.format("Attributes predicate not satisfied after %d ms.  Last attribute state state : %s",
+                                          timeout,
+                                          nodeAttributes), attributePredicate.test(nodeAttributes));
         return nodeAttributes;
     }
 
