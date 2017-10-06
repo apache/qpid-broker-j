@@ -248,7 +248,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
 
         send(disposition);
-        //TODO - check send flow
     }
 
     void updateDisposition(final Role role,
@@ -483,11 +482,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             }
             deliveryId.incr();
         }
-        if(Boolean.TRUE.equals(disposition.getSettled()))
-        {
-            //TODO - check send flow
-        }
-
     }
 
     public SessionState getSessionState()
@@ -1149,7 +1143,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     @Override
     public void addDeleteTask(final Action<? super Session_1_0> task)
     {
-        // TODO is the closed guard important?
+        // TODO: QPID-7951 is the closed guard important?
         if(!_closed.get())
         {
             super.addDeleteTask(task);
