@@ -167,5 +167,24 @@
         </dependency>
       </dependencies>
     </profile>
+    <profile>
+      <id>rest-stress-test</id>
+      <activation>
+        <property>
+            <name>reststresstest</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <configuration>
+              <mainClass>org.apache.qpid.tools.RestStressTestClient</mainClass>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>

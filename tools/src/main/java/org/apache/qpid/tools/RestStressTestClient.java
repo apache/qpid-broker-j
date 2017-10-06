@@ -30,6 +30,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,6 +45,10 @@ import java.util.Set;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -68,7 +75,7 @@ public class RestStressTestClient
             parser.usage(Arguments.class, Arguments.REQUIRED);
             System.out.println("\nRun examples:" );
             System.out.println("  Using Basic authentication:" );
-            System.out.println("  java -cp qpid-tools.jar:commons-codec.jar:jackson-core.jar:jackson-mapper.jar \\" );
+            System.out.println("  java \\" );
             System.out.println("    -Djavax.net.ssl.trustStore=java_client_truststore.jks \\");
             System.out.println("    -Djavax.net.ssl.trustStorePassword=password \\");
             System.out.println("    org.apache.qpid.tools.RestStressTestClient \\");
@@ -76,7 +83,7 @@ public class RestStressTestClient
             System.out.println("      virtualHost=default virtualHostNode=default createQueue=true bindQueue=true \\");
             System.out.println("      deleteQueue=true uniqueQueues=true queueName=boo exchangeName=amq.fanout" );
             System.out.println("  Using CRAM-MD5 SASL authentication:" );
-            System.out.println("  java -cp qpid-tools.jar:commons-codec.jar:jackson-core.jar:jackson-mapper.jar \\" );
+            System.out.println("  java \\" );
             System.out.println("    org.apache.qpid.tools.RestStressTestClient saslMechanism=CRAM-MD5 \\");
             System.out.println("      repetitions=10 brokerUrl=http://localhost:8080 username=admin password=admin \\");
             System.out.println("      virtualHost=default virtualHostNode=default createQueue=true bindQueue=true \\");
@@ -91,9 +98,45 @@ public class RestStressTestClient
     public void run(Arguments arguments) throws IOException
     {
         log(arguments.toString());
+        if (arguments.isTrustAll())
+        {
+            configureTrustAll();
+        }
         for (int i = 0; i < arguments.getRepetitions(); i++)
         {
             runIteration(arguments, i);
+        }
+    }
+
+    private void configureTrustAll()
+    {
+        TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager()
+                {
+                    public X509Certificate[] getAcceptedIssuers()
+                    {
+                        return null;
+                    }
+
+                    public void checkClientTrusted(X509Certificate[] certs, String authType)
+                    {
+                    }
+
+                    public void checkServerTrusted(X509Certificate[] certs, String authType)
+                    {
+                    }
+                }
+        };
+
+        try
+        {
+            SSLContext sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+        }
+        catch (NoSuchAlgorithmException | KeyManagementException e)
+        {
+            throw new RuntimeException("Failed to configure trust-all trust manager", e);
         }
     }
 
@@ -105,8 +148,8 @@ public class RestStressTestClient
         client.authenticateIfSaslAuthenticationRequested();
         try
         {
-            List<Map<String, Object>> brokerData = client.get("/api/latest/broker?depth=0");
-            log("    Connected to broker " + brokerData.get(0).get("name"));
+            Map<String, Object> brokerData = client.get("/api/latest/broker?depth=0");
+            log("    Connected to broker " + brokerData.get("name"));
             createAndBindQueueIfRequired(arguments, client, iteration);
         }
         finally
@@ -167,7 +210,7 @@ public class RestStressTestClient
 
         if (result != RestClient.RESPONSE_PUT_CREATE_OK)
         {
-            throw new RuntimeException("Failure to create queue " + queueName);
+            throw new RuntimeException(String.format("Failure (%d) to create queue '%s'", result, queueName));
         }
     }
 
@@ -182,7 +225,7 @@ public class RestStressTestClient
         int result = client.delete(getQueueServiceUrl(virtualHostNode, virtualHost, queueName));
         if (result != RestClient.RESPONSE_PUT_UPDATE_OK)
         {
-            throw new RuntimeException("Failure to delete queue " + queueName);
+            throw new RuntimeException(String.format("Failure (%d) to delete queue '%s'", result, queueName));
         }
     }
 
@@ -196,27 +239,22 @@ public class RestStressTestClient
 
         log("        Bind queue " + queueName + " to " + exchangeName + " using binding key " + queueName);
 
-        String bindingUrl = "/api/latest/binding/" + virtualHostNode + "/" + virtualHost + "/" + exchangeName + "/" + queueName + "/" + queueName;
+        String args = "/api/latest/exchange/" + virtualHostNode + "/" + virtualHost + "/" + exchangeName + "/bind";
 
-        Map<String, Object> bindingData = new HashMap<>();
-        bindingData.put("name", queueName);
-        bindingData.put("queue", queueName);
-        bindingData.put("exchange", exchangeName);
+        Map<String, String> bindingData = new HashMap<>();
+        bindingData.put("bindingKey", queueName);
+        bindingData.put("destination", queueName);
 
-        int result = client.put(bindingUrl, bindingData);
+        int result = client.post(args, bindingData);
 
-        if (result != RestClient.RESPONSE_PUT_CREATE_OK)
+        if (result != RestClient.RESPONSE_OK)
         {
-            throw new RuntimeException("Failure to bind queue " + queueName + " to " + exchangeName);
+            throw new RuntimeException(String.format("Failure (%d) to to bind queue '%s' to exchange '%s'", result, queueName, exchangeName));
         }
     }
 
     public static class RestClient
     {
-        private static final TypeReference<List<LinkedHashMap<String, Object>>> TYPE_LIST_OF_LINKED_HASH_MAPS = new TypeReference<List<LinkedHashMap<String, Object>>>()
-        {
-        };
-
         private static final TypeReference<LinkedHashMap<String, Object>> TYPE_HASH_MAP = new TypeReference<LinkedHashMap<String, Object>>()
         {
         };
@@ -253,7 +291,7 @@ public class RestStressTestClient
             }
         }
 
-        public List<Map<String, Object>> get(String restServiceUrl) throws IOException
+        public Map<String, Object> get(String restServiceUrl) throws IOException
         {
             HttpURLConnection connection = createConnection("GET", restServiceUrl, _cookies);
             try
@@ -261,7 +299,7 @@ public class RestStressTestClient
                 connection.connect();
                 byte[] data = readConnectionInputStream(connection);
                 checkResponseCode(connection);
-                return _mapper.readValue(new ByteArrayInputStream(data), TYPE_LIST_OF_LINKED_HASH_MAPS);
+                return _mapper.readValue(new ByteArrayInputStream(data), TYPE_HASH_MAP);
             }
             finally
             {
@@ -305,7 +343,7 @@ public class RestStressTestClient
 
         public int post(String restServiceUrl, Map<String, String> postData) throws  IOException
         {
-            HttpURLConnection connection = createConnectionAndPostData(restServiceUrl, postData, _cookies);
+            HttpURLConnection connection = createConnectionAndPostObject(restServiceUrl, postData, _cookies);
             try
             {
                 checkResponseCode(connection);
@@ -317,13 +355,31 @@ public class RestStressTestClient
             }
         }
 
+        private HttpURLConnection createConnectionAndPostObject(final String restServiceUrl,
+                                                   final Object postData,
+                                                   final List<String> cookies) throws IOException
+        {
+            HttpURLConnection connection = createConnection("POST", restServiceUrl, cookies);
+            try (OutputStream os = connection.getOutputStream())
+            {
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.writeValue(os, postData);
+                os.flush();
+            }
+            catch (IOException e)
+            {
+                connection.disconnect();
+                throw e;
+            }
+            return connection;
+        }
+
         private HttpURLConnection createConnectionAndPostData(String restServiceUrl, Map<String, String> postData, List<String> cookies) throws IOException
         {
             String postParameters = getPostDataString(postData);
             HttpURLConnection connection = createConnection("POST", restServiceUrl, cookies);
-            try
+            try (OutputStream os = connection.getOutputStream())
             {
-                OutputStream os = connection.getOutputStream();
                 os.write(postParameters.getBytes(US_ASCII));
                 os.flush();
             }
@@ -353,7 +409,7 @@ public class RestStressTestClient
                 while (iterator.hasNext())
                 {
                     String key = iterator.next();
-                    sb.append(key + "=" + postData.get(key));
+                    sb.append(key).append("=").append(postData.get(key));
                     if (iterator.hasNext())
                     {
                         sb.append("&");
@@ -485,10 +541,10 @@ public class RestStressTestClient
 
         private String toHex(byte[] data)
         {
-            StringBuffer hash = new StringBuffer();
-            for (int i = 0; i < data.length; i++)
+            StringBuilder hash = new StringBuilder();
+            for (final byte aData : data)
             {
-                String hex = Integer.toHexString(0xFF & data[i]);
+                String hex = Integer.toHexString(0xFF & aData);
                 if (hex.length() == 1)
                 {
                     hash.append('0');
@@ -541,6 +597,8 @@ public class RestStressTestClient
         private boolean bindQueue = false;
 
         private boolean logout = true;
+
+        private boolean trustAll = false;
 
         public Arguments()
         {
@@ -643,6 +701,11 @@ public class RestStressTestClient
             return saslMechanism;
         }
 
+        public boolean isTrustAll()
+        {
+            return trustAll;
+        }
+
         public boolean isLogout()
         {
             return logout;
@@ -665,6 +728,7 @@ public class RestStressTestClient
                     ", deleteQueue=" + deleteQueue +
                     ", uniqueQueues=" + uniqueQueues +
                     ", bindQueue=" + bindQueue +
+                    ", trustAll=" + trustAll +
                     ", logout=" + logout +
                     '}';
         }
