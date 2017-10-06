@@ -105,6 +105,7 @@ public class Interaction
     private int _deliveryIdCounter;
     private List<Transfer> _latestDelivery;
     private Object _decodedLatestDelivery;
+    private UnsignedInteger _latestDeliveryId;
 
     Interaction(final FrameTransport frameTransport)
     {
@@ -604,6 +605,11 @@ public class Interaction
         return this;
     }
 
+    public Interaction flowNextIncomingIdFromLatestDelivery()
+    {
+        return flowNextIncomingId(_latestDeliveryId.add(UnsignedInteger.ONE));
+    }
+
     public Interaction flowOutgoingWindow(final UnsignedInteger outgoingWindow)
     {
         _flow.setOutgoingWindow(outgoingWindow);
@@ -850,6 +856,12 @@ public class Interaction
         return this;
     }
 
+    public Interaction dispositionFirstFromLatestDelivery()
+    {
+        _disposition.setFirst(_latestDeliveryId);
+        return this;
+    }
+
     public Interaction disposition() throws Exception
     {
         sendPerformativeAndChainFuture(copyDisposition(_disposition), _sessionChannel);
@@ -1064,6 +1076,7 @@ public class Interaction
     {
         sync();
         _latestDelivery = receiveAllTransfers();
+        _latestDeliveryId = _latestDelivery.size() > 0 ? _latestDelivery.get(0).getDeliveryId() : null;
         return this;
     }
 
@@ -1109,4 +1122,5 @@ public class Interaction
     {
         return new InteractionTransactionalState(handle);
     }
+
 }

@@ -521,9 +521,13 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                     @Override
                     public void postCommit()
                     {
-                        // TODO: add handling of undeliverable-here
+                        Modified modifiedOutcome = (Modified) outcome;
+                        if (Boolean.TRUE.equals(modifiedOutcome.getUndeliverableHere()))
+                        {
+                            _queueEntry.reject(getConsumer());
+                        }
 
-                        if(Boolean.TRUE.equals(((Modified)outcome).getDeliveryFailed()))
+                        if(Boolean.TRUE.equals(modifiedOutcome.getDeliveryFailed()))
                         {
                             incrementDeliveryCountOrRouteToAlternateOrDiscard();
                         }
