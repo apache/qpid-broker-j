@@ -61,12 +61,7 @@ public class JMSSelectorFilter implements Filter
 
         JMSSelectorFilter that = (JMSSelectorFilter) o;
 
-        if(_value != null ? !_value.equals(that._value) : that._value != null)
-        {
-            return false;
-        }
-
-        return true;
+        return _value != null ? _value.equals(that._value) : that._value == null;
     }
 
     @Override

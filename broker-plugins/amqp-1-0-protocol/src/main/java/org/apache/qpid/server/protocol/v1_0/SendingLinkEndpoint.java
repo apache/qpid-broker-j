@@ -103,7 +103,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         super(session, link);
         setDeliveryCount(new SequenceNumber(0));
         setAvailable(UnsignedInteger.valueOf(0));
-        setCapabilities(Arrays.asList(AMQPConnection_1_0.SHARED_SUBSCRIPTIONS));
+        setCapabilities(Collections.singletonList(AMQPConnection_1_0.SHARED_SUBSCRIPTIONS));
     }
 
     @Override
@@ -203,8 +203,8 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     {
         final Source source = getSource();
         _consumerTarget = new ConsumerTarget_1_0(this,
-                                         _destination instanceof ExchangeSendingDestination
-                                                 ? true : source.getDistributionMode() != StdDistMode.COPY);
+                                                 _destination instanceof ExchangeSendingDestination
+                                                 || source.getDistributionMode() != StdDistMode.COPY);
         try
         {
             final String name = getTarget().getAddress() == null ? getLinkName() : getTarget().getAddress();
@@ -263,6 +263,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                     }
                     catch (NumberFormatException e)
                     {
+                        // ignore
                     }
                 }
                 if(_priority != null)

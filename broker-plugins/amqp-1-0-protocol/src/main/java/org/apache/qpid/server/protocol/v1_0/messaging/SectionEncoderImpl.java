@@ -26,7 +26,7 @@ import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry
 
 public class SectionEncoderImpl implements SectionEncoder
 {
-    private AMQPDescribedTypeRegistry _registry;
+    private final AMQPDescribedTypeRegistry _registry;
 
     public SectionEncoderImpl(final AMQPDescribedTypeRegistry describedTypeRegistry)
     {

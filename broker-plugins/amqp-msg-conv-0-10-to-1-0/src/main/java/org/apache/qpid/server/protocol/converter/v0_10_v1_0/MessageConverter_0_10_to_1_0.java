@@ -171,7 +171,7 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
             {
                 originalContentMimeType = msgProps.getContentType();
                 final Symbol contentType =
-                        MessageConverter_to_1_0.getContentType(originalContentMimeType, bodySection);
+                        MessageConverter_to_1_0.getContentType(originalContentMimeType);
                 props.setContentType(contentType);
             }
 

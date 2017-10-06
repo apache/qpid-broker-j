@@ -159,7 +159,7 @@ public class Attach implements FrameBody
         return _unsettled;
     }
 
-    public void setUnsettled(Map unsettled)
+    public void setUnsettled(Map<Binary, DeliveryState> unsettled)
     {
         _unsettled = unsettled;
     }

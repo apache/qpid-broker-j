@@ -54,7 +54,7 @@ public class UUIDWriter extends FixedSixteenWriter<UUID>
         return value.getLeastSignificantBits();
     }
 
-    private static Factory<UUID> FACTORY = new Factory<UUID>()
+    private static final Factory<UUID> FACTORY = new Factory<UUID>()
                                             {
 
                                                 @Override

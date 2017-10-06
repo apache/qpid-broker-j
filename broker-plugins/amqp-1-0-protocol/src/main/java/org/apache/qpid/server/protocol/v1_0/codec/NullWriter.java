@@ -40,7 +40,7 @@ public class NullWriter implements ValueWriter<Void>
         buffer.put((byte)0x40);
     }
 
-    private static Factory<Void> FACTORY = new Factory<Void>()
+    private static final Factory<Void> FACTORY = new Factory<Void>()
                                             {
 
                                                 @Override

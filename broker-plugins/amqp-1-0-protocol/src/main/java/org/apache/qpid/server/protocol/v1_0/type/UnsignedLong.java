@@ -102,12 +102,7 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
 
         UnsignedLong that = (UnsignedLong) o;
 
-        if (_underlying != that._underlying)
-        {
-            return false;
-        }
-
-        return true;
+        return _underlying == that._underlying;
     }
 
     @Override

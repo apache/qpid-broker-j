@@ -26,7 +26,7 @@ public class IntegerWriter
     private static final byte EIGHT_BYTE_FORMAT_CODE = (byte)0x71;
     private static final byte ONE_BYTE_FORMAT_CODE = (byte) 0x54;
 
-    private static ValueWriter.Factory<Integer> FACTORY = new ValueWriter.Factory<Integer>()
+    private static final ValueWriter.Factory<Integer> FACTORY = new ValueWriter.Factory<Integer>()
                                             {
 
                                                 @Override

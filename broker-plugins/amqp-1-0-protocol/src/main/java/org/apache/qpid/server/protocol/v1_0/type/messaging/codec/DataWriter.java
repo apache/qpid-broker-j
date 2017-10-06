@@ -39,7 +39,7 @@ public class DataWriter extends AbstractDescribedTypeWriter<Data>
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static Factory<Data> FACTORY = new Factory<Data>()
+    private static final Factory<Data> FACTORY = new Factory<Data>()
     {
 
         @Override

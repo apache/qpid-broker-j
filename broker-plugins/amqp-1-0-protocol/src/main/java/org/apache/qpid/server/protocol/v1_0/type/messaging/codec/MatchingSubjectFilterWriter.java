@@ -39,7 +39,7 @@ public class MatchingSubjectFilterWriter extends AbstractDescribedTypeWriter<Mat
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static Factory<MatchingSubjectFilter> FACTORY = new Factory<MatchingSubjectFilter>()
+    private static final Factory<MatchingSubjectFilter> FACTORY = new Factory<MatchingSubjectFilter>()
     {
 
         @Override

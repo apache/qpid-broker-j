@@ -43,10 +43,10 @@ public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
                                          size, remaining);
         }
 
-        List rval;
+        List<Object> rval;
         int count = read(in);
         TypeConstructor t = handler.readConstructor(in);
-        rval = new ArrayList(count);
+        rval = new ArrayList<>(count);
         for(int i = 0; i < count; i++)
         {
             rval.add(t.construct(in, handler));

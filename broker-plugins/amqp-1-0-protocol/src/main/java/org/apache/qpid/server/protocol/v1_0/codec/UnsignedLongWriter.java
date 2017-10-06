@@ -48,7 +48,7 @@ public class UnsignedLongWriter
 
 
 
-    private static ValueWriter.Factory<UnsignedLong> FACTORY =
+    private static final ValueWriter.Factory<UnsignedLong> FACTORY =
             new ValueWriter.Factory<UnsignedLong>()
             {
 

@@ -64,12 +64,7 @@ public class SequenceNumber implements Comparable<SequenceNumber>
 
         SequenceNumber that = (SequenceNumber) o;
 
-        if (_seqNo != that._seqNo)
-        {
-            return false;
-        }
-
-        return true;
+        return _seqNo == that._seqNo;
     }
 
     @Override

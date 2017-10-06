@@ -111,7 +111,7 @@ public class SaslInitWriter extends AbstractDescribedTypeWriter<SaslInit>
         }
     }
 
-    private static Factory<SaslInit> FACTORY = new Factory<SaslInit>()
+    private static final Factory<SaslInit> FACTORY = new Factory<SaslInit>()
     {
 
         @Override

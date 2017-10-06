@@ -27,15 +27,14 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class LinkRegistryTest extends QpidTestCase
 {
-    private QueueManagingVirtualHost _virtualHost;
     private LinkRegistryImpl _linkRegistry;
 
     @Override
     protected void setUp() throws Exception
     {
         super.setUp();
-        _virtualHost = mock(QueueManagingVirtualHost.class);
-        _linkRegistry = new LinkRegistryImpl(_virtualHost);
+        final QueueManagingVirtualHost virtualHost = mock(QueueManagingVirtualHost.class);
+        _linkRegistry = new LinkRegistryImpl(virtualHost);
     }
 
     public void testGetSendingLink() throws Exception

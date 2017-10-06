@@ -40,13 +40,10 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
@@ -76,9 +73,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     private long _deliveryTag = 0L;
 
     private Binary _transactionId;
-    private final AMQPDescribedTypeRegistry _typeRegistry;
     private final SendingLinkEndpoint _linkEndpoint;
-    private final SectionEncoder _sectionEncoder;
 
     private final StateChangeListener<MessageInstance, MessageInstance.EntryState> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, MessageInstance.EntryState>()
     {
@@ -102,9 +97,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     public ConsumerTarget_1_0(final SendingLinkEndpoint linkEndpoint, boolean acquires)
     {
         super(false, linkEndpoint.getSession().getAMQPConnection());
-        _typeRegistry = linkEndpoint.getSession().getConnection().getDescribedTypeRegistry();
         _linkEndpoint = linkEndpoint;
-        _sectionEncoder = new SectionEncoderImpl(_typeRegistry);
         _acquires = acquires;
     }
 
@@ -286,7 +279,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                             public void onRollback()
                             {
                                 entry.release(consumer);
-                                _linkEndpoint.updateDisposition(tag, (DeliveryState) null, true);
+                                _linkEndpoint.updateDisposition(tag, null, true);
                             }
                         });
                     }

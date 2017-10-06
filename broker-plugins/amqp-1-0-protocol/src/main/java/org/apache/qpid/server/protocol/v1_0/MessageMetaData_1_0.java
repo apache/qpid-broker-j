@@ -65,7 +65,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     public static final MessageMetaDataType.Factory<MessageMetaData_1_0> FACTORY = new MetaDataFactory();
     private static final byte VERSION_BYTE = 1;
 
-    private long _contentSize;
+    private final long _contentSize;
 
     // TODO move to somewhere more useful
     private static final Symbol DELIVERY_TIME = Symbol.valueOf("x-opt-delivery-time");

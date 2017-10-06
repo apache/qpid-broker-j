@@ -39,7 +39,7 @@ public class NoLocalFilterWriter extends AbstractDescribedTypeWriter<NoLocalFilt
         super(DESCRIPTOR_WRITER, ListWriter.EMPTY_LIST_WRITER);
     }
 
-    private static Factory<NoLocalFilter> FACTORY = new Factory<NoLocalFilter>()
+    private static final Factory<NoLocalFilter> FACTORY = new Factory<NoLocalFilter>()
     {
 
         @Override

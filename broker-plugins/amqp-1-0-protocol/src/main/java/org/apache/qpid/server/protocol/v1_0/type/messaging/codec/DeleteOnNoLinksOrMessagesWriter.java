@@ -39,7 +39,7 @@ public class DeleteOnNoLinksOrMessagesWriter extends AbstractDescribedTypeWriter
         super(DESCRIPTOR_WRITER, ListWriter.EMPTY_LIST_WRITER);
     }
 
-    private static Factory<DeleteOnNoLinksOrMessages> FACTORY = new Factory<DeleteOnNoLinksOrMessages>()
+    private static final Factory<DeleteOnNoLinksOrMessages> FACTORY = new Factory<DeleteOnNoLinksOrMessages>()
     {
 
         @Override

@@ -104,7 +104,7 @@ public class SaslOutcomeWriter extends AbstractDescribedTypeWriter<SaslOutcome>
         }
     }
 
-    private static Factory<SaslOutcome> FACTORY = new Factory<SaslOutcome>()
+    private static final Factory<SaslOutcome> FACTORY = new Factory<SaslOutcome>()
     {
 
         @Override

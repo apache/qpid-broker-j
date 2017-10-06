@@ -36,7 +36,7 @@ public class CharWriter extends FixedFourWriter<Character>
         return FORMAT_CODE;
     }
 
-    private static Factory<Character> FACTORY = new Factory<Character>()
+    private static final Factory<Character> FACTORY = new Factory<Character>()
                                             {
 
                                                 @Override

@@ -179,7 +179,7 @@ public class FlowWriter extends AbstractDescribedTypeWriter<Flow>
         }
     }
 
-    private static Factory<Flow> FACTORY = new Factory<Flow>()
+    private static final Factory<Flow> FACTORY = new Factory<Flow>()
     {
 
         @Override

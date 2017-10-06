@@ -114,7 +114,7 @@ public class DetachWriter extends AbstractDescribedTypeWriter<Detach>
         }
     }
 
-    private static Factory<Detach> FACTORY = new Factory<Detach>()
+    private static final Factory<Detach> FACTORY = new Factory<Detach>()
     {
 
         @Override

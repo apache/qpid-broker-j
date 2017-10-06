@@ -28,7 +28,7 @@ import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 
 public abstract class AMQFrame<T>
 {
-    private T _frameBody;
+    private final T _frameBody;
     private List<QpidByteBuffer> _payload;
 
     AMQFrame(T frameBody)

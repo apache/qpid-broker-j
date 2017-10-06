@@ -179,7 +179,7 @@ public class TransferWriter extends AbstractDescribedTypeWriter<Transfer>
         }
     }
 
-    private static Factory<Transfer> FACTORY = new Factory<Transfer>()
+    private static final Factory<Transfer> FACTORY = new Factory<Transfer>()
     {
 
         @Override

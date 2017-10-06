@@ -194,7 +194,7 @@ public class PropertiesWriter extends AbstractDescribedTypeWriter<Properties>
         }
     }
 
-    private static Factory<Properties> FACTORY = new Factory<Properties>()
+    private static final Factory<Properties> FACTORY = new Factory<Properties>()
     {
 
         @Override

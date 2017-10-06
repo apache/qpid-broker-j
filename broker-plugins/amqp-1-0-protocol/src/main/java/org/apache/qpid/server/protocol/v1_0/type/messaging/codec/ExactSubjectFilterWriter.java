@@ -39,7 +39,7 @@ public class ExactSubjectFilterWriter extends AbstractDescribedTypeWriter<ExactS
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static Factory<ExactSubjectFilter> FACTORY = new Factory<ExactSubjectFilter>()
+    private static final Factory<ExactSubjectFilter> FACTORY = new Factory<ExactSubjectFilter>()
     {
 
         @Override

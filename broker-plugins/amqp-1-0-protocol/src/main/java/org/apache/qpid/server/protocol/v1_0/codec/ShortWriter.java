@@ -48,7 +48,7 @@ public class ShortWriter extends FixedTwoWriter<Short>
         return FORMAT_CODE;
     }
 
-    private static Factory<Short> FACTORY = new Factory<Short>()
+    private static final Factory<Short> FACTORY = new Factory<Short>()
                                             {
 
                                                 @Override

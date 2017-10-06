@@ -29,7 +29,7 @@ public class ListWriter
 {
     private static class NonEmptyListWriter extends AbstractListWriter<List>
     {
-        private List _list;
+        private final List _list;
         private int _position = 0;
 
         public NonEmptyListWriter(final Registry registry, final List object)
@@ -84,7 +84,7 @@ public class ListWriter
         }
     }
 
-    private static ValueWriter.Factory<List> FACTORY =
+    private static final ValueWriter.Factory<List> FACTORY =
             new ValueWriter.Factory<List>()
             {
 

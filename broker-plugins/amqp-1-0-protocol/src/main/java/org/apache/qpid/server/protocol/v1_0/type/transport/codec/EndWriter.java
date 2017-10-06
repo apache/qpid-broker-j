@@ -97,7 +97,7 @@ public class EndWriter extends AbstractDescribedTypeWriter<End>
         }
     }
 
-    private static Factory<End> FACTORY = new Factory<End>()
+    private static final Factory<End> FACTORY = new Factory<End>()
     {
 
         @Override

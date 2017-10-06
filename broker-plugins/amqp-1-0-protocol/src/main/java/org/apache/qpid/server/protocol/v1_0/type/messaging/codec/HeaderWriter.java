@@ -131,7 +131,7 @@ public class HeaderWriter extends AbstractDescribedTypeWriter<Header>
         }
     }
 
-    private static Factory<Header> FACTORY = new Factory<Header>()
+    private static final Factory<Header> FACTORY = new Factory<Header>()
     {
 
         @Override

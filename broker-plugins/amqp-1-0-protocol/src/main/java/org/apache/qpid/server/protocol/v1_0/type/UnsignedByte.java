@@ -91,12 +91,7 @@ public final class UnsignedByte extends Number implements Comparable<UnsignedByt
 
         UnsignedByte that = (UnsignedByte) o;
 
-        if (_underlying != that._underlying)
-        {
-            return false;
-        }
-
-        return true;
+        return _underlying == that._underlying;
     }
 
     @Override

@@ -23,9 +23,9 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
-public abstract class FixedEightWriter<T extends Object> implements ValueWriter<T>
+public abstract class FixedEightWriter<T> implements ValueWriter<T>
 {
-    private long _value;
+    private final long _value;
 
     public FixedEightWriter(long value)
     {

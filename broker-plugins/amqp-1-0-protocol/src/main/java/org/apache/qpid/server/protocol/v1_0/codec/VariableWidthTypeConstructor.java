@@ -22,7 +22,7 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 public abstract class VariableWidthTypeConstructor<T> implements TypeConstructor<T>
 {
-    protected int _size;
+    protected final int _size;
 
     public VariableWidthTypeConstructor(int size)
     {

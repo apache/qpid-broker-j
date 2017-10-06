@@ -118,9 +118,8 @@ public class MessageFormat_1_0 implements MessageFormat<Message_1_0>
             dataSection.dispose();
         }
         final StoredMessage<MessageMetaData_1_0> storedMessage = handle.allContentAdded();
-        Message_1_0 message = new Message_1_0(storedMessage, connectionReference);
 
-        return message;
+        return new Message_1_0(storedMessage, connectionReference);
     }
 
     private MessageMetaData_1_0 createMessageMetaData(final List<EncodingRetainingSection<?>> allSections,

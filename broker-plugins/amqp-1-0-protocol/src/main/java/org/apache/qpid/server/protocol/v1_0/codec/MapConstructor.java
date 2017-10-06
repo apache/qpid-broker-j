@@ -29,7 +29,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
-public class MapConstructor extends VariableWidthTypeConstructor<Map>
+public class MapConstructor extends VariableWidthTypeConstructor<Map<Object,Object>>
 {
     private MapConstructor(final int size)
     {
@@ -37,7 +37,7 @@ public class MapConstructor extends VariableWidthTypeConstructor<Map>
     }
 
     @Override
-    public Map construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    public Map<Object, Object> construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
     {
         return construct(in, handler, Object.class, Object.class);
     }

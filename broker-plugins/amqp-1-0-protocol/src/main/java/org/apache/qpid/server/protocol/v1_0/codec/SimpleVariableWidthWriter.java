@@ -25,7 +25,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public abstract class SimpleVariableWidthWriter<V> extends VariableWidthWriter<V>
 {
-    private byte[] _buf;
+    private final byte[] _buf;
 
     public SimpleVariableWidthWriter(byte[] value)
     {

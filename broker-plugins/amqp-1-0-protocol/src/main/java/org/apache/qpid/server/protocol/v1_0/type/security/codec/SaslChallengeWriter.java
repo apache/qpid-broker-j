@@ -43,7 +43,7 @@ public class SaslChallengeWriter extends AbstractDescribedTypeWriter<SaslChallen
 
     private static class Writer extends AbstractListWriter<SaslChallenge>
     {
-        private SaslChallenge _value;
+        private final SaslChallenge _value;
         private int _count = -1;
         private int _field;
 
@@ -97,7 +97,7 @@ public class SaslChallengeWriter extends AbstractDescribedTypeWriter<SaslChallen
         }
     }
 
-    private static Factory<SaslChallenge> FACTORY = new Factory<SaslChallenge>()
+    private static final Factory<SaslChallenge> FACTORY = new Factory<SaslChallenge>()
     {
 
         @Override

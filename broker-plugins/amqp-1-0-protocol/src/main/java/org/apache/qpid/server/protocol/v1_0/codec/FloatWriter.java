@@ -37,7 +37,7 @@ public class FloatWriter extends FixedFourWriter<Float>
         return FORMAT_CODE;
     }
 
-    private static Factory<Float> FACTORY = new Factory<Float>()
+    private static final Factory<Float> FACTORY = new Factory<Float>()
                                             {
 
                                                 @Override

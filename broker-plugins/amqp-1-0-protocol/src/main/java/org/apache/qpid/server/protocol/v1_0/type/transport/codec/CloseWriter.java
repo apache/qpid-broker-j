@@ -99,7 +99,7 @@ public class CloseWriter extends AbstractDescribedTypeWriter<Close>
         }
     }
 
-    private static Factory<Close> FACTORY = new Factory<Close>()
+    private static final Factory<Close> FACTORY = new Factory<Close>()
     {
 
         @Override

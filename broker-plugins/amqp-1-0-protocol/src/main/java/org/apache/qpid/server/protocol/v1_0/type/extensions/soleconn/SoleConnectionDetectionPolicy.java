@@ -30,7 +30,7 @@ public class SoleConnectionDetectionPolicy implements RestrictedType<UnsignedInt
     public static final SoleConnectionDetectionPolicy
             WEAK = new SoleConnectionDetectionPolicy(UnsignedInteger.valueOf(1));
 
-    private UnsignedInteger _val;
+    private final UnsignedInteger _val;
 
     private SoleConnectionDetectionPolicy(final UnsignedInteger val)
     {

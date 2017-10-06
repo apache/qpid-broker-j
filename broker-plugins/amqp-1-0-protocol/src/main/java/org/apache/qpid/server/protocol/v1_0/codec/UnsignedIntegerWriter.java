@@ -51,7 +51,7 @@ public class UnsignedIntegerWriter
 
 
 
-    private static ValueWriter.Factory<UnsignedInteger> FACTORY = new ValueWriter.Factory<UnsignedInteger>()
+    private static final ValueWriter.Factory<UnsignedInteger> FACTORY = new ValueWriter.Factory<UnsignedInteger>()
                                             {
 
                                                 @Override

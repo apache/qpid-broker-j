@@ -157,7 +157,7 @@ public class BeginWriter extends AbstractDescribedTypeWriter<Begin>
         }
     }
 
-    private static Factory<Begin> FACTORY = new Factory<Begin>()
+    private static final Factory<Begin> FACTORY = new Factory<Begin>()
     {
 
         @Override

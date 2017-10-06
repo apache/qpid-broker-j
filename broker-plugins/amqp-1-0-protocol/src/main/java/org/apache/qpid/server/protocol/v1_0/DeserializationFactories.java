@@ -236,12 +236,7 @@ public class DeserializationFactories
 
             final UnknownErrorCondition that = (UnknownErrorCondition) o;
 
-            if (!_value.equals(that._value))
-            {
-                return false;
-            }
-
-            return true;
+            return _value.equals(that._value);
         }
 
         @Override

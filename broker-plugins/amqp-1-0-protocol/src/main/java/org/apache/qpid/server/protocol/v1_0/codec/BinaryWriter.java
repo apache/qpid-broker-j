@@ -44,7 +44,7 @@ public class BinaryWriter extends SimpleVariableWidthWriter<Binary>
     }
 
 
-    private static Factory<Binary> FACTORY = new Factory<Binary>()
+    private static final Factory<Binary> FACTORY = new Factory<Binary>()
                                             {
 
                                                 @Override

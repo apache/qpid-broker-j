@@ -114,7 +114,7 @@ public class ModifiedWriter extends AbstractDescribedTypeWriter<Modified>
         }
     }
 
-    private static Factory<Modified> FACTORY = new Factory<Modified>()
+    private static final Factory<Modified> FACTORY = new Factory<Modified>()
     {
 
         @Override

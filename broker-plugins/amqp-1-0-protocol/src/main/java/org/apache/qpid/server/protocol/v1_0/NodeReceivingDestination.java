@@ -53,9 +53,9 @@ public class NodeReceivingDestination implements ReceivingDestination
     private final boolean _discardUnroutable;
     private final EventLogger _eventLogger;
 
-    private MessageDestination _destination;
-    private TerminusDurability _durability;
-    private TerminusExpiryPolicy _expiryPolicy;
+    private final MessageDestination _destination;
+    private final TerminusDurability _durability;
+    private final TerminusExpiryPolicy _expiryPolicy;
     private final String _address;
     private final String _routingAddress;
 

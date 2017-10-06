@@ -296,7 +296,7 @@ public class PropertyConverter_Internal_to_v1_0Test extends QpidTestCase
         }
     }
 
-    private InternalMessage createTestMessage(String to) throws IOException
+    private InternalMessage createTestMessage(String to)
     {
         final InternalMessageHeader internalMessageHeader = new InternalMessageHeader(mock(AMQMessageHeader.class));
         final StoredMessage<InternalMessageMetaData> handle =

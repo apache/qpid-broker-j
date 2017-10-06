@@ -22,12 +22,13 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 import java.util.List;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
-public class BinaryTypeConstructor extends VariableWidthTypeConstructor
+public class BinaryTypeConstructor extends VariableWidthTypeConstructor<Binary>
 {
     private static final BinaryTypeConstructor INSTANCE_1 = new BinaryTypeConstructor(1);
     private static final BinaryTypeConstructor INSTANCE_4 = new BinaryTypeConstructor(4);
@@ -44,7 +45,7 @@ public class BinaryTypeConstructor extends VariableWidthTypeConstructor
     }
 
     @Override
-    public Object construct(final List in, final ValueHandler handler) throws AmqpErrorException
+    public Binary construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
     {
 
         int size;

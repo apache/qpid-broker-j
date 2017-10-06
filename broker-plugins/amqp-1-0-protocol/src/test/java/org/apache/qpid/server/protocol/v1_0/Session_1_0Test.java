@@ -356,12 +356,11 @@ public class Session_1_0Test extends QpidTestCase
     public void testReceiveAttachToExistingQueue() throws Exception
     {
         final String linkName = "testLink";
-        final String address = QUEUE_NAME;
-        Attach attach = createQueueAttach(false, linkName, address);
+        Attach attach = createQueueAttach(false, linkName, QUEUE_NAME);
 
-        Queue<?> queue = _virtualHost.createChild(Queue.class, Collections.<String, Object>singletonMap(Queue.NAME, QUEUE_NAME));
+        Queue<?> queue = _virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, QUEUE_NAME));
         Exchange<?> exchange = _virtualHost.getChildByName(Exchange.class, "amq.direct");
-        exchange.bind(QUEUE_NAME, QUEUE_NAME, Collections.<String, Object>emptyMap(), false);
+        exchange.bind(QUEUE_NAME, QUEUE_NAME, Collections.emptyMap(), false);
 
         _session.receiveAttach(attach);
 
@@ -371,8 +370,7 @@ public class Session_1_0Test extends QpidTestCase
     public void testReceiveAttachToNonExistingQueue() throws Exception
     {
         final String linkName = "testLink";
-        final String address = QUEUE_NAME;
-        Attach attach = createQueueAttach(false, linkName, address);
+        Attach attach = createQueueAttach(false, linkName, QUEUE_NAME);
         _session.receiveAttach(attach);
         assertAttachFailed(_connection, _session, attach);
     }
@@ -525,7 +523,7 @@ public class Session_1_0Test extends QpidTestCase
     {
         JMSSelectorFilter selector = new JMSSelectorFilter(selectorExpression);
         final Map<Symbol, Filter>
-                filter = Collections.<Symbol,Filter>singletonMap(Symbol.getSymbol("jms-selector"), selector);
+                filter = Collections.singletonMap(Symbol.getSymbol("jms-selector"), selector);
         ((Source)attach.getSource()).setFilter(filter);
     }
 
@@ -718,7 +716,7 @@ public class Session_1_0Test extends QpidTestCase
     {
         AMQPConnection_1_0 connection = mock(AMQPConnection_1_0.class);
         Subject subject =
-                new Subject(true, Collections.<Principal>emptySet(), Collections.emptySet(), Collections.emptySet());
+                new Subject(true, Collections.emptySet(), Collections.emptySet(), Collections.emptySet());
         when(connection.getSubject()).thenReturn(subject);
         when(connection.getAddressSpace()).thenReturn(_virtualHost);
         when(connection.getEventLogger()).thenReturn(mock(EventLogger.class));
@@ -759,8 +757,7 @@ public class Session_1_0Test extends QpidTestCase
     {
         Begin begin = mock(Begin.class);
         when(begin.getNextOutgoingId()).thenReturn(new UnsignedInteger(channelId));
-        Session_1_0 session = new Session_1_0(connection, begin, channelId, channelId, 2048);
-        return session;
+        return new Session_1_0(connection, begin, channelId, channelId, 2048);
     }
 
     private void sendDetach(final Session_1_0 session,

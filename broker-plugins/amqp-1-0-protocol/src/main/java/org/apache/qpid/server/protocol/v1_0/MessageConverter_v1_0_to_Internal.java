@@ -75,21 +75,20 @@ public class MessageConverter_v1_0_to_Internal implements MessageConverter<Messa
     {
         final String convertedMimeType = getInternalConvertedMimeType(serverMessage, convertedBodyObject);
         final MessageMetaData_1_0.MessageHeader_1_0 messageHeader = serverMessage.getMessageHeader();
-        final InternalMessageHeader header = new InternalMessageHeader(messageHeader.getHeadersAsMap(),
-                                                                       messageHeader.getCorrelationId(),
-                                                                       messageHeader.getExpiration(),
-                                                                       messageHeader.getUserId(),
-                                                                       messageHeader.getAppId(),
-                                                                       messageHeader.getMessageId(),
-                                                                       convertedMimeType,
-                                                                       messageHeader.getEncoding(),
-                                                                       messageHeader.getPriority(),
-                                                                       messageHeader.getTimestamp(),
-                                                                       messageHeader.getNotValidBefore(),
-                                                                       messageHeader.getType(),
-                                                                       messageHeader.getReplyTo(),
-                                                                       serverMessage.getArrivalTime());
-        return header;
+        return new InternalMessageHeader(messageHeader.getHeadersAsMap(),
+                                         messageHeader.getCorrelationId(),
+                                         messageHeader.getExpiration(),
+                                         messageHeader.getUserId(),
+                                         messageHeader.getAppId(),
+                                         messageHeader.getMessageId(),
+                                         convertedMimeType,
+                                         messageHeader.getEncoding(),
+                                         messageHeader.getPriority(),
+                                         messageHeader.getTimestamp(),
+                                         messageHeader.getNotValidBefore(),
+                                         messageHeader.getType(),
+                                         messageHeader.getReplyTo(),
+                                         serverMessage.getArrivalTime());
     }
 
     @Override
@@ -166,58 +165,10 @@ public class MessageConverter_v1_0_to_Internal implements MessageConverter<Messa
     {
         Symbol contentType = MessageConverter_from_1_0.getContentType(serverMsg);
 
-        JmsMessageTypeAnnotation jmsMessageTypeAnnotation = null;
-        MessageAnnotationsSection section = serverMsg.getMessageAnnotationsSection();
-        if (section != null)
-        {
-            Map<Symbol, Object> annotations = section.getValue();
-            if (annotations != null && annotations.containsKey(JmsMessageTypeAnnotation.ANNOTATION_KEY))
-            {
-                Object object = annotations.get(JmsMessageTypeAnnotation.ANNOTATION_KEY);
-                if (object instanceof Byte)
-                {
-                    try
-                    {
-                        jmsMessageTypeAnnotation = JmsMessageTypeAnnotation.valueOf(((Byte) object));
-                    }
-                    catch (IllegalArgumentException e)
-                    {
-                        // ignore
-                    }
-                }
-            }
-        }
+        JmsMessageTypeAnnotation jmsMessageTypeAnnotation = MessageConverter_from_1_0.getJmsMessageTypeAnnotation(serverMsg);
 
-        Class<?> classHint = null;
+        Class<?> classHint = MessageConverter_from_1_0.getContentTypeClassHint(jmsMessageTypeAnnotation);
         String mimeTypeHint = null;
-
-        if (jmsMessageTypeAnnotation != null)
-        {
-            switch (jmsMessageTypeAnnotation)
-            {
-                case MESSAGE:
-                    classHint = Void.class;
-                    break;
-                case MAP_MESSAGE:
-                    classHint = Map.class;
-                    break;
-                case BYTES_MESSAGE:
-                    classHint = byte[].class;
-                    break;
-                case OBJECT_MESSAGE:
-                    classHint = Serializable.class;
-                    break;
-                case TEXT_MESSAGE:
-                    classHint = String.class;
-                    break;
-                case STREAM_MESSAGE:
-                    classHint = List.class;
-                    break;
-                default:
-                    throw new ServerScopedRuntimeException(String.format(
-                            "Unexpected jms message type annotation %s", jmsMessageTypeAnnotation));
-            }
-        }
 
         if (contentType != null)
         {

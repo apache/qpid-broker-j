@@ -145,7 +145,7 @@ public class TargetWriter extends AbstractDescribedTypeWriter<Target>
         }
     }
 
-    private static Factory<Target> FACTORY = new Factory<Target>()
+    private static final Factory<Target> FACTORY = new Factory<Target>()
     {
 
         @Override

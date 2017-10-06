@@ -24,10 +24,6 @@ import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
 
 public class RestrictedTypeValueWriter<V> extends DelegatingValueWriter<RestrictedType<V>>
 {
-    public RestrictedTypeValueWriter(final Registry registry)
-    {
-        super(registry);
-    }
 
     public RestrictedTypeValueWriter(final Registry registry,
                                      final RestrictedType<V> object)
@@ -41,7 +37,7 @@ public class RestrictedTypeValueWriter<V> extends DelegatingValueWriter<Restrict
         return restrictedType.getValue();
     }
 
-    private static Factory FACTORY = new Factory()
+    private static final Factory FACTORY = new Factory()
     {
 
         @Override

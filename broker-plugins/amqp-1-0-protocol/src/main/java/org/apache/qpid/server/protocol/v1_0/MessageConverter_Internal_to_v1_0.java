@@ -291,11 +291,11 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
         }
         else if (object instanceof Map)
         {
-            return new AmqpValue(MessageConverter_to_1_0.fixMapValues((Map) object));
+            return new AmqpValue(MessageConverter_to_1_0.fixMapValues((Map<String,Object>) object));
         }
         else if (object instanceof List)
         {
-            return new AmqpSequence(MessageConverter_to_1_0.fixListValues((List) object));
+            return new AmqpSequence(MessageConverter_to_1_0.fixListValues((List<Object>) object));
         }
         else
         {

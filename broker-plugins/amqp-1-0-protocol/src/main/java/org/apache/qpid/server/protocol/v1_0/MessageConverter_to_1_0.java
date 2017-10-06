@@ -76,7 +76,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                                                                                      .registerTransactionLayer()
                                                                                      .registerSecurityLayer();
 
-    public static Symbol getContentType(final String contentMimeType, final EncodingRetainingSection<?> bodySection)
+    public static Symbol getContentType(final String contentMimeType)
     {
         Symbol contentType = null;
         if (contentMimeType != null)
@@ -302,7 +302,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         return new Data(new Binary(data));
     }
 
-    static Map fixMapValues(Map<String, Object> map)
+    static Map<String, Object> fixMapValues(Map<String, Object> map)
     {
         map = new LinkedHashMap<>(map);
         for(Map.Entry<String,Object> entry : map.entrySet())
@@ -332,7 +332,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         }
     }
 
-    static List fixListValues(List<Object> list)
+    static List<Object> fixListValues(List<Object> list)
     {
         list = new ArrayList<>(list);
         ListIterator<Object> iterator = list.listIterator();

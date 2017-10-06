@@ -26,7 +26,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 public abstract class CompoundWriter<V> implements ValueWriter<V>
 {
     private int _length = -1;
-    private Registry _registry;
+    private final Registry _registry;
 
     public CompoundWriter(final Registry registry)
     {

@@ -202,7 +202,7 @@ public class AttachWriter extends AbstractDescribedTypeWriter<Attach>
         }
     }
 
-    private static Factory<Attach> FACTORY = new Factory<Attach>()
+    private static final Factory<Attach> FACTORY = new Factory<Attach>()
     {
 
         @Override

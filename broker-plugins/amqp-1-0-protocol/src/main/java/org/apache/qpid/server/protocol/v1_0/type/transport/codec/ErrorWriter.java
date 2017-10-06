@@ -112,7 +112,7 @@ public class ErrorWriter extends AbstractDescribedTypeWriter<Error>
         }
     }
 
-    private static Factory<Error> FACTORY = new Factory<Error>()
+    private static final Factory<Error> FACTORY = new Factory<Error>()
     {
 
         @Override

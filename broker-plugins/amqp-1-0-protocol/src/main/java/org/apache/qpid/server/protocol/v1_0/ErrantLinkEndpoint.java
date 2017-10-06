@@ -37,7 +37,7 @@ public class ErrantLinkEndpoint<S extends BaseSource, T extends BaseTarget> impl
 {
     private final Link_1_0<S, T> _link;
     private final Session_1_0 _session;
-    private Error _error;
+    private final Error _error;
     private UnsignedInteger _localHandle;
 
     ErrantLinkEndpoint(Link_1_0<S, T> link, Session_1_0 session, Error error)

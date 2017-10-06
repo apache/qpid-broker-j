@@ -181,12 +181,12 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
 
         if((val & 0x60000000) != 0x60000000)
         {
-            exponent = ((int) ((val & 0x7F800000) >> 23)) - 101;
+            exponent = ((val & 0x7F800000) >> 23) - 101;
             significand = val & 0x007fffffff;
         }
         else if((val &  0x78000000) != 0x78000000)
         {
-            exponent = ((int)((val & 0x1fe00000)>>21)) - 101;
+            exponent = ((val & 0x1fe00000)>>21) - 101;
             significand = (0x001fffff & val) | 0x00800000;
         }
         else

@@ -43,8 +43,8 @@ public class SaslResponseWriter extends AbstractDescribedTypeWriter<SaslResponse
 
     private static class Writer extends AbstractListWriter<SaslResponse>
     {
-        private SaslResponse _value;
-        private int _count;
+        private final SaslResponse _value;
+        private final int _count;
         private int _field;
 
         public Writer(final Registry registry, final SaslResponse object)
@@ -98,7 +98,7 @@ public class SaslResponseWriter extends AbstractDescribedTypeWriter<SaslResponse
         }
     }
 
-    private static Factory<SaslResponse> FACTORY = new Factory<SaslResponse>()
+    private static final Factory<SaslResponse> FACTORY = new Factory<SaslResponse>()
     {
 
         @Override

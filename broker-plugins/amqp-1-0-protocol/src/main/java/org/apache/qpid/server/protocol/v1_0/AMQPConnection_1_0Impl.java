@@ -141,7 +141,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                    AMQPConnection_1_0<AMQPConnection_1_0Impl>
 {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(AMQPConnection_1_0Impl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AMQPConnection_1_0Impl.class);
     private static final Logger FRAME_LOGGER = LoggerFactory.getLogger("org.apache.qpid.server.protocol.frame");
 
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
@@ -172,7 +172,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     (byte) 0
             };
 
-    private FrameWriter _frameWriter;
+    private final FrameWriter _frameWriter;
     private ProtocolHandler _frameHandler;
     private volatile boolean _transportBlockedForWriting;
     private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
@@ -182,7 +182,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     private SoleConnectionEnforcementPolicy _soleConnectionEnforcementPolicy;
 
     private static final int CONNECTION_CONTROL_CHANNEL = 0;
-    private SubjectCreator _subjectCreator;
+    private final SubjectCreator _subjectCreator;
 
     private int _channelMax = 0;
     private int _maxFrameSize = 4096;
@@ -203,12 +203,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     private volatile ConnectionState _connectionState = ConnectionState.AWAIT_AMQP_OR_SASL_HEADER;
 
-    private AMQPDescribedTypeRegistry _describedTypeRegistry = AMQPDescribedTypeRegistry.newInstance()
-                                                                                        .registerTransportLayer()
-                                                                                        .registerMessagingLayer()
-                                                                                        .registerTransactionLayer()
-                                                                                        .registerSecurityLayer()
-                                                                                        .registerExtensionSoleconnLayer();
+    private final AMQPDescribedTypeRegistry _describedTypeRegistry = AMQPDescribedTypeRegistry.newInstance()
+                                                                                              .registerTransportLayer()
+                                                                                              .registerMessagingLayer()
+                                                                                              .registerTransactionLayer()
+                                                                                              .registerSecurityLayer()
+                                                                                              .registerExtensionSoleconnLayer();
 
     private final Map<Symbol, Object> _properties = new LinkedHashMap<>();
     private volatile boolean _saslComplete;
@@ -217,8 +217,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     private String _localHostname;
 
     private static final long MINIMUM_SUPPORTED_IDLE_TIMEOUT = 1000L;
-
-    private volatile Map<Symbol, Object> _remoteProperties;
 
     private Set<Symbol> _remoteDesiredCapabilities;
 
@@ -833,24 +831,26 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         {
             _outgoingIdleTimeout = open.getIdleTimeOut().longValue();
         }
-        _remoteProperties = open.getProperties() == null ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(open.getProperties()));
+        final Map<Symbol, Object> remoteProperties = open.getProperties() == null
+                ? Collections.emptyMap()
+                : Collections.unmodifiableMap(new LinkedHashMap<>(open.getProperties()));
         _remoteDesiredCapabilities = open.getDesiredCapabilities() == null ? Collections.emptySet() : Sets.newHashSet(open.getDesiredCapabilities());
-        if (_remoteProperties.containsKey(Symbol.valueOf("product")))
+        if (remoteProperties.containsKey(Symbol.valueOf("product")))
         {
-            setClientProduct(_remoteProperties.get(Symbol.valueOf("product")).toString());
+            setClientProduct(remoteProperties.get(Symbol.valueOf("product")).toString());
         }
-        if (_remoteProperties.containsKey(Symbol.valueOf("version")))
+        if (remoteProperties.containsKey(Symbol.valueOf("version")))
         {
-            setClientVersion(_remoteProperties.get(Symbol.valueOf("version")).toString());
+            setClientVersion(remoteProperties.get(Symbol.valueOf("version")).toString());
         }
         setClientId(_remoteContainerId);
         if (_remoteDesiredCapabilities.contains(SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER))
         {
-            if (_remoteProperties != null && _remoteProperties.containsKey(SOLE_CONNECTION_ENFORCEMENT_POLICY))
+            if (remoteProperties != null && remoteProperties.containsKey(SOLE_CONNECTION_ENFORCEMENT_POLICY))
             {
                 try
                 {
-                    _soleConnectionEnforcementPolicy = SoleConnectionEnforcementPolicy.valueOf(_remoteProperties.get(
+                    _soleConnectionEnforcementPolicy = SoleConnectionEnforcementPolicy.valueOf(remoteProperties.get(
                             SOLE_CONNECTION_ENFORCEMENT_POLICY));
                 }
                 catch (IllegalArgumentException e)
@@ -910,12 +910,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     boolean registerSucceeded = addressSpace.registerConnection(this, (existingConnections, newConnection) ->
                     {
                         boolean proceedWithRegistration = true;
-                        if (newConnection instanceof AMQPConnection_1_0Impl && !((AMQPConnection_1_0Impl) newConnection).isClosing())
+                        if (newConnection instanceof AMQPConnection_1_0Impl && !newConnection.isClosing())
                         {
                             List<ListenableFuture<Void>> rescheduleFutures = new ArrayList<>();
                             for (AMQPConnection<?> existingConnection : StreamSupport.stream(existingConnections.spliterator(), false)
                                                                                      .filter(con -> con instanceof AMQPConnection_1_0)
-                                                                                     .filter(con -> !((AMQPConnection_1_0<?>) con).isClosing())
+                                                                                     .filter(con -> !con.isClosing())
                                                                                      .filter(con -> con.getRemoteContainerName().equals(newConnection.getRemoteContainerName()))
                                                                                      .collect(Collectors.toList()))
                             {

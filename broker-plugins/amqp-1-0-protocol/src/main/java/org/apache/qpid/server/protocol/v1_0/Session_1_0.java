@@ -63,7 +63,6 @@ import org.apache.qpid.server.model.DestinationAddress;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.v1_0.delivery.DeliveryRegistry;
 import org.apache.qpid.server.protocol.v1_0.delivery.DeliveryRegistryImpl;
 import org.apache.qpid.server.protocol.v1_0.delivery.UnsettledDelivery;
@@ -88,7 +87,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
-import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
@@ -119,7 +117,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             EnumSet.of(SessionState.END_RECVD, SessionState.END_PIPE, SessionState.END_SENT, SessionState.ENDED);
 
     private final AMQPConnection_1_0<?> _connection;
-    private AtomicBoolean _closed = new AtomicBoolean();
+    private final AtomicBoolean _closed = new AtomicBoolean();
 
     private SessionState _sessionState;
 
@@ -127,7 +125,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private final Map<UnsignedInteger, LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> _inputHandleToEndpoint = new HashMap<>();
     private final Set<LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> _associatedLinkEndpoints = new HashSet<>();
 
-    private final int _receivingChannel;
     private final int _sendingChannel;
 
 
@@ -135,10 +132,10 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     private int _nextOutgoingDeliveryId;
 
-    private UnsignedInteger _initialOutgoingId = UnsignedInteger.ZERO;
+    private final UnsignedInteger _initialOutgoingId = UnsignedInteger.ZERO;
     private SequenceNumber _nextIncomingId;
     private final UnsignedInteger _incomingWindow;
-    private SequenceNumber _nextOutgoingId = new SequenceNumber(_initialOutgoingId.intValue());
+    private final SequenceNumber _nextOutgoingId = new SequenceNumber(_initialOutgoingId.intValue());
     private final UnsignedInteger _outgoingWindow = UnsignedInteger.valueOf(DEFAULT_SESSION_BUFFER_SIZE);
     private volatile long _remoteIncomingWindow;
     private UnsignedInteger _remoteOutgoingWindow = UnsignedInteger.ZERO;
@@ -166,7 +163,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     {
         super(connection, sendingChannelId);
         _sendingChannel = sendingChannelId;
-        _receivingChannel = receivingChannelId;
         _sessionState = SessionState.ACTIVE;
         _nextIncomingId = new SequenceNumber(begin.getNextOutgoingId().intValue());
         _connection = connection;

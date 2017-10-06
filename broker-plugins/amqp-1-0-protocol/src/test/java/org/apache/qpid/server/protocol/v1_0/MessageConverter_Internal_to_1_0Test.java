@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,7 +59,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.server.typedmessage.TypedBytesContentWriter;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class MessageConverter_Internal_to_1_0Test extends QpidTestCase

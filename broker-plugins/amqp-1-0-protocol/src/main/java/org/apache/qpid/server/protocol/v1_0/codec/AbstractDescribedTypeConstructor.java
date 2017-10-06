@@ -25,7 +25,7 @@ import java.util.List;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 
-public abstract class AbstractDescribedTypeConstructor<T extends Object> implements DescribedTypeConstructor<T>
+public abstract class AbstractDescribedTypeConstructor<T> implements DescribedTypeConstructor<T>
 {
     @Override
     public TypeConstructor<T> construct(final Object descriptor,
@@ -38,11 +38,11 @@ public abstract class AbstractDescribedTypeConstructor<T extends Object> impleme
 
     protected abstract T construct(Object underlying) throws AmqpErrorException;
 
-    private static class TypeConstructorFromUnderlying<S extends Object> implements TypeConstructor<S>
+    private static class TypeConstructorFromUnderlying<S> implements TypeConstructor<S>
     {
 
         private final TypeConstructor _describedConstructor;
-        private AbstractDescribedTypeConstructor<S> _describedTypeConstructor;
+        private final AbstractDescribedTypeConstructor<S> _describedTypeConstructor;
 
         public TypeConstructorFromUnderlying(final AbstractDescribedTypeConstructor<S> describedTypeConstructor,
                                              final TypeConstructor describedConstructor)

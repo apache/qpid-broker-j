@@ -65,7 +65,7 @@ public class ExchangeSendingDestination extends StandardSendingDestination
 
     private final Exchange<?> _exchange;
     private final Symbol[] _capabilities;
-    private Map<Symbol, Filter> _filters;
+    private final Map<Symbol, Filter> _filters;
 
     ExchangeSendingDestination(Exchange<?> exchange,
                                String linkName,

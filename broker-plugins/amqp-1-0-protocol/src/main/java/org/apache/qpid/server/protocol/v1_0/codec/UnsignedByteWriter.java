@@ -36,7 +36,7 @@ public class UnsignedByteWriter extends FixedOneWriter<UnsignedByte>
         return (byte) 0x50;
     }
 
-    private static Factory<UnsignedByte> FACTORY = new Factory<UnsignedByte>()
+    private static final Factory<UnsignedByte> FACTORY = new Factory<UnsignedByte>()
                                             {
 
                                                 @Override

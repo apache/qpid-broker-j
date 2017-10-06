@@ -22,7 +22,7 @@ package org.apache.qpid.server.protocol.v1_0.framing;
 public class OversizeFrameException extends RuntimeException
 {
     private final AMQFrame _frame;
-    private int _size;
+    private final int _size;
 
     public OversizeFrameException(final AMQFrame frame, final int size)
     {

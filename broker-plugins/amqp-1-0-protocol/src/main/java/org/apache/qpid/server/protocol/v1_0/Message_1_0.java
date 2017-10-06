@@ -198,11 +198,9 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
                 {
                     buf.dispose();
                 }
-                Iterator<EncodingRetainingSection<?>> iter = sections.iterator();
 
-                while (iter.hasNext())
+                for (final EncodingRetainingSection<?> section : sections)
                 {
-                    final EncodingRetainingSection<?> section = iter.next();
                     if (section instanceof DataSection
                         || section instanceof AmqpValueSection
                         || section instanceof AmqpSequenceSection)

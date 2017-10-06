@@ -87,12 +87,7 @@ public final class UnsignedShort extends Number implements Comparable<UnsignedSh
 
         UnsignedShort that = (UnsignedShort) o;
 
-        if (_underlying != that._underlying)
-        {
-            return false;
-        }
-
-        return true;
+        return _underlying == that._underlying;
     }
 
     @Override

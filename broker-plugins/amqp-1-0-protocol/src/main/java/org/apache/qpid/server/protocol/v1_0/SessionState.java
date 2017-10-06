@@ -30,6 +30,6 @@ public enum SessionState
     BEGIN_RECVD,
     END_SENT,
     END_RECVD,
-    ENDED;
+    ENDED
 
 }

@@ -40,7 +40,7 @@ public class MessageAnnotationsWriter extends AbstractDescribedTypeWriter<Messag
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static Factory<MessageAnnotations> FACTORY = new Factory<MessageAnnotations>()
+    private static final Factory<MessageAnnotations> FACTORY = new Factory<MessageAnnotations>()
     {
 
         @Override

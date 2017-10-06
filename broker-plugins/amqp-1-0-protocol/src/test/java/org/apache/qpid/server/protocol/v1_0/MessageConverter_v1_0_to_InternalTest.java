@@ -56,7 +56,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Footer;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotations;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ByteBufferUtils;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -716,7 +715,7 @@ public class MessageConverter_v1_0_to_InternalTest extends QpidTestCase
 
     private void doTestDataWithAnnotation(final byte[] data,
                                           final MessageAnnotations messageAnnotations,
-                                          final String mimeType, final String expectedMimeType) throws Exception
+                                          final String mimeType, final String expectedMimeType)
     {
 
         final Data value = new Data(new Binary(data));

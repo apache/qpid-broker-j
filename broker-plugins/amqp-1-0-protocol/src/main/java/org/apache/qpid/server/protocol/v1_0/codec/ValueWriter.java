@@ -23,12 +23,12 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
-public interface ValueWriter<T extends Object>
+public interface ValueWriter<T>
 {
 
 
 
-    interface Factory<V extends Object>
+    interface Factory<V>
     {
         ValueWriter<V> newInstance(Registry registry, V object);
     }
@@ -40,9 +40,9 @@ public interface ValueWriter<T extends Object>
             Registry getDescribedTypeRegistry();
         }
 
-        <V extends Object> ValueWriter<V> getValueWriter(V value);
+        <V> ValueWriter<V> getValueWriter(V value);
 
-        <V extends Object> ValueWriter<V> register(Class<V> clazz, ValueWriter.Factory<V> writer);
+        <V> ValueWriter<V> register(Class<V> clazz, ValueWriter.Factory<V> writer);
 
     }
 

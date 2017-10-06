@@ -59,12 +59,12 @@ import org.apache.qpid.server.store.StoredMessage;
 
 public class ConsumerTarget_1_0Test extends TestCase
 {
-    private AMQPDescribedTypeRegistry _describedTypeRegistry = AMQPDescribedTypeRegistry.newInstance()
-                                                                                        .registerTransportLayer()
-                                                                                        .registerMessagingLayer()
-                                                                                        .registerTransactionLayer()
-                                                                                        .registerSecurityLayer()
-                                                                                        .registerExtensionSoleconnLayer();
+    private final AMQPDescribedTypeRegistry _describedTypeRegistry = AMQPDescribedTypeRegistry.newInstance()
+                                                                                              .registerTransportLayer()
+                                                                                              .registerMessagingLayer()
+                                                                                              .registerTransactionLayer()
+                                                                                              .registerSecurityLayer()
+                                                                                              .registerExtensionSoleconnLayer();
     private ConsumerTarget_1_0 _consumerTarget;
     private SendingLinkEndpoint _sendingLinkEndpoint;
 

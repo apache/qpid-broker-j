@@ -55,7 +55,7 @@ public class ByteWriter implements ValueWriter<Byte>
         _value = value.byteValue();
     }
 
-    private static Factory<Byte> FACTORY = new Factory<Byte>()
+    private static final Factory<Byte> FACTORY = new Factory<Byte>()
                                             {
 
                                                 @Override

@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -155,15 +154,12 @@ public class MessageConverter_from_1_0
         return bodyObject;
     }
 
-    private static Map convertMap(final Map map)
+    private static Map<Object, Object> convertMap(final Map<Object, Object> map)
     {
-        Map resultMap = new LinkedHashMap();
-        Iterator<Map.Entry> iterator = map.entrySet().iterator();
-        while(iterator.hasNext())
+        Map<Object, Object> resultMap = new LinkedHashMap<>();
+        for (final Map.Entry<Object, Object> entry :  map.entrySet())
         {
-            Map.Entry entry = iterator.next();
             resultMap.put(convertValue(entry.getKey()), convertValue(entry.getValue()));
-
         }
         return resultMap;
     }
@@ -174,11 +170,11 @@ public class MessageConverter_from_1_0
         {
             if(value instanceof Map)
             {
-                return convertMap((Map)value);
+                return convertMap((Map<Object,Object>)value);
             }
             else if(value instanceof List)
             {
-                return convertList((List)value);
+                return convertList((List<Object>)value);
             }
             else if(value instanceof UnsignedByte)
             {
@@ -217,9 +213,9 @@ public class MessageConverter_from_1_0
         }
     }
 
-    private static List convertList(final List list)
+    private static List<Object> convertList(final List<Object> list)
     {
-        List result = new ArrayList(list.size());
+        List<Object> result = new ArrayList<>(list.size());
         for(Object entry : list)
         {
             result.add(convertValue(entry));
@@ -231,58 +227,10 @@ public class MessageConverter_from_1_0
     {
         Symbol contentType = getContentType(serverMsg);
 
-        JmsMessageTypeAnnotation jmsMessageTypeAnnotation = null;
-        MessageAnnotationsSection section = serverMsg.getMessageAnnotationsSection();
-        if (section != null)
-        {
-            Map<Symbol, Object> annotations = section.getValue();
-            if (annotations != null && annotations.containsKey(JmsMessageTypeAnnotation.ANNOTATION_KEY))
-            {
-                Object object = annotations.get(JmsMessageTypeAnnotation.ANNOTATION_KEY);
-                if (object instanceof Byte)
-                {
-                    try
-                    {
-                        jmsMessageTypeAnnotation = JmsMessageTypeAnnotation.valueOf(((Byte) object));
-                    }
-                    catch (IllegalArgumentException e)
-                    {
-                        // ignore
-                    }
-                }
-            }
-        }
+        JmsMessageTypeAnnotation jmsMessageTypeAnnotation = getJmsMessageTypeAnnotation(serverMsg);
 
-        Class<?> classHint = null;
         String mimeTypeHint = null;
-
-        if (jmsMessageTypeAnnotation != null)
-        {
-            switch (jmsMessageTypeAnnotation)
-            {
-                case MESSAGE:
-                    classHint = Void.class;
-                    break;
-                case MAP_MESSAGE:
-                    classHint = Map.class;
-                    break;
-                case BYTES_MESSAGE:
-                    classHint = byte[].class;
-                    break;
-                case OBJECT_MESSAGE:
-                    classHint = Serializable.class;
-                    break;
-                case TEXT_MESSAGE:
-                    classHint = String.class;
-                    break;
-                case STREAM_MESSAGE:
-                    classHint = List.class;
-                    break;
-                default:
-                    throw new ServerScopedRuntimeException(String.format(
-                            "Unexpected jms message type annotation %s", jmsMessageTypeAnnotation));
-            }
-        }
+        Class<?> classHint = getContentTypeClassHint(jmsMessageTypeAnnotation);
 
         if (contentType != null)
         {
@@ -325,6 +273,65 @@ public class MessageConverter_from_1_0
         }
 
         return new ContentHint(classHint, mimeTypeHint);
+    }
+
+    static Class<?> getContentTypeClassHint(final JmsMessageTypeAnnotation jmsMessageTypeAnnotation)
+    {
+        Class<?> classHint = null;
+        if (jmsMessageTypeAnnotation != null)
+        {
+            switch (jmsMessageTypeAnnotation)
+            {
+                case MESSAGE:
+                    classHint = Void.class;
+                    break;
+                case MAP_MESSAGE:
+                    classHint = Map.class;
+                    break;
+                case BYTES_MESSAGE:
+                    classHint = byte[].class;
+                    break;
+                case OBJECT_MESSAGE:
+                    classHint = Serializable.class;
+                    break;
+                case TEXT_MESSAGE:
+                    classHint = String.class;
+                    break;
+                case STREAM_MESSAGE:
+                    classHint = List.class;
+                    break;
+                default:
+                    throw new ServerScopedRuntimeException(String.format(
+                            "Unexpected jms message type annotation %s", jmsMessageTypeAnnotation));
+            }
+        }
+        return classHint;
+    }
+
+    static JmsMessageTypeAnnotation getJmsMessageTypeAnnotation(final Message_1_0 serverMsg)
+    {
+        JmsMessageTypeAnnotation jmsMessageTypeAnnotation = null;
+        MessageAnnotationsSection section = serverMsg.getMessageAnnotationsSection();
+        if (section != null)
+        {
+            Map<Symbol, Object> annotations = section.getValue();
+            if (annotations != null && annotations.containsKey(JmsMessageTypeAnnotation.ANNOTATION_KEY))
+            {
+                Object object = annotations.get(JmsMessageTypeAnnotation.ANNOTATION_KEY);
+                if (object instanceof Byte)
+                {
+                    try
+                    {
+                        jmsMessageTypeAnnotation = JmsMessageTypeAnnotation.valueOf(((Byte) object));
+                    }
+                    catch (IllegalArgumentException e)
+                    {
+                        // ignore
+                    }
+                }
+            }
+        }
+        return jmsMessageTypeAnnotation;
     }
 
     public static Symbol getContentType(final Message_1_0 serverMsg)
@@ -445,7 +452,7 @@ public class MessageConverter_from_1_0
         return replyTo;
     }
 
-    public static Symbol getContentEncoding(final Message_1_0 serverMsg)
+    static Symbol getContentEncoding(final Message_1_0 serverMsg)
     {
         Symbol contentEncoding = null;
         final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
@@ -543,13 +550,13 @@ public class MessageConverter_from_1_0
         private final Class<?> _contentClass;
         private final String _contentType;
 
-        public ContentHint(final Class<?> contentClass, final String contentType)
+        ContentHint(final Class<?> contentClass, final String contentType)
         {
             _contentClass = contentClass;
             _contentType = contentType;
         }
 
-        public Class<?> getContentClass()
+        Class<?> getContentClass()
         {
             return _contentClass;
         }

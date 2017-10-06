@@ -40,7 +40,7 @@ public class DeleteOnCloseWriter extends AbstractDescribedTypeWriter<DeleteOnClo
     }
 
 
-    private static Factory<DeleteOnClose> FACTORY = new Factory<DeleteOnClose>()
+    private static final Factory<DeleteOnClose> FACTORY = new Factory<DeleteOnClose>()
     {
 
         @Override

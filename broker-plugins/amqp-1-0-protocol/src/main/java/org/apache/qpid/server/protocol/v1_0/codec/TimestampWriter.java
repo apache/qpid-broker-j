@@ -38,7 +38,7 @@ public class TimestampWriter extends FixedEightWriter<Date>
         return FORMAT_CODE;
     }
 
-    private static Factory<Date> FACTORY = new Factory<Date>()
+    private static final Factory<Date> FACTORY = new Factory<Date>()
                                             {
 
                                                 @Override

@@ -28,7 +28,7 @@ public class LongWriter
 
     private static final byte ONE_BYTE_FORMAT_CODE = (byte) 0x55;
 
-    private static ValueWriter.Factory<Long> FACTORY =
+    private static final ValueWriter.Factory<Long> FACTORY =
             new ValueWriter.Factory<Long>()
             {
                 @Override

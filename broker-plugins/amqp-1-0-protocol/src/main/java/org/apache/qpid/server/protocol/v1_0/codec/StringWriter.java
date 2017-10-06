@@ -44,7 +44,7 @@ public class StringWriter extends SimpleVariableWidthWriter<String>
     }
 
 
-    private static Factory<String> FACTORY = new Factory<String>()
+    private static final Factory<String> FACTORY = new Factory<String>()
                                             {
 
                                                 @Override

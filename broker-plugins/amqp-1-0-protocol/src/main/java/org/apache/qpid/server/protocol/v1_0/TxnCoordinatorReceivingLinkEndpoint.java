@@ -97,7 +97,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
 
                         session.incrementStartedTransactions();
 
-                        state.setTxnId(session.integerToTransactionId(txn.getId()));
+                        state.setTxnId(Session_1_0.integerToTransactionId(txn.getId()));
                         updateDisposition(delivery.getDeliveryTag(), state, true);
 
                     }
@@ -162,7 +162,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
         ServerTransaction txn = null;
         try
         {
-            transactionId = getSession().transactionIdToInteger(transactionIdAsBinary);
+            transactionId = Session_1_0.transactionIdToInteger(transactionIdAsBinary);
             txn = _createdTransactions.get(transactionId);
         }
         catch (UnknownTransactionException | IllegalArgumentException e)

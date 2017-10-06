@@ -30,7 +30,7 @@ public class SoleConnectionEnforcementPolicy implements RestrictedType<UnsignedI
     public static final SoleConnectionEnforcementPolicy
             CLOSE_EXISTING = new SoleConnectionEnforcementPolicy(UnsignedInteger.valueOf(1));
 
-    private UnsignedInteger _val;
+    private final UnsignedInteger _val;
 
     private SoleConnectionEnforcementPolicy(final UnsignedInteger val)
     {

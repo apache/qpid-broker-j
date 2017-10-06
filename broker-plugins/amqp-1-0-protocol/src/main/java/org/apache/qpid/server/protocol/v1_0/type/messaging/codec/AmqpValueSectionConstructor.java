@@ -36,7 +36,6 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
-import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 
 public class AmqpValueSectionConstructor implements DescribedTypeConstructor<AmqpValueSection>
 {

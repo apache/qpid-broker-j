@@ -25,7 +25,7 @@ import java.util.List;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 
-public interface DescribedTypeConstructor<T extends Object>
+public interface DescribedTypeConstructor<T>
 {
     TypeConstructor<T> construct(Object descriptor,
                                  List<QpidByteBuffer> in,

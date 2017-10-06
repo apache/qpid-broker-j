@@ -53,7 +53,7 @@ public class BooleanWriter implements ValueWriter<Boolean>
         _value = value.booleanValue();
     }
 
-    private static Factory<Boolean> FACTORY = new Factory<Boolean>()
+    private static final Factory<Boolean> FACTORY = new Factory<Boolean>()
                                             {
 
                                                 @Override

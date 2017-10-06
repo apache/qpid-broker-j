@@ -36,7 +36,7 @@ public class DoubleWriter extends FixedEightWriter<Double>
         return FORMAT_CODE;
     }
 
-    private static Factory<Double> FACTORY = new Factory<Double>()
+    private static final Factory<Double> FACTORY = new Factory<Double>()
                                             {
 
                                                 @Override

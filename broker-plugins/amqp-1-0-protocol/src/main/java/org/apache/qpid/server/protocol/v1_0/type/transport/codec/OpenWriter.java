@@ -170,7 +170,7 @@ public class OpenWriter extends AbstractDescribedTypeWriter<Open>
         }
     }
 
-    private static Factory<Open> FACTORY = new Factory<Open>()
+    private static final Factory<Open> FACTORY = new Factory<Open>()
     {
 
         @Override

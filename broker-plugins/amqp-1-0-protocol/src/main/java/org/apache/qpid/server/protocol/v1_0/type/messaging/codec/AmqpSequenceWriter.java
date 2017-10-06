@@ -40,7 +40,7 @@ public class AmqpSequenceWriter extends AbstractDescribedTypeWriter<AmqpSequence
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static Factory<AmqpSequence> FACTORY = new Factory<AmqpSequence>()
+    private static final Factory<AmqpSequence> FACTORY = new Factory<AmqpSequence>()
     {
 
         @Override

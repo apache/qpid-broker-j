@@ -99,7 +99,7 @@ public class DeclaredWriter extends AbstractDescribedTypeWriter<Declared>
         }
     }
 
-    private static Factory<Declared> FACTORY = new Factory<Declared>()
+    private static final Factory<Declared> FACTORY = new Factory<Declared>()
     {
 
         @Override

@@ -39,7 +39,7 @@ public class AcceptedWriter extends AbstractDescribedTypeWriter<Accepted>
         super(DESCRIPTOR_WRITER, ListWriter.EMPTY_LIST_WRITER);
     }
 
-    private static Factory<Accepted> FACTORY = new Factory<Accepted>()
+    private static final Factory<Accepted> FACTORY = new Factory<Accepted>()
     {
 
         @Override

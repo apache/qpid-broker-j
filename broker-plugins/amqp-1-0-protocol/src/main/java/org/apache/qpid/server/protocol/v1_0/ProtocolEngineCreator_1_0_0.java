@@ -112,7 +112,7 @@ public class ProtocolEngineCreator_1_0_0 implements ProtocolEngineCreator
         return ProtocolEngineCreator_1_0_0_SASL.getInstance().getHeaderIdentifier();
     }
 
-    private static ProtocolEngineCreator INSTANCE = new ProtocolEngineCreator_1_0_0();
+    private static final ProtocolEngineCreator INSTANCE = new ProtocolEngineCreator_1_0_0();
 
     public static ProtocolEngineCreator getInstance()
     {

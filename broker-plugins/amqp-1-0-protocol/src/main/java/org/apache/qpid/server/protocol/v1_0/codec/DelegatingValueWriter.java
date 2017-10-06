@@ -25,7 +25,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 public abstract class DelegatingValueWriter<V> implements ValueWriter<V>
 {
     private ValueWriter _delegate;
-    private Registry _registry;
+    private final Registry _registry;
 
 
     protected DelegatingValueWriter(final Registry registry)

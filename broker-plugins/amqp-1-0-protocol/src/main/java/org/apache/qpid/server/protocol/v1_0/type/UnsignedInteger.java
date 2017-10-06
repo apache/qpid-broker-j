@@ -84,12 +84,7 @@ public final class UnsignedInteger extends Number implements Comparable<Unsigned
 
         UnsignedInteger that = (UnsignedInteger) o;
 
-        if (_underlying != that._underlying)
-        {
-            return false;
-        }
-
-        return true;
+        return _underlying == that._underlying;
     }
 
     @Override

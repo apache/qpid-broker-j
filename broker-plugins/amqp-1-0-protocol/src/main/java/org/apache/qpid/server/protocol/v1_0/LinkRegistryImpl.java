@@ -46,14 +46,10 @@ public class LinkRegistryImpl implements LinkRegistry
     private final ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> _sendingLinkRegistry = new ConcurrentHashMap<>();
     private final ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> _receivingLinkRegistry = new ConcurrentHashMap<>();
 
-    private final NamedAddressSpace _addressSpace;
-
     private final LinkStore _linkStore;
 
     LinkRegistryImpl(final NamedAddressSpace addressSpace)
     {
-        _addressSpace = addressSpace;
-
         LinkStoreFactory storeFactory = null;
         Iterable<LinkStoreFactory> linkStoreFactories = new QpidServiceLoader().instancesOf(LinkStoreFactory.class);
         for (LinkStoreFactory linkStoreFactory : linkStoreFactories)

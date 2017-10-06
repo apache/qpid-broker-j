@@ -40,7 +40,7 @@ public class FooterWriter extends AbstractDescribedTypeWriter<Footer>
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static Factory<Footer> FACTORY = new Factory<Footer>()
+    private static final Factory<Footer> FACTORY = new Factory<Footer>()
     {
 
         @Override

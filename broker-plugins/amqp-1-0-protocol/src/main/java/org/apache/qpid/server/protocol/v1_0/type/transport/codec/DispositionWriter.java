@@ -140,7 +140,7 @@ public class DispositionWriter extends AbstractDescribedTypeWriter<Disposition>
         }
     }
 
-    private static Factory<Disposition> FACTORY = new Factory<Disposition>()
+    private static final Factory<Disposition> FACTORY = new Factory<Disposition>()
     {
 
         @Override

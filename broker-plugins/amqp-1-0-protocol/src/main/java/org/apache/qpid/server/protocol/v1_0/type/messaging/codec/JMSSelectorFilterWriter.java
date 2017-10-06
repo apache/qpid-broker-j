@@ -40,7 +40,7 @@ public class JMSSelectorFilterWriter extends AbstractDescribedTypeWriter<JMSSele
     }
 
 
-    private static Factory<JMSSelectorFilter> FACTORY = new Factory<JMSSelectorFilter>()
+    private static final Factory<JMSSelectorFilter> FACTORY = new Factory<JMSSelectorFilter>()
     {
 
         @Override

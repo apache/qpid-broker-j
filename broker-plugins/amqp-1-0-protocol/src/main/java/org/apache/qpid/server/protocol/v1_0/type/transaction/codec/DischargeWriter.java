@@ -42,7 +42,7 @@ public class DischargeWriter extends AbstractDescribedTypeWriter<Discharge>
 
     private static class Writer extends AbstractListWriter<Discharge>
     {
-        private Discharge _value;
+        private final Discharge _value;
         private int _count = -1;
 
         private int _field;
@@ -106,7 +106,7 @@ public class DischargeWriter extends AbstractDescribedTypeWriter<Discharge>
         }
     }
 
-    private static Factory<Discharge> FACTORY = new Factory<Discharge>()
+    private static final Factory<Discharge> FACTORY = new Factory<Discharge>()
     {
 
         @Override

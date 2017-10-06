@@ -98,7 +98,7 @@ public class CoordinatorWriter extends AbstractDescribedTypeWriter<Coordinator>
         }
     }
 
-    private static Factory<Coordinator> FACTORY = new Factory<Coordinator>()
+    private static final Factory<Coordinator> FACTORY = new Factory<Coordinator>()
     {
 
         @Override

@@ -324,11 +324,11 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
 
 
     @Override
-    public <V extends Object> ValueWriter<V> getValueWriter(V value)
+    public <V> ValueWriter<V> getValueWriter(V value)
     {
         ValueWriter writer;
 
-        Class<? extends Object> clazz = value == null ? Void.TYPE : value.getClass();
+        Class<?> clazz = value == null ? Void.TYPE : value.getClass();
 
         ValueWriter.Factory<V> factory = (ValueWriter.Factory<V>) (_writerMap.get(clazz));
 
@@ -382,7 +382,7 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
     }
 
     @Override
-    public <V extends Object> ValueWriter<V> register(Class<V> clazz, ValueWriter.Factory<V> writer)
+    public <V> ValueWriter<V> register(Class<V> clazz, ValueWriter.Factory<V> writer)
     {
         return (ValueWriter<V>) _writerMap.put(clazz, writer);
     }

@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -89,7 +90,7 @@ public class ValueHandler implements DescribedTypeConstructorRegistry.Source
 
     public Object parse(QpidByteBuffer in) throws AmqpErrorException
     {
-        return parse(new ArrayList<>(Arrays.asList(in)));
+        return parse(new ArrayList<>(Collections.singletonList(in)));
     }
 
     public Object parse(final List<QpidByteBuffer> in) throws AmqpErrorException

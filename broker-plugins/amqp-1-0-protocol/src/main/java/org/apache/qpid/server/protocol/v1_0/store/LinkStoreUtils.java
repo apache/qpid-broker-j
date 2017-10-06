@@ -28,7 +28,7 @@ import org.apache.qpid.server.store.StoreException;
 
 public class LinkStoreUtils
 {
-    private static AMQPDescribedTypeRegistry DESCRIBED_TYPE_REGISTRY =
+    private static final AMQPDescribedTypeRegistry DESCRIBED_TYPE_REGISTRY =
             AMQPDescribedTypeRegistry.newInstance().registerTransportLayer().registerMessagingLayer();
 
     public static Object amqpBytesToObject(final byte[] bytes)

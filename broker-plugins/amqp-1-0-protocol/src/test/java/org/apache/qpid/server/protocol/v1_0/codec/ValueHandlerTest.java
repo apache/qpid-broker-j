@@ -20,9 +20,6 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
@@ -32,7 +29,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 public class ValueHandlerTest extends QpidTestCase
 {
 
-    private byte[] FORMAT_CODES = {
+    private final byte[] FORMAT_CODES = {
             0x00,
             0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56,
             0x60, 0x61,

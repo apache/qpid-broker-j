@@ -25,7 +25,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 public interface ValueProducingProtocolHandler extends ProtocolHandler
 {
     Object getValue();
-    public boolean hasError();
-    public Error getError();
+    boolean hasError();
+    Error getError();
 
 }

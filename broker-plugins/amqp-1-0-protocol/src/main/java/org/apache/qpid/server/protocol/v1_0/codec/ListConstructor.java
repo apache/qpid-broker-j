@@ -28,7 +28,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
-public class ListConstructor extends VariableWidthTypeConstructor<List>
+public class ListConstructor extends VariableWidthTypeConstructor<List<Object>>
 {
     private ListConstructor(final int size)
     {
@@ -36,7 +36,7 @@ public class ListConstructor extends VariableWidthTypeConstructor<List>
     }
 
     @Override
-    public List construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    public List<Object> construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
     {
         int size;
         int count;
@@ -50,7 +50,7 @@ public class ListConstructor extends VariableWidthTypeConstructor<List>
                                                        remaining));
         }
 
-        if(getSize() == 1)
+        if (getSize() == 1)
         {
             size = QpidByteBufferUtils.get(in) & 0xFF;
             count = QpidByteBufferUtils.get(in) & 0xFF;
@@ -72,15 +72,15 @@ public class ListConstructor extends VariableWidthTypeConstructor<List>
         return construct(in, handler, size, count);
     }
 
-    protected List construct(final List<QpidByteBuffer> in,
-                             final ValueHandler handler,
-                             final int size,
-                             final int count)
+    protected List<Object> construct(final List<QpidByteBuffer> in,
+                                     final ValueHandler handler,
+                                     final int size,
+                                     final int count)
             throws AmqpErrorException
     {
-        List list = new ArrayList(count);
+        List<Object> list = new ArrayList<>(count);
 
-        for(int i = 0; i < count; i++)
+        for (int i = 0; i < count; i++)
         {
             list.add(handler.parse(in));
         }

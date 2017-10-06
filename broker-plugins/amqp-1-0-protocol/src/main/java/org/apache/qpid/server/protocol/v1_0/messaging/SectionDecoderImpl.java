@@ -33,7 +33,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 public class SectionDecoderImpl implements SectionDecoder
 {
 
-    private ValueHandler _valueHandler;
+    private final ValueHandler _valueHandler;
 
 
     public SectionDecoderImpl(final SectionDecoderRegistry describedTypeRegistry)

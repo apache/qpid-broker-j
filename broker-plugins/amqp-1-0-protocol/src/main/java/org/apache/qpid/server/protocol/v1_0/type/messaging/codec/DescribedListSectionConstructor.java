@@ -33,7 +33,6 @@ import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
-import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 
 public abstract class DescribedListSectionConstructor<S extends AbstractSection> implements DescribedTypeConstructor<S>
 {

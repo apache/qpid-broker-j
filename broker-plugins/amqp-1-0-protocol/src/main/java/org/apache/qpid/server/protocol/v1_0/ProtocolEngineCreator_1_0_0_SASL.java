@@ -81,7 +81,7 @@ public class ProtocolEngineCreator_1_0_0_SASL implements ProtocolEngineCreator
         return null;
     }
 
-    private static ProtocolEngineCreator INSTANCE = new ProtocolEngineCreator_1_0_0_SASL();
+    private static final ProtocolEngineCreator INSTANCE = new ProtocolEngineCreator_1_0_0_SASL();
 
     public static ProtocolEngineCreator getInstance()
     {

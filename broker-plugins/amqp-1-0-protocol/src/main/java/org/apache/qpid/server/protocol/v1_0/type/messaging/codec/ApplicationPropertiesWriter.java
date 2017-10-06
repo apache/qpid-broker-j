@@ -39,7 +39,7 @@ public class ApplicationPropertiesWriter extends AbstractDescribedTypeWriter<App
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static Factory<ApplicationProperties> FACTORY = new Factory<ApplicationProperties>()
+    private static final Factory<ApplicationProperties> FACTORY = new Factory<ApplicationProperties>()
     {
 
         @Override

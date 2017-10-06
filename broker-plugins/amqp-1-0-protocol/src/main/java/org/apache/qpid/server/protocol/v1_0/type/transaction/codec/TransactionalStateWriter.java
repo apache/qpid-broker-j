@@ -104,7 +104,7 @@ public class TransactionalStateWriter extends AbstractDescribedTypeWriter<Transa
         }
     }
 
-    private static Factory<TransactionalState> FACTORY = new Factory<TransactionalState>()
+    private static final Factory<TransactionalState> FACTORY = new Factory<TransactionalState>()
     {
 
         @Override

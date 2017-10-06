@@ -82,7 +82,7 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
             props.setContentEncoding(Symbol.valueOf(contentHeader.getEncodingAsString()));
         }
 
-        Symbol contentType = getContentType(contentHeader.getContentTypeAsString(), bodySection);
+        Symbol contentType = getContentType(contentHeader.getContentTypeAsString());
         props.setContentType(contentType);
 
         final AMQShortString correlationId = contentHeader.getCorrelationId();

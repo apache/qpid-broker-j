@@ -31,7 +31,7 @@ public class Container
 
     private static final AtomicInteger CONTAINER_ID = new AtomicInteger(0);
 
-    private String _id;
+    private final String _id;
 
     public Container()
     {

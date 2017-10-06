@@ -98,7 +98,7 @@ public class RejectedWriter extends AbstractDescribedTypeWriter<Rejected>
         }
     }
 
-    private static Factory<Rejected> FACTORY = new Factory<Rejected>()
+    private static final Factory<Rejected> FACTORY = new Factory<Rejected>()
     {
 
         @Override

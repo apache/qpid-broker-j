@@ -31,7 +31,7 @@ public class SymbolWriter extends VariableWidthWriter<Symbol>
     private static final Charset ENCODING_CHARSET = Charset.forName("US-ASCII");
     public static final byte LARGE_ENCODING_CODE = (byte) 0xb3;
     public static final byte SMALL_ENCODING_CODE = (byte) 0xa3;
-    private Symbol _value;
+    private final Symbol _value;
 
     public SymbolWriter(final Symbol object)
     {
@@ -61,7 +61,7 @@ public class SymbolWriter extends VariableWidthWriter<Symbol>
         }
     }
 
-    private static Factory<Symbol> FACTORY = new Factory<Symbol>()
+    private static final Factory<Symbol> FACTORY = new Factory<Symbol>()
                                             {
 
                                                 @Override

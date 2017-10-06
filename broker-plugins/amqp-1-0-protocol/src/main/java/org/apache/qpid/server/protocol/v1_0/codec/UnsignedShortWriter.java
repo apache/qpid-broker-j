@@ -48,7 +48,7 @@ public class UnsignedShortWriter extends FixedTwoWriter<UnsignedShort>
         return FORMAT_CODE;
     }
 
-    private static Factory<UnsignedShort> FACTORY = new Factory<UnsignedShort>()
+    private static final Factory<UnsignedShort> FACTORY = new Factory<UnsignedShort>()
                                             {
 
                                                 @Override

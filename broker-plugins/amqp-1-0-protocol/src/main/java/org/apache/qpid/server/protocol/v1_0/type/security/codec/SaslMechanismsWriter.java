@@ -97,7 +97,7 @@ public class SaslMechanismsWriter extends AbstractDescribedTypeWriter<SaslMechan
         }
     }
 
-    private static Factory<SaslMechanisms> FACTORY = new Factory<SaslMechanisms>()
+    private static final Factory<SaslMechanisms> FACTORY = new Factory<SaslMechanisms>()
     {
 
         @Override

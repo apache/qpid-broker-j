@@ -26,7 +26,7 @@ import java.util.Map;
 
 public class MapWriter extends AbstractMapWriter<Map>
 {
-    private Map _map;
+    private final Map _map;
     private Object _value;
     private Iterator<Map.Entry> _iterator;
 

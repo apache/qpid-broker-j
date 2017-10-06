@@ -177,7 +177,7 @@ public class SourceWriter extends AbstractDescribedTypeWriter<Source>
         }
     }
 
-    private static Factory<Source> FACTORY = new Factory<Source>()
+    private static final Factory<Source> FACTORY = new Factory<Source>()
     {
 
         @Override

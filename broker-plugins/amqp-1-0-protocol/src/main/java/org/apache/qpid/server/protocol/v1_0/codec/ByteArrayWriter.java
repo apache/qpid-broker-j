@@ -41,7 +41,7 @@ public class ByteArrayWriter extends SimpleVariableWidthWriter<byte[]>
         return (byte)0xa0;
     }
 
-    private static Factory<byte[]> FACTORY = new Factory<byte[]>()
+    private static final Factory<byte[]> FACTORY = new Factory<byte[]>()
                                             {
 
                                                 @Override

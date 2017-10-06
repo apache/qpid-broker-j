@@ -75,7 +75,6 @@ import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.virtualhost.ConnectionEstablishmentPolicy;
-import org.apache.qpid.server.virtualhost.NoopConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -85,9 +84,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     private ServerNetworkConnection _networkConnection;
     private Broker<?> _broker;
     private AmqpPort _port;
-    private SubjectCreator _subjectCreator;
     private AuthenticationProvider _authenticationProvider;
-    private List<ByteBuffer> _sentBuffers;
     private FrameWriter _frameWriter;
     private AMQPConnection _connection;
     private VirtualHost<?> _virtualHost;
@@ -112,7 +109,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         when(_port.getChildExecutor()).thenReturn(taskExecutor);
         when(_port.getCategoryClass()).thenReturn(Port.class);
         when(_port.getModel()).thenReturn(BrokerModel.getInstance());
-        _subjectCreator = mock(SubjectCreator.class);
+        final SubjectCreator subjectCreator = mock(SubjectCreator.class);
         _authenticationProvider = mock(AuthenticationProvider.class);
 
         when(_port.getAuthenticationProvider()).thenReturn(_authenticationProvider);
@@ -135,10 +132,10 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         }).when(_virtualHost).registerConnection(connectionCaptor.capture(), establishmentPolicyCaptor.capture());
         when(_virtualHost.getPrincipal()).thenReturn(mock(VirtualHostPrincipal.class));
         when(_port.getAddressSpace(anyString())).thenReturn(_virtualHost);
-        when(_port.getSubjectCreator(anyBoolean(), anyString())).thenReturn(_subjectCreator);
+        when(_port.getSubjectCreator(anyBoolean(), anyString())).thenReturn(subjectCreator);
 
         final ArgumentCaptor<Principal> userCaptor = ArgumentCaptor.forClass(Principal.class);
-        when(_subjectCreator.createSubjectWithGroups(userCaptor.capture())).then(new Answer<Subject>()
+        when(subjectCreator.createSubjectWithGroups(userCaptor.capture())).then(new Answer<Subject>()
         {
             @Override
             public Subject answer(final InvocationOnMock invocation) throws Throwable
@@ -151,19 +148,6 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
 
         final ByteBufferSender sender = mock(ByteBufferSender.class);
         when(_networkConnection.getSender()).thenReturn(sender);
-
-        final ArgumentCaptor<QpidByteBuffer> byteBufferCaptor = ArgumentCaptor.forClass(QpidByteBuffer.class);
-
-        doAnswer(new Answer()
-        {
-            @Override
-            public Object answer(final InvocationOnMock invocation) throws Throwable
-            {
-                _sentBuffers.add(byteBufferCaptor.getValue().asByteBuffer());
-                return null;
-            }
-        }).when(sender).send(byteBufferCaptor.capture());
-        _sentBuffers = new ArrayList<>();
 
         AMQPDescribedTypeRegistry registry = AMQPDescribedTypeRegistry.newInstance().registerTransportLayer()
                 .registerMessagingLayer()
@@ -201,7 +185,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
 
     public void testProtocolEngineWithNoSaslNonTLSandAnon() throws Exception
     {
-        final Map<String, Object> attrs = Collections.<String, Object>singletonMap(ConfiguredObject.NAME, getTestName());
+        final Map<String, Object> attrs = Collections.singletonMap(ConfiguredObject.NAME, getTestName());
         final AnonymousAuthenticationManager anonymousAuthenticationManager =
                 (new AnonymousAuthenticationManagerFactory()).create(null, attrs, _broker);
         when(_port.getAuthenticationProvider()).thenReturn(anonymousAuthenticationManager);
@@ -262,7 +246,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
 
     public void testProtocolEngineWithSaslNonTLSandAnon() throws Exception
     {
-        final Map<String, Object> attrs = Collections.<String, Object>singletonMap(ConfiguredObject.NAME, getTestName());
+        final Map<String, Object> attrs = Collections.singletonMap(ConfiguredObject.NAME, getTestName());
         final AnonymousAuthenticationManager anonymousAuthenticationManager =
                 (new AnonymousAuthenticationManagerFactory()).create(null, attrs, _broker);
         when(_port.getAuthenticationProvider()).thenReturn(anonymousAuthenticationManager);

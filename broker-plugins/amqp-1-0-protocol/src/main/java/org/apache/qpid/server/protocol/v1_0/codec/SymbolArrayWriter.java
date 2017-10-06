@@ -129,7 +129,7 @@ public class SymbolArrayWriter extends SimpleVariableWidthWriter<Symbol[]>
     }
 
 
-    private static Factory<Symbol[]> FACTORY = new Factory<Symbol[]>()
+    private static final Factory<Symbol[]> FACTORY = new Factory<Symbol[]>()
                                             {
 
                                                 @Override
