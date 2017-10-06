@@ -1361,8 +1361,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 {
                     endpoint.close(new Error(AmqpError.RESOURCE_LIMIT_EXCEEDED,
                                              String.format(
-                                                     "Cannot find free handle for endpoint '%d' on session '%s'",
-                                                     _attach.getHandle(),
+                                                     "Cannot find free handle for endpoint '%s' on session '%s'",
+                                                     _attach.getName(),
                                                      endpoint.getSession().toLogString())));
                 }
                 else
