@@ -23,7 +23,6 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.security.AccessControlException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -389,7 +388,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 
         xfr.setHandle(getLocalHandle());
 
-        s.sendTransfer(xfr, this, true);
+        s.sendTransfer(xfr, this);
     }
 
 

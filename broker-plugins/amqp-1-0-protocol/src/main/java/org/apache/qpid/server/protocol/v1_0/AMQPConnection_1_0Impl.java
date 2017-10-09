@@ -1214,17 +1214,20 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     int payloadSize = 0;
                     for(QpidByteBuffer buf : payload)
                     {
-                        if(payloadSize + buf.remaining() < maxPayloadSize)
+                        if (buf.hasRemaining())
                         {
-                            payloadSize += buf.remaining();
-                            payloadDup.add(buf.duplicate());
-                        }
-                        else
-                        {
-                            QpidByteBuffer dup = buf.slice();
-                            dup.limit(maxPayloadSize-payloadSize);
-                            payloadDup.add(dup);
-                            break;
+                            if (payloadSize + buf.remaining() < maxPayloadSize)
+                            {
+                                payloadSize += buf.remaining();
+                                payloadDup.add(buf.duplicate());
+                            }
+                            else
+                            {
+                                QpidByteBuffer dup = buf.slice();
+                                dup.limit(maxPayloadSize - payloadSize);
+                                payloadDup.add(dup);
+                                break;
+                            }
                         }
                     }
 

@@ -273,56 +273,58 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         end(new End());
     }
 
-    public void sendTransfer(final Transfer xfr, final SendingLinkEndpoint endpoint, final boolean newDelivery)
+    void sendTransfer(final Transfer xfr, final SendingLinkEndpoint endpoint)
     {
         _nextOutgoingId.incr();
-        UnsignedInteger deliveryId;
         final boolean settled = Boolean.TRUE.equals(xfr.getSettled());
-        if (newDelivery)
+        UnsignedInteger deliveryId = UnsignedInteger.valueOf(_nextOutgoingDeliveryId++);
+        xfr.setDeliveryId(deliveryId);
+        if (!settled)
         {
-            deliveryId = UnsignedInteger.valueOf(_nextOutgoingDeliveryId++);
-            xfr.setDeliveryId(deliveryId);
-            if (!settled)
-            {
-                final UnsettledDelivery delivery = new UnsettledDelivery(xfr.getDeliveryTag(), endpoint);
-                _outgoingDeliveryRegistry.addDelivery(deliveryId, delivery);
-            }
+            final UnsettledDelivery delivery = new UnsettledDelivery(xfr.getDeliveryTag(), endpoint);
+            _outgoingDeliveryRegistry.addDelivery(deliveryId, delivery);
         }
 
         _remoteIncomingWindow--;
+        List<QpidByteBuffer> payload = xfr.getPayload();
         try
         {
-            List<QpidByteBuffer> payload = xfr.getPayload();
-            final long remaining = payload == null ? 0 : QpidByteBufferUtils.remaining(payload);
+            long remaining = payload == null ? 0 : QpidByteBufferUtils.remaining(payload);
             int payloadSent = _connection.sendFrame(_sendingChannel, xfr, payload);
-
-            if(payload != null && payloadSent < remaining && payloadSent >= 0)
+            if(payload != null)
             {
-                // TODO - should make this iterative and not recursive
-
-                Transfer secondTransfer = new Transfer();
-
-                secondTransfer.setHandle(xfr.getHandle());
-                secondTransfer.setRcvSettleMode(xfr.getRcvSettleMode());
-                secondTransfer.setState(xfr.getState());
-                secondTransfer.setPayload(payload);
-
-                sendTransfer(secondTransfer, endpoint, false);
-
-                secondTransfer.dispose();
-            }
-
-            if (payload != null)
-            {
-                for (QpidByteBuffer buf : payload)
+                while (payloadSent < remaining && payloadSent >= 0)
                 {
-                    buf.dispose();
+                    Transfer continuationTransfer = new Transfer();
+
+                    continuationTransfer.setHandle(xfr.getHandle());
+                    continuationTransfer.setRcvSettleMode(xfr.getRcvSettleMode());
+                    continuationTransfer.setState(xfr.getState());
+                    continuationTransfer.setPayload(payload);
+
+                    _nextOutgoingId.incr();
+                    _remoteIncomingWindow--;
+
+                    remaining = QpidByteBufferUtils.remaining(payload);
+                    payloadSent = _connection.sendFrame(_sendingChannel, continuationTransfer, payload);
+
+                    continuationTransfer.dispose();
                 }
             }
         }
         catch (OversizeFrameException e)
         {
             throw new ConnectionScopedRuntimeException(e);
+        }
+        finally
+        {
+            if(payload != null)
+            {
+                for (QpidByteBuffer buf : payload)
+                {
+                    buf.dispose();
+                }
+            }
         }
     }
 
