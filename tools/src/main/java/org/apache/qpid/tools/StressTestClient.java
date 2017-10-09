@@ -48,6 +48,7 @@ public class StressTestClient
 {
     private static final String JNDI_PROPERTIES_ARG = "jndiProperties";
     private static final String JNDI_DESTINATION_ARG = "jndiDestination";
+    private static final String JNDI_CONNECTION_FACTORY_ARG = "jndiConnectionFactory";
     private static final String CONNECTIONS_ARG = "connections";
     private static final String SESSIONS_ARG = "sessions";
     private static final String CONSUME_IMMEDIATELY_ARG = "consumeImmediately";
@@ -64,7 +65,6 @@ public class StressTestClient
     private static final String TIMEOUT_ARG = "timeout";
     private static final String DELAYCLOSE_ARG = "delayclose";
     private static final String REPORT_MOD_ARG = "reportmod";
-    private static final String LOW_PREFETCH_ARG = "lowprefetch";
     private static final String TRANSACTED_ARG = "transacted";
     private static final String TX_BATCH_ARG = "txbatch";
     private static final String ITERATIONS = "iterations";
@@ -73,6 +73,7 @@ public class StressTestClient
 
     private static final String JNDI_PROPERTIES_DEFAULT = "stress-test-client-qpid-jms-client-0-x.properties";
     private static final String JNDI_DESTINATION_DEFAULT = "stressTestQueue";
+    private static final String JNDI_CONNECTION_FACTORY_DEFAULT = "qpidConnectionFactory";
     private static final String CONNECTIONS_DEFAULT = "1";
     private static final String SESSIONS_DEFAULT = "1";
     private static final String CONSUME_IMMEDIATELY_DEFAULT = "true";
@@ -87,7 +88,6 @@ public class StressTestClient
     private static final String TIMEOUT_DEFAULT = "30000";
     private static final String DELAYCLOSE_DEFAULT = "0";
     private static final String REPORT_MOD_DEFAULT = "1";
-    private static final String LOW_PREFETCH_DEFAULT = "false";
     private static final String TRANSACTED_DEFAULT = "false";
     private static final String TX_BATCH_DEFAULT = "1";
     private static final String ITERATIONS_DEFAULT = "1";
@@ -102,6 +102,7 @@ public class StressTestClient
         Map<String,String> options = new HashMap<>();
         options.put(JNDI_PROPERTIES_ARG, JNDI_PROPERTIES_DEFAULT);
         options.put(JNDI_DESTINATION_ARG, JNDI_DESTINATION_DEFAULT);
+        options.put(JNDI_CONNECTION_FACTORY_ARG, JNDI_CONNECTION_FACTORY_DEFAULT);
         options.put(CONNECTIONS_ARG, CONNECTIONS_DEFAULT);
         options.put(SESSIONS_ARG, SESSIONS_DEFAULT);
         options.put(CONSUME_IMMEDIATELY_ARG, CONSUME_IMMEDIATELY_DEFAULT);
@@ -118,7 +119,6 @@ public class StressTestClient
         options.put(TIMEOUT_ARG, TIMEOUT_DEFAULT);
         options.put(DELAYCLOSE_ARG, DELAYCLOSE_DEFAULT);
         options.put(REPORT_MOD_ARG, REPORT_MOD_DEFAULT);
-        options.put(LOW_PREFETCH_ARG, LOW_PREFETCH_DEFAULT);
         options.put(TRANSACTED_ARG, TRANSACTED_DEFAULT);
         options.put(TX_BATCH_ARG, TX_BATCH_DEFAULT);
         options.put(ITERATIONS, ITERATIONS_DEFAULT);
@@ -170,12 +170,12 @@ public class StressTestClient
         int messageSize = Integer.parseInt(options.get(MESSAGE_SIZE_ARG));
         int repetitions = Integer.parseInt(options.get(REPETITIONS_ARG));
         String destinationString = options.get(JNDI_DESTINATION_ARG);
+        String connectionFactoryString = options.get(JNDI_CONNECTION_FACTORY_ARG);
         int deliveryMode = Boolean.valueOf(options.get(PERSISTENT_ARG)) ? DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT;
         boolean random = Boolean.valueOf(options.get(RANDOM_ARG));
         long recieveTimeout = Long.parseLong(options.get(TIMEOUT_ARG));
         long delayClose = Long.parseLong(options.get(DELAYCLOSE_ARG));
         int reportingMod = Integer.parseInt(options.get(REPORT_MOD_ARG));
-        boolean lowPrefetch = Boolean.valueOf(options.get(LOW_PREFETCH_ARG));
         boolean transacted = Boolean.valueOf(options.get(TRANSACTED_ARG));
         int txBatch = Integer.parseInt(options.get(TX_BATCH_ARG));
         int iterations = Integer.parseInt(options.get(ITERATIONS));
@@ -192,17 +192,7 @@ public class StressTestClient
         {
             // Load JNDI properties
             Context ctx = getInitialContext(jndiProperties);
-
-            ConnectionFactory conFac;
-            if(lowPrefetch)
-            {
-                System.out.println(CLASS + ": Using lowprefetch connection factory");
-                conFac = (ConnectionFactory)ctx.lookup("qpidConnectionfactoryLowPrefetch");
-            }
-            else
-            {
-                conFac = (ConnectionFactory)ctx.lookup("qpidConnectionfactory");
-            }
+            final ConnectionFactory conFac = (ConnectionFactory) ctx.lookup(connectionFactoryString);
 
             //ensure the queue to be used exists and is bound
             Destination destination = (Destination) ctx.lookup(destinationString);
