@@ -119,12 +119,12 @@ import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.Event;
-import org.apache.qpid.server.store.GenericRecoverer;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
+import org.apache.qpid.server.store.VirtualHostStoreUpgraderAndRecoverer;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
@@ -2630,14 +2630,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         resetStatistics();
         createHousekeepingExecutor();
 
-        final List<ConfiguredObjectRecord> records = new ArrayList<>();
-
-        // Transitioning to STOPPED will have closed all our children.  Now we are transition
-        // back to ACTIVE, we need to recover and re-open them.
-
-        getDurableConfigurationStore().reload(records::add);
-
-        new GenericRecoverer(this).recover(records, false);
+        final VirtualHostStoreUpgraderAndRecoverer virtualHostStoreUpgraderAndRecoverer =
+                new VirtualHostStoreUpgraderAndRecoverer((VirtualHostNode<?>) getParent());
+        virtualHostStoreUpgraderAndRecoverer.reloadAndRecoverVirtualHost(getDurableConfigurationStore());
 
         final Collection<VirtualHostAccessControlProvider> accessControlProviders = getChildren(VirtualHostAccessControlProvider.class);
         if (!accessControlProviders.isEmpty())

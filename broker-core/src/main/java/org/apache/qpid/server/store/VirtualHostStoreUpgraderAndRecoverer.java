@@ -1023,28 +1023,34 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                                                                records,
                                                                VirtualHost.class.getSimpleName(),
                                                                VirtualHost.MODEL_VERSION);
-        recover(durableConfigurationStore, upgradedRecords, isNew);
+        recover(_virtualHostNode, durableConfigurationStore, upgradedRecords, isNew);
         return isNew;
     }
 
     public void reloadAndRecover(final DurableConfigurationStore durableConfigurationStore)
     {
-        final List<ConfiguredObjectRecord> records = new ArrayList<>();
-        durableConfigurationStore.reload(new ConfiguredObjectRecordHandler()
-        {
-            @Override
-            public void handle(final ConfiguredObjectRecord record)
-            {
-                records.add(record);
-            }
-        });
-        recover(durableConfigurationStore, records, false);
+        reloadAndRecoverInternal(_virtualHostNode, durableConfigurationStore);
     }
 
-    private void recover(final DurableConfigurationStore durableConfigurationStore,
-                         final List<ConfiguredObjectRecord> records, final boolean isNew)
+    public void reloadAndRecoverVirtualHost(final DurableConfigurationStore durableConfigurationStore)
     {
-        new GenericRecoverer(_virtualHostNode).recover(records, isNew);
+        reloadAndRecoverInternal(_virtualHostNode.getVirtualHost(), durableConfigurationStore);
+    }
+
+    private void reloadAndRecoverInternal(final ConfiguredObject<?> recoveryRoot,
+                                          final DurableConfigurationStore durableConfigurationStore)
+    {
+        final List<ConfiguredObjectRecord> records = new ArrayList<>();
+        durableConfigurationStore.reload(records::add);
+        recover(recoveryRoot, durableConfigurationStore, records, false);
+    }
+
+    private void recover(final ConfiguredObject<?> recoveryRoot,
+                         final DurableConfigurationStore durableConfigurationStore,
+                         final List<ConfiguredObjectRecord> records,
+                         final boolean isNew)
+    {
+        new GenericRecoverer(recoveryRoot).recover(records, isNew);
 
         final StoreConfigurationChangeListener
                 configChangeListener = new StoreConfigurationChangeListener(durableConfigurationStore);
@@ -1065,50 +1071,53 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                 }
             });
         }
-        _virtualHostNode.addChangeListener(new AbstractConfigurationChangeListener()
+
+        if (recoveryRoot instanceof VirtualHostNode)
         {
-            @Override
-            public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+            _virtualHostNode.addChangeListener(new AbstractConfigurationChangeListener()
             {
-                if(child instanceof VirtualHost)
+                @Override
+                public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
                 {
-                    applyRecursively(child, new RecursiveAction<ConfiguredObject<?>>()
+                    if (child instanceof VirtualHost)
                     {
-                        @Override
-                        public boolean applyToChildren(final ConfiguredObject<?> object)
+                        applyRecursively(child, new RecursiveAction<ConfiguredObject<?>>()
                         {
-                            return object.isDurable();
-                        }
-
-                        @Override
-                        public void performAction(final ConfiguredObject<?> object)
-                        {
-                            if(object.isDurable())
+                            @Override
+                            public boolean applyToChildren(final ConfiguredObject<?> object)
                             {
-                                durableConfigurationStore.update(true, object.asObjectRecord());
-                                object.addChangeListener(configChangeListener);
+                                return object.isDurable();
                             }
-                        }
-                    });
 
+                            @Override
+                            public void performAction(final ConfiguredObject<?> object)
+                            {
+                                if (object.isDurable())
+                                {
+                                    durableConfigurationStore.update(true, object.asObjectRecord());
+                                    object.addChangeListener(configChangeListener);
+                                }
+                            }
+                        });
+                    }
                 }
-            }
 
-            @Override
-            public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-            {
-                if(child instanceof VirtualHost)
+                @Override
+                public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
                 {
-                    child.removeChangeListener(configChangeListener);
-                    removeVirtualHostConfiguration((VirtualHost<?>) child, durableConfigurationStore);
+                    if (child instanceof VirtualHost)
+                    {
+                        child.removeChangeListener(configChangeListener);
+                        removeVirtualHostConfiguration((VirtualHost<?>) child, durableConfigurationStore);
+                    }
                 }
-            }
-        });
-        if(isNew)
-        {
-            if(_virtualHostNode instanceof AbstractConfiguredObject)
+            });
+            if (isNew)
             {
-                ((AbstractConfiguredObject)_virtualHostNode).forceUpdateAllSecureAttributes();
+                if (_virtualHostNode instanceof AbstractConfiguredObject)
+                {
+                    ((AbstractConfiguredObject) _virtualHostNode).forceUpdateAllSecureAttributes();
+                }
             }
         }
     }
