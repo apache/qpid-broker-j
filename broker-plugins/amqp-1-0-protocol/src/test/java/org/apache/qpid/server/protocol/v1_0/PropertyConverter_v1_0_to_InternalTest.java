@@ -313,6 +313,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends QpidTestCase
         Map<String, Object> properties = new HashMap<>();
         properties.put("testProperty1", "testProperty1Value");
         properties.put("intProperty", 1);
+        properties.put("nullProperty", null);
         ApplicationProperties applicationProperties = new ApplicationProperties(properties);
         Message_1_0 originalMessage = createTestMessage(applicationProperties);
 

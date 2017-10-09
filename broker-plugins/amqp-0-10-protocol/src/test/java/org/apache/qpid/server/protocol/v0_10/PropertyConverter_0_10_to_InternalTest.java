@@ -72,6 +72,7 @@ public class PropertyConverter_0_10_to_InternalTest extends QpidTestCase
         Map<String, Object> headers = new HashMap<>();
         headers.put("testProperty1", "testProperty1Value");
         headers.put("intProperty", 1);
+        headers.put("nullProperty", null);
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setApplicationHeaders(headers);
         MessageTransferMessage message = createTestMessage(messageProperties);

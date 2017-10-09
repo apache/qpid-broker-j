@@ -26,8 +26,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 
@@ -89,9 +87,7 @@ public final class InternalMessageHeader implements AMQMessageHeader, Serializab
 
     public InternalMessageHeader(final AMQMessageHeader header, long arrivalTime)
     {
-        this(header.getHeaderNames()
-                   .stream()
-                   .collect(Collectors.toMap(Function.identity(), header::getHeader)),
+        this(buildHeaders(header),
              header.getCorrelationId(),
              header.getExpiration(),
              header.getUserId(),
@@ -218,5 +214,18 @@ public final class InternalMessageHeader implements AMQMessageHeader, Serializab
     public Map<String,Object> getHeaderMap()
     {
         return Collections.unmodifiableMap(new LinkedHashMap<>(_headers));
+    }
+
+    private static Map<String, Object> buildHeaders(final AMQMessageHeader header)
+    {
+        Map<String, Object> map = new LinkedHashMap<>();
+        for (String s : header.getHeaderNames())
+        {
+            if (map.put(s, header.getHeader(s)) != null)
+            {
+                throw new IllegalStateException("Duplicate key");
+            }
+        }
+        return map;
     }
 }
