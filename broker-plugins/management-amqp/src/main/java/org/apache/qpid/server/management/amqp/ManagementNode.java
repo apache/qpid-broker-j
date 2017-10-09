@@ -395,16 +395,8 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     {
     }
 
-    private synchronized void enqueue(InternalMessage message,
-                                      Action<? super MessageInstance> postEnqueueAction)
+    private synchronized void processRequest(InternalMessage message)
     {
-        if(postEnqueueAction != null)
-        {
-            postEnqueueAction.performAction(new ConsumedMessageInstance(message));
-        }
-
-
-
         String id = (String) message.getMessageHeader().getHeader(IDENTITY_ATTRIBUTE);
         String type = (String) message.getMessageHeader().getHeader(TYPE_ATTRIBUTE);
         String operation = (String) message.getMessageHeader().getHeader(OPERATION_HEADER);
@@ -444,7 +436,18 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
 
         final InternalMessage msg = converter.convert(message, _addressSpace);
 
-        enqueue(msg, action);
+        try
+        {
+            if (action != null)
+            {
+                action.performAction(new ConsumedMessageInstance(msg));
+            }
+            processRequest(msg);
+        }
+        finally
+        {
+            converter.dispose(msg);
+        }
 
     }
 
