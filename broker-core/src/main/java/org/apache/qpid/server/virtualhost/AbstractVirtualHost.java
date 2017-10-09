@@ -2654,7 +2654,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                     @Override
                                     public void onSuccess(final Void result)
                                     {
-                                        updateAccessControl();
                                     }
 
                                     @Override
