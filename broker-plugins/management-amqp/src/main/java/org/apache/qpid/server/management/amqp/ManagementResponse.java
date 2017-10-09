@@ -219,6 +219,7 @@ class ManagementResponse implements MessageInstance
     @Override
     public void delete()
     {
+        _messageReference.release();
         _isDeleted = true;
     }
 

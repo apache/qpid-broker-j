@@ -193,6 +193,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         @Override
         public void close()
         {
+            _queue.forEach(PropertiesMessageInstance::delete);
             _consumers.remove(this);
         }
 
@@ -400,12 +401,16 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         @Override
         public void release(MessageInstanceConsumer<?> consumer)
         {
-            release();
+            if (isAcquiredBy(consumer))
+            {
+                release();
+            }
         }
 
         @Override
         public void delete()
         {
+            _messageReference.release();
             _isDeleted = true;
         }
 

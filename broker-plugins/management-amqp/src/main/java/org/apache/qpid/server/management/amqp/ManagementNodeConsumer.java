@@ -127,6 +127,7 @@ class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanc
     @Override
     public void close()
     {
+        _queue.forEach(ManagementResponse::delete);
         _managementNode.unregisterConsumer(this);
     }
 
