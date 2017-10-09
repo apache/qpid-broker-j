@@ -34,13 +34,14 @@ import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
+import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -115,15 +116,14 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         return MessageConversionExceptionHandlingPolicy.CLOSE;
     }
 
-    protected class Consumer<T extends ConsumerTarget> implements MessageInstanceConsumer<T>
+    protected class Consumer<T extends ConsumerTarget> implements MessageInstanceConsumer<T>, TransactionLogResource
     {
 
         private final List<PropertiesMessageInstance> _queue =
                 Collections.synchronizedList(new ArrayList<PropertiesMessageInstance>());
         private final T _target;
         private final String _name;
-        private final Object _identifier = new Object();
-
+        private final UUID _identifier = UUID.randomUUID();
 
         public Consumer(final String consumerName, T target)
         {
@@ -161,7 +161,9 @@ public abstract class AbstractSystemMessageSource implements MessageSource
                 if (!_target.isSuspended() && _target.allocateCredit(propertiesMessageInstance.getMessage()))
                 {
                     _queue.remove(0);
-                    return new MessageContainer(propertiesMessageInstance, null, false);
+                    return new MessageContainer(propertiesMessageInstance,
+                                                propertiesMessageInstance.getMessageReference(),
+                                                false);
                 }
             }
             return null;
@@ -200,6 +202,18 @@ public abstract class AbstractSystemMessageSource implements MessageSource
             return _name;
         }
 
+        @Override
+        public UUID getId()
+        {
+            return _identifier;
+        }
+
+        @Override
+        public MessageDurability getMessageDurability()
+        {
+            return MessageDurability.NEVER;
+        }
+
         public void send(final InternalMessage response)
         {
             _queue.add(new PropertiesMessageInstance(this, response));
@@ -210,6 +224,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     class PropertiesMessageInstance implements MessageInstance
     {
         private final Consumer _consumer;
+        private final MessageReference _messageReference;
         private int _deliveryCount;
         private boolean _isRedelivered;
         private boolean _isDelivered;
@@ -220,6 +235,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         {
             _consumer = consumer;
             _message = message;
+            _messageReference = message.newReference(consumer);
         }
 
         @Override
@@ -429,5 +445,9 @@ public abstract class AbstractSystemMessageSource implements MessageSource
             return AbstractSystemMessageSource.this;
         }
 
+        public MessageReference getMessageReference()
+        {
+            return _messageReference;
+        }
     }
 }
