@@ -70,6 +70,11 @@ public class MessagingACLTest extends AbstractACLTestCase
     {
         assertTrue("Unexpected exception message:" + e.getMessage(),
                    e.getMessage().contains("Permission PERFORM_ACTION(connect) is denied"));
+        if (isBroker10())
+        {
+            assertTrue("Unexpected error condition reported:" + e.getMessage(),
+                       e.getMessage().contains("amqp:not-allowed"));
+        }
     }
 
     public void setUpAccessVirtualHostWithName() throws Exception

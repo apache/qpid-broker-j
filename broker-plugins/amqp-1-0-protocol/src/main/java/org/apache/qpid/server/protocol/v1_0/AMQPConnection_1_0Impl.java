@@ -991,11 +991,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                         }
                     }
                 }
-                catch (AccessControlException e)
-                {
-                    closeConnection(AmqpError.NOT_ALLOWED, "Connection refused");
-                }
-                catch (VirtualHostUnavailableException e)
+                catch (VirtualHostUnavailableException | AccessControlException e)
                 {
                     closeConnection(AmqpError.NOT_ALLOWED, e.getMessage());
                 }
