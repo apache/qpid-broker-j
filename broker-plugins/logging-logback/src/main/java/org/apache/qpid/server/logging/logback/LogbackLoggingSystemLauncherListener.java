@@ -21,6 +21,7 @@
 package org.apache.qpid.server.logging.logback;
 
 import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,7 @@ public class LogbackLoggingSystemLauncherListener implements SystemLauncherListe
 {
     private StartupAppender _startupAppender;
     private ch.qos.logback.classic.Logger _logger;
+    private Logback1027WorkaroundTurboFilter _logback1027WorkaroundTurboFilter;
 
     @Override
     public void beforeStartup()
@@ -42,11 +44,14 @@ public class LogbackLoggingSystemLauncherListener implements SystemLauncherListe
             _logger.setAdditive(true);
         }
 
+        final LoggerContext loggerContext = _logger.getLoggerContext();
+        _logback1027WorkaroundTurboFilter = new Logback1027WorkaroundTurboFilter();
+        loggerContext.addTurboFilter(_logback1027WorkaroundTurboFilter);
+
         _startupAppender = new StartupAppender();
-        _startupAppender.setContext(_logger.getLoggerContext());
+        _startupAppender.setContext(loggerContext);
         _startupAppender.start();
         _logger.addAppender(_startupAppender);
-
     }
 
     @Override
@@ -80,6 +85,7 @@ public class LogbackLoggingSystemLauncherListener implements SystemLauncherListe
     public void onContainerClose(final SystemConfig<?> systemConfig)
     {
         QpidLoggerTurboFilter.uninstallFromRootContext();
+        _logger.getLoggerContext().getTurboFilterList().remove(_logback1027WorkaroundTurboFilter);
     }
 
 
