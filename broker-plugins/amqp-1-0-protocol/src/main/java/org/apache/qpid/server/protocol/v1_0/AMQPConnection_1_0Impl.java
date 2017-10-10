@@ -26,6 +26,7 @@ import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.Sole
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.AccessControlContext;
+import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
@@ -989,6 +990,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                             }
                         }
                     }
+                }
+                catch (AccessControlException e)
+                {
+                    closeConnection(AmqpError.NOT_ALLOWED, "Connection refused");
                 }
                 catch (VirtualHostUnavailableException e)
                 {
