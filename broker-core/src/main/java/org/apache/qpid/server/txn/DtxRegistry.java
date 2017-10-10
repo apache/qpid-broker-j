@@ -49,6 +49,7 @@ public class DtxRegistry
 
     public ScheduledFuture<?> scheduleTask(final long delay, final Runnable task)
     {
+        // TODO if the virtualhost is shutdown, the housekeeper may be null
         return _virtualHost.scheduleTask(delay, task);
     }
 

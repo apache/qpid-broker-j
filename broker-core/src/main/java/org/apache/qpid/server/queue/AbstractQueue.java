@@ -27,7 +27,6 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.Principal;
@@ -48,7 +47,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPInputStream;
@@ -662,26 +660,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     // ------ Getters and Setters
-
-    public void execute(final String name, Runnable runnable, AccessControlContext context)
-    {
-        try
-        {
-            if (_virtualHost.getState() != State.UNAVAILABLE)
-            {
-                _virtualHost.executeTask(name, runnable, context);
-            }
-        }
-        catch (RejectedExecutionException ree)
-        {
-            // Ignore - QueueRunner submitted execution as queue was being stopped.
-            if(!_stopped.get())
-            {
-                _logger.error("Unexpected rejected execution", ree);
-                throw ree;
-            }
-        }
-    }
 
     @Override
     public boolean isExclusive()
