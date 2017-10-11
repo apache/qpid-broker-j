@@ -111,6 +111,12 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
     @ManagedAttribute( mandatory = true )
     AuthenticationProvider<?> getAuthenticationProvider();
 
+    @DerivedAttribute(description = "TLS session timeout in seconds")
+    int getTLSSessionTimeout();
+
+    @DerivedAttribute(description = "TLS session cache size")
+    int getTLSSessionCacheSize();
+
     Collection<Connection> getConnections();
 
     void start();

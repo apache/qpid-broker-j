@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSessionContext;
 import javax.security.auth.Subject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -106,6 +107,8 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     private volatile boolean _closeWhenNoRoute;
     private volatile int _sessionCountLimit;
     private volatile int _heartBeatDelay;
+    private volatile int _tlsSessionTimeout;
+    private volatile int _tlsSessionCacheSize;
 
 
     @ManagedObjectFactoryConstructor
@@ -195,6 +198,8 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
         _closeWhenNoRoute = getContextValue(Boolean.class, AmqpPort.CLOSE_WHEN_NO_ROUTE);
         _sessionCountLimit = getContextValue(Integer.class, AmqpPort.SESSION_COUNT_LIMIT);
         _heartBeatDelay = getContextValue(Integer.class, AmqpPort.HEART_BEAT_DELAY);
+        _tlsSessionTimeout = getContextValue(Integer.class, AmqpPort.TLS_SESSION_TIMEOUT);
+        _tlsSessionCacheSize = getContextValue(Integer.class, AmqpPort.TLS_SESSION_CACHE_SIZE);
     }
 
     @Override
@@ -356,7 +361,18 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
                     + this.getName() + "' but no trust store defined");
         }
 
-        return SSLUtil.createSslContext(keyStore, trustStores, getName());
+        SSLContext sslContext = SSLUtil.createSslContext(keyStore, trustStores, getName());
+        SSLSessionContext serverSessionContext = sslContext.getServerSessionContext();
+        if (getTLSSessionCacheSize() > 0)
+        {
+            serverSessionContext.setSessionCacheSize(getTLSSessionCacheSize());
+        }
+        if (getTLSSessionTimeout() > 0)
+        {
+            serverSessionContext.setSessionTimeout(getTLSSessionTimeout());
+        }
+
+        return sslContext;
     }
 
     private Protocol getDefaultAmqpSupportedReply()
@@ -577,5 +593,17 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     public int getHeartbeatDelay()
     {
         return _heartBeatDelay;
+    }
+
+    @Override
+    public int getTLSSessionTimeout()
+    {
+        return _tlsSessionTimeout;
+    }
+
+    @Override
+    public int getTLSSessionCacheSize()
+    {
+        return _tlsSessionCacheSize;
     }
 }

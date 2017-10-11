@@ -114,6 +114,16 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
     @ManagedContextDefault(name = HEART_BEAT_DELAY)
     int DEFAULT_HEART_BEAT_DELAY = 0;
 
+    String TLS_SESSION_TIMEOUT = "qpid.port.amqp.tlsSessionTimeout";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = TLS_SESSION_TIMEOUT, description = "TLS session timeout for AMQP ports (seconds).")
+    int DEFAULT_TLS_SESSION_TIMEOUT = 5* 60;
+
+    String TLS_SESSION_CACHE_SIZE = "qpid.port.amqp.tlsSessionCacheSize";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = TLS_SESSION_CACHE_SIZE, description = "TLS session cache size for AMQP ports (seconds).")
+    int DEFAULT_TLS_SESSION_CACHE_SIZE = 100;
+
     SSLContext getSSLContext();
 
     @ManagedAttribute(defaultValue = "*")

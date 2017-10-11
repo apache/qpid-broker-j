@@ -41,6 +41,7 @@ import java.util.concurrent.Executors;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSessionContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.HttpServletRequest;
@@ -600,6 +601,15 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
 
         SSLContext sslContext = SSLUtil.createSslContext(keyStore, trustStores, port.getName());
+        SSLSessionContext serverSessionContext = sslContext.getServerSessionContext();
+        if (port.getTLSSessionCacheSize() > 0)
+        {
+            serverSessionContext.setSessionCacheSize(port.getTLSSessionCacheSize());
+        }
+        if (port.getTLSSessionTimeout() > 0)
+        {
+            serverSessionContext.setSessionTimeout(port.getTLSSessionTimeout());
+        }
 
         SslContextFactory factory = new SslContextFactory()
         {

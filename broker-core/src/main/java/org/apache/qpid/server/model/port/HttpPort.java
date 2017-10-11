@@ -62,6 +62,16 @@ public interface HttpPort<X extends HttpPort<X>> extends Port<X>
                            description = "The maximum amount of time (in milliseconds) a session can be active.")
     long DEFAULT_ABSOLUTE_SESSION_TIMEOUT = -1;
 
+    String TLS_SESSION_TIMEOUT = "qpid.port.http.tlsSessionTimeout";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = TLS_SESSION_TIMEOUT, description = "TLS session timeout for HTTP ports (seconds).")
+    int DEFAULT_TLS_SESSION_TIMEOUT = 15 * 60;
+
+    String TLS_SESSION_CACHE_SIZE = "qpid.port.http.tlsSessionCacheSize";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = TLS_SESSION_CACHE_SIZE, description = "TLS session cache size for HTTP ports (seconds).")
+    int DEFAULT_TLS_SESSION_CACHE_SIZE = 1000;
+
     @ManagedAttribute(defaultValue = "*")
     String getBindingAddress();
 

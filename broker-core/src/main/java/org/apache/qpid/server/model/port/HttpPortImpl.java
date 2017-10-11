@@ -46,10 +46,13 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
 
     @ManagedAttributeField
     private boolean _manageBrokerOnNoAliasMatch;
-    private int _numberOfAcceptors;
-    private int _numberOfSelectors;
-    private int _acceptsBacklogSize;
-    private long _absoluteSessionTimeout;
+
+    private volatile int _numberOfAcceptors;
+    private volatile int _numberOfSelectors;
+    private volatile int _acceptsBacklogSize;
+    private volatile long _absoluteSessionTimeout;
+    private volatile int _tlsSessionTimeout;
+    private volatile int _tlsSessionCacheSize;
 
     @ManagedObjectFactoryConstructor
     public HttpPortImpl(final Map<String, Object> attributes,
@@ -125,6 +128,18 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
     }
 
     @Override
+    public int getTLSSessionTimeout()
+    {
+        return _tlsSessionTimeout;
+    }
+
+    @Override
+    public int getTLSSessionCacheSize()
+    {
+        return _tlsSessionCacheSize;
+    }
+
+    @Override
     protected void onOpen()
     {
         super.onOpen();
@@ -133,6 +148,8 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
         _numberOfAcceptors = getContextValue(Integer.class, HttpPort.PORT_HTTP_NUMBER_OF_ACCEPTORS);
         _numberOfSelectors =  getContextValue(Integer.class, HttpPort.PORT_HTTP_NUMBER_OF_SELECTORS);
         _absoluteSessionTimeout =  getContextValue(Long.class, HttpPort.ABSOLUTE_SESSION_TIMEOUT);
+        _tlsSessionTimeout = getContextValue(Integer.class, HttpPort.TLS_SESSION_TIMEOUT);
+        _tlsSessionCacheSize = getContextValue(Integer.class, HttpPort.TLS_SESSION_CACHE_SIZE);
     }
 
     @Override
