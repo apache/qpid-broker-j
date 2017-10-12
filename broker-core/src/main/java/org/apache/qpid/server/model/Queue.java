@@ -458,9 +458,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                       description = "Current age of oldest message on the queue.")
     long getOldestMessageAge();
 
-    @ManagedOperation(description = "reset cumulative and high watermark statistics values", changesConfiguredObjectState = false)
-    void resetStatistics();
-
     @ManagedOperation(description = "move messages from this queue to another", changesConfiguredObjectState = false)
     List<Long> moveMessages(@Param(name = "destination", description = "The queue to which the messages should be moved", mandatory = true) Queue<?> destination,
                             @Param(name = "messageIds", description = "If provided, only messages in the queue whose (internal) message-id is supplied will be considered for moving") List<Long> messageIds,

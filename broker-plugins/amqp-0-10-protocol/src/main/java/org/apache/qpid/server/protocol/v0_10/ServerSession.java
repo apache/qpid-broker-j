@@ -971,7 +971,7 @@ public class ServerSession extends SessionInvoker
         final RoutingResult<MessageTransferMessage> result =
                 exchange.route(message, message.getInitialRoutingAddress(), instanceProperties);
         result.send(_transaction, null);
-        getAMQPConnection().registerMessageReceived(message.getSize(), arrivalTime);
+        getAMQPConnection().registerMessageReceived(message.getSize());
         incrementOutstandingTxnsIfNecessary();
         return result;
     }

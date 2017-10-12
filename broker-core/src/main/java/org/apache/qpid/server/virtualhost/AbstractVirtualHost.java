@@ -114,7 +114,6 @@ import org.apache.qpid.server.security.SubjectFixedResultAccessControl.ResultCal
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
-import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsReportingTask;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -176,7 +175,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private final SystemNodeRegistry _systemNodeRegistry = new SystemNodeRegistry();
 
-    private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
+    private final AtomicLong _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
 
     private volatile LinkRegistryModel _linkRegistry;
     private AtomicBoolean _blocked = new AtomicBoolean();
@@ -285,10 +284,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _eventLogger.message(VirtualHostMessages.CREATED(getName()));
 
 
-        _messagesDelivered = new StatisticsCounter("messages-delivered-" + getName());
-        _dataDelivered = new StatisticsCounter("bytes-delivered-" + getName());
-        _messagesReceived = new StatisticsCounter("messages-received-" + getName());
-        _dataReceived = new StatisticsCounter("bytes-received-" + getName());
+        _messagesDelivered = new AtomicLong();
+        _dataDelivered = new AtomicLong();
+        _messagesReceived = new AtomicLong();
+        _dataReceived = new AtomicLong();
         _principal = new VirtualHostPrincipal(this);
 
         if (systemConfig.isManagementMode())
@@ -1649,59 +1648,41 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public void registerMessageDelivered(long messageSize)
     {
-        _messagesDelivered.registerEvent(1L);
-        _dataDelivered.registerEvent(messageSize);
+        _messagesDelivered.incrementAndGet();
+        _dataDelivered.addAndGet(messageSize);
         _broker.registerMessageDelivered(messageSize);
     }
 
     @Override
-    public void registerMessageReceived(long messageSize, long timestamp)
+    public void registerMessageReceived(long messageSize)
     {
-        _messagesReceived.registerEvent(1L, timestamp);
-        _dataReceived.registerEvent(messageSize, timestamp);
-        _broker.registerMessageReceived(messageSize, timestamp);
+        _messagesReceived.incrementAndGet();
+        _dataReceived.addAndGet(messageSize);
+        _broker.registerMessageReceived(messageSize);
     }
 
     @Override
-    public StatisticsCounter getMessageReceiptStatistics()
+    public long getMessagesIn()
     {
-        return _messagesReceived;
+        return _messagesReceived.get();
     }
 
     @Override
-    public StatisticsCounter getDataReceiptStatistics()
+    public long getBytesIn()
     {
-        return _dataReceived;
+        return _dataReceived.get();
     }
 
     @Override
-    public StatisticsCounter getMessageDeliveryStatistics()
+    public long getMessagesOut()
     {
-        return _messagesDelivered;
+        return _messagesDelivered.get();
     }
 
     @Override
-    public StatisticsCounter getDataDeliveryStatistics()
+    public long getBytesOut()
     {
-        return _dataDelivered;
-    }
-
-    @Override
-    public void resetStatistics()
-    {
-        _messagesDelivered.reset();
-        _dataDelivered.reset();
-        _messagesReceived.reset();
-        _dataReceived.reset();
-
-        for (AMQPConnection<?> connection : _connections)
-        {
-            connection.resetStatistics();
-        }
-        for(Queue<?> queue : getChildren(Queue.class))
-        {
-            queue.resetStatistics();
-        }
+        return _dataDelivered.get();
     }
 
     @Override
@@ -2215,30 +2196,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public long getBytesIn()
-    {
-        return getDataReceiptStatistics().getTotal();
-    }
-
-    @Override
-    public long getBytesOut()
-    {
-        return getDataDeliveryStatistics().getTotal();
-    }
-
-    @Override
-    public long getMessagesIn()
-    {
-        return getMessageReceiptStatistics().getTotal();
-    }
-
-    @Override
-    public long getMessagesOut()
-    {
-        return getMessageDeliveryStatistics().getTotal();
-    }
-
-    @Override
     public int getHousekeepingThreadCount()
     {
         return _housekeepingThreadCount;
@@ -2664,7 +2621,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @StateTransition( currentState = { State.STOPPED }, desiredState = State.ACTIVE )
     private ListenableFuture<Void> onRestart()
     {
-        resetStatistics();
         createHousekeepingExecutor();
 
         final VirtualHostStoreUpgraderAndRecoverer virtualHostStoreUpgraderAndRecoverer =

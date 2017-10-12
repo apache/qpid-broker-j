@@ -1488,12 +1488,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public void resetStatistics()
-    {
-        _queueStatistics.reset();
-    }
-
-    @Override
     public long getOldestMessageArrivalTime()
     {
         long oldestMessageArrivalTime = -1L;

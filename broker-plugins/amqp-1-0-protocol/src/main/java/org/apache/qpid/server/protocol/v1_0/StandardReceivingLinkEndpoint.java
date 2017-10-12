@@ -236,8 +236,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                 try
                 {
                     Session_1_0 session = getSession();
-                    // locally cache arrival time to ensure that we don't reload metadata
-                    final long arrivalTime = serverMessage.getArrivalTime();
+
                     session.getAMQPConnection()
                            .checkAuthorizedMessagePrincipal(serverMessage.getMessageHeader().getUserId());
 
@@ -308,7 +307,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     updateDisposition(delivery.getDeliveryTag(), resultantState, settled);
 
                     getSession().getAMQPConnection()
-                                .registerMessageReceived(serverMessage.getSize(), arrivalTime);
+                                .registerMessageReceived(serverMessage.getSize());
 
                     setRollbackOnly = false;
                 }

@@ -23,9 +23,9 @@ package org.apache.qpid.server.stats;
  * wishes to gather statistics about messages delivered through it.
  * 
  * These statistics are exposed using a management interface, which
- * calls these methods to retrieve the underlying {@link StatisticsCounter}s
- * and return their attributes. This interface gives a standard way for
- * parts of the broker to set up and configure statistics generation.
+ * calls these methods to retrieve the underlying statistics values.
+ * This interface gives a standard way for
+ * parts of the broker to set up and configure statistics collection.
  * <p>
  * When creating these objects, there should be a parent/child relationship
  * between them, such that the lowest level gatherer can record statistics if
@@ -37,60 +37,46 @@ public interface StatisticsGatherer
 {
     /**
      * This method is responsible for registering the receipt of a message
-     * with the counters, and also for passing this notification to any parent
-     * {@link StatisticsGatherer}s. If statistics generation is not enabled,
-     * then this method should simple delegate to the parent gatherer.
-     * 
+     * with the counters.
+     *
      * @param messageSize the size in bytes of the delivered message
-     * @param timestamp the time the message was delivered
      */
-    void registerMessageReceived(long messageSize, long timestamp);
+    void registerMessageReceived(long messageSize);
     
     /**
      * This method is responsible for registering the delivery of a message
-     * with the counters. Message delivery is recorded by the counter using
-     * the current system time, as opposed to the message timestamp.
+     * with the counters.
      * 
      * @param messageSize the size in bytes of the delivered message
-     * @see #registerMessageReceived(long, long)
      */
     void registerMessageDelivered(long messageSize);
     
     /**
-     * Gives access to the {@link StatisticsCounter} that is used to count
-     * delivered message statistics.
+     * Returns a number of delivered messages
      * 
-     * @return the {@link StatisticsCounter} that counts delivered messages
+     * @return the number of delivered messages
      */
-    StatisticsCounter getMessageDeliveryStatistics();
+    long getMessagesOut();
     
     /**
-     * Gives access to the {@link StatisticsCounter} that is used to count
-     * received message statistics.
+     * Returns a number of received messages
      * 
-     * @return the {@link StatisticsCounter} that counts received messages
+     * @return the number of received messages
      */
-    StatisticsCounter getMessageReceiptStatistics();
+    long getMessagesIn();
     
     /**
-     * Gives access to the {@link StatisticsCounter} that is used to count
-     * delivered message size statistics.
+     * Returns a number of delivered bytes
      * 
-     * @return the {@link StatisticsCounter} that counts delivered bytes
+     * @return the number of delivered bytes
      */
-    StatisticsCounter getDataDeliveryStatistics();
+    long getBytesOut();
     
     /**
-     * Gives access to the {@link StatisticsCounter} that is used to count
-     * received message size statistics.
+     * Returns a number of received bytes
      * 
-     * @return the {@link StatisticsCounter} that counts received bytes
+     * @return the number of received bytes
      */
-    StatisticsCounter getDataReceiptStatistics();
-    
-    /**
-     * Reset the counters for this, and any child {@link StatisticsGatherer}s.
-     */
-    void resetStatistics();
+    long getBytesIn();
 
 }

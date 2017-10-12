@@ -273,10 +273,6 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
             changesConfiguredObjectState = false)
     void importMessageStore(@Param(name="source", description = "Extract file", mandatory = true)String source);
 
-    @Override
-    @ManagedOperation(description = "Resets statistics on this object and all child objects", changesConfiguredObjectState = false, nonModifying = true)
-    void resetStatistics();
-
     @ManagedOperation(nonModifying = true,
             description = "Returns metadata concerning the current connection",
             changesConfiguredObjectState = false,

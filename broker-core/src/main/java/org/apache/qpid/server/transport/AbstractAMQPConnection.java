@@ -68,7 +68,6 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
-import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.transport.network.NetworkConnection;
 import org.apache.qpid.server.transport.network.Ticker;
@@ -106,7 +105,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     private String _clientId;
     private volatile boolean _stopped;
-    private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
+    private final AtomicLong _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
     private final SettableFuture<Void> _transportClosedFuture = SettableFuture.create();
     private final SettableFuture<Void> _modelClosedFuture = SettableFuture.create();
     private final AtomicBoolean _modelClosing = new AtomicBoolean();
@@ -148,10 +147,10 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
         updateAccessControllerContext();
 
-        _messagesDelivered = new StatisticsCounter("messages-delivered-" + getConnectionId());
-        _dataDelivered = new StatisticsCounter("data-delivered-" + getConnectionId());
-        _messagesReceived = new StatisticsCounter("messages-received-" + getConnectionId());
-        _dataReceived = new StatisticsCounter("data-received-" + getConnectionId());
+        _messagesDelivered = new AtomicLong();
+        _dataDelivered = new AtomicLong();
+        _messagesReceived = new AtomicLong();
+        _dataReceived = new AtomicLong();
 
         _transportClosedFuture.addListener(
                 new Runnable()
@@ -292,11 +291,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         return _connectionId;
     }
 
-    private StatisticsCounter getMessageDeliveryStatistics()
-    {
-        return _messagesDelivered;
-    }
-
     @Override
     public String getRemoteAddressString()
     {
@@ -428,16 +422,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         return _clientId;
     }
 
-    private StatisticsCounter getDataReceiptStatistics()
-    {
-        return _dataReceived;
-    }
-
-    private StatisticsCounter getDataDeliveryStatistics()
-    {
-        return _dataDelivered;
-    }
-
     @Override
     public final SocketAddress getRemoteSocketAddress()
     {
@@ -447,31 +431,17 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     @Override
     public void registerMessageDelivered(long messageSize)
     {
-        _messagesDelivered.registerEvent(1L);
-        _dataDelivered.registerEvent(messageSize);
+        _messagesDelivered.incrementAndGet();
+        _dataDelivered.addAndGet(messageSize);
         _statisticsGatherer.registerMessageDelivered(messageSize);
     }
 
     @Override
-    public void registerMessageReceived(long messageSize, long timestamp)
+    public void registerMessageReceived(long messageSize)
     {
-        _messagesReceived.registerEvent(1L, timestamp);
-        _dataReceived.registerEvent(messageSize, timestamp);
-        _statisticsGatherer.registerMessageReceived(messageSize, timestamp);
-    }
-
-    @Override
-    public final void resetStatistics()
-    {
-        _messagesDelivered.reset();
-        _dataDelivered.reset();
-        _messagesReceived.reset();
-        _dataReceived.reset();
-    }
-
-    private StatisticsCounter getMessageReceiptStatistics()
-    {
-        return _messagesReceived;
+        _messagesReceived.incrementAndGet();
+        _dataReceived.addAndGet(messageSize);
+        _statisticsGatherer.registerMessageReceived(messageSize);
     }
 
     public void setClientProduct(final String clientProduct)
@@ -661,25 +631,25 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     @Override
     public long getBytesIn()
     {
-        return getDataReceiptStatistics().getTotal();
+        return _dataReceived.get();
     }
 
     @Override
     public long getBytesOut()
     {
-        return getDataDeliveryStatistics().getTotal();
+        return _dataDelivered.get();
     }
 
     @Override
     public long getMessagesIn()
     {
-        return getMessageReceiptStatistics().getTotal();
+        return _messagesReceived.get();
     }
 
     @Override
     public long getMessagesOut()
     {
-        return getMessageDeliveryStatistics().getTotal();
+        return _messagesDelivered.get();
     }
 
     public AccessControlContext getAccessControllerContext()

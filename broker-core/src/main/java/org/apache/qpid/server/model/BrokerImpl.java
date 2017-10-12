@@ -40,6 +40,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
@@ -77,8 +78,6 @@ import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
 import org.apache.qpid.server.security.group.GroupPrincipal;
-import org.apache.qpid.server.stats.StatisticsCounter;
-import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.stats.StatisticsReportingTask;
 import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
@@ -115,7 +114,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private AuthenticationProvider<?> _managementModeAuthenticationProvider;
 
-    private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
+    private final AtomicLong _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
 
     @ManagedAttributeField
     private int _statisticsReportingPeriod;
@@ -166,10 +165,10 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         QpidServiceLoader qpidServiceLoader = new QpidServiceLoader();
         final Set<String> systemNodeCreatorTypes = qpidServiceLoader.getInstancesByType(SystemNodeCreator.class).keySet();
         _virtualHostPropertiesNodeEnabled = systemNodeCreatorTypes.contains(VirtualHostPropertiesNodeCreator.TYPE);
-        _messagesDelivered = new StatisticsCounter("messages-delivered");
-        _dataDelivered = new StatisticsCounter("bytes-delivered");
-        _messagesReceived = new StatisticsCounter("messages-received");
-        _dataReceived = new StatisticsCounter("bytes-received");
+        _messagesDelivered = new AtomicLong();
+        _dataDelivered = new AtomicLong();
+        _messagesReceived = new AtomicLong();
+        _dataReceived = new AtomicLong();
 
 
     }
@@ -641,30 +640,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                        });
     }
 
-    @Override
-    public long getBytesIn()
-    {
-        return getDataReceiptStatistics().getTotal();
-    }
-
-    @Override
-    public long getBytesOut()
-    {
-        return getDataDeliveryStatistics().getTotal();
-    }
-
-    @Override
-    public long getMessagesIn()
-    {
-        return getMessageReceiptStatistics().getTotal();
-    }
-
-    @Override
-    public long getMessagesOut()
-    {
-        return getMessageDeliveryStatistics().getTotal();
-    }
-
     @SuppressWarnings("unchecked")
     @Override
     protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
@@ -834,15 +809,15 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @Override
     public void registerMessageDelivered(long messageSize)
     {
-        _messagesDelivered.registerEvent(1L);
-        _dataDelivered.registerEvent(messageSize);
+        _messagesDelivered.incrementAndGet();
+        _dataDelivered.addAndGet(messageSize);
     }
 
     @Override
-    public void registerMessageReceived(long messageSize, long timestamp)
+    public void registerMessageReceived(long messageSize)
     {
-        _messagesReceived.registerEvent(1L, timestamp);
-        _dataReceived.registerEvent(messageSize, timestamp);
+        _messagesReceived.incrementAndGet();
+        _dataReceived.addAndGet(messageSize);
     }
 
     @Override
@@ -864,45 +839,27 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     }
 
     @Override
-    public StatisticsCounter getMessageReceiptStatistics()
+    public long getMessagesIn()
     {
-        return _messagesReceived;
+        return _messagesReceived.get();
     }
 
     @Override
-    public StatisticsCounter getDataReceiptStatistics()
+    public long getBytesIn()
     {
-        return _dataReceived;
+        return _dataReceived.get();
     }
 
     @Override
-    public StatisticsCounter getMessageDeliveryStatistics()
+    public long getMessagesOut()
     {
-        return _messagesDelivered;
+        return _messagesDelivered.get();
     }
 
     @Override
-    public StatisticsCounter getDataDeliveryStatistics()
+    public long getBytesOut()
     {
-        return _dataDelivered;
-    }
-
-    @Override
-    public void resetStatistics()
-    {
-        _messagesDelivered.reset();
-        _dataDelivered.reset();
-        _messagesReceived.reset();
-        _dataReceived.reset();
-
-        for (VirtualHostNode<?> virtualHostNode : getChildren(VirtualHostNode.class))
-        {
-            VirtualHost<?> virtualHost = virtualHostNode.getVirtualHost();
-            if (virtualHost instanceof StatisticsGatherer)
-            {
-                ((StatisticsGatherer)virtualHost).resetStatistics();
-            }
-        }
+        return _dataDelivered.get();
     }
 
     @Override

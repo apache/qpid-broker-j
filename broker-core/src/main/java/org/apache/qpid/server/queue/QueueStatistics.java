@@ -241,21 +241,4 @@ final class QueueStatistics
         _expiredSize.addAndGet(size);
     }
 
-    void reset()
-    {
-        _availableCountHwm.set(0);
-        _availableSizeHwm.set(0L);
-        _queueCountHwm.set(0);
-        _queueSizeHwm.set(0L);
-        _enqueueCount.set(0L);
-        _enqueueSize.set(0L);
-        _dequeueCount.set(0L);
-        _dequeueSize.set(0L);
-        _persistentEnqueueCount.set(0L);
-        _persistentEnqueueSize.set(0L);
-        _persistentDequeueCount.set(0L);
-        _persistentDequeueSize.set(0L);
-        _expiredCount.set(0);
-        _expiredSize.set(0);
-    }
 }
