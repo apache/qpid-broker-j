@@ -1111,6 +1111,55 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected member of update set", Sets.newHashSet(TestSingleton.DESCRIPTION),
                      object.takeLastReportedSetAttributes());
     }
+
+    public void testSetContextVariable()
+    {
+        final String objectName = "myName";
+        final String contextVariableName = "myContextVariable";
+        final String contextVariableValue = "myContextVariableValue";
+
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                Collections.singletonMap(TestSingleton.NAME, objectName),
+                                                                null);
+
+        String previousValue = object.setContextVariable(contextVariableName, contextVariableValue);
+
+        assertNull("Previous value should be null", previousValue);
+
+        Map<String, String> context = object.getContext();
+        assertTrue("Context variable should be present in context", context.containsKey(contextVariableName));
+        assertEquals("Unexpected context variable", contextVariableValue, context.get(contextVariableName));
+
+        previousValue = object.setContextVariable(contextVariableName, "newValue");
+
+        assertEquals("Unexpected previous value", contextVariableValue, previousValue);
+    }
+
+    public void testRemoveContextVariable()
+    {
+        final String objectName = "myName";
+        final String contextVariableName = "myContextVariable";
+        final String contextVariableValue = "myContextVariableValue";
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(TestSingleton.NAME, objectName);
+        attributes.put(TestSingleton.CONTEXT, Collections.singletonMap(contextVariableName, contextVariableValue));
+
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes, null);
+
+        Map<String, String> context = object.getContext();
+        assertEquals("Unexpected context variable", contextVariableValue, context.get(contextVariableName));
+
+        String previousValue = object.removeContextVariable(contextVariableName);
+        assertEquals("Unexpected context variable value", contextVariableValue, previousValue);
+
+        context = object.getContext();
+        assertFalse("Context variable should not be present in context", context.containsKey(contextVariableName));
+
+        previousValue = object.removeContextVariable(contextVariableName);
+        assertNull("Previous value should be null", previousValue);
+    }
+
     private Subject createTestAuthenticatedSubject(final String username)
     {
         return new Subject(true,

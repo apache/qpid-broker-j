@@ -176,6 +176,19 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
     Map<String, Object> getStatistics(@Param(name = "statistics", defaultValue = "[]",
             description = "Optional list of statistic values to retrieve") List<String> statistics);
 
+    @ManagedOperation(description = "Set context variable with given name to given value."
+                                    + " Previous value is returned or null if not set directly on configured object.",
+            changesConfiguredObjectState = true,
+            skipAclCheck = true)
+    String setContextVariable(@Param(name = "name", description = "Context variable name") String name,
+                              @Param(name = "value", description = "Context variable value") String value);
+
+    @ManagedOperation(description = "Remove context variable with given name."
+                                    + " Variable value is returned or null if not set directly on configured object.",
+            changesConfiguredObjectState = true,
+            skipAclCheck = true)
+    String removeContextVariable(@Param(name = "name", description = "Context variable name") String name);
+
     /**
      * Get the names of attributes that are set on this object
      *

@@ -3184,6 +3184,23 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return map;
     }
 
+    @Override
+    public String setContextVariable(final String name, final String value)
+    {
+        Map<String, String> context = new LinkedHashMap<>(getContext());
+        String previousValue = context.put(name, value);
+        setAttributes(Collections.singletonMap(CONTEXT, context));
+        return previousValue;
+    }
+
+    @Override
+    public String removeContextVariable(final String name)
+    {
+        Map<String, String> context = new LinkedHashMap<>(getContext());
+        String previousValue = context.remove(name);
+        setAttributes(Collections.singletonMap(CONTEXT, context));
+        return previousValue;
+    }
 
     @Override
     public <Y extends ConfiguredObject<Y>> Y findConfiguredObject(Class<Y> clazz, String name)
