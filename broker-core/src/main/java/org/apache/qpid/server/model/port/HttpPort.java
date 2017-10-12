@@ -69,7 +69,7 @@ public interface HttpPort<X extends HttpPort<X>> extends Port<X>
 
     String TLS_SESSION_CACHE_SIZE = "qpid.port.http.tlsSessionCacheSize";
     @SuppressWarnings("unused")
-    @ManagedContextDefault(name = TLS_SESSION_CACHE_SIZE, description = "TLS session cache size for HTTP ports (seconds).")
+    @ManagedContextDefault(name = TLS_SESSION_CACHE_SIZE, description = "TLS session cache size for HTTP ports.")
     int DEFAULT_TLS_SESSION_CACHE_SIZE = 1000;
 
     @ManagedAttribute(defaultValue = "*")

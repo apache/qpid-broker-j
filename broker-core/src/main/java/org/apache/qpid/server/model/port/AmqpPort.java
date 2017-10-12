@@ -123,7 +123,7 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
 
     String TLS_SESSION_CACHE_SIZE = "qpid.port.amqp.tlsSessionCacheSize";
     @SuppressWarnings("unused")
-    @ManagedContextDefault(name = TLS_SESSION_CACHE_SIZE, description = "TLS session cache size for AMQP ports (seconds).")
+    @ManagedContextDefault(name = TLS_SESSION_CACHE_SIZE, description = "TLS session cache size for AMQP ports.")
     int DEFAULT_TLS_SESSION_CACHE_SIZE = 100;
 
     String CONNECTION_PROPERTY_ENRICHERS = "qpid.port.connection_property_enrichers";
