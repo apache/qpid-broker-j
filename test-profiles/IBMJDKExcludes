@@ -26,3 +26,8 @@ org.apache.qpid.disttest.results.ResultsXmlWriterTest#*
 # https://www.ibm.com/support/knowledgecenter/en/SSYKE2_8.0.0/com.ibm.java.security.component.80.doc/security-component/jsse2Docs/knowndiffsun.html
 org.apache.qpid.server.security.FileTrustStoreTest#testUseOfExpiredTrustAnchorAllowed
 
+# (QPID-7955) Behaviourial difference between the IBM JDK and the Open JDK
+# https://www.ibm.com/developerworks/community/forums/html/topic?id=8482d948-665c-47a2-862e-457e49ac71a4&ps=25
+org.apache.qpid.server.logging.logback.Logback1027WorkaroundTurboFilterTest#testSuppressedExceptionRecursion
+org.apache.qpid.server.logging.logback.Logback1027WorkaroundTurboFilterTest#testInitCauseRecursion
+
