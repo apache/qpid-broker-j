@@ -67,6 +67,9 @@ public class StressTestClient
     private static final String REPORT_MOD_ARG = "reportmod";
     private static final String TRANSACTED_ARG = "transacted";
     private static final String TX_BATCH_ARG = "txbatch";
+    private static final String CLOSE_SESSION_ARG = "closeSession";
+    private static final String PAUSE_AFTER_CONNECTION_OPEN_ARG = "pauseAfterConnectionOpen";
+    private static final String PAUSE_BEFORE_CONNECTION_CLOSE_ARG = "pauseBeforeConnectionClose";
     private static final String ITERATIONS = "iterations";
     private static final String CONSUMER_MESSAGE_COUNT = "consumerMessageCount";
     private static final String CONSUMER_SELECTOR = "selector";
@@ -90,6 +93,9 @@ public class StressTestClient
     private static final String REPORT_MOD_DEFAULT = "1";
     private static final String TRANSACTED_DEFAULT = "false";
     private static final String TX_BATCH_DEFAULT = "1";
+    private static final String CLOSE_SESSION_DEFAULT = "false";
+    private static final String PAUSE_AFTER_CONNECTION_OPEN_DEFAULT = "false";
+    private static final String PAUSE_BEFORE_CONNECTION_CLOSE_DEFAULT = "false";
     private static final String ITERATIONS_DEFAULT = "1";
     private static final String CONSUMERS_SELECTOR_DEFAULT = "";
     private static final String CLASS = "StressTestClient";
@@ -121,6 +127,9 @@ public class StressTestClient
         options.put(REPORT_MOD_ARG, REPORT_MOD_DEFAULT);
         options.put(TRANSACTED_ARG, TRANSACTED_DEFAULT);
         options.put(TX_BATCH_ARG, TX_BATCH_DEFAULT);
+        options.put(CLOSE_SESSION_ARG, CLOSE_SESSION_DEFAULT);
+        options.put(PAUSE_AFTER_CONNECTION_OPEN_ARG, PAUSE_AFTER_CONNECTION_OPEN_DEFAULT);
+        options.put(PAUSE_BEFORE_CONNECTION_CLOSE_ARG, PAUSE_BEFORE_CONNECTION_CLOSE_DEFAULT);
         options.put(ITERATIONS, ITERATIONS_DEFAULT);
         options.put(CONSUMER_SELECTOR, CONSUMERS_SELECTOR_DEFAULT);
         options.put(CONSUMER_MESSAGE_COUNT, "");
@@ -178,6 +187,9 @@ public class StressTestClient
         int reportingMod = Integer.parseInt(options.get(REPORT_MOD_ARG));
         boolean transacted = Boolean.valueOf(options.get(TRANSACTED_ARG));
         int txBatch = Integer.parseInt(options.get(TX_BATCH_ARG));
+        boolean closeSession = Boolean.valueOf(options.get(CLOSE_SESSION_ARG));
+        boolean pauseAfterConnectionOpen = Boolean.valueOf(options.get(PAUSE_AFTER_CONNECTION_OPEN_ARG));
+        boolean pauseBeforeConnectionClose = Boolean.valueOf(options.get(PAUSE_BEFORE_CONNECTION_CLOSE_ARG));
         int iterations = Integer.parseInt(options.get(ITERATIONS));
         String consumerSelector =  options.get(CONSUMER_SELECTOR);
         int consumerMessageCount = !"".equals(options.get(CONSUMER_MESSAGE_COUNT)) ?
@@ -236,6 +248,13 @@ public class StressTestClient
 
                     connectionList.add(conn);
                     conn.start();
+
+                    if (pauseAfterConnectionOpen)
+                    {
+                        System.out.println(String.format("Connection %d is open. Press any key to continue...", co));
+                        System.in.read();
+                    }
+
                     for (int se= 1; se<= numSessions ; se++)
                     {
                         if( se % reportingMod == 0)
@@ -273,6 +292,7 @@ public class StressTestClient
                             }
 
                             MessageConsumer consumer = null;
+                            MessageConsumer[] consumers = new MessageConsumer[numConsumers];
                             for(int cns = 1 ; cns <= numConsumers ; cns++)
                             {
                                 if( cns % reportingMod == 0)
@@ -280,6 +300,7 @@ public class StressTestClient
                                     System.out.println(CLASS + ": Creating Consumer " + cns);
                                 }
                                 consumer = sess.createConsumer(destination, consumerSelector);
+                                consumers[cns - 1] = consumer;
                             }
 
                             MessageProducer[] producers = new MessageProducer[numProducers];
@@ -360,7 +381,15 @@ public class StressTestClient
                                 }
                             }
 
-                            if(closeConsumers)
+                            if (closeConsumers)
+                            {
+                                for (MessageConsumer messageConsumer: consumers)
+                                {
+                                    messageConsumer.close();
+                                }
+                            }
+
+                            if(closeSession)
                             {
                                 sess.close();
                             }
@@ -426,6 +455,14 @@ public class StressTestClient
                         System.out.println(CLASS + ": Closing connection " + (connection+1));
                     }
                     Connection c = connectionList.get(connection);
+
+                    if (pauseBeforeConnectionClose)
+                    {
+                        System.out.println(String.format(
+                                "Connection %d is about to be closed. Press any key to continue...",
+                                connection));
+                        System.in.read();
+                    }
                     c.close();
                 }
 
