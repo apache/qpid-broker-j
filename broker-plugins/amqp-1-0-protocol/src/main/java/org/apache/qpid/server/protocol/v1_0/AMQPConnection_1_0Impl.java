@@ -59,8 +59,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
-import org.apache.qpid.server.common.ServerPropertyNames;
-import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -69,6 +67,7 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.plugin.ConnectionPropertyEnricher;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
@@ -249,10 +248,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         super(broker, network, port, transport, Protocol.AMQP_1_0, id, aggregateTicker);
 
         _subjectCreator = port.getSubjectCreator(transport.isSecure(), network.getSelectedHost());
-        _properties.put(Symbol.valueOf(ServerPropertyNames.PRODUCT), CommonProperties.getProductName());
-        _properties.put(Symbol.valueOf(ServerPropertyNames.VERSION), CommonProperties.getReleaseVersion());
-        _properties.put(Symbol.valueOf(ServerPropertyNames.QPID_BUILD), CommonProperties.getBuildVersion());
-        _properties.put(Symbol.valueOf(ServerPropertyNames.QPID_INSTANCE_NAME), broker.getName());
 
         List<Symbol> offeredCapabilities = new ArrayList<>();
         offeredCapabilities.add(ANONYMOUS_RELAY);
@@ -1692,6 +1687,16 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     private void sendOpen(final int channelMax, final int maxFrameSize)
     {
         Open open = new Open();
+
+        Map<String,Object> props = Collections.emptyMap();
+        for(ConnectionPropertyEnricher enricher : getPort().getConnectionPropertyEnrichers())
+        {
+            props = enricher.addConnectionProperties(this, props);
+        }
+        for(Map.Entry<String,Object> entry : props.entrySet())
+        {
+            _properties.put(Symbol.valueOf(entry.getKey()), entry.getValue());
+        }
 
         if (_receivingSessions == null)
         {

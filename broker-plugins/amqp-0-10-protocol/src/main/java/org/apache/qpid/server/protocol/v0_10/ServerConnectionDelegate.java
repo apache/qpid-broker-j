@@ -27,7 +27,6 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -35,11 +34,10 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.common.ServerPropertyNames;
-import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.plugin.ConnectionPropertyEnricher;
 import org.apache.qpid.server.properties.ConnectionStartProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.*;
 import org.apache.qpid.server.security.SubjectCreator;
@@ -59,7 +57,7 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     private List<Object> _locales;
     private List<Object> _mechanisms;
 
-    private final Broker _broker;
+    private final Broker<?> _broker;
     private int _maxNoOfChannels;
     private Map<String,Object> _clientProperties;
     private final SubjectCreator _subjectCreator;
@@ -86,7 +84,6 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     {
         _port = port;
         _broker = (Broker<?>) port.getParent();
-        _clientProperties = createConnectionProperties((Broker<?>) port.getParent());
         _mechanisms = new ArrayList<>(port.getAuthenticationProvider().getAvailableMechanisms(secure));
 
         _maxNoOfChannels = port.getSessionCountLimit();
@@ -166,42 +163,13 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     {
         assertState(serverConnection, ConnectionState.INIT);
         serverConnection.send(new ProtocolHeader(1, 0, 10));
-        serverConnection.sendConnectionStart(_clientProperties, _mechanisms, Collections.singletonList((Object)"en_US"));
+        Map<String,Object> props = Collections.emptyMap();
+        for(ConnectionPropertyEnricher enricher : _port.getConnectionPropertyEnrichers())
+        {
+            props = enricher.addConnectionProperties(serverConnection.getAmqpConnection(), props);
+        }
+        serverConnection.sendConnectionStart(props, _mechanisms, Collections.singletonList((Object)"en_US"));
         _state = ConnectionState.AWAIT_START_OK;
-    }
-
-    private static List<String> getFeatures(Broker<?> broker)
-    {
-        String brokerDisabledFeatures = System.getProperty(Broker.PROPERTY_DISABLED_FEATURES);
-        final List<String> features = new ArrayList<String>();
-        if (brokerDisabledFeatures == null || !brokerDisabledFeatures.contains(ServerPropertyNames.FEATURE_QPID_JMS_SELECTOR))
-        {
-            features.add(ServerPropertyNames.FEATURE_QPID_JMS_SELECTOR);
-        }
-
-        return Collections.unmodifiableList(features);
-    }
-
-    private static Map<String, Object> createConnectionProperties(final Broker<?> broker)
-    {
-        final Map<String,Object> map = new HashMap<String,Object>();
-        // Federation tag is used by the client to identify the broker instance
-        map.put(ServerPropertyNames.FEDERATION_TAG, broker.getId().toString());
-        final List<String> features = getFeatures(broker);
-        if (features != null && features.size() > 0)
-        {
-            map.put(ServerPropertyNames.QPID_FEATURES, features);
-        }
-
-        map.put(ServerPropertyNames.PRODUCT, CommonProperties.getProductName());
-        map.put(ServerPropertyNames.VERSION, CommonProperties.getReleaseVersion());
-        map.put(ServerPropertyNames.QPID_BUILD, CommonProperties.getBuildVersion());
-        map.put(ServerPropertyNames.QPID_INSTANCE_NAME, broker.getName());
-        map.put(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED, String.valueOf(broker.isMessageCompressionEnabled()));
-        map.put(ConnectionStartProperties.QPID_VIRTUALHOST_PROPERTIES_SUPPORTED, String.valueOf(broker.isVirtualHostPropertiesNodeEnabled()));
-        map.put(ConnectionStartProperties.QPID_QUEUE_LIFETIME_SUPPORTED, Boolean.TRUE.toString());
-
-        return map;
     }
 
     @Override

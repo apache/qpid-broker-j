@@ -48,10 +48,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.QpidException;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.common.ServerPropertyNames;
-import org.apache.qpid.server.configuration.CommonProperties;
-import org.apache.qpid.server.properties.ConnectionStartProperties;
-import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.model.Broker;
@@ -60,7 +56,10 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.plugin.ConnectionPropertyEnricher;
+import org.apache.qpid.server.properties.ConnectionStartProperties;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.transport.*;
 import org.apache.qpid.server.security.SubjectCreator;
@@ -70,15 +69,15 @@ import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
+import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
+import org.apache.qpid.server.transport.TransportException;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.NoopConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
-import org.apache.qpid.server.transport.ByteBufferSender;
-import org.apache.qpid.server.transport.TransportException;
 
 public class AMQPConnection_0_8Impl
         extends AbstractAMQPConnection<AMQPConnection_0_8Impl, AMQPConnection_0_8Impl>
@@ -332,24 +331,13 @@ public class AMQPConnection_0_8Impl
 
             String locales = "en_US";
 
+            Map<String,Object> props = Collections.emptyMap();
+            for(ConnectionPropertyEnricher enricher : getPort().getConnectionPropertyEnrichers())
+            {
+                props = enricher.addConnectionProperties(this, props);
+            }
 
-            FieldTable serverProperties = FieldTableFactory.newFieldTable();
-
-            serverProperties.setString(ServerPropertyNames.PRODUCT,
-                    CommonProperties.getProductName());
-            serverProperties.setString(ServerPropertyNames.VERSION,
-                    CommonProperties.getReleaseVersion());
-            serverProperties.setString(ServerPropertyNames.QPID_BUILD,
-                    CommonProperties.getBuildVersion());
-            serverProperties.setString(ServerPropertyNames.QPID_INSTANCE_NAME,
-                    getBroker().getName());
-            serverProperties.setString(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE,
-                    String.valueOf(_closeWhenNoRoute));
-            serverProperties.setString(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED,
-                                       String.valueOf(getBroker().isMessageCompressionEnabled()));
-            serverProperties.setString(ConnectionStartProperties.QPID_CONFIRMED_PUBLISH_SUPPORTED, Boolean.TRUE.toString());
-            serverProperties.setString(ConnectionStartProperties.QPID_VIRTUALHOST_PROPERTIES_SUPPORTED, String.valueOf(getBroker().isVirtualHostPropertiesNodeEnabled()));
-            serverProperties.setString(ConnectionStartProperties.QPID_QUEUE_LIFETIME_SUPPORTED, Boolean.TRUE.toString());
+            FieldTable serverProperties = FieldTable.convertToFieldTable(props);
 
             AMQMethodBody responseBody = getMethodRegistry().createConnectionStartBody((short) getProtocolMajorVersion(),
                                                                                        (short) pv.getActualMinorVersion(),

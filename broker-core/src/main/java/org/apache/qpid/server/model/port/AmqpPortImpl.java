@@ -23,10 +23,12 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.net.SocketAddress;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -60,6 +62,7 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.model.VirtualHostNameAlias;
+import org.apache.qpid.server.plugin.ConnectionPropertyEnricher;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.TransportProviderFactory;
@@ -109,7 +112,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     private volatile int _heartBeatDelay;
     private volatile int _tlsSessionTimeout;
     private volatile int _tlsSessionCacheSize;
-
+    private volatile List<ConnectionPropertyEnricher> _connectionPropertyEnrichers;
 
     @ManagedObjectFactoryConstructor
     public AmqpPortImpl(Map<String, Object> attributes, Container<?> container)
@@ -200,6 +203,25 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
         _heartBeatDelay = getContextValue(Integer.class, AmqpPort.HEART_BEAT_DELAY);
         _tlsSessionTimeout = getContextValue(Integer.class, AmqpPort.TLS_SESSION_TIMEOUT);
         _tlsSessionCacheSize = getContextValue(Integer.class, AmqpPort.TLS_SESSION_CACHE_SIZE);
+
+        @SuppressWarnings("unchecked")
+        List<String> configurationPropertyEnrichers = getContextValue(List.class, AmqpPort.CONNECTION_PROPERTY_ENRICHERS);
+        List<ConnectionPropertyEnricher> enrichers = new ArrayList<>(configurationPropertyEnrichers.size());
+        final Map<String, ConnectionPropertyEnricher> enrichersByType =
+                new QpidServiceLoader().getInstancesByType(ConnectionPropertyEnricher.class);
+        for(String enricherName : configurationPropertyEnrichers)
+        {
+            ConnectionPropertyEnricher enricher = enrichersByType.get(enricherName);
+            if(enricher != null)
+            {
+                enrichers.add(enricher);
+            }
+            else
+            {
+                LOGGER.warn("Ignoring unknown Connection Property Enricher type: '"+enricherName+"' on port " + this.getName());
+            }
+        }
+        _connectionPropertyEnrichers = Collections.unmodifiableList(enrichers);
     }
 
     @Override
@@ -288,6 +310,12 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     public int getNetworkBufferSize()
     {
         return _container.getNetworkBufferSize();
+    }
+
+    @Override
+    public List<ConnectionPropertyEnricher> getConnectionPropertyEnrichers()
+    {
+        return _connectionPropertyEnrichers;
     }
 
     @Override

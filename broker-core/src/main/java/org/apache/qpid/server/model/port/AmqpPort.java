@@ -21,6 +21,7 @@
 package org.apache.qpid.server.model.port;
 
 import java.net.SocketAddress;
+import java.util.List;
 import java.util.Set;
 
 import javax.net.ssl.SSLContext;
@@ -35,6 +36,7 @@ import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.StatisticType;
 import org.apache.qpid.server.model.StatisticUnit;
 import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.plugin.ConnectionPropertyEnricher;
 
 @ManagedObject( category = false, type = "AMQP", amqpName = "org.apache.qpid.AmqpPort")
 public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
@@ -124,6 +126,12 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
     @ManagedContextDefault(name = TLS_SESSION_CACHE_SIZE, description = "TLS session cache size for AMQP ports (seconds).")
     int DEFAULT_TLS_SESSION_CACHE_SIZE = 100;
 
+    String CONNECTION_PROPERTY_ENRICHERS = "qpid.port.connection_property_enrichers";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = CONNECTION_PROPERTY_ENRICHERS,
+            description = "The connection property enrichers to apply to connections created on this port.")
+    String DEFAULT_CONNECTION_PROTOCOL_ENRICHERS = "[ \"STANDARD\" ] ";
+
     SSLContext getSSLContext();
 
     @ManagedAttribute(defaultValue = "*")
@@ -193,4 +201,6 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
     int decrementConnectionCount();
 
     int getNetworkBufferSize();
+
+    List<ConnectionPropertyEnricher> getConnectionPropertyEnrichers();
 }
