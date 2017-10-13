@@ -29,6 +29,10 @@
   <name>Apache Qpid LogBack Logging Broker Plug-in</name>
   <description>LogBack Logging broker plug-in</description>
 
+  <properties>
+    <qpid.home>${basedir}/../</qpid.home> <!-- override to allow the test exclusions to be found -->
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.apache.qpid</groupId>
