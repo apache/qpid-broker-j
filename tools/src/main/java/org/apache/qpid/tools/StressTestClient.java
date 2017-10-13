@@ -74,6 +74,8 @@ public class StressTestClient
     private static final String PAUSE_AFTER_SESSION_CREATE_ARG = "pauseAfterSessionCreate";
     private static final String PAUSE_BEFORE_SESSION_CLOSE_ARG = "pauseBeforeSessionClose";
     private static final String SESSION_ITERATIONS_ARG = "sessionIterations";
+    private static final String PAUSE_BEFORE_MESSAGING_ARG = "pauseBeforeMessaging";
+    private static final String PAUSE_AFTER_MESSAGING_ARG = "pauseAfterMessaging";
     private static final String MESSAGING_ITERATIONS_ARG = "messagingIterations";
     private static final String CONSUMER_MESSAGE_COUNT = "consumerMessageCount";
     private static final String CONSUMER_SELECTOR = "selector";
@@ -104,6 +106,8 @@ public class StressTestClient
     private static final String PAUSE_AFTER_SESSION_CREATE_DEFAULT = "false";
     private static final String PAUSE_BEFORE_SESSION_CLOSE_DEFAULT = "false";
     private static final String SESSION_ITERATIONS_DEFAULT = "1";
+    private static final String PAUSE_BEFORE_MESSAGING_DEFAULT= "false";
+    private static final String PAUSE_AFTER_MESSAGING_DEFAULT= "false";
     private static final String MESSAGING_ITERATIONS_DEFAULT = "1";
     private static final String CONSUMERS_SELECTOR_DEFAULT = "";
     private static final String CLASS = "StressTestClient";
@@ -142,6 +146,8 @@ public class StressTestClient
         options.put(PAUSE_AFTER_SESSION_CREATE_ARG, PAUSE_AFTER_SESSION_CREATE_DEFAULT);
         options.put(PAUSE_BEFORE_SESSION_CLOSE_ARG, PAUSE_BEFORE_SESSION_CLOSE_DEFAULT);
         options.put(SESSION_ITERATIONS_ARG, SESSION_ITERATIONS_DEFAULT);
+        options.put(PAUSE_BEFORE_MESSAGING_ARG, PAUSE_BEFORE_MESSAGING_DEFAULT);
+        options.put(PAUSE_AFTER_MESSAGING_ARG, PAUSE_AFTER_MESSAGING_DEFAULT);
         options.put(MESSAGING_ITERATIONS_ARG, MESSAGING_ITERATIONS_DEFAULT);
         options.put(CONSUMER_SELECTOR, CONSUMERS_SELECTOR_DEFAULT);
         options.put(CONSUMER_MESSAGE_COUNT, "");
@@ -206,6 +212,8 @@ public class StressTestClient
         boolean pauseAfterSessionCreate = Boolean.valueOf(options.get(PAUSE_AFTER_SESSION_CREATE_ARG));
         boolean pauseBeforeSessionClose = Boolean.valueOf(options.get(PAUSE_BEFORE_SESSION_CLOSE_ARG));
         int sessionIterations = Integer.parseInt(options.get(SESSION_ITERATIONS_ARG));
+        boolean pauseBeforeMessaging = Boolean.valueOf(options.get(PAUSE_BEFORE_MESSAGING_ARG));
+        boolean pauseAfterMessaging = Boolean.valueOf(options.get(PAUSE_AFTER_MESSAGING_ARG));
         int messagingIterations = Integer.parseInt(options.get(MESSAGING_ITERATIONS_ARG));
         String consumerSelector =  options.get(CONSUMER_SELECTOR);
         int consumerMessageCount = !"".equals(options.get(CONSUMER_MESSAGE_COUNT)) ?
@@ -355,6 +363,12 @@ public class StressTestClient
                                     }
                                 }
 
+                                if (pauseBeforeMessaging)
+                                {
+                                    System.out.println("Consumer(s)/Producer(s) created. Press any key to continue...");
+                                    System.in.read();
+                                }
+
                                 for (int iteration = 1; iteration <= messagingIterations; iteration++)
                                 {
                                     if (messagingIterations > 1 && iteration % reportingMod == 0)
@@ -413,6 +427,12 @@ public class StressTestClient
                                             }
                                         }
                                     }
+                                }
+
+                                if (pauseAfterMessaging)
+                                {
+                                    System.out.println("Messaging operations are completed. Press any key to continue...");
+                                    System.in.read();
                                 }
 
                                 if (closeProducers)
