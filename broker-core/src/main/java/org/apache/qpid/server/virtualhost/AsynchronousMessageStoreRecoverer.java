@@ -213,9 +213,11 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             {
                 if (_continueRecovery.get())
                 {
-                    _logger.info("Message id "
-                                 + storedMessage.getMessageNumber()
-                                 + " in store, but not in any queue - removing....");
+                    if (storedMessage.getMetaData().isPersistent())
+                    {
+                        _logger.warn("Message id {} in store, but not in any queue - removing....",
+                                     storedMessage.getMessageNumber());
+                    }
                     storedMessage.remove();
                 }
             }

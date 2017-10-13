@@ -102,7 +102,10 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
         for(StoredMessage<?> m : unusedMessages.values())
         {
-            _logger.warn("Message id " + m.getMessageNumber() + " in store, but not in any queue - removing....");
+            if (m.getMetaData().isPersistent())
+            {
+                _logger.warn("Message id {} in store, but not in any queue - removing....", m.getMessageNumber());
+            }
             m.remove();
         }
         eventLogger.message(logSubject, TransactionLogMessages.RECOVERY_COMPLETE(null, false));
