@@ -1253,6 +1253,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             LinkEndpoint<? extends BaseSource, ? extends BaseTarget> endpoint = _inputHandleToEndpoint.remove(handle);
             endpoint.remoteDetached(detach);
             _endpointToOutputHandle.remove(endpoint);
+            _associatedLinkEndpoints.remove(endpoint);
         }
         else
         {
