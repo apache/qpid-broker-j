@@ -34,9 +34,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -856,69 +856,18 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     private static class QBBTrackingThreadPool extends QueuedThreadPool
     {
-        private final Map<Thread, QpidByteBuffer> _cachedBufferMap = new ConcurrentHashMap<>();
+        private final ThreadFactory _threadFactory;
 
         public QBBTrackingThreadPool(@Name("maxThreads") final int maxThreads, @Name("minThreads") final int minThreads)
         {
             super(maxThreads, minThreads);
-        }
-
-        @Override
-        protected void doStop() throws Exception
-        {
-            try
-            {
-                super.doStop();
-            }
-            finally
-            {
-                for (QpidByteBuffer qpidByteBuffer : _cachedBufferMap.values())
-                {
-                    qpidByteBuffer.dispose();
-                }
-                _cachedBufferMap.clear();
-            }
+            _threadFactory = QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(r -> QBBTrackingThreadPool.super.newThread(r));
         }
 
         @Override
         protected Thread newThread(final Runnable runnable)
         {
-            return super.newThread(() ->
-                {
-                    try
-                    {
-                        runnable.run();
-                    }
-                    finally
-                    {
-                        QpidByteBuffer qbb = _cachedBufferMap.remove(Thread.currentThread());
-                        if (qbb != null)
-                        {
-                            qbb.dispose();
-                        }
-                    }
-            });
-        }
-
-        @Override
-        protected void runJob(final Runnable job)
-        {
-            try
-            {
-                super.runJob(job);
-            }
-            finally
-            {
-                final QpidByteBuffer cachedThreadLocalBuffer = QpidByteBuffer.getCachedThreadLocalBuffer();
-                if (cachedThreadLocalBuffer != null)
-                {
-                    _cachedBufferMap.put(Thread.currentThread(), cachedThreadLocalBuffer);
-                }
-                else
-                {
-                    _cachedBufferMap.remove(Thread.currentThread());
-                }
-            }
+            return _threadFactory.newThread(runnable);
         }
     }
 }

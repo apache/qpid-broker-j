@@ -33,8 +33,6 @@ import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.get
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getUserId;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -127,9 +125,9 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
             }
 
             @Override
-            public Collection<QpidByteBuffer> getContent(final int offset, final int length)
+            public QpidByteBuffer getContent(final int offset, final int length)
             {
-                return Collections.singleton(QpidByteBuffer.wrap(convertedContent, offset, length));
+                return QpidByteBuffer.wrap(convertedContent, offset, length);
             }
 
             @Override

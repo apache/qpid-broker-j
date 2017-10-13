@@ -22,18 +22,17 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-
-import junit.framework.TestCase;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.MessageInstance;
@@ -56,8 +55,9 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSec
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.store.StoredMessage;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ConsumerTarget_1_0Test extends TestCase
+public class ConsumerTarget_1_0Test extends QpidTestCase
 {
     private final AMQPDescribedTypeRegistry _describedTypeRegistry = AMQPDescribedTypeRegistry.newInstance()
                                                                                               .registerTransportLayer()
@@ -98,20 +98,16 @@ public class ConsumerTarget_1_0Test extends TestCase
         final MessageInstance messageInstance = mock(MessageInstance.class);
         when(messageInstance.getMessage()).thenReturn(message);
 
-        AtomicReference<List<QpidByteBuffer>> payload = new AtomicReference<>();
+        AtomicReference<QpidByteBuffer> payloadRef = new AtomicReference<>();
         doAnswer(invocation ->
                  {
                      final Object[] args = invocation.getArguments();
                      Transfer transfer = (Transfer) args[0];
 
-                     List<QpidByteBuffer> transferPayload = transfer.getPayload();
+                     QpidByteBuffer transferPayload = transfer.getPayload();
 
-                     final List<QpidByteBuffer> payloadCopy = new ArrayList<>(transferPayload.size());
-                     for (QpidByteBuffer qpidByteBuffer : transferPayload)
-                     {
-                         payloadCopy.add(qpidByteBuffer.duplicate());
-                     }
-                     payload.set(payloadCopy);
+                     QpidByteBuffer payloadCopy = transferPayload.duplicate();
+                     payloadRef.set(payloadCopy);
                      return null;
                  }).when(_sendingLinkEndpoint).transfer(any(Transfer.class), anyBoolean());
 
@@ -119,11 +115,11 @@ public class ConsumerTarget_1_0Test extends TestCase
 
         verify(_sendingLinkEndpoint, times(1)).transfer(any(Transfer.class), anyBoolean());
 
-        List<QpidByteBuffer> fragments = payload.get();
-
-        final List<EncodingRetainingSection<?>> sections =
-                new SectionDecoderImpl(_describedTypeRegistry.getSectionDecoderRegistry()).parseAll(fragments);
-
+        final List<EncodingRetainingSection<?>> sections;
+        try (QpidByteBuffer payload = payloadRef.get())
+        {
+            sections = new SectionDecoderImpl(_describedTypeRegistry.getSectionDecoderRegistry()).parseAll(payload);
+        }
         Header sentHeader = null;
         for (EncodingRetainingSection<?> section : sections)
         {
@@ -131,11 +127,6 @@ public class ConsumerTarget_1_0Test extends TestCase
             {
                 sentHeader = ((HeaderSection) section).getValue();
             }
-        }
-
-        for (QpidByteBuffer fragment : fragments)
-        {
-            fragment.dispose();
         }
 
         assertNotNull("Header is not found", sentHeader);
@@ -162,6 +153,7 @@ public class ConsumerTarget_1_0Test extends TestCase
                                                                0);
 
         final StoredMessage<MessageMetaData_1_0> storedMessage = mock(StoredMessage.class);
+        when(storedMessage.getContent(eq(0), anyInt())).thenReturn(QpidByteBuffer.emptyQpidByteBuffer());
         when(storedMessage.getMetaData()).thenReturn(metaData);
         return new Message_1_0(storedMessage);
     }

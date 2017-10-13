@@ -23,8 +23,6 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -50,7 +48,7 @@ public class MessageAnnotationsSectionConstructor extends DescribedMapSectionCon
 
     @Override
     protected MessageAnnotationsSection createObject(final DescribedTypeConstructorRegistry describedTypeRegistry,
-                                                     final List<QpidByteBuffer> encodedForm)
+                                                     final QpidByteBuffer encodedForm)
     {
         return new MessageAnnotationsSection(encodedForm);
     }

@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 
@@ -29,8 +27,8 @@ public abstract class AbstractDescribedTypeConstructor<T> implements DescribedTy
 {
     @Override
     public TypeConstructor<T> construct(final Object descriptor,
-                                        final List<QpidByteBuffer> in,
-                                        final int[] originalPositions, final ValueHandler valueHandler)
+                                        final QpidByteBuffer in,
+                                        final int originalPosition, final ValueHandler valueHandler)
             throws AmqpErrorException
     {
         return new TypeConstructorFromUnderlying<>(this, valueHandler.readConstructor(in));
@@ -52,7 +50,7 @@ public abstract class AbstractDescribedTypeConstructor<T> implements DescribedTy
         }
 
         @Override
-        public S construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+        public S construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
             return _describedTypeConstructor.construct(_describedConstructor.construct(in, handler));
         }

@@ -20,11 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
@@ -43,12 +41,12 @@ public class UUIDTypeConstructor implements TypeConstructor<UUID>
     }
 
     @Override
-    public UUID construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    public UUID construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
     {
-        if(QpidByteBufferUtils.hasRemaining(in, 16))
+        if (in.hasRemaining(16))
         {
-            long msb = QpidByteBufferUtils.getLong(in);
-            long lsb = QpidByteBufferUtils.getLong(in);
+            long msb = in.getLong();
+            long lsb = in.getLong();
             return new UUID(msb, lsb);
         }
         else

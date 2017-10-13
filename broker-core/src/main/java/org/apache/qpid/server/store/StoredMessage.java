@@ -20,8 +20,6 @@
 */
 package org.apache.qpid.server.store;
 
-import java.util.Collection;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public interface StoredMessage<M extends StorableMessageMetaData>
@@ -30,7 +28,7 @@ public interface StoredMessage<M extends StorableMessageMetaData>
 
     long getMessageNumber();
 
-    Collection<QpidByteBuffer> getContent(int offset, int length);
+    QpidByteBuffer getContent(int offset, int length);
 
     int getContentSize();
 

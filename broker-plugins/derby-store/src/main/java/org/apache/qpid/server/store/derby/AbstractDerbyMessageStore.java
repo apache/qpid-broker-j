@@ -21,6 +21,7 @@
 package org.apache.qpid.server.store.derby;
 
 
+import java.io.InputStream;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -137,9 +138,9 @@ public abstract class AbstractDerbyMessageStore extends AbstractJDBCMessageStore
     }
 
     @Override
-    protected byte[] getBlobAsBytes(ResultSet rs, int col) throws SQLException
+    protected InputStream getBlobAsInputStream(ResultSet rs, int col) throws SQLException
     {
-        return DerbyUtils.getBlobAsBytes(rs, col);
+        return DerbyUtils.getBlobAsInputStream(rs, col);
     }
 
     @Override

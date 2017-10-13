@@ -67,13 +67,13 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.protocol.v1_0.Response;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
+import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 {
@@ -715,7 +715,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                        .transferDeliveryId(UnsignedInteger.ZERO)
                        .transferDeliveryTag(deliveryTag)
                        .transferMore(true)
-                       .transferPayload(Collections.singletonList(messagePayload[0]))
+                       .transferPayload(messagePayload[0])
                        .transfer();
 
             // 3. detach the link
@@ -740,8 +740,13 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                        .transfer()
                        .sync()
                        .transferMore(false)
-                       .transferPayload(Collections.singletonList(messagePayload[1]))
+                       .transferPayload(messagePayload[1])
                        .transfer();
+
+            for (final QpidByteBuffer payload : messagePayload)
+            {
+                payload.dispose();
+            }
 
             boolean settled = false;
             do

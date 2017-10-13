@@ -22,8 +22,6 @@ package org.apache.qpid.server.transport;
 
 import java.io.IOException;
 import java.nio.channels.ServerSocketChannel;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -35,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.pool.QpidByteBufferDisposingThreadPoolExecutor;
 
 public class NetworkConnectionScheduler
 {
@@ -102,9 +99,17 @@ public class NetworkConnectionScheduler
         try
         {
             _selectorThread = new SelectorThread(this, _numberOfSelectors);
-            _executor = new QpidByteBufferDisposingThreadPoolExecutor(_poolSize, _poolSize,
-                                                                      _threadKeepAliveTimeout, TimeUnit.MINUTES,
-                                                                      new LinkedBlockingQueue<>(), _factory);
+            final int corePoolSize = _poolSize;
+            final int maximumPoolSize = _poolSize;
+            final long keepAliveTime = _threadKeepAliveTimeout;
+            final java.util.concurrent.BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
+            final ThreadFactory factory = _factory;
+            _executor = new ThreadPoolExecutor(corePoolSize,
+                                               maximumPoolSize,
+                                               keepAliveTime,
+                                               TimeUnit.MINUTES,
+                                               workQueue,
+                                               QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(factory));
             _executor.prestartAllCoreThreads();
             _executor.allowCoreThreadTimeOut(true);
             for(int i = 0 ; i < _poolSize; i++)

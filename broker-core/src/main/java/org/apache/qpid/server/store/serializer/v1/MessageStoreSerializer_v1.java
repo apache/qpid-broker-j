@@ -24,7 +24,6 @@ package org.apache.qpid.server.store.serializer.v1;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -305,30 +304,28 @@ public class MessageStoreSerializer_v1 implements MessageStoreSerializer
             MessageRecord messageRecord = (MessageRecord) record;
             long originalMessageNumber = messageRecord.getMessageNumber();
             byte[] metaData = messageRecord.getMetaData();
-            final MessageMetaDataType metaDataType =
-                    MessageMetaDataTypeRegistry.fromOrdinal(metaData[0] & 0xff);
-            QpidByteBuffer buf = QpidByteBuffer.wrap(metaData, 1, metaData.length - 1);
-            final StorableMessageMetaData storableMessageMetaData;
-            try
+            final MessageMetaDataType metaDataType = MessageMetaDataTypeRegistry.fromOrdinal(metaData[0] & 0xff);
+            final MessageHandle<StorableMessageMetaData> handle;
+            try (QpidByteBuffer buf = QpidByteBuffer.wrap(metaData, 1, metaData.length - 1))
             {
-                storableMessageMetaData = metaDataType.createMetaData(Collections.singletonList(buf));
+                try
+                {
+                    StorableMessageMetaData storableMessageMetaData = metaDataType.createMetaData(buf);
+                    handle = store.addMessage(storableMessageMetaData);
+                }
+                catch (ConnectionScopedRuntimeException e)
+                {
+                    throw new IllegalArgumentException("Could not deserialize message metadata", e);
+                }
             }
-            catch (ConnectionScopedRuntimeException e)
-            {
-                throw new IllegalArgumentException("Could not deserialize message metadata", e);
-            }
-            buf.dispose();
-            final MessageHandle<StorableMessageMetaData> handle =
-                    store.addMessage(storableMessageMetaData);
 
-            buf = QpidByteBuffer.wrap(messageRecord.getContent());
-            handle.addContent(buf);
-            final StoredMessage<StorableMessageMetaData> storedMessage =
-                    handle.allContentAdded();
+            try (QpidByteBuffer buf = QpidByteBuffer.wrap(messageRecord.getContent()))
+            {
+                handle.addContent(buf);
+            }
+            final StoredMessage<StorableMessageMetaData> storedMessage = handle.allContentAdded();
             messageNumberMap.put(originalMessageNumber, storedMessage);
             storedMessage.flowToDisk();
-            buf.dispose();
-
 
             record = deserializer.readRecord();
         }

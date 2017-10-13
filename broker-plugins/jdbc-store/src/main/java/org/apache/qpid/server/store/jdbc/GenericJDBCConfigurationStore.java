@@ -22,7 +22,9 @@ package org.apache.qpid.server.store.jdbc;
 import static org.apache.qpid.server.store.jdbc.AbstractJDBCConfigurationStore.State.CLOSED;
 import static org.apache.qpid.server.store.jdbc.AbstractJDBCConfigurationStore.State.CONFIGURED;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.sql.Blob;
 import java.sql.Connection;
@@ -204,17 +206,16 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
 
     }
 
-    protected byte[] getBlobAsBytes(ResultSet rs, int col) throws SQLException
+    protected InputStream getBlobAsInputStream(ResultSet rs, int col) throws SQLException
     {
         if(_useBytesMethodsForBlob)
         {
-            return rs.getBytes(col);
+            return new ByteArrayInputStream(rs.getBytes(col));
         }
         else
         {
             Blob dataAsBlob = rs.getBlob(col);
-            return dataAsBlob.getBytes(1,(int) dataAsBlob.length());
-
+            return dataAsBlob.getBinaryStream();
         }
     }
 
@@ -298,9 +299,9 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
         }
 
         @Override
-        protected byte[] getBlobAsBytes(final ResultSet rs, final int col) throws SQLException
+        protected InputStream getBlobAsInputStream(final ResultSet rs, final int col) throws SQLException
         {
-            return GenericJDBCConfigurationStore.this.getBlobAsBytes(rs, col);
+            return GenericJDBCConfigurationStore.this.getBlobAsInputStream(rs, col);
         }
     }
 

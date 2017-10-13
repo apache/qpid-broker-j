@@ -21,11 +21,9 @@
 package org.apache.qpid.server.protocol.v1_0.codec;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
@@ -37,12 +35,12 @@ public class MapConstructor extends VariableWidthTypeConstructor<Map<Object,Obje
     }
 
     @Override
-    public Map<Object, Object> construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    public Map<Object, Object> construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
     {
         return construct(in, handler, Object.class, Object.class);
     }
 
-    public <T, S> Map<T, S> construct(final List<QpidByteBuffer> in,
+    public <T, S> Map<T, S> construct(final QpidByteBuffer in,
                                       final ValueHandler handler,
                                       Class<T> keyType,
                                       Class<S> valueType) throws AmqpErrorException
@@ -50,7 +48,7 @@ public class MapConstructor extends VariableWidthTypeConstructor<Map<Object,Obje
         int size;
         int count;
 
-        long remaining = QpidByteBufferUtils.remaining(in);
+        long remaining = (long) in.remaining();
         if (remaining < getSize() * 2)
         {
             throw new AmqpErrorException(AmqpError.DECODE_ERROR,
@@ -62,13 +60,13 @@ public class MapConstructor extends VariableWidthTypeConstructor<Map<Object,Obje
 
         if (getSize() == 1)
         {
-            size = QpidByteBufferUtils.get(in) & 0xFF;
-            count = QpidByteBufferUtils.get(in) & 0xFF;
+            size = in.getUnsignedByte();
+            count = in.getUnsignedByte();
         }
         else
         {
-            size = QpidByteBufferUtils.getInt(in);
-            count = QpidByteBufferUtils.getInt(in);
+            size = in.getInt();
+            count = in.getInt();
         }
         remaining -= getSize();
         if (remaining < size)
@@ -84,7 +82,7 @@ public class MapConstructor extends VariableWidthTypeConstructor<Map<Object,Obje
     }
 
 
-    private <T, S> Map<T, S> construct(final List<QpidByteBuffer> in,
+    private <T, S> Map<T, S> construct(final QpidByteBuffer in,
                                        final ValueHandler handler,
                                        final int size,
                                        final int count,

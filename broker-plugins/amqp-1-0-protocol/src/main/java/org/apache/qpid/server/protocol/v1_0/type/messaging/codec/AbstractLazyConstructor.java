@@ -20,9 +20,6 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.TypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
@@ -30,47 +27,28 @@ import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 
 public abstract class AbstractLazyConstructor<T> implements TypeConstructor<T>
 {
-    private final int[] _originalPositions;
+    private final int _originalPosition;
 
-    AbstractLazyConstructor(final int[] originalPositions)
+    AbstractLazyConstructor(final int originalPosition)
     {
-        _originalPositions = originalPositions;
+        _originalPosition = originalPosition;
     }
 
     @Override
-    public final T construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    public final T construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
     {
         skipValue(in);
 
-        List<QpidByteBuffer> encoding = new ArrayList<>();
-        int offset = in.size() - _originalPositions.length;
-        for (int i = offset; i < in.size(); i++)
+        try (QpidByteBuffer encoding = in.duplicate())
         {
-            QpidByteBuffer buf = in.get(i);
-            if (buf.position() == _originalPositions[i - offset])
-            {
-                if (buf.hasRemaining())
-                {
-                    break;
-                }
-            }
-            else
-            {
-                QpidByteBuffer dup = buf.duplicate();
-                dup.position(_originalPositions[i - offset]);
-                dup.limit(buf.position());
-                encoding.add(dup);
-            }
+            encoding.position(_originalPosition);
+            encoding.limit(in.position());
+
+            return createObject(encoding, handler);
         }
-        T object = createObject(encoding, handler);
-        for (QpidByteBuffer buffer : encoding)
-        {
-            buffer.dispose();
-        }
-        return object;
     }
 
-    protected abstract T createObject(final List<QpidByteBuffer> encoding, final ValueHandler handler);
+    protected abstract T createObject(final QpidByteBuffer encoding, final ValueHandler handler);
 
-    protected abstract void skipValue(final List<QpidByteBuffer> in) throws AmqpErrorException;
+    protected abstract void skipValue(final QpidByteBuffer in) throws AmqpErrorException;
 }

@@ -19,12 +19,9 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.util.List;
-
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public class BooleanConstructor
 {
@@ -32,7 +29,7 @@ public class BooleanConstructor
     {
 
         @Override
-        public Boolean construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+        public Boolean construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
             return Boolean.TRUE;
         }
@@ -42,7 +39,7 @@ public class BooleanConstructor
         {
 
             @Override
-            public Boolean construct(final List<QpidByteBuffer> in, final ValueHandler handler)
+            public Boolean construct(final QpidByteBuffer in, final ValueHandler handler)
                     throws AmqpErrorException
             {
                 return Boolean.FALSE;
@@ -52,11 +49,11 @@ public class BooleanConstructor
     {
 
         @Override
-        public Boolean construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+        public Boolean construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
-            if(QpidByteBufferUtils.hasRemaining(in))
+            if (in.hasRemaining())
             {
-                byte b = QpidByteBufferUtils.get(in);
+                byte b = in.get();
                 return b != (byte) 0;
             }
             else

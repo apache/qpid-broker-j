@@ -49,7 +49,8 @@ interface NonBlockingConnectionDelegate
             return _bytesConsumed;
         }
     }
-    WriteResult doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException;
+
+    WriteResult doWrite(Collection<QpidByteBuffer> buffers) throws IOException;
 
     boolean readyForRead();
 

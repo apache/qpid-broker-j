@@ -50,27 +50,26 @@ public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnec
     @Override
     public boolean processData() throws IOException
     {
-        QpidByteBuffer buffer = _netInputBuffer.duplicate();
-        buffer.flip();
-        final boolean hasSufficientData = buffer.remaining() >= NUMBER_OF_BYTES_FOR_TLS_CHECK;
-        if (hasSufficientData)
+        try (QpidByteBuffer buffer = _netInputBuffer.duplicate())
         {
-            final byte[] headerBytes = new byte[NUMBER_OF_BYTES_FOR_TLS_CHECK];
-            buffer.get(headerBytes);
-
-            if (looksLikeSSL(headerBytes))
+            buffer.flip();
+            final boolean hasSufficientData = buffer.remaining() >= NUMBER_OF_BYTES_FOR_TLS_CHECK;
+            if (hasSufficientData)
             {
-                _parent.setTransportEncryption(TransportEncryption.TLS);
-            }
-            else
-            {
-                _parent.setTransportEncryption(TransportEncryption.NONE);
-            }
+                final byte[] headerBytes = new byte[NUMBER_OF_BYTES_FOR_TLS_CHECK];
+                buffer.get(headerBytes);
 
-
+                if (looksLikeSSL(headerBytes))
+                {
+                    _parent.setTransportEncryption(TransportEncryption.TLS);
+                }
+                else
+                {
+                    _parent.setTransportEncryption(TransportEncryption.NONE);
+                }
+            }
+            return hasSufficientData;
         }
-        buffer.dispose();
-        return hasSufficientData;
     }
 
     @Override
@@ -132,6 +131,11 @@ public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnec
     @Override
     public void shutdownInput()
     {
+        if (_netInputBuffer != null)
+        {
+            _netInputBuffer.dispose();
+            _netInputBuffer = null;
+        }
     }
 
     @Override

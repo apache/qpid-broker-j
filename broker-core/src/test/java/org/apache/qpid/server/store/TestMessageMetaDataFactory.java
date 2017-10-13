@@ -20,19 +20,16 @@
  */
 package org.apache.qpid.server.store;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 
 public class TestMessageMetaDataFactory implements MessageMetaDataType.Factory<TestMessageMetaData>
 {
     @Override
-    public TestMessageMetaData createMetaData(List<QpidByteBuffer> bufs)
+    public TestMessageMetaData createMetaData(QpidByteBuffer buf)
     {
-        long id = QpidByteBufferUtils.getLong(bufs);
-        int size = QpidByteBufferUtils.getInt(bufs);
+        long id = buf.getLong();
+        int size = buf.getInt();
 
         return new TestMessageMetaData(id, size);
 

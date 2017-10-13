@@ -22,8 +22,6 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.UUID;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -107,9 +105,9 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
                     }
 
                     @Override
-                    public Collection<QpidByteBuffer> getContent(final int offset, final int length)
+                    public QpidByteBuffer getContent(final int offset, final int length)
                     {
-                        return Collections.singleton(QpidByteBuffer.wrap(messageContent, offset, length));
+                        return QpidByteBuffer.wrap(messageContent, offset, length);
                     }
 
                     @Override

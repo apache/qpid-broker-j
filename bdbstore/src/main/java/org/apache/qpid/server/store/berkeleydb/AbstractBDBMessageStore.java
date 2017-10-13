@@ -21,11 +21,9 @@ package org.apache.qpid.server.store.berkeleydb;
 import static org.apache.qpid.server.store.berkeleydb.BDBUtils.DEFAULT_DATABASE_CONFIG;
 import static org.apache.qpid.server.store.berkeleydb.BDBUtils.abortTransactionSafely;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -62,7 +60,6 @@ import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.store.berkeleydb.entry.PreparedTransaction;
 import org.apache.qpid.server.store.berkeleydb.entry.QueueEntryKey;
-import org.apache.qpid.server.store.berkeleydb.tuple.ByteBufferBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.MessageMetaDataBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.PreparedTransactionBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.QueueEntryBinding;
@@ -88,12 +85,11 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     private static final String BRIDGEDB_NAME = "BRIDGES";
     private static final String LINKDB_NAME = "LINKS";
     private static final String XID_DB_NAME = "XIDS";
-    private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.allocateDirect(0);
 
     private final EventManager _eventManager = new EventManager();
 
     private final DatabaseEntry MESSAGE_METADATA_SEQ_KEY = new DatabaseEntry("MESSAGE_METADATA_SEQ_KEY".getBytes(
-            Charset.forName("UTF-8")));
+            StandardCharsets.UTF_8));
 
     private final SequenceConfig MESSAGE_METADATA_SEQ_CONFIG = SequenceConfig.DEFAULT.
             setAllowCreate(true).
@@ -351,66 +347,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
     }
 
-
-    /**
-     * Fills the provided ByteBuffer with as much content for the specified message as possible, starting
-     * from the specified offset in the message.
-     *
-     * @param messageId The message to get the data for.
-     * @param offset    The offset of the data within the message.
-     * @param dst       The destination of the content read back
-     *
-     * @return The number of bytes inserted into the destination
-     *
-     * @throws org.apache.qpid.server.store.StoreException If the operation fails for any reason, or if the specified message does not exist.
-     */
-    int getContent(long messageId, int offset, ByteBuffer dst) throws StoreException
-    {
-        DatabaseEntry contentKeyEntry = new DatabaseEntry();
-        LongBinding.longToEntry(messageId, contentKeyEntry);
-        DatabaseEntry value = new DatabaseEntry();
-        ByteBufferBinding contentTupleBinding = ByteBufferBinding.getInstance();
-
-
-        getLogger().debug("Message Id: {} Getting content body from offset: {}", messageId, offset);
-
-
-        try
-        {
-
-            int written = 0;
-            OperationStatus status = getMessageContentDb().get(null, contentKeyEntry, value, LockMode.READ_UNCOMMITTED);
-            if (status == OperationStatus.SUCCESS)
-            {
-                QpidByteBuffer buffer = contentTupleBinding.entryToObject(value);
-                int size = buffer.remaining();
-                if (offset > size)
-                {
-                    throw new RuntimeException("Offset " + offset + " is greater than message size " + size
-                                               + " for message id " + messageId + "!");
-
-                }
-
-                written = size - offset;
-                if(written > dst.remaining())
-                {
-                    written = dst.remaining();
-                }
-                buffer = buffer.view(offset, written);
-                buffer.get(dst);
-            }
-            return written;
-        }
-        catch (RuntimeException e)
-        {
-            throw getEnvironmentFacade().handleDatabaseException("Error getting AMQMessage with id "
-                                                                 + messageId
-                                                                 + " to database: "
-                                                                 + e.getMessage(), e);
-        }
-    }
-
-    Collection<QpidByteBuffer> getAllContent(long messageId) throws StoreException
+    QpidByteBuffer getAllContent(long messageId) throws StoreException
     {
         DatabaseEntry contentKeyEntry = new DatabaseEntry();
         LongBinding.longToEntry(messageId, contentKeyEntry);
@@ -427,15 +364,10 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 byte[] data = value.getData();
                 int offset = value.getOffset();
                 int length = value.getSize();
-                Collection<QpidByteBuffer> buffers = QpidByteBuffer.allocateDirectCollection(length);
-                for(QpidByteBuffer buf : buffers)
-                {
-                    int bufSize = buf.remaining();
-                    buf.put(data, offset, bufSize);
-                    buf.flip();
-                    offset+=bufSize;
-                }
-                return buffers;
+                QpidByteBuffer buf = QpidByteBuffer.allocateDirect(length);
+                buf.put(data, offset, length);
+                buf.flip();
+                return buf;
             }
             else
             {
@@ -534,25 +466,14 @@ public abstract class AbstractBDBMessageStore implements MessageStore
      *
      * @throws org.apache.qpid.server.store.StoreException If the operation fails for any reason, or if the specified message does not exist.
      */
-    private void addContent(final Transaction tx, long messageId,
-                            Collection<QpidByteBuffer> contentBody) throws StoreException
+    private void addContent(final Transaction tx, long messageId, QpidByteBuffer contentBody) throws StoreException
     {
         DatabaseEntry key = new DatabaseEntry();
         LongBinding.longToEntry(messageId, key);
         DatabaseEntry value = new DatabaseEntry();
 
-        int size = 0;
-
-        for(QpidByteBuffer buf : contentBody)
-        {
-            size += buf.remaining();
-        }
-        byte[] data = new byte[size];
-        ByteBuffer dst = ByteBuffer.wrap(data);
-        for(QpidByteBuffer buf : contentBody)
-        {
-            buf.copyTo(dst);
-        }
+        byte[] data = new byte[contentBody.remaining()];
+        contentBody.copyTo(data);
         value.setData(data);
         try
         {
@@ -937,7 +858,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     private static class MessageDataRef<T extends StorableMessageMetaData>
     {
         private volatile T _metaData;
-        private volatile Collection<QpidByteBuffer> _data;
+        private volatile QpidByteBuffer _data;
         private volatile boolean _isHardRef;
 
         private MessageDataRef(final T metaData, boolean isHardRef)
@@ -945,7 +866,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             this(metaData, null, isHardRef);
         }
 
-        private MessageDataRef(final T metaData, Collection<QpidByteBuffer> data, boolean isHardRef)
+        private MessageDataRef(final T metaData, QpidByteBuffer data, boolean isHardRef)
         {
             _metaData = metaData;
             _data = data;
@@ -957,12 +878,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             return _metaData;
         }
 
-        public Collection<QpidByteBuffer> getData()
+        public QpidByteBuffer getData()
         {
             return _data;
         }
 
-        public void setData(final Collection<QpidByteBuffer> data)
+        public void setData(final QpidByteBuffer data)
         {
             _data = data;
         }
@@ -997,11 +918,8 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             }
             if(_data != null)
             {
-                for(QpidByteBuffer buf : _data)
-                {
-                    bytesCleared += buf.remaining();
-                    buf.dispose();
-                }
+                bytesCleared += _data.remaining();
+                _data.dispose();
                 _data = null;
             }
             return bytesCleared;
@@ -1058,20 +976,17 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         @Override
         public synchronized void addContent(QpidByteBuffer src)
         {
-            src = src.slice();
-            Collection<QpidByteBuffer> data = _messageDataRef.getData();
-            if(data == null)
+            try(QpidByteBuffer data = _messageDataRef.getData())
             {
-                _messageDataRef.setData(Collections.singleton(src));
+                if(data == null)
+                {
+                    _messageDataRef.setData(src.slice());
+                }
+                else
+                {
+                    _messageDataRef.setData(QpidByteBuffer.concatenate(Arrays.asList(data, src)));
+                }
             }
-            else
-            {
-                List<QpidByteBuffer> newCollection = new ArrayList<>(data.size()+1);
-                newCollection.addAll(data);
-                newCollection.add(src);
-                _messageDataRef.setData(Collections.unmodifiableCollection(newCollection));
-            }
-
         }
 
         @Override
@@ -1082,11 +997,11 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         /**
-         * returns QBBs containing the content. The caller must not dispose of them because we keep a reference in _messageDataRef.
+         * returns QBB containing the content. The caller must not dispose of them because we keep a reference in _messageDataRef.
          */
-        private Collection<QpidByteBuffer> getContentAsByteBuffer()
+        private QpidByteBuffer getContentAsByteBuffer()
         {
-            Collection<QpidByteBuffer> data = _messageDataRef == null ? Collections.<QpidByteBuffer>emptyList() : _messageDataRef.getData();
+            QpidByteBuffer data = _messageDataRef == null ? QpidByteBuffer.emptyQpidByteBuffer() : _messageDataRef.getData();
             if(data == null)
             {
                 if(stored())
@@ -1098,7 +1013,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 }
                 else
                 {
-                    data = Collections.emptyList();
+                    data = QpidByteBuffer.emptyQpidByteBuffer();
                 }
             }
             return data;
@@ -1106,49 +1021,9 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
 
         @Override
-        public synchronized Collection<QpidByteBuffer> getContent(int offset, int length)
+        public synchronized QpidByteBuffer getContent(int offset, int length)
         {
-            Collection<QpidByteBuffer> bufs = getContentAsByteBuffer();
-            Collection<QpidByteBuffer> content = new ArrayList<>(bufs.size());
-            int pos = 0;
-            for (QpidByteBuffer buf : bufs)
-            {
-                if(length > 0)
-                {
-                    int bufRemaining = buf.remaining();
-                    if (pos + bufRemaining <= offset)
-                    {
-                        pos += bufRemaining;
-                    }
-                    else if (pos >= offset)
-                    {
-                        buf = buf.duplicate();
-                        if (bufRemaining <= length)
-                        {
-                            length -= bufRemaining;
-                        }
-                        else
-                        {
-                            buf.limit(length);
-                            length = 0;
-                        }
-                        content.add(buf);
-                        pos += buf.remaining();
-
-                    }
-                    else
-                    {
-                        int offsetInBuf = offset - pos;
-                        int limit = length < bufRemaining - offsetInBuf ? length : bufRemaining - offsetInBuf;
-                        final QpidByteBuffer bufView = buf.view(offsetInBuf, limit);
-                        content.add(bufView);
-                        length -= limit;
-                        pos+=limit+offsetInBuf;
-                    }
-                }
-
-            }
-            return content;
+            return getContentAsByteBuffer().view(offset, length);
         }
 
         @Override
@@ -1170,7 +1045,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 AbstractBDBMessageStore.this.storeMetaData(txn, _messageId, _messageDataRef.getMetaData());
                 AbstractBDBMessageStore.this.addContent(txn, _messageId,
                                                         _messageDataRef.getData() == null
-                                                                ? Collections.<QpidByteBuffer>emptySet()
+                                                                ? QpidByteBuffer.emptyQpidByteBuffer()
                                                                 : _messageDataRef.getData());
                 _messageDataRef.setSoft();
             }
@@ -1219,14 +1094,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 metaData.dispose();
             }
 
-            Collection<QpidByteBuffer> data = _messageDataRef.getData();
-            if(data != null)
+            try (QpidByteBuffer data = _messageDataRef.getData())
             {
-                bytesCleared += getContentSize();
-                _messageDataRef.setData(null);
-                for(QpidByteBuffer buf : data)
+                if (data != null)
                 {
-                    buf.dispose();
+                    bytesCleared += getContentSize();
+                    _messageDataRef.setData(null);
                 }
             }
             _messageDataRef = null;

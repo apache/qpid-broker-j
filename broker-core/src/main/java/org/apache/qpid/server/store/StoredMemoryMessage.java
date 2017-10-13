@@ -22,11 +22,9 @@
 package org.apache.qpid.server.store;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
@@ -35,7 +33,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
     private final long _messageNumber;
     private final int _contentSize;
     private final int _metadataSize;
-    private final Queue<QpidByteBuffer> _content = new LinkedList<>();
+    private QpidByteBuffer _content = null;
     private volatile T _metaData;
 
     public StoredMemoryMessage(long messageNumber, T metaData)
@@ -55,7 +53,17 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
     @Override
     public synchronized void addContent(QpidByteBuffer src)
     {
-        _content.add(src.slice());
+        try (QpidByteBuffer content = _content)
+        {
+            if (content == null)
+            {
+                _content = src.slice();
+            }
+            else
+            {
+                _content = QpidByteBuffer.concatenate(content, src);
+            }
+        }
     }
 
     @Override
@@ -66,46 +74,17 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
 
 
     @Override
-    public synchronized Collection<QpidByteBuffer> getContent(int offset, int length)
+    public synchronized QpidByteBuffer getContent(int offset, int length)
     {
-        Collection<QpidByteBuffer> content = new ArrayList<>(_content.size());
-        int pos = 0;
-        for (QpidByteBuffer buf : _content)
+        if (_content == null)
         {
-            if (length > 0)
-            {
-                int bufRemaining = buf.remaining();
-                if (pos + bufRemaining <= offset)
-                {
-                    pos += bufRemaining;
-                }
-                else if (pos >= offset)
-                {
-                    buf = buf.duplicate();
-                    if (bufRemaining <= length)
-                    {
-                        length -= bufRemaining;
-                    }
-                    else
-                    {
-                        buf.limit(length);
-                        length = 0;
-                    }
-                    content.add(buf);
-                    pos += buf.remaining();
-                }
-                else
-                {
-                    int offsetInBuf = offset - pos;
-                    int limit = length < bufRemaining - offsetInBuf ? length : bufRemaining - offsetInBuf;
-                    final QpidByteBuffer bufView = buf.view(offsetInBuf, limit);
-                    content.add(bufView);
-                    length -= limit;
-                    pos += limit + offsetInBuf;
-                }
-            }
+            return QpidByteBuffer.emptyQpidByteBuffer();
         }
-        return content;
+
+        try (QpidByteBuffer combined = QpidByteBuffer.concatenate(_content))
+        {
+            return combined.view(offset, length);
+        }
     }
 
     @Override
@@ -133,11 +112,8 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         _metaData = null;
         if (_content != null)
         {
-            for (QpidByteBuffer content : _content)
-            {
-                content.dispose();
-            }
-            _content.clear();
+            _content.dispose();
+            _content = null;
         }
     }
 
@@ -157,14 +133,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
     public synchronized void reallocate()
     {
         _metaData.reallocate();
-        List<QpidByteBuffer> newContent = new ArrayList<>(_content.size());
-        for (Iterator<QpidByteBuffer> iterator = _content.iterator(); iterator.hasNext(); )
-        {
-            final QpidByteBuffer buffer = iterator.next();
-            newContent.add(QpidByteBuffer.reallocateIfNecessary(buffer));
-            iterator.remove();
-        }
-        _content.addAll(newContent);
+        _content = QpidByteBuffer.reallocateIfNecessary(_content);
     }
 
     public void clear()

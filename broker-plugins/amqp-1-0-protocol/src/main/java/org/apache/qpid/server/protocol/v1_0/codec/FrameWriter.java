@@ -21,10 +21,7 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.transport.ByteBufferSender;
@@ -43,9 +40,9 @@ public class FrameWriter
 
     public <T> int send(AMQFrame<T> frame)
     {
-        final List<QpidByteBuffer> payload = frame.getPayload();
+        final QpidByteBuffer payload = frame.getPayload();
 
-        final int payloadLength = payload == null ? 0 : (int) QpidByteBufferUtils.remaining(payload);
+        final int payloadLength = payload == null ? 0 : payload.remaining();
         final T frameBody = frame.getFrameBody();
 
         final ValueWriter<T> typeWriter = frameBody == null ? null : _registry.getValueWriter(frameBody);
@@ -59,26 +56,25 @@ public class FrameWriter
             bodySize = 8 + typeWriter.getEncodedSize();
         }
 
-        QpidByteBuffer body = QpidByteBuffer.allocate(_sender.isDirectBufferPreferred(), bodySize);
-        final int totalSize = bodySize + payloadLength;
-        body.putInt(totalSize);
-        body.put((byte)2); // DOFF
-        body.put(frame.getFrameType()); // AMQP Frame Type
-        body.putShort(UnsignedShort.valueOf(frame.getChannel()).shortValue());
-        if(typeWriter != null)
+        final int totalSize;
+        try (QpidByteBuffer body = QpidByteBuffer.allocate(_sender.isDirectBufferPreferred(), bodySize))
         {
-            typeWriter.writeToBuffer(body);
-        }
-        body.flip();
+            totalSize = bodySize + payloadLength;
+            body.putInt(totalSize);
+            body.put((byte) 2); // DOFF
+            body.put(frame.getFrameType()); // AMQP Frame Type
+            body.putShort(UnsignedShort.valueOf(frame.getChannel()).shortValue());
+            if (typeWriter != null)
+            {
+                typeWriter.writeToBuffer(body);
+            }
+            body.flip();
 
-        _sender.send(body);
-        body.dispose();
+            _sender.send(body);
+        }
         if(payload != null)
         {
-            for(QpidByteBuffer buf : payload)
-            {
-                _sender.send(buf);
-            }
+            _sender.send(payload);
         }
         return totalSize;
     }

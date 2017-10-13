@@ -28,12 +28,10 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -390,10 +388,15 @@ public class PropertyConverter_v1_0_to_InternalTest extends QpidTestCase
         {
             Binary binary = new Binary(content);
             DataSection dataSection = new Data(binary).createEncodingRetainingSection();
-            List<QpidByteBuffer> qbbList = dataSection.getEncodedForm();
-            int length = (int) QpidByteBufferUtils.remaining(qbbList);
+            QpidByteBuffer qbb = dataSection.getEncodedForm();
+            int length = qbb.remaining();
             when(storedMessage.getContentSize()).thenReturn(length);
-            when(storedMessage.getContent(0, length)).thenReturn(qbbList);
+            when(storedMessage.getContent(0, length)).thenReturn(qbb);
+        }
+        else
+        {
+            when(storedMessage.getContentSize()).thenReturn(0);
+            when(storedMessage.getContent(0, 0)).thenReturn(QpidByteBuffer.emptyQpidByteBuffer());
         }
         return new Message_1_0(storedMessage);
     }

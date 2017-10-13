@@ -20,12 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.util.List;
-
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
-import org.apache.qpid.server.protocol.v1_0.type.*;
-import org.apache.qpid.server.protocol.v1_0.type.transport.*;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public class CharTypeConstructor implements TypeConstructor<String>
 {
@@ -42,11 +39,11 @@ public class CharTypeConstructor implements TypeConstructor<String>
     }
 
     @Override
-    public String construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    public String construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
     {
-        if(QpidByteBufferUtils.hasRemaining(in, 4))
+        if (in.hasRemaining(4))
         {
-            int codePoint = QpidByteBufferUtils.getInt(in);
+            int codePoint = in.getInt(); // TODO look wrong AMQP 1.0 type is actually UTF-32BE not a code point
             char[] chars = Character.toChars(codePoint);
             return new String(chars);
         }

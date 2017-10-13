@@ -26,8 +26,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +38,6 @@ import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.util.ByteBufferInputStream;
-import org.apache.qpid.server.util.ByteBufferUtils;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, InternalMessageMetaData>
@@ -73,9 +69,8 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
         long contentSize = getSize();
         if (contentSize > 0)
         {
-            Collection<QpidByteBuffer> bufs = msg.getContent(0, (int) contentSize);
-
-            try (ObjectInputStream is = new ObjectInputStream(new ByteBufferInputStream(ByteBufferUtils.combine(bufs))))
+            try (QpidByteBuffer buf = msg.getContent(0, (int) contentSize);
+                 ObjectInputStream is = new ObjectInputStream(buf.asInputStream()))
             {
                 _messageBody = is.readObject();
             }
@@ -168,8 +163,12 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
 
             final InternalMessageMetaData metaData = InternalMessageMetaData.create(persistent, internalHeader, bytes.length);
             MessageHandle<InternalMessageMetaData> handle = store.addMessage(metaData);
-            handle.addContent(QpidByteBuffer.wrap(bytes));
-            StoredMessage<InternalMessageMetaData> storedMessage = handle.allContentAdded();
+            final StoredMessage<InternalMessageMetaData> storedMessage;
+            try (QpidByteBuffer wrap = QpidByteBuffer.wrap(bytes))
+            {
+                handle.addContent(wrap);
+            }
+            storedMessage = handle.allContentAdded();
             return new InternalMessage(storedMessage, internalHeader, bodyObject, destinationName);
         }
         catch (IOException e)
@@ -258,9 +257,9 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
                     }
 
                     @Override
-                    public Collection<QpidByteBuffer> getContent(final int offset, final int length)
+                    public QpidByteBuffer getContent(final int offset, final int length)
                     {
-                        return Collections.singleton(QpidByteBuffer.wrap(bytes, offset, length));
+                        return QpidByteBuffer.wrap(bytes, offset, length);
                     }
 
                     @Override

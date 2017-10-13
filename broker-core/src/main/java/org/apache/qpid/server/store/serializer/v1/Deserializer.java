@@ -82,31 +82,32 @@ class Deserializer
     long readLong() throws IOException
     {
         byte[] data = readBytes(8);
-        QpidByteBuffer buf = QpidByteBuffer.wrap(data);
-        long val = buf.getLong();
-        buf.dispose();
-        return val;
+        try (QpidByteBuffer buf = QpidByteBuffer.wrap(data))
+        {
+            return buf.getLong();
+        }
     }
 
 
     int readInt() throws IOException
     {
         byte[] data = readBytes(4);
-        QpidByteBuffer buf = QpidByteBuffer.wrap(data);
-        int val = buf.getInt();
-        buf.dispose();
-        return val;
+        try (QpidByteBuffer buf = QpidByteBuffer.wrap(data))
+        {
+            return buf.getInt();
+        }
     }
 
 
     UUID readUUID() throws IOException
     {
         byte[] data = readBytes(16);
-        QpidByteBuffer buf = QpidByteBuffer.wrap(data);
-        long msb = buf.getLong();
-        long lsb = buf.getLong();
-        buf.dispose();
-        return new UUID(msb, lsb);
+        try (QpidByteBuffer buf = QpidByteBuffer.wrap(data))
+        {
+            long msb = buf.getLong();
+            long lsb = buf.getLong();
+            return new UUID(msb, lsb);
+        }
     }
 
     Record validateDigest() throws IOException

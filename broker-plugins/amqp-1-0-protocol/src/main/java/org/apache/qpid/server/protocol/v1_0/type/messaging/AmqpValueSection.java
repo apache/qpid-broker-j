@@ -21,15 +21,13 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.AmqpValueConstructor;
 
 public class AmqpValueSection extends AbstractSection<Object, AmqpValue>
 {
-    public AmqpValueSection(final List<QpidByteBuffer> encodedForm)
+    public AmqpValueSection(final QpidByteBuffer encodedForm)
     {
         super(encodedForm);
     }

@@ -63,7 +63,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferInputStream;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.connection.SessionPrincipal;
@@ -2489,24 +2488,29 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             ServerMessage message = _messageReference.getMessage();
 
             int length = (int) ((_limit == UNLIMITED || _decompressBeforeLimiting) ? message.getSize() : _limit);
-            InputStream inputStream = new QpidByteBufferInputStream(message.getContent(0, length));
+            try (QpidByteBuffer content = message.getContent(0, length))
+            {
+                InputStream inputStream = content.asInputStream();
+                if (_limit != UNLIMITED && _decompressBeforeLimiting)
+                {
+                    inputStream = new GZIPInputStream(inputStream);
+                    inputStream = ByteStreams.limit(inputStream, _limit);
+                    outputStream = new GZIPOutputStream(outputStream, true);
+                }
 
-            if (_limit != UNLIMITED && _decompressBeforeLimiting)
-            {
-                inputStream = new GZIPInputStream(inputStream);
-                inputStream = ByteStreams.limit(inputStream, _limit);
-                outputStream = new GZIPOutputStream(outputStream);
+                try
+                {
+                    ByteStreams.copy(inputStream, outputStream);
+                }
+                finally
+                {
+                    inputStream.close();
+                    // Seems weird to close the outputStream here but otherwise the GZIPOutputStream will be in an
+                    // invalid state. Calling flush() did not solve the problem.
+                    outputStream.close();
+                }
             }
 
-            try
-            {
-                ByteStreams.copy(inputStream, outputStream);
-            }
-            finally
-            {
-                outputStream.close();
-                inputStream.close();
-            }
         }
     }
 
@@ -3276,15 +3280,26 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         MessageConverterRegistry.getConverter(message.getClass(), InternalMessage.class);
                 if (messageConverter != null)
                 {
-                    return new JsonMessageContent(messageReference,
-                                                  (InternalMessage) messageConverter.convert(message, getVirtualHost()),
-                                                  limit);
+                    InternalMessage convertedMessage = null;
+                    try
+                    {
+                        convertedMessage = (InternalMessage) messageConverter.convert(message, getVirtualHost());
+                        return new JsonMessageContent(messageReference, convertedMessage, limit);
+                    }
+                    finally
+                    {
+                        if (convertedMessage != null)
+                        {
+                            messageConverter.dispose(convertedMessage);
+                        }
+                    }
                 }
                 else
                 {
                     throw new IllegalArgumentException(String.format("Unable to convert message %d on queue '%s' to JSON",
                                                                      message.getMessageNumber(), getName()));
                 }
+
             }
         }
         else

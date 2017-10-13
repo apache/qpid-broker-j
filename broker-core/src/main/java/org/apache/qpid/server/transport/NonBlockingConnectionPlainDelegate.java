@@ -64,12 +64,13 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
 
     protected void restoreApplicationBufferForWrite()
     {
-        QpidByteBuffer oldNetInputBuffer = _netInputBuffer;
-        int unprocessedDataLength = _netInputBuffer.remaining();
-        _netInputBuffer.limit(_netInputBuffer.capacity());
-        _netInputBuffer = oldNetInputBuffer.slice();
-        _netInputBuffer.limit(unprocessedDataLength);
-        oldNetInputBuffer.dispose();
+        try (QpidByteBuffer oldNetInputBuffer = _netInputBuffer)
+        {
+            int unprocessedDataLength = _netInputBuffer.remaining();
+            _netInputBuffer.limit(_netInputBuffer.capacity());
+            _netInputBuffer = oldNetInputBuffer.slice();
+            _netInputBuffer.limit(unprocessedDataLength);
+        }
         if (_netInputBuffer.limit() != _netInputBuffer.capacity())
         {
             _netInputBuffer.position(_netInputBuffer.limit());
@@ -77,34 +78,35 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
         }
         else
         {
-            QpidByteBuffer currentBuffer = _netInputBuffer;
-            int newBufSize;
-
-            if (currentBuffer.capacity() < _networkBufferSize)
+            try (QpidByteBuffer currentBuffer = _netInputBuffer)
             {
-                newBufSize = _networkBufferSize;
-            }
-            else
-            {
-                newBufSize = currentBuffer.capacity() + _networkBufferSize;
-                _parent.reportUnexpectedByteBufferSizeUsage();
-            }
+                int newBufSize;
 
-            _netInputBuffer = QpidByteBuffer.allocateDirect(newBufSize);
-            _netInputBuffer.put(currentBuffer);
-            currentBuffer.dispose();
+                if (currentBuffer.capacity() < _networkBufferSize)
+                {
+                    newBufSize = _networkBufferSize;
+                }
+                else
+                {
+                    newBufSize = currentBuffer.capacity() + _networkBufferSize;
+                    _parent.reportUnexpectedByteBufferSizeUsage();
+                }
+
+                _netInputBuffer = QpidByteBuffer.allocateDirect(newBufSize);
+                _netInputBuffer.put(currentBuffer);
+            }
         }
 
     }
 
 
     @Override
-    public WriteResult doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException
+    public WriteResult doWrite(Collection<QpidByteBuffer> buffers) throws IOException
     {
         long bytesToWrite = 0L;
-        if(!bufferArray.isEmpty())
+        if(!buffers.isEmpty())
         {
-            for (QpidByteBuffer buf : bufferArray)
+            for (QpidByteBuffer buf : buffers)
             {
                 bytesToWrite += buf.remaining();
             }
@@ -116,7 +118,7 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
         else
         {
 
-            long bytesWritten = _parent.writeToTransport(bufferArray);
+            long bytesWritten = _parent.writeToTransport(buffers);
             return new WriteResult(bytesWritten >= bytesToWrite, bytesWritten);
         }
 

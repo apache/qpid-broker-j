@@ -21,14 +21,13 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import java.nio.BufferUnderflowException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
-import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
@@ -62,58 +61,51 @@ public class MessageFormat_0_9_1 implements MessageFormat<AMQMessage>
     }
 
     @Override
-    public List<QpidByteBuffer> convertToMessageFormat(final AMQMessage message)
+    public QpidByteBuffer convertToMessageFormat(final AMQMessage message)
     {
         final MessagePublishInfo messagePublishInfo = message.getMessagePublishInfo();
         final ContentHeaderBody contentHeaderBody = message.getContentHeaderBody();
         AMQShortString exchange = messagePublishInfo.getExchange();
         AMQShortString routingKey = messagePublishInfo.getRoutingKey();
         int length =  contentHeaderBody.getSize() + (exchange == null ? 0 : exchange.length()) + (routingKey == null ? 0 : routingKey.length()) + 3;
-        QpidByteBuffer headerBuf = QpidByteBuffer.allocateDirect(length);
-        EncodingUtils.writeShortStringBytes(headerBuf, exchange);
-        EncodingUtils.writeShortStringBytes(headerBuf, routingKey);
-        byte flags = messagePublishInfo.isMandatory() ? (byte)0 : MANDATORY_MASK;
-        if(messagePublishInfo.isImmediate())
+        try (QpidByteBuffer headerBuf = QpidByteBuffer.allocateDirect(length);
+             QpidByteBuffer content = message.getContent())
         {
-            flags |= IMMEDIATE_MASK;
+            EncodingUtils.writeShortStringBytes(headerBuf, exchange);
+            EncodingUtils.writeShortStringBytes(headerBuf, routingKey);
+            byte flags = messagePublishInfo.isMandatory() ? (byte) 0 : MANDATORY_MASK;
+            if (messagePublishInfo.isImmediate())
+            {
+                flags |= IMMEDIATE_MASK;
+            }
+            headerBuf.put(flags);
+            headerBuf.flip();
+
+            contentHeaderBody.writePayload(headerBuf);
+
+            return QpidByteBuffer.concatenate(headerBuf, content);
         }
-        headerBuf.put(flags);
-        headerBuf.flip();
-
-        contentHeaderBody.writePayload(headerBuf);
-        List<QpidByteBuffer> bufs = new ArrayList<>();
-        headerBuf.flip();
-        bufs.add(headerBuf);
-        bufs.addAll(message.getContent(0, (int) contentHeaderBody.getBodySize()));
-
-        return bufs;
     }
 
     @Override
-    public AMQMessage createMessage(final List<QpidByteBuffer> buf,
+    public AMQMessage createMessage(final QpidByteBuffer payload,
                                     final MessageStore store,
                                     final Object connectionReference)
     {
         try
         {
-            AMQShortString exchange = readShortString(buf);
-            AMQShortString routingKey = readShortString(buf);
-            byte flags = readByte(buf);
+            AMQShortString exchange = readShortString(payload);
+            AMQShortString routingKey = readShortString(payload);
+            byte flags = payload.get();
             final MessagePublishInfo publishBody = new MessagePublishInfo(exchange,
                                                                           (flags & IMMEDIATE_MASK) != 0,
                                                                           (flags & MANDATORY_MASK) != 0,
                                                                           routingKey);
-            final ContentHeaderBody contentHeaderBody = readContentBody(buf);
+            final ContentHeaderBody contentHeaderBody = readContentBody(payload);
             MessageMetaData mmd = new MessageMetaData(publishBody, contentHeaderBody);
 
             final MessageHandle<MessageMetaData> handle = store.addMessage(mmd);
-            for (QpidByteBuffer content : buf)
-            {
-                if (content.hasRemaining())
-                {
-                    handle.addContent(content);
-                }
-            }
+            handle.addContent(payload);
             final StoredMessage<MessageMetaData> storedMessage = handle.allContentAdded();
 
             return new AMQMessage(storedMessage, connectionReference);
@@ -124,48 +116,25 @@ public class MessageFormat_0_9_1 implements MessageFormat<AMQMessage>
         }
     }
 
-    private ContentHeaderBody readContentBody(final List<QpidByteBuffer> buf) throws AMQFrameDecodingException
+    private ContentHeaderBody readContentBody(final QpidByteBuffer buf) throws AMQFrameDecodingException
     {
-        long size = ((long) readInt(buf)) & 0xffffffffL;
-        final QpidByteBuffer buffer = readByteBuffer(buf, size);
-        final ContentHeaderBody contentHeaderBody = new ContentHeaderBody(buffer, size);
-        buffer.dispose();
-        return contentHeaderBody;
+        long size = buf.getUnsignedInt();
+        try (QpidByteBuffer buffer = readByteBuffer(buf, size))
+        {
+            final long newPosition = buf.position() + size;
+            if (newPosition > Integer.MAX_VALUE)
+            {
+                throw new IllegalStateException(String.format("trying to advance QBB to %d which is larger than MAX_INT",
+                                                              newPosition));
+            }
+            buf.position((int) newPosition);
+            return new ContentHeaderBody(buffer, size);
+        }
     }
 
-    private QpidByteBuffer readByteBuffer(final List<QpidByteBuffer> data, final long size)
+    private QpidByteBuffer readByteBuffer(final QpidByteBuffer data, final long size)
     {
-        QpidByteBuffer result = null;
-        for(QpidByteBuffer buf : data)
-        {
-            if(result == null && buf.remaining()>= size)
-            {
-                return buf.view(0, (int)size);
-            }
-            else if(buf.hasRemaining())
-            {
-                if(result == null)
-                {
-                    result = QpidByteBuffer.allocateDirect((int)size);
-                }
-                if(buf.remaining()>result.remaining())
-                {
-                    QpidByteBuffer dup = buf.view(0, result.remaining());
-                    result.put(dup);
-                    dup.dispose();
-                }
-                else
-                {
-                    result.put(buf);
-                }
-                if(!result.hasRemaining())
-                {
-                    result.flip();
-                    return result;
-                }
-            }
-        }
-        throw new BufferUnderflowException();
+        return data.view(0, (int)size);
     }
 
     private int readInt(final List<QpidByteBuffer> data)
@@ -194,54 +163,8 @@ public class MessageFormat_0_9_1 implements MessageFormat<AMQMessage>
         throw new BufferUnderflowException();
     }
 
-    private byte readByte(final List<QpidByteBuffer> data)
+    private AMQShortString readShortString(final QpidByteBuffer data)
     {
-        for(QpidByteBuffer buf : data)
-        {
-            if(buf.hasRemaining())
-            {
-                return buf.get();
-            }
-        }
-        throw new BufferUnderflowException();
-    }
-
-    private AMQShortString readShortString(final List<QpidByteBuffer> data)
-    {
-        for(QpidByteBuffer buf : data)
-        {
-            if(buf.hasRemaining())
-            {
-                int length = ((int)buf.get(buf.position())) & 0xff;
-                if(buf.remaining()>length)
-                {
-                    return AMQShortString.readAMQShortString(buf);
-                }
-            }
-        }
-        int length = ((int)readByte(data)) & 0xff;
-        byte[] octets = new byte[length];
-        readByteArray(octets, data);
-        return new AMQShortString(octets);
-    }
-
-    private void readByteArray(final byte[] octets, final List<QpidByteBuffer> data)
-    {
-        int offset = 0;
-        for(QpidByteBuffer buf : data)
-        {
-            final int remaining = buf.remaining();
-            if(remaining >= octets.length-offset)
-            {
-                buf.get(octets, offset, octets.length-offset);
-                return;
-            }
-            else if(remaining > 0)
-            {
-                buf.get(octets, offset, remaining);
-                offset+=remaining;
-            }
-        }
-        throw new BufferUnderflowException();
+        return AMQShortString.readAMQShortString(data);
     }
 }

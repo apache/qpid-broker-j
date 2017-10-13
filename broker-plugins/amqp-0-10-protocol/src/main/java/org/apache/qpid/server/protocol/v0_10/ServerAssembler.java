@@ -26,9 +26,7 @@ import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -39,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.Frame;
 import org.apache.qpid.server.protocol.v0_10.transport.Header;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.Method;
@@ -46,7 +45,6 @@ import org.apache.qpid.server.protocol.v0_10.transport.ProtocolError;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolEvent;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolHeader;
 import org.apache.qpid.server.protocol.v0_10.transport.Struct;
-import org.apache.qpid.server.protocol.v0_10.transport.Frame;
 
 public class ServerAssembler
 {
@@ -77,35 +75,54 @@ public class ServerAssembler
         {
             PeekingIterator<ServerFrame> itr = Iterators.peekingIterator(frames.iterator());
 
-            while(itr.hasNext())
+            boolean cleanExit = false;
+            try
             {
-                final ServerFrame frame = itr.next();
-                final int frameChannel = frame.getChannel();
+                while(itr.hasNext())
+                {
+                    final ServerFrame frame = itr.next();
+                    final int frameChannel = frame.getChannel();
 
-                ServerSession channel = _connection.getSession(frameChannel);
-                if (channel != null)
-                {
-                    final AccessControlContext context = channel.getAccessControllerContext();
-                    AccessController.doPrivileged((PrivilegedAction<Void>) () ->
+                    ServerSession channel = _connection.getSession(frameChannel);
+                    if (channel != null)
                     {
-                        ServerFrame channelFrame = frame;
-                        boolean nextIsSameChannel;
-                        do
+                        final AccessControlContext context = channel.getAccessControllerContext();
+                        AccessController.doPrivileged((PrivilegedAction<Void>) () ->
                         {
-                            received(channelFrame);
-                            nextIsSameChannel = itr.hasNext() && frameChannel == itr.peek().getChannel();
-                            if (nextIsSameChannel)
+                            ServerFrame channelFrame = frame;
+                            boolean nextIsSameChannel;
+                            do
                             {
-                                channelFrame = itr.next();
+                                received(channelFrame);
+                                nextIsSameChannel = itr.hasNext() && frameChannel == itr.peek().getChannel();
+                                if (nextIsSameChannel)
+                                {
+                                    channelFrame = itr.next();
+                                }
                             }
-                        }
-                        while (nextIsSameChannel);
-                        return null;
-                    }, context);
+                            while (nextIsSameChannel);
+                            return null;
+                        }, context);
+                    }
+                    else
+                    {
+                        received(frame);
+                    }
                 }
-                else
+                cleanExit = true;
+            }
+            finally
+            {
+                if (!cleanExit)
                 {
-                    received(frame);
+                    while (itr.hasNext())
+                    {
+                        final QpidByteBuffer body = itr.next().getBody();
+                        if (body != null)
+                        {
+                            body.dispose();
+                        }
+                    }
                 }
             }
         }
@@ -183,11 +200,9 @@ public class ServerAssembler
 
     public void frame(ServerFrame frame)
     {
-        List<QpidByteBuffer> frameBuffers;
         if (frame.isFirstFrame() && frame.isLastFrame())
         {
-            frameBuffers = Collections.singletonList(frame.getBody());
-            assemble(frame, frameBuffers);
+            assemble(frame, frame.getBody());
         }
         else
         {
@@ -207,98 +222,103 @@ public class ServerAssembler
             if (frame.isLastFrame())
             {
                 clearSegment(frame);
-                frameBuffers = new ArrayList<>(frames.size());
+                List<QpidByteBuffer> frameBuffers = new ArrayList<>(frames.size());
                 for (ServerFrame f : frames)
                 {
-
                     frameBuffers.add(f.getBody());
                 }
-                assemble(frame, frameBuffers);
+                QpidByteBuffer combined = QpidByteBuffer.concatenate(frameBuffers);
+                for (QpidByteBuffer buffer : frameBuffers)
+                {
+                    buffer.dispose();
+                }
+                assemble(frame, combined);
             }
         }
 
     }
 
-    private void assemble(ServerFrame frame, List<QpidByteBuffer> frameBuffers)
+    private void assemble(ServerFrame frame, QpidByteBuffer frameBuffer)
     {
-        ServerDecoder dec = new ServerDecoder(frameBuffers);
-
-        int channel = frame.getChannel();
-        Method command;
-
-        switch (frame.getType())
+        try
         {
-            case CONTROL:
-                int controlType = dec.readUint16();
-                Method control = Method.create(controlType);
-                control.read(dec);
-                emit(channel, control);
-                break;
-            case COMMAND:
-                int commandType = dec.readUint16();
-                // read in the session header, right now we don't use it
-                int hdr = dec.readUint16();
-                command = Method.create(commandType);
-                command.setSync((0x0001 & hdr) != 0);
-                command.read(dec);
-                if (command.hasPayload() && !frame.isLastSegment())
-                {
-                    setIncompleteCommand(channel, command);
-                }
-                else
-                {
-                    emit(channel, command);
-                }
-                break;
-            case HEADER:
-                command = getIncompleteCommand(channel);
-                List<Struct> structs = null;
-                DeliveryProperties deliveryProps = null;
-                MessageProperties messageProps = null;
+            ServerDecoder dec = new ServerDecoder(frameBuffer);
 
-                while (dec.hasRemaining())
-                {
-                    Struct struct = dec.readStruct32();
-                    if(struct instanceof  DeliveryProperties && deliveryProps == null)
+            int channel = frame.getChannel();
+            Method command;
+
+            switch (frame.getType())
+            {
+                case CONTROL:
+                    int controlType = dec.readUint16();
+                    Method control = Method.create(controlType);
+                    control.read(dec);
+                    emit(channel, control);
+                    break;
+                case COMMAND:
+                    int commandType = dec.readUint16();
+                    // read in the session header, right now we don't use it
+                    int hdr = dec.readUint16();
+                    command = Method.create(commandType);
+                    command.setSync((0x0001 & hdr) != 0);
+                    command.read(dec);
+                    if (command.hasPayload() && !frame.isLastSegment())
                     {
-                        deliveryProps = (DeliveryProperties) struct;
-                    }
-                    else if(struct instanceof MessageProperties && messageProps == null)
-                    {
-                        messageProps = (MessageProperties) struct;
+                        setIncompleteCommand(channel, command);
                     }
                     else
                     {
-                        if(structs == null)
-                        {
-                            structs = new ArrayList<>(2);
-                        }
-                        structs.add(struct);
+                        emit(channel, command);
                     }
+                    break;
+                case HEADER:
+                    command = getIncompleteCommand(channel);
+                    List<Struct> structs = null;
+                    DeliveryProperties deliveryProps = null;
+                    MessageProperties messageProps = null;
 
-                }
-                command.setHeader(new Header(deliveryProps,messageProps,structs));
+                    while (dec.hasRemaining())
+                    {
+                        Struct struct = dec.readStruct32();
+                        if (struct instanceof DeliveryProperties && deliveryProps == null)
+                        {
+                            deliveryProps = (DeliveryProperties) struct;
+                        }
+                        else if (struct instanceof MessageProperties && messageProps == null)
+                        {
+                            messageProps = (MessageProperties) struct;
+                        }
+                        else
+                        {
+                            if (structs == null)
+                            {
+                                structs = new ArrayList<>(2);
+                            }
+                            structs.add(struct);
+                        }
+                    }
+                    command.setHeader(new Header(deliveryProps, messageProps, structs));
 
-                if (frame.isLastSegment())
-                {
+                    if (frame.isLastSegment())
+                    {
+                        setIncompleteCommand(channel, null);
+                        emit(channel, command);
+                    }
+                    break;
+                case BODY:
+                    command = getIncompleteCommand(channel);
+                    command.setBody(frameBuffer);
                     setIncompleteCommand(channel, null);
                     emit(channel, command);
-                }
-                break;
-            case BODY:
-                command = getIncompleteCommand(channel);
-                command.setBody(frameBuffers);
-                setIncompleteCommand(channel, null);
-                emit(channel, command);
 
-                break;
-            default:
-                throw new IllegalStateException("unknown frame type: " + frame.getType());
+                    break;
+                default:
+                    throw new IllegalStateException("unknown frame type: " + frame.getType());
+            }
         }
-
-        for(QpidByteBuffer buf : frameBuffers)
+        finally
         {
-            buf.dispose();
+            frameBuffer.dispose();
         }
     }
 

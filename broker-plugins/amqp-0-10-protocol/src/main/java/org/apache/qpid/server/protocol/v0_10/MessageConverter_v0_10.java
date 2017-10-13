@@ -22,8 +22,6 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.util.Collection;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -83,7 +81,7 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
                     }
 
                     @Override
-                    public Collection<QpidByteBuffer> getContent(final int offset, final int length)
+                    public QpidByteBuffer getContent(final int offset, final int length)
                     {
                         return serverMsg.getContent(offset, length);
                     }

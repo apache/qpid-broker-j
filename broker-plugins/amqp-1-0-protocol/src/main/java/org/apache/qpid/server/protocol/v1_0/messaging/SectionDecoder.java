@@ -28,5 +28,5 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSect
 
 public interface SectionDecoder
 {
-    List<EncodingRetainingSection<?>> parseAll(List<QpidByteBuffer> buf) throws AmqpErrorException;
+    List<EncodingRetainingSection<?>> parseAll(QpidByteBuffer buf) throws AmqpErrorException;
 }

@@ -21,7 +21,6 @@
 package org.apache.qpid.server.protocol.v1_0.framing;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Formatter;
 import java.util.List;
 
@@ -149,12 +148,11 @@ public class FrameHandler implements ProtocolHandler
                     in.position(in.position() + dataOffset - 8);
                 }
 
-                QpidByteBuffer dup = in.slice();
-                dup.limit(size - dataOffset);
-                in.position(in.position() + size - dataOffset);
-
-                try
+                try (QpidByteBuffer dup = in.slice())
                 {
+                    dup.limit(size - dataOffset);
+                    in.position(in.position() + size - dataOffset);
+
                     final boolean hasFrameBody = dup.hasRemaining();
                     Object frameBody;
                     if (hasFrameBody)
@@ -164,9 +162,10 @@ public class FrameHandler implements ProtocolHandler
                         {
                             if (frameBody instanceof Transfer)
                             {
-                                final QpidByteBuffer payload = dup.slice();
-                                ((Transfer) frameBody).setPayload(Collections.singletonList(payload));
-                                payload.dispose();
+                                try (QpidByteBuffer payload = dup.slice())
+                                {
+                                    ((Transfer) frameBody).setPayload(payload);
+                                }
                             }
                             else
                             {
@@ -207,10 +206,6 @@ public class FrameHandler implements ProtocolHandler
                 catch (AmqpErrorException ex)
                 {
                     frameParsingError = ex.getError();
-                }
-                finally
-                {
-                    dup.dispose();
                 }
             }
             _connectionHandler.receive(channelFrameBodies);

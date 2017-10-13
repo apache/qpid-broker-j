@@ -32,7 +32,6 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
@@ -72,14 +71,20 @@ public class MessageDecoder
         {
             throw new IllegalStateException("The section fragments have already been parsed");
         }
-        _fragments.addAll(transfer.getPayload());
+        _fragments.add(transfer.getPayload());
     }
 
     public void parse() throws AmqpErrorException
     {
         if (!_parsed)
         {
-            List<EncodingRetainingSection<?>> sections = _sectionDecoder.parseAll(_fragments);
+            List<EncodingRetainingSection<?>> sections;
+            try (QpidByteBuffer combined = QpidByteBuffer.concatenate(_fragments))
+            {
+                sections = _sectionDecoder.parseAll(combined);
+            }
+            _fragments.forEach(QpidByteBuffer::dispose);
+
             Iterator<EncodingRetainingSection<?>> iter = sections.iterator();
             EncodingRetainingSection<?> s = iter.hasNext() ? iter.next() : null;
             if (s instanceof HeaderSection)

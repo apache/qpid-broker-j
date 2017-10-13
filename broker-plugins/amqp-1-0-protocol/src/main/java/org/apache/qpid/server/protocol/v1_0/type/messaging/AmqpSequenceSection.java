@@ -29,7 +29,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.AmqpSequenceCon
 
 public class AmqpSequenceSection extends AbstractSection<List, AmqpSequence>
 {
-    public AmqpSequenceSection(final List<QpidByteBuffer> encodedForm)
+    public AmqpSequenceSection(final QpidByteBuffer encodedForm)
     {
         super(encodedForm);
     }

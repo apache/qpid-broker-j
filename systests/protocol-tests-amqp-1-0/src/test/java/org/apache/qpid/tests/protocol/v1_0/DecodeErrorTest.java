@@ -77,34 +77,39 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
 
-            List<QpidByteBuffer> combinedPayload = new ArrayList<>();
+            List<QpidByteBuffer> payloads = new ArrayList<>();
             final HeaderSection headerSection = new Header().createEncodingRetainingSection();
-            combinedPayload.addAll(headerSection.getEncodedForm());
+            payloads.add(headerSection.getEncodedForm());
             headerSection.dispose();
             final StringWriter stringWriter = new StringWriter("string in between annotation sections");
             QpidByteBuffer encodedString = QpidByteBuffer.allocate(stringWriter.getEncodedSize());
             stringWriter.writeToBuffer(encodedString);
             encodedString.flip();
-            combinedPayload.add(encodedString);
+            payloads.add(encodedString);
             final DeliveryAnnotationsSection
                     deliveryAnnotationsSection =
                     new DeliveryAnnotations(Collections.emptyMap()).createEncodingRetainingSection();
-            combinedPayload.addAll(deliveryAnnotationsSection.getEncodedForm());
+            payloads.add(deliveryAnnotationsSection.getEncodedForm());
             deliveryAnnotationsSection.dispose();
 
-            final Detach detachResponse = transport.newInteraction()
-                                                   .negotiateProtocol().consumeResponse()
-                                                   .open().consumeResponse(Open.class)
-                                                   .begin().consumeResponse(Begin.class)
-                                                   .attachRole(Role.SENDER)
-                                                   .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                                                   .attach().consumeResponse(Attach.class)
-                                                   .consumeResponse(Flow.class)
-                                                   .transferMessageFormat(UnsignedInteger.ZERO)
-                                                   .transferPayload(combinedPayload)
-                                                   .transfer()
-                                                   .consumeResponse()
-                                                   .getLatestResponse(Detach.class);
+            final Detach detachResponse;
+            try (QpidByteBuffer combinedPayload = QpidByteBuffer.concatenate(payloads))
+            {
+                detachResponse = transport.newInteraction()
+                                          .negotiateProtocol().consumeResponse()
+                                          .open().consumeResponse(Open.class)
+                                          .begin().consumeResponse(Begin.class)
+                                          .attachRole(Role.SENDER)
+                                          .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                          .attach().consumeResponse(Attach.class)
+                                          .consumeResponse(Flow.class)
+                                          .transferMessageFormat(UnsignedInteger.ZERO)
+                                          .transferPayload(combinedPayload)
+                                          .transfer()
+                                          .consumeResponse()
+                                          .getLatestResponse(Detach.class);
+            }
+            payloads.forEach(QpidByteBuffer::dispose);
             assertThat(detachResponse.getError(), is(notNullValue()));
             assertThat(detachResponse.getError().getCondition(), is(equalTo(DECODE_ERROR)));
         }

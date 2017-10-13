@@ -23,14 +23,11 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
@@ -38,7 +35,7 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 @CompositeType( symbolicDescriptor = "amqp:transfer:list", numericDescriptor = 0x0000000000000014L)
 public class Transfer implements FrameBody
 {
-    private volatile List<QpidByteBuffer> _payload;
+    private volatile QpidByteBuffer _payload;
 
     @CompositeTypeField(index = 0, mandatory = true)
     private UnsignedInteger _handle;
@@ -298,7 +295,7 @@ public class Transfer implements FrameBody
         conn.receiveTransfer(channel, this);
     }
 
-    public List<QpidByteBuffer> getPayload()
+    public QpidByteBuffer getPayload()
     {
         if (_payload == null)
         {
@@ -306,16 +303,11 @@ public class Transfer implements FrameBody
         }
         else
         {
-            List<QpidByteBuffer> payloadDup = new ArrayList<>(_payload.size());
-            for (QpidByteBuffer buf : _payload)
-            {
-                payloadDup.add(buf.duplicate());
-            }
-            return payloadDup;
+            return _payload.duplicate();
         }
     }
 
-    public void setPayload(List<QpidByteBuffer> payload)
+    public void setPayload(QpidByteBuffer payload)
     {
         if (payload == null)
         {
@@ -323,11 +315,7 @@ public class Transfer implements FrameBody
         }
         else
         {
-            _payload = new ArrayList<>(payload.size());
-            for (QpidByteBuffer buf : payload)
-            {
-                _payload.add(buf.duplicate());
-            }
+            _payload = payload.duplicate();
         }
     }
 
@@ -335,10 +323,7 @@ public class Transfer implements FrameBody
     {
         if (_payload != null)
         {
-            for (QpidByteBuffer buf : _payload)
-            {
-                buf.dispose();
-            }
+            _payload.dispose();
             _payload = null;
         }
     }

@@ -45,8 +45,8 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.transport.network.Ticker;
+import org.apache.qpid.server.util.Action;
 
 public class MultiVersionProtocolEngine implements ProtocolEngine
 {
@@ -386,22 +386,20 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         public void received(QpidByteBuffer msg)
         {
             _lastReadTime = System.currentTimeMillis();
-            QpidByteBuffer msgheader = msg.slice();
-
-            if(_header.remaining() > msgheader.limit())
+            try (QpidByteBuffer msgheader = msg.slice())
             {
-                msgheader.dispose();
-                return;
-            }
-            else
-            {
-                msgheader.limit(_header.remaining());
-                msg.position(msg.position()+_header.remaining());
-            }
+                if (_header.remaining() > msgheader.limit())
+                {
+                    return;
+                }
+                else
+                {
+                    msgheader.limit(_header.remaining());
+                    msg.position(msg.position() + _header.remaining());
+                }
 
-            _header.put(msgheader);
-
-            msgheader.dispose();
+                _header.put(msgheader);
+            }
 
             if(!_header.hasRemaining())
             {
@@ -466,16 +464,18 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                     _broker.getEventLogger().message(new PortLogSubject(_port),
                                                      PortMessages.UNSUPPORTED_PROTOCOL_HEADER(supportedReplyVersion.toString()));
 
-                    final QpidByteBuffer supportedReplyBuf = QpidByteBuffer.allocateDirect(supportedReplyBytes.length);
-                    supportedReplyBuf.put(supportedReplyBytes);
-                    supportedReplyBuf.flip();
-                    _sender.send(supportedReplyBuf);
+                    try (QpidByteBuffer supportedReplyBuf = QpidByteBuffer.allocateDirect(supportedReplyBytes.length))
+                    {
+                        supportedReplyBuf.put(supportedReplyBytes);
+                        supportedReplyBuf.flip();
+                        _sender.send(supportedReplyBuf);
+                    }
                     _sender.flush();
 
                     _delegate = new ClosedDelegateProtocolEngine();
 
+                    _header.dispose();
                     _network.close();
-
                 }
                 else
                 {
@@ -489,6 +489,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                     _delegate.setWorkListener(_workListener.get());
                     _header.flip();
                     _delegate.received(_header);
+                    _header.dispose();
 
                     Certificate peerCertificate = _network.getPeerCertificate();
                     if(peerCertificate != null && _port.getClientCertRecorder() != null)

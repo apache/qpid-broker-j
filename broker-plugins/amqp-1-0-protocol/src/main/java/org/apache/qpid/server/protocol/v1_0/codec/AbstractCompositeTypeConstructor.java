@@ -22,11 +22,9 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 
 import java.lang.reflect.Array;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
@@ -35,8 +33,8 @@ public abstract class AbstractCompositeTypeConstructor<T> implements DescribedTy
 {
     @Override
     public TypeConstructor<T> construct(final Object descriptor,
-                                        final List<QpidByteBuffer> in,
-                                        final int[] originalPositions,
+                                        final QpidByteBuffer in,
+                                        final int originalPosition,
                                         final ValueHandler valueHandler) throws AmqpErrorException
     {
         return new FieldValueReader();
@@ -48,12 +46,12 @@ public abstract class AbstractCompositeTypeConstructor<T> implements DescribedTy
 
     protected class FieldValueReader implements TypeConstructor<T>
     {
-        private List<QpidByteBuffer> _in;
+        private QpidByteBuffer _in;
         private ValueHandler _valueHandler;
         private int _count;
 
         @Override
-        public T construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+        public T construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
             _in = in;
             _valueHandler = handler;
@@ -64,7 +62,7 @@ public abstract class AbstractCompositeTypeConstructor<T> implements DescribedTy
         {
             int size;
             final TypeConstructor typeConstructor = _valueHandler.readConstructor(_in);
-            long remaining = QpidByteBufferUtils.remaining(_in);
+            long remaining = _in.remaining();
             if (typeConstructor instanceof ListConstructor)
             {
                 ListConstructor listConstructor = (ListConstructor) typeConstructor;
@@ -80,13 +78,13 @@ public abstract class AbstractCompositeTypeConstructor<T> implements DescribedTy
 
                 if (listConstructor.getSize() == 1)
                 {
-                    size = QpidByteBufferUtils.get(_in) & 0xFF;
-                    _count = QpidByteBufferUtils.get(_in) & 0xFF;
+                    size = _in.getUnsignedByte();
+                    _count = _in.getUnsignedByte();
                 }
                 else
                 {
-                    size = QpidByteBufferUtils.getInt(_in);
-                    _count = QpidByteBufferUtils.getInt(_in);
+                    size = _in.getInt();
+                    _count = _in.getInt();
                 }
 
                 remaining -= listConstructor.getSize();
@@ -115,7 +113,7 @@ public abstract class AbstractCompositeTypeConstructor<T> implements DescribedTy
             final T constructedObject = AbstractCompositeTypeConstructor.this.construct(this);
 
             long expectedRemaining = remaining - size;
-            long unconsumedBytes = QpidByteBufferUtils.remaining(_in) - expectedRemaining;
+            long unconsumedBytes = _in.remaining() - expectedRemaining;
             if(unconsumedBytes > 0)
             {
                 final String msg =

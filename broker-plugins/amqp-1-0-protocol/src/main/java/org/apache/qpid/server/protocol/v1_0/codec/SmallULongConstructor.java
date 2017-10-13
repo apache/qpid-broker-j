@@ -19,10 +19,7 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
@@ -42,11 +39,11 @@ public class SmallULongConstructor implements TypeConstructor<UnsignedLong>
     }
 
     @Override
-    public UnsignedLong construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    public UnsignedLong construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
     {
-        if (QpidByteBufferUtils.hasRemaining(in))
+        if (in.hasRemaining())
         {
-            byte b = QpidByteBufferUtils.get(in);
+            byte b = in.get();
             return UnsignedLong.valueOf(((long) b) & 0xffL);
         }
         else

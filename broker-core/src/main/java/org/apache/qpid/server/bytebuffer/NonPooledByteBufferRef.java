@@ -28,6 +28,10 @@ class NonPooledByteBufferRef implements ByteBufferRef
 
     NonPooledByteBufferRef(final ByteBuffer buffer)
     {
+        if (buffer == null)
+        {
+            throw new NullPointerException();
+        }
         _buffer = buffer;
     }
 

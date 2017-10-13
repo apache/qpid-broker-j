@@ -50,7 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
@@ -286,10 +285,9 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
 
         _remoteIncomingWindow--;
-        List<QpidByteBuffer> payload = xfr.getPayload();
-        try
+        try (QpidByteBuffer payload = xfr.getPayload())
         {
-            long remaining = payload == null ? 0 : QpidByteBufferUtils.remaining(payload);
+            long remaining = payload == null ? 0 : (long) payload.remaining();
             int payloadSent = _connection.sendFrame(_sendingChannel, xfr, payload);
             if(payload != null)
             {
@@ -305,7 +303,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                     _nextOutgoingId.incr();
                     _remoteIncomingWindow--;
 
-                    remaining = QpidByteBufferUtils.remaining(payload);
+                    remaining = (long) payload.remaining();
                     payloadSent = _connection.sendFrame(_sendingChannel, continuationTransfer, payload);
 
                     continuationTransfer.dispose();
@@ -315,16 +313,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         catch (OversizeFrameException e)
         {
             throw new ConnectionScopedRuntimeException(e);
-        }
-        finally
-        {
-            if(payload != null)
-            {
-                for (QpidByteBuffer buf : payload)
-                {
-                    buf.dispose();
-                }
-            }
         }
     }
 

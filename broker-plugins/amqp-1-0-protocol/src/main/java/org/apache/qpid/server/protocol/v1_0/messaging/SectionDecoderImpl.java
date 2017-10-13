@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -42,27 +41,38 @@ public class SectionDecoderImpl implements SectionDecoder
     }
 
     @Override
-    public List<EncodingRetainingSection<?>> parseAll(List<QpidByteBuffer> buf) throws AmqpErrorException
+    public List<EncodingRetainingSection<?>> parseAll(QpidByteBuffer buf) throws AmqpErrorException
     {
 
         List<EncodingRetainingSection<?>> obj = new ArrayList<>();
-        while(QpidByteBufferUtils.hasRemaining(buf))
+        try
         {
+            while (buf.hasRemaining())
+            {
 
-            final Object parsedObject = _valueHandler.parse(buf);
-            if (parsedObject instanceof EncodingRetainingSection)
-            {
-                EncodingRetainingSection<?> section = (EncodingRetainingSection<?>) parsedObject;
-                obj.add(section);
-            }
-            else
-            {
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                             String.format("Invalid Message: Expected type \"section\" but found \"%s\"",
-                                                           parsedObject.getClass().getSimpleName()));
+                final Object parsedObject = _valueHandler.parse(buf);
+                if (parsedObject instanceof EncodingRetainingSection)
+                {
+                    EncodingRetainingSection<?> section = (EncodingRetainingSection<?>) parsedObject;
+                    obj.add(section);
+                }
+                else
+                {
+                    throw new AmqpErrorException(AmqpError.DECODE_ERROR,
+                                                 String.format(
+                                                         "Invalid Message: Expected type \"section\" but found \"%s\"",
+                                                         parsedObject.getClass().getSimpleName()));
+                }
             }
         }
-
+        catch (AmqpErrorException e)
+        {
+            for (EncodingRetainingSection<?> encodingRetainingSection : obj)
+            {
+                encodingRetainingSection.dispose();
+            }
+            throw e;
+        }
         return obj;
     }
 }

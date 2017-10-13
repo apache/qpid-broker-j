@@ -464,19 +464,21 @@ public class BasicContentHeaderProperties
     {
         if(useEncodedForm())
         {
-            final QpidByteBuffer duplicate = _encodedForm.duplicate();
-            sender.send(duplicate);
-            duplicate.dispose();
+            try (QpidByteBuffer duplicate = _encodedForm.duplicate())
+            {
+                sender.send(duplicate);
+            }
             return _encodedForm.remaining();
         }
         else
         {
             int propertyListSize = getPropertyListSize();
-            QpidByteBuffer buf = QpidByteBuffer.allocate(sender.isDirectBufferPreferred(), propertyListSize);
-            writePropertyListPayload(buf);
-            buf.flip();
-            sender.send(buf);
-            buf.dispose();
+            try (QpidByteBuffer buf = QpidByteBuffer.allocate(sender.isDirectBufferPreferred(), propertyListSize))
+            {
+                writePropertyListPayload(buf);
+                buf.flip();
+                sender.send(buf);
+            }
             return propertyListSize;
         }
 
@@ -497,9 +499,10 @@ public class BasicContentHeaderProperties
         }
         _encodedForm = buffer.view(0,size);
 
-        final QpidByteBuffer byteBuffer = _encodedForm.slice();
-        decode(byteBuffer);
-        byteBuffer.dispose();
+        try (QpidByteBuffer byteBuffer = _encodedForm.slice())
+        {
+            decode(byteBuffer);
+        }
         buffer.position(buffer.position()+size);
 
     }
@@ -520,9 +523,10 @@ public class BasicContentHeaderProperties
         {
             long length = buffer.getUnsignedInt();
 
-            QpidByteBuffer buf = buffer.view(0, (int)length);
-            _headers = new FieldTable(buf);
-            buf.dispose();
+            try (QpidByteBuffer buf = buffer.view(0, (int) length))
+            {
+                _headers = new FieldTable(buf);
+            }
             buffer.position(buffer.position()+(int)length);
         }
 
@@ -959,6 +963,7 @@ public class BasicContentHeaderProperties
         if(_headers != null)
         {
             _headers.dispose();
+            _headers = null;
         }
     }
 

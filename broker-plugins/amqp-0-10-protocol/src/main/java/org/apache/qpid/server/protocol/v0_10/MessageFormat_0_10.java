@@ -27,14 +27,14 @@ import java.util.List;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.plugin.PluggableService;
-import org.apache.qpid.server.store.MessageHandle;
-import org.apache.qpid.server.store.MessageStore;
-import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.Header;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.Struct;
+import org.apache.qpid.server.store.MessageHandle;
+import org.apache.qpid.server.store.MessageStore;
+import org.apache.qpid.server.store.StoredMessage;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 @PluggableService
 public class MessageFormat_0_10 implements MessageFormat<MessageTransferMessage>
@@ -63,7 +63,7 @@ public class MessageFormat_0_10 implements MessageFormat<MessageTransferMessage>
     // format: <int header count> <headers> <body>
 
     @Override
-    public List<QpidByteBuffer> convertToMessageFormat(final MessageTransferMessage message)
+    public QpidByteBuffer convertToMessageFormat(final MessageTransferMessage message)
     {
         ServerEncoder encoder = new ServerEncoder(4096, true);
         Struct[] structs = message.getHeader().getStructs();
@@ -72,22 +72,21 @@ public class MessageFormat_0_10 implements MessageFormat<MessageTransferMessage>
         {
             encoder.writeStruct32(struct);
         }
-        final QpidByteBuffer headerBuf = encoder.getBuffer();
-        List<QpidByteBuffer> bufs = new ArrayList<>();
-        bufs.add(headerBuf);
-        bufs.addAll(message.getContent(0, (int) message.getSize()));
-
-        return bufs;
+        try (QpidByteBuffer headerBuf = encoder.getBuffer();
+             QpidByteBuffer content = message.getContent())
+        {
+            return QpidByteBuffer.concatenate(headerBuf, content);
+        }
     }
 
     @Override
-    public MessageTransferMessage createMessage(final List<QpidByteBuffer> buf,
+    public MessageTransferMessage createMessage(final QpidByteBuffer payload,
                                                 final MessageStore store,
                                                 final Object connectionReference)
     {
         try
         {
-            ServerDecoder serverDecoder = new ServerDecoder(buf);
+            ServerDecoder serverDecoder = new ServerDecoder(payload);
             int headerCount = serverDecoder.readInt32();
             DeliveryProperties deliveryProperties = null;
             MessageProperties messageProperties = null;
@@ -113,20 +112,11 @@ public class MessageFormat_0_10 implements MessageFormat<MessageTransferMessage>
                 }
             }
             Header header = new Header(deliveryProperties, messageProperties, nonStandard);
-            int bodySize = 0;
-            for(QpidByteBuffer content : buf)
-            {
-                bodySize += content.remaining();
-            }
-            MessageMetaData_0_10 metaData = new MessageMetaData_0_10(header, bodySize, System.currentTimeMillis());
+            MessageMetaData_0_10 metaData = new MessageMetaData_0_10(header,
+                                                                     payload.remaining(),
+                                                                     System.currentTimeMillis());
             final MessageHandle<MessageMetaData_0_10> handle = store.addMessage(metaData);
-            for (QpidByteBuffer content : buf)
-            {
-                if (content.hasRemaining())
-                {
-                    handle.addContent(content);
-                }
-            }
+            handle.addContent(payload);
             final StoredMessage<MessageMetaData_0_10> storedMessage = handle.allContentAdded();
             return new MessageTransferMessage(storedMessage, connectionReference);
 

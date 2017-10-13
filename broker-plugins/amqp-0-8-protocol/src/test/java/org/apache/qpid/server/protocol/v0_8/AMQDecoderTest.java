@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQBody;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQDataBlock;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQFrame;
@@ -39,14 +40,13 @@ import org.apache.qpid.server.protocol.v0_8.transport.ContentBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.FrameCreatingMethodProcessor;
 import org.apache.qpid.server.protocol.v0_8.transport.HeartbeatBody;
-import org.apache.qpid.server.protocol.ProtocolVersion;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.server.transport.ByteBufferSender;
-import org.apache.qpid.server.util.ByteBufferUtils;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AMQDecoderTest extends QpidTestCase
 {
 
+    private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.allocate(0);
     private ClientDecoder _decoder;
     private FrameCreatingMethodProcessor _methodProcessor;
 
@@ -58,15 +58,15 @@ public class AMQDecoderTest extends QpidTestCase
         _methodProcessor = new FrameCreatingMethodProcessor(ProtocolVersion.v0_91);
         _decoder = new ClientDecoder(_methodProcessor);
     }
-   
-    
+
+
     private ByteBuffer getHeartbeatBodyBuffer() throws IOException
     {
         TestSender sender = new TestSender();
         HeartbeatBody.FRAME.writePayload(sender);
-        return ByteBufferUtils.combine(sender.getSentBuffers());
+        return combine(sender.getSentBuffers());
     }
-    
+
     public void testSingleFrameDecode() throws AMQProtocolVersionException, AMQFrameDecodingException, IOException
     {
         ByteBuffer msg = getHeartbeatBodyBuffer();
@@ -94,7 +94,7 @@ public class AMQDecoderTest extends QpidTestCase
         AMQFrame frame = new AMQFrame(1, body);
         TestSender sender = new TestSender();
         frame.writePayload(sender);
-        ByteBuffer msg = ByteBufferUtils.combine(sender.getSentBuffers());
+        ByteBuffer msg = combine(sender.getSentBuffers());
 
         _decoder.decodeBuffer(msg);
         List<AMQDataBlock> frames = _methodProcessor.getProcessedMethods();
@@ -122,7 +122,7 @@ public class AMQDecoderTest extends QpidTestCase
         AMQFrame frame = new AMQFrame(1, body);
         TestSender sender = new TestSender();
         frame.writePayload(sender);
-        ByteBuffer allData = ByteBufferUtils.combine(sender.getSentBuffers());
+        ByteBuffer allData = combine(sender.getSentBuffers());
 
 
         for(int i = 0 ; i < allData.remaining(); i++)
@@ -137,9 +137,12 @@ public class AMQDecoderTest extends QpidTestCase
         {
             assertEquals(ContentBody.TYPE, ((AMQFrame) frames.get(0)).getBodyFrame().getFrameType());
             ContentBody decodedBody = (ContentBody) ((AMQFrame) frames.get(0)).getBodyFrame();
-            final ByteBuffer byteBuffer = decodedBody.getPayload().asByteBuffer().duplicate();
-            byte[] bodyBytes = new byte[byteBuffer.remaining()];
-            byteBuffer.get(bodyBytes);
+            byte[] bodyBytes;
+            try (QpidByteBuffer payloadBuffer = decodedBody.getPayload())
+            {
+                bodyBytes = new byte[payloadBuffer.remaining()];
+                payloadBuffer.get(bodyBytes);
+            }
             assertTrue("Body was corrupted", Arrays.equals(payload, bodyBytes));
         }
         else
@@ -147,7 +150,7 @@ public class AMQDecoderTest extends QpidTestCase
             fail("decode was not a frame");
         }
     }
-    
+
     public void testPartialFrameDecode() throws AMQProtocolVersionException, AMQFrameDecodingException, IOException
     {
         ByteBuffer msg = getHeartbeatBodyBuffer();
@@ -173,7 +176,7 @@ public class AMQDecoderTest extends QpidTestCase
             fail("decode was not a frame");
         }
     }
-    
+
     public void testMultipleFrameDecode() throws AMQProtocolVersionException, AMQFrameDecodingException, IOException
     {
         ByteBuffer msgA = getHeartbeatBodyBuffer();
@@ -197,13 +200,13 @@ public class AMQDecoderTest extends QpidTestCase
             }
         }
     }
-    
+
     public void testMultiplePartialFrameDecode() throws AMQProtocolVersionException, AMQFrameDecodingException, IOException
     {
         ByteBuffer msgA = getHeartbeatBodyBuffer();
         ByteBuffer msgB = getHeartbeatBodyBuffer();
         ByteBuffer msgC = getHeartbeatBodyBuffer();
-        
+
         ByteBuffer sliceA = ByteBuffer.allocate(msgA.remaining() + msgB.remaining() / 2);
         sliceA.put(msgA);
         int limit = msgB.limit();
@@ -213,7 +216,7 @@ public class AMQDecoderTest extends QpidTestCase
         sliceA.flip();
         msgB.limit(limit);
         msgB.position(pos);
-        
+
         ByteBuffer sliceB = ByteBuffer.allocate(msgB.remaining() + pos);
         sliceB.put(msgB);
         msgC.limit(pos);
@@ -245,8 +248,8 @@ public class AMQDecoderTest extends QpidTestCase
 
     private static class TestSender implements ByteBufferSender
     {
-        private final Collection<QpidByteBuffer> _sentBuffers = new ArrayList<>();
 
+        private final Collection<QpidByteBuffer> _sentBuffers = new ArrayList<>();
         @Override
         public boolean isDirectBufferPreferred()
         {
@@ -276,6 +279,32 @@ public class AMQDecoderTest extends QpidTestCase
         {
             return _sentBuffers;
         }
+
     }
 
+    private static ByteBuffer combine(Collection<QpidByteBuffer> bufs)
+    {
+        if(bufs == null || bufs.isEmpty())
+        {
+            return EMPTY_BYTE_BUFFER;
+        }
+        else
+        {
+            int size = 0;
+            boolean isDirect = false;
+            for(QpidByteBuffer buf : bufs)
+            {
+                size += buf.remaining();
+                isDirect = isDirect || buf.isDirect();
+            }
+            ByteBuffer combined = isDirect ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
+
+            for(QpidByteBuffer buf : bufs)
+            {
+                buf.copyTo(combined);
+            }
+            combined.flip();
+            return combined;
+        }
+    }
 }

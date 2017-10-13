@@ -23,7 +23,6 @@ package org.apache.qpid.server.store.berkeleydb.tuple;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.List;
 
 import com.sleepycat.bind.EntryBinding;
 import com.sleepycat.je.DatabaseEntry;
@@ -61,15 +60,10 @@ public class MessageMetaDataBinding implements EntryBinding<StorableMessageMetaD
             final int metaDataType = stream.readByte() & 0xff;
             MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(metaDataType);
 
-            List<QpidByteBuffer> bufs = QpidByteBuffer.asQpidByteBuffers(stream);
-
-            final StorableMessageMetaData metaData = type.createMetaData(bufs);
-
-            for (final QpidByteBuffer buf : bufs)
+            try (QpidByteBuffer buf = QpidByteBuffer.asQpidByteBuffer(stream))
             {
-                buf.dispose();
+                return type.createMetaData(buf);
             }
-            return metaData;
         }
         catch (IOException | RuntimeException e)
         {
@@ -83,12 +77,15 @@ public class MessageMetaDataBinding implements EntryBinding<StorableMessageMetaD
         final int bodySize = 1 + metaData.getStorableSize();
         byte[] underlying = new byte[4+bodySize];
         underlying[4] = (byte) metaData.getType().ordinal();
-        QpidByteBuffer buf = QpidByteBuffer.wrap(underlying);
-        buf.putInt(bodySize ^ 0x80000000);
-        buf.position(5);
-        buf = buf.slice();
-
-        metaData.writeToBuffer(buf);
+        try (QpidByteBuffer buf = QpidByteBuffer.wrap(underlying))
+        {
+            buf.putInt(bodySize ^ 0x80000000);
+            buf.position(5);
+            try (QpidByteBuffer bufSlice = buf.slice())
+            {
+                metaData.writeToBuffer(bufSlice);
+            }
+        }
         entry.setData(underlying);
     }
 }

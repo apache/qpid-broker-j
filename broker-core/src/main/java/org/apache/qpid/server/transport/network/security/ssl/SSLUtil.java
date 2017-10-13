@@ -656,9 +656,7 @@ public class SSLUtil
 
     public final static String getServerNameFromTLSClientHello(QpidByteBuffer source)
     {
-
-        QpidByteBuffer input = source.duplicate();
-        try
+        try (QpidByteBuffer input = source.duplicate())
         {
 
             // Do we have a complete header?
@@ -680,7 +678,7 @@ public class SSLUtil
                 int recordLength = input.getUnsignedShort();
                 int messageType = input.get();
                 // 24-bit length field
-                int length = ((input.get() & 0xFF) << 16) | ((input.get() & 0xFF) << 8) | (input.get() & 0xFF);
+                int length = (input.getUnsignedByte() << 16) | (input.getUnsignedByte() << 8) | input.getUnsignedByte();
                 if(input.remaining() < length)
                 {
                     return null;
@@ -761,11 +759,6 @@ public class SSLUtil
 
             }
             return null;
-
-        }
-        finally
-        {
-            input.dispose();
         }
     }
 

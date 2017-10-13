@@ -26,7 +26,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.JdkFutureAdapters;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -158,11 +158,32 @@ public class FrameTransport implements AutoCloseable
     {
         Preconditions.checkState(_channel != null, "Not connected");
         ChannelPromise promise = _channel.newPromise();
-        final List<QpidByteBuffer> payload = frameBody instanceof Transfer ? ((Transfer) frameBody).getPayload() : null;
-        TransportFrame transportFrame = new TransportFrame(channel.shortValue(), frameBody, payload);
-        _channel.write(transportFrame, promise);
-        _channel.flush();
-        return JdkFutureAdapters.listenInPoolThread(promise);
+        final TransportFrame transportFrame;
+        try (QpidByteBuffer payload = frameBody instanceof Transfer ? ((Transfer) frameBody).getPayload() : null)
+        {
+            final QpidByteBuffer duplicate;
+            if (payload == null)
+            {
+                duplicate = null;
+            }
+            else
+            {
+                duplicate = payload.duplicate();
+            }
+            transportFrame = new TransportFrame(channel.shortValue(), frameBody, duplicate);
+            _channel.write(transportFrame, promise);
+            _channel.flush();
+            final ListenableFuture<Void> listenableFuture = JdkFutureAdapters.listenInPoolThread(promise);
+            if (frameBody instanceof Transfer)
+            {
+                listenableFuture.addListener(() -> ((Transfer) frameBody).dispose(), MoreExecutors.directExecutor());
+            }
+            if (duplicate != null)
+            {
+                listenableFuture.addListener(() -> duplicate.dispose(), MoreExecutors.directExecutor());
+            }
+            return listenableFuture;
+        }
     }
 
     public ListenableFuture<Void> sendPerformative(final SaslFrameBody frameBody) throws Exception

@@ -20,14 +20,7 @@
 
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferInputStream;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
@@ -65,38 +58,13 @@ public class MessageMetaDataFactoryTest extends QpidTestCase
             _mmd.writeToBuffer(qpidByteBuffer);
             qpidByteBuffer.flip();
 
-            MessageMetaData recreated = MessageMetaData.FACTORY.createMetaData(Collections.singletonList(qpidByteBuffer));
+            MessageMetaData recreated = MessageMetaData.FACTORY.createMetaData(qpidByteBuffer);
 
             assertEquals("Unexpected arrival time", _arrivalTime, recreated.getArrivalTime());
             assertEquals("Unexpected routing key", _routingKey, recreated.getMessagePublishInfo().getRoutingKey());
             assertEquals("Unexpected content type", CONTENT_TYPE, recreated.getContentHeaderBody().getProperties()
                                                                                .getContentTypeAsString());
             recreated.dispose();
-        }
-    }
-
-    public void testUnmarshalFromMultipleBuffers() throws Exception
-    {
-        List<QpidByteBuffer> bufs = Collections.emptyList();
-        try (QpidByteBuffer qpidByteBuffer = QpidByteBuffer.allocateDirect(_mmd.getStorableSize()))
-        {
-            _mmd.writeToBuffer(qpidByteBuffer);
-            qpidByteBuffer.flip();
-
-            bufs = splitIntoSmallerBuffers(qpidByteBuffer);
-
-            final MessageMetaData recreated = MessageMetaData.FACTORY.createMetaData(bufs);
-            assertEquals("Unexpected arrival time", _arrivalTime, recreated.getArrivalTime());
-            assertEquals("Unexpected routing key", _routingKey, recreated.getMessagePublishInfo().getRoutingKey());
-            assertEquals("Unexpected content type", CONTENT_TYPE, recreated.getContentHeaderBody().getProperties().getContentTypeAsString());
-            recreated.dispose();
-        }
-        finally
-        {
-            for (final QpidByteBuffer buf : bufs)
-            {
-                buf.dispose();
-            }
         }
     }
 
@@ -112,24 +80,4 @@ public class MessageMetaDataFactoryTest extends QpidTestCase
 
         return new MessageMetaData(publishBody, contentHeaderBody, _arrivalTime);
     }
-
-    private List<QpidByteBuffer> splitIntoSmallerBuffers(final QpidByteBuffer qpidByteBuffer) throws IOException
-    {
-        List<QpidByteBuffer> bufs = new ArrayList<>();
-        try (InputStream stream = new QpidByteBufferInputStream(Collections.singletonList(qpidByteBuffer)))
-        {
-            byte[] transferBuf = new byte[3];
-            int read = stream.read(transferBuf);
-            while (read != -1)
-            {
-                QpidByteBuffer buf = QpidByteBuffer.allocateDirect(read);
-                buf.put(transferBuf, 0, read);
-                buf.flip();
-                bufs.add(buf);
-                read = stream.read(transferBuf);
-            }
-        }
-        return bufs;
-    }
-
 }

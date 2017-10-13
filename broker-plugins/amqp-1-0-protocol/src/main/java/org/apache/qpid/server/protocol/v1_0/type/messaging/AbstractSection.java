@@ -20,12 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
@@ -45,19 +40,14 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
     private T _value;
 
     private S _section;
-    private List<QpidByteBuffer> _encodedForm;
+    private QpidByteBuffer _encodedForm;
     // _encodedSize is valid only when _encodedForm is non-null
     private long _encodedSize = 0;
 
-    protected AbstractSection(final List<QpidByteBuffer> encodedForm)
+    protected AbstractSection(final QpidByteBuffer encodedForm)
     {
-        _encodedForm = new ArrayList<>();
-        _encodedSize = 0;
-        for(QpidByteBuffer encodedChunk : encodedForm)
-        {
-            _encodedSize += encodedChunk.remaining();
-            _encodedForm.add(encodedChunk.duplicate());
-        }
+        _encodedForm = encodedForm.duplicate();
+        _encodedSize = encodedForm.remaining();
     }
 
     protected AbstractSection(final S section)
@@ -72,7 +62,7 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
         _value = otherAbstractSection.getValue();
         _section = otherAbstractSection._section;
         _encodedForm = otherAbstractSection.getEncodedForm();
-        _encodedSize = QpidByteBufferUtils.remaining(_encodedForm);
+        _encodedSize = _encodedForm.remaining();
     }
 
     protected abstract DescribedTypeConstructor<S> createNonEncodingRetainingSectionConstructor();
@@ -89,15 +79,10 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
     }
 
     @Override
-    public synchronized final List<QpidByteBuffer> getEncodedForm()
+    public synchronized final QpidByteBuffer getEncodedForm()
     {
         encodeIfNecessary();
-        List<QpidByteBuffer> returnVal = new ArrayList<>(_encodedForm.size());
-        for(int i = 0; i < _encodedForm.size(); i++)
-        {
-            returnVal.add(_encodedForm.get(i).duplicate());
-        }
-        return returnVal;
+        return _encodedForm.duplicate();
     }
 
     @Override
@@ -111,10 +96,7 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
     public synchronized void writeTo(final QpidByteBuffer dest)
     {
         encodeIfNecessary();
-        for(QpidByteBuffer buf : _encodedForm)
-        {
-            dest.putCopyOf(buf);
-        }
+        dest.putCopyOf(_encodedForm);
     }
 
     @Override
@@ -123,10 +105,7 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
         if (_encodedForm != null)
         {
             _section = decode(createNonEncodingRetainingSectionConstructor());
-            for (int i = 0; i < _encodedForm.size(); i++)
-            {
-                _encodedForm.get(i).dispose();
-            }
+            _encodedForm.dispose();
             _encodedForm = null;
             _encodedSize = 0;
         }
@@ -145,10 +124,7 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
         _value = null;
         if (_encodedForm != null)
         {
-            for (int i = 0; i < _encodedForm.size(); i++)
-            {
-                _encodedForm.get(i).dispose();
-            }
+            _encodedForm.dispose();
             _encodedForm = null;
             _encodedSize = 0;
         }
@@ -157,7 +133,14 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
     @Override
     public String toString()
     {
-        return getValue().toString();
+        if (_value == null)
+        {
+            return String.format("<Undecoded %s (%d bytes)>", getClass().getSimpleName(), _encodedSize);
+        }
+        else
+        {
+            return getValue().toString();
+        }
     }
 
     private void encodeIfNecessary()
@@ -165,41 +148,33 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
         if (_encodedForm == null)
         {
             SectionEncoder sectionEncoder = new SectionEncoderImpl(TYPE_REGISTRY);
-            _encodedForm = Collections.singletonList(sectionEncoder.encodeObject(_section));
-            _encodedSize = QpidByteBufferUtils.remaining(_encodedForm);
+            _encodedForm = sectionEncoder.encodeObject(_section);
+            _encodedSize = _encodedForm.remaining();
         }
     }
 
     private S decode(DescribedTypeConstructor<S> constructor)
     {
-        List<QpidByteBuffer> input = getEncodedForm();
-        int[] originalPositions = new int[input.size()];
-        for(int i = 0; i < input.size(); i++)
+        try (QpidByteBuffer input = getEncodedForm())
         {
-            originalPositions[i] = input.get(i).position();
-        }
-        int describedByte = QpidByteBufferUtils.get(input);
-        if (describedByte != ValueHandler.DESCRIBED_TYPE)
-        {
-            throw new ConnectionScopedRuntimeException("Cannot decode section",
-                                                       new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                                                              "Not a described type."));
-        }
-        ValueHandler handler = new ValueHandler(TYPE_REGISTRY);
-        try
-        {
-            Object descriptor = handler.parse(input);
-            return constructor.construct(descriptor, input, originalPositions, handler).construct(input, handler);
-        }
-        catch (AmqpErrorException e)
-        {
-            throw new ConnectionScopedRuntimeException("Cannot decode section", e);
-        }
-        finally
-        {
-            for (QpidByteBuffer anInput : input)
+
+            int originalPosition = input.position();
+            int describedByte = input.get();
+            if (describedByte != ValueHandler.DESCRIBED_TYPE)
             {
-                anInput.dispose();
+                throw new ConnectionScopedRuntimeException("Cannot decode section",
+                                                           new AmqpErrorException(AmqpError.DECODE_ERROR,
+                                                                                  "Not a described type."));
+            }
+            ValueHandler handler = new ValueHandler(TYPE_REGISTRY);
+            try
+            {
+                Object descriptor = handler.parse(input);
+                return constructor.construct(descriptor, input, originalPosition, handler).construct(input, handler);
+            }
+            catch (AmqpErrorException e)
+            {
+                throw new ConnectionScopedRuntimeException("Cannot decode section", e);
             }
         }
     }

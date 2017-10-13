@@ -22,14 +22,11 @@ package org.apache.qpid.server.protocol.v1_0;
 
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -144,12 +141,6 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
         return resource instanceof Queue && ((Queue<?>)resource).isHoldOnPublishEnabled();
     }
 
-
-    public Collection<QpidByteBuffer> getFragments()
-    {
-        return getContent(0, (int) getSize());
-    }
-
     public HeaderSection getHeaderSection()
     {
         return getMessageMetaData().getHeaderSection();
@@ -181,7 +172,7 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
     }
 
     @Override
-    public Collection<QpidByteBuffer> getContent(final int offset, final int length)
+    public QpidByteBuffer getContent(final int offset, final int length)
     {
         if(getMessageMetaData().getVersion() == 0)
         {
@@ -189,15 +180,12 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
 
             try
             {
-                final Collection<QpidByteBuffer> allSectionsContent = super.getContent(0, Integer.MAX_VALUE);
-
-                List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(new ArrayList<>(allSectionsContent));
-
-                List<QpidByteBuffer> bodySectionContent = new ArrayList<>();
-                for(QpidByteBuffer buf : allSectionsContent)
+                List<EncodingRetainingSection<?>> sections;
+                try (QpidByteBuffer allSectionsContent = super.getContent())
                 {
-                    buf.dispose();
+                    sections = sectionDecoder.parseAll(allSectionsContent);
                 }
+                List<QpidByteBuffer> bodySectionContent = new ArrayList<>();
 
                 for (final EncodingRetainingSection<?> section : sections)
                 {
@@ -205,44 +193,14 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
                         || section instanceof AmqpValueSection
                         || section instanceof AmqpSequenceSection)
                     {
-                        bodySectionContent.addAll(section.getEncodedForm());
+                        bodySectionContent.add(section.getEncodedForm());
                     }
                     section.dispose();
                 }
-                if(offset == 0 && length >= QpidByteBufferUtils.remaining(bodySectionContent))
+                try (QpidByteBuffer bodyContent = QpidByteBuffer.concatenate(bodySectionContent))
                 {
-                    return bodySectionContent;
-                }
-                else
-                {
-                    final Collection<QpidByteBuffer> contentView = new ArrayList<>();
-                    int position = 0;
-                    for(QpidByteBuffer buf :bodySectionContent)
-                    {
-                        if (position < offset)
-                        {
-                            if (offset - position < buf.remaining())
-                            {
-                                QpidByteBuffer view = buf.view(offset - position,
-                                                               Math.min(length, buf.remaining() - (offset - position)));
-                                contentView.add(view);
-                                position += view.remaining();
-                            }
-                            else
-                            {
-                                position += buf.remaining();
-                            }
-                        }
-                        else if (position <= offset + length)
-                        {
-                            QpidByteBuffer view = buf.view(0, Math.min(length - (position - offset), buf.remaining()));
-                            contentView.add(view);
-                            position += view.remaining();
-                        }
-
-                        buf.dispose();
-                    }
-                    return contentView;
+                    bodySectionContent.forEach(QpidByteBuffer::dispose);
+                    return bodyContent.view(offset, length);
                 }
             }
             catch (AmqpErrorException e)

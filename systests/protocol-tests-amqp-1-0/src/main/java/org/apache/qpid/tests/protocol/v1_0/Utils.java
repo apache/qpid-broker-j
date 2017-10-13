@@ -21,10 +21,8 @@
 package org.apache.qpid.tests.protocol.v1_0;
 
 import java.net.InetSocketAddress;
-import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
@@ -94,41 +92,27 @@ public class Utils
         final Header header = new Header();
         messageEncoder.setHeader(header);
         messageEncoder.addData(messageContent);
-        List<QpidByteBuffer> payload = messageEncoder.getPayload();
-        long size = QpidByteBufferUtils.remaining(payload);
-
-        QpidByteBuffer[] result = new QpidByteBuffer[numberOfParts];
-        int chunkSize = (int) size / numberOfParts;
-        int lastChunkSize = (int) size - chunkSize * (numberOfParts - 1);
-        for (int i = 0; i < numberOfParts; i++)
+        final QpidByteBuffer[] result;
+        try (QpidByteBuffer payload = messageEncoder.getPayload())
         {
-            result[i] = QpidByteBuffer.allocate(false, i == numberOfParts - 1 ? lastChunkSize : chunkSize);
-        }
+            long size = (long) payload.remaining();
 
-        int currentBufferIndex = 0;
-        for (QpidByteBuffer p : payload)
-        {
-            final int limit = p.limit();
-
-            while (p.hasRemaining())
+            result = new QpidByteBuffer[numberOfParts];
+            int chunkSize = (int) size / numberOfParts;
+            int lastChunkSize = (int) size - chunkSize * (numberOfParts - 1);
+            for (int i = 0; i < numberOfParts; i++)
             {
-                QpidByteBuffer currentBuffer = result[currentBufferIndex];
-                if (currentBuffer.hasRemaining())
+                result[i] = QpidByteBuffer.allocate(false, i == numberOfParts - 1 ? lastChunkSize : chunkSize);
+                final int remaining = result[i].remaining();
+                try (QpidByteBuffer view = payload.view(0, remaining))
                 {
-                    int length = Math.min(p.remaining(), currentBuffer.remaining());
-                    p.limit(p.position() + length);
-                    currentBuffer.put(p.slice());
-                    p.position(p.position() + length);
-                    p.limit(limit);
+                    result[i].put(view);
                 }
-
-                if (!currentBuffer.hasRemaining())
-                {
-                    currentBuffer.flip();
-                    currentBufferIndex++;
-                }
+                result[i].flip();
+                payload.position(payload.position() + remaining);
             }
         }
+
         return result;
     }
 }

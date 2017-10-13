@@ -20,9 +20,7 @@
  */
 package org.apache.qpid.server.util;
 
-import java.util.Map;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -40,11 +38,10 @@ public class HousekeepingExecutor extends ScheduledThreadPoolExecutor
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HousekeepingExecutor.class);
-    private final Map<Thread, QpidByteBuffer> _cachedBufferMap = new ConcurrentHashMap<>();
 
     public HousekeepingExecutor(final String threadPrefix, final int threadCount, final Subject subject)
     {
-        super(threadCount, createThreadFactory(threadPrefix, threadCount, subject));
+        super(threadCount, QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(createThreadFactory(threadPrefix, threadCount, subject)));
 
     }
 
@@ -57,16 +54,6 @@ public class HousekeepingExecutor extends ScheduledThreadPoolExecutor
     protected void afterExecute(Runnable r, Throwable t)
     {
         super.afterExecute(r, t);
-
-        final QpidByteBuffer cachedThreadLocalBuffer = QpidByteBuffer.getCachedThreadLocalBuffer();
-        if (cachedThreadLocalBuffer != null)
-        {
-            _cachedBufferMap.put(Thread.currentThread(), cachedThreadLocalBuffer);
-        }
-        else
-        {
-            _cachedBufferMap.remove(Thread.currentThread());
-        }
 
         if (t == null && r instanceof Future<?>)
         {
@@ -110,16 +97,5 @@ public class HousekeepingExecutor extends ScheduledThreadPoolExecutor
                 Runtime.getRuntime().halt(1);
             }
         }
-    }
-
-    @Override
-    protected void terminated()
-    {
-        super.terminated();
-        for (QpidByteBuffer qpidByteBuffer : _cachedBufferMap.values())
-        {
-            qpidByteBuffer.dispose();
-        }
-        _cachedBufferMap.clear();
     }
 }

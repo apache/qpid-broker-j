@@ -263,7 +263,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
     private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData_0_10>
     {
         @Override
-        public MessageMetaData_0_10 createMetaData(List<QpidByteBuffer> buf)
+        public MessageMetaData_0_10 createMetaData(QpidByteBuffer buf)
         {
             ServerDecoder decoder = new ServerDecoder(buf);
 

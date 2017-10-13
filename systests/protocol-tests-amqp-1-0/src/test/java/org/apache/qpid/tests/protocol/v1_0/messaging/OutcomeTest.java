@@ -94,7 +94,6 @@ public class OutcomeTest extends BrokerAdminUsingTestBase
                        .flow()
                        .receiveDelivery()
                        .decodeLatestDelivery();
-            ;
 
             Object secondDeliveryPayload = interaction.getDecodedLatestDelivery();
             assertThat(secondDeliveryPayload, is(equalTo("message2")));

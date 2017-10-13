@@ -75,12 +75,6 @@ public class MemoryMessageStore implements MessageStore
         @Override
         public MessageEnqueueRecord enqueueMessage(TransactionLogResource queue, EnqueueableMessage message)
         {
-
-            if(message.getStoredMessage() instanceof StoredMemoryMessage)
-            {
-                _messages.putIfAbsent(message.getMessageNumber(), (StoredMemoryMessage) message.getStoredMessage());
-            }
-
             Set<Long> messageIds = _localEnqueueMap.get(queue.getId());
             if (messageIds == null)
             {
@@ -328,6 +322,7 @@ public class MemoryMessageStore implements MessageStore
                 }
             }
         };
+        _messages.put(storedMemoryMessage.getMessageNumber(), storedMemoryMessage);
         _inMemorySize.addAndGet(metaData.getStorableSize());
 
         return storedMemoryMessage;
@@ -493,7 +488,7 @@ public class MemoryMessageStore implements MessageStore
         {
             for (StoredMemoryMessage message : _messages.values())
             {
-                if(!handler.handle(message))
+                if (!handler.handle(message))
                 {
                     break;
                 }

@@ -19,10 +19,8 @@
 package org.apache.qpid.server.security;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
@@ -31,19 +29,18 @@ import java.io.ObjectInputStream;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TestMemoryMessageStore;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -96,19 +93,16 @@ public class TrustStoreMessageSourceTest extends QpidTestCase
     {
         final int bodySize = (int) message.getSize();
         byte[] msgContent = new byte[bodySize];
-        final Collection<QpidByteBuffer> allData = message.getStoredMessage().getContent(0, bodySize);
-        int total = 0;
-        for(QpidByteBuffer b : allData)
+        final List<String> certificates;
+        final ByteArrayInputStream bytesIn;
+        try (QpidByteBuffer allData = message.getStoredMessage().getContent(0, bodySize))
         {
-            int len = b.remaining();
-            b.get(msgContent, total, len);
-            b.dispose();
-            total += len;
+            assertEquals("Unexpected message size was retrieved", bodySize, allData.remaining());
+            allData.get(msgContent);
         }
-        assertEquals("Unexpected message size was retrieved", bodySize, total);
 
-        List<String> certificates = new ArrayList<>();
-        ByteArrayInputStream bytesIn = new ByteArrayInputStream(msgContent);
+        certificates = new ArrayList<>();
+        bytesIn = new ByteArrayInputStream(msgContent);
         try (ObjectInputStream is = new ObjectInputStream(bytesIn))
         {
             ArrayList<byte[]> encodedCertificates = (ArrayList<byte[]>) is.readObject();

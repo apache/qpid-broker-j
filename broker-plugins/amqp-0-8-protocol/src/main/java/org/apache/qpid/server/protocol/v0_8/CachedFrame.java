@@ -50,9 +50,10 @@ class CachedFrame extends AMQDataBlock
     public long writePayload(final ByteBufferSender sender)
     {
 
-        QpidByteBuffer dup = _buffer.duplicate();
-        sender.send(dup);
-        dup.dispose();
+        try (QpidByteBuffer dup = _buffer.duplicate())
+        {
+            sender.send(dup);
+        }
         return _size;
     }
 
@@ -80,9 +81,10 @@ class CachedFrame extends AMQDataBlock
         @Override
         public void send(final QpidByteBuffer msg)
         {
-            QpidByteBuffer dup = msg.duplicate();
-            _buffer.put(dup);
-            dup.dispose();
+            try (QpidByteBuffer dup = msg.duplicate())
+            {
+                _buffer.put(dup);
+            }
         }
 
         @Override

@@ -29,25 +29,26 @@ import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.Futures;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.server.protocol.v0_10.transport.Binary;
 import org.apache.qpid.server.protocol.v0_10.transport.ExecutionErrorCode;
 import org.apache.qpid.server.protocol.v0_10.transport.ExecutionException;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
 import org.apache.qpid.server.protocol.v0_10.transport.Method;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 public class ServerSessionTest extends QpidTestCase
 {
@@ -133,7 +134,8 @@ public class ServerSessionTest extends QpidTestCase
         ServerSessionDelegate delegate = new ServerSessionDelegate();
 
         MessageTransfer xfr = new MessageTransfer();
-        xfr.setBody(new byte[2048]);
+        byte[] body1 = new byte[2048];
+        xfr.setBody(QpidByteBuffer.wrap(body1));
         delegate.messageTransfer(session, xfr);
 
         assertFalse("No methods invoked - expecting at least 1", invokedMethods.isEmpty());
@@ -145,7 +147,8 @@ public class ServerSessionTest extends QpidTestCase
 
         // test the boundary condition
 
-        xfr.setBody(new byte[1024]);
+        byte[] body = new byte[1024];
+        xfr.setBody(QpidByteBuffer.wrap(body));
         delegate.messageTransfer(session, xfr);
 
         assertTrue("Methods invoked when not expecting any", invokedMethods.isEmpty());

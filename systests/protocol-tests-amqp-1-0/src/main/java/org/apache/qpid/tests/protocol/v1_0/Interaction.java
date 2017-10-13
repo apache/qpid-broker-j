@@ -761,7 +761,7 @@ public class Interaction
         return this;
     }
 
-    public Interaction transferPayload(final List<QpidByteBuffer> payload)
+    public Interaction transferPayload(final QpidByteBuffer payload)
     {
         _transfer.setPayload(payload);
         return this;
@@ -777,12 +777,10 @@ public class Interaction
     {
         AmqpValue amqpValue = new AmqpValue(payload);
         final AmqpValueSection section = amqpValue.createEncodingRetainingSection();
-        final List<QpidByteBuffer> encodedForm = section.getEncodedForm();
-        transfer.setPayload(encodedForm);
-        section.dispose();
-        for (QpidByteBuffer qbb : encodedForm)
+        try (QpidByteBuffer encodedForm = section.getEncodedForm())
         {
-            qbb.dispose();
+            transfer.setPayload(encodedForm);
+            section.dispose();
         }
     }
 
@@ -806,15 +804,12 @@ public class Interaction
         transferCopy.setResume(transfer.getResume());
         transferCopy.setAborted(transfer.getAborted());
         transferCopy.setBatchable(transfer.getBatchable());
-        final List<QpidByteBuffer> payload = transfer.getPayload();
-        if (payload != null)
+        try (QpidByteBuffer payload = transfer.getPayload())
         {
-            final List<QpidByteBuffer> payloadCopy = new ArrayList<>(payload.size());
-            for (QpidByteBuffer qpidByteBuffer : payload)
+            if (payload != null)
             {
-                payloadCopy.add(qpidByteBuffer.duplicate());
+                transferCopy.setPayload(payload);
             }
-            transferCopy.setPayload(payloadCopy);
         }
         return transferCopy;
     }

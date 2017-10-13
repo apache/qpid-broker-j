@@ -36,22 +36,17 @@ class MessageRecord implements Record
     {
         _messageNumber = storedMessage.getMessageNumber();
         _metaData = new byte[1 + storedMessage.getMetadataSize()];
-        QpidByteBuffer buf = QpidByteBuffer.wrap(_metaData);
-        buf.put((byte)storedMessage.getMetaData().getType().ordinal());
-        storedMessage.getMetaData().writeToBuffer(buf);
-        buf.dispose();
-
+        try (QpidByteBuffer buf = QpidByteBuffer.wrap(_metaData))
+        {
+            buf.put((byte) storedMessage.getMetaData().getType().ordinal());
+            storedMessage.getMetaData().writeToBuffer(buf);
+        }
 
         _content = new byte[storedMessage.getContentSize()];
-        buf = QpidByteBuffer.wrap(_content);
-        for(QpidByteBuffer content : storedMessage.getContent(0, storedMessage.getContentSize()))
+        try (QpidByteBuffer content = storedMessage.getContent(0, storedMessage.getContentSize()))
         {
-            buf.put(content);
-            content.dispose();
+            content.get(_content);
         }
-        buf.dispose();
-
-
     }
 
     MessageRecord(long messageNumber, byte[] metaData, byte[] content)

@@ -21,7 +21,9 @@
 package org.apache.qpid.server.store.jdbc;
 
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.InputStream;
 import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -156,17 +158,16 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
     }
 
     @Override
-    protected byte[] getBlobAsBytes(ResultSet rs, int col) throws SQLException
+    protected InputStream getBlobAsInputStream(ResultSet rs, int col) throws SQLException
     {
         if(_useBytesMethodsForBlob)
         {
-            return rs.getBytes(col);
+            return new ByteArrayInputStream(rs.getBytes(col));
         }
         else
         {
             Blob dataAsBlob = rs.getBlob(col);
-            return dataAsBlob.getBytes(1,(int) dataAsBlob.length());
-
+            return dataAsBlob.getBinaryStream();
         }
     }
 

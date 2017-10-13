@@ -33,7 +33,7 @@ class ZeroListConstructor implements TypeConstructor<List>
     }
 
     @Override
-    public List construct(final List<QpidByteBuffer> in, final ValueHandler handler)
+    public List construct(final QpidByteBuffer in, final ValueHandler handler)
     {
         return Collections.EMPTY_LIST;
     }

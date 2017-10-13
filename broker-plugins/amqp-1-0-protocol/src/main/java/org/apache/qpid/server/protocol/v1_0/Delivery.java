@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -171,11 +170,12 @@ public class Delivery
             }
         }
 
-        final List<QpidByteBuffer> payload = transfer.getPayload();
-        if (payload != null)
+        try (QpidByteBuffer payload = transfer.getPayload())
         {
-            _totalPayloadSize += QpidByteBufferUtils.remaining(payload);
-            QpidByteBufferUtils.dispose(payload);
+            if (payload != null)
+            {
+                _totalPayloadSize += (long) payload.remaining();
+            }
         }
     }
 
@@ -184,17 +184,18 @@ public class Delivery
         return _linkEndpoint;
     }
 
-
-    public List<QpidByteBuffer> getPayload()
+    public QpidByteBuffer getPayload()
     {
-        List<QpidByteBuffer> fragments = new ArrayList<>(_transfers.size());
+        List<QpidByteBuffer> transferBuffers = new ArrayList<>(_transfers.size());
         for (Transfer t : _transfers)
         {
-            fragments.addAll(t.getPayload());
+            transferBuffers.add(t.getPayload());
             t.dispose();
         }
         _transfers.clear();
-        return fragments;
+        final QpidByteBuffer combined = QpidByteBuffer.concatenate(transferBuffers);
+        transferBuffers.forEach(QpidByteBuffer::dispose);
+        return combined;
     }
 
     public void discard()

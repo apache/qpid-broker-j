@@ -20,9 +20,6 @@
  */
 package org.apache.qpid.server.store;
 
-import java.util.Collection;
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
@@ -42,9 +39,9 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
     }
 
     @Override
-    public TestMessageMetaData createMetaData(List<QpidByteBuffer> bufs)
+    public TestMessageMetaData createMetaData(QpidByteBuffer buf)
     {
-        return TestMessageMetaData.FACTORY.createMetaData(bufs);
+        return TestMessageMetaData.FACTORY.createMetaData(buf);
     }
 
     @Override
@@ -108,7 +105,13 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
 
         @Override
-        public Collection<QpidByteBuffer> getContent(int offset, int length)
+        public QpidByteBuffer getContent()
+        {
+            return null;
+        }
+
+        @Override
+        public QpidByteBuffer getContent(int offset, int length)
         {
             return null;
         }

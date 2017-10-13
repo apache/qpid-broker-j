@@ -20,10 +20,8 @@
 package org.apache.qpid.server.protocol.v1_0.codec;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
@@ -34,13 +32,13 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
     {
 
         @Override
-        public BigDecimal construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+        public BigDecimal construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
             int val;
 
-            if(QpidByteBufferUtils.hasRemaining(in, 4))
+            if (in.hasRemaining(4))
             {
-                val = QpidByteBufferUtils.getInt(in);
+                val = in.getInt();
             }
             else
             {
@@ -57,13 +55,13 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
     {
 
         @Override
-        public BigDecimal construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+        public BigDecimal construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
             long val;
 
-            if(QpidByteBufferUtils.hasRemaining(in, 8))
+            if (in.hasRemaining(8))
             {
-                val = QpidByteBufferUtils.getLong(in);
+                val = in.getLong();
             }
             else
             {
@@ -80,16 +78,16 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
     {
 
         @Override
-        public BigDecimal construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+        public BigDecimal construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
 
             long high;
             long low;
 
-            if(QpidByteBufferUtils.hasRemaining(in, 16))
+            if (in.hasRemaining(16))
             {
-                high = QpidByteBufferUtils.getLong(in);
-                low = QpidByteBufferUtils.getLong(in);
+                high = in.getLong();
+                low = in.getLong();
             }
             else
             {

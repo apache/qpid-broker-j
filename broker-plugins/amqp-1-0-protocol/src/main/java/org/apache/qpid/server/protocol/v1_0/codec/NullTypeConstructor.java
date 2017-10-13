@@ -19,8 +19,6 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 class NullTypeConstructor implements TypeConstructor<Void>
@@ -32,7 +30,7 @@ class NullTypeConstructor implements TypeConstructor<Void>
     }
 
     @Override
-    public Void construct(final List<QpidByteBuffer> in, final ValueHandler handler)
+    public Void construct(final QpidByteBuffer in, final ValueHandler handler)
     {
         return null;
     }

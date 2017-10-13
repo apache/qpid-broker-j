@@ -310,6 +310,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             ConnectionHeartbeat heartbeat = new ConnectionHeartbeat();
             ServerDisassembler serverDisassembler = new ServerDisassembler(sender, Frame.HEADER_SIZE + 1);
             serverDisassembler.command(null, heartbeat);
+            serverDisassembler.closed();
         }
         else if(isBrokerPre010())
         {

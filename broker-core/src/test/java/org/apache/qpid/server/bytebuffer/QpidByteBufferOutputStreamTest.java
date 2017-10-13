@@ -21,94 +21,93 @@
 
 package org.apache.qpid.server.bytebuffer;
 
-import java.util.Collection;
-import java.util.Iterator;
+import java.nio.charset.StandardCharsets;
 
-import junit.framework.TestCase;
 import org.junit.Assert;
 
-public class QpidByteBufferOutputStreamTest extends TestCase
+import org.apache.qpid.test.utils.QpidTestCase;
+
+public class QpidByteBufferOutputStreamTest extends QpidTestCase
 {
+    private static final int BUFFER_SIZE = 10;
+    private static final int POOL_SIZE = 20;
+    private static final double SPARSITY_FRACTION = 0.5;
+
+    @Override
+    protected void setUp() throws Exception
+    {
+        super.setUp();
+        QpidByteBuffer.deinitialisePool();
+        QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
+    }
+
+    @Override
+    public void tearDown() throws Exception
+    {
+        try
+        {
+            super.tearDown();
+        }
+        finally
+        {
+            QpidByteBuffer.deinitialisePool();
+        }
+    }
+
     public void testWriteByteByByte() throws Exception
     {
         boolean direct = false;
-        QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 3);
-        stream.write('a');
-        stream.write('b');
+        try (QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 3))
+        {
+            stream.write('a');
+            stream.write('b');
 
-        Collection<QpidByteBuffer> bufs = stream.fetchAccumulatedBuffers();
-        assertEquals("Unexpected number of buffers", 2, bufs.size());
-        Iterator<QpidByteBuffer> bufItr = bufs.iterator();
-
-        QpidByteBuffer buf1 = bufItr.next();
-        assertBufferContent("1st buffer", buf1, "a".getBytes(), direct);
-
-
-        QpidByteBuffer buf2 = bufItr.next();
-        assertBufferContent("2nd buffer", buf2, "b".getBytes(), direct);
+            assertBufferContent(false, "ab".getBytes(StandardCharsets.UTF_8), stream.fetchAccumulatedBuffer());
+        }
     }
 
     public void testWriteByteArrays() throws Exception
     {
         boolean direct = false;
-        QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 8);
-        stream.write("abcd".getBytes(), 0, 4);
-        stream.write("_ef_".getBytes(), 1, 2);
+        try (QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 8))
+        {
+            stream.write("abcd".getBytes(), 0, 4);
+            stream.write("_ef_".getBytes(), 1, 2);
 
-        Collection<QpidByteBuffer> bufs = stream.fetchAccumulatedBuffers();
-        assertEquals("Unexpected number of buffers", 2, bufs.size());
-        Iterator<QpidByteBuffer> bufItr = bufs.iterator();
-
-        QpidByteBuffer buf1 = bufItr.next();
-        assertBufferContent("1st buffer", buf1, "abcd".getBytes(), direct);
-
-        QpidByteBuffer buf2 = bufItr.next();
-        assertBufferContent("2nd buffer", buf2, "ef".getBytes(), direct);
+            assertBufferContent(direct, "abcdef".getBytes(StandardCharsets.UTF_8), stream.fetchAccumulatedBuffer());
+        }
     }
 
     public void testWriteMixed() throws Exception
     {
         boolean direct = true;
-        QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 3);
-        stream.write('a');
-        stream.write("bcd".getBytes());
+        try (QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 3))
+        {
+            stream.write('a');
+            stream.write("bcd".getBytes());
 
-        Collection<QpidByteBuffer> bufs = stream.fetchAccumulatedBuffers();
-        assertEquals("Unexpected number of buffers", 2, bufs.size());
-        Iterator<QpidByteBuffer> bufItr = bufs.iterator();
-
-        QpidByteBuffer buf1 = bufItr.next();
-        assertBufferContent("1st buffer", buf1, "a".getBytes(), direct);
-
-        QpidByteBuffer buf2 = bufItr.next();
-        assertBufferContent("2nd buffer", buf2, "bcd".getBytes(), direct);
+            assertBufferContent(direct, "abcd".getBytes(StandardCharsets.UTF_8), stream.fetchAccumulatedBuffer());
+        }
     }
 
 
     public void testWriteByteArrays_ArrayTooLargeForSingleBuffer() throws Exception
     {
         boolean direct = false;
-        QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 8);
-        stream.write("abcdefghi".getBytes());
+        try (QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 8))
+        {
+            stream.write("abcdefghi".getBytes());
 
-        Collection<QpidByteBuffer> bufs = stream.fetchAccumulatedBuffers();
-        assertEquals("Unexpected number of buffers", 2, bufs.size());
-        Iterator<QpidByteBuffer> bufItr = bufs.iterator();
-
-        QpidByteBuffer buf1 = bufItr.next();
-        assertBufferContent("1st buffer", buf1, "abcdefgh".getBytes(), direct);
-
-        QpidByteBuffer buf2 = bufItr.next();
-        assertBufferContent("2nd buffer", buf2, "i".getBytes(), direct);
+            assertBufferContent(direct, "abcdefghi".getBytes(StandardCharsets.UTF_8), stream.fetchAccumulatedBuffer());
+        }
     }
 
-    private void assertBufferContent(String bufName, QpidByteBuffer buf, byte[] expectedBytes, final boolean direct)
+    private void assertBufferContent(final boolean isDirect, final byte[] expected, final QpidByteBuffer buffer)
     {
-        assertEquals(bufName + " has unexpected number of bytes", expectedBytes.length, buf.remaining());
-        byte[] copy = new byte[buf.remaining()];
-        buf.get(copy);
-        Assert.assertArrayEquals(bufName + " has unexpected content", expectedBytes, copy);
-        assertEquals(bufName + " has unexpected type", direct, buf.isDirect());
+        assertEquals("Unexpected buffer type", isDirect, buffer.isDirect());
+        byte[] buf = new byte[buffer.remaining()];
+        buffer.get(buf);
+        buffer.dispose();
+        Assert.assertArrayEquals("Unexpected buffer content", expected, buf);
     }
-
 }

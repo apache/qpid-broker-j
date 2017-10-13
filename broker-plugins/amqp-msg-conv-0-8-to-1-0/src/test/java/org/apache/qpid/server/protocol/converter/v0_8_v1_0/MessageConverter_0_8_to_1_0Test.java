@@ -30,8 +30,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +37,6 @@ import java.util.UUID;
 
 import com.google.common.collect.Lists;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
@@ -340,12 +336,12 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         return expected;
     }
 
-    private List<EncodingRetainingSection<?>> getEncodingRetainingSections(final Collection<QpidByteBuffer> content,
+    private List<EncodingRetainingSection<?>> getEncodingRetainingSections(final QpidByteBuffer content,
                                                                            final int expectedNumberOfSections)
             throws Exception
     {
         SectionDecoder sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
-        final List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(new ArrayList<>(content));
+        final List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(content);
         assertEquals("Unexpected number of sections", expectedNumberOfSections, sections.size());
         return sections;
     }
@@ -376,15 +372,8 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
         final ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
 
         when(_handle.getContent(offsetCaptor.capture(),
-                                sizeCaptor.capture())).then(new Answer<Collection<QpidByteBuffer>>()
-        {
-            @Override
-            public Collection<QpidByteBuffer> answer(final InvocationOnMock invocation) throws Throwable
-            {
-                final QpidByteBuffer view = combined.view(offsetCaptor.getValue(), sizeCaptor.getValue());
-                return Collections.singleton(view);
-            }
-        });
+                                sizeCaptor.capture())).then(invocation -> combined.view(offsetCaptor.getValue(),
+                                                                                        sizeCaptor.getValue()));
     }
 
     private Byte getJmsMessageTypeAnnotation(final Message_1_0 convertedMessage)
@@ -466,7 +455,7 @@ public class MessageConverter_0_8_to_1_0Test extends QpidTestCase
     {
         final AMQMessage sourceMessage = getAmqMessage(messageBytes, mimeType);
         final Message_1_0 convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         List<EncodingRetainingSection<?>> sections = getEncodingRetainingSections(content, 1);
         EncodingRetainingSection<?> encodingRetainingSection = sections.get(0);

@@ -366,18 +366,6 @@ public abstract class MessageStoreTestCase extends QpidTestCase
         assertTrue("Message with id " + messageId3 + " is not found", enqueuedIds.contains(messageId3));
     }
 
-    public void testStoreIgnoresTransientMessage() throws Exception
-    {
-        long messageId = 1;
-        int contentSize = 0;
-        final StoredMessage<TestMessageMetaData> message = _store.addMessage(new TestMessageMetaData(messageId, contentSize, false)).allContentAdded();
-
-        MessageHandler handler = mock(MessageHandler.class);
-        _storeReader.visitMessages(handler);
-
-        verify(handler, times(0)).handle(argThat(new MessageMetaDataMatcher(messageId)));
-    }
-
     public void testAddAndRemoveMessageWithoutContent() throws Exception
     {
         long messageId = 1;

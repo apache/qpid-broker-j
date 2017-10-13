@@ -21,7 +21,6 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.Iterator;
-import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -71,7 +70,7 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
 
     AMQPDescribedTypeRegistry getDescribedTypeRegistry();
 
-    int sendFrame(int channel, FrameBody body, List<QpidByteBuffer> payload);
+    int sendFrame(int channel, FrameBody body, QpidByteBuffer payload);
 
     void sendFrame(int channel, FrameBody body);
 

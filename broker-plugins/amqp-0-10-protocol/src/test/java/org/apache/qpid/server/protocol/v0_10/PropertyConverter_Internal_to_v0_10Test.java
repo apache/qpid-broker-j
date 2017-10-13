@@ -626,8 +626,8 @@ public class PropertyConverter_Internal_to_v0_10Test extends QpidTestCase
             {
                 oos.writeObject(content);
 
-                when(storedMessage.getContent(0, contentSize)).thenReturn(Collections.singletonList(QpidByteBuffer.wrap(
-                        baos.toByteArray())));
+                when(storedMessage.getContent(0, contentSize)).thenReturn(QpidByteBuffer.wrap(
+                        baos.toByteArray()));
             }
         }
         when(storedMessage.getContentSize()).thenReturn(contentSize);

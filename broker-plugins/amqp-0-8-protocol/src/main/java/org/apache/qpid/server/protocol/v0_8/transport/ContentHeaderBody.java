@@ -90,14 +90,15 @@ public class ContentHeaderBody implements AMQBody
     @Override
     public long writePayload(final ByteBufferSender sender)
     {
-        QpidByteBuffer data = QpidByteBuffer.allocate(sender.isDirectBufferPreferred(), HEADER_SIZE);
-        data.putUnsignedShort(CLASS_ID);
-        data.putUnsignedShort(0);
-        data.putLong(_bodySize);
-        data.putUnsignedShort(_properties.getPropertyFlags());
-        data.flip();
-        sender.send(data);
-        data.dispose();
+        try (QpidByteBuffer data = QpidByteBuffer.allocate(sender.isDirectBufferPreferred(), HEADER_SIZE))
+        {
+            data.putUnsignedShort(CLASS_ID);
+            data.putUnsignedShort(0);
+            data.putLong(_bodySize);
+            data.putUnsignedShort(_properties.getPropertyFlags());
+            data.flip();
+            sender.send(data);
+        }
         return HEADER_SIZE + _properties.writePropertyListPayload(sender);
     }
 
@@ -167,7 +168,6 @@ public class ContentHeaderBody implements AMQBody
                                final ChannelMethodProcessor methodProcessor, final long size)
             throws AMQFrameDecodingException
     {
-
         int classId = buffer.getUnsignedShort();
         buffer.getUnsignedShort();
         long bodySize = buffer.getLong();
@@ -185,6 +185,10 @@ public class ContentHeaderBody implements AMQBody
         if(!methodProcessor.ignoreAllButCloseOk())
         {
             methodProcessor.receiveMessageHeader(properties, bodySize);
+        }
+        else
+        {
+            properties.dispose();
         }
     }
 

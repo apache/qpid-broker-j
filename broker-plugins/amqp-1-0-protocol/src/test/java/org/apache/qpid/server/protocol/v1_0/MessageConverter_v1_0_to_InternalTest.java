@@ -57,7 +57,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotations;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.server.util.ByteBufferUtils;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class MessageConverter_v1_0_to_InternalTest extends QpidTestCase
@@ -117,8 +116,6 @@ public class MessageConverter_v1_0_to_InternalTest extends QpidTestCase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
-
         assertEquals("Unexpected mime type",
                      "application/x-java-serialized-object",
                      convertedMessage.getMessageHeader().getMimeType());
@@ -132,8 +129,6 @@ public class MessageConverter_v1_0_to_InternalTest extends QpidTestCase
         Message_1_0 sourceMessage = createTestMessage(MAP_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
         assertNull("Unexpected content", convertedMessage.getMessageBody());
@@ -218,7 +213,6 @@ public class MessageConverter_v1_0_to_InternalTest extends QpidTestCase
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("Unexpected mime type", "text/plain", convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertEquals("Unexpected content", expected, convertedMessage.getMessageBody());
     }
 
@@ -611,17 +605,6 @@ public class MessageConverter_v1_0_to_InternalTest extends QpidTestCase
         assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
     }
 
-    private byte[] getBytes(final Collection<QpidByteBuffer> content) throws Exception
-    {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        for (QpidByteBuffer buf : content)
-        {
-            ByteStreams.copy(buf.asInputStream(), bos);
-            buf.dispose();
-        }
-        return bos.toByteArray();
-    }
-
     private Message_1_0 createTestMessage(final EncodingRetainingSection encodingRetainingSection)
     {
         return createTestMessage(new Properties(), encodingRetainingSection);
@@ -684,19 +667,19 @@ public class MessageConverter_v1_0_to_InternalTest extends QpidTestCase
 
         if (section != null)
         {
-            final QpidByteBuffer combined = QpidByteBuffer.wrap(ByteBufferUtils.combine(section.getEncodedForm()));
+            // TODO this is leaking QBBs
+            final QpidByteBuffer combined = section.getEncodedForm();
             when(storedMessage.getContentSize()).thenReturn((int) section.getEncodedSize());
             final ArgumentCaptor<Integer> offsetCaptor = ArgumentCaptor.forClass(Integer.class);
             final ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
 
             when(storedMessage.getContent(offsetCaptor.capture(),
-                                          sizeCaptor.capture())).then(invocation ->
-                                                                      {
-                                                                          final QpidByteBuffer view = combined.view(
-                                                                                  offsetCaptor.getValue(),
-                                                                                  sizeCaptor.getValue());
-                                                                          return Collections.singleton(view);
-                                                                      });
+                                          sizeCaptor.capture())).then(invocation -> combined.view(offsetCaptor.getValue(),
+                                                                                                  sizeCaptor.getValue()));
+        }
+        else
+        {
+            when(storedMessage.getContent(0,0)).thenReturn(QpidByteBuffer.emptyQpidByteBuffer());
         }
         return new Message_1_0(storedMessage);
     }

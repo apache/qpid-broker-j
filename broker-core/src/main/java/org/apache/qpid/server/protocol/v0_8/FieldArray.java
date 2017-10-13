@@ -117,13 +117,14 @@ public class FieldArray<T> extends AbstractCollection<T>
     {
         ArrayList<Object> result = new ArrayList<>();
         int size = buffer.getInt();
-        QpidByteBuffer slicedBuffer = buffer.view(0,size);
-        buffer.position(buffer.position()+size);
-        while(slicedBuffer.hasRemaining())
+        try (QpidByteBuffer slicedBuffer = buffer.view(0, size))
         {
-            result.add(AMQTypedValue.readFromBuffer(slicedBuffer).getValue());
+            buffer.position(buffer.position() + size);
+            while (slicedBuffer.hasRemaining())
+            {
+                result.add(AMQTypedValue.readFromBuffer(slicedBuffer).getValue());
+            }
         }
-        slicedBuffer.dispose();
         return new FieldArray<>(result);
     }
 }

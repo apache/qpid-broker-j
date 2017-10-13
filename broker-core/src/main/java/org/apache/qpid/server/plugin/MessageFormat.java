@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.plugin;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.store.MessageStore;
@@ -30,6 +28,6 @@ public interface MessageFormat<M extends ServerMessage<?>> extends Pluggable
 {
     int getSupportedFormat();
     Class<M> getMessageClass();
-    List<QpidByteBuffer> convertToMessageFormat(M message);
-    M createMessage(List<QpidByteBuffer> buf, MessageStore store, final Object connectionReference);
+    QpidByteBuffer convertToMessageFormat(M message);
+    M createMessage(QpidByteBuffer payload, MessageStore store, final Object connectionReference);
 }

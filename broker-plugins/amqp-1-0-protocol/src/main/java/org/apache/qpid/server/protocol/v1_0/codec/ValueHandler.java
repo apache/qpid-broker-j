@@ -20,13 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
@@ -90,49 +84,21 @@ public class ValueHandler implements DescribedTypeConstructorRegistry.Source
 
     public Object parse(QpidByteBuffer in) throws AmqpErrorException
     {
-        return parse(new ArrayList<>(Collections.singletonList(in)));
-    }
-
-    public Object parse(final List<QpidByteBuffer> in) throws AmqpErrorException
-    {
         TypeConstructor constructor = readConstructor(in);
         return constructor.construct(in, this);
     }
 
-
-    public TypeConstructor readConstructor(List<QpidByteBuffer> in) throws AmqpErrorException
+    public TypeConstructor readConstructor(QpidByteBuffer in) throws AmqpErrorException
     {
-        if(!QpidByteBufferUtils.hasRemaining(in))
+        if(!in.hasRemaining())
         {
             throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data - expected type, no data remaining");
         }
-        int firstBufferWithAvailable = 0;
-        if(in.size() > 1)
-        {
-            for(int i = 0; i < in.size(); i++)
-            {
-                if(in.get(i).hasRemaining())
-                {
-                    firstBufferWithAvailable = i;
-                    break;
-                }
-            }
-        }
-        byte formatCode = QpidByteBufferUtils.get(in);
+        byte formatCode = in.get();
 
         if(formatCode == DESCRIBED_TYPE)
         {
-            int[] originalPositions = new int[in.size()-firstBufferWithAvailable];
-
-            for(int i = firstBufferWithAvailable; i < in.size(); i++)
-            {
-                int position = in.get(i).position();
-                if(i==firstBufferWithAvailable)
-                {
-                    position--;
-                }
-                originalPositions[i - firstBufferWithAvailable] = position;
-            }
+            int originalPositions = in.position() - 1;
 
             Object descriptor = parse(in);
             DescribedTypeConstructor describedTypeConstructor = _describedTypeConstructorRegistry.getConstructor(descriptor);

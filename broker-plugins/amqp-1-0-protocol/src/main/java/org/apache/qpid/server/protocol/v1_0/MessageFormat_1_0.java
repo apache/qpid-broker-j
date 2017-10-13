@@ -83,13 +83,13 @@ public class MessageFormat_1_0 implements MessageFormat<Message_1_0>
     }
 
     @Override
-    public List<QpidByteBuffer> convertToMessageFormat(final Message_1_0 message)
+    public QpidByteBuffer convertToMessageFormat(final Message_1_0 message)
     {
         throw new UnsupportedOperationException("not implemented");
     }
 
     @Override
-    public Message_1_0 createMessage(final List<QpidByteBuffer> buf,
+    public Message_1_0 createMessage(final QpidByteBuffer payload,
                                      final MessageStore store,
                                      final Object connectionReference)
     {
@@ -98,7 +98,7 @@ public class MessageFormat_1_0 implements MessageFormat<Message_1_0>
         List<EncodingRetainingSection<?>> allSections;
         try
         {
-            allSections = getSectionDecoder().parseAll(buf);
+            allSections = getSectionDecoder().parseAll(payload);
         }
         catch (AmqpErrorException e)
         {
@@ -110,10 +110,9 @@ public class MessageFormat_1_0 implements MessageFormat<Message_1_0>
 
         for (EncodingRetainingSection<?> dataSection : dataSections)
         {
-            for (QpidByteBuffer buffer : dataSection.getEncodedForm())
+            try (QpidByteBuffer encodedForm = dataSection.getEncodedForm())
             {
-                handle.addContent(buffer);
-                buffer.dispose();
+                handle.addContent(encodedForm);
             }
             dataSection.dispose();
         }

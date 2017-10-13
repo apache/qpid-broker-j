@@ -19,10 +19,8 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.util.List;
-
-import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
 class ZeroUIntConstructor implements TypeConstructor<UnsignedInteger>
 {
@@ -33,7 +31,7 @@ class ZeroUIntConstructor implements TypeConstructor<UnsignedInteger>
     }
 
     @Override
-    public UnsignedInteger construct(final List<QpidByteBuffer> in, final ValueHandler handler)
+    public UnsignedInteger construct(final QpidByteBuffer in, final ValueHandler handler)
     {
         return UnsignedInteger.ZERO;
     }

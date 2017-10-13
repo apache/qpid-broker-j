@@ -47,7 +47,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -618,7 +618,11 @@ public class TransferTest extends BrokerAdminUsingTestBase
             assertThat(first.getMore(), is(equalTo(true)));
             messageDecoder.addTransfer(first);
 
-            final long firstRemaining = QpidByteBufferUtils.remaining(first.getPayload());
+            final long firstRemaining;
+            try (QpidByteBuffer payload = first.getPayload())
+            {
+                firstRemaining = payload.remaining();
+            }
 
             Received state = new Received();
             state.setSectionNumber(UnsignedInteger.ZERO);

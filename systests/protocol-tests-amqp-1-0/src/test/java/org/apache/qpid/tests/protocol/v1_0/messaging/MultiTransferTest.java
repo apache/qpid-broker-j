@@ -29,7 +29,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,13 +50,13 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.protocol.v1_0.Response;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
+import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class MultiTransferTest extends BrokerAdminUsingTestBase
 {
@@ -111,18 +110,22 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                                                  .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                                                  .attach().consumeResponse(Attach.class)
                                                  .consumeResponse(Flow.class)
-                                                 .transferPayload(Collections.singletonList(payloads[0]))
+                                                 .transferPayload(payloads[0])
                                                  .transferDeliveryId(deliveryId)
                                                  .transferDeliveryTag(deliveryTag)
                                                  .transferMore(true)
                                                  .transfer()
                                                  .sync()
                                                  .transferMore(false)
-                                                 .transferPayload(Collections.singletonList(payloads[1]))
+                                                 .transferPayload(payloads[1])
                                                  .transfer()
                                                  .consumeResponse()
                                                  .getLatestResponse(Disposition.class);
 
+            for (final QpidByteBuffer payload : payloads)
+            {
+                payload.dispose();
+            }
             assertThat(disposition.getFirst(), is(equalTo(deliveryId)));
             assertThat(disposition.getLast(), isOneOf(null, deliveryId));
             assertThat(disposition.getSettled(), is(equalTo(false)));
@@ -155,30 +158,34 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .transferDeliveryId(deliveryId)
                        .transferDeliveryTag(deliveryTag)
                        .transferMore(true)
-                       .transferPayload(Collections.singletonList(payloads[0]))
+                       .transferPayload(payloads[0])
                        .transfer()
                        .sync()
                        .transferDeliveryId(deliveryId)
                        .transferDeliveryTag(null)
                        .transferMore(true)
-                       .transferPayload(Collections.singletonList(payloads[1]))
+                       .transferPayload(payloads[1])
                        .transfer()
                        .sync()
                        .transferDeliveryId(null)
                        .transferDeliveryTag(deliveryTag)
                        .transferMore(true)
-                       .transferPayload(Collections.singletonList(payloads[2]))
+                       .transferPayload(payloads[2])
                        .transfer()
                        .sync()
                        .transferDeliveryId(null)
                        .transferDeliveryTag(null)
                        .transferMore(false)
-                       .transferPayload(Collections.singletonList(payloads[3]))
+                       .transferPayload(payloads[3])
                        .transfer()
                        .consumeResponse();
 
             Disposition disposition = interaction.getLatestResponse(Disposition.class);
 
+            for (final QpidByteBuffer payload : payloads)
+            {
+                payload.dispose();
+            }
             assertThat(disposition.getFirst(), is(equalTo(deliveryId)));
             assertThat(disposition.getLast(), isOneOf(null, deliveryId));
             assertThat(disposition.getSettled(), is(equalTo(false)));
@@ -212,7 +219,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
-                       .transferPayload(Collections.singletonList(payloads[0]))
+                       .transferPayload(payloads[0])
                        .transferDeliveryId(deliveryId)
                        .transferDeliveryTag(deliveryTag)
                        .transferMore(true)
@@ -223,6 +230,10 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .transferAborted(true)
                        .transfer();
 
+            for (final QpidByteBuffer payload : payloads)
+            {
+                payload.dispose();
+            }
             Response<?> latestResponse = interaction.consumeResponse(new Class<?>[] {null}).getLatestResponse();
             assertThat(latestResponse, is(nullValue()));
         }
@@ -272,7 +283,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .transferDeliveryId(deliverId1)
                        .transferDeliveryTag(deliveryTag1)
                        .transferMore(true)
-                       .transferPayload(Collections.singletonList(messagePayload1[0]))
+                       .transferPayload(messagePayload1[0])
                        .transfer()
                        .sync()
 
@@ -280,7 +291,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .transferDeliveryId(deliveryId2)
                        .transferDeliveryTag(deliveryTag2)
                        .transferMore(true)
-                       .transferPayload(Collections.singletonList(messagePayload2[0]))
+                       .transferPayload(messagePayload2[0])
                        .transfer()
                        .sync()
 
@@ -288,7 +299,7 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .transferDeliveryId(deliverId1)
                        .transferDeliveryTag(deliveryTag1)
                        .transferMore(false)
-                       .transferPayload(Collections.singletonList(messagePayload1[1]))
+                       .transferPayload(messagePayload1[1])
                        .transfer()
                        .sync()
 
@@ -296,9 +307,18 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .transferDeliveryId(deliveryId2)
                        .transferDeliveryTag(deliveryTag2)
                        .transferMore(false)
-                       .transferPayload(Collections.singletonList(messagePayload2[1]))
+                       .transferPayload(messagePayload2[1])
                        .transfer()
                        .sync();
+
+            for (final QpidByteBuffer payload : messagePayload1)
+            {
+                payload.dispose();
+            }
+            for (final QpidByteBuffer payload : messagePayload2)
+            {
+                payload.dispose();
+            }
 
             Map<UnsignedInteger, Disposition> dispositionMap = new HashMap<>();
             for (int i = 0; i < 2; i++)
@@ -349,16 +369,24 @@ public class MultiTransferTest extends BrokerAdminUsingTestBase
                        .transferDeliveryId(deliverId1)
                        .transferDeliveryTag(deliveryTag1)
                        .transferMore(true)
-                       .transferPayload(Collections.singletonList(messagePayload1[0]))
+                       .transferPayload(messagePayload1[0])
                        .transfer()
                        .sync()
 
                        .transferDeliveryId(deliveryId2)
                        .transferDeliveryTag(deliveryTag2)
                        .transferMore(true)
-                       .transferPayload(Collections.singletonList(messagePayload2[0]))
+                       .transferPayload(messagePayload2[0])
                        .transfer()
                        .sync();
+            for (final QpidByteBuffer payload : messagePayload1)
+            {
+                payload.dispose();
+            }
+            for (final QpidByteBuffer payload : messagePayload2)
+            {
+                payload.dispose();
+            }
 
             interaction.consumeResponse(Detach.class, End.class, Close.class);
         }

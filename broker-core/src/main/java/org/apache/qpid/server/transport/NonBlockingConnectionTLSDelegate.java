@@ -40,8 +40,8 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDelegate
 {
@@ -90,8 +90,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     {
         if(!_hostChecked)
         {
-            QpidByteBuffer buffer = _netInputBuffer.duplicate();
-            try
+            try (QpidByteBuffer buffer = _netInputBuffer.duplicate())
             {
                 buffer.flip();
                 if (SSLUtil.isSufficientToDetermineClientSNIHost(buffer))
@@ -107,10 +106,6 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                 {
                     return false;
                 }
-            }
-            finally
-            {
-                buffer.dispose();;
             }
         }
         _netInputBuffer.flip();
@@ -157,14 +152,14 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     }
 
     @Override
-    public WriteResult doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException
+    public WriteResult doWrite(Collection<QpidByteBuffer> buffers) throws IOException
     {
-        final int bufCount = bufferArray.size();
+        final int bufCount = buffers.size();
 
-        int totalConsumed = wrapBufferArray(bufferArray);
+        int totalConsumed = wrapBufferArray(buffers);
 
         boolean bufsSent = true;
-        final Iterator<QpidByteBuffer> itr = bufferArray.iterator();
+        final Iterator<QpidByteBuffer> itr = buffers.iterator();
         int bufIndex = 0;
         while(itr.hasNext() && bufsSent && bufIndex++ < bufCount)
         {
@@ -196,12 +191,13 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
 
     protected void restoreApplicationBufferForWrite()
     {
-        QpidByteBuffer oldApplicationBuffer = _applicationBuffer;
-        int unprocessedDataLength = _applicationBuffer.remaining();
-        _applicationBuffer.limit(_applicationBuffer.capacity());
-        _applicationBuffer = _applicationBuffer.slice();
-        _applicationBuffer.limit(unprocessedDataLength);
-        oldApplicationBuffer.dispose();
+        try (QpidByteBuffer oldApplicationBuffer = _applicationBuffer)
+        {
+            int unprocessedDataLength = _applicationBuffer.remaining();
+            _applicationBuffer.limit(_applicationBuffer.capacity());
+            _applicationBuffer = _applicationBuffer.slice();
+            _applicationBuffer.limit(unprocessedDataLength);
+        }
         if (_applicationBuffer.limit() <= _applicationBuffer.capacity() - _sslEngine.getSession().getApplicationBufferSize())
         {
             _applicationBuffer.position(_applicationBuffer.limit());
@@ -209,26 +205,27 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         }
         else
         {
-            QpidByteBuffer currentBuffer = _applicationBuffer;
-            int newBufSize;
-            if (currentBuffer.capacity() < _networkBufferSize)
+            try (QpidByteBuffer currentBuffer = _applicationBuffer)
             {
-                newBufSize = _networkBufferSize;
-            }
-            else
-            {
-                newBufSize = currentBuffer.capacity() + _networkBufferSize;
-                _parent.reportUnexpectedByteBufferSizeUsage();
-            }
+                int newBufSize;
+                if (currentBuffer.capacity() < _networkBufferSize)
+                {
+                    newBufSize = _networkBufferSize;
+                }
+                else
+                {
+                    newBufSize = currentBuffer.capacity() + _networkBufferSize;
+                    _parent.reportUnexpectedByteBufferSizeUsage();
+                }
 
-            _applicationBuffer = QpidByteBuffer.allocateDirect(newBufSize);
-            _applicationBuffer.put(currentBuffer);
-            currentBuffer.dispose();
+                _applicationBuffer = QpidByteBuffer.allocateDirect(newBufSize);
+                _applicationBuffer.put(currentBuffer);
+            }
         }
 
     }
 
-    private int wrapBufferArray(Collection<QpidByteBuffer> bufferArray) throws SSLException
+    private int wrapBufferArray(Collection<QpidByteBuffer> buffers) throws SSLException
     {
         int totalConsumed = 0;
         boolean encrypted;
@@ -250,7 +247,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                     _netOutputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
                 }
 
-                _status = QpidByteBuffer.encryptSSL(_sslEngine, bufferArray, _netOutputBuffer);
+                _status = QpidByteBuffer.encryptSSL(_sslEngine, buffers, _netOutputBuffer);
                 encrypted = _status.bytesProduced() > 0;
                 totalConsumed += _status.bytesConsumed();
                 runSSLEngineTasks(_status);

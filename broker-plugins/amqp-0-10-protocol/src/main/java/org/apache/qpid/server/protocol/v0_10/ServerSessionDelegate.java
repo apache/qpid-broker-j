@@ -557,13 +557,10 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                                                                    final MessageMetaData_0_10 messageMetaData, final MessageStore store)
     {
         final MessageHandle<MessageMetaData_0_10> addedMessage = store.addMessage(messageMetaData);
-        Collection<QpidByteBuffer> body = xfr.getBody();
+        QpidByteBuffer body = xfr.getBody();
         if(body != null)
         {
-            for(QpidByteBuffer b : body)
-            {
-                addedMessage.addContent(b);
-            }
+            addedMessage.addContent(body);
         }
         final StoredMessage<MessageMetaData_0_10> storedMessage = addedMessage.allContentAdded();
         return storedMessage;

@@ -21,10 +21,8 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,16 +37,9 @@ import org.apache.qpid.server.message.MessageInstance.ConsumerAcquiredState;
 import org.apache.qpid.server.message.MessageInstance.EntryState;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
-import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.txn.AutoCommitTransaction;
-import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.Header;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcceptMode;
@@ -59,8 +50,13 @@ import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
 import org.apache.qpid.server.protocol.v0_10.transport.Method;
 import org.apache.qpid.server.protocol.v0_10.transport.Option;
-import org.apache.qpid.server.util.ByteBufferUtils;
+import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.txn.AutoCommitTransaction;
+import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.GZIPUtils;
+import org.apache.qpid.server.util.StateChangeListener;
 
 public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0_10>
 {
@@ -254,50 +250,41 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         boolean msgCompressed = messageProps != null && GZIPUtils.GZIP_CONTENT_ENCODING.equals(messageProps.getContentEncoding());
 
 
-        Collection<QpidByteBuffer> bodyBuffers = msg.getBody();
+        QpidByteBuffer bodyBuffer = msg.getBody();
 
         boolean compressionSupported = _session.getConnection().getConnectionDelegate().isCompressionSupported();
 
-        if(msgCompressed && !compressionSupported && bodyBuffers != null)
+        if(msgCompressed && !compressionSupported && bodyBuffer != null)
         {
-            Collection<QpidByteBuffer> uncompressedBuffers = inflateIfPossible(bodyBuffers);
+            QpidByteBuffer uncompressedBuffer = inflateIfPossible(bodyBuffer);
             messageProps.setContentEncoding(null);
-            for (QpidByteBuffer buf : bodyBuffers)
-            {
-                buf.dispose();
-            }
-            bodyBuffers = uncompressedBuffers;
+            bodyBuffer.dispose();
+            bodyBuffer = uncompressedBuffer;
         }
         else if(!msgCompressed
                 && compressionSupported
                 && (messageProps == null || messageProps.getContentEncoding() == null)
-                && bodyBuffers != null
-                && ByteBufferUtils.remaining(bodyBuffers) > _session.getConnection().getMessageCompressionThreshold())
+                && bodyBuffer != null
+                && bodyBuffer.remaining() > _session.getConnection().getMessageCompressionThreshold())
         {
-            Collection<QpidByteBuffer> compressedBuffers = deflateIfPossible(bodyBuffers);
+            QpidByteBuffer compressedBuffers = deflateIfPossible(bodyBuffer);
             if(messageProps == null)
             {
                 messageProps = new MessageProperties();
             }
             messageProps.setContentEncoding(GZIPUtils.GZIP_CONTENT_ENCODING);
-            for (QpidByteBuffer buf : bodyBuffers)
-            {
-                buf.dispose();
-            }
-            bodyBuffers = compressedBuffers;
+            bodyBuffer.dispose();
+            bodyBuffer = compressedBuffers;
         }
 
         Header header = new Header(deliveryProps, messageProps, msg.getHeader() == null ? null : msg.getHeader().getNonStandardProperties());
 
-        xfr = batch ? new MessageTransfer(_name,_acceptMode,_acquireMode,header, bodyBuffers, BATCHED)
-                    : new MessageTransfer(_name,_acceptMode,_acquireMode,header, bodyBuffers);
-        if (bodyBuffers != null)
+        xfr = batch ? new MessageTransfer(_name, _acceptMode, _acquireMode, header, bodyBuffer, BATCHED)
+                    : new MessageTransfer(_name, _acceptMode, _acquireMode, header, bodyBuffer);
+        if (bodyBuffer != null)
         {
-            for (QpidByteBuffer buf : bodyBuffers)
-            {
-                buf.dispose();
-            }
-            bodyBuffers = null;
+            bodyBuffer.dispose();
+            bodyBuffer = null;
         }
         if(_acceptMode == MessageAcceptMode.NONE && _acquireMode != MessageAcquireMode.PRE_ACQUIRED)
         {
@@ -612,11 +599,11 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
     }
 
 
-    private Collection<QpidByteBuffer> deflateIfPossible(final Collection<QpidByteBuffer> buffers)
+    private QpidByteBuffer deflateIfPossible(final QpidByteBuffer buffer)
     {
         try
         {
-            return QpidByteBuffer.deflate(buffers);
+            return QpidByteBuffer.deflate(buffer);
         }
         catch (IOException e)
         {
@@ -625,11 +612,11 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         }
     }
 
-    private Collection<QpidByteBuffer> inflateIfPossible(final Collection<QpidByteBuffer> buffers)
+    private QpidByteBuffer inflateIfPossible(final QpidByteBuffer buffer)
     {
         try
         {
-            return QpidByteBuffer.inflate(buffers);
+            return QpidByteBuffer.inflate(buffer);
         }
         catch (IOException e)
         {

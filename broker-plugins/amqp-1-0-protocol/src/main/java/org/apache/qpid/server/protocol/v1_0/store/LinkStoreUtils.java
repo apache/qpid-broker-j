@@ -33,33 +33,25 @@ public class LinkStoreUtils
 
     public static Object amqpBytesToObject(final byte[] bytes)
     {
-        QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(bytes);
         ValueHandler valueHandler = new ValueHandler(DESCRIBED_TYPE_REGISTRY);
-        Object object;
-        try
+        try (QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(bytes))
         {
-            object = valueHandler.parse(qpidByteBuffer);
+            return valueHandler.parse(qpidByteBuffer);
         }
         catch (AmqpErrorException e)
         {
             throw new StoreException("Unexpected serialized data", e);
         }
-        finally
-        {
-            qpidByteBuffer.dispose();
-        }
-        return object;
     }
 
     public static byte[] objectToAmqpBytes(final Object object)
     {
         ValueWriter valueWriter = DESCRIBED_TYPE_REGISTRY.getValueWriter(object);
         int encodedSize = valueWriter.getEncodedSize();
-        QpidByteBuffer qpidByteBuffer = QpidByteBuffer.allocate(encodedSize);
-        valueWriter.writeToBuffer(qpidByteBuffer);
-
-        byte[] bytes = qpidByteBuffer.array();
-        qpidByteBuffer.dispose();
-        return bytes;
+        try (QpidByteBuffer qpidByteBuffer = QpidByteBuffer.allocate(encodedSize))
+        {
+            valueWriter.writeToBuffer(qpidByteBuffer);
+            return qpidByteBuffer.array();
+        }
     }
 }

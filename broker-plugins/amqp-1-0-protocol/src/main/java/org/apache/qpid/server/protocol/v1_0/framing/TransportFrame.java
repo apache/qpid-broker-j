@@ -18,8 +18,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0.framing;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 
@@ -34,7 +32,7 @@ public final class TransportFrame extends AMQFrame<FrameBody>
         _channel = channel;
     }
 
-    public TransportFrame(int channel, FrameBody frameBody, List<QpidByteBuffer> payload)
+    public TransportFrame(int channel, FrameBody frameBody, QpidByteBuffer payload)
     {
         super(frameBody, payload);
         _channel = channel;

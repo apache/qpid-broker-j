@@ -30,11 +30,10 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.net.ssl.SSLContext;
@@ -130,68 +129,7 @@ class WebSocketProvider implements AcceptingTransport
     {
         _idleTimeoutChecker.start();
 
-        _server = new Server(new QueuedThreadPool()
-        {
-            private final Map<Thread, QpidByteBuffer> _cachedBufferMap = new ConcurrentHashMap<>();
-
-            @Override
-            protected void doStop() throws Exception
-            {
-                try
-                {
-                    super.doStop();
-                }
-                finally
-                {
-                    for (QpidByteBuffer qpidByteBuffer : _cachedBufferMap.values())
-                    {
-                        qpidByteBuffer.dispose();
-                    }
-                    _cachedBufferMap.clear();
-                }
-            }
-
-            @Override
-            protected Thread newThread(final Runnable runnable)
-            {
-                return super.newThread(() ->
-                                       {
-                                           try
-                                           {
-                                               runnable.run();
-                                           }
-                                           finally
-                                           {
-                                               QpidByteBuffer qbb = _cachedBufferMap.remove(Thread.currentThread());
-                                               if (qbb != null)
-                                               {
-                                                   qbb.dispose();
-                                               }
-                                           }
-                                       });
-            }
-
-            @Override
-            protected void runJob(final Runnable job)
-            {
-                try
-                {
-                    super.runJob(job);
-                }
-                finally
-                {
-                    final QpidByteBuffer cachedThreadLocalBuffer = QpidByteBuffer.getCachedThreadLocalBuffer();
-                    if (cachedThreadLocalBuffer != null)
-                    {
-                        _cachedBufferMap.put(Thread.currentThread(), cachedThreadLocalBuffer);
-                    }
-                    else
-                    {
-                        _cachedBufferMap.remove(Thread.currentThread());
-                    }
-                }
-            }
-        });
+        _server = new Server(new QBBTrackingThreadPool());
 
         final ServerConnector connector;
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
@@ -357,6 +295,17 @@ class WebSocketProvider implements AcceptingTransport
                 ((ServerConnector) server.getConnectors()[0]).getLocalPort();
     }
 
+    private static class QBBTrackingThreadPool extends QueuedThreadPool
+    {
+        private final ThreadFactory _threadFactory = QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(r -> QBBTrackingThreadPool.super.newThread(r));
+
+        @Override
+        protected Thread newThread(final Runnable runnable)
+        {
+            return _threadFactory.newThread(runnable);
+        }
+    }
+
     @WebSocket
     public class AmqpWebSocket
     {
@@ -442,13 +391,14 @@ class WebSocketProvider implements AcceptingTransport
 
         private void restoreApplicationBufferForWrite()
         {
-            QpidByteBuffer oldNetInputBuffer = _netInputBuffer;
-            int unprocessedDataLength = _netInputBuffer.remaining();
+            try (QpidByteBuffer oldNetInputBuffer = _netInputBuffer)
+            {
+                int unprocessedDataLength = _netInputBuffer.remaining();
 
-            _netInputBuffer.limit(_netInputBuffer.capacity());
-            _netInputBuffer = oldNetInputBuffer.slice();
-            _netInputBuffer.limit(unprocessedDataLength);
-            oldNetInputBuffer.dispose();
+                _netInputBuffer.limit(_netInputBuffer.capacity());
+                _netInputBuffer = oldNetInputBuffer.slice();
+                _netInputBuffer.limit(unprocessedDataLength);
+            }
             if (_netInputBuffer.limit() != _netInputBuffer.capacity())
             {
                 _netInputBuffer.position(_netInputBuffer.limit());
@@ -456,22 +406,23 @@ class WebSocketProvider implements AcceptingTransport
             }
             else
             {
-                QpidByteBuffer currentBuffer = _netInputBuffer;
-                int newBufSize;
-
-                if (currentBuffer.capacity() < _broker.getNetworkBufferSize())
+                try (QpidByteBuffer currentBuffer = _netInputBuffer)
                 {
-                    newBufSize = _broker.getNetworkBufferSize();
-                }
-                else
-                {
-                    newBufSize = currentBuffer.capacity() + _broker.getNetworkBufferSize();
-                    reportUnexpectedByteBufferSizeUsage();
-                }
+                    int newBufSize;
 
-                _netInputBuffer = QpidByteBuffer.allocateDirect(newBufSize);
-                _netInputBuffer.put(currentBuffer);
-                currentBuffer.dispose();
+                    if (currentBuffer.capacity() < _broker.getNetworkBufferSize())
+                    {
+                        newBufSize = _broker.getNetworkBufferSize();
+                    }
+                    else
+                    {
+                        newBufSize = currentBuffer.capacity() + _broker.getNetworkBufferSize();
+                        reportUnexpectedByteBufferSizeUsage();
+                    }
+
+                    _netInputBuffer = QpidByteBuffer.allocateDirect(newBufSize);
+                    _netInputBuffer.put(currentBuffer);
+                }
             }
         }
 

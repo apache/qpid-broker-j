@@ -20,15 +20,13 @@
  */
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public interface EncodingRetaining
 {
     void writeTo(QpidByteBuffer dest);
     long getEncodedSize();
-    List<QpidByteBuffer> getEncodedForm();
+    QpidByteBuffer getEncodedForm();
     void clearEncodedForm();
     EncodingRetaining copy();
     void reallocate();

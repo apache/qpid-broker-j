@@ -61,13 +61,15 @@ import org.apache.qpid.server.protocol.v0_10.transport.ConnectionCloseOk;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionException;
 import org.apache.qpid.server.protocol.v0_10.transport.ExecutionErrorCode;
 import org.apache.qpid.server.protocol.v0_10.transport.ExecutionException;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
 import org.apache.qpid.server.protocol.v0_10.transport.Method;
 import org.apache.qpid.server.protocol.v0_10.transport.Option;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolEvent;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionDetachCode;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionDetached;
 import org.apache.qpid.server.session.AMQPSession;
-import org.apache.qpid.server.transport.*;
+import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.transport.network.NetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -275,6 +277,13 @@ public class ServerConnection extends ConnectionInvoker
                 LOGGER.debug("RECV: [{}] {}", this, String.valueOf(event));
             }
             event.delegate(this, delegate);
+        }
+        else
+        {
+            if (event instanceof MessageTransfer)
+            {
+                ((MessageTransfer) event).dispose();
+            }
         }
     }
 

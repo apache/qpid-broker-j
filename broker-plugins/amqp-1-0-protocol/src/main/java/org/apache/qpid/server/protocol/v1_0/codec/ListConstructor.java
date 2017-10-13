@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
@@ -36,11 +35,11 @@ public class ListConstructor extends VariableWidthTypeConstructor<List<Object>>
     }
 
     @Override
-    public List<Object> construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    public List<Object> construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
     {
         int size;
         int count;
-        long remaining = QpidByteBufferUtils.remaining(in);
+        long remaining = (long) in.remaining();
         if (remaining < getSize() * 2)
         {
             throw new AmqpErrorException(AmqpError.DECODE_ERROR,
@@ -52,13 +51,13 @@ public class ListConstructor extends VariableWidthTypeConstructor<List<Object>>
 
         if (getSize() == 1)
         {
-            size = QpidByteBufferUtils.get(in) & 0xFF;
-            count = QpidByteBufferUtils.get(in) & 0xFF;
+            size = in.getUnsignedByte();
+            count = in.getUnsignedByte();
         }
         else
         {
-            size = QpidByteBufferUtils.getInt(in);
-            count = QpidByteBufferUtils.getInt(in);
+            size = in.getInt();
+            count = in.getInt();
         }
         remaining -= getSize();
         if (remaining < size)
@@ -72,7 +71,7 @@ public class ListConstructor extends VariableWidthTypeConstructor<List<Object>>
         return construct(in, handler, size, count);
     }
 
-    protected List<Object> construct(final List<QpidByteBuffer> in,
+    protected List<Object> construct(final QpidByteBuffer in,
                                      final ValueHandler handler,
                                      final int size,
                                      final int count)

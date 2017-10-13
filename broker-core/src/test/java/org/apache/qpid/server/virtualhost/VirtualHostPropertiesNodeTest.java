@@ -58,5 +58,9 @@ public class VirtualHostPropertiesNodeTest extends QpidTestCase
         MessageInstanceConsumer consumer = _virtualHostPropertiesNode.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
         final MessageContainer messageContainer = consumer.pullMessage();
         assertNotNull("Could not pull message from VirtualHostPropertyNode", messageContainer);
+        if (messageContainer.getMessageReference() != null)
+        {
+            messageContainer.getMessageReference().release();
+        }
     }
 }

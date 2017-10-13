@@ -26,7 +26,6 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -57,6 +56,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.EncodingRetaining;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
@@ -78,30 +78,26 @@ public class MessageConverter_from_1_0
 
     static Object convertBodyToObject(final Message_1_0 serverMessage)
     {
-        final Collection<QpidByteBuffer> allData = serverMessage.getContent(0, (int) serverMessage.getSize());
         SectionDecoderImpl sectionDecoder = new SectionDecoderImpl(MessageConverter_v1_0_to_Internal.TYPE_REGISTRY.getSectionDecoderRegistry());
 
         Object bodyObject = null;
+        List<EncodingRetainingSection<?>> sections = null;
         try
         {
-            List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(new ArrayList<>(allData));
-            for(QpidByteBuffer buf : allData)
+            try (QpidByteBuffer allData = serverMessage.getContent())
             {
-                buf.dispose();
+                sections = sectionDecoder.parseAll(allData);
             }
 
+            List<EncodingRetainingSection<?>> bodySections = new ArrayList<>(sections.size());
             ListIterator<EncodingRetainingSection<?>> iterator = sections.listIterator();
             EncodingRetainingSection<?> previousSection = null;
             while(iterator.hasNext())
             {
                 EncodingRetainingSection<?> section = iterator.next();
-                if(!(section instanceof AmqpValueSection || section instanceof DataSection || section instanceof AmqpSequenceSection))
+                if (section instanceof AmqpValueSection || section instanceof DataSection || section instanceof AmqpSequenceSection)
                 {
-                    iterator.remove();
-                }
-                else
-                {
-                    if(previousSection != null && (previousSection.getClass() != section.getClass() || section instanceof AmqpValueSection))
+                    if (previousSection != null && (previousSection.getClass() != section.getClass() || section instanceof AmqpValueSection))
                     {
                         throw new MessageConversionException("Message is badly formed and has multiple body section which are not all Data or not all AmqpSequence");
                     }
@@ -109,13 +105,14 @@ public class MessageConverter_from_1_0
                     {
                         previousSection = section;
                     }
+                    bodySections.add(section);
                 }
             }
 
             // In 1.0 of the spec, it is illegal to have message with no body but AMQP-127 asks to have that restriction lifted
-            if(!sections.isEmpty())
+            if (!bodySections.isEmpty())
             {
-                EncodingRetainingSection<?> firstBodySection = sections.get(0);
+                EncodingRetainingSection<?> firstBodySection = bodySections.get(0);
                 if(firstBodySection instanceof AmqpValueSection)
                 {
                     bodyObject = convertValue(firstBodySection.getValue());
@@ -123,13 +120,13 @@ public class MessageConverter_from_1_0
                 else if(firstBodySection instanceof DataSection)
                 {
                     int totalSize = 0;
-                    for(EncodingRetainingSection<?> section : sections)
+                    for(EncodingRetainingSection<?> section : bodySections)
                     {
                         totalSize += ((DataSection)section).getValue().getArray().length;
                     }
                     byte[] bodyData = new byte[totalSize];
                     ByteBuffer buf = ByteBuffer.wrap(bodyData);
-                    for(EncodingRetainingSection<?> section : sections)
+                    for(EncodingRetainingSection<?> section : bodySections)
                     {
                         buf.put(((DataSection) section).getValue().asByteBuffer());
                     }
@@ -138,7 +135,7 @@ public class MessageConverter_from_1_0
                 else
                 {
                     ArrayList<Object> totalSequence = new ArrayList<>();
-                    for(EncodingRetainingSection<?> section : sections)
+                    for(EncodingRetainingSection<?> section : bodySections)
                     {
                         totalSequence.addAll(((AmqpSequenceSection)section).getValue());
                     }
@@ -150,6 +147,13 @@ public class MessageConverter_from_1_0
         catch (AmqpErrorException e)
         {
             throw new ConnectionScopedRuntimeException(e);
+        }
+        finally
+        {
+            if (sections != null)
+            {
+                sections.forEach(EncodingRetaining::dispose);
+            }
         }
         return bodyObject;
     }
@@ -315,6 +319,7 @@ public class MessageConverter_from_1_0
         if (section != null)
         {
             Map<Symbol, Object> annotations = section.getValue();
+            section.dispose();
             if (annotations != null && annotations.containsKey(JmsMessageTypeAnnotation.ANNOTATION_KEY))
             {
                 Object object = annotations.get(JmsMessageTypeAnnotation.ANNOTATION_KEY);
@@ -337,9 +342,11 @@ public class MessageConverter_from_1_0
     public static Symbol getContentType(final Message_1_0 serverMsg)
     {
         final PropertiesSection propertiesSection = serverMsg.getPropertiesSection();
+
         if (propertiesSection != null)
         {
             final Properties properties = propertiesSection.getValue();
+            propertiesSection.dispose();
             if (properties != null)
             {
                 return properties.getContentType();
@@ -354,6 +361,7 @@ public class MessageConverter_from_1_0
         if (propertiesSection != null)
         {
             final Properties properties = propertiesSection.getValue();
+            propertiesSection.dispose();
             if (properties != null)
             {
                 return properties.getGroupSequence();
@@ -368,6 +376,7 @@ public class MessageConverter_from_1_0
         if (propertiesSection != null)
         {
             final Properties properties = propertiesSection.getValue();
+            propertiesSection.dispose();
             if (properties != null)
             {
                 return properties.getGroupId();
@@ -382,6 +391,7 @@ public class MessageConverter_from_1_0
         if (propertiesSection != null)
         {
             final Properties properties = propertiesSection.getValue();
+            propertiesSection.dispose();
             if (properties != null)
             {
                 return properties.getCreationTime();
@@ -396,6 +406,7 @@ public class MessageConverter_from_1_0
         if (propertiesSection != null)
         {
             final Properties properties = propertiesSection.getValue();
+            propertiesSection.dispose();
             if (properties != null)
             {
                 return properties.getAbsoluteExpiryTime();
@@ -410,6 +421,7 @@ public class MessageConverter_from_1_0
         if (headerSection != null)
         {
             Header header = headerSection.getValue();
+            headerSection.dispose();
             if (header != null)
             {
                 UnsignedInteger ttl = header.getTtl();
@@ -429,6 +441,7 @@ public class MessageConverter_from_1_0
         if (propertiesSection != null)
         {
             final Properties properties = propertiesSection.getValue();
+            propertiesSection.dispose();
             if (properties != null)
             {
                 userId = properties.getUserId();
@@ -444,6 +457,7 @@ public class MessageConverter_from_1_0
         if (propertiesSection != null)
         {
             final Properties properties = propertiesSection.getValue();
+            propertiesSection.dispose();
             if (properties != null)
             {
                 replyTo = properties.getReplyTo();
@@ -459,6 +473,7 @@ public class MessageConverter_from_1_0
         if (propertiesSection != null)
         {
             final Properties properties = propertiesSection.getValue();
+            propertiesSection.dispose();
             if (properties != null)
             {
                 contentEncoding = properties.getContentEncoding();
@@ -474,6 +489,7 @@ public class MessageConverter_from_1_0
         if (propertiesSection != null)
         {
             final Properties properties = propertiesSection.getValue();
+            propertiesSection.dispose();
             if (properties != null)
             {
                 correlationIdObject = properties.getCorrelationId();
@@ -490,6 +506,7 @@ public class MessageConverter_from_1_0
         if (propertiesSection != null)
         {
             final Properties properties = propertiesSection.getValue();
+            propertiesSection.dispose();
             if (properties != null)
             {
                 messageId = properties.getMessageId();

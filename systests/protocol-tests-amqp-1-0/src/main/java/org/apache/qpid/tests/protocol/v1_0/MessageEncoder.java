@@ -44,12 +44,12 @@ public class MessageEncoder
         _header = header;
     }
 
-    public List<QpidByteBuffer> getPayload()
+    public QpidByteBuffer getPayload()
     {
         List<QpidByteBuffer> payload = new ArrayList<>();
         if (_header != null)
         {
-            payload.addAll(_header.createEncodingRetainingSection().getEncodedForm());
+            payload.add(_header.createEncodingRetainingSection().getEncodedForm());
         }
 
         if (_data.isEmpty())
@@ -70,10 +70,12 @@ public class MessageEncoder
 
         for (EncodingRetainingSection<?> section: dataSections)
         {
-            payload.addAll(section.getEncodedForm());
+            payload.add(section.getEncodedForm());
             section.dispose();
         }
 
-        return payload;
+        QpidByteBuffer combined = QpidByteBuffer.concatenate(payload);
+        payload.forEach(QpidByteBuffer::dispose);
+        return combined;
     }
 }

@@ -34,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
@@ -415,37 +414,29 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         }
 
         @Override
-        public MessageMetaData_1_0 createMetaData(List<QpidByteBuffer> bufs)
+        public MessageMetaData_1_0 createMetaData(QpidByteBuffer buf)
         {
             try
             {
-                if (!QpidByteBufferUtils.hasRemaining(bufs))
+                if (!buf.hasRemaining())
                 {
                     throw new ConnectionScopedRuntimeException("No metadata found");
                 }
 
-                byte versionByte = 0;
-                for (final QpidByteBuffer buf : bufs)
-                {
-                    if (buf.hasRemaining())
-                    {
-                        versionByte = buf.get(buf.position());
-                        break;
-                    }
-                }
+                byte versionByte = buf.get(buf.position());
 
                 long arrivalTime;
                 long contentSize = 0;
                 if (versionByte == 1)
                 {
-                    if (!QpidByteBufferUtils.hasRemaining(bufs, 17))
+                    if (!buf.hasRemaining(17))
                     {
                         throw new ConnectionScopedRuntimeException("Cannot decode stored message meta data.");
                     }
                     // we can discard the first byte
-                    QpidByteBufferUtils.get(bufs);
-                    arrivalTime = QpidByteBufferUtils.getLong(bufs);
-                    contentSize = QpidByteBufferUtils.getLong(bufs);
+                    buf.get();
+                    arrivalTime = buf.getLong();
+                    contentSize = buf.getLong();
                 }
                 else if (versionByte == 0)
                 {
@@ -460,7 +451,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
                 SectionDecoder sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
 
-                List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(bufs);
+                List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(buf);
 
                 if (versionByte == 0)
                 {

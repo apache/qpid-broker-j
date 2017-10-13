@@ -23,23 +23,13 @@ package org.apache.qpid.server.bytebuffer;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedList;
 
-/**
- * OutputStream implementation that yields a list QpidByteBuffers that contain a copy
- * of the incoming bytes.  Use fetchAccumulatedBuffers to get the buffers.  Caller
- * has responsibility to dispose the buffers after use.
- *
- * It will be normally be desirable to front this stream with java.io.BufferedOutputStream
- * to minimise the number of write and thus the number of buffers created.
- *
- * Not thread safe.
- */
 public class QpidByteBufferOutputStream extends OutputStream
 {
     private final LinkedList<QpidByteBuffer> _buffers = new LinkedList<>();
+    private int _bufferPosition = 0;
+    private final byte[] _buffer;
     private final boolean _isDirect;
     private final int _maximumBufferSize;
     private boolean _closed;
@@ -52,14 +42,13 @@ public class QpidByteBufferOutputStream extends OutputStream
         }
         _isDirect = isDirect;
         _maximumBufferSize = maximumBufferSize;
+        _buffer = new byte[_maximumBufferSize];
     }
 
     @Override
     public void write(int b) throws IOException
     {
-        int size = 1;
-        byte[] data = new byte[] {(byte)b};
-        allocateDataBuffers(data, 0, size);
+        write(new byte[] {(byte)b});
     }
 
     @Override
@@ -78,18 +67,18 @@ public class QpidByteBufferOutputStream extends OutputStream
     public void close() throws IOException
     {
         _closed = true;
-        for (QpidByteBuffer buffer : _buffers)
-        {
-            buffer.dispose();
-        }
+        _buffers.forEach(QpidByteBuffer::dispose);
         _buffers.clear();
     }
 
-    public Collection<QpidByteBuffer> fetchAccumulatedBuffers()
+    QpidByteBuffer fetchAccumulatedBuffer()
     {
-        Collection<QpidByteBuffer> bufs = new ArrayList<>(_buffers);
-        _buffers.clear();
-        return bufs;
+        if (_bufferPosition != 0)
+        {
+            addSingleQpidByteBuffer(_buffer, 0, _bufferPosition);
+        }
+        final QpidByteBuffer combined = QpidByteBuffer.concatenate(_buffers);
+        return combined;
     }
 
     private void allocateDataBuffers(byte[] data, int offset, int len) throws IOException
@@ -99,15 +88,28 @@ public class QpidByteBufferOutputStream extends OutputStream
             throw new IOException("Stream is closed");
         }
 
-        int size = Math.min(_maximumBufferSize, len);
+        do
+        {
+            int bytesWeCanWrite = Math.min(_buffer.length - _bufferPosition, len);
+            System.arraycopy(data, offset, _buffer, _bufferPosition, bytesWeCanWrite);
+            offset += bytesWeCanWrite;
+            len -= bytesWeCanWrite;
+            _bufferPosition += bytesWeCanWrite;
+            if (_buffer.length == _bufferPosition)
+            {
+                addSingleQpidByteBuffer(_buffer, 0, _buffer.length);
+            }
+        } while (len != 0);
+    }
 
-        QpidByteBuffer current = _isDirect ? QpidByteBuffer.allocateDirect(len) : QpidByteBuffer.allocate(len);
-        current.put(data, offset, size);
+    private void addSingleQpidByteBuffer(final byte[] buffer, final int offset, final int length)
+    {
+        QpidByteBuffer current = _isDirect
+                ? QpidByteBuffer.allocateDirect(length)
+                : QpidByteBuffer.allocate(length);
+        current.put(buffer, offset, length);
         current.flip();
         _buffers.add(current);
-        if (len > size)
-        {
-            allocateDataBuffers(data, offset + size, len - size);
-        }
+        _bufferPosition = 0;
     }
 }

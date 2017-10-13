@@ -23,10 +23,8 @@ package org.apache.qpid.server.transport.util;
 import static java.lang.Math.min;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.util.ByteBufferUtils;
 
 
 /**
@@ -83,17 +81,6 @@ public final class Functions
     public static final String str(QpidByteBuffer buf, int limit)
     {
         return str(buf, limit, buf.position());
-    }
-
-    public static final String str(Collection<QpidByteBuffer> buf, int limit, int start)
-    {
-        return str(ByteBufferUtils.combine(buf),limit,start);
-    }
-
-
-    public static final String str(Collection<QpidByteBuffer> buf, int limit)
-    {
-        return str(buf, limit, 0);
     }
 
     public static final String str(QpidByteBuffer buf, int limit, int start)

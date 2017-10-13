@@ -156,24 +156,15 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
             MessageFormat format = MessageFormatRegistry.getFormat(messageFormat.intValue());
             if(format != null)
             {
-                List<QpidByteBuffer> fragments = delivery.getPayload();
-                try
+                try (QpidByteBuffer payload = delivery.getPayload())
                 {
-                    serverMessage = format.createMessage(fragments,
+                    serverMessage = format.createMessage(payload,
                                                          getAddressSpace().getMessageStore(),
                                                          getSession().getConnection().getReference());
                 }
                 catch (AmqpErrorRuntimeException e)
                 {
                     return e.getCause().getError();
-                }
-                finally
-                {
-                    for(QpidByteBuffer fragment: fragments)
-                    {
-                        fragment.dispose();
-                    }
-                    fragments = null;
                 }
             }
             else

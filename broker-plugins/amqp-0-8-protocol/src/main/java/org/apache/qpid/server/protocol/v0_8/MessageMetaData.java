@@ -21,17 +21,15 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
+import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQProtocolVersionException;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
-import org.apache.qpid.server.message.AMQMessageHeader;
-import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
@@ -158,35 +156,11 @@ public class MessageMetaData implements StorableMessageMetaData
     {
 
         @Override
-        public MessageMetaData createMetaData(List<QpidByteBuffer> bufs)
+        public MessageMetaData createMetaData(QpidByteBuffer buf)
         {
             try
             {
-                final int size = QpidByteBufferUtils.getInt(bufs);
-
-                final QpidByteBuffer buf;
-                final boolean disposalRequired;
-                if (bufs.size() == 1)
-                {
-                    buf = bufs.get(0);
-                    disposalRequired = false;
-                }
-                else
-                {
-                    // This should seldom happen.  For AMQP 0-8..0-91 the content header body must
-                    // fit within one frame.  If we get here we are either recovering after a reduction
-                    // in framesize or it so happens that the content header and the size/exchange/routingkey
-                    // just overfills one frame.
-                    int totalRemaining = (int) QpidByteBufferUtils.remaining(bufs);
-
-                    buf = QpidByteBuffer.allocateDirect(totalRemaining);
-                    disposalRequired = true;
-                    for (final QpidByteBuffer qpidByteBuffer : bufs)
-                    {
-                        buf.put(qpidByteBuffer);
-                    }
-                    buf.flip();
-                }
+                final int size = buf.getInt();
 
                 ContentHeaderBody chb = ContentHeaderBody.createFromBuffer(buf, size);
                 final AMQShortString exchange = AMQShortString.readAMQShortString(buf);
@@ -200,11 +174,6 @@ public class MessageMetaData implements StorableMessageMetaData
                                                (flags & IMMEDIATE_FLAG) != 0,
                                                (flags & MANDATORY_FLAG) != 0,
                                                routingKey);
-
-                if (disposalRequired)
-                {
-                    buf.dispose();
-                }
 
                 return new MessageMetaData(publishBody, chb, arrivalTime);
             }

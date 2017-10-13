@@ -125,7 +125,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
 
     public static AMQShortString readAMQShortString(QpidByteBuffer buffer)
     {
-        int length = ((int) buffer.get()) & 0xff;
+        int length = buffer.getUnsignedByte();
         if(length == 0)
         {
             return null;

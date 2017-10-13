@@ -25,18 +25,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
@@ -237,15 +235,8 @@ public class MessageConverter_Internal_to_0_10Test extends QpidTestCase
         final ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
 
         when(_handle.getContent(offsetCaptor.capture(),
-                                sizeCaptor.capture())).then(new Answer<Collection<QpidByteBuffer>>()
-        {
-            @Override
-            public Collection<QpidByteBuffer> answer(final InvocationOnMock invocation) throws Throwable
-            {
-                final QpidByteBuffer view = combined.view(offsetCaptor.getValue(), sizeCaptor.getValue());
-                return Collections.singleton(view);
-            }
-        });
+                                sizeCaptor.capture())).then(invocation -> combined.view(offsetCaptor.getValue(),
+                                                                                        sizeCaptor.getValue()));
     }
 
     private void doTest(final Serializable messageBytes,
@@ -255,22 +246,23 @@ public class MessageConverter_Internal_to_0_10Test extends QpidTestCase
     {
         final InternalMessage sourceMessage = getAmqMessage(messageBytes, mimeType);
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent();
 
         assertArrayEquals("Unexpected content", expectedContent != null ? expectedContent : new byte[0], getBytes(content));
         assertEquals("Unexpected content type", expectedContentType, convertedMessage.getMessageHeader().getMimeType());
     }
 
-    private byte[] getBytes(final Collection<QpidByteBuffer> content) throws Exception
+    private byte[] getBytes(final QpidByteBuffer content) throws Exception
     {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        for (QpidByteBuffer buf : content)
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             InputStream contentInputStream = content.asInputStream())
         {
-            ByteStreams.copy(buf.asInputStream(), bos);
-            buf.dispose();
+            ByteStreams.copy(contentInputStream, bos);
+            content.dispose();
+            return bos.toByteArray();
         }
-        return bos.toByteArray();
     }
+
 
     private static class MySerializable implements Serializable
     {

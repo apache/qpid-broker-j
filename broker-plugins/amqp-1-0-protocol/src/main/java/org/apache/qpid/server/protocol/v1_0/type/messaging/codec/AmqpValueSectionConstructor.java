@@ -23,10 +23,7 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.TypeConstructor;
@@ -58,36 +55,36 @@ public class AmqpValueSectionConstructor implements DescribedTypeConstructor<Amq
 
     @Override
     public TypeConstructor<AmqpValueSection> construct(final Object descriptor,
-                                                        final List<QpidByteBuffer> in,
-                                                        final int[] originalPositions,
+                                                        final QpidByteBuffer in,
+                                                        final int originalPosition,
                                                         final ValueHandler valueHandler)
             throws AmqpErrorException
     {
-        return new LazyConstructor(originalPositions);
+        return new LazyConstructor(originalPosition);
     }
 
 
     private class LazyConstructor extends AbstractLazyConstructor<AmqpValueSection>
     {
-        LazyConstructor(final int[] originalPositions)
+        LazyConstructor(final int originalPosition)
         {
-            super(originalPositions);
+            super(originalPosition);
         }
 
         @Override
-        protected AmqpValueSection createObject(final List<QpidByteBuffer> encoding, final ValueHandler handler)
+        protected AmqpValueSection createObject(final QpidByteBuffer encoding, final ValueHandler handler)
         {
             return new AmqpValueSection(encoding);
         }
 
         @Override
-        protected void skipValue(final List<QpidByteBuffer> in) throws AmqpErrorException
+        protected void skipValue(final QpidByteBuffer in) throws AmqpErrorException
         {
-            if (!QpidByteBufferUtils.hasRemaining(in))
+            if (!in.hasRemaining())
             {
                 throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode AMQP value section.");
             }
-            byte formatCode = QpidByteBufferUtils.get(in);
+            byte formatCode = in.get();
 
             if (formatCode == ValueHandler.DESCRIBED_TYPE)
             {
@@ -122,32 +119,32 @@ public class AmqpValueSectionConstructor implements DescribedTypeConstructor<Amq
                     case 0x0a:
                     case 0x0c:
                     case 0x0e:
-                        if (!QpidByteBufferUtils.hasRemaining(in))
+                        if (!in.hasRemaining())
                         {
                             throw new AmqpErrorException(AmqpError.DECODE_ERROR,
                                                          "Insufficient data to decode AMQP value section.");
                         }
-                        skipLength = ((int) QpidByteBufferUtils.get(in)) & 0xFF;
+                        skipLength = in.getUnsignedByte();
                         break;
                     case 0x0b:
                     case 0x0d:
                     case 0x0f:
-                        if (!QpidByteBufferUtils.hasRemaining(in, 4))
+                        if (!in.hasRemaining(4))
                         {
                             throw new AmqpErrorException(AmqpError.DECODE_ERROR,
                                                          "Insufficient data to decode AMQP value section.");
                         }
-                        skipLength = QpidByteBufferUtils.getInt(in);
+                        skipLength = in.getInt();
                         break;
                     default:
                         throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Unknown type");
                 }
-                if (!QpidByteBufferUtils.hasRemaining(in, skipLength))
+                if (!in.hasRemaining(skipLength))
                 {
                     throw new AmqpErrorException(AmqpError.DECODE_ERROR,
                                                  "Insufficient data to decode AMQP value section.");
                 }
-                QpidByteBufferUtils.skip(in,skipLength);
+                in.position(in.position() + skipLength);
             }
         }
 

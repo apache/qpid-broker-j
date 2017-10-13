@@ -21,7 +21,6 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -31,7 +30,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.ApplicationProp
 public class ApplicationPropertiesSection extends AbstractSection<Map<String,Object>, ApplicationProperties>
 {
 
-    public ApplicationPropertiesSection(final List<QpidByteBuffer> encodedForm)
+    public ApplicationPropertiesSection(final QpidByteBuffer encodedForm)
     {
         super(encodedForm);
     }

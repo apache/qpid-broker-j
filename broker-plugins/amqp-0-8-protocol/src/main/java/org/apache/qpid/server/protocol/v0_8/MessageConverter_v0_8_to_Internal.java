@@ -67,13 +67,9 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
     {
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];
-        int total = 0;
-        for(QpidByteBuffer b : serverMessage.getContent(0, (int) serverMessage.getSize()))
+        try (QpidByteBuffer content = serverMessage.getContent())
         {
-            int len = b.remaining();
-            b.get(data, total, len);
-            b.dispose();
-            total += len;
+            content.get(data);
         }
 
         String encoding = serverMessage.getMessageHeader().getEncoding();

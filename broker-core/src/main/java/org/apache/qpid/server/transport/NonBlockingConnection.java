@@ -41,9 +41,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.server.util.SystemUtils;
 
 public class NonBlockingConnection implements ServerNetworkConnection, ByteBufferSender
@@ -431,21 +431,34 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     private void shutdownOutput()
     {
-        if(!SystemUtils.isWindows())
+        try
         {
-            try
+
+            if(!SystemUtils.isWindows())
             {
-                _socketChannel.shutdownOutput();
-            }
-            catch (IOException e)
-            {
-                LOGGER.info("Exception closing socket '{}': {}", _remoteSocketAddress, e.getMessage());
-            }
-            finally
-            {
-                _delegate.shutdownOutput();
+                try
+                {
+                    _socketChannel.shutdownOutput();
+                }
+                catch (IOException e)
+                {
+                    LOGGER.info("Exception closing socket '{}': {}", _remoteSocketAddress, e.getMessage());
+                }
+                finally
+                {
+                    _delegate.shutdownOutput();
+                }
             }
         }
+        finally
+        {
+            while (!_buffers.isEmpty())
+            {
+                final QpidByteBuffer buffer = _buffers.poll();
+                buffer.dispose();
+            }
+        }
+
     }
 
     private void shutdownInput()
@@ -476,7 +489,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         _partialRead = false;
         if(!_closed.get() && _delegate.readyForRead())
         {
-            int readData = readFromNetwork();
+            long readData = readFromNetwork();
 
             if (readData > 0)
             {
@@ -521,11 +534,11 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         return _fullyWritten;
     }
 
-    protected int readFromNetwork() throws IOException
+    protected long readFromNetwork() throws IOException
     {
         QpidByteBuffer buffer = _delegate.getNetInputBuffer();
 
-        int read = buffer.read(_socketChannel);
+        long read = buffer.read(_socketChannel);
         if (read == -1)
         {
             _closed.set(true);
@@ -608,12 +621,15 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
             default:
                 throw new IllegalArgumentException("unknown TransportEncryption " + transportEncryption);
         }
-        if(oldDelegate != null)
+        if (oldDelegate != null)
         {
-            QpidByteBuffer src = oldDelegate.getNetInputBuffer().duplicate();
-            src.flip();
-            _delegate.getNetInputBuffer().put(src);
-            src.dispose();
+            try (QpidByteBuffer src = oldDelegate.getNetInputBuffer().duplicate())
+            {
+                src.flip();
+                _delegate.getNetInputBuffer().put(src);
+            }
+            oldDelegate.shutdownInput();
+            oldDelegate.shutdownOutput();
         }
         LOGGER.debug("Identified transport encryption as " + transportEncryption);
     }

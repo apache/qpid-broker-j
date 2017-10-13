@@ -21,7 +21,6 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -31,7 +30,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.FooterConstruct
 
 public class FooterSection extends AbstractSection<Map<Symbol,Object>, Footer>
 {
-    public FooterSection(final List<QpidByteBuffer> encodedForm)
+    public FooterSection(final QpidByteBuffer encodedForm)
     {
         super(encodedForm);
     }

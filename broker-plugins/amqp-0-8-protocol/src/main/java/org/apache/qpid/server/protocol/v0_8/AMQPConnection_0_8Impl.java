@@ -394,7 +394,8 @@ public class AMQPConnection_0_8Impl
     @Override
     public boolean channelAwaitingClosure(int channelId)
     {
-        return !_closingChannelsList.isEmpty() && _closingChannelsList.containsKey(channelId);
+        return ignoreAllButCloseOk() || (!_closingChannelsList.isEmpty()
+                                         && _closingChannelsList.containsKey(channelId));
     }
 
     private void addChannel(AMQChannel channel)
@@ -411,12 +412,10 @@ public class AMQPConnection_0_8Impl
 
     private void removeChannel(int channelId)
     {
-        AMQChannel session;
         synchronized (_channelAddRemoveLock)
         {
-            session = _channelMap.remove(channelId);
+            _channelMap.remove(channelId);
         }
-        session.dispose();
     }
 
 
@@ -1288,16 +1287,18 @@ public class AMQPConnection_0_8Impl
                         public Object invoke(final Object proxy, final Method method, final Object[] args)
                                 throws Throwable
                         {
-                            if(method.getName().startsWith("receive"))
+                            if (method.getName().equals("receiveChannelCloseOk") && channelAwaitingClosure(channelId))
+                            {
+                                closeChannelOk(channelId);
+                            }
+                            else if(method.getName().startsWith("receive"))
                             {
                                 sendConnectionClose(ErrorCodes.CHANNEL_ERROR,
-                                        "Unknown channel id: " + channelId,
-                                                    channelId);
-                                return null;
+                                        "Unknown channel id: " + channelId, channelId);
                             }
                             else if(method.getName().equals("ignoreAllButCloseOk"))
                             {
-                                return false;
+                                return channelAwaitingClosure(channelId);
                             }
                             return null;
                         }

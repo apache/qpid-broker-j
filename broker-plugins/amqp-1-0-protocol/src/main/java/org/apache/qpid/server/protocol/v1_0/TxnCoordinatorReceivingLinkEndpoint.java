@@ -67,73 +67,76 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
     @Override
     protected Error receiveDelivery(Delivery delivery)
     {
-        List<QpidByteBuffer> payload = delivery.getPayload();
-
-
-
         // Only interested in the amqp-value section that holds the message to the coordinator
-        try
+        try (QpidByteBuffer payload = delivery.getPayload())
         {
             List<EncodingRetainingSection<?>> sections = getSectionDecoder().parseAll(payload);
             boolean amqpValueSectionFound = false;
             for(EncodingRetainingSection section : sections)
             {
-                if(section instanceof AmqpValueSection)
+                try
                 {
-                    if (amqpValueSectionFound)
+                    if (section instanceof AmqpValueSection)
                     {
-                        throw new ConnectionScopedRuntimeException("Received more than one AmqpValue sections");
-                    }
-                    amqpValueSectionFound = true;
-                    Object command = section.getValue();
-
-                    Session_1_0 session = getSession();
-                    if(command instanceof Declare)
-                    {
-                        final IdentifiedTransaction txn = session.getConnection().createIdentifiedTransaction();
-                        _createdTransactions.put(txn.getId(), txn.getServerTransaction());
-
-                        Declared state = new Declared();
-
-                        session.incrementStartedTransactions();
-
-                        state.setTxnId(Session_1_0.integerToTransactionId(txn.getId()));
-                        updateDisposition(delivery.getDeliveryTag(), state, true);
-
-                    }
-                    else if(command instanceof Discharge)
-                    {
-                        Discharge discharge = (Discharge) command;
-
-                        Error error = discharge(discharge.getTxnId(), Boolean.TRUE.equals(discharge.getFail()));
-                        final DeliveryState outcome;
-                        if (error == null)
+                        if (amqpValueSectionFound)
                         {
-                            outcome = new Accepted();
+                            throw new ConnectionScopedRuntimeException("Received more than one AmqpValue sections");
                         }
-                        else if (Arrays.asList(getSource().getOutcomes()).contains(Rejected.REJECTED_SYMBOL))
+                        amqpValueSectionFound = true;
+                        Object command = section.getValue();
+
+                        Session_1_0 session = getSession();
+                        if (command instanceof Declare)
                         {
-                            final Rejected rejected = new Rejected();
-                            rejected.setError(error);
-                            outcome = rejected;
-                            error = null;
+                            final IdentifiedTransaction txn = session.getConnection().createIdentifiedTransaction();
+                            _createdTransactions.put(txn.getId(), txn.getServerTransaction());
+
+                            Declared state = new Declared();
+
+                            session.incrementStartedTransactions();
+
+                            state.setTxnId(Session_1_0.integerToTransactionId(txn.getId()));
+                            updateDisposition(delivery.getDeliveryTag(), state, true);
+                        }
+                        else if (command instanceof Discharge)
+                        {
+                            Discharge discharge = (Discharge) command;
+
+                            Error error = discharge(discharge.getTxnId(), Boolean.TRUE.equals(discharge.getFail()));
+                            final DeliveryState outcome;
+                            if (error == null)
+                            {
+                                outcome = new Accepted();
+                            }
+                            else if (Arrays.asList(getSource().getOutcomes()).contains(Rejected.REJECTED_SYMBOL))
+                            {
+                                final Rejected rejected = new Rejected();
+                                rejected.setError(error);
+                                outcome = rejected;
+                                error = null;
+                            }
+                            else
+                            {
+                                outcome = null;
+                            }
+
+                            if (error == null)
+                            {
+                                updateDisposition(delivery.getDeliveryTag(), outcome, true);
+                            }
+                            return error;
                         }
                         else
                         {
-                            outcome = null;
+                            throw new ConnectionScopedRuntimeException(String.format("Received unknown command '%s'",
+                                                                                     command.getClass()
+                                                                                            .getSimpleName()));
                         }
-
-                        if (error == null)
-                        {
-                            updateDisposition(delivery.getDeliveryTag(), outcome, true);
-                        }
-                        return error;
                     }
-                    else
-                    {
-                        throw new ConnectionScopedRuntimeException(String.format("Received unknown command '%s'",
-                                                                                 command.getClass().getSimpleName()));
-                    }
+                }
+                finally
+                {
+                    section.dispose();
                 }
             }
             if (!amqpValueSectionFound)
@@ -144,13 +147,6 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
         catch (AmqpErrorException e)
         {
             return e.getError();
-        }
-        finally
-        {
-            for(QpidByteBuffer buf : payload)
-            {
-                buf.dispose();
-            }
         }
         return null;
     }

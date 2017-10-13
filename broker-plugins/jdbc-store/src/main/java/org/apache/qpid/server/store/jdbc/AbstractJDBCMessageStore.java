@@ -23,7 +23,6 @@ package org.apache.qpid.server.store.jdbc;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -31,7 +30,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -831,11 +829,14 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             final int bodySize = 1 + metaData.getStorableSize();
             byte[] underlying = new byte[bodySize];
             underlying[0] = (byte) metaData.getType().ordinal();
-            QpidByteBuffer buf = QpidByteBuffer.wrap(underlying);
-            buf.position(1);
-            buf = buf.slice();
-
-            metaData.writeToBuffer(buf);
+            try (QpidByteBuffer buf = QpidByteBuffer.wrap(underlying))
+            {
+                buf.position(1);
+                try (QpidByteBuffer bufSlice = buf.slice())
+                {
+                    metaData.writeToBuffer(buf);
+                }
+            }
             try(ByteArrayInputStream bis = new ByteArrayInputStream(underlying))
             {
                 stmt.setBinaryStream(2, bis, underlying.length);
@@ -938,7 +939,14 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
                     if (rs.next())
                     {
-                        return getStorableMessageMetaData(messageId, getBlobAsBytes(rs, 1));
+                        try (InputStream blobAsInputStream = getBlobAsInputStream(rs, 1))
+                        {
+                            return getStorableMessageMetaData(messageId, blobAsInputStream);
+                        }
+                        catch (IOException e)
+                        {
+                            throw new StoreException("Error reading meta data from the store for message with id " + messageId, e);
+                        }
                     }
                     else
                     {
@@ -949,20 +957,18 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
     }
 
-    private StorableMessageMetaData getStorableMessageMetaData(final long messageId, final byte[] blobAsBytes)
+    private StorableMessageMetaData getStorableMessageMetaData(final long messageId, final InputStream stream)
             throws SQLException
     {
-        try(InputStream stream = new ByteArrayInputStream(blobAsBytes))
+        try
         {
             int typeOrdinal = stream.read() & 0xff;
             MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(typeOrdinal);
-            List<QpidByteBuffer> bufs = QpidByteBuffer.asQpidByteBuffers(stream);
-            StorableMessageMetaData metaData = type.createMetaData(bufs);
-            for (final QpidByteBuffer buf : bufs)
+
+            try (QpidByteBuffer buf = QpidByteBuffer.asQpidByteBuffer(stream))
             {
-                buf.dispose();
+                return type.createMetaData(buf);
             }
-            return metaData;
         }
         catch (IOException | RuntimeException e)
         {
@@ -970,41 +976,30 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
     }
 
-    protected abstract byte[] getBlobAsBytes(ResultSet rs, int col) throws SQLException;
+    protected abstract InputStream getBlobAsInputStream(ResultSet rs, int col) throws SQLException;
 
     private void addContent(final Connection conn, long messageId,
-                            Collection<QpidByteBuffer> contentBody)
+                            QpidByteBuffer contentBody)
     {
         getLogger().debug("Adding content for message {}", messageId);
 
-        int size = 0;
-
-        for(QpidByteBuffer buf : contentBody)
-        {
-            size += buf.remaining();
-        }
-        byte[] data = new byte[size];
-        ByteBuffer dst = ByteBuffer.wrap(data);
-        for(QpidByteBuffer buf : contentBody)
-        {
-            buf.copyTo(dst);
-        }
-
-        try(PreparedStatement stmt = conn.prepareStatement("INSERT INTO " + getMessageContentTableName()
-                                                           + "( message_id, content ) values (?, ?)"))
+        try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO " + getMessageContentTableName()
+                                                            + "( message_id, content ) values (?, ?)");
+             QpidByteBuffer bodyDuplicate = contentBody.duplicate();
+             InputStream inputStream = bodyDuplicate.asInputStream())
         {
             stmt.setLong(1, messageId);
-            stmt.setBinaryStream(2, new ByteArrayInputStream(data), data.length);
+            stmt.setBinaryStream(2, inputStream, contentBody.remaining());
             stmt.executeUpdate();
         }
-        catch (SQLException e)
+        catch (SQLException | IOException e)
         {
             JdbcUtils.closeConnection(conn, getLogger());
             throw new StoreException("Error adding content for message " + messageId + ": " + e.getMessage(), e);
         }
     }
 
-    Collection<QpidByteBuffer> getAllContent(long messageId) throws StoreException
+    QpidByteBuffer getAllContent(long messageId) throws StoreException
     {
         getLogger().debug("Message Id: {} Getting content body", messageId);
 
@@ -1017,18 +1012,10 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
             if (rs.next())
             {
-                byte[] data = getBlobAsBytes(rs, 1);
-                int offset = 0;
-                int length = data.length;
-                Collection<QpidByteBuffer> buffers = QpidByteBuffer.allocateDirectCollection(length);
-                for(QpidByteBuffer buf : buffers)
+                try (InputStream blobAsInputStream = getBlobAsInputStream(rs, 1))
                 {
-                    int bufSize = buf.remaining();
-                    buf.put(data, offset, bufSize);
-                    buf.flip();
-                    offset+=bufSize;
+                    return QpidByteBuffer.asQpidByteBuffer(blobAsInputStream);
                 }
-                return buffers;
             }
             else
             {
@@ -1036,7 +1023,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             }
 
         }
-        catch (SQLException e)
+        catch (SQLException | IOException e)
         {
             throw new StoreException("Error retrieving content for message " + messageId + ": " + e.getMessage(), e);
         }
@@ -1262,7 +1249,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private static class MessageDataRef<T extends StorableMessageMetaData>
     {
         private volatile T _metaData;
-        private volatile Collection<QpidByteBuffer> _data;
+        private volatile QpidByteBuffer _data;
         private volatile boolean _isHardRef;
 
         private MessageDataRef(final T metaData, boolean isHardRef)
@@ -1270,7 +1257,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             this(metaData, null, isHardRef);
         }
 
-        private MessageDataRef(final T metaData, Collection<QpidByteBuffer> data, boolean isHardRef)
+        private MessageDataRef(final T metaData, QpidByteBuffer data, boolean isHardRef)
         {
             _metaData = metaData;
             _data = data;
@@ -1282,12 +1269,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             return _metaData;
         }
 
-        public Collection<QpidByteBuffer> getData()
+        public QpidByteBuffer getData()
         {
             return _data;
         }
 
-        public void setData(final Collection<QpidByteBuffer> data)
+        public void setData(final QpidByteBuffer data)
         {
             _data = data;
         }
@@ -1322,11 +1309,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             }
             if(_data != null)
             {
-                for(QpidByteBuffer buf : _data)
-                {
-                    bytesCleared += buf.remaining();
-                    buf.dispose();
-                }
+                bytesCleared += _data.remaining();
+                _data.dispose();
                 _data = null;
             }
             return bytesCleared;
@@ -1405,20 +1389,17 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         @Override
         public synchronized void addContent(QpidByteBuffer src)
         {
-            src = src.slice();
-            Collection<QpidByteBuffer> data = _messageDataRef.getData();
-            if(data == null)
+            try(QpidByteBuffer data = _messageDataRef.getData())
             {
-                _messageDataRef.setData(Collections.singleton(src));
+                if(data == null)
+                {
+                    _messageDataRef.setData(src.slice());
+                }
+                else
+                {
+                    _messageDataRef.setData(QpidByteBuffer.concatenate(Arrays.asList(data, src)));
+                }
             }
-            else
-            {
-                List<QpidByteBuffer> newCollection = new ArrayList<>(data.size()+1);
-                newCollection.addAll(data);
-                newCollection.add(src);
-                _messageDataRef.setData(Collections.unmodifiableCollection(newCollection));
-            }
-
         }
 
         @Override
@@ -1429,11 +1410,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         /**
-         * returns QBBs containing the content. The caller must not dispose of them because we keep a reference in _messageDataRef.
+         * returns QBB containing the content. The caller must not dispose of them because we keep a reference in _messageDataRef.
          */
-        private Collection<QpidByteBuffer> getContentAsByteBuffer()
+        private QpidByteBuffer getContentAsByteBuffer()
         {
-            Collection<QpidByteBuffer> data = _messageDataRef == null ? Collections.<QpidByteBuffer>emptyList() : _messageDataRef.getData();
+            QpidByteBuffer data = _messageDataRef == null ? QpidByteBuffer.emptyQpidByteBuffer() : _messageDataRef.getData();
             if(data == null)
             {
                 if(stored())
@@ -1445,57 +1426,16 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 }
                 else
                 {
-                    data = Collections.emptyList();
+                    data = QpidByteBuffer.emptyQpidByteBuffer();
                 }
             }
             return data;
         }
 
         @Override
-        public synchronized Collection<QpidByteBuffer> getContent(int offset, int length)
+        public synchronized QpidByteBuffer getContent(int offset, int length)
         {
-            Collection<QpidByteBuffer> bufs = getContentAsByteBuffer();
-            Collection<QpidByteBuffer> content = new ArrayList<>(bufs.size());
-
-            int pos = 0;
-            for (QpidByteBuffer buf : bufs)
-            {
-                if (length > 0)
-                {
-                    int bufRemaining = buf.remaining();
-                    if (pos + bufRemaining <= offset)
-                    {
-                        pos += bufRemaining;
-                    }
-                    else if (pos >= offset)
-                    {
-                        buf = buf.duplicate();
-                        if (bufRemaining <= length)
-                        {
-                            length -= bufRemaining;
-                        }
-                        else
-                        {
-                            buf.limit(length);
-                            length = 0;
-                        }
-                        content.add(buf);
-                        pos += buf.remaining();
-
-                    }
-                    else
-                    {
-                        int offsetInBuf = offset - pos;
-                        int limit = length < bufRemaining - offsetInBuf ? length : bufRemaining - offsetInBuf;
-                        final QpidByteBuffer bufView = buf.view(offsetInBuf, limit);
-                        content.add(bufView);
-                        length -= limit;
-                        pos+=limit+offsetInBuf;
-                    }
-                }
-
-            }
-            return content;
+            return getContentAsByteBuffer().view(offset, length);
         }
 
         @Override
@@ -1517,7 +1457,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 AbstractJDBCMessageStore.this.storeMetaData(conn, _messageId, _messageDataRef.getMetaData());
                 AbstractJDBCMessageStore.this.addContent(conn, _messageId,
                                                          _messageDataRef.getData() == null
-                                                                ? Collections.<QpidByteBuffer>emptySet()
+                                                                ? QpidByteBuffer.emptyQpidByteBuffer()
                                                                 : _messageDataRef.getData());
 
                 getLogger().debug("Storing message {} to store", _messageId);
@@ -1569,14 +1509,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 metaData.dispose();
             }
 
-            Collection<QpidByteBuffer> data = _messageDataRef.getData();
-            if(data != null)
+            try (QpidByteBuffer data = _messageDataRef.getData())
             {
-                bytesCleared += getContentSize();
-                _messageDataRef.setData(null);
-                for(QpidByteBuffer buf : data)
+                if (data != null)
                 {
-                    buf.dispose();
+                    bytesCleared += getContentSize();
+                    _messageDataRef.setData(null);
                 }
             }
             _messageDataRef = null;
@@ -1670,9 +1608,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     {
                         if (rs.next())
                         {
-                            byte[] dataAsBytes = getBlobAsBytes(rs, 2);
-                            StorableMessageMetaData metaData = getStorableMessageMetaData(messageId, dataAsBytes);
-                            message = createStoredJDBCMessage(messageId, metaData, true);
+                            try (InputStream blobAsInputStream = getBlobAsInputStream(rs, 2))
+                            {
+                                final StorableMessageMetaData metaData = getStorableMessageMetaData(messageId, blobAsInputStream);
+                                message = createStoredJDBCMessage(messageId, metaData, true);
+                            }
                         }
                         else
                         {
@@ -1682,7 +1622,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 }
                 return message;
             }
-            catch (SQLException e)
+            catch (SQLException | IOException e)
             {
                 throw new StoreException("Error encountered when visiting messages", e);
             }
@@ -1710,18 +1650,20 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                         while (rs.next())
                         {
                             long messageId = rs.getLong(1);
-                            byte[] dataAsBytes = getBlobAsBytes(rs, 2);
-                            StorableMessageMetaData metaData = getStorableMessageMetaData(messageId, dataAsBytes);
-                            StoredJDBCMessage message = createStoredJDBCMessage(messageId, metaData, true);
-                            if (!handler.handle(message))
+                            try (InputStream dataAsInputStream = getBlobAsInputStream(rs, 2))
                             {
-                                break;
+                                StorableMessageMetaData metaData = getStorableMessageMetaData(messageId, dataAsInputStream);
+                                StoredJDBCMessage message = createStoredJDBCMessage(messageId, metaData, true);
+                                if (!handler.handle(message))
+                                {
+                                    break;
+                                }
                             }
                         }
                     }
                 }
             }
-            catch (SQLException e)
+            catch (SQLException | IOException e)
             {
                 throw new StoreException("Error encountered when visiting messages", e);
             }

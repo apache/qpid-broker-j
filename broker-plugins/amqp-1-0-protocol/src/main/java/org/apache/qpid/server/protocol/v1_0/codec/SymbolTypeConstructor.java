@@ -20,14 +20,11 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.nio.CharBuffer;
 import java.nio.charset.Charset;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
@@ -50,85 +47,33 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor<Symbol>
         super(size);
     }
 
-    private Symbol constructFromSingleBuffer(final QpidByteBuffer in, final int size)
-    {
-        BinaryString binaryStr;
-        if (in.hasArray())
-        {
-            binaryStr = new BinaryString(in.array(), in.arrayOffset() + in.position(), size);
-        }
-        else
-        {
-            byte[] b = new byte[in.remaining()];
-            QpidByteBuffer dup = in.duplicate();
-            dup.get(b);
-            dup.dispose();
-            binaryStr = new BinaryString(b, 0, b.length);
-        }
-
-        Symbol symbolVal = SYMBOL_MAP.get(binaryStr);
-        if (symbolVal == null)
-        {
-            QpidByteBuffer dup = in.duplicate();
-            dup.limit(in.position() + size);
-            CharBuffer charBuf = dup.decode(ASCII);
-            dup.dispose();
-
-            symbolVal = Symbol.getSymbol(charBuf.toString());
-
-            byte[] data = new byte[size];
-            in.get(data);
-            binaryStr = new BinaryString(data, 0, size);
-            SYMBOL_MAP.putIfAbsent(binaryStr, symbolVal);
-        }
-        else
-        {
-            in.position(in.position() + size);
-        }
-
-        return symbolVal;
-    }
-
     @Override
-    public Symbol construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    public Symbol construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
     {
 
         int size;
 
-        if (!QpidByteBufferUtils.hasRemaining(in, getSize()))
+        if (!in.hasRemaining(getSize()))
         {
             throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct symbol: insufficient input data");
         }
 
         if (getSize() == 1)
         {
-            size = QpidByteBufferUtils.get(in) & 0xFF;
+            size = in.getUnsignedByte();
         }
         else
         {
-            size = QpidByteBufferUtils.getInt(in);
+            size = in.getInt();
         }
 
-        if (!QpidByteBufferUtils.hasRemaining(in, size))
+        if (!in.hasRemaining(size))
         {
             throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct symbol: insufficient input data");
         }
 
-        for (int i = 0; i < in.size(); i++)
-        {
-            QpidByteBuffer buf = in.get(i);
-            if (buf.hasRemaining())
-            {
-                if (buf.remaining() >= size)
-                {
-                    return constructFromSingleBuffer(buf, size);
-                }
-                break;
-            }
-        }
-
         byte[] data = new byte[size];
-        QpidByteBufferUtils.get(in, data);
+        in.get(data);
         final BinaryString binaryStr = new BinaryString(data);
 
         Symbol symbolVal = SYMBOL_MAP.get(binaryStr);

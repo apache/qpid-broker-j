@@ -21,8 +21,6 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -30,7 +28,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.DataConstructor
 
 public class DataSection extends AbstractSection<Binary, Data>
 {
-    public DataSection(final List<QpidByteBuffer> encodedForm)
+    public DataSection(final QpidByteBuffer encodedForm)
     {
         super(encodedForm);
     }

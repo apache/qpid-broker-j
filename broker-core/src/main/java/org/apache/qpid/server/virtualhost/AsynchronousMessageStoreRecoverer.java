@@ -27,7 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -38,6 +40,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.TransactionLogMessages;
 import org.apache.qpid.server.logging.subjects.MessageStoreLogSubject;
@@ -45,7 +48,6 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
-import org.apache.qpid.server.pool.QpidByteBufferDisposingThreadPoolExecutor;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
@@ -98,9 +100,12 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private final AtomicBoolean _recoveryComplete = new AtomicBoolean();
         private final Map<Long, MessageReference<? extends ServerMessage<?>>> _recoveredMessages = new HashMap<>();
         private final ListeningExecutorService _queueRecoveryExecutor =
-                MoreExecutors.listeningDecorator(new QpidByteBufferDisposingThreadPoolExecutor(0, Integer.MAX_VALUE,
-                                                                                               60L, TimeUnit.SECONDS,
-                                                                                               new SynchronousQueue<Runnable>()));
+                MoreExecutors.listeningDecorator(new ThreadPoolExecutor(0,
+                                                                        Integer.MAX_VALUE,
+                                                                        60L,
+                                                                        TimeUnit.SECONDS,
+                                                                        new SynchronousQueue<Runnable>(),
+                                                                        QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(Executors.defaultThreadFactory())));
 
         private final MessageStore.MessageStoreReader _storeReader;
         private AtomicBoolean _continueRecovery = new AtomicBoolean(true);

@@ -21,27 +21,23 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.QpidException;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageContentSource;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQBody;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQDataBlock;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQFrame;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQMethodBody;
+import org.apache.qpid.server.protocol.v0_8.transport.AMQVersionAwareProtocolSession;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicCancelOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
-import org.apache.qpid.server.protocol.v0_8.transport.AMQVersionAwareProtocolSession;
-import org.apache.qpid.server.message.InstanceProperties;
-import org.apache.qpid.server.message.MessageContentSource;
-import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.util.GZIPUtils;
 
@@ -130,8 +126,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
     private DisposableMessageContentSource deflateIfPossible(MessageContentSource source)
     {
-        Collection<QpidByteBuffer> contentBuffers = source.getContent(0, (int) source.getSize());
-        try
+        try (QpidByteBuffer contentBuffers = source.getContent())
         {
             return new ModifiedContentSource(QpidByteBuffer.deflate(contentBuffers));
         }
@@ -140,20 +135,12 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             LOGGER.warn("Unable to compress message payload for consumer with gzip, message will be sent as is", e);
             return null;
         }
-        finally
-        {
-            for (QpidByteBuffer contentBuffer : contentBuffers)
-            {
-                contentBuffer.dispose();
-            }
-        }
     }
 
 
     private DisposableMessageContentSource inflateIfPossible(MessageContentSource source)
     {
-        Collection<QpidByteBuffer> contentBuffers = source.getContent(0, (int) source.getSize());
-        try
+        try (QpidByteBuffer contentBuffers = source.getContent())
         {
             return new ModifiedContentSource(QpidByteBuffer.inflate(contentBuffers));
         }
@@ -161,13 +148,6 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         {
             LOGGER.warn("Unable to decompress message payload for consumer with gzip, message will be sent as is", e);
             return null;
-        }
-        finally
-        {
-            for (QpidByteBuffer contentBuffer : contentBuffers)
-            {
-                contentBuffer.dispose();
-            }
         }
     }
 
@@ -255,13 +235,11 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         @Override
         public long writePayload(final ByteBufferSender sender)
         {
-            long size = 0L;
-            for(QpidByteBuffer buf : _content.getContent(_offset, _length))
+            long size;
+            try (final QpidByteBuffer content = _content.getContent(_offset, _length))
             {
-                size += buf.remaining();
-
-                sender.send(buf);
-                buf.dispose();
+                size = content.remaining();
+                sender.send(content);
             }
             return size;
         }
@@ -527,73 +505,31 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
     private static class ModifiedContentSource implements DisposableMessageContentSource
     {
-        private final Collection<QpidByteBuffer> _buffers;
+        private final QpidByteBuffer _buffer;
         private final int _size;
 
-        public ModifiedContentSource(final Collection<QpidByteBuffer> buffers)
+        public ModifiedContentSource(final QpidByteBuffer buffer)
         {
-            _buffers = buffers;
-            int size = 0;
-            for(QpidByteBuffer buf : buffers)
-            {
-                size += buf.remaining();
-            }
-            _size = size;
+            _buffer = buffer;
+            _size = _buffer.remaining();
         }
 
         @Override
         public void dispose()
         {
-            for(QpidByteBuffer buffer : _buffers)
-            {
-                buffer.dispose();
-            }
+            _buffer.dispose();
         }
 
         @Override
-        public Collection<QpidByteBuffer> getContent(final int offset, int length)
+        public QpidByteBuffer getContent()
         {
-            Collection<QpidByteBuffer> content = new ArrayList<>(_buffers.size());
-            int pos = 0;
-            for (QpidByteBuffer buf : _buffers)
-            {
-                if (length > 0)
-                {
-                    int bufRemaining = buf.remaining();
-                    if (pos + bufRemaining <= offset)
-                    {
-                        pos += bufRemaining;
-                    }
-                    else if (pos >= offset)
-                    {
-                        buf = buf.duplicate();
-                        if (bufRemaining <= length)
-                        {
-                            length -= bufRemaining;
-                        }
-                        else
-                        {
-                            buf.limit(length);
-                            length = 0;
-                        }
-                        content.add(buf);
-                        pos+=buf.remaining();
+            return getContent(0, (int) getSize());
+        }
 
-                    }
-                    else
-                    {
-                        int offsetInBuf = offset - pos;
-                        int limit = length < bufRemaining - offsetInBuf ? length : bufRemaining - offsetInBuf;
-                        final QpidByteBuffer bufView = buf.view(offsetInBuf, limit);
-                        content.add(bufView);
-                        length -= limit;
-                        pos+=limit+offsetInBuf;
-                    }
-                }
-
-            }
-            return content;
-
+        @Override
+        public QpidByteBuffer getContent(final int offset, int length)
+        {
+            return _buffer.view(offset, length);
         }
 
         @Override

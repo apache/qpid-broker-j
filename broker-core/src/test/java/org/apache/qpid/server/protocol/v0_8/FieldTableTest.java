@@ -598,11 +598,11 @@ public class FieldTableTest extends QpidTestCase
         buf.flip();
 
         long length = buf.getInt() & 0xFFFFFFFFL;
-        buf = buf.slice();
-        buf.limit((int)length);
+        QpidByteBuffer bufSlice = buf.slice();
+        bufSlice.limit((int)length);
 
 
-        FieldTable table2 = new FieldTable(buf);
+        FieldTable table2 = new FieldTable(bufSlice);
 
         Assert.assertEquals((Boolean) true, table2.getBoolean("bool"));
         Assert.assertEquals((Byte) Byte.MAX_VALUE, table2.getByte("byte"));
@@ -615,6 +615,10 @@ public class FieldTableTest extends QpidTestCase
         Assert.assertEquals(Short.valueOf(Short.MAX_VALUE), table2.getShort("short"));
         Assert.assertEquals("hello", table2.getString("string"));
         Assert.assertNull(table2.getString("null-string"));
+        buf.dispose();
+        bufSlice.dispose();
+        table.dispose();
+        table2.dispose();
     }
 
     public void testEncodingSize()

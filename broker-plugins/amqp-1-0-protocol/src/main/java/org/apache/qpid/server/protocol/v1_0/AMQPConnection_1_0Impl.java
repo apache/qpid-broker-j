@@ -58,7 +58,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -444,37 +443,60 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public void receive(final List<ChannelFrameBody> channelFrameBodies)
     {
-        PeekingIterator<ChannelFrameBody> itr = Iterators.peekingIterator(channelFrameBodies.iterator());
-
-        while(itr.hasNext())
+        if (!channelFrameBodies.isEmpty())
         {
-            final ChannelFrameBody channelFrameBody = itr.next();
-            final int frameChannel = channelFrameBody.getChannel();
-
-            Session_1_0 session = _receivingSessions == null || frameChannel >= _receivingSessions.length ? null : _receivingSessions[frameChannel];
-            if (session != null)
+            PeekingIterator<ChannelFrameBody> itr = Iterators.peekingIterator(channelFrameBodies.iterator());
+            boolean cleanExit = false;
+            try
             {
-                final AccessControlContext context = session.getAccessControllerContext();
-                AccessController.doPrivileged((PrivilegedAction<Void>) () ->
+                while (itr.hasNext())
                 {
-                    ChannelFrameBody channelFrame = channelFrameBody;
-                    boolean nextIsSameChannel;
-                    do
+                    final ChannelFrameBody channelFrameBody = itr.next();
+                    final int frameChannel = channelFrameBody.getChannel();
+
+                    Session_1_0 session = _receivingSessions == null || frameChannel >= _receivingSessions.length
+                            ? null
+                            : _receivingSessions[frameChannel];
+                    if (session != null)
                     {
-                        received(frameChannel, channelFrame.getFrameBody());
-                        nextIsSameChannel = itr.hasNext() && frameChannel == itr.peek().getChannel();
-                        if (nextIsSameChannel)
+                        final AccessControlContext context = session.getAccessControllerContext();
+                        AccessController.doPrivileged((PrivilegedAction<Void>) () ->
                         {
-                            channelFrame = itr.next();
+                            ChannelFrameBody channelFrame = channelFrameBody;
+                            boolean nextIsSameChannel;
+                            do
+                            {
+                                received(frameChannel, channelFrame.getFrameBody());
+                                nextIsSameChannel = itr.hasNext() && frameChannel == itr.peek().getChannel();
+                                if (nextIsSameChannel)
+                                {
+                                    channelFrame = itr.next();
+                                }
+                            }
+                            while (nextIsSameChannel);
+                            return null;
+                        }, context);
+                    }
+                    else
+                    {
+                        received(frameChannel, channelFrameBody.getFrameBody());
+                    }
+                }
+                cleanExit = true;
+            }
+            finally
+            {
+                if (!cleanExit)
+                {
+                    while (itr.hasNext())
+                    {
+                        final Object frameBody = itr.next().getFrameBody();
+                        if (frameBody instanceof Transfer)
+                        {
+                            ((Transfer) frameBody).dispose();
                         }
                     }
-                    while (nextIsSameChannel);
-                    return null;
-                }, context);
-            }
-            else
-            {
-                received(frameChannel, channelFrameBody.getFrameBody());
+                }
             }
         }
     }
@@ -1178,7 +1200,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public int sendFrame(final int channel, final FrameBody body, final List<QpidByteBuffer> payload)
+    public int sendFrame(final int channel, final FrameBody body, final QpidByteBuffer payload)
     {
         if (!_closedForOutput)
         {
@@ -1192,8 +1214,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             {
                 int size = writer.getEncodedSize();
                 int maxPayloadSize = _maxFrameSize - (size + 9);
-                long payloadLength = QpidByteBufferUtils.remaining(payload);
-                if(payloadLength <= maxPayloadSize)
+                long payloadLength = (long) payload.remaining();
+                if (payloadLength <= maxPayloadSize)
                 {
                     send(AMQFrame.createAMQFrame(channel, body, payload));
                     return (int)payloadLength;
@@ -1206,32 +1228,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     size = writer.getEncodedSize();
                     maxPayloadSize = _maxFrameSize - (size + 9);
 
-                    List<QpidByteBuffer> payloadDup = new ArrayList<>(payload.size());
-                    int payloadSize = 0;
-                    for(QpidByteBuffer buf : payload)
+                    try (QpidByteBuffer payloadDup = payload.view(0, maxPayloadSize))
                     {
-                        if (buf.hasRemaining())
-                        {
-                            if (payloadSize + buf.remaining() < maxPayloadSize)
-                            {
-                                payloadSize += buf.remaining();
-                                payloadDup.add(buf.duplicate());
-                            }
-                            else
-                            {
-                                QpidByteBuffer dup = buf.slice();
-                                dup.limit(maxPayloadSize - payloadSize);
-                                payloadDup.add(dup);
-                                break;
-                            }
-                        }
-                    }
-
-                    QpidByteBufferUtils.skip(payload, maxPayloadSize);
-                    send(AMQFrame.createAMQFrame(channel, body, payloadDup));
-                    for(QpidByteBuffer buf : payloadDup)
-                    {
-                        buf.dispose();
+                        payload.position(payload.position() + maxPayloadSize);
+                        send(AMQFrame.createAMQFrame(channel, body, payloadDup));
                     }
 
                     return maxPayloadSize;
@@ -1361,8 +1361,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     throw new ConnectionScopedRuntimeException("SASL Layer header received after SASL already established");
                 }
 
-                getSender().send(QpidByteBuffer.wrap(SASL_HEADER));
-
+                try (QpidByteBuffer protocolHeader = QpidByteBuffer.wrap(SASL_HEADER))
+                {
+                    getSender().send(protocolHeader);
+                }
                 SaslMechanisms mechanisms = new SaslMechanisms();
                 ArrayList<Symbol> mechanismsList = new ArrayList<>();
                 for (String name :  authenticationProvider.getAvailableMechanisms(getTransport().isSecure()))
@@ -1397,7 +1399,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     }
 
                 }
-                getSender().send(QpidByteBuffer.wrap(AMQP_HEADER));
+                try (QpidByteBuffer protocolHeader = QpidByteBuffer.wrap(AMQP_HEADER))
+                {
+                    getSender().send(protocolHeader);
+                }
                 _connectionState = ConnectionState.AWAIT_OPEN;
                 _frameHandler = getFrameHandler(false);
 

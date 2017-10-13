@@ -35,6 +35,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
@@ -67,6 +68,7 @@ public class ReportRunnerTest extends QpidTestCase
         final ServerMessage message = mock(ServerMessage.class);
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(message.getMessageHeader()).thenReturn(header);
+        when(message.getContent()).thenReturn(QpidByteBuffer.emptyQpidByteBuffer());
 
         return message;
     }
@@ -158,6 +160,7 @@ public class ReportRunnerTest extends QpidTestCase
             }
         });
         when(header.getHeaderNames()).thenReturn(props.keySet());
+        when(message.getContent()).thenReturn(QpidByteBuffer.emptyQpidByteBuffer());
         return message;
     }
 

@@ -23,6 +23,7 @@ package org.apache.qpid.server.store.derby;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.sql.Blob;
@@ -151,10 +152,10 @@ public class DerbyUtils
         return new String(bytes, StandardCharsets.UTF_8);
     }
 
-    protected static byte[] getBlobAsBytes(ResultSet rs, int col) throws SQLException
+    protected static InputStream getBlobAsInputStream(ResultSet rs, int col) throws SQLException
     {
         Blob dataAsBlob = rs.getBlob(col);
-        return dataAsBlob.getBytes(1,(int) dataAsBlob.length());
+        return dataAsBlob.getBinaryStream();
     }
 
     public static boolean tableExists(final String tableName, final Connection conn) throws SQLException

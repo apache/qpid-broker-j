@@ -38,8 +38,6 @@ import java.util.UUID;
 
 import com.google.common.collect.Lists;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
@@ -323,15 +321,8 @@ public class MessageConverter_0_10_to_InternalTest extends QpidTestCase
         final ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
 
         when(_handle.getContent(offsetCaptor.capture(),
-                                sizeCaptor.capture())).then(new Answer<Collection<QpidByteBuffer>>()
-        {
-            @Override
-            public Collection<QpidByteBuffer> answer(final InvocationOnMock invocation) throws Throwable
-            {
-                final QpidByteBuffer view = combined.view(offsetCaptor.getValue(), sizeCaptor.getValue());
-                return Collections.singleton(view);
-            }
-        });
+                                sizeCaptor.capture())).then(invocation -> combined.view(offsetCaptor.getValue(),
+                                                                                        sizeCaptor.getValue()));
     }
 
     private void doTestTextMessage(final String originalContent, final String mimeType) throws Exception

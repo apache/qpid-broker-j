@@ -59,8 +59,10 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
                 @Override
                 public void send(final QpidByteBuffer msg)
                 {
+                    byte[] data = new byte[msg.remaining()];
+                    msg.get(data);
                     ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
-                    buffer.writeBytes(msg.asByteBuffer());
+                    buffer.writeBytes(data);
                     try
                     {
                         OutputHandler.super.write(ctx, buffer, promise);

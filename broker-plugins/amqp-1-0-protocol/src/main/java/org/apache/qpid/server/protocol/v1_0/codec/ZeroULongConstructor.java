@@ -19,10 +19,8 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.util.List;
-
-import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 
 class ZeroULongConstructor implements TypeConstructor<UnsignedLong>
 {
@@ -33,7 +31,7 @@ class ZeroULongConstructor implements TypeConstructor<UnsignedLong>
     }
 
     @Override
-    public UnsignedLong construct(final List<QpidByteBuffer> in, final ValueHandler handler)
+    public UnsignedLong construct(final QpidByteBuffer in, final ValueHandler handler)
     {
         return UnsignedLong.ZERO;
     }

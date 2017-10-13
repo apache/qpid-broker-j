@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
@@ -42,9 +40,9 @@ public class MessageMetaDataType_0_8 implements MessageMetaDataType<MessageMetaD
     }
 
     @Override
-    public MessageMetaData createMetaData(List<QpidByteBuffer> bufs)
+    public MessageMetaData createMetaData(QpidByteBuffer buf)
     {
-        return MessageMetaData.FACTORY.createMetaData(bufs);
+        return MessageMetaData.FACTORY.createMetaData(buf);
     }
 
     @Override

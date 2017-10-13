@@ -68,9 +68,10 @@ public class ContentBody implements AMQBody
     {
         if(_payload != null)
         {
-            final QpidByteBuffer duplicate = _payload.duplicate();
-            sender.send(duplicate);
-            duplicate.dispose();
+            try (QpidByteBuffer duplicate = _payload.duplicate())
+            {
+                sender.send(duplicate);
+            }
             return _payload.remaining();
         }
         else
@@ -96,15 +97,13 @@ public class ContentBody implements AMQBody
     public static void process(final QpidByteBuffer in,
                                final ChannelMethodProcessor methodProcessor, final long bodySize)
     {
-
-        QpidByteBuffer payload = in.view(0, (int) bodySize);
-
-        if(!methodProcessor.ignoreAllButCloseOk())
+        try (QpidByteBuffer payload = in.view(0, (int) bodySize))
         {
-            methodProcessor.receiveMessageContent(payload);
+            if (!methodProcessor.ignoreAllButCloseOk())
+            {
+                methodProcessor.receiveMessageContent(payload);
+            }
         }
-
-        payload.dispose();
         in.position(in.position()+(int)bodySize);
     }
 

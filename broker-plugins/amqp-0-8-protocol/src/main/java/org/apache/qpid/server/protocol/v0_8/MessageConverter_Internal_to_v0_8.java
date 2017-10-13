@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -110,9 +108,9 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
             }
 
             @Override
-            public Collection<QpidByteBuffer> getContent(final int offset, final int length)
+            public QpidByteBuffer getContent(final int offset, final int length)
             {
-                return Collections.singleton(QpidByteBuffer.wrap(messageContent, offset, length));
+                return QpidByteBuffer.wrap(messageContent, offset, length);
             }
 
             @Override

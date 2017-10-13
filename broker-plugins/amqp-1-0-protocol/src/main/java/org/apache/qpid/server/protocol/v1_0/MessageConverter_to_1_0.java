@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -357,16 +356,13 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
     {
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];
-        int total = 0;
-        for(QpidByteBuffer b : serverMessage.getContent(0, (int) serverMessage.getSize()))
-        {
-            int len = b.remaining();
-            b.get(data, total, len);
-            b.dispose();
-            total += len;
-        }
-        byte[] uncompressed;
 
+        try (QpidByteBuffer content = serverMessage.getContent())
+        {
+            content.get(data);
+        }
+
+        byte[] uncompressed;
         if(GZIPUtils.GZIP_CONTENT_ENCODING.equals(serverMessage.getMessageHeader().getEncoding())
            && (uncompressed = GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data))) != null)
         {
@@ -420,35 +416,12 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         }
 
         @Override
-        public Collection<QpidByteBuffer> getContent(int offset, int length)
+        public QpidByteBuffer getContent(int offset, int length)
         {
-            int position = 0;
-            List<QpidByteBuffer> content = new ArrayList<>();
-            for(QpidByteBuffer buf : _section.getEncodedForm())
+            try (QpidByteBuffer content = _section.getEncodedForm())
             {
-                if(position < offset)
-                {
-                    if(offset - position < buf.remaining())
-                    {
-                        QpidByteBuffer view = buf.view(offset - position, Math.min(length, buf.remaining() - (offset-position)));
-                        content.add(view);
-                        position += view.remaining();
-                    }
-                    else
-                    {
-                        position += buf.remaining();
-                    }
-                }
-                else if(position <= offset+length)
-                {
-                    QpidByteBuffer view = buf.view(0, Math.min(length - (position-offset), buf.remaining()));
-                    content.add(view);
-                    position += view.remaining();
-                }
-
-                buf.dispose();
+                return content.view(offset, length);
             }
-            return content;
         }
 
         @Override
@@ -490,6 +463,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         private void dispose()
         {
             _section.dispose();
+            _metaData.dispose();
         }
     }
 }

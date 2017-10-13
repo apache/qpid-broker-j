@@ -21,13 +21,12 @@
 
 package org.apache.qpid.server.message;
 
-import java.util.Collection;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public interface MessageContentSource
 {
-    Collection<QpidByteBuffer> getContent(int offset, int length);
+    QpidByteBuffer getContent();
+    QpidByteBuffer getContent(int offset, int length);
 
     long getSize();
 }

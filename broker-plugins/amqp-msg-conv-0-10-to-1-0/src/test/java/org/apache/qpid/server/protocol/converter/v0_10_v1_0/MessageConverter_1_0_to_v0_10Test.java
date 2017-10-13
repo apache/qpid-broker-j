@@ -27,9 +27,9 @@ import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -67,7 +67,6 @@ import org.apache.qpid.server.typedmessage.mimecontentconverter.JmsMapMessageToM
 import org.apache.qpid.server.typedmessage.mimecontentconverter.JmsStreamMessageToList;
 import org.apache.qpid.server.typedmessage.mimecontentconverter.ListToJmsStreamMessage;
 import org.apache.qpid.server.typedmessage.mimecontentconverter.MapToJmsMapMessage;
-import org.apache.qpid.server.util.ByteBufferUtils;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
@@ -127,7 +126,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
 
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("Unexpected mime type",
                      "application/java-object-stream",
@@ -143,7 +142,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
 
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("Unexpected mime type", "jms/map-message", convertedMessage.getMessageHeader().getMimeType());
         assertArrayEquals("Unexpected content size",
@@ -235,7 +234,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
 
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("Unexpected mime type", "jms/map-message", convertedMessage.getMessageHeader().getMimeType());
 
@@ -268,7 +267,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("Unexpected mime type", "text/plain", convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertEquals("Unexpected content", expected, new String(getBytes(content), UTF_8));
     }
 
@@ -282,7 +281,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("Unexpected mime type", "text/plain", convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertEquals("Unexpected content", expected, new String(getBytes(content), UTF_8));
     }
 
@@ -298,7 +297,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("Unexpected mime type", "jms/map-message", convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         Map<String, Object> convertedMap = new JmsMapMessageToMap().toObject(getBytes(content));
         assertEquals("Unexpected size", originalMap.size(), convertedMap.size());
@@ -319,7 +318,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("Unexpected mime type", "amqp/map", convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         Map<String, Object> convertedMap = new AmqpMapToMapConverter().toObject(getBytes(content));
         assertEquals("Unexpected size", originalMap.size(), convertedMap.size());
@@ -355,7 +354,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("Unexpected mime type", "jms/stream-message", convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         List<Object> convertedList = new JmsStreamMessageToList().toObject(getBytes(content));
         assertEquals("Unexpected size", originalList.size(), convertedList.size());
@@ -374,7 +373,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("Unexpected mime type", "amqp/list", convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         List<Object> convertedList = new AmqpListToListConverter().toObject(getBytes(content));
         assertEquals("Unexpected size", originalList.size(), convertedList.size());
@@ -427,7 +426,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("Unexpected mime type", "jms/stream-message", convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertEquals("Unexpected content", expected, new JmsStreamMessageToList().toObject(getBytes(content)));
     }
 
@@ -440,7 +439,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("Unexpected mime type", "amqp/list", convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         List<Object> convertedList = new AmqpListToListConverter().toObject(getBytes(content));
         assertEquals("Unexpected size", originalList.size(), convertedList.size());
@@ -500,7 +499,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
 
         assertEquals("Unexpected mime type",
                      expectedMimeType, convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals("Unexpected content", data, getBytes(content));
     }
 
@@ -520,7 +519,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
 
         assertEquals("Unexpected mime type",
                      expectedMimeType, convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals("Unexpected content", data, getBytes(content));
     }
 
@@ -553,7 +552,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
 
         assertEquals("Unexpected mime type",
                      expectedMimeType, convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals("Unexpected content", data, getBytes(content));
     }
 
@@ -573,7 +572,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
 
         assertEquals("Unexpected mime type",
                      expectedMimeType, convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals("Unexpected content", data, getBytes(content));
     }
 
@@ -643,7 +642,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("Unexpected mime type", "amqp/map", convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals("Unexpected content", bytes, getBytes(content));
     }
 
@@ -660,7 +659,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("Unexpected mime type", "jms/map-message", convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals("Unexpected content", bytes, getBytes(content));
     }
 
@@ -677,7 +676,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("Unexpected mime type", "amqp/list", convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals("Unexpected content", bytes, getBytes(content));
     }
 
@@ -694,7 +693,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("Unexpected mime type", "jms/stream-message", convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals("Unexpected content", bytes, getBytes(content));
     }
 
@@ -711,7 +710,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         assertEquals("Unexpected mime type",
                      "application/java-object-stream",
                      convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals("Unexpected content", expected, getBytes(content));
     }
 
@@ -729,7 +728,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         assertEquals("Unexpected mime type",
                      "application/java-object-stream",
                      convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals("Unexpected content", expected, getBytes(content));
     }
 
@@ -746,7 +745,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         assertEquals("Unexpected mime type",
                      "application/octet-stream",
                      convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals("Unexpected content", expected, getBytes(content));
     }
 
@@ -761,7 +760,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
         assertEquals("Unexpected mime type",
                      "application/octet-stream",
                      convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals("Unexpected content", expected, getBytes(content));
     }
 
@@ -781,7 +780,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
 
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("Unexpected mime type",
                      "application/java-object-stream",
@@ -795,7 +794,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
 
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("Unexpected mime type", "jms/map-message", convertedMessage.getMessageHeader().getMimeType());
         assertArrayEquals("Unexpected content size",
@@ -894,7 +893,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
 
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("Unexpected mime type", "jms/map-message", convertedMessage.getMessageHeader().getMimeType());
 
@@ -929,21 +928,21 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
 
         final MessageTransferMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertEquals("Unexpected content", expected, new String(getBytes(content), UTF_8));
 
         assertEquals("Unexpected mime type", "text/plain", convertedMessage.getMessageHeader().getMimeType());
     }
 
-    private byte[] getBytes(final Collection<QpidByteBuffer> content) throws Exception
+    private byte[] getBytes(final QpidByteBuffer content) throws Exception
     {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        for (QpidByteBuffer buf : content)
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             InputStream contentInputStream = content.asInputStream())
         {
-            ByteStreams.copy(buf.asInputStream(), bos);
-            buf.dispose();
+            ByteStreams.copy(contentInputStream, bos);
+            content.dispose();
+            return bos.toByteArray();
         }
-        return bos.toByteArray();
     }
 
     private Message_1_0 createTestMessage(final EncodingRetainingSection encodingRetainingSection)
@@ -1008,20 +1007,21 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
 
         if (section != null)
         {
-            final QpidByteBuffer combined = QpidByteBuffer.wrap(ByteBufferUtils.combine(section.getEncodedForm()));
+            // TODO this seems to leak QBBs
+            final QpidByteBuffer combined = section.getEncodedForm();
             when(storedMessage.getContentSize()).thenReturn((int) section.getEncodedSize());
             final ArgumentCaptor<Integer> offsetCaptor = ArgumentCaptor.forClass(Integer.class);
             final ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
 
             when(storedMessage.getContent(offsetCaptor.capture(),
-                                          sizeCaptor.capture())).then(invocation ->
-                                                                      {
-                                                                          final QpidByteBuffer view = combined.view(
-                                                                                  offsetCaptor.getValue(),
-                                                                                  sizeCaptor.getValue());
-                                                                          return Collections.singleton(view);
-                                                                      });
+                                          sizeCaptor.capture())).then(invocation -> combined.view(offsetCaptor.getValue(),
+                                                                                                  sizeCaptor.getValue()));
         }
+        else
+        {
+            when(storedMessage.getContent(0,0)).thenReturn(QpidByteBuffer.emptyQpidByteBuffer());
+        }
+
         return new Message_1_0(storedMessage);
     }
 
@@ -1048,7 +1048,7 @@ public class MessageConverter_1_0_to_v0_10Test extends QpidTestCase
 
         assertEquals("Unexpected mime type",
                      expectedMimeType, convertedMessage.getMessageHeader().getMimeType());
-        final Collection<QpidByteBuffer> content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final QpidByteBuffer content = convertedMessage.getContent();
         assertArrayEquals("Unexpected content", data, getBytes(content));
     }
 }

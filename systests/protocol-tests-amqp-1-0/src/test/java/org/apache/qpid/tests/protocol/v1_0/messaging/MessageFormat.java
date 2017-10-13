@@ -26,7 +26,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -83,18 +82,22 @@ public class MessageFormat extends BrokerAdminUsingTestBase
                                                         .consumeResponse(Flow.class)
                                                         .transferMore(true)
                                                         .transferMessageFormat(UnsignedInteger.ZERO)
-                                                        .transferPayload(Collections.singletonList(payloads[0]))
+                                                        .transferPayload(payloads[0])
                                                         .transfer()
                                                         .consumeResponse(null, Flow.class, Disposition.class)
                                                         .transferDeliveryTag(null)
                                                         .transferDeliveryId(null)
                                                         .transferMore(false)
                                                         .transferMessageFormat(UnsignedInteger.ONE)
-                                                        .transferPayload(Collections.singletonList(payloads[1]))
+                                                        .transferPayload(payloads[1])
                                                         .transfer()
                                                         .consumeResponse(Detach.class, End.class, Close.class)
                                                         .getLatestResponse();
 
+            for (final QpidByteBuffer payload : payloads)
+            {
+                payload.dispose();
+            }
             assertThat(latestResponse, is(notNullValue()));
             final Object responseBody = latestResponse.getBody();
             final Error error;

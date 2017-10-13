@@ -83,6 +83,12 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
             Error error = validateTransfer(transfer);
             if (error != null)
             {
+                transfer.dispose();
+                if (_currentDelivery != null)
+                {
+                    _currentDelivery.discard();
+                    _currentDelivery = null;
+                }
                 close(error);
                 return;
             }
@@ -92,6 +98,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                 error = validateNewTransfer(transfer);
                 if (error != null)
                 {
+                    transfer.dispose();
                     close(error);
                     return;
                 }
@@ -109,6 +116,9 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                 error = validateSubsequentTransfer(transfer);
                 if (error != null)
                 {
+                    transfer.dispose();
+                    _currentDelivery.discard();
+                    _currentDelivery = null;
                     close(error);
                     return;
                 }
@@ -121,6 +131,8 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                                   String.format("delivery '%s' exceeds max-message-size %d",
                                                 _currentDelivery.getDeliveryTag(),
                                                 getSession().getConnection().getMaxMessageSize()));
+                _currentDelivery.discard();
+                _currentDelivery = null;
                 close(error);
                 return;
             }

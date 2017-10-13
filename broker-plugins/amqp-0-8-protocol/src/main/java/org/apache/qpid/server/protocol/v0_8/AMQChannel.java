@@ -805,6 +805,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
         finally
         {
+            dispose();
             LogMessage operationalLogMessage = cause == 0?
                     ChannelMessages.CLOSE() :
                     ChannelMessages.CLOSE_FORCED(cause, message);
@@ -2269,6 +2270,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         {
             if(bodySize > _connection.getMaxMessageSize())
             {
+                properties.dispose();
                 closeChannel(ErrorCodes.MESSAGE_TOO_LARGE,
                              "Message size of " + bodySize + " greater than allowed maximum of " + _connection.getMaxMessageSize());
             }
@@ -2276,6 +2278,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
         else
         {
+            properties.dispose();
             _connection.sendConnectionClose(ErrorCodes.COMMAND_INVALID,
                                             "Attempt to send a content header without first sending a publish frame",
                                             _channelId);
@@ -3537,5 +3540,24 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     public void dispose()
     {
         _txCommitOkFrame.dispose();
+        final IncomingMessage currentMessage = _currentMessage;
+        if (currentMessage != null)
+        {
+            _currentMessage = null;
+            final ContentHeaderBody contentHeader = currentMessage.getContentHeader();
+            if (contentHeader != null)
+            {
+                contentHeader.dispose();
+            }
+
+            int bodyCount = currentMessage.getBodyCount();
+            if (bodyCount > 0)
+            {
+                for (int i = 0; i < bodyCount; i++)
+                {
+                    currentMessage.getContentChunk(i).dispose();
+                }
+            }
+        }
     }
 }

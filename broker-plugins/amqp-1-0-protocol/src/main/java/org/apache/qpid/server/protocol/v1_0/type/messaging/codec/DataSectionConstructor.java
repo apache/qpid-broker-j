@@ -23,12 +23,9 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.bytebuffer.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.codec.TypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -59,16 +56,16 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
 
     @Override
     public TypeConstructor<DataSection> construct(final Object descriptor,
-                                                        final List<QpidByteBuffer> in,
-                                                        final int[] originalPositions,
+                                                        final QpidByteBuffer in,
+                                                        final int originalPosition,
                                                         final ValueHandler valueHandler)
             throws AmqpErrorException
     {
-        if (!QpidByteBufferUtils.hasRemaining(in))
+        if (!in.hasRemaining())
         {
             throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode data section.");
         }
-        int constructorByte = QpidByteBufferUtils.get(in) & 0xff;
+        int constructorByte = in.getUnsignedByte();
         int sizeBytes;
         switch(constructorByte)
         {
@@ -83,7 +80,7 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
                                              "The described section must always be binary");
         }
 
-        return new LazyConstructor(sizeBytes, originalPositions);
+        return new LazyConstructor(sizeBytes, originalPosition);
     }
 
 
@@ -91,22 +88,22 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
     {
         private final int _sizeBytes;
 
-        public LazyConstructor(final int sizeBytes, final int[] originalPositions)
+        public LazyConstructor(final int sizeBytes, final int originalPosition)
         {
-            super(originalPositions);
+            super(originalPosition);
             _sizeBytes = sizeBytes;
         }
 
         @Override
-        protected DataSection createObject(final List<QpidByteBuffer> encoding, final ValueHandler handler)
+        protected DataSection createObject(final QpidByteBuffer encoding, final ValueHandler handler)
         {
             return new DataSection(encoding);
         }
 
         @Override
-        protected void skipValue(final List<QpidByteBuffer> in) throws AmqpErrorException
+        protected void skipValue(final QpidByteBuffer in) throws AmqpErrorException
         {
-            if (!QpidByteBufferUtils.hasRemaining(in, _sizeBytes))
+            if (!in.hasRemaining(_sizeBytes))
             {
                 throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode data section.");
             }
@@ -114,19 +111,19 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
             switch(_sizeBytes)
             {
                 case 1:
-                    size = QpidByteBufferUtils.get(in) & 0xff;
+                    size = in.getUnsignedByte();
                     break;
                 case 4:
-                    size = QpidByteBufferUtils.getInt(in);
+                    size = in.getInt();
                     break;
                 default:
                     throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Unexpected constructor type, can only be 1 or 4");
             }
-            if (!QpidByteBufferUtils.hasRemaining(in, size))
+            if (!in.hasRemaining(size))
             {
                 throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode data section.");
             }
-            QpidByteBufferUtils.skip(in, size);
+            in.position(in.position() + size);
         }
     }
 }

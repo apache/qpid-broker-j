@@ -24,7 +24,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -472,8 +471,12 @@ public class PropertyConverter_0_8_to_0_10Test extends QpidTestCase
         if (content != null)
         {
             when(storedMessage.getContentSize()).thenReturn(content.length);
-            when(storedMessage.getContent(0, content.length)).thenReturn(Collections.singleton(QpidByteBuffer.wrap(
-                    content)));
+            when(storedMessage.getContent(0, content.length)).thenReturn(QpidByteBuffer.wrap(content));
+        }
+        else
+        {
+            when(storedMessage.getContentSize()).thenReturn(0);
+            when(storedMessage.getContent(0, 0)).thenReturn(QpidByteBuffer.emptyQpidByteBuffer());
         }
 
         return new AMQMessage(storedMessage);

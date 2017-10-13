@@ -19,11 +19,9 @@
  */
 package org.apache.qpid.server.protocol.v0_10.transport;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-
 import static org.apache.qpid.server.transport.util.Functions.str;
 
-import java.util.Collection;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 /**
  * Method
@@ -126,12 +124,12 @@ public abstract class Method extends Struct implements ProtocolEvent
         throw new UnsupportedOperationException();
     }
 
-    public Collection<QpidByteBuffer> getBody()
+    public QpidByteBuffer getBody()
     {
         return null;
     }
 
-    public void setBody(Collection<QpidByteBuffer> body)
+    public void setBody(QpidByteBuffer body)
     {
         throw new UnsupportedOperationException();
     }
@@ -226,7 +224,7 @@ public abstract class Method extends Struct implements ProtocolEvent
                 str.append(st);
             }
         }
-        Collection<QpidByteBuffer> body = getBody();
+        QpidByteBuffer body = getBody();
         if (body != null)
         {
             str.append("\n  body=");
