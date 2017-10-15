@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+<!--
+  ~
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  -->
+
+<appendix xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Appendix-Statistics-Reporting">
+  <title>Statistics Reporting</title>
+  <para>The Broker has the ability to periodically write statistics of any entity within the system to
+    the log.  Statistics can be enabled for a single entity  (e.g. a queue) or for all entities of a particular
+    class (e.g. for all queues). The system can be configured dynamically at runtime without the need for the
+    system to be restarted.</para>
+  <para>This feature helps allow the behaviour of the overall system to be understood and can aid real-time problem
+    diagnosis.</para>
+  <para>It can be configured Broker-wide or separately for each virtual host.</para>
+  <para>The format of the statistics report is configurable.</para>
+  <section>
+    <title>Statistics Report Period</title>
+    <para>This governs the period with which statistics reports will be written to the log.  The period is defined
+      in seconds.  By default the statistics report period is zero, meaning the system is disabled.   To enable the
+      statistics report set the <emphasis>statistics reporting period</emphasis> on either the Broker or virtualhost to
+      a non-zero value.</para>
+    <para>Once the period is defined, the system will respond to the statistic report patterns defined described next.</para>
+  </section>
+  <section>
+    <title>Statistic Report Patterns</title>
+    <para>The statistic report pattern defines the format of a statistic report written to the log.</para>
+    <para>Statistic report patterns are defined by <link linkend="Java-Broker-Management-Managing-Entities-General">
+      content variables</link>.  The place where the context variable is definedgoverns the scope i.e. the entities to
+      which the pattern will be applied.</para>
+    <para>For instance, to define a statistics reporting pattern for a single queue,
+      <link linkend="Java-Broker-Management-Channel-Web-Console-Managing-Context-Variables">set the contextvariable
+      </link> on the queue itself.  If you want the same statistics report pattern for apply to all queues, set the pattern on a
+       suitable ancestor of the queue.  For instance, if set on virtualhost, the pattern will applied to all queues defined
+       on that virtualhost.  If set on Broker, the pattern will be applied to all queues on the Broker.</para>
+    <para>The context variable name is formed as follows:
+      <literal>qpid.&lt;category-name&gt;.statisticsReportPattern</literal>.</para>
+    <para>For instance, for queue: <literal>qpid.queue.statisticsReportPattern</literal> and virtualhost:
+      <literal>qpid.virtualhost.statisticsReportPattern</literal></para>
+    <para>The value of the context variable is a free text string containing reference(s) to the statistic names that
+      are to appear in the report. References are made by surrounding the name of the statistic thus
+      <literal>${&lt;statistic-name&gt;</literal>.</para>
+    <para>Statistics references allow an optional formatters. The supported formatters are: <literal>:byteunit</literal>
+      (produces a human readable byte value e.g. 3 MiB), <literal>:duration</literal> (produces a ISO-8601 duration)and
+      <literal>:datetime</literal> (produces a ISO-8601 date/time).</para>
+    <para>For example, a statistic report pattern for the <literal>queue</literal> category specifying two queue
+      statistic values: <literal>queueDepthMessages=${queueDepthMessages},queueDepthBytes=${queueDepthBytes:byteunit}</literal></para>
+    <para>Like all context variables, the statistic report pattern can also reference the attributes of the entity
+      or even its ancestors.  This feature can be exploited to include things like the name of the entity within the
+      report.</para>
+    <para>These points are illustrated in the examples in the next section.</para>
+    <para>A catalogue of statistics names and descriptions is available from the REST API documentation available
+      through the <link linkend="Java-Broker-Management-Channel-Web-Console">Web Management Console</link>.</para>
+  </section>
+  <section>
+    <title>Examples</title>
+    <para>Adding a statistic reporting pattern to a single queue, called <literal>myqueue</literal> using the REST API and
+      cURL.  This example uses <literal>ancestor</literal> references to include entity names:</para>
+    <example>
+      <title>Enabling statistics for a single queue using the REST API and cURL</title>
+      <screen><![CDATA[curl --user admin --data '{"name" : "qpid.queue.statisticsReportPattern", "value" : "${ancestor:virtualhost:name}/${ancestor:queue:name}: queueDepthMessages=${queueDepthMessages}, queueDepthBytes=${queueDepthBytes:byteunit}"}' https://localhost:8080/api/latest/queue/default/default/myqueue/setContextVariable]]></screen>
+    </example>
+    <para>
+      Once enabled, an example statistic report output written to the log might look like this:
+      <example>
+        <screen><![CDATA[2017-10-15 13:03:12,993 INFO  [virtualhost-default-pool-0] (q.s.Queue) - Statistics: default/myqueue: queueDepthMessages=0, queueDepthBytes=0 B
+2017-10-15 13:03:22,979 INFO  [virtualhost-default-pool-2] (q.s.Queue) - Statistics: default/myqueue: queueDepthMessages=3, queueDepthBytes=345 B
+2017-10-15 13:03:32,981 INFO  [virtualhost-default-pool-2] (q.s.Queue) - Statistics: default/myqueue: queueDepthMessages=3, queueDepthBytes=345 B]]></screen>
+      </example>
+    </para>
+    <para>Removing a statistic report pattern from the same queue:</para>
+    <example>
+      <title>Diabling statistics for a single queue using the REST API and cURL</title>
+      <screen><![CDATA[curl --user admin --data '{"name" : "qpid.queue.statisticsReportPattern"}' https://localhost:8080/api/latest/queue/default/default/myqueue/setContextVariable]]></screen>
+    </example>
+    <para>Adding a statistic reporting pattern to all queues:</para>
+    <example>
+      <title>Enabling statistics for all queues using the REST API and cURL</title>
+      <screen><![CDATA[curl --user admin --data '{"name" : "qpid.queue.statisticsReportPattern", "value" : "${ancestor:virtualhost:name}/${ancestor:queue:name}: oldestMessageAge=${oldestMessageAge:duration}"}' https://localhost:8080/api/latest/virtualhost/default/default/setContextVariable]]></screen>
+    </example>
+    <para>
+      Once enabled, an  example statistic report for a virtualhost with two queues might look like this:
+      <example>
+        <screen><![CDATA[2017-10-15 13:17:42,918 INFO  [virtualhost-default-pool-1] (q.s.Queue) - Statistics: default/myqueue1: oldestMessageAge=PT1M24S
+2017-10-15 13:17:42,918 INFO  [virtualhost-default-pool-1] (q.s.Queue) - Statistics: default/myqueue2: oldestMessageAge=PT0S]]></screen>
+      </example>
+    </para>
+  </section>
+</appendix>
