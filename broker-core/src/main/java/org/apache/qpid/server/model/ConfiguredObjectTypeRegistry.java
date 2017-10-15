@@ -26,6 +26,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,6 +45,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -357,6 +360,47 @@ public class ConfiguredObjectTypeRegistry
 
         validateContextDependencies();
 
+    }
+
+    public static boolean returnsCollectionOfConfiguredObjects(ConfiguredObjectOperation operation)
+    {
+        return Collection.class.isAssignableFrom(operation.getReturnType())
+               && operation.getGenericReturnType() instanceof ParameterizedType
+               && ConfiguredObject.class.isAssignableFrom(getCollectionMemberType((ParameterizedType) operation.getGenericReturnType()));
+    }
+
+    public static Class getCollectionMemberType(ParameterizedType collectionType)
+    {
+        return getRawType((collectionType).getActualTypeArguments()[0]);
+    }
+
+    public static Class getRawType(Type t)
+    {
+        if(t instanceof Class)
+        {
+            return (Class)t;
+        }
+        else if(t instanceof ParameterizedType)
+        {
+            return (Class)((ParameterizedType)t).getRawType();
+        }
+        else if(t instanceof TypeVariable)
+        {
+            Type[] bounds = ((TypeVariable)t).getBounds();
+            if(bounds.length == 1)
+            {
+                return getRawType(bounds[0]);
+            }
+        }
+        else if(t instanceof WildcardType)
+        {
+            Type[] upperBounds = ((WildcardType)t).getUpperBounds();
+            if(upperBounds.length == 1)
+            {
+                return getRawType(upperBounds[0]);
+            }
+        }
+        throw new ServerScopedRuntimeException("Unable to process type when constructing configuration model: " + t);
     }
 
     private void validateContextDependencies()
@@ -1255,6 +1299,11 @@ public class ConfiguredObjectTypeRegistry
 
     public Map<String, ConfiguredObjectOperation<?>> getOperations(final Class<? extends ConfiguredObject> clazz)
     {
+        return getOperations(clazz, null);
+    }
+
+    public Map<String, ConfiguredObjectOperation<?>> getOperations(final Class<? extends ConfiguredObject> clazz, Predicate<ConfiguredObjectOperation<?>> predicate)
+    {
         processClassIfNecessary(clazz);
         final Set<ConfiguredObjectOperation<?>> operations = _allOperations.get(clazz);
         if (operations == null)
@@ -1264,9 +1313,12 @@ public class ConfiguredObjectTypeRegistry
         else
         {
             Map<String, ConfiguredObjectOperation<?>> returnVal = new HashMap<>();
-            for (ConfiguredObjectOperation<?> operation : operations)
+            for (ConfiguredObjectOperation<? extends ConfiguredObject<?>> operation : operations)
             {
-                returnVal.put(operation.getName(), operation);
+                if (predicate == null || predicate.test(operation))
+                {
+                    returnVal.put(operation.getName(), operation);
+                }
             }
             return returnVal;
         }

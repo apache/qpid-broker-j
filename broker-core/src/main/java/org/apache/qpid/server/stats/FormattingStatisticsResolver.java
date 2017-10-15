@@ -23,6 +23,7 @@ package org.apache.qpid.server.stats;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Date;
 import java.util.Map;
 
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -48,21 +49,35 @@ public class FormattingStatisticsResolver implements Resolver
 
         Object statisticValue = _statistics.get(statName);
 
-        if (statisticValue instanceof Number && split.length > 1)
+        if (split.length > 1)
         {
-            String formatterName = split[1];
-            final long value = ((Number) statisticValue).longValue();
-            switch(formatterName.toLowerCase())
+            String formatterName = split[1].toLowerCase();
+            if (statisticValue instanceof Number)
             {
-                case BYTEUNIT:
-                    statisticValue = toIEC80000BinaryPrefixedValue(value);
-                    break;
-                case DURATION:
-                    statisticValue = value < 0 ? "-" : Duration.ofMillis(value);
-                    break;
-                case DATETIME:
-                    statisticValue =  value < 0 ? "-" : Instant.ofEpochMilli(value).toString();
-                    break;
+                final long value = ((Number) statisticValue).longValue();
+                switch (formatterName.toLowerCase())
+                {
+                    case BYTEUNIT:
+                        statisticValue = toIEC80000BinaryPrefixedValue(value);
+                        break;
+                    case DURATION:
+                        statisticValue = value < 0 ? "-" : Duration.ofMillis(value);
+                        break;
+                    case DATETIME:
+                        statisticValue = value < 0 ? "-" : Instant.ofEpochMilli(value).toString();
+                        break;
+                }
+            }
+            else if (statisticValue instanceof Date)
+            {
+                switch (formatterName.toLowerCase())
+                {
+                    case DATETIME:
+                        long time = ((Date) statisticValue).getTime();
+                        statisticValue = time < 0 ? "-" : Instant.ofEpochMilli(time).toString();
+                        break;
+                }
+
             }
         }
 

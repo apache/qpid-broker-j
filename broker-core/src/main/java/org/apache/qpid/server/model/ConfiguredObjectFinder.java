@@ -20,24 +20,22 @@
  */
 package org.apache.qpid.server.model;
 
+import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.getRawType;
+import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.returnsCollectionOfConfiguredObjects;
+
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.Strings;
 
 public class ConfiguredObjectFinder
@@ -454,45 +452,9 @@ public class ConfiguredObjectFinder
         return hierarchyList;
     }
 
-    private boolean returnsCollectionOfConfiguredObjects(ConfiguredObjectOperation operation)
-    {
-        return Collection.class.isAssignableFrom(operation.getReturnType())
-               && operation.getGenericReturnType() instanceof ParameterizedType
-               && ConfiguredObject.class.isAssignableFrom(getCollectionMemberType((ParameterizedType) operation.getGenericReturnType()));
-    }
-
     private Class getCollectionMemberType(ParameterizedType collectionType)
     {
         return getRawType((collectionType).getActualTypeArguments()[0]);
-    }
-
-    private static Class getRawType(Type t)
-    {
-        if (t instanceof Class)
-        {
-            return (Class) t;
-        }
-        else if (t instanceof ParameterizedType)
-        {
-            return (Class) ((ParameterizedType) t).getRawType();
-        }
-        else if (t instanceof TypeVariable)
-        {
-            Type[] bounds = ((TypeVariable) t).getBounds();
-            if (bounds.length == 1)
-            {
-                return getRawType(bounds[0]);
-            }
-        }
-        else if (t instanceof WildcardType)
-        {
-            Type[] upperBounds = ((WildcardType) t).getUpperBounds();
-            if (upperBounds.length == 1)
-            {
-                return getRawType(upperBounds[0]);
-            }
-        }
-        throw new ServerScopedRuntimeException("Unable to process type when constructing configuration model: " + t);
     }
 
     public Collection<? extends ConfiguredObject> getAssociatedChildren(final Class<? extends ConfiguredObject> childClass)

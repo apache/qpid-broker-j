@@ -24,6 +24,7 @@ package org.apache.qpid.server.stats;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Date;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
@@ -40,6 +41,7 @@ public class FormattingStatisticsResolverTest extends QpidTestCase
     private static final String NEGATIVE_VALUE_STAT_NAME = "negativeValue";
     private static final String SMALLER_NEGATIVE_VALUE_STAT_NAME = "smallerNegativeValue";
     private static final String SMALLEST_NEGATIVE_VALUE_STAT_NAME = "smallestNegativeValue";
+    private static final String EPOCH_DATE_STAT_NAME = "epochDateStatName";
 
     private FormattingStatisticsResolver _resolver;
 
@@ -57,6 +59,7 @@ public class FormattingStatisticsResolverTest extends QpidTestCase
         statisticsMap.put(SMALLER_NEGATIVE_VALUE_STAT_NAME, -1025L);
         statisticsMap.put(SMALLEST_NEGATIVE_VALUE_STAT_NAME, (-1024L * 1024L) - 1L );
         statisticsMap.put(ZERO_VALUE_STAT_NAME, 0L);
+        statisticsMap.put(EPOCH_DATE_STAT_NAME, new Date(0L));
 
         when(object.getStatistics()).thenReturn(statisticsMap);
         _resolver = new FormattingStatisticsResolver(object);
@@ -79,6 +82,7 @@ public class FormattingStatisticsResolverTest extends QpidTestCase
     public void testDateTime() throws Exception
     {
         assertEquals("1970-01-01T00:00:00Z", _resolver.resolve(ZERO_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.DATETIME, null));
+        assertEquals("1970-01-01T00:00:00Z", _resolver.resolve(EPOCH_DATE_STAT_NAME + ":" + FormattingStatisticsResolver.DATETIME, null));
         assertEquals("-", _resolver.resolve(NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.DATETIME, null));
     }
 

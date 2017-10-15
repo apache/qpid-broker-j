@@ -22,12 +22,10 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.DEFAULT_PREFERENCE_OPERATION_TIMEOUT;
 import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME;
 import static org.apache.qpid.server.management.plugin.HttpManagementUtil.ensureFilenameIsRfc2183;
+import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.returnsCollectionOfConfiguredObjects;
 
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,6 +56,7 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFinder;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
+import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
@@ -67,7 +66,6 @@ import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.server.util.ExternalServiceException;
 import org.apache.qpid.server.util.ExternalServiceTimeoutException;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 public class RestServlet extends AbstractServlet
@@ -702,45 +700,9 @@ public class RestServlet extends AbstractServlet
         return target;
     }
 
-    private boolean returnsCollectionOfConfiguredObjects(ConfiguredObjectOperation operation)
-    {
-        return Collection.class.isAssignableFrom(operation.getReturnType())
-                 && operation.getGenericReturnType() instanceof ParameterizedType
-                 && ConfiguredObject.class.isAssignableFrom(getCollectionMemberType((ParameterizedType) operation.getGenericReturnType()));
-    }
-
     private Class getCollectionMemberType(ParameterizedType collectionType)
     {
-        return getRawType((collectionType).getActualTypeArguments()[0]);
-    }
-
-    private static Class getRawType(Type t)
-    {
-        if(t instanceof Class)
-        {
-            return (Class)t;
-        }
-        else if(t instanceof ParameterizedType)
-        {
-            return (Class)((ParameterizedType)t).getRawType();
-        }
-        else if(t instanceof TypeVariable)
-        {
-            Type[] bounds = ((TypeVariable)t).getBounds();
-            if(bounds.length == 1)
-            {
-                return getRawType(bounds[0]);
-            }
-        }
-        else if(t instanceof WildcardType)
-        {
-            Type[] upperBounds = ((WildcardType)t).getUpperBounds();
-            if(upperBounds.length == 1)
-            {
-                return getRawType(upperBounds[0]);
-            }
-        }
-        throw new ServerScopedRuntimeException("Unable to process type when constructing configuration model: " + t);
+        return ConfiguredObjectTypeRegistry.getRawType((collectionType).getActualTypeArguments()[0]);
     }
 
     private Map<String, Object> getOperationArgumentsAsMap(HttpServletRequest request)

@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.server.management.amqp;
 
+import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.getRawType;
+import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.returnsCollectionOfConfiguredObjects;
+
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
 import java.nio.charset.Charset;
 import java.security.AccessControlException;
 import java.security.AccessController;
@@ -94,7 +94,6 @@ import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.StateChangeListener;
 
 class ManagementNode implements MessageSource, MessageDestination, BaseQueue
@@ -276,48 +275,10 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         }
     }
 
-
-    private boolean returnsCollectionOfConfiguredObjects(ConfiguredObjectOperation operation)
-    {
-        return Collection.class.isAssignableFrom(operation.getReturnType())
-               && operation.getGenericReturnType() instanceof ParameterizedType
-               && ConfiguredObject.class.isAssignableFrom(getCollectionMemberType((ParameterizedType) operation.getGenericReturnType()));
-    }
-
     private Class getCollectionMemberType(ParameterizedType collectionType)
     {
         return getRawType((collectionType).getActualTypeArguments()[0]);
     }
-
-    private static Class getRawType(Type t)
-    {
-        if(t instanceof Class)
-        {
-            return (Class)t;
-        }
-        else if(t instanceof ParameterizedType)
-        {
-            return (Class)((ParameterizedType)t).getRawType();
-        }
-        else if(t instanceof TypeVariable)
-        {
-            Type[] bounds = ((TypeVariable)t).getBounds();
-            if(bounds.length == 1)
-            {
-                return getRawType(bounds[0]);
-            }
-        }
-        else if(t instanceof WildcardType)
-        {
-            Type[] upperBounds = ((WildcardType)t).getUpperBounds();
-            if(upperBounds.length == 1)
-            {
-                return getRawType(upperBounds[0]);
-            }
-        }
-        throw new ServerScopedRuntimeException("Unable to process type when constructing configuration model: " + t);
-    }
-
 
     String getAmqpName(final Class<? extends ConfiguredObject> type)
     {

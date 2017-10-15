@@ -21,8 +21,15 @@
 
 package org.apache.qpid.server.stats;
 
+import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.returnsCollectionOfConfiguredObjects;
+
 import java.security.PrivilegedAction;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.TimerTask;
 
 import javax.security.auth.Subject;
@@ -31,6 +38,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectOperation;
+import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.util.Strings;
 
@@ -38,10 +47,13 @@ public class StatisticsReportingTask extends TimerTask
 {
     private final ConfiguredObject<?> _root;
     private final Subject _subject;
+    private final ConfiguredObjectTypeRegistry _typeRegistry;
+    private final Map<Class<? extends ConfiguredObject>, Set<ConfiguredObjectOperation<?>>> _associatedOperations = new HashMap<>();
 
     public StatisticsReportingTask(final ConfiguredObject<?> root, final Subject subject)
     {
         _root = root;
+        _typeRegistry = root.getModel().getTypeRegistry();
         _subject = subject;
     }
 
@@ -49,25 +61,9 @@ public class StatisticsReportingTask extends TimerTask
     public void run()
     {
         Subject.doAs(_subject, (PrivilegedAction<Object>) () -> {
-            reportStatisticsForObject(_root);
-            applyRecursively(_root);
+            processChild(_root);
             return null;
         });
-    }
-
-    private void applyRecursively(final ConfiguredObject<?> object)
-    {
-        Collection<Class<? extends ConfiguredObject>> childTypes = object.getModel().getChildTypes(object.getCategoryClass());
-        childTypes.forEach(childClass -> processChildType(object, childClass));
-    }
-
-    private void processChildType(final ConfiguredObject<?> object, final Class<? extends ConfiguredObject> childType)
-    {
-        Collection<? extends ConfiguredObject> children = object.getChildren(childType);
-        if (!children.isEmpty())
-        {
-            children.forEach(this::processChild);
-        }
     }
 
     private void processChild(final ConfiguredObject<?> child)
@@ -80,6 +76,40 @@ public class StatisticsReportingTask extends TimerTask
         }
     }
 
+    private void applyRecursively(final ConfiguredObject<?> object)
+    {
+        Collection<Class<? extends ConfiguredObject>> childTypes = object.getModel().getChildTypes(object.getCategoryClass());
+        childTypes.forEach(childClass -> {
+            Collection<? extends ConfiguredObject> children = object.getChildren(childClass);
+            if (!children.isEmpty())
+            {
+                children.forEach(this::processChild);
+            }
+        });
+        processAssociations(object);
+    }
+
+    private void processAssociations(final ConfiguredObject<?> object)
+    {
+        _associatedOperations.computeIfAbsent(object.getTypeClass(), aClass -> new HashSet<>(_typeRegistry.getOperations(object.getTypeClass(),
+                                                                                                           operation -> operation.isAssociateAsIfChildren()
+                                                                                                                        && returnsCollectionOfConfiguredObjects(
+                                                                                                                   operation)).values()));
+        for(ConfiguredObjectOperation<?> operation : _associatedOperations.get(object.getTypeClass()))
+        {
+            @SuppressWarnings("unchecked")
+            ConfiguredObjectOperation<ConfiguredObject<?>> configuredObjectOperation = (ConfiguredObjectOperation<ConfiguredObject<?>>) operation;
+
+            @SuppressWarnings("unchecked")
+            Collection<? extends ConfiguredObject<?>> associatedChildren =
+                    (Collection<? extends ConfiguredObject<?>>) configuredObjectOperation.perform(object, Collections.emptyMap());
+            if (associatedChildren != null && !associatedChildren.isEmpty())
+            {
+                associatedChildren.forEach(this::processChild);
+            }
+        }
+    }
+
     private void reportStatisticsForObject(final ConfiguredObject<?> object)
     {
         final String statisticsReportPatternContextKey =
@@ -88,11 +118,8 @@ public class StatisticsReportingTask extends TimerTask
 
         if (object.getContextKeys(false).contains(statisticsReportPatternContextKey))
         {
-            String statisticsReportPattern = object.getContextValue(String.class, statisticsReportPatternContextKey);
-
-            String formattedStatistics = Strings.expand(statisticsReportPattern,
-                                                        false,
-                                                        new FormattingStatisticsResolver(object));
+            String reportPattern = object.getContextValue(String.class, statisticsReportPatternContextKey);
+            String formattedStatistics = Strings.expand(reportPattern, false, new FormattingStatisticsResolver(object));
 
             String loggerName = String.format("qpid.statistics.%s", object.getCategoryClass().getSimpleName());
             Logger logger = LoggerFactory.getLogger(loggerName);

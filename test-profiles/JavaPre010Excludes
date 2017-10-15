@@ -87,4 +87,5 @@ org.apache.qpid.server.security.acl.MessagingACLTest#testPublishToTempTopicSucce
 // Test requires ability to address the $management node.  Fails for 0-9 only as client erroneously tries to declare an exchange
 // Already fixed for next Qpid Client AMQP 0-x release (6.3.x)
 org.apache.qpid.server.stats.StatisticsReportingTest#testBrokerStatistics
+org.apache.qpid.server.stats.StatisticsReportingTest#testVirtualHostConnectionStatistics
 
