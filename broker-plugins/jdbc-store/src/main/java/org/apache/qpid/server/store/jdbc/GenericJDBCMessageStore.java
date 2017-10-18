@@ -47,7 +47,7 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
 
     private static final Logger _logger = LoggerFactory.getLogger(GenericJDBCMessageStore.class);
 
-    protected String _connectionURL;
+    private String _connectionURL;
     private ConnectionProvider _connectionProvider;
 
     private String _blobType;
@@ -92,7 +92,7 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
         try
         {
             Map<String, String> providerAttributes = new HashMap<>();
-            Set<String> providerAttributeNames = new HashSet<String>(connectionProviderFactory.getProviderAttributeNames());
+            Set<String> providerAttributeNames = new HashSet<>(connectionProviderFactory.getProviderAttributeNames());
             providerAttributeNames.retainAll(parent.getContextKeys(false));
             for(String attr : providerAttributeNames)
             {
@@ -106,8 +106,10 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
         }
         catch (SQLException e)
         {
-            throw new StoreException("Failed to create connection provider for connectionUrl: " + _connectionURL +
-                                    " and username: " + settings.getUsername());
+            throw new StoreException(String.format(
+                    "Failed to create connection provider for connectionUrl: '%s' and username: '%s'",
+                    _connectionURL,
+                    settings.getUsername()), e);
         }
 
     }
