@@ -59,27 +59,15 @@ public class JdbcUtils
         }
     }
 
-    public static boolean tableExists(final String tableName, final Connection conn) throws SQLException
-    {
+    public static boolean tableExists(final String tableName, final Connection conn) throws SQLException {
         DatabaseMetaData metaData = conn.getMetaData();
-        ResultSet rs = metaData.getTables(null, null, "%", null);
+        return tableExistsCase(tableName.toUpperCase(), metaData) || tableExistsCase(tableName.toLowerCase(), metaData) || tableExistsCase(tableName, metaData);
 
-        try
-        {
-
-            while(rs.next())
-            {
-                final String table = rs.getString(3);
-                if(tableName.equalsIgnoreCase(table))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        finally
-        {
-            rs.close();
+    }
+    
+    private static boolean tableExistsCase(final String tableName, final DatabaseMetaData metaData) throws SQLException {
+        try (ResultSet rs = metaData.getTables(null, null, tableName, null)) {
+            return rs.next();
         }
     }
 }
