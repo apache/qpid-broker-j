@@ -62,24 +62,19 @@ public class JdbcUtils
     public static boolean tableExists(final String tableName, final Connection conn) throws SQLException
     {
         DatabaseMetaData metaData = conn.getMetaData();
-        ResultSet rs = metaData.getTables(null, null, "%", null);
+        // Some databases are not case sensitive in their table names and/or report back a different case for the
+        // name of the table than the one originally used to create it
+        return tableExistsCase(tableName.toUpperCase(), metaData) || tableExistsCase(tableName.toLowerCase(), metaData)
+               || tableName.equals(tableName.toUpperCase()) || tableName.equals(tableName.toLowerCase())
+               || tableExistsCase(tableName, metaData);
 
-        try
-        {
+    }
 
-            while(rs.next())
-            {
-                final String table = rs.getString(3);
-                if(tableName.equalsIgnoreCase(table))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        finally
+    private static boolean tableExistsCase(final String tableName, final DatabaseMetaData metaData) throws SQLException
+    {
+        try (ResultSet rs = metaData.getTables(null, null, tableName, null))
         {
-            rs.close();
+            return rs.next();
         }
     }
 }
