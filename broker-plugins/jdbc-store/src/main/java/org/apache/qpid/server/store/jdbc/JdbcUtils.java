@@ -62,7 +62,7 @@ public class JdbcUtils
     public static boolean tableExists(final String tableName, final Connection conn) throws SQLException
     {
         DatabaseMetaData metaData = conn.getMetaData();
-        ResultSet rs = metaData.getTables(null, null, "%", null);
+        ResultSet rs = metaData.getTables(null, null, tableName, null);
 
         try
         {
