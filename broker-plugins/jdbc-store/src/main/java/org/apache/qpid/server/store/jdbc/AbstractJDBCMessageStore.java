@@ -708,7 +708,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     protected void setTablePrefix(final String tablePrefix)
     {
-        _tablePrefix = tablePrefix;
+        _tablePrefix = tablePrefix == null ? "" : tablePrefix;
     }
 
     private String getDbVersionTableName()
