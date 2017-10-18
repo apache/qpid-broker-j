@@ -23,9 +23,9 @@
 <appendix xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Appendix-Statistics-Reporting">
   <title>Statistics Reporting</title>
   <para>The Broker has the ability to periodically write statistics of any entity within the system to
-    the log.  Statistics can be enabled for a single entity  (e.g. a queue) or for all entities of a particular
-    class (e.g. for all queues). The system can be configured dynamically at runtime without the need for the
-    system to be restarted.</para>
+    the log.  Statistics reporting can be configured for a single entity  (e.g. a queue) or for all entities of a
+    particular category (e.g. for all queues). The system can be configured dynamically at runtime without the need
+    for the system to be restarted.</para>
   <para>This feature helps allow the behaviour of the overall system to be understood and can aid real-time problem
     diagnosis.</para>
   <para>It can be configured Broker-wide or separately for each virtual host.</para>
@@ -42,7 +42,7 @@
     <title>Statistic Report Patterns</title>
     <para>The statistic report pattern defines the format of a statistic report written to the log.</para>
     <para>Statistic report patterns are defined by <link linkend="Java-Broker-Management-Managing-Entities-General">
-      content variables</link>.  The place where the context variable is definedgoverns the scope i.e. the entities to
+      content variables</link>.  The place where the context variable is defined governs the scope i.e. the entities to
       which the pattern will be applied.</para>
     <para>For instance, to define a statistics reporting pattern for a single queue,
       <link linkend="Java-Broker-Management-Channel-Web-Console-Managing-Context-Variables">set the contextvariable
@@ -54,8 +54,8 @@
     <para>For instance, for queue: <literal>qpid.queue.statisticsReportPattern</literal> and virtualhost:
       <literal>qpid.virtualhost.statisticsReportPattern</literal></para>
     <para>The value of the context variable is a free text string containing reference(s) to the statistic names that
-      are to appear in the report. References are made by surrounding the name of the statistic thus
-      <literal>${&lt;statistic-name&gt;</literal>.</para>
+      are to appear in the report. References are made by surrounding the name of the statistic with '$' and curly braces,
+      thus <literal>${&lt;statistic-name&gt;}</literal>.</para>
     <para>Statistics references allow an optional formatters. The supported formatters are: <literal>:byteunit</literal>
       (produces a human readable byte value e.g. 3 MiB), <literal>:duration</literal> (produces a ISO-8601 duration)and
       <literal>:datetime</literal> (produces a ISO-8601 date/time).</para>
