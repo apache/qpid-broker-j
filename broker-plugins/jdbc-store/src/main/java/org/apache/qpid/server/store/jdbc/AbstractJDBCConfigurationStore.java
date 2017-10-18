@@ -70,7 +70,9 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
     protected void setTableNamePrefix(final String tableNamePrefix)
     {
-        _tableNamePrefix = tableNamePrefix;
+        if (tableNamePrefix != null) {
+            _tableNamePrefix = tableNamePrefix;
+        }
     }
 
     @Override
