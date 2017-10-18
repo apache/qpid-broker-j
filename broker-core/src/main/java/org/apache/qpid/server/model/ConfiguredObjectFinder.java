@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.model;
 
-import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.getRawType;
+import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.getCollectionMemberType;
 import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.returnsCollectionOfConfiguredObjects;
 
 import java.lang.reflect.ParameterizedType;
@@ -450,11 +450,6 @@ public class ConfiguredObjectFinder
         Collections.reverse(hierarchyList);
 
         return hierarchyList;
-    }
-
-    private Class getCollectionMemberType(ParameterizedType collectionType)
-    {
-        return getRawType((collectionType).getActualTypeArguments()[0]);
     }
 
     public Collection<? extends ConfiguredObject> getAssociatedChildren(final Class<? extends ConfiguredObject> childClass)

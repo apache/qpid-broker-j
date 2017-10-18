@@ -22,6 +22,7 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.DEFAULT_PREFERENCE_OPERATION_TIMEOUT;
 import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME;
 import static org.apache.qpid.server.management.plugin.HttpManagementUtil.ensureFilenameIsRfc2183;
+import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.getCollectionMemberType;
 import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.returnsCollectionOfConfiguredObjects;
 
 import java.io.IOException;
@@ -56,7 +57,6 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFinder;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
-import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
@@ -698,11 +698,6 @@ public class RestServlet extends AbstractServlet
             }
         }
         return target;
-    }
-
-    private Class getCollectionMemberType(ParameterizedType collectionType)
-    {
-        return ConfiguredObjectTypeRegistry.getRawType((collectionType).getActualTypeArguments()[0]);
     }
 
     private Map<String, Object> getOperationArgumentsAsMap(HttpServletRequest request)
