@@ -65,8 +65,9 @@ public class JdbcUtils
         // Some databases are not case sensitive in their table names and/or report back a different case for the
         // name of the table than the one originally used to create it
         return tableExistsCase(tableName.toUpperCase(), metaData) || tableExistsCase(tableName.toLowerCase(), metaData)
-               || tableName.equals(tableName.toUpperCase()) || tableName.equals(tableName.toLowerCase())
-               || tableExistsCase(tableName, metaData);
+               || (!tableName.equals(tableName.toUpperCase())
+                   && !tableName.equals(tableName.toLowerCase())
+                   && tableExistsCase(tableName, metaData));
 
     }
 
