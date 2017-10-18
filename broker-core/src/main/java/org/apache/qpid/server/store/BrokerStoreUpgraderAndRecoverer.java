@@ -569,6 +569,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         {
             if (record.getType().equals("Broker"))
             {
+                boolean rebuildRecord = false;
                 Map<String, Object> attributes = new HashMap<>(record.getAttributes());
                 Map<String, String> additionalContext = new HashMap<>();
                 for (String attributeName : BROKER_ATTRIBUTES_MOVED_INTO_CONTEXT.keySet())
@@ -581,6 +582,20 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                     }
                 }
 
+                if (attributes.containsKey("statisticsReportingResetEnabled"))
+                {
+                    attributes.remove("statisticsReportingResetEnabled");
+                    rebuildRecord = true;
+                }
+
+                if (attributes.containsKey("statisticsReportingPeriod")
+                    && Integer.parseInt(String.valueOf(attributes.get("statisticsReportingPeriod"))) > 0)
+                {
+                    additionalContext.put("qpid.broker.statisticsReportPattern", "messagesIn=${messagesIn}, bytesIn=${bytesIn:byteunit}, messagesOut=${messagesOut}, bytesOut=${bytesOut:byteunit}");
+
+                    rebuildRecord = true;
+                }
+
                 if (!additionalContext.isEmpty())
                 {
                     Map<String, String> newContext = new HashMap<>();
@@ -591,6 +606,11 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                     newContext.putAll(additionalContext);
                     attributes.put("context", newContext);
 
+                    rebuildRecord = true;
+                }
+
+                if (rebuildRecord)
+                {
                     record = new ConfiguredObjectRecordImpl(record.getId(),
                                                             record.getType(),
                                                             attributes,
@@ -609,6 +629,22 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                 {
                     upgradeHttpPortIfRequired(record);
                 }
+            }
+            else if (record.getType().equals("BrokerLogger"))
+            {
+                Map<String,Object> attributes = new HashMap<>();
+                attributes.put("name", "statistics-" + record.getAttributes().get("name"));
+                attributes.put("level", "INFO");
+                attributes.put("loggerName", "qpid.statistics.*");
+                attributes.put("type", "NameAndLevel");
+
+
+                final ConfiguredObjectRecord filterRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
+                                                                                           "BrokerLogInclusionRule",
+                                                                                           attributes,
+                                                                                           Collections.singletonMap("BrokerLogger",
+                                                                                                                    record.getId()));
+                getUpdateMap().put(filterRecord.getId(), filterRecord);
             }
         }
 

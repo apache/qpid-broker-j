@@ -21,6 +21,7 @@ package org.apache.qpid.server.store;
 
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -44,7 +47,9 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
     {
         super.setUp();
 
+        final Broker broker = mock(Broker.class);
         _virtualHostNode = mock(VirtualHostNode.class);
+        when(_virtualHostNode.getParent()).thenReturn(broker);
         _store = mock(DurableConfigurationStore.class);
         _upgraderAndRecoverer = new VirtualHostStoreUpgraderAndRecoverer(_virtualHostNode);
     }

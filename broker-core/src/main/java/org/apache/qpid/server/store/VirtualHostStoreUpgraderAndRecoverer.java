@@ -38,6 +38,7 @@ import org.apache.qpid.server.filter.FilterSupport;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
@@ -631,14 +632,29 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                 Map<String, Object> attributes = new HashMap<>(record.getAttributes());
                 boolean modified = attributes.remove("queue_deadLetterQueueEnabled") != null;
                 Object context = attributes.get("context");
+                Map<String,Object> contextMap = null;
                 if(context instanceof Map)
                 {
-                    Map<String,Object> contextMap = new HashMap<>((Map<String,Object>) context);
+                    contextMap = new HashMap<>((Map<String,Object>) context);
                     modified |= contextMap.remove("queue.deadLetterQueueEnabled") != null;
                     if (modified)
                     {
                         attributes.put("context", contextMap);
                     }
+                }
+
+                int brokerStatisticsReportingPeriod = ((Broker) _virtualHostNode.getParent()).getStatisticsReportingPeriod();
+                if (brokerStatisticsReportingPeriod > 0)
+                {
+                    attributes.put("statisticsReportingPeriod", brokerStatisticsReportingPeriod);
+                    if (contextMap == null)
+                    {
+                        contextMap = new HashMap<>();
+                    }
+
+                    contextMap.put("qpid.virtualhost.statisticsReportPattern", "${ancestor:virtualhost:name}: messagesIn=${messagesIn}, bytesIn=${bytesIn:byteunit}, messagesOut=${messagesOut}, bytesOut=${bytesOut:byteunit}");
+                    attributes.put("context", contextMap);
+                    modified = true;
                 }
 
                 if (modified)
@@ -779,6 +795,22 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                                                                       attributes,
                                                                       record.getParents()));
                 }
+            }
+            else if (record.getType().equals("VirtualHostLogger"))
+            {
+                Map<String,Object> attributes = new HashMap<>();
+                attributes.put("name", "statistics-" + record.getAttributes().get("name"));
+                attributes.put("level", "INFO");
+                attributes.put("loggerName", "qpid.statistics.*");
+                attributes.put("type", "NameAndLevel");
+
+
+                final ConfiguredObjectRecord filterRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
+                                                                                           "VirtualHostLogInclusionRule",
+                                                                                           attributes,
+                                                                                           Collections.singletonMap("VirtualHostLogger",
+                                                                                                                    record.getId()));
+                getUpdateMap().put(filterRecord.getId(), filterRecord);
             }
         }
 
