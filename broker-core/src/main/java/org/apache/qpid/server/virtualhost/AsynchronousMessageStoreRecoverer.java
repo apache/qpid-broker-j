@@ -31,7 +31,6 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.google.common.base.Function;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -46,6 +45,7 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
+import org.apache.qpid.server.pool.QpidByteBufferDisposingThreadPoolExecutor;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
@@ -55,14 +55,13 @@ import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
+import org.apache.qpid.server.transport.util.Functions;
 import org.apache.qpid.server.txn.DtxBranch;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.txn.Xid;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.pool.QpidByteBufferDisposingThreadPoolExecutor;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.transport.util.Functions;
 
 public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 {
@@ -88,7 +87,6 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
     private static class AsynchronousRecoverer
     {
-        private static final Logger LOGGER = LoggerFactory.getLogger(AsynchronousRecoverer.class);
 
         public static final int THREAD_POOL_SHUTDOWN_TIMEOUT = 5000;
         private final QueueManagingVirtualHost<?> _virtualHost;
@@ -172,6 +170,13 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             MessageInstanceVisitor handler = new MessageInstanceVisitor(queue);
             _storeReader.visitMessageInstances(queue, handler);
 
+            if (handler.getNumberOfUnknownMessageInstances() > 0)
+            {
+                _logger.warn("Discarded {} of unknown message instances for queue '{}'.",
+                             handler.getNumberOfUnknownMessageInstances(),
+                             queue.getName());
+            }
+
             getEventLogger().message(getLogSubject(), TransactionLogMessages.RECOVERED(handler.getRecoveredCount(), queue.getName()));
             getEventLogger().message(getLogSubject(), TransactionLogMessages.RECOVERY_COMPLETE(queue.getName(), true));
             queue.completeRecovery();
@@ -209,17 +214,21 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                     return false;
                 }
             });
+            int unusedMessageCounter = 0;
             for(StoredMessage<?> storedMessage : messagesToDelete)
             {
                 if (_continueRecovery.get())
                 {
-                    if (storedMessage.getMetaData().isPersistent())
-                    {
-                        _logger.warn("Message id {} in store, but not in any queue - removing....",
-                                     storedMessage.getMessageNumber());
-                    }
+                    _logger.debug("Message id {} in store, but not in any queue - removing....",
+                                 storedMessage.getMessageNumber());
                     storedMessage.remove();
+                    unusedMessageCounter++;
                 }
+            }
+
+            if (unusedMessageCounter > 0)
+            {
+                _logger.warn("Discarded {} of orphan messages.", unusedMessageCounter);
             }
 
             messagesToDelete.clear();
@@ -501,10 +510,12 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         {
             private final Queue<?> _queue;
             long _recoveredCount;
+            private int _numberOfUnknownMessageInstances;
 
             private MessageInstanceVisitor(Queue<?> queue)
             {
                 _queue = queue;
+                _numberOfUnknownMessageInstances = 0;
             }
 
             @Override
@@ -529,14 +540,14 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                     }
                     else
                     {
-                        _logger.warn("Message id "
-                                     + messageId
-                                     + " referenced in log as enqueued in queue "
-                                     + queueName
-                                     + " is unknown, entry will be discarded");
+                        _logger.debug(
+                                "Message id {} referenced in log as enqueued in queue '{}' is unknown, entry will be discarded",
+                                messageId,
+                                queueName);
                         Transaction txn = _store.newTransaction();
                         txn.dequeueMessage(record);
                         txn.commitTranAsync((Void) null);
+                        _numberOfUnknownMessageInstances++;
                     }
                     return _continueRecovery.get();
                 }
@@ -550,6 +561,11 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             public long getRecoveredCount()
             {
                 return _recoveredCount;
+            }
+
+            public int getNumberOfUnknownMessageInstances()
+            {
+                return _numberOfUnknownMessageInstances;
             }
         }
     }
