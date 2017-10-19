@@ -148,7 +148,7 @@ public class TCPandSSLTransportTest extends QpidTestCase
         when(port.getThreadPoolSize()).thenReturn(2);
         when(port.getNumberOfSelectors()).thenReturn(1);
         when(port.getSSLContext()).thenReturn(sslContext);
-        when(port.getContextValue(Long.class, AmqpPort.PORT_AMQP_THREAD_POOL_KEEP_ALIVE_TIMEOUT)).thenReturn(1l);
+        when(port.getContextValue(Long.class, AmqpPort.PORT_AMQP_THREAD_POOL_KEEP_ALIVE_TIMEOUT)).thenReturn(1L);
         when(port.getContextValue(Integer.class, AmqpPort.PORT_AMQP_ACCEPT_BACKLOG)).thenReturn(AmqpPort.DEFAULT_PORT_AMQP_ACCEPT_BACKLOG);
         when(port.getProtocolHandshakeTimeout()).thenReturn(AmqpPort.DEFAULT_PROTOCOL_HANDSHAKE_TIMEOUT);
         ObjectMapper mapper = new ObjectMapper();
@@ -171,20 +171,18 @@ public class TCPandSSLTransportTest extends QpidTestCase
                                                               Protocol.AMQP_0_9_1);
 
         transport.start();
-        try
+        SSLContext clientContext = SSLContext.getInstance("TLS");
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(keyStore);
+
+        clientContext.init(null, tmf.getTrustManagers(), null);
+
+        try (SSLSocket sslSocket = (SSLSocket) clientContext.getSocketFactory()
+                                                            .createSocket(InetAddress.getLoopbackAddress(),
+                                                                          transport.getAcceptingPort()))
         {
-            SSLContext clientContext = SSLContext.getInstance("TLS");
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            tmf.init(keyStore);
-
-            clientContext.init(null, tmf.getTrustManagers(), null);
-
-            SSLSocket sslSocket =
-                    (SSLSocket) clientContext.getSocketFactory().createSocket(InetAddress.getLoopbackAddress(),
-                            transport.getAcceptingPort());
 
             sslSocket.setEnabledProtocols(new String[]{clientProtocol});
-
             sslSocket.startHandshake();
         }
         finally
