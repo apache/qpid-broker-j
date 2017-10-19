@@ -181,7 +181,9 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
             try
             {
                 List<EncodingRetainingSection<?>> sections;
-                try (QpidByteBuffer allSectionsContent = super.getContent())
+                // The v0 message format put all sections within the content, so we need to read all the stored content
+                // not just #getSize()
+                try (QpidByteBuffer allSectionsContent = super.getContent(0, Integer.MAX_VALUE))
                 {
                     sections = sectionDecoder.parseAll(allSectionsContent);
                 }

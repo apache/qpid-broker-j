@@ -83,6 +83,10 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
 
         try (QpidByteBuffer combined = QpidByteBuffer.concatenate(_content))
         {
+            if (length == Integer.MAX_VALUE)
+            {
+                length = combined.remaining();
+            }
             return combined.view(offset, length);
         }
     }

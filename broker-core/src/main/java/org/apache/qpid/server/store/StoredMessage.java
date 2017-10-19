@@ -28,6 +28,11 @@ public interface StoredMessage<M extends StorableMessageMetaData>
 
     long getMessageNumber();
 
+    /**
+     * Returns length bytes of message content beginning from the given offset.  Caller is responsible
+     * for the disposal of the returned buffer.  If length is {@link Integer#MAX_VALUE}, length is not
+     * constrained.
+     */
     QpidByteBuffer getContent(int offset, int length);
 
     int getContentSize();
