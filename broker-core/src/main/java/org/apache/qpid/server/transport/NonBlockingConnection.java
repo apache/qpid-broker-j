@@ -567,10 +567,14 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         {
             LOGGER.warn("Send ignored as the connection is already closed");
         }
-        else if (msg.remaining() > 0)
+        else
         {
-            _buffers.add(msg.duplicate());
-            _bufferedSize += msg.remaining();
+            int remaining = msg.remaining();
+            if (remaining > 0)
+            {
+                _buffers.add(msg.duplicate());
+                _bufferedSize += remaining;
+            }
         }
         msg.position(msg.limit());
     }

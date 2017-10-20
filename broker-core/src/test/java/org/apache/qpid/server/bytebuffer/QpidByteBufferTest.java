@@ -257,6 +257,39 @@ public class QpidByteBufferTest extends QpidTestCase
 
     }
 
+    public void testPutQpidByteBuffer() throws Exception
+    {
+        _slicedBuffer = createSlice();
+
+        final byte[] source = getTestBytes(_slicedBuffer.remaining());
+        _slicedBuffer.put(source);
+        _slicedBuffer.flip();
+
+        try( QpidByteBuffer other = QpidByteBuffer.allocateDirect(BUFFER_SIZE))
+        {
+            other.put(_slicedBuffer);
+
+            other.flip();
+            byte[] target = new byte[other.remaining()];
+            other.get(target);
+            Assert.assertArrayEquals("Unexpected put QpidByteBuffer result", source, target);
+        }
+    }
+
+    public void testPutByteBuffer() throws Exception
+    {
+        final byte[] source = getTestBytes(_parent.remaining() - 1);
+
+        ByteBuffer src = ByteBuffer.wrap(source);
+
+        _parent.put(src);
+
+        _parent.flip();
+        byte[] target = new byte[_parent.remaining()];
+        _parent.get(target);
+        Assert.assertArrayEquals("Unexpected but ByteBuffer result", source, target);
+    }
+
     public void testDuplicate()
     {
         _slicedBuffer = createSlice();

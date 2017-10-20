@@ -175,7 +175,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
             while (iter.hasNext())
             {
                 QpidByteBuffer buf = iter.next();
-                if (buf.remaining() == 0)
+                if (!buf.hasRemaining())
                 {
                     buf.dispose();
                     iter.remove();

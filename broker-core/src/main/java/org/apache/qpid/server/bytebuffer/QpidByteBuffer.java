@@ -34,6 +34,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
@@ -63,8 +64,12 @@ public class QpidByteBuffer implements AutoCloseable
     private final QpidByteBufferFragment[] _fragments;
     private volatile int _resetFragmentIndex = -1;
 
-    private QpidByteBuffer(final QpidByteBufferFragment[] fragments)
+    private QpidByteBuffer(final QpidByteBufferFragment... fragments)
     {
+        if (fragments == null)
+        {
+            throw new IllegalArgumentException();
+        }
         _fragments = fragments;
     }
 
@@ -129,10 +134,10 @@ public class QpidByteBuffer implements AutoCloseable
         {
             throw new IndexOutOfBoundsException(String.format("index %d is out of bounds [%d, %d)", index, 0, limit()));
         }
-        boolean bytewise = false;
+
         int written = 0;
         int bytesToSkip = index;
-        for (int i = 0, size = _fragments.length; i < size; i++)
+        for (int i = 0; i < _fragments.length && written != valueWidth; i++)
         {
             final QpidByteBufferFragment buffer = _fragments[i];
             final int limit = buffer.limit();
@@ -142,45 +147,19 @@ public class QpidByteBuffer implements AutoCloseable
                 throw new IllegalStateException(String.format("Unexpected limit %d on fragment %d", limit, i));
             }
 
-            if (bytewise)
+            if (bytesToSkip >= limit)
             {
-                int offset = 0;
-                while (limit > offset && written < valueWidth)
-                {
-                    buffer.put(offset, src[written]);
-                    offset++;
-                    written++;
-                }
-                if (written == valueWidth)
-                {
-                    break;
-                }
+                bytesToSkip -= limit;
             }
             else
             {
-                if (limit >= bytesToSkip + valueWidth)
-                {
-                    for (int i1 = 0; i1 < valueWidth; i1++)
-                    {
-                        buffer.put(bytesToSkip + i1, src[i1]);
-                        written++;
-                    }
-                    break;
-                }
-                else if (limit > bytesToSkip)
-                {
-                    bytewise = true;
-                    while (limit > bytesToSkip + written)
-                    {
-                        buffer.put(bytesToSkip + written, src[written]);
-                        written++;
-                    }
-                    bytesToSkip = 0;
-                }
-                else
-                {
-                    bytesToSkip -= limit;
-                }
+                final int bytesToCopy = Math.min(limit - bytesToSkip, valueWidth - written);
+                final int originalPosition = buffer.position();
+                buffer.position(bytesToSkip);
+                buffer.put(src, written, bytesToCopy);
+                buffer.position(originalPosition);
+                written += bytesToCopy;
+                bytesToSkip = 0;
             }
         }
         if (valueWidth != written)
@@ -260,43 +239,24 @@ public class QpidByteBuffer implements AutoCloseable
 
     public final QpidByteBuffer put(final byte[] src, final int offset, final int length)
     {
-        if (length > remaining())
+        if (_fragments.length == 1)
+        {
+            _fragments[0].put(src, offset, length);
+            return this;
+        }
+
+        if (!hasRemaining(length))
         {
             throw new BufferOverflowException();
         }
-        boolean bytewise = false;
+
         int written = 0;
-        for (int i = 0, size = _fragments.length; i < size; i++)
+        for (int i = 0; i < _fragments.length && written != length; i++)
         {
             final QpidByteBufferFragment buffer = _fragments[i];
-            if (bytewise)
-            {
-                while (buffer.remaining() > 0 && written < length)
-                {
-                    buffer.put(src[offset + written]);
-                    written++;
-                }
-                if (written == length)
-                {
-                    break;
-                }
-            }
-            else
-            {
-                final int remaining = buffer.remaining();
-                if (remaining >= length)
-                {
-                    buffer.put(src, offset, length);
-                    written += length;
-                    break;
-                }
-                else
-                {
-                    bytewise = true;
-                    buffer.put(src, offset, remaining);
-                    written = remaining;
-                }
-            }
+            int bytesToWrite = Math.min(buffer.remaining(), length - written);
+            buffer.put(src, offset + written, bytesToWrite);
+            written += bytesToWrite;
         }
         if (written != length)
         {
@@ -307,45 +267,38 @@ public class QpidByteBuffer implements AutoCloseable
 
     public final QpidByteBuffer put(final ByteBuffer src)
     {
+        if (_fragments.length == 1)
+        {
+            _fragments[0].put(src);
+            return this;
+        }
+
         final int valueWidth = src.remaining();
-        if (valueWidth > remaining())
+        if (!hasRemaining(valueWidth))
         {
             throw new BufferOverflowException();
         }
-        boolean bytewise = false;
+
         int written = 0;
-        for (int i = 0, size = _fragments.length; i < size; i++)
+        for (int i = 0; i < _fragments.length && written != valueWidth; i++)
         {
-            final QpidByteBufferFragment buffer = _fragments[i];
-            if (bytewise)
+            final QpidByteBufferFragment dstFragment = _fragments[i];
+            if (dstFragment.hasRemaining())
             {
-                while (src.remaining() > 0 && buffer.remaining() > 0)
+                final int srcFragmentRemaining = src.remaining();
+                final int dstFragmentRemaining = dstFragment.remaining();
+                if (dstFragmentRemaining >= srcFragmentRemaining)
                 {
-                    buffer.put(src.get());
-                    written++;
-                }
-                if (written == valueWidth)
-                {
-                    break;
-                }
-            }
-            else
-            {
-                final int remaining = buffer.remaining();
-                if (remaining >= valueWidth)
-                {
-                    buffer.put(src);
-                    written += valueWidth;
-                    break;
+                    dstFragment.put(src);
+                    written += srcFragmentRemaining;
                 }
                 else
                 {
-                    bytewise = true;
-                    while (remaining > written)
-                    {
-                        buffer.put(src.get());
-                        written++;
-                    }
+                    int srcOriginalLimit = src.limit();
+                    src.limit(src.position() + dstFragmentRemaining);
+                    dstFragment.put(src);
+                    src.limit(srcOriginalLimit);
+                    written += dstFragmentRemaining;
                 }
             }
         }
@@ -358,17 +311,22 @@ public class QpidByteBuffer implements AutoCloseable
 
     public final QpidByteBuffer put(final QpidByteBuffer src)
     {
+        if (_fragments.length == 1 && src._fragments.length == 1)
+        {
+            _fragments[0].put(src._fragments[0]);
+            return this;
+        }
+
         final int valueWidth = src.remaining();
-        if (valueWidth > remaining())
+        if (!hasRemaining(valueWidth))
         {
             throw new BufferOverflowException();
         }
         int i = 0;
-        boolean bytewise = false;
         int written = 0;
         int size = _fragments.length;
         final QpidByteBufferFragment[] fragments = src._fragments;
-        for (int i1 = 0, fragmentsSize = fragments.length; i1 < fragmentsSize; i1++)
+        for (int i1 = 0; i1 < fragments.length; i1++)
         {
             final QpidByteBufferFragment srcFragment = fragments[i1];
             for (; i < size; i++)
@@ -377,36 +335,20 @@ public class QpidByteBuffer implements AutoCloseable
                 if (dstFragment.hasRemaining())
                 {
                     final int srcFragmentRemaining = srcFragment.remaining();
-                    if (bytewise)
+                    final int dstFragmentRemaining = dstFragment.remaining();
+                    if (dstFragmentRemaining >= srcFragmentRemaining)
                     {
-                        while (srcFragmentRemaining > 0 && dstFragment.remaining() > 0)
-                        {
-                            dstFragment.put(srcFragment.get());
-                            written++;
-                        }
-                        if (!srcFragment.hasRemaining())
-                        {
-                            break;
-                        }
+                        dstFragment.put(srcFragment);
+                        written += srcFragmentRemaining;
+                        break;
                     }
                     else
                     {
-                        final int remaining = dstFragment.remaining();
-                        if (remaining >= srcFragmentRemaining)
-                        {
-                            dstFragment.put(srcFragment);
-                            written += srcFragmentRemaining;
-                            break;
-                        }
-                        else
-                        {
-                            bytewise = true;
-                            while (remaining > written)
-                            {
-                                dstFragment.put(srcFragment.get());
-                                written++;
-                            }
-                        }
+                        int srcOriginalLimit = srcFragment.limit();
+                        srcFragment.limit(srcFragment.position() + dstFragmentRemaining);
+                        dstFragment.put(srcFragment);
+                        srcFragment.limit(srcOriginalLimit);
+                        written += dstFragmentRemaining;
                     }
                 }
             }
@@ -471,16 +413,16 @@ public class QpidByteBuffer implements AutoCloseable
 
     private byte[] getByteArray(final int index, final int length)
     {
-        if (index + length > limit())
+        if (index < 0 || index + length > limit())
         {
             throw new IndexOutOfBoundsException(String.format("%d bytes at index %d do not fit into bounds [%d, %d)", length, index, 0, limit()));
         }
 
         byte[] value = new byte[length];
-        boolean bytewise = false;
+
         int consumed = 0;
         int bytesToSkip = index;
-        for (int i = 0, size = _fragments.length; i < size; i++)
+        for (int i = 0; i < _fragments.length && consumed != length; i++)
         {
             final QpidByteBufferFragment buffer = _fragments[i];
             final int limit = buffer.limit();
@@ -489,45 +431,20 @@ public class QpidByteBuffer implements AutoCloseable
             {
                 throw new IllegalStateException(String.format("Unexpectedly limit %d on fragment %d.", limit, i));
             }
-            if (bytewise)
+
+            if (bytesToSkip >= limit)
             {
-                int offset = 0;
-                while (limit > offset && consumed < length)
-                {
-                    value[consumed] = buffer.get(offset);
-                    offset++;
-                    consumed++;
-                }
-                if (consumed == length)
-                {
-                    break;
-                }
+                bytesToSkip -= limit;
             }
             else
             {
-                if (limit >= bytesToSkip + length)
-                {
-                    while (consumed < length)
-                    {
-                        value[consumed] = buffer.get(bytesToSkip + consumed);
-                        consumed++;
-                    }
-                    break;
-                }
-                else if (limit > bytesToSkip)
-                {
-                    bytewise = true;
-                    while (limit > bytesToSkip + consumed)
-                    {
-                        value[consumed] = buffer.get(bytesToSkip + consumed);
-                        consumed++;
-                    }
-                    bytesToSkip = 0;
-                }
-                else
-                {
-                    bytesToSkip -= limit;
-                }
+                final int bytesToCopy = Math.min(limit - bytesToSkip, length - consumed);
+                final int originalPosition = buffer.position();
+                buffer.position(bytesToSkip);
+                buffer.get(value, consumed, bytesToCopy);
+                buffer.position(originalPosition);
+                consumed += bytesToCopy;
+                bytesToSkip = 0;
             }
         }
         if (consumed != length)
@@ -610,45 +527,24 @@ public class QpidByteBuffer implements AutoCloseable
 
     public final QpidByteBuffer get(final byte[] dst, final int offset, final int length)
     {
-        if (remaining() < length)
+        if (_fragments.length == 1)
+        {
+            _fragments[0].get(dst, offset, length);
+            return this;
+        }
+
+        if (!hasRemaining(length))
         {
             throw new BufferUnderflowException();
         }
-        boolean bytewise = false;
+
         int consumed = 0;
-        for (int i = 0, size = _fragments.length; i < size; i++)
+        for (int i = 0; i < _fragments.length && consumed != length; i++)
         {
             final QpidByteBufferFragment buffer = _fragments[i];
-            if (bytewise)
-            {
-                while (buffer.hasRemaining() && consumed < length)
-                {
-                    dst[offset + consumed] = buffer.get();
-                    consumed++;
-                }
-                if (consumed == length)
-                {
-                    return this;
-                }
-            }
-            else
-            {
-                final int remaining = buffer.remaining();
-                if (remaining >= length)
-                {
-                    buffer.get(dst, offset, length);
-                    return this;
-                }
-                else if (remaining > 0)
-                {
-                    bytewise = true;
-                    while (remaining > consumed)
-                    {
-                        dst[offset + consumed] = buffer.get();
-                        consumed++;
-                    }
-                }
-            }
+            int bytesToCopy = Math.min(buffer.remaining(), length - consumed);
+            buffer.get(dst, offset + consumed, bytesToCopy);
+            consumed += bytesToCopy;
         }
         if (consumed != length)
         {
@@ -663,11 +559,12 @@ public class QpidByteBuffer implements AutoCloseable
 
     public final void copyTo(final byte[] dst)
     {
-        if (remaining() < dst.length)
+        final int remaining = remaining();
+        if (remaining < dst.length)
         {
             throw new BufferUnderflowException();
         }
-        if (remaining() > dst.length)
+        if (remaining > dst.length)
         {
             throw new BufferOverflowException();
         }
@@ -695,9 +592,8 @@ public class QpidByteBuffer implements AutoCloseable
 
     public final void putCopyOf(final QpidByteBuffer source)
     {
-        int remaining = remaining();
         int sourceRemaining = source.remaining();
-        if (sourceRemaining > remaining)
+        if (!hasRemaining(sourceRemaining))
         {
             throw new BufferOverflowException();
         }
@@ -943,6 +839,10 @@ public class QpidByteBuffer implements AutoCloseable
 
     public final boolean hasRemaining(int atLeast)
     {
+        if (atLeast == 0)
+        {
+            return true;
+        }
         int remaining = 0;
         for (int i = 0, fragmentsSize = _fragments.length; i < fragmentsSize; i++)
         {
@@ -1002,6 +902,12 @@ public class QpidByteBuffer implements AutoCloseable
         {
             throw new IllegalArgumentException(String.format("offset: %d, length: %d, remaining: %d", offset, length, remaining()));
         }
+
+        if (_fragments.length == 1)
+        {
+            return new QpidByteBuffer(_fragments[0].view(offset, length));
+        }
+
         final List<QpidByteBufferFragment> fragments = new ArrayList<>(_fragments.length);
 
         boolean firstFragmentToBeConsidered = true;
@@ -1015,16 +921,17 @@ public class QpidByteBuffer implements AutoCloseable
                     throw new IllegalStateException(String.format("Unexpectedly position %d on fragment %d.", fragment.position(), i));
                 }
                 firstFragmentToBeConsidered = false;
-                if (fragment.remaining() > offset)
+                final int fragmentRemaining = fragment.remaining();
+                if (fragmentRemaining > offset)
                 {
-                    final int fragmentViewLength = Math.min(fragment.remaining() - offset, length);
+                    final int fragmentViewLength = Math.min(fragmentRemaining - offset, length);
                     fragments.add(fragment.view(offset, fragmentViewLength));
                     length -= fragmentViewLength;
                     offset = 0;
                 }
                 else
                 {
-                    offset -= fragment.remaining();
+                    offset -= fragmentRemaining;
                 }
             }
         }
@@ -1032,12 +939,12 @@ public class QpidByteBuffer implements AutoCloseable
         return new QpidByteBuffer(fragments);
     }
 
-    List<ByteBuffer> getUnderlyingBuffers()
+    private ByteBuffer[] getUnderlyingBuffers()
     {
-        List<ByteBuffer> byteBuffers = new ArrayList<>();
-        for (int i = 0, fragmentsSize = _fragments.length; i < fragmentsSize; i++)
+        ByteBuffer[] byteBuffers = new ByteBuffer[_fragments.length];
+        for (int i = 0; i < _fragments.length; i++)
         {
-            byteBuffers.add(_fragments[i].getUnderlyingBuffer());
+            byteBuffers[i] = _fragments[i].getUnderlyingBuffer();
         }
         return byteBuffers;
 
@@ -1128,14 +1035,13 @@ public class QpidByteBuffer implements AutoCloseable
 
     public final SSLEngineResult decryptSSL(SSLEngine engine, QpidByteBuffer dst) throws SSLException
     {
-        final List<ByteBuffer> dstUnderlyingBuffers = dst.getUnderlyingBuffers();
-        final List<ByteBuffer> underlyingBuffers = getUnderlyingBuffers();
-        if (underlyingBuffers.size() != 1)
+        final ByteBuffer[] dstUnderlyingBuffers = dst.getUnderlyingBuffers();
+        final ByteBuffer[] underlyingBuffers = getUnderlyingBuffers();
+        if (underlyingBuffers.length != 1)
         {
             throw new IllegalStateException("Expected single fragment buffer");
         }
-        return engine.unwrap(underlyingBuffers.get(0),
-                             dstUnderlyingBuffers.toArray(new ByteBuffer[dstUnderlyingBuffers.size()]));
+        return engine.unwrap(underlyingBuffers[0], dstUnderlyingBuffers);
     }
 
     public static SSLEngineResult encryptSSL(SSLEngine engine,
@@ -1153,16 +1059,16 @@ public class QpidByteBuffer implements AutoCloseable
             List<ByteBuffer> buffers_ = new LinkedList<>();
             for (QpidByteBuffer buffer : buffers)
             {
-                buffers_.addAll(buffer.getUnderlyingBuffers());
+                Collections.addAll(buffers_, buffer.getUnderlyingBuffers());
             }
             src = buffers_.toArray(new ByteBuffer[buffers_.size()]);
         }
-        final List<ByteBuffer> dstUnderlyingBuffers = dest.getUnderlyingBuffers();
-        if (dstUnderlyingBuffers.size() != 1)
+        final ByteBuffer[] dstUnderlyingBuffers = dest.getUnderlyingBuffers();
+        if (dstUnderlyingBuffers.length != 1)
         {
             throw new IllegalStateException("Expected a single fragment output buffer");
         }
-        return engine.wrap(src, dstUnderlyingBuffers.get(0));
+        return engine.wrap(src, dstUnderlyingBuffers[0]);
     }
 
     public static QpidByteBuffer inflate(QpidByteBuffer compressedBuffer) throws IOException
@@ -1225,10 +1131,7 @@ public class QpidByteBuffer implements AutoCloseable
         List<ByteBuffer> byteBuffers = new ArrayList<>();
         for (QpidByteBuffer qpidByteBuffer : qpidByteBuffers)
         {
-            for (QpidByteBufferFragment fragment : qpidByteBuffer._fragments)
-            {
-                byteBuffers.add(fragment.getUnderlyingBuffer());
-            }
+            Collections.addAll(byteBuffers, qpidByteBuffer.getUnderlyingBuffers());
         }
         return channel.write(byteBuffers.toArray(new ByteBuffer[byteBuffers.size()]));
     }
@@ -1434,9 +1337,10 @@ public class QpidByteBuffer implements AutoCloseable
             {
                 return -1;
             }
-            if (_qpidByteBuffer.remaining() < len)
+            int remaining = _qpidByteBuffer.remaining();
+            if (remaining < len)
             {
-                len = _qpidByteBuffer.remaining();
+                len = remaining;
             }
             _qpidByteBuffer.get(b, off, len);
 
@@ -1592,12 +1496,6 @@ public class QpidByteBuffer implements AutoCloseable
 
         public final QpidByteBufferFragment put(final QpidByteBufferFragment src)
         {
-            int sourceRemaining = src.remaining();
-            if (sourceRemaining > remaining())
-            {
-                throw new BufferOverflowException();
-            }
-
             _buffer.put(src.getUnderlyingBuffer());
             return this;
         }

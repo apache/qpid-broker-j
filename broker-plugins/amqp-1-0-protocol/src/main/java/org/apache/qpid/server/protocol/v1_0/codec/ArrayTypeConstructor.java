@@ -100,7 +100,7 @@ public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
 
         @Override int read(final QpidByteBuffer in) throws AmqpErrorException
         {
-            if(in.remaining()<4)
+            if(!in.hasRemaining(4))
             {
                 throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode array");
             }
