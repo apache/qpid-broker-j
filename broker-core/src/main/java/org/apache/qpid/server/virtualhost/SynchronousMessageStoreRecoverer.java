@@ -68,10 +68,11 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         MessageStore.MessageStoreReader storeReader = store.newMessageStoreReader();
         MessageStoreLogSubject logSubject = new MessageStoreLogSubject(virtualHost.getName(), store.getClass().getSimpleName());
 
-        Map<String, Integer> queueRecoveries = new TreeMap<>();
+        Map<Queue<?>, Integer> queueRecoveries = new TreeMap<>();
         Map<Long, ServerMessage<?>> recoveredMessages = new HashMap<>();
-        Map<Long, StoredMessage<?>> unusedMessages = new HashMap<>();
-        Map<Object, Integer> unknownMessageInstances = new HashMap<>();
+        Map<Long, StoredMessage<?>> unusedMessages = new TreeMap<>();
+        Map<UUID, Integer> unknownQueuesWithMessages = new HashMap<>();
+        Map<Queue<?>, Integer> queuesWithUnknownMessages = new HashMap<>();
 
         eventLogger.message(logSubject, MessageStoreMessages.RECOVERY_START());
 
@@ -85,52 +86,59 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                                                                          queueRecoveries,
                                                                          recoveredMessages,
                                                                          unusedMessages,
-                                                                         unknownMessageInstances));
+                                                                         unknownQueuesWithMessages,
+                                                                         queuesWithUnknownMessages));
         }
         finally
         {
-            if (!unknownMessageInstances.isEmpty())
+            if (!unknownQueuesWithMessages.isEmpty())
             {
-                for (Map.Entry<Object, Integer> entry: unknownMessageInstances.entrySet())
-                {
-                    Object key = entry.getKey();
-                    String logMessage = key instanceof UUID
-                            ? "Discarded {} of unknown message instances for unknown queue with id '{}'."
-                            : "Discarded {} of unknown message instances for queue '{}'.";
-                    _logger.warn(logMessage, entry.getValue(), key);
-                }
+                unknownQueuesWithMessages.forEach((queueId, count) -> {
+                    _logger.info("Discarded {} entry(s) associated with queue id '{}' as a queue with this "
+                                 + "id does not appear in the configuration.",
+                                 count, queueId);
+                });
+            }
+            if (!queuesWithUnknownMessages.isEmpty())
+            {
+                queuesWithUnknownMessages.forEach((queue, count) -> {
+                    _logger.info("Discarded {} entry(s) associated with queue '{}' as the referenced message "
+                                 + "does not exist.",
+                                 count, queue.getName());
+                });
             }
         }
 
-        for(Map.Entry<String,Integer> entry : queueRecoveries.entrySet())
+        for(Map.Entry<Queue<?>, Integer> entry : queueRecoveries.entrySet())
         {
-            eventLogger.message(logSubject, TransactionLogMessages.RECOVERED(entry.getValue(), entry.getKey()));
-            eventLogger.message(logSubject, TransactionLogMessages.RECOVERY_COMPLETE(entry.getKey(), true));
-            virtualHost.getAttainedChildFromAddress(Queue.class, entry.getKey()).completeRecovery();
+            Queue<?> queue = entry.getKey();
+            Integer deliveredCount = entry.getValue();
+            eventLogger.message(logSubject, TransactionLogMessages.RECOVERED(deliveredCount, queue.getName()));
+            eventLogger.message(logSubject, TransactionLogMessages.RECOVERY_COMPLETE(queue.getName(), true));
+            queue.completeRecovery();
         }
 
-        for(Queue<?> q : virtualHost.getChildren(Queue.class))
+        for (Queue<?> q : virtualHost.getChildren(Queue.class))
         {
-            if(!queueRecoveries.containsKey(q.getName()))
+            if (!queueRecoveries.containsKey(q))
             {
                 q.completeRecovery();
             }
         }
 
-        storeReader.visitDistributedTransactions(new DistributedTransactionVisitor(virtualHost, store, eventLogger,
-                                                                             logSubject, recoveredMessages, unusedMessages));
+        storeReader.visitDistributedTransactions(new DistributedTransactionVisitor(virtualHost,
+                                                                                   eventLogger,
+                                                                                   logSubject, recoveredMessages, unusedMessages));
 
-
-        int unusedMessageCounter = 0;
         for(StoredMessage<?> m : unusedMessages.values())
         {
-            unusedMessageCounter++;
+            _logger.debug("Message id '{}' is orphaned, removing", m.getMessageNumber());
             m.remove();
         }
 
-        if (unusedMessageCounter > 0)
+        if (unusedMessages.size() > 0)
         {
-            _logger.warn("Discarded {} of orphan messages.", unusedMessageCounter);
+            _logger.info("Discarded {} orphaned message(s).", unusedMessages.size());
         }
 
         eventLogger.message(logSubject, TransactionLogMessages.RECOVERY_COMPLETE(null, false));
@@ -154,8 +162,8 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private final Map<Long, ServerMessage<?>> _recoveredMessages;
         private final Map<Long, StoredMessage<?>> _unusedMessages;
 
-        public MessageVisitor(final Map<Long, ServerMessage<?>> recoveredMessages,
-                              final Map<Long, StoredMessage<?>> unusedMessages)
+        MessageVisitor(final Map<Long, ServerMessage<?>> recoveredMessages,
+                       final Map<Long, StoredMessage<?>> unusedMessages)
         {
             _recoveredMessages = recoveredMessages;
             _unusedMessages = unusedMessages;
@@ -184,24 +192,27 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private final QueueManagingVirtualHost<?> _virtualHost;
         private final MessageStore _store;
 
-        private final Map<String, Integer> _queueRecoveries;
+        private final Map<Queue<?>, Integer> _queueRecoveries;
         private final Map<Long, ServerMessage<?>> _recoveredMessages;
         private final Map<Long, StoredMessage<?>> _unusedMessages;
-        private final Map<Object, Integer> _unknownMessageInstances;
+        private final Map<UUID, Integer> _unknownQueuesWithMessages;
+        private Map<Queue<?>, Integer> _queuesWithUnknownMessages;
 
         private MessageInstanceVisitor(final QueueManagingVirtualHost<?> virtualHost,
                                        final MessageStore store,
-                                       final Map<String, Integer> queueRecoveries,
+                                       final Map<Queue<?>, Integer> queueRecoveries,
                                        final Map<Long, ServerMessage<?>> recoveredMessages,
                                        final Map<Long, StoredMessage<?>> unusedMessages,
-                                       final Map<Object, Integer> unknownMessageInstances)
+                                       final Map<UUID, Integer> unknownQueuesWithMessages,
+                                       final Map<Queue<?>, Integer> queuesWithUnknownMessages)
         {
             _virtualHost = virtualHost;
             _store = store;
             _queueRecoveries = queueRecoveries;
             _recoveredMessages = recoveredMessages;
             _unusedMessages = unusedMessages;
-            _unknownMessageInstances = unknownMessageInstances;
+            _unknownQueuesWithMessages = unknownQueuesWithMessages;
+            _queuesWithUnknownMessages = queuesWithUnknownMessages;
         }
 
         @Override
@@ -210,60 +221,45 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             final UUID queueId = record.getQueueId();
             long messageId = record.getMessageNumber();
             Queue<?> queue = _virtualHost.getAttainedQueue(queueId);
-            boolean unknownMessageInstance = true;
+            boolean dequeueMessageInstance = true;
             if(queue != null)
             {
                 String queueName = queue.getName();
                 ServerMessage<?> message = _recoveredMessages.get(messageId);
                 _unusedMessages.remove(messageId);
 
-                if(message != null)
+                if (message != null)
                 {
-                    if (_logger.isDebugEnabled())
-                    {
-                        _logger.debug("On recovery, delivering " + message.getMessageNumber() + " to " + queueName);
-                    }
+                    _logger.debug("Delivering message id '{}' to queue '{}'", message.getMessageNumber(), queueName);
 
-                    Integer count = _queueRecoveries.get(queueName);
-                    if (count == null)
-                    {
-                        count = 0;
-                    }
+                    _queueRecoveries.merge(queue, 1, (old, unused) -> old + 1);
 
                     queue.recover(message, record);
 
-                    _queueRecoveries.put(queueName, ++count);
-                    unknownMessageInstance = false;
+                    dequeueMessageInstance = false;
                 }
                 else
                 {
-                    _logger.debug(
-                            "Message id {} referenced in log as enqueued in queue '{}' is unknown, entry will be discarded",
-                            messageId,
-                            queueName);
+                    _logger.debug("Message id '{}' referenced in log as enqueued in queue '{}' is unknown, entry will be discarded",
+                            messageId, queueName);
+
+                    _queuesWithUnknownMessages.merge(queue, 1, (old, unused) -> old + 1);
+
                 }
             }
             else
             {
                 _logger.debug(
-                        "Message id {} in log references queue with id '{}' which is not in the configuration, entry will be discarded",
-                        messageId,
-                        queueId);
+                        "Message id '{}' in log references queue with id '{}' which is not in the configuration, entry will be discarded",
+                        messageId, queueId);
+                _unknownQueuesWithMessages.merge(queueId, 1, (old, unused) -> old + 1);
             }
 
-            if (unknownMessageInstance)
+            if (dequeueMessageInstance)
             {
                 Transaction txn = _store.newTransaction();
                 txn.dequeueMessage(record);
                 txn.commitTranAsync((Void) null);
-
-                Object queueNameOrId = queue == null ? queueId : queue.getName();
-                Integer unknownMessageCounter = _unknownMessageInstances.get(queueNameOrId);
-                if (unknownMessageCounter == null)
-                {
-                    unknownMessageCounter = 0;
-                }
-                _unknownMessageInstances.put(queueNameOrId, ++unknownMessageCounter);
             }
 
             return true;
@@ -274,7 +270,6 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
     {
 
         private final QueueManagingVirtualHost<?> _virtualHost;
-        private final MessageStore _store;
         private final EventLogger _eventLogger;
         private final MessageStoreLogSubject _logSubject;
 
@@ -282,14 +277,12 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private final Map<Long, StoredMessage<?>> _unusedMessages;
 
         private DistributedTransactionVisitor(final QueueManagingVirtualHost<?> virtualHost,
-                                              final MessageStore store,
                                               final EventLogger eventLogger,
                                               final MessageStoreLogSubject logSubject,
                                               final Map<Long, ServerMessage<?>> recoveredMessages,
                                               final Map<Long, StoredMessage<?>> unusedMessages)
         {
             _virtualHost = virtualHost;
-            _store = store;
             _eventLogger = eventLogger;
             _logSubject = logSubject;
             _recoveredMessages = recoveredMessages;
