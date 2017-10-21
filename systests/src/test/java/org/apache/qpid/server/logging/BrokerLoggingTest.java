@@ -152,7 +152,7 @@ public class BrokerLoggingTest extends AbstractTestLogging
      */
     public void testBrokerStartupStartup() throws Exception
     {
-        // This logging startup code only occurs when you run a Apache Qpid Broker for Java,
+        // This logging startup code only occurs when you run a Apache Qpid Broker-J,
         // that broker must be started via Main so not an InVM broker.
         if (isJavaBroker())
         {

@@ -25,9 +25,9 @@
 org.apache.qpid.test.client.message.JMSDestinationTest#testReceiveResend
 org.apache.qpid.server.message.MessageProtocolConversionTest#*
 
-//QPID-3422: test fails because ring queue is not implemented on Apache Qpid Broker for Java
+//QPID-3422: test fails because ring queue is not implemented on Apache Qpid Broker-J
 org.apache.qpid.test.client.destination.AddressBasedDestinationTest#testBrowseMode
-//QPID-3392: the Apache Qpid Broker for Java does not yet implement exchange creation arguments
+//QPID-3392: the Apache Qpid Broker-J does not yet implement exchange creation arguments
 org.apache.qpid.test.client.destination.AddressBasedDestinationTest#testCreateExchangeWithArgs
 org.apache.qpid.test.client.destination.AddressBasedDestinationTest#testSessionCreateTopicWithExchangeArgs
 //QPID-3678: zero capacity not supported in 0-9-1

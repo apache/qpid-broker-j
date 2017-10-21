@@ -24,7 +24,7 @@
          xml:id="Java-Broker-Runtime-Disk-Space-Management-Producer-Flow-Control">
     <title>Disk quota-based flow control</title>
     <para>
-        The Apache Qpid Broker for Java supports a flow control mechanism which is triggered when a configured
+        The Apache Qpid Broker-J supports a flow control mechanism which is triggered when a configured
         disk quota is exceeded. This is supported by the BDB and Derby virtualhosts.
     </para>
     <para>

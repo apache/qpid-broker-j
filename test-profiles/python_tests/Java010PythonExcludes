@@ -17,7 +17,7 @@
 # under the License.
 #
 
-###### Feature not supported in Broker for Java ######
+###### Feature not supported in Qpid Broker-J ######
 
 #The broker does not have the appropriate QMF support
 qpid_tests.broker_0_10.management.*
@@ -53,20 +53,20 @@ qpid_tests.broker_0_10.extensions.ExtensionTests.test_timed_autodelete
 qpid_tests.broker_0_10.priority.PriorityTests.test_fairshare*
 qpid_tests.broker_0_10.priority.PriorityTests.test_prioritised_delivery_with_alias
 
-#QPID-6572 These tests pass a empty binding key argument, which won't match with the Broker for Java's stricter impl.
+#QPID-6572 These tests pass a empty binding key argument, which won't match with the Qpid Broker-J's stricter impl.
 qpid_tests.broker_0_10.exchange.AutodeleteTests.testAutodeleteFanout
 qpid_tests.broker_0_10.exchange.AutodeleteTests.testAutodeleteHeaders
 
-# QPID-5531 : Changes to the C++ behaviour in having a default timeout for every transaction not implemented in Broker for Java
+# QPID-5531 : Changes to the C++ behaviour in having a default timeout for every transaction not implemented in Qpid Broker-J
 qpid_tests.broker_0_10.dtx.DtxTests.test_get_timeout
 
-###### Behavioural differences between Broker for Java & CPP Broker ######
+###### Behavioural differences between Qpid Broker-J & CPP Broker ######
 
 #Tests changed/added in QPID-5280 and QPID-5283
 qpid_tests.broker_0_10.queue.QueueTests.test_declare_exclusive
 qpid_tests.broker_0_10.queue.QueueTests.test_declare_exclusive_alreadyinuse
 
-#QPID-3587 Broker for Java does not alter queue counts until msgs are accepted.
+#QPID-3587 Qpid Broker-J does not alter queue counts until msgs are accepted.
 qpid_tests.broker_0_10.message.MessageTests.test_ack
 qpid_tests.broker_0_10.message.MessageTests.test_acquire
 qpid_tests.broker_0_10.message.MessageTests.test_acquire_with_no_accept_and_credit_flow
@@ -80,7 +80,7 @@ qpid_tests.broker_0_10.dtx.DtxTests.test_simple_rollback
 
 qpid_tests.broker_0_10.new_api.GeneralTests.test_qpid_3481_acquired_to_alt_exchange_2_consumers
 
-###### Broker for Java defects ######
+###### Qpid Broker-J defects ######
 
 #QPID-3591 Fails due to bytes credit issue
 qpid_tests.broker_0_10.message.MessageTests.test_credit_flow_bytes
@@ -89,7 +89,7 @@ qpid_tests.broker_0_10.message.MessageTests.test_window_flow_bytes
 #QPID-3605 Durable subscriber with no-local true receives messages on re-connection
 qpid_tests.broker_0_10.message.MessageTests.test_no_local_awkward
 
-# QPID-6673 Broker for Java cannot discriminate between null and empty messages
+# QPID-6673 Qpid Broker-J cannot discriminate between null and empty messages
 qpid.tests.messaging.message.MessageEchoTests.testApplicationProperties
 qpid.tests.messaging.message.MessageEchoTests.testContentTypeUnknown
 qpid.tests.messaging.message.MessageEchoTests.testProperties

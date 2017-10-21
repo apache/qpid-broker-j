@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>qpid-java-doc-perftests</artifactId>
-    <name>Apache Qpid Performance Test Docbook</name>
+    <name>Apache Qpid Broker-J Performance Test Docbook</name>
     <description>Apache Qpid Performance Test Documentation</description>
 
     <profiles>

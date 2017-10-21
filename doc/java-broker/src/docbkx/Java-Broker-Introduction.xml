@@ -22,22 +22,19 @@
 
 <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Introduction">
   <title>Introduction</title>
-  <para>The Apache Qpid Broker for Java is a powerful open-source message broker that implements all versions of the
-      <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.amqp.org"> Advanced Message Queuing Protocol (AMQP)</link>. The Apache Qpid Broker for Java
-    is actually one of two message brokers provided by the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://qpid.apache.org">Apache Qpid project</link>: Broker for Java and the C++
+  <para>The Apache Qpid Broker-J is a powerful open-source message broker that implements all versions of the
+      <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.amqp.org"> Advanced Message Queuing Protocol (AMQP)</link>. The Apache Qpid Broker-J
+    is actually one of two message brokers provided by the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://qpid.apache.org">Apache Qpid project</link>: Qpid Broker-J and the C++
     Broker.</para>
-  <para>This document relates to the Apache Qpid Broker for Java. The <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidCppBook}">C++ Broker is
+  <para>This document relates to the Apache Qpid Broker-J. The <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidCppBook}">C++ Broker is
     described separately</link>.</para>
   <para><emphasis>Headline features</emphasis></para>
   <itemizedlist mark="circle">
     <listitem>
-      <para>100% Java implementation - runs on any platform supporting Java 1.7 or higher</para>
+      <para>100% Java implementation - runs on any platform supporting Java 1.8 or higher</para>
     </listitem>
     <listitem>
-      <para>Messaging clients support in Java, C++, Python.</para>
-    </listitem>
-    <listitem>
-      <para>JMS 1.1 compliance (Java client).</para>
+      <para>Messaging clients support in Java (JMS 1.1 and 2.0 compliance), C++, Python and more.</para>
     </listitem>
     <listitem>
       <para>Persistent and non-persistent (transient) message support</para>

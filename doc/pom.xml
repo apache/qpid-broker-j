@@ -30,8 +30,8 @@
     </parent>
 
     <artifactId>qpid-java-doc</artifactId>
-    <name>Apache Qpid for Java Docbook</name>
-    <description>Java Qpid Docbook</description>
+    <name>Apache Qpid Broker-J Docbook</name>
+    <description>Apache Qpid Broker-J Docbook</description>
     <packaging>pom</packaging>
 
     <properties>

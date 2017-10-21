@@ -26,7 +26,7 @@
   </parent>
 
   <artifactId>qpid-broker-plugins-amqp-0-8-protocol</artifactId>
-  <name>Apache Qpid AMQP 0-8 Protocol Broker Plug-in</name>
+  <name>Apache Qpid Broker-J AMQP 0-8 Protocol Plug-in</name>
   <description>AMQP 0-8, 0-9 and 0-9-1 protocol broker plug-in</description>
 
   <properties>

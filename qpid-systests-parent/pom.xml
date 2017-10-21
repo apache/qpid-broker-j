@@ -27,7 +27,7 @@
   <artifactId>qpid-systests-parent</artifactId>
   <version>7.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>Apache Qpid System Test Parent</name>
+  <name>Apache Qpid Broker-J System Test Parent</name>
   <description>Parent POM for Qpid system testing modules</description>
 
   <properties>

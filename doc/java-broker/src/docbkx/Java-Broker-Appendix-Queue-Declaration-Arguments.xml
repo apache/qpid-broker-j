@@ -21,7 +21,7 @@
 <appendix xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Appendix-Queue-Declare-Arguments">
     <title>Queue Declaration Arguments supported by the Broker</title>
     <para>
-        <emphasis>Qpid Broker for Java</emphasis>
+        <emphasis>Qpid Broker-J</emphasis>
         supports a number of custom arguments which can be specified as part of <emphasis>queue.declare</emphasis>
         commands for AMQP 0-x protocols. This section provides an overview of the supported arguments.
     </para>

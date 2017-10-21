@@ -28,7 +28,7 @@ import org.apache.qpid.server.store.StoreException;
 
 /**
  * JE permits the same environment to opened for write many times from within the same JVM.
- * The Apache Qpid Broker for Java needs to disallow this as the stores of many VHNs or many VH
+ * The Apache Qpid Broker-J needs to disallow this as the stores of many VHNs or many VH
  */
 public class EnvHomeRegistry
 {

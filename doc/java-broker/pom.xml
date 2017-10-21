@@ -29,8 +29,8 @@
     </parent>
 
     <artifactId>qpid-java-doc-broker</artifactId>
-    <name>Apache Qpid Broker for Java Docbook</name>
-    <description>Apache Qpid Broker for Java Documentation</description>
+    <name>Apache Qpid Broker-J Docbook</name>
+    <description>Apache Qpid Broker-J Documentation</description>
 
     <profiles>
         <profile>

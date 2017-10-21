@@ -26,7 +26,7 @@
   </parent>
 
   <artifactId>qpid-bdbstore-systests</artifactId>
-  <name>Apache Qpid BDB Store System Tests</name>
+  <name>Apache Qpid Broker-J BDB Store System Tests</name>
   <description>BDB message store system tests</description>
 
   <properties>

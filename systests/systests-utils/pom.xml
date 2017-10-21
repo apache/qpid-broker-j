@@ -30,7 +30,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>qpid-systests-utils</artifactId>
-    <name>Apache Qpid System Test Utils</name>
+    <name>Apache Qpid Broker-J System Test Utils</name>
     <description>Utility classes for Apache Qpid system tests</description>
 
     <dependencies>

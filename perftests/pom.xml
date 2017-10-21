@@ -25,7 +25,7 @@
   </parent>
 
   <artifactId>qpid-perftests</artifactId>
-  <name>Apache Qpid Performance Tests</name>
+  <name>Apache Qpid Broker-J Performance Tests</name>
   <description>Performance testing configuration, code and tests</description>
 
   <properties>

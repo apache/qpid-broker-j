@@ -39,7 +39,7 @@
     </para>
     <para>
         In order to simplify application handling of scenarios where 'mandatory' messages
-        are being sent to queues which do not actually exist, the Apache Qpid Broker for Java can be configured such that
+        are being sent to queues which do not actually exist, the Apache Qpid Broker-J can be configured such that
         it will respond to this situation by closing the connection
         rather than returning the unroutable message to the client as it normally should.
         From the application perspective, this will result in failure of synchronous operations in progress such as a session commit() call.

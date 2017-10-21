@@ -30,7 +30,7 @@ org.apache.qpid.test.client.CloseOnNoRouteForMandatoryMessageTest#*
 org.apache.qpid.server.queue.PriorityTest#*
 org.apache.qpid.server.queue.AMQPriorityQueueTest#*
 
-// the 0-10 c++ broker does not implement the extended LVQ semantics which the Broker for Java does
+// the 0-10 c++ broker does not implement the extended LVQ semantics which the Qpid Broker-J does
 org.apache.qpid.server.queue.ConflationQueueTest#*
 
 // the 0-10 c++ broker does not implement sorted queues
@@ -80,7 +80,7 @@ org.apache.qpid.server.AlertingTest#*
 org.apache.qpid.server.store.PersistentStoreTest#*
 org.apache.qpid.server.store.SplitStoreTest#*
 
-// CPP Broker does not follow the same Logging convention as the Broker for Java
+// CPP Broker does not follow the same Logging convention as the Qpid Broker-J
 org.apache.qpid.server.BrokerStartupTest#*
 org.apache.qpid.server.logging.*
 org.apache.qpid.server.logging.messages.*
@@ -100,13 +100,13 @@ org.apache.qpid.test.unit.client.DynamicQueueExchangeCreateTest#*
 // QPID-2118 : JMS client for AMQP 0-10 has differrent error handling then 0-8 code path
 org.apache.qpid.test.client.message.SelectorTest#testRuntimeSelectorError
 
-//QPID-942 : Implemented Channel.Flow based Producer Side flow control to the Broker for Java (not in CPP Broker)
+//QPID-942 : Implemented Channel.Flow based Producer Side flow control to the Qpid Broker-J (not in CPP Broker)
 org.apache.qpid.server.queue.ProducerFlowControlTest#*
 org.apache.qpid.test.client.ProducerFlowControlTest#*
 
 //QPID-3986 : Flow control invoked on total store disk usage
 org.apache.qpid.server.store.StoreOverfullTest#*
-// 0-8/0-9/0-9-1 and/or Broker for Java specific failover tests related to the above Producer Flow Control mechanisms
+// 0-8/0-9/0-9-1 and/or Qpid Broker-J specific failover tests related to the above Producer Flow Control mechanisms
 org.apache.qpid.client.failover.FailoverBehaviourTest#testFailoverHandlerTimeoutExpires
 org.apache.qpid.client.failover.FailoverBehaviourTest#testFlowControlFlagResetOnFailover
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testFailoverHandlerTimeoutExpires
@@ -114,7 +114,7 @@ org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testFlowContro
 
 org.apache.qpid.test.client.RollbackOrderTest#testOrderingAfterRollbackOnMessage#*
 
-// Excluded because plugins from Broker for Java are not used in CPP broker
+// Excluded because plugins from Qpid Broker-J are not used in CPP broker
 org.apache.qpid.server.virtualhost.plugin.*
 org.apache.qpid.info.test.*
 org.apache.qpid.server.security.access.*
@@ -132,7 +132,7 @@ org.apache.qpid.test.unit.transacted.TransactionTimeoutDisabledTest#*
 org.apache.qpid.test.unit.transacted.TransactionTimeoutConfigurationTest#*
 org.apache.qpid.test.unit.transacted.TransactionTimeoutTest#*
 
-// Broker for Java only
+// Qpid Broker-J only
 org.apache.qpid.server.SupportedProtocolVersionsTest#*
 org.apache.qpid.server.stats.StatisticsReportingTest#*
 
@@ -148,13 +148,13 @@ org.apache.qpid.server.queue.MessageGroupQueueTest#testGroupAssignmentSurvivesEm
 // CPP Broker does not implement message conversion from 0-9-1
 org.apache.qpid.server.message.MessageProtocolConversionTest#*
 
-// passwd script is a Broker for Java specific command line tool
+// passwd script is a Qpid Broker-J specific command line tool
 org.apache.qpid.scripts.QpidPasswdTest#*
 
 // QPID-3604: Immediate Prefetch no longer supported by 0-10
 org.apache.qpid.client.AsynchMessageListenerTest#testImmediatePrefetchWithMessageListener
 
-// Broker for Java has an extenstion to allow it to influence the prefix of temporary queue names
+// Qpid Broker-J has an extenstion to allow it to influence the prefix of temporary queue names
 org.apache.qpid.client.TemporaryQueuePrefixTest#*
 
 // QPID-3936: Exclude Performance Test Framework tests
@@ -162,14 +162,14 @@ org.apache.qpid.systest.disttest.*
 org.apache.qpid.disttest.*
 org.apache.qpid.systest.disttest.endtoend.*
 
-// Exclude REST API tests for Broker for Java
+// Exclude REST API tests for Qpid Broker-J
 org.apache.qpid.systest.rest.*
 org.apache.qpid.systest.rest.acl.*
 
 // Exclude failover tests requiring virtual host functionality
 org.apache.qpid.client.failover.MultipleBrokersFailoverTest#*
 
-// Uses Broker for Java specific configuration
+// Uses Qpid Broker-J specific configuration
 org.apache.qpid.client.ssl.SSLTest#testClientCertMissingWhilstWanting
 org.apache.qpid.client.ssl.SSLTest#testCreateSSLandTCPonSamePort
 
@@ -178,20 +178,20 @@ org.apache.qpid.client.ssl.SSLTest#testCreateSSLandTCPonSamePort
 org.apache.qpid.client.HeartbeatTest#testUnidirectionalHeartbeating
 org.apache.qpid.client.HeartbeatTest#testHeartbeatsEnabledBrokerSide
 
-// Exclude Broker for Java specific behavior allowing queue re-bind to topic exchanges on 0.8/0-10 paths
+// Exclude Qpid Broker-J specific behavior allowing queue re-bind to topic exchanges on 0.8/0-10 paths
 org.apache.qpid.server.queue.QueueBindTest#testQueueCanBeReboundOnTopicExchange
 
-// Tests queue message durability settings which are a Broker for Java specific feature
+// Tests queue message durability settings which are a Qpid Broker-J specific feature
 org.apache.qpid.server.queue.QueueMessageDurabilityTest#*
 
 // QPID-4429 : C++ Broker does not enforce max frame size negotiation rules as per the spec
 org.apache.qpid.transport.MaxFrameSizeTest#*
 
-// CPP Broker does not timeout connections with no activity like the Broker for Java
+// CPP Broker does not timeout connections with no activity like the Qpid Broker-J
 org.apache.qpid.transport.ProtocolNegotiationTest#testNoProtocolHeaderSent_BrokerClosesConnection
 org.apache.qpid.transport.ProtocolNegotiationTest#testNoConnectionOpenSent_BrokerClosesConnection
 
-// QPID-6000 : Tests Broker for Java specific message compression functionality, and uses the REST API to test it
+// QPID-6000 : Tests Qpid Broker-J specific message compression functionality, and uses the REST API to test it
 org.apache.qpid.systest.MessageCompressionTest#*
 
 
@@ -206,12 +206,12 @@ org.apache.qpid.server.queue.DefaultFiltersTest#*
 org.apache.qpid.server.queue.EnsureNondestructiveConsumersTest#*
 org.apache.qpid.server.protocol.v0_8.*
 
-//Broker for Java BDB System Tests
+//Qpid Broker-J BDB System Tests
 org.apache.qpid.server.store.berkeleydb.*
 org.apache.qpid.server.store.berkeleydb.replication.*
 org.apache.qpid.server.virtualhostnode.berkeleydb.*
 
-// Broker for Java Derby Tests
+// Qpid Broker-J Derby Tests
 org.apache.qpid.server.store.derby.*
 
 // These tests are 0-8..0-91 specific
@@ -221,7 +221,7 @@ org.apache.qpid.test.unit.basic.PropertyValueTest#testOverlyLargeHeaderRejected_
 // QPID-6786 Sending headers larger than [first] transfer/frame size (which is outside the spec) isn't supported against the C++ broker
 org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_010_HeadersFillContentHeaderFrame
 
-// QPID-6703 Use of Broker for Java specific queue creation arguments to properly fulfill JMS TemporaryQueue contract
+// QPID-6703 Use of Qpid Broker-J specific queue creation arguments to properly fulfill JMS TemporaryQueue contract
 org.apache.qpid.test.unit.client.temporaryqueue.TemporaryQueueTest#testClosingSessionDoesNotDeleteQueue
 
 # QPID-7156: Test requires a Broker with a virtualhost
@@ -231,7 +231,7 @@ org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest#tes
 # the following test requires running broker with authentication enabled
 org.apache.qpid.transport.ConnectionEstablishmentTest#testAuthenticationBypass
 
-#Node Creation Policy Tests use Broker for Java Specific Config
+#Node Creation Policy Tests use Qpid Broker-J Specific Config
 org.apache.qpid.server.queue.NodeAutoCreationPolicyTest#*
 
 # The consumer x-priority feature is Java Broker Specific

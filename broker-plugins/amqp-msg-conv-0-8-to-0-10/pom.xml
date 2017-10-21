@@ -26,7 +26,7 @@
   </parent>
 
   <artifactId>qpid-broker-plugins-amqp-msg-conv-0-8-to-0-10</artifactId>
-  <name>Apache Qpid AMQP 0-8 to 0-10 Message Conversion Broker Plug-in</name>
+  <name>Apache Qpid Broker-J AMQP 0-8 to 0-10 Message Conversion Plug-in</name>
   <description>AMQP message conversion (0-8, 0-9 and 0-9-1 to 0-10) broker plug-in</description>
 
   <dependencies>

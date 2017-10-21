@@ -30,7 +30,7 @@
     </parent>
 
     <artifactId>qpid-systests-end-to-end-conversion-tests</artifactId>
-    <name>Apache Qpid End to End Conversion Tests</name>
+    <name>Apache Qpid Broker-J End to End Conversion Tests</name>
     <description>End to end conversion tests</description>
 
     <properties>

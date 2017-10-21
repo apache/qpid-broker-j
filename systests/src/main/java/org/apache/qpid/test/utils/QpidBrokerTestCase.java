@@ -665,7 +665,7 @@ public class QpidBrokerTestCase extends QpidTestCase
      * When the test run is complete the value will be reverted.
      * <p/>
      * The values set using this method will also be propagated to the external
-     * Apache Qpid Broker for Java via a -D value defined in QPID_OPTS.
+     * Apache Qpid Broker-J via a -D value defined in QPID_OPTS.
      * <p/>
      * If the value should not be set on the broker then use
      * setTestClientSystemProperty().

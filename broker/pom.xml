@@ -25,7 +25,7 @@
   </parent>
 
   <artifactId>qpid-broker</artifactId>
-  <name>Apache Qpid Broker for Java</name>
+  <name>Apache Qpid Broker-J</name>
   <description>Broker configuration and executable</description>
 
   <properties>

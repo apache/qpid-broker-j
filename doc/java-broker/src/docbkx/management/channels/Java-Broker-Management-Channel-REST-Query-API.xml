@@ -23,7 +23,7 @@
     <title>Query API</title>
     <section xml:id="Java-Broker-Management-Channel-REST-Query-API-Introduction">
         <title>Introduction</title>
-        <para>The <emphasis>Qpid Broker for Java</emphasis> provides a powerful feature called
+        <para>The <emphasis>Qpid Broker-J</emphasis> provides a powerful feature called
             the <emphasis>Query API</emphasis>. This allows the retrieval of the existing configured objects attributes
             satisfying user-provided queries.</para>
         <para>Developers and operators can use this feature to monitor the Broker.

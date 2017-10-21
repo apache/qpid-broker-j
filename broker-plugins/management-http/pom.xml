@@ -26,7 +26,7 @@
   </parent>
 
   <artifactId>qpid-broker-plugins-management-http</artifactId>
-  <name>Apache Qpid HTTP Management Broker Plug-in</name>
+  <name>Apache Qpid Broker-J HTTP Management Plug-in</name>
   <description>HTTP Management broker plug-in</description>
 
   <dependencies>

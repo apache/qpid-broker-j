@@ -86,8 +86,8 @@
     <para>Currently, the only virtualhost/virtualhost node type offering HA is BDB HA. Internally,
       this leverages the HA capabilities of the Berkeley DB JE edition.</para>
     <note>
-      <para>The HA solution from the Apache Qpid Broker for Java is incompatible with the HA solution offered by the CPP
-        Broker. It is not possible to co-locate Broker for Java and CPP Brokers within the same group.</para>
+      <para>The HA solution from the Apache Qpid Broker-J is incompatible with the HA solution offered by the CPP
+        Broker. It is not possible to co-locate Qpid Broker-J and CPP Brokers within the same group.</para>
     </note>
   </section>
   <section xml:id="Java-Broker-High-Availability-CreatingGroup">

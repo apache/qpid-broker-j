@@ -189,7 +189,7 @@
     <section>
       <title>Java Tuning</title>
       <para>
-        Most of these options are implementation specific. It is assumed you are using Oracle Java 1.7 and Qpid v6.
+        Most of these options are implementation specific. It is assumed you are using Oracle Java 1.8.
         <itemizedlist>
           <listitem>
             Heap and direct memory can be configured through the <link linkend="Java-Broker-Appendix-Environment-Variables-Qpid-Java-Mem"><literal>QPID_JAVA_MEM</literal> environment variable</link>.

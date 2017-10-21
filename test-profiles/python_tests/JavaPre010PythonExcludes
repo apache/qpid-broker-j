@@ -29,7 +29,7 @@ qpid_tests.broker_0_9.query.QueryTests.test_binding_query_header
 qpid_tests.broker_0_9.query.QueryTests.test_binding_query_topic
 qpid_tests.broker_0_9.query.QueryTests.test_exchange_query
 
-#QPID-4832 Apache Qpid Broker for Java does not support an explicit bind to a default exchange
+#QPID-4832 Apache Qpid Broker-J does not support an explicit bind to a default exchange
 qpid_tests.broker_0_8.exchange.DefaultExchangeRuleTests.testDefaultExchangeExplicitBind
 
 #QPID-5551 : We now throw a connection exception rather than a channel exception

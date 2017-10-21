@@ -54,7 +54,7 @@ import org.apache.qpid.server.util.StringUtil;
 import org.apache.qpid.server.util.FileUtils;
 
 /**
- * Main entry point for AMQPD.
+ * Main entry point for Apache Qpid Broker-J.
  *
  */
 public class Main

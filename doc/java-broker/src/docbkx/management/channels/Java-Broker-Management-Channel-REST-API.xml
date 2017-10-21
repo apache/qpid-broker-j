@@ -24,7 +24,7 @@
   <title>REST API</title>
   <section xml:id="Java-Broker-Management-Channel-REST-API-Introduction">
     <title>Introduction</title>
-    <para>This section describes the REST API provided by the Apache Qpid Broker for Java. The REST API is intended
+    <para>This section describes the REST API provided by the Apache Qpid Broker-J. The REST API is intended
       for use by developers who wish to automate the management or monitoring of the Qpid Broker. It
       is also very useful for adhoc monitoring on the command line using tools such as
         <literal>curl</literal>.</para>

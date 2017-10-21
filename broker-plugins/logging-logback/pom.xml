@@ -26,7 +26,7 @@
   </parent>
 
   <artifactId>qpid-broker-plugins-logging-logback</artifactId>
-  <name>Apache Qpid LogBack Logging Broker Plug-in</name>
+  <name>Apache Qpid Broker-J LogBack Logging Plug-in</name>
   <description>LogBack Logging broker plug-in</description>
 
   <properties>

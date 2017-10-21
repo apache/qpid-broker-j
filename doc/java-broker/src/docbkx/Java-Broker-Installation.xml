@@ -24,14 +24,14 @@
   <title>Installation</title>
   <section role="h2" xml:id="Java-Broker-Installation-Introduction">
     <title>Introduction</title>
-    <para>This document describes how to install the Apache Qpid Broker for Java on both Windows and UNIX
+    <para>This document describes how to install the Apache Qpid Broker-J on both Windows and UNIX
       platforms.</para>
   </section>
   <section role="h2" xml:id="Java-Broker-Installation-Prerequistes">
     <title>Prerequisites</title>
     <section role="h3" xml:id="Java-Broker-Installation-Prerequistes-Java">
       <title>Java Platform</title>
-      <para> The Apache Qpid Broker for Java is an 100% Java implementation and as such it can be used on any
+      <para> The Apache Qpid Broker-J is an 100% Java implementation and as such it can be used on any
         operating system supporting Java 1.8  or higher<footnote><para>Java Cryptography Extension (JCE)
           Unlimited Strength policy file are required for some features</para></footnote>. This includes Linux, Solaris, Mac OS X, and
         Windows Vista/7/8/10.</para>
