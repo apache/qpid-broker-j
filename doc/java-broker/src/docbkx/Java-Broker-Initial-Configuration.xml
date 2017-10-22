@@ -264,7 +264,7 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
             <programlisting>
 {
   "name": "\${broker.name}",
-  "modelVersion": "6.1",
+  "modelVersion": "7.0",
   "authenticationproviders" : [ {
     "name" : "passwordFile",
     "type" : "PlainPasswordFile",
@@ -289,6 +289,11 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
       "type" : "NameAndLevel",
       "level" : "INFO",
       "loggerName" : "qpid.message.*"
+    }, {
+      "name" : "Statistics",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "qpid.statistics.*"
     } ]
   }, {
     "name" : "memory",
@@ -308,6 +313,11 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
       "type" : "NameAndLevel",
       "level" : "INFO",
       "loggerName" : "qpid.message.*"
+    }, {
+      "name" : "Statistics",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "qpid.statistics.*"
     } ]
   } ],
   "ports" : [  {

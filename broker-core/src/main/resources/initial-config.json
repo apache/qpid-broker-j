@@ -20,7 +20,7 @@
  */
 {
   "name": "${broker.name}",
-  "modelVersion": "6.1",
+  "modelVersion": "7.0",
   "authenticationproviders" : [ {
     "name" : "passwordFile",
     "type" : "PlainPasswordFile",
@@ -69,6 +69,11 @@
       "type" : "NameAndLevel",
       "level" : "INFO",
       "loggerName" : "qpid.message.*"
+    }, {
+      "name" : "Statistics",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "qpid.statistics.*"
     } ]
   } ],
   "ports" : [  {
