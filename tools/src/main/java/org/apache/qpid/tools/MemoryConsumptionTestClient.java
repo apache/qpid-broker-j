@@ -60,15 +60,11 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import org.apache.qpid.client.AMQConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.QpidException;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
 
-
+/* TODO this program assumes addresses understood by the Qpid JMS Client 0-x. */
 public class MemoryConsumptionTestClient
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(MemoryConsumptionTestClient.class);
@@ -292,12 +288,12 @@ public class MemoryConsumptionTestClient
         }
     }
 
-    private void purgeQueue(ConnectionFactory connectionFactory, String queueString, long receiveTimeout) throws JMSException, QpidException
+    private void purgeQueue(ConnectionFactory connectionFactory, String queueString, long receiveTimeout) throws JMSException
     {
         LOGGER.debug("Consuming left over messages, using receive timeout:" + receiveTimeout);
 
         Connection connection = connectionFactory.createConnection();
-        Session session = ((AMQConnection)connection).createSession(false, Session.AUTO_ACKNOWLEDGE, 10);
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Destination destination = session.createQueue(queueString);
         MessageConsumer consumer = session.createConsumer(destination);
         connection.start();
@@ -309,12 +305,8 @@ public class MemoryConsumptionTestClient
 
             if(msg == null)
             {
-                long queueDepth = ((AMQSession<?,?>)session).getQueueDepth((AMQDestination)destination);
-                if (queueDepth == 0)
-                {
-                    LOGGER.debug("Received " + count + " messages");
-                    break;
-                }
+                LOGGER.debug("Received {} message(s)", connection);
+                break;
             }
             else
             {
