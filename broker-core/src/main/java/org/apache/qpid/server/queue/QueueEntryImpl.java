@@ -28,9 +28,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDeletedException;
@@ -51,8 +48,6 @@ import org.apache.qpid.server.util.StateChangeListenerEntry;
 
 public abstract class QueueEntryImpl implements QueueEntry
 {
-    private static final Logger _log = LoggerFactory.getLogger(QueueEntryImpl.class);
-
     private final QueueEntryList _queueEntryList;
 
     private final MessageReference _message;
@@ -605,7 +600,8 @@ public abstract class QueueEntryImpl implements QueueEntry
         {
             result = new RoutingResult<>(getMessage());
         }
-        txn.addPostTransactionAction(new ServerTransaction.Action()
+
+        txn.dequeue(getEnqueueRecord(), new ServerTransaction.Action()
         {
             @Override
             public void postCommit()
@@ -625,7 +621,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         {
             txn.commit();
         }
-        return  enqueues;
+        return enqueues;
     }
 
     @Override
