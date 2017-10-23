@@ -95,10 +95,13 @@ main()
     else
         pids=( "$@" )
         declare -a broker_pids=()
+        pidfile=$(mktemp)
+        trap "rm -f ${pidfile} || true" EXIT
         for pid in "${pids[@]}"
         do
-            ps -f -p $pid | grep -- "${SEARCH}" >/dev/null
-            if [[ "$?" == "0" ]]; then
+            echo ${pid} > ${pidfile}
+            pgrep -f -U "${USER}" -F "${pidfile}" -- "${SEARCH}" >/dev/null
+            if [[ $? -eq 0 ]]; then
                 broker_pids+=($pid)
             else
                 echo "Qpid Broker-J with the PID '$1' is not found"
