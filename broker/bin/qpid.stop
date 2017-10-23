@@ -20,94 +20,93 @@
 
 # qpid.stop script
 #
-# The script can be used to stop instances of Qpid Brokers with given PIDs or all running Qpid Brokers for current user
+# The script can be used to stop instances of Qpid Broker-J instances with given PIDs or all running Qpid Brokers for current user
 # if no PID is provided.
-# The script issues KILL TERM for found or specified Qpid Broker instances and waits for their termination
+# The script issues KILL TERM for found or specified Qpid Broker-J instances and waits for their termination
 # for up to MAX_WAIT_PERIOD seconds.
 
-MAX_WAIT_PERIOD=3600
 SLEEP_DELAY=1
-DEFAULT_SEARCH="PNAME=QPBRKR"
+SEARCH=${QPID_STOP_SEARCH:-PNAME=QPBRKR}
+MAX_WAIT_PERIOD=${QPID_STOP_MAX_WAIT_PERIOD:-360}
 
-if [ -z "$QPID_STOP_SEARCH" ]; then
-    SEARCH=$DEFAULT_SEARCH;
-else
-    SEARCH=$QPID_STOP_SEARCH;
-fi
-
-shudown_brokers()
+shutdown_brokers()
 {
     pids=( "$@" )
     if [[ ${#pids[@]} == 1 ]]; then
-        echo "Found Qpid Broker process with the PID '${pids[@]}'"
+        echo "Found Qpid Broker-J process with PID: ${pids[@]}"
     else
-        echo "Found Qpid Broker processes with PIDs: ${pids[@]}"
+        echo "Found Qpid Broker-J processes with PIDs: ${pids[@]}"
     fi
 
     declare -a monitored_pids=()
     for pid in "${pids[@]}"
     do
-        echo "Killing Qpid Broker with the PID '$pid'"
+        echo "Killing Qpid Broker-J with PID '$pid'"
         if kill $pid 2>/dev/null; then
             monitored_pids+=($pid)
         else
-            echo "Cannot shutdown Qpid Broker with the PID '$pid'"
+            echo "Cannot shutdown Qpid Broker-J with the PID '$pid'"
         fi
     done
 
     echo "Waiting for up to $MAX_WAIT_PERIOD seconds for process(es) to terminate..."
     end_time=$(($SECONDS+$MAX_WAIT_PERIOD))
-    while [[ "${#monitored_pids[@]}" -ne 0 && "$SECONDS" -lt "$end_time" ]]
+    while [[ ${#monitored_pids[@]} -ne 0 && "${SECONDS}" -lt ${end_time} ]]
     do
-        sleep $SLEEP_DELAY
-        declare -a running_pids=()
-        for pid in "${monitored_pids[@]}"
+        for i in "${!monitored_pids[@]}"
         do
-           if kill -0 $pid 2>/dev/null; then
-               running_pids+=($pid)
+           pid=${monitored_pids[i]}
+           if ! kill -0 ${pid} 2>/dev/null
+           then
+              unset 'monitored_pids[i]'
            fi
         done
-        declare -a  monitored_pids=()
-        monitored_pids=("${running_pids[@]}")
+
+        if [[ ${#monitored_pids[@]} -eq 0 ]]
+        then
+           break
+        else
+           sleep "${SLEEP_DELAY}"
+        fi
     done
 
-    if [[ "${#monitored_pids[@]}" != 0 ]]; then
+    if [[ ${#monitored_pids[@]} -ne 0 ]]; then
         echo "Process(es) with PID(s) ${monitored_pids[@]} not terminated within ${MAX_WAIT_PERIOD} seconds. Please, investigate..."
         exit 1
     else
-        echo "Qpid Broker process(es) terminated successfully"
+        echo "Qpid Broker-J process(es) terminated successfully"
     fi
 }
 
 main()
 {
     arg_length=$#
-    if [[ $arg_length == 0 ]] ; then
-        pids=($(pgrep -f -U $USER $SEARCH))
+    if [[ $arg_length -eq 0 ]] ; then
+        pids=($(pgrep -f -U "${USER}" -- "${SEARCH}"))
 
-        if [[ ${#pids[@]} == 0 ]]; then
-            echo "No Qpid Broker process found running"
+        if [[ ${#pids[@]} -eq 0 ]]; then
+            echo "No Qpid Broker-J process found running"
         else
-            shudown_brokers "${pids[@]}"
+            shutdown_brokers "${pids[@]}"
         fi
-    elif [[ $arg_length == 1 && "$1" == "-h" ]] ; then
-        echo "$0: script tries to stop instances of Qpid Brokers with given PIDs or all running Qpid Brokers if no PID is provided."
+    elif [[ $arg_length -eq 1 && "$1" == "-h" ]] ; then
+        echo "$0: script tries to stop instances of Qpid Broker-J with given PIDs or all running Qpid Brokers if no PID is provided."
         echo "usage: $0 [pid...]"
     else
         pids=( "$@" )
         declare -a broker_pids=()
         for pid in "${pids[@]}"
         do
-            ps -f -p $pid | grep "$SEARCH" | grep java >/dev/null
+            ps -f -p $pid | grep -- "${SEARCH}" >/dev/null
             if [[ "$?" == "0" ]]; then
                 broker_pids+=($pid)
             else
-                echo "Qpid Broker with the PID '$1' is not found"
+                echo "Qpid Broker-J with the PID '$1' is not found"
             fi
         done
 
         if [[ ${#broker_pids[@]} != 0 ]]; then
-            shudown_brokers "${broker_pids[@]}"
+            shutdown_brokers "${broker_pids[@]}"
         fi
     fi
 }
