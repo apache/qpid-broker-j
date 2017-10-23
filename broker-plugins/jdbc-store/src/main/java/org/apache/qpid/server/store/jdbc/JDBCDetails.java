@@ -62,10 +62,10 @@ public abstract class JDBCDetails
                                                                          true);
         private static final JDBCDetails DERBY = new KnownJDBCDetails("derby", "blob", "varchar(%d) for bit data", "bigint", false,
                                                                       true);
-        private static final JDBCDetails MYSQL = new KnownJDBCDetails("mysql", "blob", "varbinary(%d)", "bigint", false,
+        private static final JDBCDetails MYSQL = new KnownJDBCDetails("mysql", "longblob", "varbinary(%d)", "bigint", false,
                 true);
 
-        private static final JDBCDetails MARIA_DB = new KnownJDBCDetails("mariadb", "blob", "varbinary(%d)",
+        private static final JDBCDetails MARIA_DB = new KnownJDBCDetails("mariadb", "longblob", "varbinary(%d)",
                                                                          "bigint", false, true);
 
         static
