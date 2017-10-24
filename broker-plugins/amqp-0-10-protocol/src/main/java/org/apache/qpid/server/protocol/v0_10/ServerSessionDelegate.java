@@ -104,9 +104,9 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         {
             if(!session.isClosing())
             {
-                Object asyncCommandMark = ((ServerSession)session).getAsyncCommandMark();
+                Object asyncCommandMark = session.getAsyncCommandMark();
                 command(session, method, false);
-                Object newOutstanding = ((ServerSession)session).getAsyncCommandMark();
+                Object newOutstanding = session.getAsyncCommandMark();
                 if(newOutstanding == null || newOutstanding == asyncCommandMark)
                 {
                     session.processed(method);
@@ -114,12 +114,12 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
 
                 if(newOutstanding != null)
                 {
-                    ((ServerSession)session).completeAsyncCommands();
+                    session.completeAsyncCommands();
                 }
 
                 if (method.isSync())
                 {
-                    ((ServerSession)session).awaitCommandCompletion();
+                    session.awaitCommandCompletion();
                     session.flushProcessed();
                 }
             }
@@ -138,7 +138,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     @Override
     public void messageAccept(ServerSession session, MessageAccept method)
     {
-        final ServerSession serverSession = (ServerSession) session;
+        final ServerSession serverSession = session;
         serverSession.accept(method.getTransfers());
         if(!serverSession.isTransactional())
         {
@@ -150,19 +150,19 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     @Override
     public void messageReject(ServerSession session, MessageReject method)
     {
-        ((ServerSession)session).reject(method.getTransfers());
+        session.reject(method.getTransfers());
     }
 
     @Override
     public void messageRelease(ServerSession session, MessageRelease method)
     {
-        ((ServerSession)session).release(method.getTransfers(), method.getSetRedelivered());
+        session.release(method.getTransfers(), method.getSetRedelivered());
     }
 
     @Override
     public void messageAcquire(ServerSession session, MessageAcquire method)
     {
-        RangeSet acquiredRanges = ((ServerSession)session).acquire(method.getTransfers());
+        RangeSet acquiredRanges = session.acquire(method.getTransfers());
 
         Acquired result = new Acquired(acquiredRanges);
 
@@ -209,7 +209,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
             {
                 exception(session, method, ExecutionErrorCode.INVALID_ARGUMENT, "Subscriber must provide a destination. The protocol specification marking the destination argument as optional is considered a mistake.");
             }
-            else if(((ServerSession)session).getSubscription(destination) != null)
+            else if(session.getSubscription(destination) != null)
             {
                 exception(session, method, ExecutionErrorCode.NOT_ALLOWED, "Subscription already exists with destination '"+destination+"'");
             }
@@ -252,7 +252,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                 {
                     exception(session, method, ExecutionErrorCode.NOT_FOUND, "Queue: " + queueName + " not found");
                 }
-                else if(!verifySessionAccess((ServerSession) session, sources))
+                else if(!verifySessionAccess(session, sources))
                 {
                     exception(session,method,ExecutionErrorCode.RESOURCE_LOCKED, "Exclusive Queue: " + queueName + " owned exclusively by another session");
                 }
@@ -309,7 +309,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                     }
 
                     boolean multiQueue = sources.size()>1;
-                    ConsumerTarget_0_10 target = new ConsumerTarget_0_10((ServerSession)session, destination,
+                    ConsumerTarget_0_10 target = new ConsumerTarget_0_10(session, destination,
                                                                          method.getAcceptMode(),
                                                                          method.getAcquireMode(),
                                                                          MessageFlowMode.WINDOW,
@@ -338,7 +338,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                         }
                     }
 
-                    ((ServerSession)session).register(destination, target);
+                    session.register(destination, target);
                     try
                     {
                         EnumSet<ConsumerOption> options = EnumSet.noneOf(ConsumerOption.class);
@@ -418,18 +418,17 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     {
         try
         {
-            ServerSession serverSession = (ServerSession) ssn;
-            if(serverSession.blockingTimeoutExceeded())
+            if(ssn.blockingTimeoutExceeded())
             {
                 getEventLogger(ssn).message(ChannelMessages.FLOW_CONTROL_IGNORED());
 
-                serverSession.close(ErrorCodes.MESSAGE_TOO_LARGE,
-                                    "Session flow control was requested, but not enforced by sender");
+                ssn.close(ErrorCodes.MESSAGE_TOO_LARGE,
+                          "Session flow control was requested, but not enforced by sender");
             }
-            else if(xfr.getBodySize() > serverSession.getConnection().getMaxMessageSize())
+            else if(xfr.getBodySize() > ssn.getConnection().getMaxMessageSize())
             {
                 exception(ssn, xfr, ExecutionErrorCode.RESOURCE_LIMIT_EXCEEDED,
-                          "Message size of " + xfr.getBodySize() + " greater than allowed maximum of " + serverSession.getConnection().getMaxMessageSize());
+                          "Message size of " + xfr.getBodySize() + " greater than allowed maximum of " + ssn.getConnection().getMaxMessageSize());
             }
             else
             {
@@ -447,8 +446,9 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                 final NamedAddressSpace virtualHost = getAddressSpace(ssn);
                 try
                 {
-                    serverSession.getAMQPConnection().checkAuthorizedMessagePrincipal(getMessageUserId(xfr));
-                    serverSession.authorisePublish(destination, messageMetaData.getRoutingKey(), messageMetaData.isImmediate(), serverSession.getAMQPConnection().getLastReadTime());
+                    ssn.getAMQPConnection().checkAuthorizedMessagePrincipal(getMessageUserId(xfr));
+                    ssn.authorisePublish(destination, messageMetaData.getRoutingKey(), messageMetaData.isImmediate(), ssn
+                            .getAMQPConnection().getLastReadTime());
 
                 }
                 catch (AccessControlException e)
@@ -462,7 +462,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                 final MessageStore store = virtualHost.getMessageStore();
                 final StoredMessage<MessageMetaData_0_10> storeMessage = createStoreMessage(xfr, messageMetaData, store);
                 final MessageTransferMessage message =
-                        new MessageTransferMessage(storeMessage, serverSession.getReference());
+                        new MessageTransferMessage(storeMessage, ssn.getReference());
                 MessageReference<MessageTransferMessage> reference = message.newReference();
 
                 try
@@ -490,12 +490,12 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                         }
                     };
 
-                    RoutingResult<MessageTransferMessage> routingResult = serverSession.enqueue(message, instanceProperties, destination);
+                    RoutingResult<MessageTransferMessage> routingResult = ssn.enqueue(message, instanceProperties, destination);
 
                     boolean explictlyRejected = routingResult.containsReject(RejectType.LIMIT_EXCEEDED);
                     if (!routingResult.hasRoutes() || explictlyRejected)
                     {
-                        boolean closeWhenNoRoute = serverSession.getAMQPConnection().getPort().getCloseWhenNoRoute();
+                        boolean closeWhenNoRoute = ssn.getAMQPConnection().getPort().getCloseWhenNoRoute();
                         boolean discardUnroutable = delvProps != null && delvProps.getDiscardUnroutable();
                         if (!discardUnroutable && xfr.getAcceptMode() == MessageAcceptMode.EXPLICIT)
                         {
@@ -515,8 +515,8 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                             ExecutionException ex = new ExecutionException();
                             ex.setErrorCode(code);
                             ex.setDescription(errorMessage);
-                            serverSession.invoke(ex);
-                            serverSession.close(ErrorCodes.RESOURCE_ERROR, errorMessage);
+                            ssn.invoke(ex);
+                            ssn.close(ErrorCodes.RESOURCE_ERROR, errorMessage);
                             return;
                         }
                         else
@@ -527,19 +527,19 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                     }
 
                     // TODO: we currently do not send MessageAccept when AcceptMode is EXPLICIT
-                    if (serverSession.isTransactional())
+                    if (ssn.isTransactional())
                     {
-                        serverSession.processed(xfr);
+                        ssn.processed(xfr);
                     }
                     else
                     {
-                        serverSession.recordFuture(Futures.immediateFuture(null),
-                                                   new CommandProcessedAction(serverSession, xfr));
+                        ssn.recordFuture(Futures.immediateFuture(null),
+                                         new CommandProcessedAction(ssn, xfr));
                     }
                 }
                 catch (VirtualHostUnavailableException e)
                 {
-                    getServerConnection(serverSession).sendConnectionCloseAsync(ConnectionCloseCode.CONNECTION_FORCED, e.getMessage());
+                    getServerConnection(ssn).sendConnectionCloseAsync(ConnectionCloseCode.CONNECTION_FORCED, e.getMessage());
                 }
                 finally
                 {
@@ -571,7 +571,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     {
         String destination = method.getDestination();
 
-        ConsumerTarget_0_10 sub = ((ServerSession)session).getSubscription(destination);
+        ConsumerTarget_0_10 sub = session.getSubscription(destination);
 
         if(sub == null)
         {
@@ -579,7 +579,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         }
         else
         {
-            ((ServerSession)session).unregister(sub);
+            session.unregister(sub);
         }
     }
 
@@ -588,7 +588,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     {
         String destination = method.getDestination();
 
-        ConsumerTarget_0_10 sub = ((ServerSession)session).getSubscription(destination);
+        ConsumerTarget_0_10 sub = session.getSubscription(destination);
 
         if(sub == null)
         {
@@ -604,28 +604,28 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     public void txSelect(ServerSession session, TxSelect method)
     {
         // TODO - check current tx mode
-        ((ServerSession)session).selectTx();
+        session.selectTx();
     }
 
     @Override
     public void txCommit(ServerSession session, TxCommit method)
     {
         // TODO - check current tx mode
-        ((ServerSession)session).commit();
+        session.commit();
     }
 
     @Override
     public void txRollback(ServerSession session, TxRollback method)
     {
         // TODO - check current tx mode
-        ((ServerSession)session).rollback();
+        session.rollback();
     }
 
     @Override
     public void dtxSelect(ServerSession session, DtxSelect method)
     {
         // TODO - check current tx mode
-        ((ServerSession)session).selectDtx();
+        session.selectDtx();
     }
 
     @Override
@@ -635,7 +635,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         result.setStatus(DtxXaStatus.XA_OK);
         try
         {
-            ((ServerSession)session).startDtx(method.getXid(), method.getJoin(), method.getResume());
+            session.startDtx(method.getXid(), method.getJoin(), method.getResume());
             session.executionResult(method.getId(), result);
         }
         catch(JoinAndResumeDtxException e)
@@ -667,7 +667,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         {
             try
             {
-                ((ServerSession) session).endDtx(method.getXid(), method.getFail(), method.getSuspend());
+                session.endDtx(method.getXid(), method.getFail(), method.getSuspend());
             }
             catch (TimeoutDtxException e)
             {
@@ -703,7 +703,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         {
             try
             {
-                ((ServerSession)session).commitDtx(method.getXid(), method.getOnePhase());
+                session.commitDtx(method.getXid(), method.getOnePhase());
             }
             catch (RollbackOnlyDtxException e)
             {
@@ -735,7 +735,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     {
         try
         {
-            ((ServerSession)session).forgetDtx(method.getXid());
+            session.forgetDtx(method.getXid());
         }
         catch(UnknownDtxBranchException e)
         {
@@ -754,7 +754,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         GetTimeoutResult result = new GetTimeoutResult();
         try
         {
-            result.setTimeout(((ServerSession) session).getTimeoutDtx(method.getXid()));
+            result.setTimeout(session.getTimeoutDtx(method.getXid()));
             session.executionResult(method.getId(), result);
         }
         catch(UnknownDtxBranchException e)
@@ -772,7 +772,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         {
             try
             {
-                ((ServerSession)session).prepareDtx(method.getXid());
+                session.prepareDtx(method.getXid());
             }
             catch (RollbackOnlyDtxException e)
             {
@@ -803,7 +803,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     public void dtxRecover(ServerSession session, DtxRecover method)
     {
         RecoverResult result = new RecoverResult();
-        List inDoubt = ((ServerSession)session).recoverDtx();
+        List inDoubt = session.recoverDtx();
         result.setInDoubt(inDoubt);
         session.executionResult(method.getId(), result);
     }
@@ -818,7 +818,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         {
             try
             {
-                ((ServerSession)session).rollbackDtx(method.getXid());
+                session.rollbackDtx(method.getXid());
             }
             catch (TimeoutDtxException e)
             {
@@ -846,7 +846,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     {
         try
         {
-            ((ServerSession)session).setTimeoutDtx(method.getXid(), method.getTimeout());
+            session.setTimeoutDtx(method.getXid(), method.getTimeout());
         }
         catch(UnknownDtxBranchException e)
         {
@@ -1003,7 +1003,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
 
         session.invoke(ex);
 
-        ((ServerSession)session).close(errorCode.getValue(), description);
+        session.close(errorCode.getValue(), description);
     }
 
     private Exchange<?> getExchange(ServerSession session, String exchangeName)
@@ -1528,7 +1528,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                     exception(session, method, errorCode, description);
 
                 }
-                else if (!verifySessionAccess((ServerSession) session, queue))
+                else if (!verifySessionAccess(session, queue))
                 {
                     String description = "Cannot passively declare queue('" + queueName + "'),"
                                          + " as exclusive queue with same name "
@@ -1589,7 +1589,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
             catch(AbstractConfiguredObject.DuplicateNameException qe)
             {
                 queue = (Queue<?>) qe.getExisting();
-                if (!verifySessionAccess((ServerSession) session, queue))
+                if (!verifySessionAccess(session, queue))
                 {
                     String description = "Cannot declare queue('" + queueName + "'),"
                                                                            + " as exclusive queue with same name "
@@ -1640,7 +1640,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
             }
             else
             {
-                if(!verifySessionAccess((ServerSession) session, queue))
+                if(!verifySessionAccess(session, queue))
                 {
                     exception(session,method,ExecutionErrorCode.RESOURCE_LOCKED, "Exclusive Queue: " + queueName + " owned exclusively by another session");
                 }
@@ -1745,7 +1745,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     {
         String destination = sfm.getDestination();
 
-        ConsumerTarget_0_10 sub = ((ServerSession)session).getSubscription(destination);
+        ConsumerTarget_0_10 sub = session.getSubscription(destination);
 
         if(sub == null)
         {
@@ -1766,7 +1766,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     {
         String destination = stop.getDestination();
 
-        ConsumerTarget_0_10 sub = ((ServerSession)session).getSubscription(destination);
+        ConsumerTarget_0_10 sub = session.getSubscription(destination);
 
         if(sub == null)
         {
@@ -1784,7 +1784,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
     {
         String destination = flow.getDestination();
 
-        ConsumerTarget_0_10 sub = ((ServerSession)session).getSubscription(destination);
+        ConsumerTarget_0_10 sub = session.getSubscription(destination);
 
         if(sub == null)
         {
@@ -1799,11 +1799,10 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
 
     public void closed(ServerSession session)
     {
-        ServerSession serverSession = (ServerSession)session;
 
-        serverSession.stopSubscriptions();
-        serverSession.onClose();
-        serverSession.unregisterSubscriptions();
+        session.stopSubscriptions();
+        session.onClose();
+        session.unregisterSubscriptions();
     }
 
     public void detached(ServerSession session)

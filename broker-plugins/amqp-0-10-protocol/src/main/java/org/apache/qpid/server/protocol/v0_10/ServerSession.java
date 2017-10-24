@@ -110,7 +110,7 @@ public class ServerSession extends SessionInvoker
     private static final int PRODUCER_CREDIT_TOPUP_THRESHOLD = 1 << 30;
     private static final int UNFINISHED_COMMAND_QUEUE_THRESHOLD = 500;
 
-    private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<Object>());
+    private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<>());
 
     private final AtomicBoolean _blocking = new AtomicBoolean(false);
     private final AtomicInteger _outstandingCredit = new AtomicInteger(UNLIMITED_CREDIT);
@@ -136,7 +136,7 @@ public class ServerSession extends SessionInvoker
     private int syncPoint;
     // outgoing command count
     private int commandsOut = 0;
-    private Map<Integer,Method> commands = new HashMap<Integer, Method>();
+    private Map<Integer,Method> commands = new HashMap<>();
     private int commandBytes = 0;
     private int byteLimit = Integer.getInteger("qpid.session.byte_limit", 1024 * 1024);
     private int maxComplete = commandsOut - 1;
@@ -146,11 +146,11 @@ public class ServerSession extends SessionInvoker
     private boolean transacted = false;
     private SessionDetachCode detachCode;
     private boolean _isNoReplay = false;
-    private Map<Integer,ResultFuture<?>> results = new HashMap<Integer,ResultFuture<?>>();
+    private Map<Integer,ResultFuture<?>> results = new HashMap<>();
     private org.apache.qpid.server.protocol.v0_10.transport.ExecutionException exception = null;
 
     private final SortedMap<Integer, MessageDispositionChangeListener> _messageDispositionListenerMap =
-            new ConcurrentSkipListMap<Integer, MessageDispositionChangeListener>();
+            new ConcurrentSkipListMap<>();
 
     private ServerTransaction _transaction;
     private final AtomicLong _txnStarts = new AtomicLong(0);
