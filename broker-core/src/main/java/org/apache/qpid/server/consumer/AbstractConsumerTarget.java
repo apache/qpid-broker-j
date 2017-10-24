@@ -51,14 +51,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractConsumerTarget.class);
 
-    private static final LogSubject MULTI_QUEUE_LOG_SUBJECT = new LogSubject()
-    {
-        @Override
-        public String toLogString()
-        {
-            return "[(** Multi-Queue **)] ";
-        }
-    };
+    private static final LogSubject MULTI_QUEUE_LOG_SUBJECT = () -> "[(** Multi-Queue **)] ";
     protected final AtomicLong _unacknowledgedBytes = new AtomicLong(0);
     protected final AtomicLong _unacknowledgedCount = new AtomicLong(0);
     private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
@@ -66,10 +59,10 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
     private final boolean _isMultiQueue;
     private final SuspendedConsumerLoggingTicker _suspendedConsumerLoggingTicker;
     private final List<MessageInstanceConsumer> _consumers = new CopyOnWriteArrayList<>();
-
-    private Iterator<MessageInstanceConsumer> _pullIterator;
-    private boolean _notifyWorkDesired;
     private final AtomicBoolean _scheduled = new AtomicBoolean();
+
+    private volatile Iterator<MessageInstanceConsumer> _pullIterator;
+    private volatile boolean _notifyWorkDesired;
 
     protected AbstractConsumerTarget(final boolean isMultiQueue,
                                      final AMQPConnection<?> amqpConnection)
@@ -122,17 +115,14 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
     {
         if (desired != _notifyWorkDesired)
         {
-            if(_suspendedConsumerLoggingTicker != null)
+            if (desired)
             {
-                if (desired)
-                {
-                    getSession().removeTicker(_suspendedConsumerLoggingTicker);
-                }
-                else
-                {
-                    _suspendedConsumerLoggingTicker.setStartTime(System.currentTimeMillis());
-                    getSession().addTicker(_suspendedConsumerLoggingTicker);
-                }
+                getSession().removeTicker(_suspendedConsumerLoggingTicker);
+            }
+            else
+            {
+                _suspendedConsumerLoggingTicker.setStartTime(System.currentTimeMillis());
+                getSession().addTicker(_suspendedConsumerLoggingTicker);
             }
 
             for (MessageInstanceConsumer consumer : _consumers)
@@ -174,14 +164,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
         if(_consumers.contains(sub))
         {
             return doOnIoThreadAsync(
-                    new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            consumerRemovedInternal(sub);
-                        }
-                    });
+                    () -> consumerRemovedInternal(sub));
         }
         else
         {
@@ -355,19 +338,17 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
     {
         if (_state.compareAndSet(State.OPEN, State.CLOSED))
         {
+            setNotifyWorkDesired(false);
+
             List<MessageInstanceConsumer> consumers = new ArrayList<>(_consumers);
             _consumers.clear();
-
-            setNotifyWorkDesired(false);
 
             for (MessageInstanceConsumer consumer : consumers)
             {
                 consumer.close();
             }
-            if (_suspendedConsumerLoggingTicker != null)
-            {
-                getSession().removeTicker(_suspendedConsumerLoggingTicker);
-            }
+
+            getSession().removeTicker(_suspendedConsumerLoggingTicker);
 
             return true;
         }

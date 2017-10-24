@@ -22,10 +22,15 @@ package org.apache.qpid.server.consumer;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import org.mockito.InOrder;
 
 import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.message.MessageInstance;
@@ -49,7 +54,8 @@ public class AbstractConsumerTargetTest extends QpidTestCase
     private TestAbstractConsumerTarget _consumerTarget;
     private Consumer _consumer;
     private MessageSource _messageSource;
-    private AMQPConnection _connection = mock(AMQPConnection.class);
+    private AMQPConnection<?> _connection = mock(AMQPConnection.class);
+    private AMQPSession<?,TestAbstractConsumerTarget> _session = mock(AMQPSession.class);
     private MessageInstance _messageInstance;
 
     @Override
@@ -69,6 +75,48 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         when(_consumer.pullMessage()).thenReturn(messageContainer);
         _consumerTarget = new TestAbstractConsumerTarget();
         _consumerTarget.consumerAdded(_consumer);
+    }
+
+    public void testClose() throws Exception
+    {
+        _consumerTarget = new TestAbstractConsumerTarget();
+        assertEquals("Unexpected number of consumers", 0, _consumerTarget.getConsumers().size());
+
+        _consumerTarget.consumerAdded(_consumer);
+        assertEquals("Unexpected number of consumers after add", 1, _consumerTarget.getConsumers().size());
+
+        _consumerTarget.close();
+        assertEquals("Unexpected number of consumers after close", 0, _consumerTarget.getConsumers().size());
+
+        verify(_consumer, times(1)).close();
+    }
+
+    public void testNotifyWork() throws Exception
+    {
+        InOrder order = inOrder(_consumer);
+
+        _consumerTarget = new TestAbstractConsumerTarget();
+        assertEquals("Unexpected number of consumers", 0, _consumerTarget.getConsumers().size());
+
+        _consumerTarget.consumerAdded(_consumer);
+
+        _consumerTarget.setNotifyWorkDesired(true);
+        order.verify(_consumer, times(1)).setNotifyWorkDesired(true);
+
+        _consumerTarget.setNotifyWorkDesired(false);
+        order.verify(_consumer, times(1)).setNotifyWorkDesired(false);
+
+        _consumerTarget.setNotifyWorkDesired(true);
+        order.verify(_consumer, times(1)).setNotifyWorkDesired(true);
+
+        _consumerTarget.setNotifyWorkDesired(true);
+        // no change of state - should not be propagated to the consumer
+
+        _consumerTarget.close();
+        order.verify(_consumer, times(1)).setNotifyWorkDesired(false);
+        order.verify(_consumer, times(1)).close();
+
+        verifyNoMoreInteractions(_consumer);
     }
 
     public void testConversionExceptionPolicyClose() throws Exception
@@ -199,13 +247,13 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         @Override
         public void updateNotifyWorkDesired()
         {
-
+            throw new UnsupportedOperationException();
         }
 
         @Override
         public AMQPSession<?, TestAbstractConsumerTarget> getSession()
         {
-            return null;
+            return _session;
         }
 
         @Override
