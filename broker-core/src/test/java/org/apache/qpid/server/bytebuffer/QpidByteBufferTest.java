@@ -257,7 +257,7 @@ public class QpidByteBufferTest extends QpidTestCase
 
     }
 
-    public void testPutQpidByteBuffer() throws Exception
+    public void testPutQpidByteBufferMultipleIntoMultiple() throws Exception
     {
         _slicedBuffer = createSlice();
 
@@ -272,6 +272,42 @@ public class QpidByteBufferTest extends QpidTestCase
             other.flip();
             byte[] target = new byte[other.remaining()];
             other.get(target);
+            Assert.assertArrayEquals("Unexpected put QpidByteBuffer result", source, target);
+        }
+    }
+
+    public void testPutQpidByteBufferMultipleIntoSingle() throws Exception
+    {
+        _slicedBuffer = createSlice();
+
+        final byte[] source = getTestBytes(_slicedBuffer.remaining());
+        _slicedBuffer.put(source);
+        _slicedBuffer.flip();
+
+        try( QpidByteBuffer other = QpidByteBuffer.wrap(new byte[source.length]))
+        {
+            other.put(_slicedBuffer);
+
+            other.flip();
+            byte[] target = new byte[other.remaining()];
+            other.get(target);
+            Assert.assertArrayEquals("Unexpected put QpidByteBuffer result", source, target);
+        }
+    }
+
+    public void testPutQpidByteBufferSingleIntoMultiple() throws Exception
+    {
+        _slicedBuffer = createSlice();
+
+        final byte[] source = getTestBytes(_slicedBuffer.remaining());
+
+        try( QpidByteBuffer other = QpidByteBuffer.wrap(source))
+        {
+            _slicedBuffer.put(other);
+
+            _slicedBuffer.flip();
+            byte[] target = new byte[_slicedBuffer.remaining()];
+            _slicedBuffer.get(target);
             Assert.assertArrayEquals("Unexpected put QpidByteBuffer result", source, target);
         }
     }
@@ -344,7 +380,7 @@ public class QpidByteBufferTest extends QpidTestCase
         Assert.assertArrayEquals("Unexpected copyTo result", source, destination);
     }
 
-    public void testPutCopyOf()
+    public void testPutCopyOfSingleIntoMultiple()
     {
         _slicedBuffer = createSlice();
         byte[] source = getTestBytes(_slicedBuffer.remaining());
@@ -360,6 +396,50 @@ public class QpidByteBufferTest extends QpidTestCase
         _slicedBuffer.get(destination);
 
         Assert.assertArrayEquals("Unexpected putCopyOf result", source, destination);
+    }
+
+    public void testPutCopyOfMultipleIntoSingle()
+    {
+        _slicedBuffer = createSlice();
+        byte[] source = getTestBytes(_slicedBuffer.remaining());
+        _slicedBuffer.put(source);
+        _slicedBuffer.flip();
+
+        try (QpidByteBuffer target = QpidByteBuffer.wrap(new byte[source.length + 1]))
+        {
+            target.putCopyOf(_slicedBuffer);
+
+            assertEquals("Copied buffer should not be changed", source.length, _slicedBuffer.remaining());
+            assertEquals("Unexpected remaining", 1, target.remaining());
+            target.flip();
+
+            byte[] destination = new byte[source.length];
+            target.get(destination);
+
+            Assert.assertArrayEquals("Unexpected putCopyOf result", source, destination);
+        }
+    }
+
+    public void testPutCopyOfMultipleIntoMultiple()
+    {
+        _slicedBuffer = createSlice();
+        byte[] source = getTestBytes(_slicedBuffer.remaining());
+        _slicedBuffer.put(source);
+        _slicedBuffer.flip();
+
+        try (QpidByteBuffer target = QpidByteBuffer.allocateDirect(BUFFER_SIZE))
+        {
+            target.putCopyOf(_slicedBuffer);
+
+            assertEquals("Copied buffer should not be changed", source.length, _slicedBuffer.remaining());
+            assertEquals("Unexpected remaining", 2, target.remaining());
+            target.flip();
+
+            byte[] destination = new byte[source.length];
+            target.get(destination);
+
+            Assert.assertArrayEquals("Unexpected putCopyOf result", source, destination);
+        }
     }
 
     public void testCompact()

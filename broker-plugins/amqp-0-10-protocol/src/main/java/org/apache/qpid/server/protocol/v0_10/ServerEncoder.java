@@ -67,7 +67,7 @@ public final class ServerEncoder extends AbstractEncoder
     {
         int pos = _out.position();
         _out.position(0);
-        QpidByteBuffer slice = _out.view(0,pos);
+        QpidByteBuffer slice = _out.view(0, pos);
         QpidByteBuffer old = _out;
         _out.position(pos);
         _out = _out.slice();

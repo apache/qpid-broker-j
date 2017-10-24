@@ -117,7 +117,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
             int oldAppBufPos = _applicationBuffer.position();
             oldNetBufferPos = _netInputBuffer.position();
 
-            _status = _netInputBuffer.decryptSSL(_sslEngine, _applicationBuffer);
+            _status = QpidByteBuffer.decryptSSL(_sslEngine, _netInputBuffer, _applicationBuffer);
             if (_status.getStatus() == SSLEngineResult.Status.CLOSED)
             {
                 int remaining = _netInputBuffer.remaining();

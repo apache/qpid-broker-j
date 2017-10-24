@@ -21,11 +21,6 @@
 
 package org.apache.qpid.server.store;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public class StoredMemoryMessage<T extends StorableMessageMetaData> implements StoredMessage<T>, MessageHandle<T>

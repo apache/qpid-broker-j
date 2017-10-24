@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.LinkedList;
 
-public class QpidByteBufferOutputStream extends OutputStream
+final class QpidByteBufferOutputStream extends OutputStream
 {
     private final LinkedList<QpidByteBuffer> _buffers = new LinkedList<>();
     private int _bufferPosition = 0;
