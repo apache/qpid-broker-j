@@ -172,7 +172,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     private final AtomicLong _txnCount = new AtomicLong(0);
 
     private final AMQPConnection_0_8 _connection;
-    private AtomicBoolean _closing = new AtomicBoolean(false);
+    private final AtomicBoolean _closing = new AtomicBoolean(false);
 
     private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<Object>());
 
@@ -188,7 +188,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     private final ClientDeliveryMethod _clientDeliveryMethod;
 
     private final ImmediateAction _immediateAction = new ImmediateAction();
-    private Session<?> _modelObject;
     private long _blockTime;
     private long _blockingTimeout;
     private boolean _confirmOnPublish;
@@ -790,10 +789,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         {
             unsubscribeAllConsumers();
             setDefaultQueue(null);
-            if(_modelObject != null)
-            {
-                _modelObject.delete();
-            }
             for (Action<? super AMQChannel> task : _taskList)
             {
                 task.performAction(this);
