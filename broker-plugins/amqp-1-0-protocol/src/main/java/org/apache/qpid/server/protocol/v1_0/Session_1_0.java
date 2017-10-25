@@ -152,7 +152,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private volatile long _startedTransactions;
     private volatile long _committedTransactions;
     private volatile long _rolledBackTransactions;
-    private volatile int _unacknowledgedMessages;
 
     public Session_1_0(final AMQPConnection_1_0 connection,
                        Begin begin,
@@ -1091,7 +1090,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     @Override
     public int getUnacknowledgedMessageCount()
     {
-        return _unacknowledgedMessages;
+        return _outgoingDeliveryRegistry.size();
     }
 
     @Override
@@ -1202,16 +1201,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     void incrementRolledBackTransactions()
     {
         _rolledBackTransactions++;
-    }
-
-    void incrementUnacknowledged()
-    {
-        _unacknowledgedMessages++;
-    }
-
-    void decrementUnacknowledged()
-    {
-        _unacknowledgedMessages--;
     }
 
     @Override

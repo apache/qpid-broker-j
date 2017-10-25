@@ -76,4 +76,10 @@ public class DeliveryRegistryImpl implements DeliveryRegistry
     {
         return _deliveryIds.get(deliveryTag);
     }
+
+    @Override
+    public int size()
+    {
+        return _deliveries.size();
+    }
 }
