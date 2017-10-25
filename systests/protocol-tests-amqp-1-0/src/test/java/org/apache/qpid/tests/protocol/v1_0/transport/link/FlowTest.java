@@ -36,14 +36,16 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
+import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.server.protocol.v1_0.type.transport.SessionError;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
+import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class FlowTest extends BrokerAdminUsingTestBase
 {
@@ -136,7 +138,6 @@ public class FlowTest extends BrokerAdminUsingTestBase
         assertThat(data, is(equalTo("foo")));
     }
 
-
     @Test
     @SpecificationTest(section = "2.6.7",
             description = "If the sender's drain flag is set and there are no available messages,"
@@ -169,6 +170,29 @@ public class FlowTest extends BrokerAdminUsingTestBase
             assertThat(responseFlow.getHandle(), is(notNullValue()));
             assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
             assertThat(responseFlow.getDrain(), is(equalTo(Boolean.TRUE)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "2.7.4",
+            description = "If set to a handle that is not currently associated with an attached link, the recipient"
+                          + " MUST respond by ending the session with an unattached-handle session error.")
+    public void flowWithUnknownHandle() throws Exception
+    {
+        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
+        try (FrameTransport transport = new FrameTransport(addr).connect())
+        {
+            End responseEnd = transport.newInteraction()
+                                       .negotiateProtocol().consumeResponse()
+                                       .open().consumeResponse(Open.class)
+                                       .begin().consumeResponse(Begin.class)
+                                       .flowEcho(true)
+                                       .flowHandle(UnsignedInteger.ONE)
+                                       .flow()
+                                       .consumeResponse().getLatestResponse(End.class);
+
+            assertThat(responseEnd.getError(), is(notNullValue()));
+            assertThat(responseEnd.getError().getCondition(), is(equalTo(SessionError.UNATTACHED_HANDLE)));
         }
     }
 }

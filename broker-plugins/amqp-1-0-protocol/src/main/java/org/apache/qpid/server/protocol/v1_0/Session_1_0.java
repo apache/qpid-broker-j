@@ -397,16 +397,24 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             _remoteOutgoingWindow = flow.getOutgoingWindow();
 
             UnsignedInteger handle = flow.getHandle();
-            final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> endpoint =
-                    handle == null ? null : _inputHandleToEndpoint.get(handle);
-
-            if (endpoint != null)
+            if (handle != null)
             {
-                endpoint.receiveFlow(flow);
-
-                if (Boolean.TRUE.equals(flow.getEcho()))
+                final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> endpoint = _inputHandleToEndpoint.get(handle);
+                if (endpoint == null)
                 {
-                    endpoint.sendFlow();
+                    End end = new End();
+                    end.setError(new Error(SessionError.UNATTACHED_HANDLE,
+                                           String.format("Received Flow with unknown handle %d", handle.intValue())));
+                    end(end);
+                }
+                else
+                {
+                    endpoint.receiveFlow(flow);
+
+                    if (Boolean.TRUE.equals(flow.getEcho()))
+                    {
+                        endpoint.sendFlow();
+                    }
                 }
             }
             else
