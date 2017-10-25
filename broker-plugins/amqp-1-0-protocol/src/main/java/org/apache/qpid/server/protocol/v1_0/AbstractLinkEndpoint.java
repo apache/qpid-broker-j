@@ -108,8 +108,14 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
     public void receiveAttach(final Attach attach) throws AmqpErrorException
     {
         _errored = false;
+        boolean isAttachingRemoteTerminusNull = (attach.getRole() == Role.SENDER ? attach.getSource() == null : attach.getTarget() == null);
         boolean isAttachingLocalTerminusNull = (attach.getRole() == Role.SENDER ? attach.getTarget() == null : attach.getSource() == null);
         boolean isLocalTerminusNull = (attach.getRole() == Role.SENDER ? getTarget() == null : getSource() == null);
+
+        if (isAttachingRemoteTerminusNull)
+        {
+            throw new AmqpErrorException(AmqpError.INVALID_FIELD, "received Attach with remote null terminus.");
+        }
 
         if (isAttachingLocalTerminusNull)
         {

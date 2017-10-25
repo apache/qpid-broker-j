@@ -19,13 +19,14 @@
 
 package org.apache.qpid.tests.protocol.v1_0.transport.link;
 
-import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.net.InetSocketAddress;
 
@@ -36,12 +37,15 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
+import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
+import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class AttachTest extends BrokerAdminUsingTestBase
 {
@@ -115,6 +119,92 @@ public class AttachTest extends BrokerAdminUsingTestBase
             assertThat(responseAttach.getHandle().longValue(), is(both(greaterThanOrEqualTo(0L)).and(lessThan(UnsignedInteger.MAX_VALUE.longValue()))));
             assertThat(responseAttach.getRole(), is(Role.SENDER));
             assertThat(responseAttach.getSource(), is(notNullValue()));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "2.6.3",
+            description = "Note that if the application chooses not to create a terminus, the session endpoint will"
+                          + " still create a link endpoint and issue an attach indicating that the link endpoint has"
+                          + " no associated local terminus. In this case, the session endpoint MUST immediately"
+                          + " detach the newly created link endpoint.")
+    public void attachReceiverWithNullTarget() throws Exception
+    {
+        String queueName = "testQueue";
+        getBrokerAdmin().createQueue(queueName);
+        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
+        try (FrameTransport transport = new FrameTransport(addr).connect())
+        {
+            Interaction interaction = transport.newInteraction();
+            final Attach responseAttach = interaction.negotiateProtocol().consumeResponse()
+                                                     .open().consumeResponse(Open.class)
+                                                     .begin().consumeResponse(Begin.class)
+                                                     .attachRole(Role.RECEIVER)
+                                                     .attachSourceAddress(queueName)
+                                                     .attachTarget(null)
+                                                     .attach().consumeResponse()
+                                                     .getLatestResponse(Attach.class);
+            assertThat(responseAttach.getName(), is(notNullValue()));
+            assertThat(responseAttach.getHandle().longValue(), is(both(greaterThanOrEqualTo(0L)).and(lessThan(UnsignedInteger.MAX_VALUE.longValue()))));
+            assertThat(responseAttach.getRole(), is(Role.SENDER));
+            assertThat(responseAttach.getSource(), is(nullValue()));
+            assertThat(responseAttach.getTarget(), is(nullValue()));
+
+            final Detach responseDetach = interaction.consumeResponse().getLatestResponse(Detach.class);
+            assertThat(responseDetach.getClosed(), is(true));
+            assertThat(responseDetach.getError(), is(notNullValue()));
+            assertThat(responseDetach.getError().getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
+
+            final End endResponse = interaction.flowHandleFromLinkHandle()
+                                               .flowEcho(true)
+                                               .flow()
+                                               .consumeResponse().getLatestResponse(End.class);
+            assertThat(endResponse.getError(), is(notNullValue()));
+            // QPID-7954
+            //assertThat(endResponse.getError().getCondition(), is(equalTo(SessionError.ERRANT_LINK)));
+        }
+    }
+    @Test
+    @SpecificationTest(section = "2.6.3",
+            description = "Note that if the application chooses not to create a terminus, the session endpoint will"
+                          + " still create a link endpoint and issue an attach indicating that the link endpoint has"
+                          + " no associated local terminus. In this case, the session endpoint MUST immediately"
+                          + " detach the newly created link endpoint.")
+    public void attachSenderWithNullSource() throws Exception
+    {
+        String queueName = "testQueue";
+        getBrokerAdmin().createQueue(queueName);
+        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
+        try (FrameTransport transport = new FrameTransport(addr).connect())
+        {
+            Interaction interaction = transport.newInteraction();
+            final Attach responseAttach = interaction.negotiateProtocol().consumeResponse()
+                                                     .open().consumeResponse(Open.class)
+                                                     .begin().consumeResponse(Begin.class)
+                                                     .attachRole(Role.SENDER)
+                                                     .attachSource(null)
+                                                     .attachTargetAddress(queueName)
+                                                     .attachInitialDeliveryCount(UnsignedInteger.ZERO)
+                                                     .attach().consumeResponse()
+                                                     .getLatestResponse(Attach.class);
+            assertThat(responseAttach.getName(), is(notNullValue()));
+            assertThat(responseAttach.getHandle().longValue(), is(both(greaterThanOrEqualTo(0L)).and(lessThan(UnsignedInteger.MAX_VALUE.longValue()))));
+            assertThat(responseAttach.getRole(), is(Role.RECEIVER));
+            assertThat(responseAttach.getSource(), is(nullValue()));
+            assertThat(responseAttach.getTarget(), is(nullValue()));
+
+            final Detach responseDetach = interaction.consumeResponse().getLatestResponse(Detach.class);
+            assertThat(responseDetach.getClosed(), is(true));
+            assertThat(responseDetach.getError(), is(notNullValue()));
+            assertThat(responseDetach.getError().getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
+
+            final End endResponse = interaction.flowHandleFromLinkHandle()
+                                               .flowEcho(true)
+                                               .flow()
+                                               .consumeResponse().getLatestResponse(End.class);
+            assertThat(endResponse.getError(), is(notNullValue()));
+            // QPID-7954
+            //assertThat(endResponse.getError().getCondition(), is(equalTo(SessionError.ERRANT_LINK)));
         }
     }
 }
