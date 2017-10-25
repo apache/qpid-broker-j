@@ -175,7 +175,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private final SystemNodeRegistry _systemNodeRegistry = new SystemNodeRegistry();
 
-    private final AtomicLong _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
+    private final AtomicLong _messagesIn = new AtomicLong();
+    private final AtomicLong _messagesOut = new AtomicLong();
+    private final AtomicLong _transactedMessagesIn = new AtomicLong();
+    private final AtomicLong _transactedMessagesOut = new AtomicLong();
+    private final AtomicLong _bytesIn = new AtomicLong();
+    private final AtomicLong _bytesOut = new AtomicLong();
 
     private volatile LinkRegistryModel _linkRegistry;
     private AtomicBoolean _blocked = new AtomicBoolean();
@@ -283,11 +288,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         _eventLogger.message(VirtualHostMessages.CREATED(getName()));
 
-
-        _messagesDelivered = new AtomicLong();
-        _dataDelivered = new AtomicLong();
-        _messagesReceived = new AtomicLong();
-        _dataReceived = new AtomicLong();
         _principal = new VirtualHostPrincipal(this);
 
         if (systemConfig.isManagementMode())
@@ -1648,41 +1648,67 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public void registerMessageDelivered(long messageSize)
     {
-        _messagesDelivered.incrementAndGet();
-        _dataDelivered.addAndGet(messageSize);
+        _messagesOut.incrementAndGet();
+        _bytesOut.addAndGet(messageSize);
         _broker.registerMessageDelivered(messageSize);
     }
 
     @Override
     public void registerMessageReceived(long messageSize)
     {
-        _messagesReceived.incrementAndGet();
-        _dataReceived.addAndGet(messageSize);
+        _messagesIn.incrementAndGet();
+        _bytesIn.addAndGet(messageSize);
         _broker.registerMessageReceived(messageSize);
+    }
+
+    @Override
+    public void registerTransactedMessageReceived()
+    {
+        _transactedMessagesIn.incrementAndGet();
+        _broker.registerTransactedMessageReceived();
+    }
+
+    @Override
+    public void registerTransactedMessageDelivered()
+    {
+        _transactedMessagesOut.incrementAndGet();
+        _broker.registerTransactedMessageDelivered();
     }
 
     @Override
     public long getMessagesIn()
     {
-        return _messagesReceived.get();
+        return _messagesIn.get();
     }
 
     @Override
     public long getBytesIn()
     {
-        return _dataReceived.get();
+        return _bytesIn.get();
     }
 
     @Override
     public long getMessagesOut()
     {
-        return _messagesDelivered.get();
+        return _messagesOut.get();
     }
 
     @Override
     public long getBytesOut()
     {
-        return _dataDelivered.get();
+        return _bytesOut.get();
+    }
+
+    @Override
+    public long getTransactedMessagesIn()
+    {
+        return _transactedMessagesIn.get();
+    }
+
+    @Override
+    public long getTransactedMessagesOut()
+    {
+        return _transactedMessagesOut.get();
     }
 
     @Override

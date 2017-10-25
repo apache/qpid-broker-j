@@ -42,7 +42,9 @@ public interface StatisticsGatherer
      * @param messageSize the size in bytes of the delivered message
      */
     void registerMessageReceived(long messageSize);
-    
+
+    void registerTransactedMessageReceived();
+
     /**
      * This method is responsible for registering the delivery of a message
      * with the counters.
@@ -50,7 +52,9 @@ public interface StatisticsGatherer
      * @param messageSize the size in bytes of the delivered message
      */
     void registerMessageDelivered(long messageSize);
-    
+
+    void registerTransactedMessageDelivered();
+
     /**
      * Returns a number of delivered messages
      * 

@@ -21,7 +21,6 @@
 package org.apache.qpid.systest.rest;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -30,72 +29,41 @@ import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
+import javax.jms.Session;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.server.model.BrokerModel;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
-import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 public class ConnectionRestTest extends QpidRestTestCase
 {
-    /**
-     * Message number to publish into queue
-     */
-    private static final int MESSAGE_NUMBER = 5;
-    private static final int MESSAGE_SIZE = 6;
-
-    private static final String SESSIONS_ATTRIBUTE = "sessions";
-
     private javax.jms.Connection _connection;
     private javax.jms.Session _session;
+    private MessageProducer _producer;
+    private long _startTime;
+    private Destination _queue;
 
     @Override
     public void setUp() throws Exception
     {
         // disable the virtualhostPropertiesNode as it messes with the statistics counts since causes the client to
         // create a session and then it sends a message
-        setTestSystemProperty("qpid.plugin.disabled:systemnodecreator."+ VirtualHostPropertiesNodeCreator.TYPE, "true");
+        setTestSystemProperty("qpid.plugin.disabled:systemnodecreator." + VirtualHostPropertiesNodeCreator.TYPE,
+                              "true");
 
         super.setUp();
 
-        _connection = getConnection();
+        javax.jms.Connection managementConnection = getConnection();
+        managementConnection.start();
+        _queue = createTestQueue(managementConnection.createSession(false, javax.jms.Session.AUTO_ACKNOWLEDGE));
+        managementConnection.close();
+
+        _startTime = System.currentTimeMillis();
+        _connection = getConnectionBuilder().setSyncPublish(true).build();
         _session = _connection.createSession(true, javax.jms.Session.SESSION_TRANSACTED);
-        String queueName = getTestQueueName();
-        Destination queue = _session.createQueue(queueName);
-        MessageConsumer consumer = _session.createConsumer(queue);
-        MessageProducer producer = _session.createProducer(queue);
+        _producer = _session.createProducer(_queue);
         _connection.start();
-
-        // send messages
-        for (int i = 0; i < MESSAGE_NUMBER; i++)
-        {
-            producer.send(_session.createTextMessage("Test-" + i));
-        }
-        _session.commit();
-        Message m = consumer.receive(1000l);
-        assertNotNull("First message was not received", m);
-        _session.commit();
-
-        // receive the rest of messages for rollback
-        for (int i = 0; i < MESSAGE_NUMBER - 1; i++)
-        {
-            m = consumer.receive(1000l);
-            assertNotNull("Subsequent messages were not received", m);
-        }
-        _session.rollback();
-
-        // receive them again
-        for (int i = 0; i < MESSAGE_NUMBER - 1; i++)
-        {
-            m = consumer.receive(1000l);
-            assertNotNull("Message was not received after rollback", m);
-        }
-
-        // Session left open
     }
 
     public void testGetAllConnections() throws Exception
@@ -107,23 +75,10 @@ public class ConnectionRestTest extends QpidRestTestCase
 
     public void testGetVirtualHostConnections() throws Exception
     {
-        List<Map<String, Object>> connections = getRestTestHelper().getJsonAsList("virtualhost/test/test/getConnections");
+        List<Map<String, Object>> connections =
+                getRestTestHelper().getJsonAsList("virtualhost/test/test/getConnections");
         assertEquals("Unexpected number of connections", 1, connections.size());
         Asserts.assertConnection(connections.get(0), isBroker10() ? 2 : 1);
-    }
-
-    public void testGetConnectionByName() throws Exception
-    {
-        // get connection name
-        String connectionName = getConnectionName();
-
-        Map<String, Object> connectionDetailsFromPost = getRestTestHelper().postDataToPathAndGetObject("virtualhost/test/test/getConnection",
-                Collections.singletonMap("name", connectionName));
-        assertConnection(connectionDetailsFromPost);
-
-        Map<String, Object> connectionDetailsFromGet = getRestTestHelper().getJsonAsMap("virtualhost/test/test/getConnection?name="
-                        + getRestTestHelper().encodeAsUTF(connectionName));
-        assertConnection(connectionDetailsFromGet);
     }
 
     public void testDeleteConnection() throws Exception
@@ -151,136 +106,159 @@ public class ConnectionRestTest extends QpidRestTestCase
         }
     }
 
-    public void testGetAllSessions() throws Exception
+    public void testConnectionTransactionCountStatistics() throws Exception
     {
-        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session");
-        assertEquals("Unexpected number of sessions", 1, sessions.size());
-        assertSession(sessions.get(0));
-    }
+        String connectionUrl = getVirtualHostConnectionUrl();
 
-    public void testGetPortSessions() throws Exception
-    {
-        String portName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
+        _producer.send(_session.createTextMessage("Test-0"));
+        _session.commit();
 
-        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/" + portName);
-        assertEquals("Unexpected number of sessions", 1, sessions.size());
-        assertSession(sessions.get(0));
-    }
-
-    public void testGetConnectionSessions() throws Exception
-    {
-        String connectionName = getConnectionName();
-        String portName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
-
-        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/" + portName + "/"
-                + getRestTestHelper().encodeAsUTF(connectionName));
-        assertEquals("Unexpected number of sessions", 1, sessions.size());
-        assertSession(sessions.get(0));
-    }
-
-    public void testGetSessionByName() throws Exception
-    {
-        String connectionName = getConnectionName();
-        String portName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
-
-        Map<String, Object> sessionDetails = getRestTestHelper().getJsonAsMap("session/" + portName + "/"
-                + getRestTestHelper().encodeAsUTF(connectionName) + "/" + ((AMQSession<?, ?>) _session).getChannelId());
-        assertSession(sessionDetails);
-    }
-
-    public void testProducerSessionOpenHasTransactionStartAndUpdateTimes() throws Exception
-    {
-        Destination queue = _session.createQueue(getTestQueueName());
-        MessageProducer producer = _session.createProducer(queue);
-        producer.send(_session.createMessage());
-        // session left open
-        ((AMQSession)_session).sync();
-        String connectionName = getConnectionName();
-        String portName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
-
-        Map<String, Object> sessionData = getRestTestHelper().getJsonAsMap("session/" + portName + "/"
-                                                                               + getRestTestHelper().encodeAsUTF(connectionName)
-                                                                               + "/" + ((AMQSession<?, ?>) _session).getChannelId());
+        MessageConsumer consumer = _session.createConsumer(_queue);
+        Message m = consumer.receive(getReceiveTimeout());
+        assertNotNull("Subsequent messages were not received", m);
 
         @SuppressWarnings("unchecked")
-        Map<String, Object> statistics = (Map<String, Object>) sessionData.get(Asserts.STATISTICS_ATTRIBUTE);
+        Map<String, Object> statistics = getConnectionStatistics(connectionUrl);
 
-        long transactionStartTime = ((Number) statistics.get("transactionStartTime")).longValue();
-        long transactionUpdateTime = ((Number) statistics.get("transactionUpdateTime")).longValue();
-
-        assertTrue("Unexpected transaction start value for open transaction " + transactionStartTime, transactionStartTime > 0);
-        assertTrue("Unexpected transaction update value for open transaction " + transactionUpdateTime, transactionUpdateTime > 0);
-        assertTrue("Expected transaction update value " + transactionUpdateTime + " to be greater than transaction start time " + transactionStartTime, transactionUpdateTime >= transactionStartTime);
-
-
-    }
-
-    private void assertConnection(Map<String, Object> connectionDetails) throws JMSException, IOException
-    {
-        Asserts.assertConnection(connectionDetails, isBroker10() ? 2 : 1);
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> statistics = (Map<String, Object>) connectionDetails.get(Asserts.STATISTICS_ATTRIBUTE);
-        assertEquals("Unexpected value of connection statistics attribute " + "bytesIn", MESSAGE_NUMBER
-                * MESSAGE_SIZE, statistics.get("bytesIn"));
-        assertEquals("Unexpected value of connection statistics attribute " + "bytesOut", MESSAGE_SIZE
-                + ((MESSAGE_NUMBER - 1) * MESSAGE_SIZE) * 2, statistics.get("bytesOut"));
-        assertEquals("Unexpected value of connection statistics attribute " + "messagesIn", MESSAGE_NUMBER,
-                statistics.get("messagesIn"));
-        assertEquals("Unexpected value of connection statistics attribute " + "messagesOut",
-                MESSAGE_NUMBER * 2 - 1, statistics.get("messagesOut"));
-
-        String encodedName = getRestTestHelper().encodeAsUTF(String.valueOf(connectionDetails.get(Connection.NAME)));
-        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/amqp/" + encodedName);
-        assertNotNull("Sessions cannot be found", sessions);
-        assertEquals("Unexpected number of sessions", 1, sessions.size());
-        assertSession(sessions.get(0));
-    }
-
-    private void assertSession(Map<String, Object> sessionData)
-    {
-        assertNotNull("Session map cannot be null", sessionData);
-        Asserts.assertAttributesPresent(sessionData, BrokerModel.getInstance().getTypeRegistry().getAttributeNames(
-                Session.class),
-                                        ConfiguredObject.TYPE,
-                                        ConfiguredObject.CREATED_BY,
-                                        ConfiguredObject.CREATED_TIME,
-                                        ConfiguredObject.LAST_UPDATED_BY,
-                                        ConfiguredObject.LAST_UPDATED_TIME,
-                                        ConfiguredObject.DESCRIPTION,
-                                        ConfiguredObject.CONTEXT,
-                                        ConfiguredObject.DESIRED_STATE,
-                                        Session.STATE,
-                                        Session.DURABLE,
-                                        Session.LIFETIME_POLICY);
-        assertEquals("Unexpected value of attribute " + Session.PRODUCER_FLOW_BLOCKED, Boolean.FALSE,
-                sessionData.get(Session.PRODUCER_FLOW_BLOCKED));
-        assertNotNull("Unexpected value of attribute " + Session.NAME, sessionData.get(Session.NAME));
-        assertNotNull("Unexpected value of attribute " + Session.CHANNEL_ID , sessionData.get(Session.CHANNEL_ID));
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> statistics = (Map<String, Object>) sessionData.get(Asserts.STATISTICS_ATTRIBUTE);
-        Asserts.assertAttributesPresent(statistics, "consumerCount",
-                                        "localTransactionBegins", "localTransactionOpen",
-                                        "localTransactionRollbacks", "unacknowledgedMessages",
-                                        "transactionStartTime", "transactionUpdateTime");
-
-        assertEquals("Unexpected value of statistic attribute " + "unacknowledgedMessages", MESSAGE_NUMBER - 1,
-                statistics.get("unacknowledgedMessages"));
-        assertEquals("Unexpected value of statistic attribute " + "localTransactionBegins", 4,
+        assertEquals("Unexpected value of connection statistics attribute messagesIn", 1,
+                     statistics.get("messagesIn"));
+        assertEquals("Unexpected value of connection statistics attribute messagesOut",
+                     1, statistics.get("messagesOut"));
+        assertEquals("Unexpected value of statistic attribute localTransactionBegins", 2,
                      statistics.get("localTransactionBegins"));
-        assertEquals("Unexpected value of statistic attribute " + "localTransactionRollbacks", 1,
+        assertEquals("Unexpected value of statistic attribute localTransactionRollbacks", 0,
                      statistics.get("localTransactionRollbacks"));
-        assertEquals("Unexpected value of statistic attribute " + "consumerCount", 1,
-                     statistics.get("consumerCount"));
+        assertEquals("Unexpected value of statistic attribute localTransactionOpen", 1,
+                     statistics.get("localTransactionOpen"));
+        assertEquals("Unexpected value of statistic attribute transactedMessagesIn", 1,
+                     statistics.get("transactedMessagesIn"));
+        assertEquals("Unexpected value of statistic attribute transactedMessagesOut", 1,
+                     statistics.get("transactedMessagesOut"));
+
+        _session.rollback();
+        m = consumer.receive(getReceiveTimeout());
+        assertNotNull("Subsequent messages were not received", m);
+
+        final Map<String, Object> statistics2 = getConnectionStatistics(connectionUrl);
+
+        assertEquals("Unexpected value of connection statistics attribute messagesIn", 1,
+                     statistics2.get("messagesIn"));
+        assertEquals("Unexpected value of connection statistics attribute messagesOut",
+                     2, statistics2.get("messagesOut"));
+        assertEquals("Unexpected value of statistic attribute localTransactionBegins", 3,
+                     statistics2.get("localTransactionBegins"));
+        assertEquals("Unexpected value of statistic attribute localTransactionRollbacks", 1,
+                     statistics2.get("localTransactionRollbacks"));
+        assertEquals("Unexpected value of statistic attribute localTransactionOpen", 1,
+                     statistics2.get("localTransactionOpen"));
+        assertEquals("Unexpected value of statistic attribute transactedMessagesIn", 1,
+                     statistics2.get("transactedMessagesIn"));
+        assertEquals("Unexpected value of statistic attribute transactedMessagesOut", 2,
+                     statistics2.get("transactedMessagesOut"));
+
+        _producer.send(_session.createMessage());
+        consumer.close();
+        _session.close();
+
+        final Map<String, Object> statistics3 = getConnectionStatistics(connectionUrl);
+
+        assertEquals("Unexpected value of connection statistics attribute messagesIn", 2,
+                     statistics3.get("messagesIn"));
+        assertEquals("Unexpected value of connection statistics attribute messagesOut",
+                     2, statistics3.get("messagesOut"));
+        assertEquals("Unexpected value of statistic attribute localTransactionBegins", 3,
+                     statistics3.get("localTransactionBegins"));
+        assertEquals("Unexpected value of statistic attribute localTransactionRollbacks", 2,
+                     statistics3.get("localTransactionRollbacks"));
+        assertEquals("Unexpected value of statistic attribute localTransactionOpen", 0,
+                     statistics3.get("localTransactionOpen"));
+        assertEquals("Unexpected value of statistic attribute transactedMessagesIn", 2,
+                     statistics3.get("transactedMessagesIn"));
+        assertEquals("Unexpected value of statistic attribute transactedMessagesOut", 2,
+                     statistics3.get("transactedMessagesOut"));
+    }
+
+    public void testConnectionMessageCountStatistics() throws Exception
+    {
+        _producer.send(_session.createTextMessage("Test-0"));
+        _session.commit();
+
+        MessageConsumer consumer = _session.createConsumer(_queue);
+        Message m = consumer.receive(getReceiveTimeout());
+        assertNotNull("First message was not received", m);
+        _session.commit();
+
+        _session.close();
+
+        _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        _producer = _session.createProducer(_queue);
+        _producer.send(_session.createTextMessage("Test-1"));
+        consumer = _session.createConsumer(_queue);
+        m = consumer.receive(getReceiveTimeout());
+        assertNotNull("First message was not received", m);
+
+        String connectionUrl = getVirtualHostConnectionUrl();
+        @SuppressWarnings("unchecked") Map<String, Object> statistics = getConnectionStatistics(connectionUrl);
+        assertTrue("Unexpected value of connection statistics attribute bytesIn",
+                   Long.parseLong(String.valueOf(statistics.get("bytesIn"))) > 0);
+        assertTrue("Unexpected value of connection statistics attribute bytesOut",
+                   Long.parseLong(String.valueOf(statistics.get("bytesOut"))) > 0);
+        assertEquals("Unexpected value of connection statistics attribute messagesIn", 2,
+                     statistics.get("messagesIn"));
+        assertEquals("Unexpected value of connection statistics attribute messagesOut",
+                     2, statistics.get("messagesOut"));
+
+        assertEquals("Unexpected value of statistic attribute transactedMessagesIn", 1,
+                     statistics.get("transactedMessagesIn"));
+
+        assertEquals("Unexpected value of statistic attribute transactedMessagesOut", 1,
+                     statistics.get("transactedMessagesOut"));
+    }
+
+    public void testOldestTransactionStartTime() throws Exception
+    {
+        String connectionUrl = getVirtualHostConnectionUrl();
+
+        _producer.send(_session.createTextMessage("Test"));
+
+        Map<String, Object> statistics = getConnectionStatistics(connectionUrl);
+        long oldestTransactionStartTime = ((Number) statistics.get("oldestTransactionStartTime")).longValue();
+        assertTrue("Unexpected transaction oldestTransactionStartTime  for connection with work "
+                   + oldestTransactionStartTime, oldestTransactionStartTime >= _startTime);
+
+        _session.commit();
+        statistics = getConnectionStatistics(connectionUrl);
+        assertNull(String.format(
+                "Unexpected transaction oldestTransactionStartTime %s for connection with no work",
+                statistics.get("oldestTransactionStartTime")), statistics.get("oldestTransactionStartTime"));
+
+        _producer.send(_session.createTextMessage("Test"));
+        _session.close();
+
+        statistics = getConnectionStatistics(connectionUrl);
+        assertNull("Unexpected transaction oldestTransactionStartTime for connection with no session",
+                   statistics.get("oldestTransactionStartTime"));
     }
 
     private String getConnectionName() throws IOException
     {
-        List<Map<String, Object>> connections = getRestTestHelper().getJsonAsList("virtualhost/test/test/getConnections");
+        List<Map<String, Object>> connections =
+                getRestTestHelper().getJsonAsList("virtualhost/test/test/getConnections");
         assertEquals("Unexpected number of connections", 1, connections.size());
         Map<String, Object> connection = connections.get(0);
         String connectionName = (String) connection.get(Connection.NAME);
         return connectionName;
+    }
+
+    private String getVirtualHostConnectionUrl() throws IOException
+    {
+        String connectionName = getConnectionName();
+        return "virtualhost/test/test/getConnection?name=" + getRestTestHelper().encodeAsUTF(connectionName);
+    }
+
+    private Map<String, Object> getConnectionStatistics(final String connectionUrl) throws IOException
+    {
+        Map<String, Object> connection = getRestTestHelper().getJsonAsMap(connectionUrl);
+        return (Map<String, Object>) connection.get(Asserts.STATISTICS_ATTRIBUTE);
     }
 }

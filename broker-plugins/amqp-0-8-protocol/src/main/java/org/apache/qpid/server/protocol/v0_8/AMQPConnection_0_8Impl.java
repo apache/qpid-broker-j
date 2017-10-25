@@ -73,6 +73,8 @@ import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.transport.TransportException;
+import org.apache.qpid.server.txn.LocalTransaction;
+import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -871,6 +873,16 @@ public class AMQPConnection_0_8Impl
     }
 
     @Override
+    public Iterator<ServerTransaction> getOpenTransactions()
+    {
+        return _channelMap.values()
+                          .stream()
+                          .filter(channel -> channel.getTransaction() instanceof LocalTransaction)
+                          .map(AMQChannel::getTransaction)
+                          .iterator();
+    }
+
+    @Override
     public void receiveChannelOpen(final int channelId)
     {
         if(_logger.isDebugEnabled())
@@ -1245,6 +1257,10 @@ public class AMQPConnection_0_8Impl
                                                   deliveryTag,
                                                   target.getConsumerTag());
             registerMessageDelivered(size);
+            if (target.getChannel().isTransactional())
+            {
+                registerTransactedMessageDelivered();
+            }
             return size;
         }
 

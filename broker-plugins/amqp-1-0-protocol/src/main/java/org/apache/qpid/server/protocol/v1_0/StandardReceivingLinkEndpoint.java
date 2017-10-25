@@ -268,6 +268,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                         sourceSupportedOutcomes.add(Accepted.ACCEPTED_SYMBOL);
                     }
 
+                    boolean transacted = transactionId != null && transaction instanceof LocalTransaction;
                     if (sourceSupportedOutcomes.contains(outcome.getSymbol()))
                     {
                         if (transactionId == null)
@@ -284,8 +285,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     }
                     else
                     {
-                        if(transactionId != null && transaction instanceof LocalTransaction
-                           && source.getDefaultOutcome() != null
+                        if(transacted && source.getDefaultOutcome() != null
                            && outcome.getSymbol() != source.getDefaultOutcome().getSymbol())
                         {
                             ((LocalTransaction) transaction).setRollbackOnly();
@@ -297,8 +297,11 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
                     updateDisposition(delivery.getDeliveryTag(), resultantState, settled);
 
-                    getSession().getAMQPConnection()
-                                .registerMessageReceived(serverMessage.getSize());
+                    getSession().getAMQPConnection().registerMessageReceived(serverMessage.getSize());
+                    if (transacted)
+                    {
+                        getSession().getAMQPConnection().registerTransactedMessageReceived();
+                    }
 
                     setRollbackOnly = false;
                 }

@@ -22,7 +22,6 @@ package org.apache.qpid.server.session;
 
 import java.security.AccessControlContext;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -170,25 +169,6 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     }
 
     @Override
-    public int getLocalTransactionOpen()
-    {
-        long open = getTxnStart() - (getTxnCommits() + getTxnRejects());
-        return (open > 0L) ? 1 : 0;
-    }
-
-    @Override
-    public long getLocalTransactionBegins()
-    {
-        return getTxnStart();
-    }
-
-    @Override
-    public long getLocalTransactionRollbacks()
-    {
-        return getTxnRejects();
-    }
-
-    @Override
     public long getUnacknowledgedMessages()
     {
         return getUnacknowledgedMessageCount();
@@ -204,18 +184,6 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     public void removeDeleteTask(final Action<? super S> task)
     {
         _taskList.remove(task);
-    }
-
-    @Override
-    public Date getTransactionStartTime()
-    {
-        return new Date(getTransactionStartTimeLong());
-    }
-
-    @Override
-    public Date getTransactionUpdateTime()
-    {
-        return new Date(getTransactionUpdateTimeLong());
     }
 
     @StateTransition(currentState = State.ACTIVE, desiredState = State.DELETED)

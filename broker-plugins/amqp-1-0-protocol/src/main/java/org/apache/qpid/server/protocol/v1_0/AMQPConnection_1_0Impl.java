@@ -1837,9 +1837,9 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     }
 
     @Override
-    public Iterator<IdentifiedTransaction> getOpenTransactions()
+    public Iterator<ServerTransaction> getOpenTransactions()
     {
-        return new Iterator<IdentifiedTransaction>()
+        return new Iterator<ServerTransaction>()
         {
             int _index = 0;
 
@@ -1857,7 +1857,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             }
 
             @Override
-            public IdentifiedTransaction next()
+            public ServerTransaction next()
             {
                 IdentifiedTransaction txn;
                 for( ; _index < _openTransactions.length; _index++)
@@ -1866,7 +1866,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                     {
                         txn = new IdentifiedTransaction(_index, _openTransactions[_index]);
                         _index++;
-                        return txn;
+                        return txn.getServerTransaction();
                     }
                 }
 

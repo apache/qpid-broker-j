@@ -202,6 +202,19 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
                       description = "Total number of messages delivered by the Broker.")
     long getMessagesOut();
 
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES,
+            label = "Transacted Inbound",
+            description = "Total number of messages delivered by the Broker within a transaction.")
+    long getTransactedMessagesIn();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES,
+            label = "Transacted Outbound",
+            description = "Total number of messages received by the Broker within a transaction.")
+    long getTransactedMessagesOut();
+
     @ManagedOperation(nonModifying = true,
             description = "Initiates an orderly shutdown of the Broker.",
             changesConfiguredObjectState = false)

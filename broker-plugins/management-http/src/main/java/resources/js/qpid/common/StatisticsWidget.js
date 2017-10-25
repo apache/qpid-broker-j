@@ -371,10 +371,10 @@ define(["dojox/lang/functional/object",
                     }
                     else if (units === "ABSOLUTE_TIME")
                     {
-                        return this._userPreferences.formatDateTime(value, {
+                        return value > 0 ? this._userPreferences.formatDateTime(value, {
                             addOffset: true,
                             appendTimeZone: true
-                        });
+                        }) : "-";
                     }
                     else if (units === "TIME_DURATION")
                     {

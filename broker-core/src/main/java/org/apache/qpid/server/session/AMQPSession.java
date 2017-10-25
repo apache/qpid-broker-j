@@ -59,12 +59,6 @@ public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSessio
 
     int getUnacknowledgedMessageCount();
 
-    long getTxnStart();
-
-    long getTxnCommits();
-
-    long getTxnRejects();
-
     @Override
     long getConsumerCount();
 

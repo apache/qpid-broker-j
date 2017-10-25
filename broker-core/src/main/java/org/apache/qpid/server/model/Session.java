@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.model;
 
-import java.util.Date;
-
 @ManagedObject( creatable = false, amqpName = "org.apache.qpid.Session")
 public interface Session<X extends Session<X>> extends ConfiguredObject<X>
 {
@@ -58,31 +56,6 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Consumers")
     long getConsumerCount();
 
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Transactions")
-    long getLocalTransactionBegins();
-
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Open Transactions")
-    int getLocalTransactionOpen();
-
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Rolled-back Transactions")
-    long getLocalTransactionRollbacks();
-
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Prefetched")
     long getUnacknowledgedMessages();
-
-    /**
-     * Return the time the current transaction started.
-     *
-     * @return the time this transaction started or 0 if not in a transaction
-     */
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Last Transaction Start")
-    Date getTransactionStartTime();
-
-    /**
-     * Return the time of the last activity on the current transaction.
-     *
-     * @return the time of the last activity or 0 if not in a transaction
-     */
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Last Transaction Update")
-    Date getTransactionUpdateTime();
 }

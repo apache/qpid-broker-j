@@ -48,6 +48,8 @@ import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
+import org.apache.qpid.server.txn.LocalTransaction;
+import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -382,4 +384,15 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
                 throw new IllegalStateException("Unsupported state " + state);
         }
     }
+
+    @Override
+    public Iterator<ServerTransaction> getOpenTransactions()
+    {
+        return getSessionModels().stream()
+                                 .filter(sessionModel -> sessionModel.getServerSession()
+                                                                     .getTransaction() instanceof LocalTransaction)
+                                 .map(sessionModel -> sessionModel.getServerSession().getTransaction())
+                                 .iterator();
+    }
+
 }

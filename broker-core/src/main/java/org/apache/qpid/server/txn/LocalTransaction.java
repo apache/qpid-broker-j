@@ -60,6 +60,7 @@ public class LocalTransaction implements ServerTransaction
     private volatile long _txnUpdateTime = 0l;
     private ListenableFuture<Runnable> _asyncTran;
     private volatile boolean _isRollbackOnly;
+    private volatile boolean _outstandingWork;
 
     public LocalTransaction(MessageStore transactionLog)
     {
@@ -103,6 +104,7 @@ public class LocalTransaction implements ServerTransaction
     public void dequeue(MessageEnqueueRecord record, Action postTransactionAction)
     {
         sync();
+        _outstandingWork = true;
         _postTransactionActions.add(postTransactionAction);
         initTransactionStartTimeIfNecessaryAndAdvanceUpdateTime();
 
@@ -129,6 +131,7 @@ public class LocalTransaction implements ServerTransaction
     public void dequeue(Collection<MessageInstance> queueEntries, Action postTransactionAction)
     {
         sync();
+        _outstandingWork = true;
         _postTransactionActions.add(postTransactionAction);
         initTransactionStartTimeIfNecessaryAndAdvanceUpdateTime();
 
@@ -192,6 +195,7 @@ public class LocalTransaction implements ServerTransaction
     public void enqueue(TransactionLogResource queue, EnqueueableMessage message, EnqueueAction postTransactionAction)
     {
         sync();
+        _outstandingWork = true;
         initTransactionStartTimeIfNecessaryAndAdvanceUpdateTime();
         _transactionObserver.onMessageEnqueue(this, message);
         if(queue.getMessageDurability().persist(message.isPersistent()))
@@ -276,6 +280,7 @@ public class LocalTransaction implements ServerTransaction
     public void enqueue(Collection<? extends BaseQueue> queues, EnqueueableMessage message, EnqueueAction postTransactionAction)
     {
         sync();
+        _outstandingWork = true;
         initTransactionStartTimeIfNecessaryAndAdvanceUpdateTime();
         _transactionObserver.onMessageEnqueue(this, message);
         try
@@ -525,6 +530,7 @@ public class LocalTransaction implements ServerTransaction
 
     private void resetDetails()
     {
+        _outstandingWork = false;
         _transactionObserver.onDischarge(this);
         _asyncTran = null;
         _transaction = null;
@@ -553,5 +559,11 @@ public class LocalTransaction implements ServerTransaction
     public boolean isRollbackOnly()
     {
         return _isRollbackOnly;
+    }
+
+
+    public boolean hasOutstandingWork()
+    {
+        return _outstandingWork;
     }
 }

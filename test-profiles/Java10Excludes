@@ -197,7 +197,7 @@ org.apache.qpid.server.store.berkeleydb.BDBUpgradeTest#testDurableSubscriptionWi
 org.apache.qpid.server.store.berkeleydb.BDBUpgradeTest#testSelectorDurability
 
 // this test makes assumptions about the way the client uses sessions.
-org.apache.qpid.systest.rest.ConnectionRestTest#*
+org.apache.qpid.systest.rest.SessionRestTest#*
 
 // Tests verify the 0-x client's ability to create queues and that the server logs creation/deletion faithfully
 org.apache.qpid.server.logging.DurableQueueLoggingTest#*

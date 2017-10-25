@@ -60,7 +60,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
@@ -152,12 +151,7 @@ public class ServerSession extends SessionInvoker
     private final SortedMap<Integer, MessageDispositionChangeListener> _messageDispositionListenerMap =
             new ConcurrentSkipListMap<>();
 
-    private ServerTransaction _transaction;
-    private final AtomicLong _txnStarts = new AtomicLong(0);
-    private final AtomicLong _txnCommits = new AtomicLong(0);
-    private final AtomicLong _txnRejects = new AtomicLong(0);
-
-    private final AtomicLong _txnCount = new AtomicLong(0);
+    private volatile ServerTransaction _transaction;
     private Map<String, ConsumerTarget_0_10> _subscriptions = new ConcurrentHashMap<String, ConsumerTarget_0_10>();
 
     private AtomicReference<LogMessage> _forcedCloseLogMessage = new AtomicReference<LogMessage>();
@@ -972,7 +966,10 @@ public class ServerSession extends SessionInvoker
                 exchange.route(message, message.getInitialRoutingAddress(), instanceProperties);
         result.send(_transaction, null);
         getAMQPConnection().registerMessageReceived(message.getSize());
-        incrementOutstandingTxnsIfNecessary();
+        if (isTransactional())
+        {
+            getAMQPConnection().registerTransactedMessageReceived();
+        }
         return result;
     }
 
@@ -980,6 +977,10 @@ public class ServerSession extends SessionInvoker
                             Runnable postIdSettingAction)
     {
         getAMQPConnection().registerMessageDelivered(xfr.getBodySize());
+        if (_transaction.isTransactional())
+        {
+            getAMQPConnection().registerTransactedMessageDelivered();
+        }
         invoke(xfr, postIdSettingAction);
     }
 
@@ -1136,8 +1137,14 @@ public class ServerSession extends SessionInvoker
 
     public void onClose()
     {
+        AMQPConnection_0_10 amqpConnection = getAMQPConnection();
         if(_transaction instanceof LocalTransaction)
         {
+            if (((LocalTransaction) _transaction).hasOutstandingWork())
+            {
+                amqpConnection.incrementTransactionRollbackCounter();
+            }
+            amqpConnection.decrementTransactionOpenCounter();
             _transaction.rollback();
         }
         else if(_transaction instanceof DistributedTransaction)
@@ -1161,7 +1168,7 @@ public class ServerSession extends SessionInvoker
         {
             operationalLoggingMessage = ChannelMessages.CLOSE();
         }
-        getAMQPConnection().getEventLogger().message(getLogSubject(), operationalLoggingMessage);
+        amqpConnection.getEventLogger().message(getLogSubject(), operationalLoggingMessage);
     }
 
     protected void awaitClose()
@@ -1225,10 +1232,14 @@ public class ServerSession extends SessionInvoker
         return _transaction.isTransactional();
     }
 
+    ServerTransaction getTransaction()
+    {
+        return _transaction;
+    }
+
     public void selectTx()
     {
         _transaction = getConnection().getAmqpConnection().createLocalTransaction();
-        _txnStarts.incrementAndGet();
     }
 
     public void selectDtx()
@@ -1330,60 +1341,20 @@ public class ServerSession extends SessionInvoker
     public void commit()
     {
         _transaction.commit();
-
-        _txnCommits.incrementAndGet();
-        _txnStarts.incrementAndGet();
-        decrementOutstandingTxnsIfNecessary();
+        getAMQPConnection().incrementTransactionBeginCounter();
     }
 
     public void rollback()
     {
         _transaction.rollback();
-
-        _txnRejects.incrementAndGet();
-        _txnStarts.incrementAndGet();
-        decrementOutstandingTxnsIfNecessary();
-    }
-
-
-    private void incrementOutstandingTxnsIfNecessary()
-    {
-        if(isTransactional())
-        {
-            //There can currently only be at most one outstanding transaction
-            //due to only having LocalTransaction support. Set value to 1 if 0.
-            _txnCount.compareAndSet(0,1);
-        }
-    }
-
-    private void decrementOutstandingTxnsIfNecessary()
-    {
-        if(isTransactional())
-        {
-            //There can currently only be at most one outstanding transaction
-            //due to only having LocalTransaction support. Set value to 0 if 1.
-            _txnCount.compareAndSet(1,0);
-        }
-    }
-
-    public long getTxnCommits()
-    {
-        return _txnCommits.get();
-    }
-
-    public long getTxnRejects()
-    {
-        return _txnRejects.get();
+        AMQPConnection_0_10 amqpConnection = getAMQPConnection();
+        amqpConnection.incrementTransactionRollbackCounter();
+        amqpConnection.incrementTransactionBeginCounter();
     }
 
     public int getChannelId()
     {
         return getChannel();
-    }
-
-    public long getTxnStart()
-    {
-        return _txnStarts.get();
     }
 
     public Principal getAuthorizedPrincipal()

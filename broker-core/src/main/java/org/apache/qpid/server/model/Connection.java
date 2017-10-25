@@ -147,6 +147,37 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
                       description = "Current number of sessions belonging to this connection.")
     int getSessionCount();
 
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT,
+            label = "Transactions", description = "Total number of transactions started.")
+    long getLocalTransactionBegins();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT,
+            label = "Rolled-back Transactions", description = "Total number of rolled-back transactions.")
+    long getLocalTransactionRollbacks();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT,
+            label = "Open Transactions", description = "Current number of open transactions.")
+    long getLocalTransactionOpen();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME,
+            label= "Oldest transaction start time",
+            description = "The start time of the oldest transaction or null if no transaction is in progress.")
+    Date getOldestTransactionStartTime();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Transacted Inbound",
+            description = "Total number of messages delivered by this connection within a transaction.")
+    long getTransactedMessagesIn();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Transacted Outbound",
+            description = "Total number of messages received by this connection within a transaction.")
+    long getTransactedMessagesOut();
+
     //children
     Collection<Session> getSessions();
 

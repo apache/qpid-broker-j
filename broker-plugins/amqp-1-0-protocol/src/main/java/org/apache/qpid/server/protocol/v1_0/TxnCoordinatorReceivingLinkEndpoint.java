@@ -93,8 +93,6 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
 
                             Declared state = new Declared();
 
-                            session.incrementStartedTransactions();
-
                             state.setTxnId(Session_1_0.integerToTransactionId(txn.getId()));
                             updateDisposition(delivery.getDeliveryTag(), state, true);
                         }
@@ -168,26 +166,27 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
 
         if(txn != null)
         {
+            AMQPConnection_1_0<?> connection = getSession().getConnection();
             if(fail)
             {
                 txn.rollback();
-                getSession().incrementRolledBackTransactions();
+                connection.incrementTransactionRollbackCounter();
             }
             else if(!(txn instanceof LocalTransaction && ((LocalTransaction)txn).isRollbackOnly()))
             {
                 txn.commit();
-                getSession().incrementCommittedTransactions();
             }
             else
             {
                 txn.rollback();
-                getSession().incrementRolledBackTransactions();
+                connection.incrementTransactionRollbackCounter();
                 error = new Error();
                 error.setCondition(TransactionError.TRANSACTION_ROLLBACK);
                 error.setDescription("The transaction was marked as rollback only due to an earlier issue (e.g. a published message was sent settled but could not be enqueued)");
             }
             _createdTransactions.remove(transactionId);
-            getSession().getConnection().removeTransaction(transactionId);
+            connection.removeTransaction(transactionId);
+            connection.decrementTransactionOpenCounter();
         }
         else
         {
@@ -205,8 +204,10 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
         for(Map.Entry<Integer, ServerTransaction> entry : _createdTransactions.entrySet())
         {
             entry.getValue().rollback();
-            getSession().incrementRolledBackTransactions();
-            getSession().getConnection().removeTransaction(entry.getKey());
+            AMQPConnection_1_0<?> connection = getSession().getConnection();
+            connection.decrementTransactionOpenCounter();
+            connection.incrementTransactionRollbackCounter();
+            connection.removeTransaction(entry.getKey());
         }
         close();
     }

@@ -114,7 +114,12 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private AuthenticationProvider<?> _managementModeAuthenticationProvider;
 
-    private final AtomicLong _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
+    private final AtomicLong _messagesIn = new AtomicLong();
+    private final AtomicLong _messagesOut = new AtomicLong();
+    private final AtomicLong _transactedMessagesIn = new AtomicLong();
+    private final AtomicLong _transactedMessagesOut = new AtomicLong();
+    private final AtomicLong _bytesIn = new AtomicLong();
+    private final AtomicLong _bytesOut = new AtomicLong();
 
     @ManagedAttributeField
     private int _statisticsReportingPeriod;
@@ -165,12 +170,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         QpidServiceLoader qpidServiceLoader = new QpidServiceLoader();
         final Set<String> systemNodeCreatorTypes = qpidServiceLoader.getInstancesByType(SystemNodeCreator.class).keySet();
         _virtualHostPropertiesNodeEnabled = systemNodeCreatorTypes.contains(VirtualHostPropertiesNodeCreator.TYPE);
-        _messagesDelivered = new AtomicLong();
-        _dataDelivered = new AtomicLong();
-        _messagesReceived = new AtomicLong();
-        _dataReceived = new AtomicLong();
-
-
     }
 
     private void registerSystemAddressSpaces()
@@ -809,15 +808,27 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @Override
     public void registerMessageDelivered(long messageSize)
     {
-        _messagesDelivered.incrementAndGet();
-        _dataDelivered.addAndGet(messageSize);
+        _messagesOut.incrementAndGet();
+        _bytesOut.addAndGet(messageSize);
+    }
+
+    @Override
+    public void registerTransactedMessageReceived()
+    {
+        _transactedMessagesIn.incrementAndGet();
+    }
+
+    @Override
+    public void registerTransactedMessageDelivered()
+    {
+        _transactedMessagesOut.incrementAndGet();
     }
 
     @Override
     public void registerMessageReceived(long messageSize)
     {
-        _messagesReceived.incrementAndGet();
-        _dataReceived.addAndGet(messageSize);
+        _messagesIn.incrementAndGet();
+        _bytesIn.addAndGet(messageSize);
     }
 
     @Override
@@ -841,25 +852,37 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @Override
     public long getMessagesIn()
     {
-        return _messagesReceived.get();
+        return _messagesIn.get();
     }
 
     @Override
     public long getBytesIn()
     {
-        return _dataReceived.get();
+        return _bytesIn.get();
     }
 
     @Override
     public long getMessagesOut()
     {
-        return _messagesDelivered.get();
+        return _messagesOut.get();
     }
 
     @Override
     public long getBytesOut()
     {
-        return _dataDelivered.get();
+        return _bytesOut.get();
+    }
+
+    @Override
+    public long getTransactedMessagesIn()
+    {
+        return _transactedMessagesIn.get();
+    }
+
+    @Override
+    public long getTransactedMessagesOut()
+    {
+        return _transactedMessagesOut.get();
     }
 
     @Override

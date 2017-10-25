@@ -221,6 +221,18 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     long getMessagesOut();
 
     @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES,
+            label = "Transacted Inbound",
+            description = "Total number of messages delivered by this virtualhost within a transaction.")
+    long getTransactedMessagesIn();
+
+    @SuppressWarnings("unused")
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES,
+            label = "Transacted Outbound",
+            description = "Total number of messages received by this virtualhost within a transaction.")
+    long getTransactedMessagesOut();
+
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth",
             description = "Current size of all messages enqueued by this virtualhost.")
     long getTotalDepthOfQueuesBytes();

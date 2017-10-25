@@ -107,24 +107,6 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     }
 
     @Override
-    public long getTxnRejects()
-    {
-        return _serverSession.getTxnRejects();
-    }
-
-    @Override
-    public long getTxnCommits()
-    {
-        return _serverSession.getTxnCommits();
-    }
-
-    @Override
-    public long getTxnStart()
-    {
-        return _serverSession.getTxnStart();
-    }
-
-    @Override
     public int getUnacknowledgedMessageCount()
     {
         return _serverSession.getUnacknowledgedMessageCount();

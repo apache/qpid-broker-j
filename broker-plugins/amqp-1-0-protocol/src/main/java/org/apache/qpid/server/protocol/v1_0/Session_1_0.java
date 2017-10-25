@@ -149,9 +149,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     private final String _primaryDomain;
     private final Set<Object> _blockingEntities = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    private volatile long _startedTransactions;
-    private volatile long _committedTransactions;
-    private volatile long _rolledBackTransactions;
 
     public Session_1_0(final AMQPConnection_1_0 connection,
                        Begin begin,
@@ -1094,24 +1091,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     }
 
     @Override
-    public long getTxnStart()
-    {
-        return _startedTransactions;
-    }
-
-    @Override
-    public long getTxnCommits()
-    {
-        return _committedTransactions;
-    }
-
-    @Override
-    public long getTxnRejects()
-    {
-        return _rolledBackTransactions;
-    }
-
-    @Override
     public String toLogString()
     {
         final AMQPConnection<?> amqpConnection = getAMQPConnection();
@@ -1186,21 +1165,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     public void doTimeoutAction(final String reason)
     {
         getAMQPConnection().closeSessionAsync(this, AMQPConnection.CloseReason.TRANSACTION_TIMEOUT, reason);
-    }
-
-    void incrementStartedTransactions()
-    {
-        _startedTransactions++;
-    }
-
-    void incrementCommittedTransactions()
-    {
-        _committedTransactions++;
-    }
-
-    void incrementRolledBackTransactions()
-    {
-        _rolledBackTransactions++;
     }
 
     @Override

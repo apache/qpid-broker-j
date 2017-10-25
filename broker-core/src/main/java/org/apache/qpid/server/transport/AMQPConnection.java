@@ -24,6 +24,7 @@ import java.net.SocketAddress;
 import java.security.AccessControlContext;
 import java.security.Principal;
 import java.util.Collection;
+import java.util.Iterator;
 
 import javax.security.auth.Subject;
 
@@ -35,6 +36,7 @@ import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.txn.LocalTransaction;
+import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Deletable;
 
 public interface AMQPConnection<C extends AMQPConnection<C>>
@@ -70,6 +72,10 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
     // See also QPID-7689: https://issues.apache.org/jira/browse/QPID-7689?focusedCommentId=16022923#comment-16022923
     void registerMessageDelivered(long size);
 
+    void registerTransactedMessageReceived();
+
+    void registerTransactedMessageDelivered();
+
     void closeSessionAsync(AMQPSession<?,?> session, CloseReason reason, String message);
 
     SocketAddress getRemoteSocketAddress();
@@ -87,6 +93,16 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
     AggregateTicker getAggregateTicker();
 
     LocalTransaction createLocalTransaction();
+
+    void incrementTransactionRollbackCounter();
+
+    void decrementTransactionOpenCounter();
+
+    void incrementTransactionOpenCounter();
+
+    void incrementTransactionBeginCounter();
+
+    Iterator<ServerTransaction> getOpenTransactions();
 
     enum CloseReason
     {

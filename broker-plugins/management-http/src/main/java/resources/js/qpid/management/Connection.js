@@ -139,22 +139,6 @@ define(["dojo/parser",
 
             this.connectionData = {};
 
-            var transactionTimeFormatter = function (value, object)
-            {
-                if (value > 0)
-                {
-                    return userPreferences.formatDateTime(value, {
-                        selector: "time",
-                        addOffset: true,
-                        appendTimeZone: true
-                    });
-                }
-                else
-                {
-                    return "N/A";
-                }
-            };
-
             this.sessionsGrid = new QueryGrid({
                 detectChanges: true,
                 rowsPerPage: 10,
@@ -175,14 +159,6 @@ define(["dojo/parser",
                     }, {
                         label: "Unacknowledged messages",
                         field: "unacknowledgedMessages"
-                    }, {
-                        label: "Current store transaction start",
-                        field: "transactionStartTime",
-                        formatter: transactionTimeFormatter
-                    }, {
-                        label: "Current store transaction update",
-                        field: "transactionUpdateTime",
-                        formatter:transactionTimeFormatter
                     }
                 ]
             }, findNode("sessions"));

@@ -20,8 +20,6 @@
 
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.util.Iterator;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.DerivedAttribute;
@@ -82,7 +80,6 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
 
     void close(Error error);
 
-    Iterator<IdentifiedTransaction> getOpenTransactions();
     IdentifiedTransaction createIdentifiedTransaction();
     ServerTransaction getTransaction(int txnId);
     void removeTransaction(int txnId);

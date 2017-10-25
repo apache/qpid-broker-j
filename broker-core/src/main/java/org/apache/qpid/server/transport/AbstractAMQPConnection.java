@@ -30,6 +30,7 @@ import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -73,6 +74,7 @@ import org.apache.qpid.server.transport.network.NetworkConnection;
 import org.apache.qpid.server.transport.network.Ticker;
 import org.apache.qpid.server.txn.FlowToDiskTransactionObserver;
 import org.apache.qpid.server.txn.LocalTransaction;
+import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.txn.TransactionObserver;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
@@ -105,7 +107,17 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     private String _clientId;
     private volatile boolean _stopped;
-    private final AtomicLong _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
+
+    private final AtomicLong _messagesIn = new AtomicLong();
+    private final AtomicLong _messagesOut = new AtomicLong();
+    private final AtomicLong _transactedMessagesIn = new AtomicLong();
+    private final AtomicLong _transactedMessagesOut = new AtomicLong();
+    private final AtomicLong _bytesIn = new AtomicLong();
+    private final AtomicLong _bytesOut = new AtomicLong();
+    private final AtomicLong _localTransactionBegins = new AtomicLong();
+    private final AtomicLong _localTransactionRollbacks = new AtomicLong();
+    private final AtomicLong _localTransactionOpens = new AtomicLong();
+
     private final SettableFuture<Void> _transportClosedFuture = SettableFuture.create();
     private final SettableFuture<Void> _modelClosedFuture = SettableFuture.create();
     private final AtomicBoolean _modelClosing = new AtomicBoolean();
@@ -146,11 +158,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         _subject.getPrincipals().add(new ConnectionPrincipal(this));
 
         updateAccessControllerContext();
-
-        _messagesDelivered = new AtomicLong();
-        _dataDelivered = new AtomicLong();
-        _messagesReceived = new AtomicLong();
-        _dataReceived = new AtomicLong();
 
         _transportClosedFuture.addListener(
                 new Runnable()
@@ -431,17 +438,31 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     @Override
     public void registerMessageDelivered(long messageSize)
     {
-        _messagesDelivered.incrementAndGet();
-        _dataDelivered.addAndGet(messageSize);
+        _messagesOut.incrementAndGet();
+        _bytesOut.addAndGet(messageSize);
         _statisticsGatherer.registerMessageDelivered(messageSize);
     }
 
     @Override
     public void registerMessageReceived(long messageSize)
     {
-        _messagesReceived.incrementAndGet();
-        _dataReceived.addAndGet(messageSize);
+        _messagesIn.incrementAndGet();
+        _bytesIn.addAndGet(messageSize);
         _statisticsGatherer.registerMessageReceived(messageSize);
+    }
+
+    @Override
+    public void registerTransactedMessageDelivered()
+    {
+        _transactedMessagesOut.incrementAndGet();
+        _statisticsGatherer.registerTransactedMessageDelivered();
+    }
+
+    @Override
+    public void registerTransactedMessageReceived()
+    {
+        _transactedMessagesIn.incrementAndGet();
+        _statisticsGatherer.registerTransactedMessageReceived();
     }
 
     public void setClientProduct(final String clientProduct)
@@ -631,25 +652,37 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     @Override
     public long getBytesIn()
     {
-        return _dataReceived.get();
+        return _bytesIn.get();
     }
 
     @Override
     public long getBytesOut()
     {
-        return _dataDelivered.get();
+        return _bytesOut.get();
     }
 
     @Override
     public long getMessagesIn()
     {
-        return _messagesReceived.get();
+        return _messagesIn.get();
     }
 
     @Override
     public long getMessagesOut()
     {
-        return _messagesDelivered.get();
+        return _messagesOut.get();
+    }
+
+    @Override
+    public long getTransactedMessagesIn()
+    {
+        return _transactedMessagesIn.get();
+    }
+
+    @Override
+    public long getTransactedMessagesOut()
+    {
+        return _transactedMessagesOut.get();
     }
 
     public AccessControlContext getAccessControllerContext()
@@ -850,6 +883,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     @Override
     public LocalTransaction createLocalTransaction()
     {
+        _localTransactionBegins.incrementAndGet();
+        _localTransactionOpens.incrementAndGet();
         return new LocalTransaction(getAddressSpace().getMessageStore(),
                                     () -> getLastReadTime(),
                                     _transactionObserver);
@@ -931,4 +966,65 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         return getNetwork().getPeerPrincipal();
     }
 
+    @Override
+    public Date getOldestTransactionStartTime()
+    {
+        long oldest = Long.MAX_VALUE;
+        Iterator<ServerTransaction> iterator = getOpenTransactions();
+        while (iterator.hasNext())
+        {
+            final ServerTransaction value = iterator.next();
+            if (value instanceof LocalTransaction)
+            {
+                long transactionStartTimeLong = value.getTransactionStartTime();
+                if (transactionStartTimeLong > 0 && oldest > transactionStartTimeLong)
+                {
+                    oldest = transactionStartTimeLong;
+                }
+            }
+        }
+        return oldest == Long.MAX_VALUE ? null : new Date(oldest);
+    }
+
+    @Override
+    public long getLocalTransactionBegins()
+    {
+        return _localTransactionBegins.get();
+    }
+
+    @Override
+    public long getLocalTransactionOpen()
+    {
+        return _localTransactionOpens.get();
+    }
+
+    @Override
+    public long getLocalTransactionRollbacks()
+    {
+        return _localTransactionRollbacks.get();
+    }
+
+    @Override
+    public void incrementTransactionRollbackCounter()
+    {
+        _localTransactionRollbacks.incrementAndGet();
+    }
+
+    @Override
+    public void decrementTransactionOpenCounter()
+    {
+        _localTransactionOpens.decrementAndGet();
+    }
+
+    @Override
+    public void incrementTransactionOpenCounter()
+    {
+        _localTransactionOpens.incrementAndGet();
+    }
+
+    @Override
+    public void incrementTransactionBeginCounter()
+    {
+        _localTransactionBegins.incrementAndGet();
+    }
 }

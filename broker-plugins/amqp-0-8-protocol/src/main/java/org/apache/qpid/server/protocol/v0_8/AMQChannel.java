@@ -40,7 +40,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
@@ -164,12 +163,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     private final AtomicBoolean _suspended = new AtomicBoolean(false);
 
-    private ServerTransaction _transaction;
-
-    private final AtomicLong _txnStarts = new AtomicLong(0);
-    private final AtomicLong _txnCommits = new AtomicLong(0);
-    private final AtomicLong _txnRejects = new AtomicLong(0);
-    private final AtomicLong _txnCount = new AtomicLong(0);
+    private volatile ServerTransaction _transaction;
 
     private final AMQPConnection_0_8 _connection;
     private final AtomicBoolean _closing = new AtomicBoolean(false);
@@ -299,12 +293,16 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     private void setLocalTransactional()
     {
         _transaction = _connection.createLocalTransaction();
-        _txnStarts.incrementAndGet();
     }
 
-    private boolean isTransactional()
+    boolean isTransactional()
     {
         return _transaction.isTransactional();
+    }
+
+    ServerTransaction getTransaction()
+    {
+        return _transaction;
     }
 
     public void receivedComplete()
@@ -319,44 +317,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             }
         }, getAccessControllerContext());
 
-    }
-
-    private void incrementOutstandingTxnsIfNecessary()
-    {
-        if(isTransactional())
-        {
-            //There can currently only be at most one outstanding transaction
-            //due to only having LocalTransaction support. Set value to 1 if 0.
-            _txnCount.compareAndSet(0,1);
-        }
-    }
-
-    private void decrementOutstandingTxnsIfNecessary()
-    {
-        if(isTransactional())
-        {
-            //There can currently only be at most one outstanding transaction
-            //due to only having LocalTransaction support. Set value to 0 if 1.
-            _txnCount.compareAndSet(1,0);
-        }
-    }
-
-    @Override
-    public long getTxnCommits()
-    {
-        return _txnCommits.get();
-    }
-
-    @Override
-    public long getTxnRejects()
-    {
-        return _txnRejects.get();
-    }
-
-    @Override
-    public long getTxnStart()
-    {
-        return _txnStarts.get();
     }
 
     private void setPublishFrame(MessagePublishInfo info, final MessageDestination e)
@@ -527,13 +487,16 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                                                        .createBasicAckBody(_confirmedMessageCounter, false);
                                 _connection.writeFrame(responseBody.generateFrame(_channelId));
                             }
-                            incrementOutstandingTxnsIfNecessary();
                         }
                     }
                 }
                 finally
                 {
                     _connection.registerMessageReceived(bodySize);
+                    if (isTransactional())
+                    {
+                        _connection.registerTransactedMessageReceived();
+                    }
                     _currentMessage = null;
                 }
             }
@@ -792,6 +755,15 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             for (Action<? super AMQChannel> task : _taskList)
             {
                 task.performAction(this);
+            }
+
+            if (_transaction instanceof LocalTransaction)
+            {
+                if (((LocalTransaction) _transaction).hasOutstandingWork())
+                {
+                    _connection.incrementTransactionRollbackCounter();
+                }
+                _connection.decrementTransactionOpenCounter();
             }
 
             _transaction.rollback();
@@ -1111,9 +1083,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     }
                     finally
                     {
-                        _txnCommits.incrementAndGet();
-                        _txnStarts.incrementAndGet();
-                        decrementOutstandingTxnsIfNecessary();
+                        _connection.incrementTransactionBeginCounter();
                     }
                 }
             });
@@ -1121,10 +1091,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         else
         {
             _transaction.commit(immediateAction);
-
-            _txnCommits.incrementAndGet();
-            _txnStarts.incrementAndGet();
-            decrementOutstandingTxnsIfNecessary();
+            _connection.incrementTransactionBeginCounter();
         }
     }
 
@@ -1143,10 +1110,8 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         finally
         {
             _rollingBack = false;
-
-            _txnRejects.incrementAndGet();
-            _txnStarts.incrementAndGet();
-            decrementOutstandingTxnsIfNecessary();
+            _connection.incrementTransactionRollbackCounter();
+            _connection.incrementTransactionBeginCounter();
         }
 
         postRollbackTask.run();
@@ -3368,15 +3333,18 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             closeChannel(ErrorCodes.COMMAND_INVALID,
                          "Fatal error: commit called on non-transactional channel");
         }
-        commit(new Runnable()
+        else
         {
-
-            @Override
-            public void run()
+            commit(new Runnable()
             {
-                _connection.writeFrame(_txCommitOkFrame);
-            }
-        }, true);
+
+                @Override
+                public void run()
+                {
+                    _connection.writeFrame(_txCommitOkFrame);
+                }
+            }, true);
+        }
 
     }
 

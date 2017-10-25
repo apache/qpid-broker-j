@@ -415,6 +415,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                 try
                 {
                     txn = _linkEndpoint.getTransaction(transactionId);
+                    getSession().getConnection().registerTransactedMessageDelivered();
                 }
                 catch (UnknownTransactionException e)
                 {
