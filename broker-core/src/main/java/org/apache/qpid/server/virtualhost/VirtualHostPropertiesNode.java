@@ -57,7 +57,7 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
     {
         final Consumer<T> consumer = super.addConsumer(target, filters, messageClass, consumerName, options, priority);
         consumer.send(createMessage());
-        target.queueEmpty();
+        target.noMessagesAvailable();
         return consumer;
     }
 

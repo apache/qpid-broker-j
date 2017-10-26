@@ -357,7 +357,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     }
 
     @Override
-    public void queueEmpty()
+    public void noMessagesAvailable()
     {
         if(_linkEndpoint.drained())
         {

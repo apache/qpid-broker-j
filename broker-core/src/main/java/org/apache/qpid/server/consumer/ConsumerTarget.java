@@ -66,7 +66,7 @@ public interface ConsumerTarget<T extends ConsumerTarget<T>>
 
     void flushBatched();
 
-    void queueEmpty();
+    void noMessagesAvailable();
 
     boolean allocateCredit(ServerMessage msg);
 

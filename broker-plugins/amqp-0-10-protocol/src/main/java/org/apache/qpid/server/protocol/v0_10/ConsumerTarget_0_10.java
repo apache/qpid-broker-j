@@ -577,7 +577,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
     }
 
     @Override
-    public void queueEmpty()
+    public void noMessagesAvailable()
     {
     }
 

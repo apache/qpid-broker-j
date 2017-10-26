@@ -381,7 +381,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
     }
 
     @Override
-    public void queueEmpty()
+    public void noMessagesAvailable()
     {
         if(isAutoClose() && getState() != State.CLOSED)
         {

@@ -31,7 +31,7 @@ public interface QueueConsumer<X extends QueueConsumer<X,T>, T extends ConsumerT
 {
     void flushBatched();
 
-    void queueEmpty();
+    void noMessagesAvailable();
 
     boolean hasInterest(QueueEntry node);
 

@@ -308,9 +308,9 @@ class QueueConsumerImpl<T extends ConsumerTarget>
     }
 
     @Override
-    public void queueEmpty()
+    public void noMessagesAvailable()
     {
-        _target.queueEmpty();
+        _target.noMessagesAvailable();
     }
 
     @Override

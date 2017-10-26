@@ -71,7 +71,7 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         _messageInstance = mock(MessageInstance.class);
         when(_messageInstance.getOwningResource()).thenReturn(_messageSource);
         final MessageContainer messageContainer =
-                new MessageContainer(_messageInstance, mock(MessageReference.class), false);
+                new MessageContainer(_messageInstance, mock(MessageReference.class));
         when(_consumer.pullMessage()).thenReturn(messageContainer);
         _consumerTarget = new TestAbstractConsumerTarget();
         _consumerTarget.consumerAdded(_consumer);
@@ -263,7 +263,7 @@ public class AbstractConsumerTargetTest extends QpidTestCase
         }
 
         @Override
-        public void queueEmpty()
+        public void noMessagesAvailable()
         {
 
         }

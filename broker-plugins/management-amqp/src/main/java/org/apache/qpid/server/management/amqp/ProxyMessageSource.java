@@ -322,9 +322,9 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
         }
 
         @Override
-        public void queueEmpty()
+        public void noMessagesAvailable()
         {
-            _underlying.queueEmpty();
+            _underlying.noMessagesAvailable();
         }
 
         @Override

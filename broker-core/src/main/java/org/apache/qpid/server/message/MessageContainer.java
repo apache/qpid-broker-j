@@ -24,19 +24,17 @@ public final class MessageContainer
 {
     private final MessageInstance _messageInstance;
     private final MessageReference<?> _messageReference;
-    private final boolean _hasNoAvailableMessages;
 
-    public MessageContainer(final boolean hasNoAvailableMessages)
+    public MessageContainer()
     {
-        this(null, null, hasNoAvailableMessages);
+        this(null, null);
     }
 
     public MessageContainer(final MessageInstance messageInstance,
-                            final MessageReference<?> messageReference, final boolean hasNoAvailableMessages)
+                            final MessageReference<?> messageReference)
     {
         _messageInstance = messageInstance;
         _messageReference = messageReference;
-        _hasNoAvailableMessages = hasNoAvailableMessages;
     }
 
     public MessageInstance getMessageInstance()
@@ -47,10 +45,5 @@ public final class MessageContainer
     public MessageReference<?> getMessageReference()
     {
         return _messageReference;
-    }
-
-    public boolean hasNoAvailableMessages()
-    {
-        return _hasNoAvailableMessages;
     }
 }

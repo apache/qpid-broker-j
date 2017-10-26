@@ -197,7 +197,7 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
 
 
     @Override
-    public void queueEmpty()
+    public void noMessagesAvailable()
     {
     }
 

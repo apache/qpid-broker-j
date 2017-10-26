@@ -162,8 +162,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
                 {
                     _queue.remove(0);
                     return new MessageContainer(propertiesMessageInstance,
-                                                propertiesMessageInstance.getMessageReference(),
-                                                false);
+                                                propertiesMessageInstance.getMessageReference());
                 }
             }
             return null;

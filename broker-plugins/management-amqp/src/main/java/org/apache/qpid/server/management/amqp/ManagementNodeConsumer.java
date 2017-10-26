@@ -90,9 +90,7 @@ class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanc
             if (!_target.isSuspended() && _target.allocateCredit(managementResponse.getMessage()))
             {
                 _queue.remove(0);
-                return new MessageContainer(managementResponse,
-                                            managementResponse.getMessageReference(),
-                                            false);
+                return new MessageContainer(managementResponse, managementResponse.getMessageReference());
             }
         }
         return null;

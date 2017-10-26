@@ -833,7 +833,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             target.consumerAdded(queueConsumer);
             if(isEmpty())
             {
-                target.queueEmpty();
+                target.noMessagesAvailable();
             }
             target.updateNotifyWorkDesired();
             target.notifyWork();
@@ -1954,11 +1954,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                 if(messageContainer.getMessageInstance() == null)
                 {
-                    if (messageContainer.hasNoAvailableMessages())
-                    {
-                        queueEmpty = true;
-                    }
-
                     if (consumer.acquires())
                     {
                         if (hasAvailableMessages())
@@ -1966,6 +1961,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                             notifyOtherConsumers(consumer);
                         }
                     }
+
+                    consumer.noMessagesAvailable();
                     messageContainer = null;
                 }
                 else
@@ -1981,11 +1978,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         finally
         {
-            if(queueEmpty)
-            {
-                consumer.queueEmpty();
-            }
-
             consumer.flushBatched();
         }
 
@@ -1997,8 +1989,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _queueStatistics.getAvailableCount() != 0;
     }
 
-    private static final MessageContainer NO_MESSAGES = new MessageContainer(true);
-    private static final MessageContainer HAS_MESSAGES = new MessageContainer(false);
+    private static final MessageContainer NO_MESSAGES = new MessageContainer();
 
     /**
      * Attempt delivery for the given consumer.
@@ -2011,12 +2002,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
      */
     private MessageContainer attemptDelivery(QueueConsumer<?,?> sub)
     {
-        MessageContainer messageContainer;
         // avoid referring old deleted queue entry in sub._queueContext._lastSeen
-        QueueEntry node  = getNextAvailableEntry(sub);
+        QueueEntry node = getNextAvailableEntry(sub);
         boolean subActive = sub.isActive() && !sub.isSuspended();
 
-        if (node != null && subActive && (sub.getPriority() == Integer.MAX_VALUE || noHigherPriorityWithCredit(sub, node)))
+        if (node != null && subActive
+            && (sub.getPriority() == Integer.MAX_VALUE || noHigherPriorityWithCredit(sub, node)))
         {
 
             if (_virtualHost.getState() != State.ACTIVE)
@@ -2024,41 +2015,33 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 throw new ConnectionScopedRuntimeException("Delivery halted owing to " +
                                                            "virtualhost state " + _virtualHost.getState());
             }
-            messageContainer = HAS_MESSAGES;
 
-            if (node.isAvailable())
+            if (node.isAvailable() && mightAssign(sub, node))
             {
-                if (sub.hasInterest(node) && mightAssign(sub, node))
+                if (sub.allocateCredit(node))
                 {
-                    if (sub.allocateCredit(node))
+                    MessageReference messageReference = null;
+                    if ((sub.acquires() && !assign(sub, node))
+                        || (!sub.acquires() && (messageReference = node.newMessageReference()) == null))
                     {
-                        MessageReference messageReference = null;
-                        if ((sub.acquires() && !assign(sub, node))
-                            || (!sub.acquires() && (messageReference = node.newMessageReference()) == null))
-                        {
-                            // restore credit here that would have been taken away by allocateCredit since we didn't manage
-                            // to acquire the entry for this consumer
-                            sub.restoreCredit(node);
-
-                        }
-                        else
-                        {
-                            setLastSeenEntry(sub, node);
-                            messageContainer = new MessageContainer(node, messageReference, false);
-                        }
+                        // restore credit here that would have been taken away by allocateCredit since we didn't manage
+                        // to acquire the entry for this consumer
+                        sub.restoreCredit(node);
                     }
                     else
                     {
-                        sub.awaitCredit(node);
+                        setLastSeenEntry(sub, node);
+                        return new MessageContainer(node, messageReference);
                     }
+                }
+                else
+                {
+                    sub.awaitCredit(node);
                 }
             }
         }
-        else
-        {
-            messageContainer = node == null ? NO_MESSAGES : HAS_MESSAGES;
-        }
-        return messageContainer;
+
+        return NO_MESSAGES;
     }
 
     private boolean noHigherPriorityWithCredit(final QueueConsumer<?,?> sub, final QueueEntry queueEntry)
