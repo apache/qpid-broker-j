@@ -73,7 +73,7 @@ public class SessionRestTest extends QpidRestTestCase
         _producer.send(_session.createTextMessage("Test"));
         _session.commit();
 
-        Message m = consumer.receive(1000l);
+        Message m = consumer.receive(getReceiveTimeout());
         assertNotNull("First message was not received", m);
         // Session left open with uncommitted transaction
     }
@@ -139,8 +139,7 @@ public class SessionRestTest extends QpidRestTestCase
         @SuppressWarnings("unchecked")
         Map<String, Object> statistics = (Map<String, Object>) sessionData.get(Asserts.STATISTICS_ATTRIBUTE);
         Asserts.assertAttributesPresent(statistics, "consumerCount",
-                                        "unacknowledgedMessages",
-                                        "transactionStartTime", "transactionUpdateTime");
+                                        "unacknowledgedMessages");
 
         assertEquals("Unexpected value of statistic attribute " + "unacknowledgedMessages",  1,
                 statistics.get("unacknowledgedMessages"));
