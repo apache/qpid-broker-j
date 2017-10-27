@@ -52,7 +52,7 @@ import org.apache.qpid.url.BindingURL;
 
 public class ReturnUnroutableMandatoryMessageTest extends QpidBrokerTestCase implements ExceptionListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(ReturnUnroutableMandatoryMessageTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReturnUnroutableMandatoryMessageTest.class);
 
     private final List<Message> _bouncedMessageList = Collections.synchronizedList(new ArrayList<Message>());
 
@@ -92,7 +92,7 @@ public class ReturnUnroutableMandatoryMessageTest extends QpidBrokerTestCase imp
             producerSession = (AMQSession) con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
 
             // Need to start the "producer" connection in order to receive bounced messages
-            _logger.info("Starting producer connection");
+            LOGGER.info("Starting producer connection");
             con2.start();
         }
         catch (JMSException jmse)
@@ -106,22 +106,22 @@ public class ReturnUnroutableMandatoryMessageTest extends QpidBrokerTestCase imp
             MessageProducer mandatoryProducer = producerSession.createProducer(queue);
 
             // First test - should neither be bounced nor routed
-            _logger.info("Sending non-routable non-mandatory message");
+            LOGGER.info("Sending non-routable non-mandatory message");
             TextMessage msg1 = producerSession.createTextMessage("msg1");
             nonMandatoryProducer.send(msg1);
 
             // Second test - should be bounced
-            _logger.info("Sending non-routable mandatory message");
+            LOGGER.info("Sending non-routable mandatory message");
             TextMessage msg2 = producerSession.createTextMessage("msg2");
             mandatoryProducer.send(msg2);
 
             // Third test - should be routed
-            _logger.info("Sending routable message");
+            LOGGER.info("Sending routable message");
             TextMessage msg3 = producerSession.createTextMessage("msg3");
             msg3.setStringProperty("F1000", "1");
             mandatoryProducer.send(msg3);
 
-            _logger.info("Starting consumer connection");
+            LOGGER.info("Starting consumer connection");
             con.start();
             TextMessage tm = (TextMessage) consumer.receive(1000L);
 
@@ -171,23 +171,23 @@ public class ReturnUnroutableMandatoryMessageTest extends QpidBrokerTestCase imp
         AMQSession producerSession = (AMQSession) con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
 
         // Need to start the "producer" connection in order to receive bounced messages
-        _logger.info("Starting producer connection");
+        LOGGER.info("Starting producer connection");
         con2.start();
 
         MessageProducer nonMandatoryProducer = producerSession.createProducer(valid_queue, false, false);
         MessageProducer mandatoryProducer = producerSession.createProducer(invalid_queue);
 
         // First test - should be routed
-        _logger.info("Sending non-mandatory message");
+        LOGGER.info("Sending non-mandatory message");
         TextMessage msg1 = producerSession.createTextMessage("msg1");
         nonMandatoryProducer.send(msg1);
 
         // Second test - should be bounced
-        _logger.info("Sending non-routable mandatory message");
+        LOGGER.info("Sending non-routable mandatory message");
         TextMessage msg2 = producerSession.createTextMessage("msg2");
         mandatoryProducer.send(msg2);
 
-        _logger.info("Starting consumer connection");
+        LOGGER.info("Starting consumer connection");
         con.start();
         TextMessage tm = (TextMessage) consumer.receive(1000L);
 
@@ -232,23 +232,23 @@ public class ReturnUnroutableMandatoryMessageTest extends QpidBrokerTestCase imp
         AMQSession producerSession = (AMQSession) con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
 
         // Need to start the "producer" connection in order to receive bounced messages
-        _logger.info("Starting producer connection");
+        LOGGER.info("Starting producer connection");
         con2.start();
 
         MessageProducer nonMandatoryProducer = producerSession.createProducer(valid_topic, false, false);
         MessageProducer mandatoryProducer = producerSession.createProducer(invalid_topic, false, true);
 
         // First test - should be routed
-        _logger.info("Sending non-mandatory message");
+        LOGGER.info("Sending non-mandatory message");
         TextMessage msg1 = producerSession.createTextMessage("msg1");
         nonMandatoryProducer.send(msg1);
 
         // Second test - should be bounced
-        _logger.info("Sending non-routable mandatory message");
+        LOGGER.info("Sending non-routable mandatory message");
         TextMessage msg2 = producerSession.createTextMessage("msg2");
         mandatoryProducer.send(msg2);
 
-        _logger.info("Starting consumer connection");
+        LOGGER.info("Starting consumer connection");
         con.start();
         TextMessage tm = (TextMessage) consumer.receive(1000L);
 
@@ -288,11 +288,11 @@ public class ReturnUnroutableMandatoryMessageTest extends QpidBrokerTestCase imp
             AMQNoRouteException noRoute = (AMQNoRouteException) linkedException;
             Message bounced = (Message) noRoute.getUndeliveredMessage();
             _bouncedMessageList.add(bounced);
-            _logger.info("Caught expected NoRouteException");
+            LOGGER.info("Caught expected NoRouteException");
         }
         else
         {
-            _logger.warn("Caught exception on producer: ", jmsException);
+            LOGGER.warn("Caught exception on producer: ", jmsException);
         }
     }
 }

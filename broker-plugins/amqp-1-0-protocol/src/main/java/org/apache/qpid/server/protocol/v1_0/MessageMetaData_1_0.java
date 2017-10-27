@@ -59,7 +59,7 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class MessageMetaData_1_0 implements StorableMessageMetaData
 {
-    private static final Logger _logger = LoggerFactory.getLogger(MessageMetaData_1_0.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MessageMetaData_1_0.class);
     private static final MessageMetaDataType_1_0 TYPE = new MessageMetaDataType_1_0();
     public static final MessageMetaDataType.Factory<MessageMetaData_1_0> FACTORY = new MetaDataFactory();
     private static final byte VERSION_BYTE = 1;

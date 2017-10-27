@@ -46,7 +46,7 @@ import org.apache.qpid.disttest.results.aggregation.ITestResult;
 
 public class ResultsDbWriter implements ResultsWriter
 {
-    private static final Logger _logger = LoggerFactory.getLogger(ResultsDbWriter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ResultsDbWriter.class);
 
     private static final String RESULTS_TABLE_NAME = "RESULTS";
 
@@ -233,7 +233,7 @@ public class ResultsDbWriter implements ResultsWriter
                     Statement statement = connection.createStatement();
                     try
                     {
-                        _logger.info("About to create results table using SQL: " + CREATE_RESULTS_TABLE);
+                        LOGGER.info("About to create results table using SQL: " + CREATE_RESULTS_TABLE);
                         statement.execute(CREATE_RESULTS_TABLE);
                     }
                     finally
@@ -297,7 +297,7 @@ public class ResultsDbWriter implements ResultsWriter
         {
             throw new RuntimeException("Couldn't write results " + results, e);
         }
-        _logger.info(this + " wrote " + results.getTestResults().size() + " results to database");
+        LOGGER.info(this + " wrote " + results.getTestResults().size() + " results to database");
     }
 
     @Override
@@ -332,9 +332,9 @@ public class ResultsDbWriter implements ResultsWriter
 
     private void writeParticipantResult(Connection connection, ParticipantResult participantResult) throws SQLException
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("About to write to DB the following participant result: " + participantResult);
+            LOGGER.debug("About to write to DB the following participant result: " + participantResult);
         }
 
         PreparedStatement statement = null;
@@ -423,7 +423,7 @@ public class ResultsDbWriter implements ResultsWriter
         }
         catch(SQLException e)
         {
-            _logger.error("Couldn't write " + participantResult, e);
+            LOGGER.error("Couldn't write " + participantResult, e);
         }
         finally
         {

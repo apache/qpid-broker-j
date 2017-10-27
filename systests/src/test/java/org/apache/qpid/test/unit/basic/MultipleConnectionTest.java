@@ -35,7 +35,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class MultipleConnectionTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(MultipleConnectionTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultipleConnectionTest.class);
 
 
     private class Receiver
@@ -186,7 +186,7 @@ public class MultipleConnectionTest extends QpidBrokerTestCase
         try
         {
             waitForCompletion(messages, 5000, receivers);
-            _logger.info("All receivers received all expected messages");
+            LOGGER.info("All receivers received all expected messages");
         }
         finally
         {

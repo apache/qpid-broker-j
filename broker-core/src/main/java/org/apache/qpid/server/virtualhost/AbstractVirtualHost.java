@@ -162,7 +162,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private static final String USE_ASYNC_RECOVERY = "use_async_message_store_recovery";
 
 
-    private static final Logger _logger = LoggerFactory.getLogger(AbstractVirtualHost.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractVirtualHost.class);
 
     private static final int HOUSEKEEPING_SHUTDOWN_TIMEOUT = 5;
 
@@ -315,7 +315,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         if(!((SystemConfig)_broker.getParent()).isManagementMode())
         {
             List<VirtualHostAccessControlProvider> children = new ArrayList<>(getChildren(VirtualHostAccessControlProvider.class));
-            _logger.debug("Updating access control list with {} provider children", children.size());
+            LOGGER.debug("Updating access control list with {} provider children", children.size());
             Collections.sort(children, VirtualHostAccessControlProvider.ACCESS_CONTROL_PROVIDER_COMPARATOR);
 
             List<AccessControl<?>> accessControls = new ArrayList<>(children.size()+2);
@@ -562,7 +562,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
                 catch(Exception e)
                 {
-                    _logger.warn("Failed to close database", e);
+                    LOGGER.warn("Failed to close database", e);
                 }
             }
         }
@@ -1204,7 +1204,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
             catch (InterruptedException e)
             {
-                _logger.warn("Interrupted during Housekeeping shutdown:", e);
+                LOGGER.warn("Interrupted during Housekeeping shutdown:", e);
                 Thread.currentThread().interrupt();
             }
             finally
@@ -1344,7 +1344,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     }
                     catch (RuntimeException e)
                     {
-                        _logger.info("Unable to auto create a node named {} due to exception", name, e);
+                        LOGGER.info("Unable to auto create a node named {} due to exception", name, e);
                     }
 
                 }
@@ -1432,7 +1432,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 if (!houseKeepingTaskExecutor.isShutdown())
                 {
-                    _logger.warn("Failed to schedule reallocation of messages", e);
+                    LOGGER.warn("Failed to schedule reallocation of messages", e);
                 }
             }
         }
@@ -1584,9 +1584,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private ListenableFuture<Void> closeConnections()
     {
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug("Closing connection registry : {} connection(s).", _connections.size());
+            LOGGER.debug("Closing connection registry : {} connection(s).", _connections.size());
         }
         _acceptsConnections.set(false);
         for(AMQPConnection<?> conn : _connections)
@@ -1607,7 +1607,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
                 catch (Exception e)
                 {
-                    _logger.warn("Exception closing connection " + connection.getName() + " from " + connection.getRemoteAddress(), e);
+                    LOGGER.warn("Exception closing connection " + connection.getName() + " from " + connection.getRemoteAddress(), e);
                 }
                 finally
                 {
@@ -1635,7 +1635,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
             catch (StoreException e)
             {
-                _logger.error("Failed to close message store", e);
+                LOGGER.error("Failed to close message store", e);
             }
 
             if (!(_virtualHostNode.getConfigurationStore() instanceof MessageStoreProvider))
@@ -1936,7 +1936,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 if (q.getState() == State.ACTIVE)
                 {
-                    _logger.debug("Checking message status for queue: {}", q.getName());
+                    LOGGER.debug("Checking message status for queue: {}", q.getName());
                     q.checkMessageStatus();
                 }
             }
@@ -2345,7 +2345,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
             catch (Exception e)
             {
-                _logger.warn("Exception occurred on preference store deletion", e);
+                LOGGER.warn("Exception occurred on preference store deletion", e);
             }
             finally
             {
@@ -2366,7 +2366,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
             catch (Exception e)
             {
-                _logger.warn( "Exception occurred on message store deletion", e);
+                LOGGER.warn( "Exception occurred on message store deletion", e);
             }
             finally
             {
@@ -2678,7 +2678,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                     @Override
                                     public void onFailure(final Throwable t)
                                     {
-                                        _logger.error("Exception occurred while opening {} : {}",
+                                        LOGGER.error("Exception occurred while opening {} : {}",
                                                       child.getClass().getSimpleName(), child.getName(), t);
                                     }
 
@@ -2709,7 +2709,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
             if (totalSpace == 0)
             {
-                _logger.warn("Cannot check file system for disk space because store path '{}' is not valid", _fileSystem.getPath());
+                LOGGER.warn("Cannot check file system for disk space because store path '{}' is not valid", _fileSystem.getPath());
                 return;
             }
 

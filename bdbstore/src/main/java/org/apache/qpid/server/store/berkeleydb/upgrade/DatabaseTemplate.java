@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 public class DatabaseTemplate
 {
-    private static final Logger _logger = LoggerFactory.getLogger(DatabaseTemplate.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseTemplate.class);
 
     private Environment _environment;
     private String _sourceDatabaseName;
@@ -106,7 +106,7 @@ public class DatabaseTemplate
             }
             catch (Exception e)
             {
-                _logger.error("Unable to close database", e);
+                LOGGER.error("Unable to close database", e);
             }
         }
     }

@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class NetworkFirewallRule implements FirewallRule
 {
-    private static final Logger _logger = LoggerFactory.getLogger(NetworkFirewallRule.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(NetworkFirewallRule.class);
 
     private List<InetNetwork> _networks;
 
@@ -47,11 +47,11 @@ public class NetworkFirewallRule implements FirewallRule
             }
             catch (java.net.UnknownHostException uhe)
             {
-                _logger.error("Cannot resolve address: " + network, uhe);
+                LOGGER.error("Cannot resolve address: " + network, uhe);
             }
         }
 
-        _logger.debug("Created {}", this);
+        LOGGER.debug("Created {}", this);
     }
 
     @Override
@@ -62,13 +62,13 @@ public class NetworkFirewallRule implements FirewallRule
             if (network.contains(ip))
             {
 
-                _logger.debug("Client address {} matches configured network {}", ip, network);
+                LOGGER.debug("Client address {} matches configured network {}", ip, network);
 
                 return true;
             }
         }
 
-        _logger.debug("Client address {} does not match any configured networks", ip);
+        LOGGER.debug("Client address {} does not match any configured networks", ip);
 
         return false;
     }

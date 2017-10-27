@@ -49,7 +49,7 @@ import org.apache.qpid.server.protocol.ErrorCodes;
  */
 public class UnroutableMessageTestExceptionListener implements ExceptionListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(UnroutableMessageTestExceptionListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UnroutableMessageTestExceptionListener.class);
 
     /**
      * Number of seconds to check for an event that should should NOT happen
@@ -66,7 +66,7 @@ public class UnroutableMessageTestExceptionListener implements ExceptionListener
     @Override
     public void onException(JMSException e)
     {
-        _logger.info("Received exception " + e);
+        LOGGER.info("Received exception " + e);
         _exceptions.add(e);
     }
 

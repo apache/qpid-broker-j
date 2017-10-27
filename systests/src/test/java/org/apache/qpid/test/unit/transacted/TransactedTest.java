@@ -53,7 +53,7 @@ public class TransactedTest extends QpidBrokerTestCase
     private Session testSession;
     private MessageConsumer testConsumer1;
     private MessageConsumer testConsumer2;
-    private static final Logger _logger = LoggerFactory.getLogger(TransactedTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TransactedTest.class);
 
     @Override
     public void setUp() throws Exception
@@ -61,52 +61,52 @@ public class TransactedTest extends QpidBrokerTestCase
         try
         {
             super.setUp();
-            _logger.info("Create Connection");
+            LOGGER.info("Create Connection");
             con = getConnection();
-            _logger.info("Create Session");
+            LOGGER.info("Create Session");
             session = con.createSession(true, Session.SESSION_TRANSACTED);
-            _logger.info("Create Q1");
+            LOGGER.info("Create Q1");
             queue1 = createTestQueue(session, "Q1");
-            _logger.info("Create Q2");
+            LOGGER.info("Create Q2");
             Queue queue2 = createTestQueue(session, "Q2");
             session.commit();
 
-            _logger.info("Create Consumer of Q1");
+            LOGGER.info("Create Consumer of Q1");
             consumer1 = session.createConsumer(queue1);
             // Dummy just to create the queue.
-            _logger.info("Create Consumer of Q2");
+            LOGGER.info("Create Consumer of Q2");
             MessageConsumer consumer2 = session.createConsumer(queue2);
-            _logger.info("Close Consumer of Q2");
+            LOGGER.info("Close Consumer of Q2");
             consumer2.close();
 
-            _logger.info("Create producer to Q2");
+            LOGGER.info("Create producer to Q2");
             producer2 = session.createProducer(queue2);
 
-            _logger.info("Start Connection");
+            LOGGER.info("Start Connection");
             con.start();
 
-            _logger.info("Create prep connection");
+            LOGGER.info("Create prep connection");
             prepCon = getConnection();
 
-            _logger.info("Create prep session");
+            LOGGER.info("Create prep session");
             prepSession = prepCon.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-            _logger.info("Create prep producer to Q1");
+            LOGGER.info("Create prep producer to Q1");
             prepProducer1 = prepSession.createProducer(queue1);
 
-            _logger.info("Create prep connection start");
+            LOGGER.info("Create prep connection start");
             prepCon.start();
 
-            _logger.info("Create test connection");
+            LOGGER.info("Create test connection");
             testCon = getConnection();
-            _logger.info("Create test session");
+            LOGGER.info("Create test session");
             testSession = testCon.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            _logger.info("Create test consumer of q2");
+            LOGGER.info("Create test consumer of q2");
             testConsumer2 = testSession.createConsumer(queue2);
         }
         catch (Exception e)
         {
-            _logger.error("setup error",e);
+            LOGGER.error("setup error",e);
             startDefaultBroker();
             throw e;
         }
@@ -117,16 +117,16 @@ public class TransactedTest extends QpidBrokerTestCase
     {
         try
         {
-            _logger.info("Close connection");
+            LOGGER.info("Close connection");
             con.close();
-            _logger.info("Close test connection");
+            LOGGER.info("Close test connection");
             testCon.close();
-            _logger.info("Close prep connection");
+            LOGGER.info("Close prep connection");
             prepCon.close();
         }
         catch (Exception e)
         {
-            _logger.error("tear down error",e);
+            LOGGER.error("tear down error",e);
         }
         finally
         {
@@ -136,65 +136,65 @@ public class TransactedTest extends QpidBrokerTestCase
 
     public void testCommit() throws Exception
     {
-        _logger.info("Send prep A");
+        LOGGER.info("Send prep A");
         prepProducer1.send(prepSession.createTextMessage("A"));
-        _logger.info("Send prep B");
+        LOGGER.info("Send prep B");
         prepProducer1.send(prepSession.createTextMessage("B"));
-        _logger.info("Send prep C");
+        LOGGER.info("Send prep C");
         prepProducer1.send(prepSession.createTextMessage("C"));
 
         // send and receive some messages
-        _logger.info("Send X to Q2");
+        LOGGER.info("Send X to Q2");
         producer2.send(session.createTextMessage("X"));
-        _logger.info("Send Y to Q2");
+        LOGGER.info("Send Y to Q2");
         producer2.send(session.createTextMessage("Y"));
-        _logger.info("Send Z to Q2");
+        LOGGER.info("Send Z to Q2");
         producer2.send(session.createTextMessage("Z"));
 
-        _logger.info("Read A from Q1");
+        LOGGER.info("Read A from Q1");
         expect("A", consumer1.receive(1000));
-        _logger.info("Read B from Q1");
+        LOGGER.info("Read B from Q1");
         expect("B", consumer1.receive(1000));
-        _logger.info("Read C from Q1");
+        LOGGER.info("Read C from Q1");
         expect("C", consumer1.receive(1000));
 
         // commit
-        _logger.info("session commit");
+        LOGGER.info("session commit");
         session.commit();
-        _logger.info("Start test Connection");
+        LOGGER.info("Start test Connection");
         testCon.start();
 
         // ensure sent messages can be received and received messages are gone
-        _logger.info("Read X from Q2");
+        LOGGER.info("Read X from Q2");
         expect("X", testConsumer2.receive(1000));
-        _logger.info("Read Y from Q2");
+        LOGGER.info("Read Y from Q2");
         expect("Y", testConsumer2.receive(1000));
-        _logger.info("Read Z from Q2");
+        LOGGER.info("Read Z from Q2");
         expect("Z", testConsumer2.receive(1000));
 
-        _logger.info("create test session on Q1");
+        LOGGER.info("create test session on Q1");
         testConsumer1 = testSession.createConsumer(queue1);
-        _logger.info("Read null from Q1");
+        LOGGER.info("Read null from Q1");
         assertTrue(null == testConsumer1.receive(1000));
-        _logger.info("Read null from Q2");
+        LOGGER.info("Read null from Q2");
         assertTrue(null == testConsumer2.receive(1000));
     }
 
     public void testRollback() throws Exception
     {
         // add some messages
-        _logger.info("Send prep RB_A");
+        LOGGER.info("Send prep RB_A");
         prepProducer1.send(prepSession.createTextMessage("RB_A"));
-        _logger.info("Send prep RB_B");
+        LOGGER.info("Send prep RB_B");
         prepProducer1.send(prepSession.createTextMessage("RB_B"));
-        _logger.info("Send prep RB_C");
+        LOGGER.info("Send prep RB_C");
         prepProducer1.send(prepSession.createTextMessage("RB_C"));
 
-        _logger.info("Sending RB_X RB_Y RB_Z");
+        LOGGER.info("Sending RB_X RB_Y RB_Z");
         producer2.send(session.createTextMessage("RB_X"));
         producer2.send(session.createTextMessage("RB_Y"));
         producer2.send(session.createTextMessage("RB_Z"));
-        _logger.info("Receiving RB_A RB_B");
+        LOGGER.info("Receiving RB_A RB_B");
         expect("RB_A", consumer1.receive(1000));
         expect("RB_B", consumer1.receive(1000));
         // Don't consume 'RB_C' leave it in the prefetch cache to ensure rollback removes it.
@@ -202,24 +202,24 @@ public class TransactedTest extends QpidBrokerTestCase
         Thread.sleep(500);
 
         // rollback
-        _logger.info("rollback");
+        LOGGER.info("rollback");
         session.rollback();
 
-        _logger.info("Receiving RB_A RB_B RB_C");
+        LOGGER.info("Receiving RB_A RB_B RB_C");
         // ensure sent messages are not visible and received messages are requeued
         expect("RB_A", consumer1.receive(1000), true);
         expect("RB_B", consumer1.receive(1000), true);
         expect("RB_C", consumer1.receive(1000), (isBroker010()||isBroker10())?false:true);
-        _logger.info("Starting new connection");
+        LOGGER.info("Starting new connection");
         testCon.start();
         testConsumer1 = testSession.createConsumer(queue1);
-        _logger.info("Testing we have no messages left");
+        LOGGER.info("Testing we have no messages left");
         assertTrue(null == testConsumer1.receive(1000));
         assertTrue(null == testConsumer2.receive(1000));
 
         session.commit();
 
-        _logger.info("Testing we have no messages left after commit");
+        LOGGER.info("Testing we have no messages left after commit");
         assertTrue(null == testConsumer1.receive(1000));
         assertTrue(null == testConsumer2.receive(1000));
     }
@@ -237,7 +237,7 @@ public class TransactedTest extends QpidBrokerTestCase
         Session producerSession = con2.createSession(true, Session.SESSION_TRANSACTED);
         MessageProducer producer = producerSession.createProducer(queue3);
 
-        _logger.info("Sending four messages");
+        LOGGER.info("Sending four messages");
         producer.send(producerSession.createTextMessage("msg1"));
         producer.send(producerSession.createTextMessage("msg2"));
         producer.send(producerSession.createTextMessage("msg3"));
@@ -245,7 +245,7 @@ public class TransactedTest extends QpidBrokerTestCase
 
         producerSession.commit();
 
-        _logger.info("Starting connection");
+        LOGGER.info("Starting connection");
         con.start();
         TextMessage tm = (TextMessage) consumer.receive();
         assertNotNull(tm);
@@ -253,7 +253,7 @@ public class TransactedTest extends QpidBrokerTestCase
 
         consumerSession.commit();
 
-        _logger.info("Received and committed first message");
+        LOGGER.info("Received and committed first message");
         tm = (TextMessage) consumer.receive(1000);
         assertNotNull(tm);
         assertEquals("msg2", tm.getText());
@@ -266,7 +266,7 @@ public class TransactedTest extends QpidBrokerTestCase
         assertNotNull(tm);
         assertEquals("msg4", tm.getText());
 
-        _logger.info("Received all four messages. Closing connection with three outstanding messages");
+        LOGGER.info("Received all four messages. Closing connection with three outstanding messages");
 
         consumerSession.close();
 
@@ -290,16 +290,16 @@ public class TransactedTest extends QpidBrokerTestCase
         assertEquals("msg4", tm.getText());
         assertTrue("Message is not redelivered", tm.getJMSRedelivered());
 
-        _logger.info("Received redelivery of three messages. Committing");
+        LOGGER.info("Received redelivery of three messages. Committing");
 
         consumerSession.commit();
 
-        _logger.info("Called commit");
+        LOGGER.info("Called commit");
 
         tm = (TextMessage) consumer.receive(1000);
         assertNull(tm);
 
-        _logger.info("No messages redelivered as is expected");
+        LOGGER.info("No messages redelivered as is expected");
 
         con.close();
         con2.close();

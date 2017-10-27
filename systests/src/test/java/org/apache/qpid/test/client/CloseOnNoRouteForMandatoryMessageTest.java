@@ -42,7 +42,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
  */
 public class CloseOnNoRouteForMandatoryMessageTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(CloseOnNoRouteForMandatoryMessageTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CloseOnNoRouteForMandatoryMessageTest.class);
 
     private Connection _connection;
     private UnroutableMessageTestExceptionListener _testExceptionListener = new UnroutableMessageTestExceptionListener();
@@ -70,7 +70,7 @@ public class CloseOnNoRouteForMandatoryMessageTest extends QpidBrokerTestCase
         }
         catch (IllegalStateException ise)
         {
-            _logger.debug("Caught exception", ise);
+            LOGGER.debug("Caught exception", ise);
             //The session was marked closed even before we had a chance to call commit on it
             assertTrue("ISE did not indicate closure", ise.getMessage().contains("closed"));
         }

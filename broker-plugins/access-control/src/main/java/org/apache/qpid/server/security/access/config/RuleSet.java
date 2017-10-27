@@ -47,7 +47,7 @@ import org.apache.qpid.server.security.access.plugins.RuleOutcome;
  */
 public class RuleSet implements EventLoggerProvider
 {
-    private static final Logger _logger = LoggerFactory.getLogger(RuleSet.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RuleSet.class);
 
     private final List<Rule> _rules;
     private final Map<Subject, Map<LegacyOperation, Map<ObjectType, List<Rule>>>> _cache =
@@ -110,13 +110,13 @@ public class RuleSet implements EventLoggerProvider
             // Save the rules we selected
             objects.put(objectType, filtered);
 
-            _logger.debug("Cached {} RulesList: {}", objectType, filtered);
+            LOGGER.debug("Cached {} RulesList: {}", objectType, filtered);
         }
 
         // Return the cached rules
         List<Rule> rules = objects.get(objectType);
 
-        _logger.debug("Returning RuleList: {}", rules);
+        LOGGER.debug("Returning RuleList: {}", rules);
 
         return rules;
     }
@@ -144,14 +144,14 @@ public class RuleSet implements EventLoggerProvider
     {
         ClientAction action = new ClientAction(operation, objectType, properties);
 
-        _logger.debug("Checking action: {}", action);
+        LOGGER.debug("Checking action: {}", action);
 
         // get the list of rules relevant for this request
         List<Rule> rules = getRules(subject, operation, objectType);
         if (rules == null)
         {
 
-            _logger.debug("No rules found, returning default result");
+            LOGGER.debug("No rules found, returning default result");
 
             return getDefault();
         }
@@ -160,12 +160,12 @@ public class RuleSet implements EventLoggerProvider
         for (Rule rule : rules)
         {
 
-            _logger.debug("Checking against rule: {}", rule);
+            LOGGER.debug("Checking against rule: {}", rule);
 
             if (action.matches(rule.getAclAction(), addressOfClient))
             {
                 RuleOutcome ruleOutcome = rule.getRuleOutcome();
-                _logger.debug("Action matches.  Result: {}", ruleOutcome);
+                LOGGER.debug("Action matches.  Result: {}", ruleOutcome);
                 boolean allowed = ruleOutcome.isAllowed();
                 if(ruleOutcome.isLogged())
                 {
@@ -189,7 +189,7 @@ public class RuleSet implements EventLoggerProvider
                 return allowed ? Result.ALLOWED : Result.DENIED;
             }
         }
-        _logger.debug("Deferring result of ACL check");
+        LOGGER.debug("Deferring result of ACL check");
         // Defer to the next plugin of this type, if it exists
         return Result.DEFER;
     }

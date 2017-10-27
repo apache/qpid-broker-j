@@ -44,7 +44,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class SelectorTest extends QpidBrokerTestCase implements MessageListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(SelectorTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SelectorTest.class);
 
     private Connection _connection;
     private Queue _destination;
@@ -70,7 +70,7 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
     public void onMessage(Message message)
     {
         count++;
-        _logger.info("Got Message:" + message);
+        LOGGER.info("Got Message:" + message);
         _responseLatch.countDown();
     }
 
@@ -86,18 +86,18 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
         msg.setStringProperty("foo", "wibble");
         msg.setJMSType("Special");
 
-        _logger.info("Sending Message:" + msg);
+        LOGGER.info("Sending Message:" + msg);
 
         final MessageProducer producer = session.createProducer(_destination);
         producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
         producer.send(msg);
-        _logger.info("Message sent, waiting for response...");
+        LOGGER.info("Message sent, waiting for response...");
 
         _responseLatch.await(getReceiveTimeout(), TimeUnit.MILLISECONDS);
 
         if (count > 0)
         {
-            _logger.info("Got message");
+            LOGGER.info("Got message");
         }
 
         if (count == 0)
@@ -120,7 +120,7 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
         }
         catch (JMSException e)
         {
-            _logger.debug("JMS:" + e.getClass().getSimpleName() + ":" + e.getMessage());
+            LOGGER.debug("JMS:" + e.getClass().getSimpleName() + ":" + e.getMessage());
             if (!(e instanceof InvalidSelectorException))
             {
                 fail("Wrong exception:" + e.getMessage());
@@ -137,7 +137,7 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
         }
         catch (JMSException e)
         {
-            _logger.debug("JMS:" + e.getClass().getSimpleName() + ":" + e.getMessage());
+            LOGGER.debug("JMS:" + e.getClass().getSimpleName() + ":" + e.getMessage());
             if (!(e instanceof InvalidSelectorException))
             {
                 fail("Wrong exception:" + e.getMessage());
@@ -154,7 +154,7 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
         }
         catch (JMSException e)
         {
-            _logger.debug("JMS:" + e.getClass().getSimpleName() + ":" + e.getMessage());
+            LOGGER.debug("JMS:" + e.getClass().getSimpleName() + ":" + e.getMessage());
             if (!(e instanceof InvalidSelectorException))
             {
                 fail("Wrong exception:" + e.getMessage());
@@ -170,7 +170,7 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
         }
         catch (JMSException e)
         {
-            _logger.debug("JMS:" + e.getClass().getSimpleName() + ":" + e.getMessage());
+            LOGGER.debug("JMS:" + e.getClass().getSimpleName() + ":" + e.getMessage());
             if (!(e instanceof InvalidSelectorException))
             {
                 fail("Wrong exception:" + e.getMessage());

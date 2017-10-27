@@ -31,7 +31,7 @@ import org.apache.qpid.server.exchange.ExchangeDefaults;
 
 public class AMQBindingURL implements BindingURL
 {
-    private static final Logger _logger = LoggerFactory.getLogger(AMQBindingURL.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AMQBindingURL.class);
 
     private final String _url;
     private String _exchangeClass = ExchangeDefaults.DIRECT_EXCHANGE_CLASS;
@@ -45,9 +45,9 @@ public class AMQBindingURL implements BindingURL
     {
         // format:
         // <exch_class>://<exch_name>/[<destination>]/[<queue>]?<option>='<value>'[,<option>='<value>']*
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug("Parsing URL: " + url);
+            LOGGER.debug("Parsing URL: " + url);
         }
         _url = url;
         _options = new HashMap<>();
@@ -67,9 +67,9 @@ public class AMQBindingURL implements BindingURL
              + " to be a '" + getExchangeClass() + "' exchange.  It must be an instance of the '"
              + ExchangeDefaults.DIRECT_EXCHANGE_CLASS + "' exchange.");
         }
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug("URL Parsed: " + this);
+            LOGGER.debug("URL Parsed: " + this);
         }
     }
 

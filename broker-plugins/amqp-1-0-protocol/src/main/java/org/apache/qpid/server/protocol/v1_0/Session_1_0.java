@@ -110,7 +110,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     static final Symbol DELAYED_DELIVERY = Symbol.valueOf("DELAYED_DELIVERY");
     static final Symbol SHARED_CAPABILITY = Symbol.getSymbol("shared");
     static final Symbol GLOBAL_CAPABILITY = Symbol.getSymbol("global");
-    private static final Logger _logger = LoggerFactory.getLogger(Session_1_0.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Session_1_0.class);
     public static final Symbol LIFETIME_POLICY = Symbol.valueOf("lifetime-policy");
     private static final EnumSet<SessionState> END_STATES =
             EnumSet.of(SessionState.END_RECVD, SessionState.END_PIPE, SessionState.END_SENT, SessionState.ENDED);
@@ -770,7 +770,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
         catch (AbstractConfiguredObject.DuplicateNameException e)
         {
-            _logger.error("A temporary queue was created with a name which collided with an existing queue name");
+            LOGGER.error("A temporary queue was created with a name which collided with an existing queue name");
             throw new ConnectionScopedRuntimeException(e);
         }
     }
@@ -803,7 +803,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
         catch (AbstractConfiguredObject.DuplicateNameException e)
         {
-            _logger.error("A temporary destination was created with a name which collided with an existing destination name '{}'", destName);
+            LOGGER.error("A temporary destination was created with a name which collided with an existing destination name '{}'", destName);
             throw new ConnectionScopedRuntimeException(e);
         }
     }
@@ -1347,7 +1347,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         public void onFailure(final Throwable t)
         {
             String errorMessage = String.format("Failed to create LinkEndpoint in response to Attach: %s", _attach);
-            _logger.error(errorMessage, t);
+            LOGGER.error(errorMessage, t);
             throw new ConnectionScopedRuntimeException(errorMessage, t);
         }
     }

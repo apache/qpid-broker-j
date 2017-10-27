@@ -41,7 +41,7 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 public class MultiVersionProtocolEngineFactory implements ProtocolEngineFactory
 {
     private static final AtomicLong ID_GENERATOR = new AtomicLong(0);
-    private static final Logger _logger = LoggerFactory.getLogger(MultiVersionProtocolEngineFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiVersionProtocolEngineFactory.class);
 
     private final Broker<?> _broker;
     private final Set<Protocol> _supported;
@@ -60,7 +60,7 @@ public class MultiVersionProtocolEngineFactory implements ProtocolEngineFactory
     {
         if(defaultSupportedReply != null && !supportedVersions.contains(defaultSupportedReply))
         {
-            _logger.warn("The configured default reply ({}) to an unsupported protocol version initiation is not"
+            LOGGER.warn("The configured default reply ({}) to an unsupported protocol version initiation is not"
                          + " supported on this port.  Only the following versions are supported: {}",
                          defaultSupportedReply, supportedVersions);
             defaultSupportedReply = null;

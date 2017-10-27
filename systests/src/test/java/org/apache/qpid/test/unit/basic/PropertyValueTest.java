@@ -51,7 +51,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class PropertyValueTest extends QpidBrokerTestCase implements MessageListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(PropertyValueTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PropertyValueTest.class);
 
     private Connection _connection;
     private Destination _destination;
@@ -314,14 +314,14 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
             int run = 0;
             while (run < runSize)
             {
-                _logger.error("Run Number:" + run++);
+                LOGGER.error("Run Number:" + run++);
                 try
                 {
                     init(getConnection());
                 }
                 catch (Exception e)
                 {
-                    _logger.error("exception:", e);
+                    LOGGER.error("exception:", e);
                     fail("Unable to initialise connection: " + e);
                 }
 
@@ -329,16 +329,16 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
                 send(count, run);
                 waitFor(count);
                 check();
-                _logger.info("Completed without failure");
+                LOGGER.info("Completed without failure");
 
                 _connection.close();
 
-                _logger.error("End Run Number:" + (run - 1));
+                LOGGER.error("End Run Number:" + (run - 1));
             }
         }
         catch (Exception e)
         {
-            _logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
     }
 
@@ -381,7 +381,7 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
             m.setStringProperty("ReplyToIndex", String.valueOf(i));
             _replyToDestinations.put(String.valueOf(i), q);
 
-            _logger.debug("Message:" + m);
+            LOGGER.debug("Message:" + m);
 
             m.setJMSType("Test");
             m.setLongProperty("UnsignedInt", (long) 4294967295L);
@@ -390,7 +390,7 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
             m.setShortProperty("Short", (short) Short.MAX_VALUE);
             m.setStringProperty("String", "Test");
 
-            _logger.debug("Sending Msg:" + m);
+            LOGGER.debug("Sending Msg:" + m);
             producer.send(m);
             _session.commit();
         }

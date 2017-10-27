@@ -43,7 +43,7 @@ import org.apache.qpid.test.utils.FailoverBaseCase;
 
 public class FailoverTest extends FailoverBaseCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(FailoverTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FailoverTest.class);
 
     private static final int DEFAULT_NUM_MESSAGES = 10;
     private static final int DEFAULT_SEED = 20080921;
@@ -108,21 +108,21 @@ public class FailoverTest extends FailoverBaseCase
     private void consumeMessages(int startIndex,int endIndex, boolean transacted) throws JMSException
     {
         Message msg;
-        _logger.debug("**************** Receive (Start: " + startIndex + ", End:" + endIndex + ")***********************");
+        LOGGER.debug("**************** Receive (Start: " + startIndex + ", End:" + endIndex + ")***********************");
         
         for (int i = startIndex; i < endIndex; i++)
         {
             msg = consumer.receive(1000);            
             assertNotNull("Message " + i + " was null!", msg);
             
-            _logger.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-            _logger.debug("Received : " + ((TextMessage) msg).getText());
-            _logger.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            LOGGER.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            LOGGER.debug("Received : " + ((TextMessage) msg).getText());
+            LOGGER.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
             
             assertEquals("Invalid message order","message " + i, ((TextMessage) msg).getText());
             
         }
-        _logger.debug("***********************************************************");
+        LOGGER.debug("***********************************************************");
         
         if (transacted) 
         {
@@ -132,18 +132,18 @@ public class FailoverTest extends FailoverBaseCase
 
     private void sendMessages(int startIndex,int endIndex, boolean transacted) throws Exception
     {
-        _logger.debug("**************** Send (Start: " + startIndex + ", End:" + endIndex + ")***********************");
+        LOGGER.debug("**************** Send (Start: " + startIndex + ", End:" + endIndex + ")***********************");
         
         for (int i = startIndex; i < endIndex; i++)
         {            
             producer.send(producerSession.createTextMessage("message " + i));
             
-            _logger.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-            _logger.debug("Sending message"+i);
-            _logger.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            LOGGER.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            LOGGER.debug("Sending message"+i);
+            LOGGER.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         }
         
-        _logger.debug("***********************************************************");
+        LOGGER.debug("***********************************************************");
         
         if (transacted)
         {
@@ -199,18 +199,18 @@ public class FailoverTest extends FailoverBaseCase
     {
         int toProduce = totalMessages;
         
-        _logger.debug("===================================================================");
-        _logger.debug("Total messages used for the test " + totalMessages + " messages");
-        _logger.debug("===================================================================");
+        LOGGER.debug("===================================================================");
+        LOGGER.debug("Total messages used for the test " + totalMessages + " messages");
+        LOGGER.debug("===================================================================");
         
         if (!produceAll)
         {
             toProduce = totalMessages - rand.nextInt(totalMessages);
         }
                 
-        _logger.debug("==================");
-        _logger.debug("Sending " + toProduce + " messages");
-        _logger.debug("==================");
+        LOGGER.debug("==================");
+        LOGGER.debug("Sending " + toProduce + " messages");
+        LOGGER.debug("==================");
         
         sendMessages(0, toProduce, transacted);
 
@@ -223,25 +223,25 @@ public class FailoverTest extends FailoverBaseCase
         
         consumeMessages(0, toConsume, transacted);
 
-        _logger.debug("==================");
-        _logger.debug("Consuming " + toConsume + " messages");
-        _logger.debug("==================");
+        LOGGER.debug("==================");
+        LOGGER.debug("Consuming " + toConsume + " messages");
+        LOGGER.debug("==================");
         
-        _logger.info("Failing over");
+        LOGGER.info("Failing over");
 
         causeFailure(broker, DEFAULT_FAILOVER_TIME);
 
         // Check that you produce and consume the rest of messages.
-        _logger.debug("==================");
-        _logger.debug("Sending " + (totalMessages-toProduce) + " messages");
-        _logger.debug("==================");
+        LOGGER.debug("==================");
+        LOGGER.debug("Sending " + (totalMessages-toProduce) + " messages");
+        LOGGER.debug("==================");
         
         sendMessages(toProduce, totalMessages, transacted);
         consumeMessages(toConsume, totalMessages, transacted);
         
-        _logger.debug("==================");
-        _logger.debug("Consuming " + (totalMessages-toConsume) + " messages");
-        _logger.debug("==================");
+        LOGGER.debug("==================");
+        LOGGER.debug("Consuming " + (totalMessages-toConsume) + " messages");
+        LOGGER.debug("==================");
     }
 
     private void causeFailure(BrokerHolder broker, long delay)
@@ -249,7 +249,7 @@ public class FailoverTest extends FailoverBaseCase
 
         failBroker(broker);
 
-        _logger.info("Awaiting Failover completion");
+        LOGGER.info("Awaiting Failover completion");
         try
         {
             if (!_failoverComplete.await(delay, TimeUnit.MILLISECONDS))
@@ -297,14 +297,14 @@ public class FailoverTest extends FailoverBaseCase
 
         BrokerHolder currentBroker = getDefaultBroker();
         int iterations = Integer.getInteger("profile.failoverIterations", 3);
-        _logger.debug("LQ: iterations {}", iterations);
+        LOGGER.debug("LQ: iterations {}", iterations);
         boolean useDefaultBroker = true;
         init(false, Session.AUTO_ACKNOWLEDGE);
         for (int i=0; i < iterations; i++)
         {
-            _logger.debug("===================================================================");
-            _logger.debug("Failover In a loop : iteration number " + i);
-            _logger.debug("===================================================================");
+            LOGGER.debug("===================================================================");
+            LOGGER.debug("Failover In a loop : iteration number " + i);
+            LOGGER.debug("===================================================================");
 
             runP2PFailover(currentBroker, numMessages, false, false, false);
             restartBroker(currentBroker);

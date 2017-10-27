@@ -41,7 +41,7 @@ import org.apache.qpid.server.security.access.Operation;
 
 public class RuleBasedAccessControl implements AccessControl<CachingSecurityToken>, LegacyAccessControl
 {
-    private static final Logger _logger = LoggerFactory.getLogger(RuleBasedAccessControl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RuleBasedAccessControl.class);
     private final LegacyAccessControlAdapter _adapter;
 
     private RuleSet _ruleSet;
@@ -97,9 +97,9 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
             }
         }
 
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("Checking " + operation + " " + objectType + " " +
+            LOGGER.debug("Checking " + operation + " " + objectType + " " +
                           (addressOfClient == null ? "" : addressOfClient));
         }
 
@@ -109,7 +109,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
         }
         catch(Exception e)
         {
-            _logger.error("Unable to check " + operation + " " + objectType + " "
+            LOGGER.error("Unable to check " + operation + " " + objectType + " "
                           + (addressOfClient == null ? "" : addressOfClient), e);
             return Result.DENIED;
         }

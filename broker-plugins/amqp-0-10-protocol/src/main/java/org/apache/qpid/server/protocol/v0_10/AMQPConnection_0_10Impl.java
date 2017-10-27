@@ -59,7 +59,7 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
         implements
         AMQPConnection_0_10<AMQPConnection_0_10Impl>
 {
-    private static final Logger _logger = LoggerFactory.getLogger(AMQPConnection_0_10Impl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AMQPConnection_0_10Impl.class);
     private final ServerInputHandler _inputHandler;
 
     private final ServerConnection _connection;

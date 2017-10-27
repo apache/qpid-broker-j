@@ -29,7 +29,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public class EncodingUtils
 {
-    private static final Logger _logger = LoggerFactory.getLogger(EncodingUtils.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EncodingUtils.class);
 
     private EncodingUtils()
     {

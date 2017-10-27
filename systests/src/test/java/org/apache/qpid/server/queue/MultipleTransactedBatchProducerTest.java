@@ -40,7 +40,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(MultipleTransactedBatchProducerTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultipleTransactedBatchProducerTest.class);
 
     private static final int MESSAGE_COUNT = 1000;
     private static final int BATCH_SIZE = 50;
@@ -183,11 +183,11 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
             }
             catch (JMSException e)
             {
-                _logger.error(_desc + " received exception: " + e.getMessage(), e);
+                LOGGER.error(_desc + " received exception: " + e.getMessage(), e);
                 failAsyncTest(e.getMessage());
             }
 
-            _logger.info("Consumer received message:"+ msgCount + " with ID: " + msgID);
+            LOGGER.info("Consumer received message:"+ msgCount + " with ID: " + msgID);
 
             try
             {
@@ -195,7 +195,7 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
             }
             catch (JMSException e)
             {
-                _logger.error(_desc + " received exception: " + e.getMessage(), e);
+                LOGGER.error(_desc + " received exception: " + e.getMessage(), e);
                 failAsyncTest(e.getMessage());
             }
         }
@@ -224,7 +224,7 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
             }
             catch (Exception e)
             {
-                _logger.error(_desc + " received exception: " + e.getMessage(), e);
+                LOGGER.error(_desc + " received exception: " + e.getMessage(), e);
                 failAsyncTest(e.getMessage());
             }
         }
@@ -242,14 +242,14 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
         @Override
         public void onException(JMSException e)
         {
-            _logger.error(_desc + " received exception: " + e.getMessage(), e);
+            LOGGER.error(_desc + " received exception: " + e.getMessage(), e);
             failAsyncTest(e.getMessage());
         }
     }
 
     private void failAsyncTest(String msg)
     {
-        _logger.error("Failing test because: " + msg);
+        LOGGER.error("Failing test because: " + msg);
         _failMsg = msg;
     }
 }

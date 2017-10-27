@@ -120,7 +120,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 @ManagedObject( category = false, type = HttpManagement.PLUGIN_TYPE )
 public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implements HttpManagementConfiguration<HttpManagement>, PortManager
 {
-    private final Logger _logger = LoggerFactory.getLogger(HttpManagement.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpManagement.class);
     
     // 10 minutes by default
     public static final int DEFAULT_TIMEOUT_IN_SECONDS = 60 * 10;
@@ -202,7 +202,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         Collection<HttpPort<?>> httpPorts = getEligibleHttpPorts(getBroker().getPorts());
         if (httpPorts.isEmpty())
         {
-            _logger.warn("HttpManagement plugin is configured but no suitable HTTP ports are available.");
+            LOGGER.warn("HttpManagement plugin is configured but no suitable HTTP ports are available.");
         }
         else
         {
@@ -286,7 +286,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     private Server createServer(Collection<HttpPort<?>> ports)
     {
-        _logger.debug("Starting up web server on {}", ports);
+        LOGGER.debug("Starting up web server on {}", ports);
         _allowPortActivation = true;
 
         _jettyServerExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory("Jetty-Server-Thread"));
@@ -534,16 +534,16 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                 public void handshakeFailed(final Event event, final Throwable failure)
                 {
                     SSLEngine sslEngine = event.getSSLEngine();
-                    if (_logger.isDebugEnabled())
+                    if (LOGGER.isDebugEnabled())
                     {
-                        _logger.info("TLS handshake failed: host='{}', port={}",
+                        LOGGER.info("TLS handshake failed: host='{}', port={}",
                                     sslEngine.getPeerHost(),
                                     sslEngine.getPeerPort(),
                                     failure);
                     }
                     else
                     {
-                        _logger.info("TLS handshake failed: host='{}', port={}: {}",
+                        LOGGER.info("TLS handshake failed: host='{}', port={}: {}",
                                     sslEngine.getPeerHost(),
                                     sslEngine.getPeerPort(),
                                     String.valueOf(failure));
@@ -555,9 +555,9 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
         int acceptors = connector.getAcceptors();
         int selectors = connector.getSelectorManager().getSelectorCount();
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug(
+            LOGGER.debug(
                     "Created connector for http port {} with maxThreads={}, minThreads={}, acceptors={}, selectors={}, acceptBacklog={}",
                     port.getName(),
                     port.getThreadPoolMaximum(),

@@ -37,7 +37,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class SessionStartTest extends QpidBrokerTestCase implements MessageListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(SessionStartTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SessionStartTest.class);
 
     private Connection _connection;
     private Destination _destination;
@@ -68,7 +68,7 @@ public class SessionStartTest extends QpidBrokerTestCase implements MessageListe
         try
         {
             _session.createProducer(_destination).send(_session.createTextMessage("Message"));
-            _logger.info("Message sent, waiting for response...");
+            LOGGER.info("Message sent, waiting for response...");
             _countdownLatch.await(getReceiveTimeout(), TimeUnit.MILLISECONDS);
         }
         finally

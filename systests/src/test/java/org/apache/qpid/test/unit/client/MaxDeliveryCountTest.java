@@ -64,7 +64,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
  */
 public class MaxDeliveryCountTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(MaxDeliveryCountTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MaxDeliveryCountTest.class);
     private boolean _failed;
     private String _failMsg;
     private static final int MSG_COUNT = 15;
@@ -295,7 +295,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
             Integer msgId = message.getIntProperty("count");
 
             TextMessage txt = (TextMessage) message;
-            _logger.info("Received message " + msgId + " at " + i + " from the DLQ: " + txt.getText());
+            LOGGER.info("Received message " + msgId + " at " + i + " from the DLQ: " + txt.getText());
 
             assertTrue("message " + i + " was not one of those which should have been on the DLQ",
                     redeliverMsgs.contains(msgId));
@@ -356,7 +356,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
                 {
                     int msgId = message.getIntProperty("count");
 
-                    _logger.info("Received message: " + msgId);
+                    LOGGER.info("Received message: " + msgId);
 
                     //check the message is the one we expected
                     if(_expectedMessage != msgId)
@@ -401,7 +401,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
 
                         _deliveryAttempts++; //increment count of times the current rolled back/recovered message(s) have been seen
 
-                        _logger.debug("ROLLBACK/RECOVER");
+                        LOGGER.debug("ROLLBACK/RECOVER");
                         switch(deliveryMode)
                         {
                             case Session.SESSION_TRANSACTED:
@@ -427,7 +427,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
                             //the message(s) should be redelivered, adjust expected message
                             _expectedMessage -= _numMsgsToBeRedelivered;
                         }
-                        _logger.debug("XXX _expectedMessage: " + _expectedMessage + " _deliveryAttempts : " + _deliveryAttempts + " _numMsgsToBeRedelivered=" + _numMsgsToBeRedelivered);
+                        LOGGER.debug("XXX _expectedMessage: " + _expectedMessage + " _deliveryAttempts : " + _deliveryAttempts + " _numMsgsToBeRedelivered=" + _numMsgsToBeRedelivered);
                         //reset count of messages expected to be redelivered
                         _numMsgsToBeRedelivered = 0;
                     }
@@ -474,7 +474,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
 
     private void failAsyncTest(String msg)
     {
-        _logger.error("Failing test because: " + msg);
+        LOGGER.error("Failing test because: " + msg);
         _failMsg = msg;
         _failed = true;
         _awaitCompletion.countDown();
@@ -513,7 +513,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
             {
                 int msgId = message.getIntProperty("count");
 
-                _logger.info("Received message: " + msgId);
+                LOGGER.info("Received message: " + msgId);
 
                 //check the message is the one we expected
                 assertEquals("Unexpected message.", _expectedMessage, msgId);

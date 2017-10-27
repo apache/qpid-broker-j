@@ -45,7 +45,7 @@ import org.apache.qpid.server.util.Action;
 public class BrokerLogbackSocketLoggerImpl
         extends AbstractBrokerLogger<BrokerLogbackSocketLoggerImpl> implements BrokerLogbackSocketLogger<BrokerLogbackSocketLoggerImpl>
 {
-    private static final Logger _logger = LoggerFactory.getLogger(BrokerLogbackSocketLoggerImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BrokerLogbackSocketLoggerImpl.class);
 
     private final List<Action<Void>> _stopLoggingActions = new CopyOnWriteArrayList<>();
 
@@ -121,7 +121,7 @@ public class BrokerLogbackSocketLoggerImpl
                 final String existingValue = loggerContext.getProperty(key);
                 if (existingValue != null && !Objects.equals(existingValue, value))
                 {
-                    _logger.warn("Logback context property key '{}' value '{}' overwritten with value '{}", key, existingValue, value);
+                    LOGGER.warn("Logback context property key '{}' value '{}' overwritten with value '{}", key, existingValue, value);
                 }
                 loggerContext.putProperty(key, value);
 

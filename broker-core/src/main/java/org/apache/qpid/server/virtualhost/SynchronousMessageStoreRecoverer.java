@@ -58,7 +58,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 {
-    private static final Logger _logger = LoggerFactory.getLogger(SynchronousMessageStoreRecoverer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SynchronousMessageStoreRecoverer.class);
 
     @Override
     public ListenableFuture<Void> recover(QueueManagingVirtualHost<?> virtualHost)
@@ -94,7 +94,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             if (!unknownQueuesWithMessages.isEmpty())
             {
                 unknownQueuesWithMessages.forEach((queueId, count) -> {
-                    _logger.info("Discarded {} entry(s) associated with queue id '{}' as a queue with this "
+                    LOGGER.info("Discarded {} entry(s) associated with queue id '{}' as a queue with this "
                                  + "id does not appear in the configuration.",
                                  count, queueId);
                 });
@@ -102,7 +102,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             if (!queuesWithUnknownMessages.isEmpty())
             {
                 queuesWithUnknownMessages.forEach((queue, count) -> {
-                    _logger.info("Discarded {} entry(s) associated with queue '{}' as the referenced message "
+                    LOGGER.info("Discarded {} entry(s) associated with queue '{}' as the referenced message "
                                  + "does not exist.",
                                  count, queue.getName());
                 });
@@ -132,13 +132,13 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
         for(StoredMessage<?> m : unusedMessages.values())
         {
-            _logger.debug("Message id '{}' is orphaned, removing", m.getMessageNumber());
+            LOGGER.debug("Message id '{}' is orphaned, removing", m.getMessageNumber());
             m.remove();
         }
 
         if (unusedMessages.size() > 0)
         {
-            _logger.info("Discarded {} orphaned message(s).", unusedMessages.size());
+            LOGGER.info("Discarded {} orphaned message(s).", unusedMessages.size());
         }
 
         eventLogger.message(logSubject, TransactionLogMessages.RECOVERY_COMPLETE(null, false));
@@ -230,7 +230,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
                 if (message != null)
                 {
-                    _logger.debug("Delivering message id '{}' to queue '{}'", message.getMessageNumber(), queueName);
+                    LOGGER.debug("Delivering message id '{}' to queue '{}'", message.getMessageNumber(), queueName);
 
                     _queueRecoveries.merge(queue, 1, (old, unused) -> old + 1);
 
@@ -240,7 +240,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 }
                 else
                 {
-                    _logger.debug("Message id '{}' referenced in log as enqueued in queue '{}' is unknown, entry will be discarded",
+                    LOGGER.debug("Message id '{}' referenced in log as enqueued in queue '{}' is unknown, entry will be discarded",
                             messageId, queueName);
 
                     _queuesWithUnknownMessages.merge(queue, 1, (old, unused) -> old + 1);
@@ -249,7 +249,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             }
             else
             {
-                _logger.debug(
+                LOGGER.debug(
                         "Message id '{}' in log references queue with id '{}' which is not in the configuration, entry will be discarded",
                         messageId, queueId);
                 _unknownQueuesWithMessages.merge(queueId, 1, (old, unused) -> old + 1);

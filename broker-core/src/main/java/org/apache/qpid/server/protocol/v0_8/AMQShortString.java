@@ -45,7 +45,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
     private static final byte MINUS = (byte)'-';
     private static final byte ZERO = (byte) '0';
 
-    private static final Logger _logger = LoggerFactory.getLogger(AMQShortString.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AMQShortString.class);
 
     private final byte[] _data;
     private final int _offset;

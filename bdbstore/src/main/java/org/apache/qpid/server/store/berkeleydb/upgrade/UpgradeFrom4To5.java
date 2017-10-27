@@ -72,7 +72,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
 
     private static final byte COLON = (byte) ':';
 
-    private static final Logger _logger = LoggerFactory.getLogger(UpgradeFrom4To5.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpgradeFrom4To5.class);
 
     @Override
     public void performUpgrade(final Environment environment, final UpgradeInteractionHandler handler, ConfiguredObject<?> parent)
@@ -101,7 +101,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
     {
         if (environment.getDatabaseNames().contains(OLD_BINDINGS_DB_NAME))
         {
-            _logger.info("Queue Bindings");
+            LOGGER.info("Queue Bindings");
             final BindingTuple bindingTuple = new BindingTuple();
             CursorOperation databaseOperation = new CursorOperation()
             {
@@ -118,9 +118,9 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
                     AMQShortString routingKey = oldBindingRecord.getRoutingKey();
                     FieldTable arguments = oldBindingRecord.getArguments();
 
-                    if (_logger.isDebugEnabled())
+                    if (LOGGER.isDebugEnabled())
                     {
-                        _logger.debug(String.format(
+                        LOGGER.debug(String.format(
                                 "Processing binding for queue %s, exchange %s, routingKey %s arguments %s", queueName,
                                 exchangeName, routingKey, arguments));
                     }
@@ -138,9 +138,9 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
                         AMQShortString selectorFilterKey = AMQShortString.valueOf(AMQPFilterTypes.JMS_SELECTOR.getValue());
                         if (!arguments.containsKey(selectorFilterKey))
                         {
-                            if (_logger.isDebugEnabled())
+                            if (LOGGER.isDebugEnabled())
                             {
-                                _logger.info("adding the empty string (i.e. 'no selector') value for " + queueName
+                                LOGGER.info("adding the empty string (i.e. 'no selector') value for " + queueName
                                         + " and exchange " + exchangeName);
                             }
                             arguments.put(selectorFilterKey, "");
@@ -153,14 +153,14 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             new DatabaseTemplate(environment, OLD_BINDINGS_DB_NAME, NEW_BINDINGS_DB_NAME, transaction)
                     .run(databaseOperation);
             environment.removeDatabase(transaction, OLD_BINDINGS_DB_NAME);
-            _logger.info(databaseOperation.getRowCount() + " Queue Binding entries");
+            LOGGER.info(databaseOperation.getRowCount() + " Queue Binding entries");
         }
     }
 
     private Set<String> upgradeQueues(final Environment environment, final UpgradeInteractionHandler handler,
             List<AMQShortString> potentialDurableSubs, Transaction transaction)
     {
-        _logger.info("Queues");
+        LOGGER.info("Queues");
         final Set<String> existingQueues = new HashSet<String>();
         if (environment.getDatabaseNames().contains(OLD_QUEUE_DB_NAME))
         {
@@ -181,7 +181,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             };
             new DatabaseTemplate(environment, OLD_QUEUE_DB_NAME, NEW_QUEUE_DB_NAME, transaction).run(databaseOperation);
             environment.removeDatabase(transaction, OLD_QUEUE_DB_NAME);
-            _logger.info(databaseOperation.getRowCount() + " Queue entries");
+            LOGGER.info(databaseOperation.getRowCount() + " Queue entries");
         }
         return existingQueues;
     }
@@ -216,7 +216,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
         final Set<Long> messagesToDiscard = new HashSet<Long>();
         final Set<String> queuesToDiscard = new HashSet<String>();
         final QueueEntryKeyBinding queueEntryKeyBinding = new QueueEntryKeyBinding();
-        _logger.info("Delivery Records");
+        LOGGER.info("Delivery Records");
 
         CursorOperation databaseOperation = new CursorOperation()
         {
@@ -290,7 +290,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             };
             new DatabaseTemplate(environment, NEW_DELIVERY_DB, transaction).run(databaseOperation);
         }
-        _logger.info(databaseOperation.getRowCount() + " Delivery Records entries ");
+        LOGGER.info(databaseOperation.getRowCount() + " Delivery Records entries ");
         environment.removeDatabase(transaction, OLD_DELIVERY_DB);
 
         return messagesToDiscard;
@@ -357,7 +357,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
     private void upgradeMetaData(final Environment environment, final UpgradeInteractionHandler handler,
             final Set<Long> messagesToDiscard, Transaction transaction)
     {
-        _logger.info("Message MetaData");
+        LOGGER.info("Message MetaData");
         if (environment.getDatabaseNames().contains(OLD_METADATA_DB_NAME))
         {
             final MessageMetaDataBinding binding = new MessageMetaDataBinding();
@@ -391,14 +391,14 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             new DatabaseTemplate(environment, OLD_METADATA_DB_NAME, NEW_METADATA_DB_NAME, transaction)
                     .run(databaseOperation);
             environment.removeDatabase(transaction, OLD_METADATA_DB_NAME);
-            _logger.info(databaseOperation.getRowCount() + " Message MetaData entries");
+            LOGGER.info(databaseOperation.getRowCount() + " Message MetaData entries");
         }
     }
 
     private void upgradeContent(final Environment environment, final UpgradeInteractionHandler handler,
             final Set<Long> messagesToDiscard, Transaction transaction)
     {
-        _logger.info("Message Contents");
+        LOGGER.info("Message Contents");
         if (environment.getDatabaseNames().contains(OLD_CONTENT_DB_NAME))
         {
             final MessageContentKeyBinding keyBinding = new MessageContentKeyBinding();
@@ -447,7 +447,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             };
             new DatabaseTemplate(environment, OLD_CONTENT_DB_NAME, NEW_CONTENT_DB_NAME, transaction).run(cursorOperation);
             environment.removeDatabase(transaction, OLD_CONTENT_DB_NAME);
-            _logger.info(cursorOperation.getRowCount() + " Message Content entries");
+            LOGGER.info(cursorOperation.getRowCount() + " Message Content entries");
         }
     }
 
@@ -463,7 +463,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             if (dbName.endsWith("_v4"))
             {
                 String newName = dbName.substring(0, dbName.length() - 3) + "_v5";
-                _logger.info("Renaming " + dbName + " into " + newName);
+                LOGGER.info("Renaming " + dbName + " into " + newName);
                 environment.renameDatabase(transaction, dbName, newName);
             }
         }
@@ -648,7 +648,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             }
             catch (Exception e)
             {
-                _logger.error("Error converting entry to object: " + e, e);
+                LOGGER.error("Error converting entry to object: " + e, e);
                 // annoyingly just have to return null since we cannot throw
                 return null;
             }

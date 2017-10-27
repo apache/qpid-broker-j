@@ -27,8 +27,9 @@ import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
 
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
@@ -37,6 +38,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
  */
 public class DurableSubscriberTest extends QpidBrokerTestCase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DurableSubscriberTest.class);
     private final String _topicName = "durableSubscriberTopic";
 
     /**
@@ -65,7 +67,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
             }
             catch (Exception e)
             {
-                _logger.error("problems restarting broker: " + e);
+                LOGGER.error("problems restarting broker: " + e);
                 throw e;
             }
             TopicConnection pubConnection = (TopicConnection) getConnection();
@@ -119,7 +121,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
     {
         if (! isBrokerStorePersistent())
         {
-            _logger.warn("Test skipped due to requirement of a persistent store");
+            LOGGER.warn("Test skipped due to requirement of a persistent store");
             return;
         }
         
@@ -152,7 +154,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         }
         catch (Exception e)
         {
-            _logger.error("problems restarting broker: " + e);
+            LOGGER.error("problems restarting broker: " + e);
             throw e;
         }
         
@@ -212,7 +214,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
     {
         if (! isBrokerStorePersistent())
         {
-            _logger.warn("Test skipped due to requirement of a persistent store");
+            LOGGER.warn("Test skipped due to requirement of a persistent store");
             return;
         }
         
@@ -245,7 +247,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         }
         catch (Exception e)
         {
-            _logger.error("problems restarting broker: " + e);
+            LOGGER.error("problems restarting broker: " + e);
             throw e;
         }
         
@@ -292,7 +294,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
     {
         if (! isBrokerStorePersistent())
         {
-            _logger.warn("Test skipped due to requirement of a persistent store");
+            LOGGER.warn("Test skipped due to requirement of a persistent store");
             return;
         }
         
@@ -375,7 +377,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         }
         catch (Exception e)
         {
-            _logger.error("problems restarting broker: " + e);
+            LOGGER.error("problems restarting broker: " + e);
             throw e;
         }
         

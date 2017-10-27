@@ -37,7 +37,7 @@ import org.apache.qpid.server.util.FileUtils;
 
 public abstract class MessageStoreQuotaEventsTestBase extends QpidTestCase implements EventListener, TransactionLogResource
 {
-    private static final Logger _logger = LoggerFactory.getLogger(MessageStoreQuotaEventsTestBase.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MessageStoreQuotaEventsTestBase.class);
 
     protected static final byte[] MESSAGE_DATA = new byte[32 * 1024];
 
@@ -129,7 +129,7 @@ public abstract class MessageStoreQuotaEventsTestBase extends QpidTestCase imple
     @Override
     public void event(Event event)
     {
-        _logger.debug("Test event listener received event " + event);
+        LOGGER.debug("Test event listener received event " + event);
         _events.add(event);
     }
 

@@ -34,7 +34,7 @@ import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
  */
 public class AclRulePredicates
 {
-    private static final Logger _logger = LoggerFactory.getLogger(AclRulePredicates.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AclRulePredicates.class);
 
     private static final String SEPARATOR = ",";
 
@@ -65,7 +65,7 @@ public class AclRulePredicates
 
         addPropertyValue(property, value);
 
-        _logger.debug("Parsed {} with value {}",  property, value);
+        LOGGER.debug("Parsed {} with value {}",  property, value);
     }
 
     private void addPropertyValue(final Property property, final String value)

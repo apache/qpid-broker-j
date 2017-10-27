@@ -31,6 +31,9 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.model.Consumer;
 
 /**
@@ -46,6 +49,8 @@ import org.apache.qpid.server.model.Consumer;
  */
 public class ConsumerLoggingTest extends AbstractTestLogging
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerLoggingTest.class);
+
     static final String SUB_PREFIX = "SUB-";
 
     private Connection _connection;
@@ -323,7 +328,7 @@ public class ConsumerLoggingTest extends AbstractTestLogging
 
         Thread.sleep(2500l);
 
-        _logger.debug("Looking for SUB-1003s");
+        LOGGER.debug("Looking for SUB-1003s");
         List<String> results = waitAndFindMatches("SUB-1003");
 
         assertTrue("Expected at least two suspension messages, but got " + results.size(), results.size() >= 2);

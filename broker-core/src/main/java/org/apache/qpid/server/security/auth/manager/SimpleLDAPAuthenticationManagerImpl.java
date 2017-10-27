@@ -77,7 +77,7 @@ import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationManager<SimpleLDAPAuthenticationManagerImpl>
         implements SimpleLDAPAuthenticationManager<SimpleLDAPAuthenticationManagerImpl>
 {
-    private static final Logger _logger = LoggerFactory.getLogger(SimpleLDAPAuthenticationManagerImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SimpleLDAPAuthenticationManagerImpl.class);
 
     private static final List<String> CONNECTIVITY_ATTRS = unmodifiableList(Arrays.asList(PROVIDER_URL,
                                                                              PROVIDER_AUTH_URL,
@@ -191,7 +191,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
             || cacheExpirationTime == null || cacheExpirationTime <= 0
             || cacheIterationCount == null || cacheIterationCount < 0)
         {
-            _logger.debug("disabling authentication result caching");
+            LOGGER.debug("disabling authentication result caching");
             cacheMaxSize = 0;
             cacheExpirationTime = 1L;
             cacheIterationCount = 0;
@@ -314,7 +314,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         }
         catch (NamingException e)
         {
-            _logger.warn("Retrieving LDAP name for user '{}' resulted in error.", userId, e);
+            LOGGER.warn("Retrieving LDAP name for user '{}' resulted in error.", userId, e);
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
         }
 
@@ -358,7 +358,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         catch (NamingException e)
         {
             //Some other failure
-            _logger.warn("LDAP authentication attempt for username '{}' resulted in error.", name, e);
+            LOGGER.warn("LDAP authentication attempt for username '{}' resulted in error.", name, e);
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
         }
         finally
@@ -533,7 +533,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         }
         catch (GeneralSecurityException e)
         {
-            _logger.error("Exception creating SSLContext", e);
+            LOGGER.error("Exception creating SSLContext", e);
             if (trustStore != null)
             {
                 throw new IllegalConfigurationException("Error creating SSLContext with trust store : " +
@@ -552,7 +552,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
                                                                                                  _tlsProtocolBlackList);
         Class<? extends AbstractLDAPSSLSocketFactory> clazz = LDAPSSLSocketFactoryGenerator.createSubClass(clazzName,
                                                                                                            sslSocketFactory);
-        _logger.debug("Connection to Directory will use custom SSL socket factory : {}",  clazz);
+        LOGGER.debug("Connection to Directory will use custom SSL socket factory : {}",  clazz);
         return clazz;
     }
 
@@ -583,7 +583,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         }
         catch (NamingException e)
         {
-            _logger.error("Failed to establish connectivity to the ldap server for '{}'", providerUrl, e);
+            LOGGER.error("Failed to establish connectivity to the ldap server for '{}'", providerUrl, e);
             throw new IllegalConfigurationException("Failed to establish connectivity to the ldap server." , e);
         }
         finally
@@ -621,18 +621,18 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
                 searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
                 NamingEnumeration<?> namingEnum = null;
 
-                _logger.debug("Searching for '{}'", id);
+                LOGGER.debug("Searching for '{}'", id);
                 namingEnum = ctx.search(_searchContext, _searchFilter, new String[]{id}, searchControls);
                 if (namingEnum.hasMore())
                 {
                     SearchResult result = (SearchResult) namingEnum.next();
                     String name = result.getNameInNamespace();
-                    _logger.debug("Found '{}' DN '{}'", id, name);
+                    LOGGER.debug("Found '{}' DN '{}'", id, name);
                     return name;
                 }
                 else
                 {
-                    _logger.debug("Not found '{}'", id);
+                    LOGGER.debug("Not found '{}'", id);
                     return null;
                 }
             }
@@ -698,7 +698,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         }
         catch (Exception e)
         {
-            _logger.warn("Exception closing InitialDirContext", e);
+            LOGGER.warn("Exception closing InitialDirContext", e);
         }
     }
 

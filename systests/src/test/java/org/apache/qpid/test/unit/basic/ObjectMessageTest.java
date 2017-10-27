@@ -42,7 +42,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class ObjectMessageTest extends QpidBrokerTestCase implements MessageListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(ObjectMessageTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ObjectMessageTest.class);
 
     private Connection _connection;
     private Destination _destination;
@@ -71,7 +71,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
         send(count);
         waitFor(count);
         check();
-        _logger.info("Completed without failure");
+        LOGGER.info("Completed without failure");
         _connection.close();
     }
 

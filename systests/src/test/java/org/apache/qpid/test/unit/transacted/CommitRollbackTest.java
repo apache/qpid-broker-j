@@ -61,7 +61,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
  */
 public class CommitRollbackTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(CommitRollbackTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CommitRollbackTest.class);
     private long _positiveTimeout;
     private long _negativeTimeout;
 
@@ -82,7 +82,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
     private void newConnection() throws Exception
     {
-        _logger.debug("calling newConnection()");
+        LOGGER.debug("calling newConnection()");
         _conn = getConnection();
 
         _session = _conn.createSession(true, Session.SESSION_TRANSACTED);
@@ -111,16 +111,16 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         assertTrue("session is not transacted", _session.getTransacted());
         assertTrue("session is not transacted", _pubSession.getTransacted());
 
-        _logger.info("sending test message");
+        LOGGER.info("sending test message");
         String MESSAGE_TEXT = "testPutThenDisconnect";
         _publisher.send(_pubSession.createTextMessage(MESSAGE_TEXT));
 
-        _logger.info("reconnecting without commit");
+        LOGGER.info("reconnecting without commit");
         _conn.close();
 
         newConnection();
 
-        _logger.info("receiving result");
+        LOGGER.info("receiving result");
         Message result = _consumer.receive(_negativeTimeout);
 
         // commit to ensure message is removed from queue
@@ -143,14 +143,14 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         assertTrue("session is not transacted", _session.getTransacted());
         assertTrue("session is not transacted", _pubSession.getTransacted());
 
-        _logger.info("sending test message");
+        LOGGER.info("sending test message");
         String MESSAGE_TEXT = "testPutThenRollback";
         _publisher.send(_pubSession.createTextMessage(MESSAGE_TEXT));
 
-        _logger.info("rolling back");
+        LOGGER.info("rolling back");
         _pubSession.rollback();
 
-        _logger.info("receiving result");
+        LOGGER.info("receiving result");
         Message result = _consumer.receive(_negativeTimeout);
 
         assertNull("test message was put and rolled back, but is still present", result);
@@ -168,23 +168,23 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         assertTrue("session is not transacted", _session.getTransacted());
         assertTrue("session is not transacted", _pubSession.getTransacted());
 
-        _logger.info("sending test message");
+        LOGGER.info("sending test message");
         String MESSAGE_TEXT = "testGetThenDisconnect";
         _publisher.send(_pubSession.createTextMessage(MESSAGE_TEXT));
 
         _pubSession.commit();
 
-        _logger.info("getting test message");
+        LOGGER.info("getting test message");
 
         Message msg = _consumer.receive(_positiveTimeout);
         assertNotNull("retrieved message is null", msg);
 
-        _logger.info("closing connection");
+        LOGGER.info("closing connection");
         _conn.close();
 
         newConnection();
 
-        _logger.info("receiving result");
+        LOGGER.info("receiving result");
         Message result = _consumer.receive(_negativeTimeout);
 
         _session.commit();
@@ -206,25 +206,25 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         assertTrue("session is not transacted", _session.getTransacted());
         assertTrue("session is not transacted", _pubSession.getTransacted());
 
-        _logger.info("sending test message");
+        LOGGER.info("sending test message");
         String MESSAGE_TEXT = "testGetThenCloseDisconnect";
         _publisher.send(_pubSession.createTextMessage(MESSAGE_TEXT));
 
         _pubSession.commit();
 
-        _logger.info("getting test message");
+        LOGGER.info("getting test message");
 
         Message msg = _consumer.receive(_positiveTimeout);
         assertNotNull("retrieved message is null", msg);
         assertEquals("test message was correct message", MESSAGE_TEXT, ((TextMessage) msg).getText());
 
-        _logger.info("reconnecting without commit");
+        LOGGER.info("reconnecting without commit");
         _consumer.close();
         _conn.close();
 
         newConnection();
 
-        _logger.info("receiving result");
+        LOGGER.info("receiving result");
         Message result = _consumer.receive(_positiveTimeout);
 
         _session.commit();
@@ -246,24 +246,24 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         assertTrue("session is not transacted", _session.getTransacted());
         assertTrue("session is not transacted", _pubSession.getTransacted());
 
-        _logger.info("sending test message");
+        LOGGER.info("sending test message");
         String MESSAGE_TEXT = "testGetThenRollback";
         _publisher.send(_pubSession.createTextMessage(MESSAGE_TEXT));
 
         _pubSession.commit();
 
-        _logger.info("getting test message");
+        LOGGER.info("getting test message");
 
         Message msg = _consumer.receive(_positiveTimeout);
 
         assertNotNull("retrieved message is null", msg);
         assertEquals("test message was correct message", MESSAGE_TEXT, ((TextMessage) msg).getText());
 
-        _logger.info("rolling back");
+        LOGGER.info("rolling back");
 
         _session.rollback();
 
-        _logger.info("receiving result");
+        LOGGER.info("receiving result");
 
         Message result = _consumer.receive(_positiveTimeout);
 
@@ -286,26 +286,26 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         assertTrue("session is not transacted", _session.getTransacted());
         assertTrue("session is not transacted", _pubSession.getTransacted());
 
-        _logger.info("sending test message");
+        LOGGER.info("sending test message");
         String MESSAGE_TEXT = "testGetThenCloseRollback";
         _publisher.send(_pubSession.createTextMessage(MESSAGE_TEXT));
 
         _pubSession.commit();
 
-        _logger.info("getting test message");
+        LOGGER.info("getting test message");
 
         Message msg = _consumer.receive(_positiveTimeout);
 
         assertNotNull("retrieved message is null", msg);
         assertEquals("test message was correct message", MESSAGE_TEXT, ((TextMessage) msg).getText());
 
-        _logger.info("Closing consumer");
+        LOGGER.info("Closing consumer");
         _consumer.close();
 
-        _logger.info("rolling back");
+        LOGGER.info("rolling back");
         _session.rollback();
 
-        _logger.info("receiving result");
+        LOGGER.info("receiving result");
 
         _consumer = _session.createConsumer(_jmsQueue);
 
@@ -331,26 +331,26 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         assertTrue("session is not transacted", _session.getTransacted());
         assertTrue("session is not transacted", _pubSession.getTransacted());
 
-        _logger.info("sending two test messages");
+        LOGGER.info("sending two test messages");
         _publisher.send(_pubSession.createTextMessage("1"));
         _publisher.send(_pubSession.createTextMessage("2"));
         _pubSession.commit();
 
-        _logger.info("getting test message");
+        LOGGER.info("getting test message");
         Message result = _consumer.receive(_positiveTimeout);
 
         assertNotNull("Message received should not be null", result);
         assertEquals("1", ((TextMessage) result).getText());
         assertTrue("Message is marked as redelivered" + result, !result.getJMSRedelivered());
 
-        _logger.info("Closing Consumer");
+        LOGGER.info("Closing Consumer");
         
         _consumer.close();
 
-        _logger.info("Creating New consumer");
+        LOGGER.info("Creating New consumer");
         _consumer = _session.createConsumer(_jmsQueue);
 
-        _logger.info("receiving result");
+        LOGGER.info("receiving result");
 
 
         // Message 2 may be marked as redelivered if it was prefetched.
@@ -379,7 +379,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         assertTrue("session is not transacted", _session.getTransacted());
         assertTrue("session is not transacted", _pubSession.getTransacted());
 
-        _logger.info("sending test message");
+        LOGGER.info("sending test message");
         String MESSAGE_TEXT = "testPutThenRollbackThenGet";
 
         _publisher.send(_pubSession.createTextMessage(MESSAGE_TEXT));
@@ -389,10 +389,10 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
         _publisher.send(_pubSession.createTextMessage(MESSAGE_TEXT));
 
-        _logger.info("rolling back");
+        LOGGER.info("rolling back");
         _pubSession.rollback();
 
-        _logger.info("receiving result");
+        LOGGER.info("receiving result");
         Message result = _consumer.receive(_negativeTimeout);
         assertNull("test message was put and rolled back, but is still present", result);
 
@@ -426,7 +426,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         message.setJMSCorrelationID("m1");
         prod.send(message);
         _session.commit();
-        _logger.info("Sent message to queue");
+        LOGGER.info("Sent message to queue");
         CountDownLatch cd = new CountDownLatch(1);
         cons.setMessageListener(new CommitWithinOnMessageListener(cd));
         _conn.start();
@@ -490,10 +490,10 @@ public class CommitRollbackTest extends QpidBrokerTestCase
             assertEquals("Unexpected message received", i, message.getIntProperty(INDEX));
         }
 
-        _logger.info("Rolling back");
+        LOGGER.info("Rolling back");
         _session.rollback();
 
-        _logger.info("Receiving messages");
+        LOGGER.info("Receiving messages");
 
         Message result = _consumer.receive(_positiveTimeout);
         assertNotNull("Message expected", result);
@@ -513,15 +513,15 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         {
             try
             {
-                _logger.info("received message " + message);
+                LOGGER.info("received message " + message);
                 assertEquals("Wrong message received", message.getJMSCorrelationID(), "m1");
-                _logger.info("commit session");
+                LOGGER.info("commit session");
                 _session.commit();
                 _cd.countDown();
             }
             catch (JMSException e)
             {
-                _logger.error("OnMessage error",e);
+                LOGGER.error("OnMessage error",e);
             }
         }
     }
@@ -598,7 +598,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
             try
             {
                 combinedFuture.get(testTimeout, TimeUnit.MILLISECONDS);
-                _logger.debug("Performed {} rollbacks, consumed {}/{} messages",
+                LOGGER.debug("Performed {} rollbacks, consumed {}/{} messages",
                               rollbackCounter.get(),
                               counter.get(),
                               numberOfMessages);
@@ -647,7 +647,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         assertTrue("session is not transacted", _session.getTransacted());
         assertTrue("session is not transacted", _pubSession.getTransacted());
 
-        _logger.info("sending test message");
+        LOGGER.info("sending test message");
         String MESSAGE_TEXT = "message text";
 
         _publisher.send(_pubSession.createTextMessage(MESSAGE_TEXT));
@@ -659,7 +659,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
         _session.rollback();
 
-        _logger.info("receiving result");
+        LOGGER.info("receiving result");
 
         assertNotNull("two messages were sent, but none has been received", _consumer.receive(_positiveTimeout));
         assertNotNull("two messages were sent, but only one has been received", _consumer.receive(_positiveTimeout));

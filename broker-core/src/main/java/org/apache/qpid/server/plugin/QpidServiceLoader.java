@@ -36,7 +36,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
  */
 public class QpidServiceLoader
 {
-    private static final Logger _logger = LoggerFactory.getLogger(QpidServiceLoader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(QpidServiceLoader.class);
 
     public <C extends Pluggable> Iterable<C> instancesOf(Class<C> clazz)
     {
@@ -82,7 +82,7 @@ public class QpidServiceLoader
             throw new ServerScopedRuntimeException("At least one implementation of " + clazz + " expected");
         }
 
-        _logger.debug("Found {} implementations of {}", serviceImplementations.size(), clazz);
+        LOGGER.debug("Found {} implementations of {}", serviceImplementations.size(), clazz);
 
         return serviceImplementations;
     }

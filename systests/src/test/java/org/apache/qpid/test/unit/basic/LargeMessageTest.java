@@ -36,7 +36,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class LargeMessageTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(LargeMessageTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LargeMessageTest.class);
 
     private Destination _destination;
     private Session _session;
@@ -117,11 +117,11 @@ public class LargeMessageTest extends QpidBrokerTestCase
     {
             MessageConsumer consumer = _session.createConsumer(_destination);
             MessageProducer producer = _session.createProducer(_destination);
-            _logger.info("Testing message of size:" + messageSize);
+            LOGGER.info("Testing message of size:" + messageSize);
 
             String _messageText = buildLargeMessage(messageSize);
 
-            _logger.debug("Message built");
+            LOGGER.debug("Message built");
 
             producer.send(_session.createTextMessage(_messageText));
 

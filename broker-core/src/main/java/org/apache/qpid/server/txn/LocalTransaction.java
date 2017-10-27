@@ -48,7 +48,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
  */
 public class LocalTransaction implements ServerTransaction
 {
-    protected static final Logger _logger = LoggerFactory.getLogger(LocalTransaction.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LocalTransaction.class);
 
     private final List<Action> _postTransactionActions = new ArrayList<>();
     private final TransactionObserver _transactionObserver;
@@ -112,9 +112,9 @@ public class LocalTransaction implements ServerTransaction
         {
             try
             {
-                if (_logger.isDebugEnabled())
+                if (LOGGER.isDebugEnabled())
                 {
-                    _logger.debug("Dequeue of message number " + record.getMessageNumber() + " from transaction log. Queue : " + record.getQueueId());
+                    LOGGER.debug("Dequeue of message number " + record.getMessageNumber() + " from transaction log. Queue : " + record.getQueueId());
                 }
 
                 beginTranIfNecessary();
@@ -142,9 +142,9 @@ public class LocalTransaction implements ServerTransaction
                 final MessageEnqueueRecord record = entry.getEnqueueRecord();
                 if(record != null)
                 {
-                    if (_logger.isDebugEnabled())
+                    if (LOGGER.isDebugEnabled())
                     {
-                        _logger.debug("Dequeue of message number " + record.getMessageNumber() + " from transaction log. Queue : " + record.getQueueId());
+                        LOGGER.debug("Dequeue of message number " + record.getMessageNumber() + " from transaction log. Queue : " + record.getQueueId());
                     }
 
                     beginTranIfNecessary();
@@ -202,9 +202,9 @@ public class LocalTransaction implements ServerTransaction
         {
             try
             {
-                if (_logger.isDebugEnabled())
+                if (LOGGER.isDebugEnabled())
                 {
-                    _logger.debug("Enqueue of message number " + message.getMessageNumber() + " to transaction log. Queue : " + queue.getName());
+                    LOGGER.debug("Enqueue of message number " + message.getMessageNumber() + " to transaction log. Queue : " + queue.getName());
                 }
 
                 beginTranIfNecessary();
@@ -291,9 +291,9 @@ public class LocalTransaction implements ServerTransaction
             {
                 if(queue.getMessageDurability().persist(message.isPersistent()))
                 {
-                    if (_logger.isDebugEnabled())
+                    if (LOGGER.isDebugEnabled())
                     {
-                        _logger.debug("Enqueue of message number " + message.getMessageNumber() + " to transaction log. Queue : " + queue.getName() );
+                        LOGGER.debug("Enqueue of message number " + message.getMessageNumber() + " to transaction log. Queue : " + queue.getName() );
                     }
 
                     beginTranIfNecessary();
@@ -438,14 +438,14 @@ public class LocalTransaction implements ServerTransaction
 
     private void doPostTransactionActions()
     {
-        _logger.debug("Beginning {} post transaction actions",  _postTransactionActions.size());
+        LOGGER.debug("Beginning {} post transaction actions",  _postTransactionActions.size());
 
         for(int i = 0; i < _postTransactionActions.size(); i++)
         {
             _postTransactionActions.get(i).postCommit();
         }
 
-        _logger.debug("Completed post transaction actions");
+        LOGGER.debug("Completed post transaction actions");
 
     }
 

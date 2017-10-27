@@ -43,7 +43,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class PrefetchBehaviourTest extends QpidBrokerTestCase
 {
-    protected static final Logger _logger = LoggerFactory.getLogger(PrefetchBehaviourTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PrefetchBehaviourTest.class);
     private Connection _normalConnection;
     private AtomicBoolean _exceptionCaught;
     private CountDownLatch _processingStarted;
@@ -86,9 +86,9 @@ public class PrefetchBehaviourTest extends QpidBrokerTestCase
             {
                 try
                 {
-                    _logger.debug("starting processing");
+                    LOGGER.debug("starting processing");
                     _processingStarted.countDown();
-                    _logger.debug("processing started");
+                    LOGGER.debug("processing started");
 
                     //simulate message processing
                     Thread.sleep(processingTime);
@@ -99,7 +99,7 @@ public class PrefetchBehaviourTest extends QpidBrokerTestCase
                 }
                 catch(Exception e)
                 {
-                    _logger.error("Exception caught in message listener");
+                    LOGGER.error("Exception caught in message listener");
                     _exceptionCaught.set(true);
                 }
             }
@@ -117,7 +117,7 @@ public class PrefetchBehaviourTest extends QpidBrokerTestCase
 
         //wait for the first message to start being processed by the async consumer
         assertTrue("Async processing failed to start in allowed timeframe", _processingStarted.await(2000, TimeUnit.MILLISECONDS));
-        _logger.debug("proceeding with test");
+        LOGGER.debug("proceeding with test");
 
         //try to consumer the other messages with another consumer while the async procesisng occurs
         Session normalSession = _normalConnection.createSession(true, Session.AUTO_ACKNOWLEDGE);
@@ -134,7 +134,7 @@ public class PrefetchBehaviourTest extends QpidBrokerTestCase
         assertNull("Consumer should not have received a 5th message",msg);
 
         //wait for the other consumer to finish to ensure it completes ok
-        _logger.debug("waiting for async consumer to complete");
+        LOGGER.debug("waiting for async consumer to complete");
         assertTrue("Async processing failed to complete in allowed timeframe", _processingStarted.await(processingTime + 2000, TimeUnit.MILLISECONDS));
         assertFalse("Unexpected exception during async message processing",_exceptionCaught.get());
     }

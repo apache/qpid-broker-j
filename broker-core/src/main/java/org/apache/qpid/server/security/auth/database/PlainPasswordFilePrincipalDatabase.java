@@ -52,7 +52,7 @@ import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSourceAdap
 public class PlainPasswordFilePrincipalDatabase extends AbstractPasswordFilePrincipalDatabase<PlainUser>
 {
 
-    private final Logger _logger = LoggerFactory.getLogger(PlainPasswordFilePrincipalDatabase.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PlainPasswordFilePrincipalDatabase.class);
     private final List<String> _mechanisms = Collections.unmodifiableList(Arrays.asList(PlainNegotiator.MECHANISM,
                                                                                         CramMd5Negotiator.MECHANISM,
                                                                                         ScramSHA1AuthenticationManager.MECHANISM,
@@ -121,7 +121,7 @@ public class PlainPasswordFilePrincipalDatabase extends AbstractPasswordFilePrin
     @Override
     protected Logger getLogger()
     {
-        return _logger;
+        return LOGGER;
     }
 
 

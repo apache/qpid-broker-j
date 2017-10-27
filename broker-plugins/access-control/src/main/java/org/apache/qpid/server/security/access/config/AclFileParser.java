@@ -44,7 +44,7 @@ import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 
 public final class AclFileParser
 {
-    private static final Logger _logger = LoggerFactory.getLogger(AclFileParser.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AclFileParser.class);
     public static final String DEFAULT_ALLOW = "defaultallow";
     public static final String DEFAULT_DEFER = "defaultdefer";
     public static final String DEFAULT_DENY = "defaultdeny";
@@ -117,7 +117,7 @@ public final class AclFileParser
         int line = 0;
         try(Reader fileReader = configReader)
         {
-            _logger.debug("About to load ACL file");
+            LOGGER.debug("About to load ACL file");
             StreamTokenizer tokenizer = new StreamTokenizer(new BufferedReader(fileReader));
             tokenizer.resetSyntax(); // setup the tokenizer
 

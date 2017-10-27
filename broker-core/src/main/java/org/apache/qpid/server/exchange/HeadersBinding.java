@@ -42,7 +42,7 @@ import org.apache.qpid.server.model.Binding;
  */
 class HeadersBinding
 {
-    private static final Logger _logger = LoggerFactory.getLogger(HeadersBinding.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HeadersBinding.class);
 
     private final Map<String,Object> _mappings;
     private final AbstractExchange.BindingIdentifier _binding;
@@ -87,7 +87,7 @@ class HeadersBinding
             }
             catch (AMQInvalidArgumentException e)
             {
-                _logger.warn("Invalid filter in binding queue '"+_binding.getDestination().getName()
+                LOGGER.warn("Invalid filter in binding queue '"+_binding.getDestination().getName()
                              +"' with arguments: " + _mappings);
                 _filter = new FilterManager();
 
@@ -215,7 +215,7 @@ class HeadersBinding
         }
         else
         {
-            _logger.warn("Ignoring special header: " + key);
+            LOGGER.warn("Ignoring special header: " + key);
         }
     }
 
@@ -232,7 +232,7 @@ class HeadersBinding
                 return false;
             }
         }
-        _logger.warn("Ignoring unrecognised match type: " + value);
+        LOGGER.warn("Ignoring unrecognised match type: " + value);
         return false;//default to all
     }
 

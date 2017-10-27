@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 public class HostnameFirewallRule implements FirewallRule
 {
-    private static final Logger _logger = LoggerFactory.getLogger(HostnameFirewallRule.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HostnameFirewallRule.class);
 
     private static final long DNS_TIMEOUT = 30000;
     private static final ExecutorService DNS_LOOKUP = Executors.newCachedThreadPool();
@@ -51,7 +51,7 @@ public class HostnameFirewallRule implements FirewallRule
             _hostnamePatterns[i++] = Pattern.compile(hostname);
         }
 
-        _logger.debug("Created {}", this);
+        LOGGER.debug("Created {}", this);
 
     }
 
@@ -69,15 +69,15 @@ public class HostnameFirewallRule implements FirewallRule
 
             if (hostnameMatches)
             {
-                if(_logger.isDebugEnabled())
+                if(LOGGER.isDebugEnabled())
                 {
-                    _logger.debug("Hostname " + hostname + " matches rule " + pattern.toString());
+                    LOGGER.debug("Hostname " + hostname + " matches rule " + pattern.toString());
                 }
                 return true;
             }
         }
 
-        _logger.debug("Hostname {} matches no configured hostname patterns", hostname);
+        LOGGER.debug("Hostname {} matches no configured hostname patterns", hostname);
 
         return false;
     }
@@ -107,7 +107,7 @@ public class HostnameFirewallRule implements FirewallRule
         }
         catch (Exception e)
         {
-            _logger.warn("Unable to look up hostname from address " + remote, e);
+            LOGGER.warn("Unable to look up hostname from address " + remote, e);
             return null;
         }
         finally

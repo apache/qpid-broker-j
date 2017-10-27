@@ -46,7 +46,7 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> implements DirectExchange<DirectExchangeImpl>
 {
 
-    private static final Logger _logger = LoggerFactory.getLogger(DirectExchangeImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DirectExchangeImpl.class);
 
     private final class BindingSet
     {
@@ -124,7 +124,7 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
                 }
                 catch (AMQInvalidArgumentException e)
                 {
-                    _logger.warn(
+                    LOGGER.warn(
                             "Binding ignored: cannot parse filter on binding of destination '{}' to exchange '{}' with arguments: {}",
                             destination.getName(),
                             DirectExchangeImpl.this.getName(),

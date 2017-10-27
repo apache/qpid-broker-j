@@ -56,7 +56,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
  */
 public class DurableSubscriptionTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(DurableSubscriptionTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DurableSubscriptionTest.class);
 
     private static final String MY_TOPIC = "MyTopic";
 
@@ -66,22 +66,22 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
     {
         TopicConnection con = (TopicConnection) getConnection();
         Topic topic = createTopic(con, "MyDurableSubscriptionTestTopic");
-        _logger.info("Create Session 1");
+        LOGGER.info("Create Session 1");
         Session session1 = con.createSession(false, AMQSession.NO_ACKNOWLEDGE);
-        _logger.info("Create Consumer on Session 1");
+        LOGGER.info("Create Consumer on Session 1");
         MessageConsumer consumer1 = session1.createConsumer(topic);
-        _logger.info("Create Producer on Session 1");
+        LOGGER.info("Create Producer on Session 1");
         MessageProducer producer = session1.createProducer(topic);
 
-        _logger.info("Create Session 2");
+        LOGGER.info("Create Session 2");
         Session session2 = con.createSession(false, AMQSession.NO_ACKNOWLEDGE);
-        _logger.info("Create Durable Subscriber on Session 2");
+        LOGGER.info("Create Durable Subscriber on Session 2");
         TopicSubscriber consumer2 = session2.createDurableSubscriber(topic, MY_SUBSCRIPTION);
 
-        _logger.info("Starting connection");
+        LOGGER.info("Starting connection");
         con.start();
 
-        _logger.info("Producer sending message A");
+        LOGGER.info("Producer sending message A");
         producer.send(session1.createTextMessage("A"));
 
         //check the dur sub's underlying queue now has msg count 1
@@ -89,27 +89,27 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         assertEquals("Msg count should be 1", 1, ((AMQSession<?, ?>) session1).getQueueDepth(subQueue, true));
 
         Message msg;
-        _logger.info("Receive message on consumer 1:expecting A");
+        LOGGER.info("Receive message on consumer 1:expecting A");
         msg = consumer1.receive(getReceiveTimeout());
         assertNotNull("Message should have been received",msg);
         assertEquals("A", ((TextMessage) msg).getText());
-        _logger.info("Receive message on consumer 1 :expecting null");
+        LOGGER.info("Receive message on consumer 1 :expecting null");
         msg = consumer1.receive(getShortReceiveTimeout());
         assertEquals(null, msg);
 
-        _logger.info("Receive message on consumer 2:expecting A");
+        LOGGER.info("Receive message on consumer 2:expecting A");
         msg = consumer2.receive(getReceiveTimeout());
         assertNotNull("Message should have been received",msg);
         assertEquals("A", ((TextMessage) msg).getText());
         msg = consumer2.receive(getShortReceiveTimeout());
-        _logger.info("Receive message on consumer 1 :expecting null");
+        LOGGER.info("Receive message on consumer 1 :expecting null");
         assertEquals(null, msg);
 
         //check the dur sub's underlying queue now has msg count 0
         assertEquals("Msg count should be 0", 0, ((AMQSession<?, ?>) session2).getQueueDepth(subQueue, true));
 
         consumer2.close();
-        _logger.info("Unsubscribe session2/consumer2");
+        LOGGER.info("Unsubscribe session2/consumer2");
         session2.unsubscribe(MY_SUBSCRIPTION);
         
         ((AMQSession<?, ?>) session2).sync();
@@ -120,18 +120,18 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         }
         
         //verify unsubscribing the durable subscriber did not affect the non-durable one
-        _logger.info("Producer sending message B");
+        LOGGER.info("Producer sending message B");
         producer.send(session1.createTextMessage("B"));
 
-        _logger.info("Receive message on consumer 1 :expecting B");
+        LOGGER.info("Receive message on consumer 1 :expecting B");
         msg = consumer1.receive(getReceiveTimeout());
         assertNotNull("Message should have been received",msg);
         assertEquals("B", ((TextMessage) msg).getText());
-        _logger.info("Receive message on consumer 1 :expecting null");
+        LOGGER.info("Receive message on consumer 1 :expecting null");
         msg = consumer1.receive(getShortReceiveTimeout());
         assertEquals(null, msg);
 
-        _logger.info("Close connection");
+        LOGGER.info("Close connection");
         con.close();
     }
 
@@ -186,7 +186,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         public void onException(JMSException exception)
         {
             _exception = exception;
-            _logger.info("Exception listener received: " + exception);
+            LOGGER.info("Exception listener received: " + exception);
             _latch.countDown();
         }
 
@@ -216,7 +216,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
     {
         if(!isBrokerStorePersistent())
         {
-            _logger.warn("The broker store is not persistent, skipping this test");
+            LOGGER.warn("The broker store is not persistent, skipping this test");
             return;
         }
         
@@ -252,14 +252,14 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         producer.send(session1.createTextMessage("A"));
 
         Message msg;
-        _logger.info("Receive message on consumer 1 :expecting A");
+        LOGGER.info("Receive message on consumer 1 :expecting A");
         msg = consumer1.receive(getReceiveTimeout());
         assertNotNull("Message should have been received",msg);
         assertEquals("A", ((TextMessage) msg).getText());
         msg = consumer1.receive(getShortReceiveTimeout());
         assertEquals(null, msg);
 
-        _logger.info("Receive message on consumer 2 :expecting A");
+        LOGGER.info("Receive message on consumer 2 :expecting A");
         msg = consumer2.receive(getReceiveTimeout());
         assertNotNull("Message should have been received",msg);
         assertEquals("A", ((TextMessage) msg).getText());
@@ -269,11 +269,11 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         //send message B, receive with consumer 1, and disconnect consumer 2 to leave the message behind (if not NO_ACK)
         producer.send(session1.createTextMessage("B"));
 
-        _logger.info("Receive message on consumer 1 :expecting B");
+        LOGGER.info("Receive message on consumer 1 :expecting B");
         msg = consumer1.receive(getReceiveTimeout());
         assertNotNull("Consumer 1 should get message 'B'.", msg);
         assertEquals("Incorrect Message received on consumer1.", "B", ((TextMessage) msg).getText());
-        _logger.info("Receive message on consumer 1 :expecting null");
+        LOGGER.info("Receive message on consumer 1 :expecting null");
         msg = consumer1.receive(getShortReceiveTimeout());
         assertNull("There should be no more messages for consumption on consumer1.", msg);
 
@@ -294,25 +294,25 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         }
         else
         {
-            _logger.info("Receive message on consumer 3 :expecting B");
+            LOGGER.info("Receive message on consumer 3 :expecting B");
             msg = consumer3.receive(getReceiveTimeout());
             assertNotNull("Consumer 3 should get message 'B'.", msg);
             assertEquals("Incorrect Message received on consumer3.", "B", ((TextMessage) msg).getText());
         }
 
-        _logger.info("Receive message on consumer 1 :expecting C");
+        LOGGER.info("Receive message on consumer 1 :expecting C");
         msg = consumer1.receive(getReceiveTimeout());
         assertNotNull("Consumer 1 should get message 'C'.", msg);
         assertEquals("Incorrect Message received on consumer1.", "C", ((TextMessage) msg).getText());
-        _logger.info("Receive message on consumer 1 :expecting null");
+        LOGGER.info("Receive message on consumer 1 :expecting null");
         msg = consumer1.receive(getShortReceiveTimeout());
         assertNull("There should be no more messages for consumption on consumer1.", msg);
 
-        _logger.info("Receive message on consumer 3 :expecting C");
+        LOGGER.info("Receive message on consumer 3 :expecting C");
         msg = consumer3.receive(getReceiveTimeout());
         assertNotNull("Consumer 3 should get message 'C'.", msg);
         assertEquals("Incorrect Message received on consumer3.", "C", ((TextMessage) msg).getText());
-        _logger.info("Receive message on consumer 3 :expecting null");
+        LOGGER.info("Receive message on consumer 3 :expecting null");
         msg = consumer3.receive(getShortReceiveTimeout());
         assertNull("There should be no more messages for consumption on consumer3.", msg);
 
@@ -381,10 +381,10 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         // Send message and receive on consumer 1.
         producer.send(session0.createTextMessage("B"));
 
-        _logger.info("Receive message on consumer 1 :expecting B");
+        LOGGER.info("Receive message on consumer 1 :expecting B");
         msg = consumer1.receive(getReceiveTimeout());
         assertEquals("B", ((TextMessage) msg).getText());
-        _logger.info("Receive message on consumer 1 :expecting null");
+        LOGGER.info("Receive message on consumer 1 :expecting null");
         msg = consumer1.receive(getShortReceiveTimeout());
         assertEquals(null, msg);
         
@@ -396,10 +396,10 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         // Send message C and receive on consumer 1
         producer.send(session0.createTextMessage("C"));
 
-        _logger.info("Receive message on consumer 1 :expecting C");
+        LOGGER.info("Receive message on consumer 1 :expecting C");
         msg = consumer1.receive(getReceiveTimeout());
         assertEquals("C", ((TextMessage) msg).getText());
-        _logger.info("Receive message on consumer 1 :expecting null");
+        LOGGER.info("Receive message on consumer 1 :expecting null");
         msg = consumer1.receive(getShortReceiveTimeout());
         assertEquals(null, msg);
 
@@ -418,17 +418,17 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         }
         else
         {
-            _logger.info("Receive message on consumer 3 :expecting B");
+            LOGGER.info("Receive message on consumer 3 :expecting B");
             msg = consumer3.receive(getReceiveTimeout());
             assertNotNull(msg);
             assertEquals("B", ((TextMessage) msg).getText());
         }
         
-        _logger.info("Receive message on consumer 3 :expecting C");
+        LOGGER.info("Receive message on consumer 3 :expecting C");
         msg = consumer3.receive(getReceiveTimeout());
         assertNotNull("Consumer 3 should get message 'C'.", msg);
         assertEquals("Incorrect Message recevied on consumer3.", "C", ((TextMessage) msg).getText());
-        _logger.info("Receive message on consumer 3 :expecting null");
+        LOGGER.info("Receive message on consumer 3 :expecting null");
         msg = consumer3.receive(getShortReceiveTimeout());
         assertNull("There should be no more messages for consumption on consumer3.", msg);
 
@@ -716,7 +716,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         }
         catch (Exception e)
         {
-            _logger.error("Receive error",e);
+            LOGGER.error("Receive error",e);
         }
 
         conn.stop();
@@ -784,7 +784,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         }
         catch (Exception e)
         {
-            _logger.error("Receive error",e);
+            LOGGER.error("Receive error",e);
         }
 
         conn.stop();
@@ -846,7 +846,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         }
         catch (Exception e)
         {
-            _logger.error("Error creating durable subscriber",e);
+            LOGGER.error("Error creating durable subscriber",e);
         }
     }
 

@@ -58,7 +58,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     public static final String QUEUE = "queue";
     public static final String TOPIC = "topic";
     public static final String MANAGEMENT_MODE_PASSWORD = "mm_password";
-    protected static final Logger _logger = LoggerFactory.getLogger(QpidBrokerTestCase.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(QpidBrokerTestCase.class);
     protected static final long RECEIVE_TIMEOUT = Long.getLong("qpid.test_receive_timeout", 1000L);
     protected static final String INDEX = "index";
     protected static final String CONTENT = "content";
@@ -92,7 +92,7 @@ public class QpidBrokerTestCase extends QpidTestCase
         }
         catch (Exception e)
         {
-            _logger.error("exception", e);
+            LOGGER.error("exception", e);
             throw e;
         }
         finally
@@ -102,13 +102,13 @@ public class QpidBrokerTestCase extends QpidTestCase
             // reset properties used in the test
             revertSystemProperties();
 
-            _logger.info("==========  stop " + getTestName() + " ==========");
+            LOGGER.info("==========  stop " + getTestName() + " ==========");
         }
     }
 
     public Logger getLogger()
     {
-        return QpidBrokerTestCase._logger;
+        return QpidBrokerTestCase.LOGGER;
     }
 
     public File getOutputFile()
@@ -566,7 +566,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     @Override
     protected void tearDown() throws java.lang.Exception
     {
-        _logger.debug("tearDown started");
+        LOGGER.debug("tearDown started");
         try
         {
             for (Connection c : _connections)
@@ -607,13 +607,13 @@ public class QpidBrokerTestCase extends QpidTestCase
         catch (Exception e)
         {
             success = false;
-            _logger.error("Failed to stop broker " + broker, e);
+            LOGGER.error("Failed to stop broker " + broker, e);
             if (broker != null)
             {
                 // save the thread dump in case of dead locks
                 try
                 {
-                    _logger.error("Broker " + broker + " thread dump:" + broker.dumpThreads());
+                    LOGGER.error("Broker " + broker + " thread dump:" + broker.dumpThreads());
                 }
                 finally
                 {
@@ -889,7 +889,7 @@ public class QpidBrokerTestCase extends QpidTestCase
         public BrokerHolder create(BrokerHolder.BrokerType brokerType, int port, QpidBrokerTestCase testCase)
         {
             // This will force the creation of the file appender
-            _logger.debug("Creating BrokerHolder");
+            LOGGER.debug("Creating BrokerHolder");
 
             final File logFile = testCase.getOutputFile();
             final String classQualifiedTestName = testCase.getClassQualifiedTestName();

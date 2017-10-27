@@ -48,7 +48,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
 
     private static final int DEFAULT_PRIORITY = 4;
 
-    private static final Logger _logger = LoggerFactory.getLogger(JMSMessagePropertyExpression.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JMSMessagePropertyExpression.class);
 
     private static final HashMap<String, Expression> JMS_PROPERTY_EXPRESSIONS = new HashMap<String, Expression>();
     static
@@ -188,9 +188,9 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
         {
                 JMSDeliveryMode mode = message.isPersistent() ? JMSDeliveryMode.PERSISTENT :
                                                                 JMSDeliveryMode.NON_PERSISTENT;
-                if (_logger.isDebugEnabled())
+                if (LOGGER.isDebugEnabled())
                 {
-                    _logger.debug("JMSDeliveryMode is :" + mode);
+                    LOGGER.debug("JMSDeliveryMode is :" + mode);
                 }
 
                 return mode.toString();

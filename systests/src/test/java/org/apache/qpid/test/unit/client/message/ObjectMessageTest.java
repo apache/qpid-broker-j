@@ -40,7 +40,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class ObjectMessageTest extends QpidBrokerTestCase implements MessageListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(ObjectMessageTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ObjectMessageTest.class);
 
     private Connection connection;
     private Destination destination;
@@ -92,11 +92,11 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
             send();
             waitUntilReceived(data.length);
             check();
-            _logger.info("All " + data.length + " items matched.");
+            LOGGER.info("All " + data.length + " items matched.");
         }
         catch (Exception e)
         {
-            _logger.error("This Test should succeed but failed", e);
+            LOGGER.error("This Test should succeed but failed", e);
             fail("This Test should succeed but failed due to: " + e);
         }
     }
@@ -233,13 +233,13 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
             }
             else
             {
-                _logger.error("ERROR: Got " + message.getClass().getName() + " not ObjectMessage");
+                LOGGER.error("ERROR: Got " + message.getClass().getName() + " not ObjectMessage");
                 items.add(message);
             }
         }
         catch (JMSException e)
         {
-            _logger.error("Error getting object from message", e);
+            LOGGER.error("Error getting object from message", e);
             items.add(e);
         }
 

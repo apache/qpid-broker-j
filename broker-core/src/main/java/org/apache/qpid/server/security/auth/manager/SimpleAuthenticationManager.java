@@ -49,7 +49,7 @@ import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSourceAdap
 public class SimpleAuthenticationManager extends AbstractAuthenticationManager<SimpleAuthenticationManager>
         implements PasswordCredentialManagingAuthenticationProvider<SimpleAuthenticationManager>
 {
-    private static final Logger _logger = LoggerFactory.getLogger(SimpleAuthenticationManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SimpleAuthenticationManager.class);
 
     private static final String PLAIN_MECHANISM = "PLAIN";
     private static final String CRAM_MD5_MECHANISM = "CRAM-MD5";

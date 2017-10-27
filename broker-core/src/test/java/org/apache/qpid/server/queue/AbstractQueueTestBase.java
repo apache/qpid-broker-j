@@ -78,7 +78,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 abstract class AbstractQueueTestBase extends QpidTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(AbstractQueueTestBase.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractQueueTestBase.class);
     private Queue<?> _queue;
     private QueueManagingVirtualHost<?> _virtualHost;
     private String _qname = "qname";

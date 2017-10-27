@@ -28,7 +28,7 @@ import org.apache.qpid.server.message.MessageInstanceConsumer;
 
 class ImplicitAcceptDispositionChangeListener implements ServerSession.MessageDispositionChangeListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(ImplicitAcceptDispositionChangeListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ImplicitAcceptDispositionChangeListener.class);
 
 
     private final MessageInstance _entry;
@@ -47,7 +47,7 @@ class ImplicitAcceptDispositionChangeListener implements ServerSession.MessageDi
     @Override
     public void onAccept()
     {
-        _logger.warn("MessageAccept received for message which is using NONE as the accept mode (likely client error)");
+        LOGGER.warn("MessageAccept received for message which is using NONE as the accept mode (likely client error)");
     }
 
     @Override

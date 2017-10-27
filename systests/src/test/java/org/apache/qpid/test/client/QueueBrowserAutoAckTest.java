@@ -31,6 +31,10 @@ import javax.jms.QueueBrowser;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.naming.NamingException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
@@ -38,6 +42,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(QueueBrowserAutoAckTest.class);
     protected Connection _clientConnection;
     protected Session _clientSession;
     protected Queue _queue;
@@ -125,14 +130,14 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
     {
 
         // create QueueBrowser
-        _logger.info("Creating Queue Browser");
+        LOGGER.info("Creating Queue Browser");
 
         QueueBrowser queueBrowser = _clientSession.createBrowser(_queue);
 
         // check for messages
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug("Checking for " + expectedDepth + " messages with QueueBrowser");
+            LOGGER.debug("Checking for " + expectedDepth + " messages with QueueBrowser");
         }
 
         //Check what the session believes the queue count to be.
@@ -161,9 +166,9 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
             msgCount++;
         }
 
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug("Found " + msgCount + " messages total in browser");
+            LOGGER.debug("Found " + msgCount + " messages total in browser");
         }
 
         // check to see if all messages found
@@ -210,7 +215,7 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
 
         for (int count = 0; count < browserEnumerationCount; count++)
         {
-            _logger.info("Checking getEnumeration:" + count);
+            LOGGER.info("Checking getEnumeration:" + count);
             Enumeration msgs = queueBrowser.getEnumeration();
 
             int msgCount = 0;
@@ -309,7 +314,7 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
 
         MessageConsumer consumer = session.createConsumer(_queue);
 
-        _logger.info("Verify messages are still on the queue");
+        LOGGER.info("Verify messages are still on the queue");
 
         Message tempMsg;
 
@@ -325,7 +330,7 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
         //Close this new connection
         connection.close();
 
-        _logger.info("All messages received from queue");
+        LOGGER.info("All messages received from queue");
 
         //ensure no message left.
         checkQueueDepth(0);

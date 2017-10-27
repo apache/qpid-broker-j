@@ -41,7 +41,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class RecoverTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(RecoverTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RecoverTest.class);
 
     private static final int SENT_COUNT = 4;
 
@@ -70,9 +70,9 @@ public class RecoverTest extends QpidBrokerTestCase
 
         _consumer = _consumerSession.createConsumer(queue);
 
-        _logger.info("Sending four messages");
+        LOGGER.info("Sending four messages");
         sendMessage(_connection.createSession(false, Session.AUTO_ACKNOWLEDGE), queue, SENT_COUNT);
-        _logger.info("Starting connection");
+        LOGGER.info("Starting connection");
         _connection.start();
     }
 
@@ -103,17 +103,17 @@ public class RecoverTest extends QpidBrokerTestCase
 
         if (message != null)
         {
-            _logger.info("Received redelivery of three messages. Acknowledging last message");
+            LOGGER.info("Received redelivery of three messages. Acknowledging last message");
             message.acknowledge();
         }
 
-        _logger.info("Calling acknowledge with no outstanding messages");
+        LOGGER.info("Calling acknowledge with no outstanding messages");
         // all acked so no messages to be delivered
         _consumerSession.recover();
 
         message = _consumer.receiveNoWait();
         assertNull(message);
-        _logger.info("No messages redelivered as is expected");
+        LOGGER.info("No messages redelivered as is expected");
     }
 
     public void testRecoverResendsMsgs() throws Exception
@@ -122,12 +122,12 @@ public class RecoverTest extends QpidBrokerTestCase
 
         Message message = validateNextMessages(1, 0);
         message.acknowledge();
-        _logger.info("Received and acknowledged first message");
+        LOGGER.info("Received and acknowledged first message");
 
         _consumer.receive();
         _consumer.receive();
         _consumer.receive();
-        _logger.info("Received all four messages. Calling recover with three outstanding messages");
+        LOGGER.info("Received all four messages. Calling recover with three outstanding messages");
         // no ack for last three messages so when I call recover I expect to get three messages back
 
         _consumerSession.recover();
@@ -141,11 +141,11 @@ public class RecoverTest extends QpidBrokerTestCase
 
         Message message = validateNextMessages(2, 0);
         message.acknowledge();
-        _logger.info("Received 2 messages, acknowledge() first message, should acknowledge both");
+        LOGGER.info("Received 2 messages, acknowledge() first message, should acknowledge both");
 
         _consumer.receive();
         _consumer.receive();
-        _logger.info("Received all four messages. Calling recover with two outstanding messages");
+        LOGGER.info("Received all four messages. Calling recover with two outstanding messages");
         // no ack for last three messages so when I call recover I expect to get three messages back
         _consumerSession.recover();
 
@@ -157,10 +157,10 @@ public class RecoverTest extends QpidBrokerTestCase
         assertNotNull(message3);
         assertEquals(3, message3.getIntProperty(INDEX));
 
-        _logger.info("Received redelivery of two messages. calling acknolwedgeThis() first of those message");
+        LOGGER.info("Received redelivery of two messages. calling acknolwedgeThis() first of those message");
         ((org.apache.qpid.jms.Message) message2).acknowledgeThis();
 
-        _logger.info("Calling recover");
+        LOGGER.info("Calling recover");
         // all acked so no messages to be delivered
         _consumerSession.recover();
 
@@ -193,7 +193,7 @@ public class RecoverTest extends QpidBrokerTestCase
 
         con2.close();
 
-        _logger.info("Starting connection");
+        LOGGER.info("Starting connection");
         con.start();
 
         TextMessage tm2 = (TextMessage) consumer2.receive(_timeout);
@@ -250,13 +250,13 @@ public class RecoverTest extends QpidBrokerTestCase
                     }
                     else
                     {
-                        _logger.error(message.toString());
+                        LOGGER.error(message.toString());
                         setError(new Exception("Message delivered too many times!: " + _count));
                     }
                 }
                 catch (JMSException e)
                 {
-                    _logger.error("Error recovering session: " + e, e);
+                    LOGGER.error("Error recovering session: " + e, e);
                     setError(e);
                 }
 
@@ -342,7 +342,7 @@ public class RecoverTest extends QpidBrokerTestCase
             //don't ack the message until we receive it 5 times
             if( messageSeen < 5 ) 
             {
-                _logger.debug("Ignoring message " + actualIndex + " and calling recover");
+                LOGGER.debug("Ignoring message " + actualIndex + " and calling recover");
                 session.recover();
                 messageSeen++;
             }
@@ -351,7 +351,7 @@ public class RecoverTest extends QpidBrokerTestCase
                 messageSeen = 0;
                 expectedIndex++;
                 message.acknowledge();
-                _logger.debug("Acknowledging message " + actualIndex);
+                LOGGER.debug("Acknowledging message " + actualIndex);
             }
         }        
     }
@@ -391,7 +391,7 @@ public class RecoverTest extends QpidBrokerTestCase
                     //don't ack the message until we receive it 5 times
                     if( messageSeen < 5 ) 
                     {
-                        _logger.debug("Ignoring message " + actualIndex + " and calling recover");
+                        LOGGER.debug("Ignoring message " + actualIndex + " and calling recover");
                         session.recover();
                         messageSeen++;
                     }
@@ -400,7 +400,7 @@ public class RecoverTest extends QpidBrokerTestCase
                         messageSeen = 0;
                         expectedIndex++;
                         message.acknowledge();
-                        _logger.debug("Acknowledging message " + actualIndex);
+                        LOGGER.debug("Acknowledging message " + actualIndex);
                         if (expectedIndex == 8)
                         {
                             pass.set(true);
@@ -468,7 +468,7 @@ public class RecoverTest extends QpidBrokerTestCase
             assertEquals("Unexpected message received", i, message.getIntProperty(INDEX));
         }
 
-        _logger.info("Recovering");
+        LOGGER.info("Recovering");
         session.recover();
 
         Message result = cons.receive(_timeout);

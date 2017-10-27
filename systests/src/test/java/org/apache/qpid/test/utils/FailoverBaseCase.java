@@ -37,7 +37,7 @@ import org.apache.qpid.jms.ConnectionListener;
 
 public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionListener
 {
-    protected static final Logger _logger = LoggerFactory.getLogger(FailoverBaseCase.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FailoverBaseCase.class);
 
     public static final long DEFAULT_FAILOVER_TIME = Long.getLong("FailoverBaseCase.defaultFailoverTime", 10000L);
 
@@ -96,7 +96,7 @@ public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionLi
     @Override
     public ConnectionFactory getConnectionFactory() throws NamingException
     {
-        _logger.info("get ConnectionFactory");
+        LOGGER.info("get ConnectionFactory");
         if (_connectionFactory == null)
         {
             if (Boolean.getBoolean("profile.use_ssl"))

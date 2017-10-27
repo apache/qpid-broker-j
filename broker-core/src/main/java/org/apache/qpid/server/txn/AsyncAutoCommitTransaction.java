@@ -47,7 +47,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
 {
     static final String QPID_STRICT_ORDER_WITH_MIXED_DELIVERY_MODE = "qpid.strict_order_with_mixed_delivery_mode";
 
-    protected static final Logger _logger = LoggerFactory.getLogger(AsyncAutoCommitTransaction.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AsyncAutoCommitTransaction.class);
 
     private final MessageStore _messageStore;
     private final FutureRecorder _futureRecorder;
@@ -99,7 +99,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
             ListenableFuture<Void> future;
             if(record != null)
             {
-                _logger.debug("Dequeue of message number {} from transaction log. Queue : {}", record.getMessageNumber(), record.getQueueId());
+                LOGGER.debug("Dequeue of message number {} from transaction log. Queue : {}", record.getMessageNumber(), record.getQueueId());
 
                 txn = _messageStore.newTransaction();
                 txn.dequeueMessage(record);
@@ -166,7 +166,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
 
                 if(record != null)
                 {
-                    _logger.debug("Dequeue of message number {} from transaction log. Queue : {}", record.getMessageNumber(), record.getQueueId());
+                    LOGGER.debug("Dequeue of message number {} from transaction log. Queue : {}", record.getMessageNumber(), record.getQueueId());
 
                     if(txn == null)
                     {
@@ -208,7 +208,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
             final MessageEnqueueRecord enqueueRecord;
             if(queue.getMessageDurability().persist(message.isPersistent()))
             {
-                _logger.debug("Enqueue of message number {} to transaction log. Queue : {}", message.getMessageNumber(), queue.getName());
+                LOGGER.debug("Enqueue of message number {} to transaction log. Queue : {}", message.getMessageNumber(), queue.getName());
 
                 txn = _messageStore.newTransaction();
                 enqueueRecord = txn.enqueueMessage(queue, message);
@@ -275,7 +275,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
             {
                 if (queue.getMessageDurability().persist(message.isPersistent()))
                 {
-                    _logger.debug("Enqueue of message number {} to transaction log. Queue : {}", message.getMessageNumber(), queue.getName());
+                    LOGGER.debug("Enqueue of message number {} to transaction log. Queue : {}", message.getMessageNumber(), queue.getName());
 
                     if (txn == null)
                     {

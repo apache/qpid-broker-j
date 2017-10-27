@@ -67,7 +67,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 {
-    private static final Logger _logger = LoggerFactory.getLogger(AsynchronousMessageStoreRecoverer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AsynchronousMessageStoreRecoverer.class);
     private AsynchronousRecoverer _asynchronousRecoverer;
 
     @Override
@@ -177,7 +177,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
             if (handler.getNumberOfUnknownMessageInstances() > 0)
             {
-                _logger.info("Discarded {} entry(s) associated with queue '{}' as the referenced message "
+                LOGGER.info("Discarded {} entry(s) associated with queue '{}' as the referenced message "
                              + "does not exist.", handler.getNumberOfUnknownMessageInstances(), queue.getName());
             }
 
@@ -223,7 +223,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             {
                 if (_continueRecovery.get())
                 {
-                    _logger.debug("Message id '{}' is orphaned, removing", storedMessage.getMessageNumber());
+                    LOGGER.debug("Message id '{}' is orphaned, removing", storedMessage.getMessageNumber());
                     storedMessage.remove();
                     unusedMessageCounter++;
                 }
@@ -231,7 +231,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
             if (unusedMessageCounter > 0)
             {
-                _logger.info("Discarded {} orphaned message(s).", unusedMessageCounter);
+                LOGGER.info("Discarded {} orphaned message(s).", unusedMessageCounter);
             }
 
             messagesToDelete.clear();
@@ -272,7 +272,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 boolean wasShutdown = _queueRecoveryExecutor.awaitTermination(THREAD_POOL_SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS);
                 if (!wasShutdown)
                 {
-                    _logger.warn("Failed to gracefully shutdown queue recovery executor within permitted time period");
+                    LOGGER.warn("Failed to gracefully shutdown queue recovery executor within permitted time period");
                     _queueRecoveryExecutor.shutdownNow();
                 }
             }
@@ -536,14 +536,14 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
                     if (message != null)
                     {
-                        _logger.debug("Delivering message id '{}' to queue '{}'", message.getMessageNumber(), queueName);
+                        LOGGER.debug("Delivering message id '{}' to queue '{}'", message.getMessageNumber(), queueName);
 
                         _queue.recover(message, record);
                         _recoveredCount++;
                     }
                     else
                     {
-                        _logger.debug("Message id '{}' referenced in log as enqueued in queue '{}' is unknown, entry will be discarded",
+                        LOGGER.debug("Message id '{}' referenced in log as enqueued in queue '{}' is unknown, entry will be discarded",
                                       messageId, queueName);
                         Transaction txn = _store.newTransaction();
                         txn.dequeueMessage(record);

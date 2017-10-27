@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class CursorOperation implements DatabaseRunnable
 {
-    private static final Logger _logger = LoggerFactory.getLogger(CursorOperation.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CursorOperation.class);
 
     private CursorTemplate _template;
     private long _rowCount;
@@ -49,7 +49,7 @@ public abstract class CursorOperation implements DatabaseRunnable
                 CursorOperation.this.processEntry(database, targetDatabase, transaction, key, value);
                 if (getProcessedCount() % 1000 == 0)
                 {
-                    _logger.info("Processed " + getProcessedCount() + " records of " + getRowCount() + ".");
+                    LOGGER.info("Processed " + getProcessedCount() + " records of " + getRowCount() + ".");
                 }
             }
 

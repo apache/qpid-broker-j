@@ -67,7 +67,7 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> implements HeadersExchange<HeadersExchangeImpl>
 {
 
-    private static final Logger _logger = LoggerFactory.getLogger(HeadersExchangeImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HeadersExchangeImpl.class);
 
     private final Set<HeadersBinding> _bindingHeaderMatchers = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -83,7 +83,7 @@ public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> i
                                                                                      final InstanceProperties instanceProperties,
                                                                                      RoutingResult<M> routingResult)
     {
-        _logger.debug("Exchange {}: routing message with headers {}", getName(), payload.getMessageHeader());
+        LOGGER.debug("Exchange {}: routing message with headers {}", getName(), payload.getMessageHeader());
 
         for (HeadersBinding hb : _bindingHeaderMatchers)
         {
@@ -91,9 +91,9 @@ public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> i
             {
                 MessageDestination destination = hb.getBinding().getDestination();
 
-                if (_logger.isDebugEnabled())
+                if (LOGGER.isDebugEnabled())
                 {
-                    _logger.debug("Exchange '{}' delivering message with headers '{}' to '{}'",
+                    LOGGER.debug("Exchange '{}' delivering message with headers '{}' to '{}'",
                                   getName(), payload.getMessageHeader(), destination.getName());
                 }
                 String actualRoutingKey = hb.getReplacementRoutingKey() == null

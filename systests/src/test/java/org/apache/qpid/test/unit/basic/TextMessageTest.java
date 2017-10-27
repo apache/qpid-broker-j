@@ -45,7 +45,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class TextMessageTest extends QpidBrokerTestCase implements MessageListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(TextMessageTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TextMessageTest.class);
 
     private Connection _connection;
     private Destination _destination;
@@ -94,7 +94,7 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
         }
         catch (Throwable  e)
         {
-            _logger.error("Error creating consumer", e);
+            LOGGER.error("Error creating consumer", e);
         }
     }
 
@@ -105,7 +105,7 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
         send(count);
         _waitForCompletion.await(20, TimeUnit.SECONDS);
         check();
-        _logger.info("Completed without failure");
+        LOGGER.info("Completed without failure");
         _connection.close();
     }
 
@@ -120,10 +120,10 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
             Message m = _session.createTextMessage(text);
             //m.setStringProperty("String", "hello");
 
-            _logger.info("Sending Msg:" + m);
+            LOGGER.info("Sending Msg:" + m);
             producer.send(m);
         }
-        _logger.info("sent " + count  + " mesages");
+        LOGGER.info("sent " + count  + " mesages");
     }
 
 
@@ -227,7 +227,7 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
     {
         synchronized (received)
         {
-            _logger.info("===== received one message");
+            LOGGER.info("===== received one message");
             received.add(message);
             _waitForCompletion.countDown();
         }

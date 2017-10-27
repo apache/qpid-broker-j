@@ -106,7 +106,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             socket.setSoTimeout(SO_TIMEOUT);
 
             final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getDefaultAmqpPort());
-            _logger.debug("Making connection to {}", inetSocketAddress);
+            LOGGER.debug("Making connection to {}", inetSocketAddress);
 
             socket.connect(inetSocketAddress);
 
@@ -147,7 +147,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             socket.setSoTimeout(SO_TIMEOUT);
 
             final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getDefaultAmqpPort());
-            _logger.debug("Making connection to {}", inetSocketAddress);
+            LOGGER.debug("Making connection to {}", inetSocketAddress);
 
             socket.connect(inetSocketAddress);
 
@@ -157,7 +157,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             try
             {
                 c = socket.getInputStream().read();
-                _logger.debug("Read {}", c);
+                LOGGER.debug("Read {}", c);
 
             }
             catch(SocketTimeoutException ste)
@@ -180,7 +180,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             byte[] header = getHeaderBytesForBrokerVersion();
 
             final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getDefaultAmqpPort());
-            _logger.debug("Making connection to {}", inetSocketAddress);
+            LOGGER.debug("Making connection to {}", inetSocketAddress);
 
             socket.connect(inetSocketAddress);
 
@@ -252,7 +252,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
 
 
             final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getDefaultAmqpPort());
-            _logger.debug("Making connection to {}", inetSocketAddress);
+            LOGGER.debug("Making connection to {}", inetSocketAddress);
 
             socket.connect(inetSocketAddress);
 

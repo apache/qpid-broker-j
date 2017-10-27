@@ -43,7 +43,7 @@ import org.apache.qpid.server.store.TransactionLogResource;
  */
 public class AutoCommitTransaction implements ServerTransaction
 {
-    protected static final Logger _logger = LoggerFactory.getLogger(AutoCommitTransaction.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AutoCommitTransaction.class);
 
     private final MessageStore _messageStore;
 
@@ -82,7 +82,7 @@ public class AutoCommitTransaction implements ServerTransaction
         {
             if(record != null)
             {
-                _logger.debug("Dequeue of message number {} from transaction log. Queue : {}", record.getMessageNumber(), record.getQueueId());
+                LOGGER.debug("Dequeue of message number {} from transaction log. Queue : {}", record.getMessageNumber(), record.getQueueId());
 
                 txn = _messageStore.newTransaction();
                 txn.dequeueMessage(record);
@@ -111,7 +111,7 @@ public class AutoCommitTransaction implements ServerTransaction
                 MessageEnqueueRecord enqueueRecord = entry.getEnqueueRecord();
                 if(enqueueRecord != null)
                 {
-                    _logger.debug("Dequeue of message number {} from transaction log. Queue : {}", enqueueRecord.getMessageNumber(), enqueueRecord.getQueueId());
+                    LOGGER.debug("Dequeue of message number {} from transaction log. Queue : {}", enqueueRecord.getMessageNumber(), enqueueRecord.getQueueId());
 
                     if(txn == null)
                     {
@@ -147,7 +147,7 @@ public class AutoCommitTransaction implements ServerTransaction
             final MessageEnqueueRecord record;
             if(queue.getMessageDurability().persist(message.isPersistent()))
             {
-                _logger.debug("Enqueue of message number {} to transaction log. Queue : {}", message.getMessageNumber(), queue.getName());
+                LOGGER.debug("Enqueue of message number {} to transaction log. Queue : {}", message.getMessageNumber(), queue.getName());
 
                 txn = _messageStore.newTransaction();
                 record = txn.enqueueMessage(queue, message);
@@ -201,7 +201,7 @@ public class AutoCommitTransaction implements ServerTransaction
             {
                 if (queue.getMessageDurability().persist(message.isPersistent()))
                 {
-                    _logger.debug("Enqueue of message number {} to transaction log. Queue : {}", message.getMessageNumber(), queue.getName());
+                    LOGGER.debug("Enqueue of message number {} to transaction log. Queue : {}", message.getMessageNumber(), queue.getName());
 
                     if (txn == null)
                     {

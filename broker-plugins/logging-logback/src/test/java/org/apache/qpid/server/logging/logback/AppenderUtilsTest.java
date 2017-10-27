@@ -46,7 +46,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AppenderUtilsTest extends QpidTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(AppenderUtilsTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AppenderUtilsTest.class);
 
     public static final String LAYOUT = "%d %-5p [%t] \\(%c{2}\\) # %m%n";
     public static final int MAX_FILE_SIZE = 101;
@@ -175,7 +175,7 @@ public class AppenderUtilsTest extends QpidTestCase
             }
             else
             {
-                _logger.warn("could not set permissions on temporary directory - test skipped");
+                LOGGER.warn("could not set permissions on temporary directory - test skipped");
             }
         }
         finally

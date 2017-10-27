@@ -45,7 +45,7 @@ import org.apache.qpid.server.store.StoreException;
 public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
 {
 
-    private static final Logger _logger = LoggerFactory.getLogger(GenericJDBCMessageStore.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GenericJDBCMessageStore.class);
 
     private String _connectionURL;
     private ConnectionProvider _connectionProvider;
@@ -85,7 +85,7 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
                 JDBCConnectionProviderFactory.FACTORIES.get(connectionPoolType);
         if(connectionProviderFactory == null)
         {
-            _logger.warn("Unknown connection pool type: " + connectionPoolType + ".  No connection pooling will be used");
+            LOGGER.warn("Unknown connection pool type: " + connectionPoolType + ".  No connection pooling will be used");
             connectionProviderFactory = new DefaultConnectionProviderFactory();
         }
 
@@ -144,7 +144,7 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
     @Override
     protected Logger getLogger()
     {
-        return _logger;
+        return LOGGER;
     }
 
     @Override

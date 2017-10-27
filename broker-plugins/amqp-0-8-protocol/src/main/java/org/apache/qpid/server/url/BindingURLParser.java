@@ -45,7 +45,7 @@ public class BindingURLParser
     private static final char COLON_CHAR = ':';
     private static final char END_OF_URL_MARKER_CHAR = '%';
 
-    private static final Logger _logger = LoggerFactory.getLogger(BindingURLParser.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BindingURLParser.class);
 
     private char[] _url;
     private AMQBindingURL _bindingURL;
@@ -84,7 +84,7 @@ public class BindingURLParser
             {
                 _error =
                         "Invalid URL format [current_state = " + prevState + ", details extracted so far " + _bindingURL + " ] error at (" + _index + ") due to " + _error;
-                _logger.debug(_error);
+                LOGGER.debug(_error);
                 URISyntaxException ex;
                 ex = new URISyntaxException(markErrorLocation(),"Error occurred while parsing URL",_index);
                 throw ex;

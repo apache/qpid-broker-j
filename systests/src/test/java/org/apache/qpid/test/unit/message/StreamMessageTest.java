@@ -44,7 +44,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
  */
 public class StreamMessageTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(StreamMessageTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(StreamMessageTest.class);
 
     public void testStreamMessageEOF() throws Exception
     {
@@ -58,7 +58,7 @@ public class StreamMessageTest extends QpidBrokerTestCase
         Session producerSession = con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
 
         // Need to start the "producer" connection in order to receive bounced messages
-        _logger.info("Starting producer connection");
+        LOGGER.info("Starting producer connection");
         con2.start();
 
         MessageProducer mandatoryProducer = producerSession.createProducer(queue);
@@ -70,7 +70,7 @@ public class StreamMessageTest extends QpidBrokerTestCase
 
         mandatoryProducer.send(msg);
 
-        _logger.info("Starting consumer connection");
+        LOGGER.info("Starting consumer connection");
         con.start();
 
         StreamMessage msg2 = (StreamMessage) consumer.receive(2000);

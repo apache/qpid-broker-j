@@ -90,7 +90,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         extends AbstractConfiguredObject<T>
         implements Exchange<T>
 {
-    private static final Logger _logger = LoggerFactory.getLogger(AbstractExchange.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractExchange.class);
 
     private static final ThreadLocal<Map<AbstractExchange<?>, Set<String>>> CURRENT_ROUTING = new ThreadLocal<>();
 
@@ -248,7 +248,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             }
             else
             {
-                _logger.warn("Cannot find alternate binding destination '{}' for exchange '{}'", alternateDestination, toString());
+                LOGGER.warn("Cannot find alternate binding destination '{}' for exchange '{}'", alternateDestination, toString());
             }
         }
 
@@ -879,7 +879,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     {
         if (isAutoDeletePending())
         {
-            _logger.debug("Auto-deleting exchange: {}", this);
+            LOGGER.debug("Auto-deleting exchange: {}", this);
 
             delete();
             return true;

@@ -49,7 +49,7 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements TopicExchange<TopicExchangeImpl>
 {
-    private static final Logger _logger = LoggerFactory.getLogger(TopicExchangeImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TopicExchangeImpl.class);
 
     private final TopicParser _parser = new TopicParser();
 
@@ -69,7 +69,7 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
         final String bindingKey = binding.getBindingKey();
         final MessageDestination destination = binding.getDestination();
 
-        _logger.debug("Updating binding of queue {} with routing key {}", destination.getName(), bindingKey);
+        LOGGER.debug("Updating binding of queue {} with routing key {}", destination.getName(), bindingKey);
 
         String routingKey = TopicNormalizer.normalize(bindingKey);
 
@@ -92,7 +92,7 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
         final String bindingKey = binding.getBindingKey();
         MessageDestination messageDestination = binding.getDestination();
 
-        _logger.debug("Registering messageDestination {} with routing key {}", messageDestination.getName(), bindingKey);
+        LOGGER.debug("Registering messageDestination {} with routing key {}", messageDestination.getName(), bindingKey);
 
         String routingKey = TopicNormalizer.normalize(bindingKey);
         TopicExchangeResult result = _topicExchangeResults.get(routingKey);
@@ -163,7 +163,7 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
         {
             Map<String,Object> bindingArgs = _bindings.remove(binding);
 
-            _logger.debug("deregisterQueue args: {}", bindingArgs);
+            LOGGER.debug("deregisterQueue args: {}", bindingArgs);
 
             String bindingKey = TopicNormalizer.normalize(binding.getBindingKey());
             TopicExchangeResult result = _topicExchangeResults.get(bindingKey);

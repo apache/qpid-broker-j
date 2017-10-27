@@ -29,6 +29,9 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.QpidException;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
@@ -41,6 +44,8 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
  */
 public class QueueDepthWithSelectorTest extends QpidBrokerTestCase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(QueueDepthWithSelectorTest.class);
+
     protected final String VHOST = "test";
     protected final String QUEUE = this.getClass().getName();
 
@@ -81,17 +86,17 @@ public class QueueDepthWithSelectorTest extends QpidBrokerTestCase
     public void test() throws Exception
     {
         //Send messages
-        _logger.info("Starting to send messages");
+        LOGGER.info("Starting to send messages");
         for (int msg = 0; msg < MSG_COUNT; msg++)
         {
             _producer.send(nextMessage(msg));
         }
-        _logger.info("Closing connection");
+        LOGGER.info("Closing connection");
         //Close the connection.. .giving the broker time to clean up its state.
         _producerConnection.close();
 
         //Verify we get all the messages.
-        _logger.info("Verifying messages");
+        LOGGER.info("Verifying messages");
         verifyAllMessagesRecevied(50);
         verifyBrokerState(0);
 
@@ -99,7 +104,7 @@ public class QueueDepthWithSelectorTest extends QpidBrokerTestCase
         _clientConnection.close();
 
         //Verify Broker state
-        _logger.info("Verifying broker state");
+        LOGGER.info("Verifying broker state");
         verifyBrokerState(0);
     }
 

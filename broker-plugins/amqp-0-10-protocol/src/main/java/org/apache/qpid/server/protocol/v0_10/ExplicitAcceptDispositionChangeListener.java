@@ -29,7 +29,7 @@ import org.apache.qpid.server.message.MessageInstanceConsumer;
 
 class ExplicitAcceptDispositionChangeListener implements ServerSession.MessageDispositionChangeListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(ExplicitAcceptDispositionChangeListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExplicitAcceptDispositionChangeListener.class);
 
 
     private final MessageInstance _entry;

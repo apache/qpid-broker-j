@@ -45,7 +45,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class TimeToLiveTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(TimeToLiveTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TimeToLiveTest.class);
 
     protected final String QUEUE = "TimeToLiveQueue";
 
@@ -162,9 +162,9 @@ public class TimeToLiveTest extends QpidBrokerTestCase
         Message receivedThird = consumer.receive(_shortReceiveTimeout);
 
         // Log the messages to help diagnosis incase of failure
-        _logger.info("First:"+receivedFirst);
-        _logger.info("Second:"+receivedSecond);
-        _logger.info("Third:"+receivedThird);
+        LOGGER.info("First:"+receivedFirst);
+        LOGGER.info("Second:"+receivedSecond);
+        LOGGER.info("Third:"+receivedThird);
 
         // Only first and last messages sent should survive expiry
         Assert.assertNull("More messages received", receivedThird);
@@ -317,9 +317,9 @@ public class TimeToLiveTest extends QpidBrokerTestCase
         Message receivedThird = durableSubscriber.receive(getShortReceiveTimeout());
         
         // Log the messages to help diagnosis incase of failure
-        _logger.info("First:"+receivedFirst);
-        _logger.info("Second:"+receivedSecond);
-        _logger.info("Third:"+receivedThird);
+        LOGGER.info("First:"+receivedFirst);
+        LOGGER.info("Second:"+receivedSecond);
+        LOGGER.info("Third:"+receivedThird);
 
         // Only first and last messages sent should survive expiry
         Assert.assertNull("More messages received", receivedThird); 

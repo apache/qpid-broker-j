@@ -67,7 +67,7 @@ import org.apache.qpid.url.URLSyntaxException;
  */
 public class FailoverBehaviourTest extends FailoverBaseCase implements ExceptionListener
 {
-    protected static final Logger _LOGGER = LoggerFactory.getLogger(FailoverBehaviourTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FailoverBehaviourTest.class);
 
     private static final String TEST_MESSAGE_FORMAT = "test message {0}";
 
@@ -754,7 +754,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Exception
                             catch (JMSException e)
                             {
                                 // OK we will be failing over
-                                _logger.debug("Got JMS exception, probably just failing over", e);
+                                LOGGER.debug("Got JMS exception, probably just failing over", e);
                             }
                         }
 
@@ -780,18 +780,18 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Exception
 
         if (hardKill)
         {
-            _logger.debug("Killing the Broker");
+            LOGGER.debug("Killing the Broker");
             killDefaultBroker();
         }
         else
         {
-            _logger.debug("Stopping the Broker");
+            LOGGER.debug("Stopping the Broker");
             stopDefaultBroker();
         }
 
         if (exception.get() != null)
         {
-            _logger.error("Unexpected exception from producer thread", exception.get());
+            LOGGER.error("Unexpected exception from producer thread", exception.get());
         }
         assertNull("Producer thread should not have got an exception", exception.get());
 
@@ -1034,9 +1034,9 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Exception
                 {
                     try
                     {
-                        _LOGGER.debug("Stopping connection from dispatcher thread");
+                        LOGGER.debug("Stopping connection from dispatcher thread");
                         _connection.stop();
-                        _LOGGER.debug("Connection stopped from dispatcher thread");
+                        LOGGER.debug("Connection stopped from dispatcher thread");
 
                     }
                     catch (Exception e)
@@ -1114,7 +1114,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Exception
             public boolean preFailover(final boolean redirect)
             {
                 failoverBegun.countDown();
-                _LOGGER.info("Failover started");
+                LOGGER.info("Failover started");
                 return true;
             }
 
@@ -1328,7 +1328,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Exception
             String text = MessageFormat.format(messagePattern, i);
             Message message = producerSession.createTextMessage(text);
             producer.send(message);
-            _LOGGER.debug("Test message number " + i + " produced with text = " + text + ", and JMSMessageID = " + message.getJMSMessageID());
+            LOGGER.debug("Test message number " + i + " produced with text = " + text + ", and JMSMessageID = " + message.getJMSMessageID());
         }
 
         if(standaloneProducer)
@@ -1384,7 +1384,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Exception
         {
             fail("JMSException occured while getting message text:" + e.getMessage());
         }
-        _LOGGER.debug("Test message number " + messageIndex + " consumed with text = " + receivedText + ", and JMSMessageID = " + receivedMessage.getJMSMessageID());
+        LOGGER.debug("Test message number " + messageIndex + " consumed with text = " + receivedText + ", and JMSMessageID = " + receivedMessage.getJMSMessageID());
         assertEquals("Failover is broken! Expected [" + expectedText + "] but got [" + receivedText + "]",
                 expectedText, receivedText);
     }
@@ -1413,7 +1413,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Exception
 
     private void awaitForFailoverCompletion(long delay)
     {
-        _logger.info("Awaiting {} ms for failover completion..", delay);
+        LOGGER.info("Awaiting {} ms for failover completion..", delay);
         try
         {
             if (!_failoverComplete.await(delay, TimeUnit.MILLISECONDS))

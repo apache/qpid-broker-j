@@ -112,7 +112,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 {
     public static final int DEFAULT_PREFETCH = 4096;
 
-    private static final Logger _logger = LoggerFactory.getLogger(AMQChannel.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AMQChannel.class);
     private static final InfiniteCreditCreditManager INFINITE_CREDIT_CREDIT_MANAGER = new InfiniteCreditCreditManager();
     private static final Function<MessageConsumerAssociation, MessageInstance>
             MESSAGE_INSTANCE_FUNCTION = new Function<MessageConsumerAssociation, MessageInstance>()
@@ -327,9 +327,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     private void publishContentHeader(ContentHeaderBody contentHeaderBody)
     {
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug("Content header received on channel " + _channelId);
+            LOGGER.debug("Content header received on channel " + _channelId);
         }
 
         _currentMessage.setContentHeaderBody(contentHeaderBody);
@@ -429,9 +429,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                             boolean mandatory = amqMessage.isMandatory();
 
                             boolean closeOnNoRoute = _connection.isCloseWhenNoRoute();
-                            if (_logger.isDebugEnabled())
+                            if (LOGGER.isDebugEnabled())
                             {
-                                _logger.debug("Unroutable message exchange='{}', routing key='{}', mandatory={},"
+                                LOGGER.debug("Unroutable message exchange='{}', routing key='{}', mandatory={},"
                                         + " transactionalSession={}, closeOnNoRoute={}, confirmOnPublish={}",
                                         exchangeName,
                                         routingKey,
@@ -511,9 +511,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     private void publishContentBody(ContentBody contentBody)
     {
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug(debugIdentity() + " content body received on channel " + _channelId);
+            LOGGER.debug(debugIdentity() + " content body received on channel " + _channelId);
         }
 
         try
@@ -716,9 +716,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
      */
     private boolean unsubscribeConsumer(AMQShortString consumerTag)
     {
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug("Unsubscribing consumer '{}' on channel {}", consumerTag, this);
+            LOGGER.debug("Unsubscribing consumer '{}' on channel {}", consumerTag, this);
         }
 
         ConsumerTarget_0_8 target = _tag2SubscriptionTargetMap.remove(consumerTag);
@@ -729,7 +729,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
         else
         {
-            _logger.warn("Attempt to unsubscribe consumer with tag '" + consumerTag + "' which is not registered.");
+            LOGGER.warn("Attempt to unsubscribe consumer with tag '" + consumerTag + "' which is not registered.");
         }
         return false;
     }
@@ -787,15 +787,15 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     private void unsubscribeAllConsumers()
     {
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
             if (!_tag2SubscriptionTargetMap.isEmpty())
             {
-                _logger.debug("Unsubscribing all consumers on channel " + toString());
+                LOGGER.debug("Unsubscribing all consumers on channel " + toString());
             }
             else
             {
-                _logger.debug("No consumers to unsubscribe on channel " + toString());
+                LOGGER.debug("No consumers to unsubscribe on channel " + toString());
             }
         }
 
@@ -819,9 +819,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                          MessageInstanceConsumer consumer,
                                          final boolean usesCredit)
     {
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug(debugIdentity() + " Adding unacked message(" + entry.getMessage().toString() + " DT:" + deliveryTag
+            LOGGER.debug(debugIdentity() + " Adding unacked message(" + entry.getMessage().toString() + " DT:" + deliveryTag
                                + ") for " + consumer + " on " + entry.getOwningResource().getName());
         }
 
@@ -862,9 +862,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
         if (!copy.isEmpty())
         {
-            if (_logger.isDebugEnabled())
+            if (LOGGER.isDebugEnabled())
             {
-                _logger.debug("Requeuing {} unacked messages", copy.size());
+                LOGGER.debug("Requeuing {} unacked messages", copy.size());
             }
         }
 
@@ -904,7 +904,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
         else
         {
-            _logger.warn("Requested requeue of message: {} but no such delivery tag exists.", deliveryTag);
+            LOGGER.warn("Requested requeue of message: {} but no such delivery tag exists.", deliveryTag);
         }
 
     }
@@ -943,9 +943,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         final Map<Long, MessageConsumerAssociation> msgToRequeue = new LinkedHashMap<>();
         final Map<Long, MessageConsumerAssociation> msgToResend = new LinkedHashMap<>();
 
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug("Unacknowledged messages: {}", _unacknowledgedMessageMap.size());
+            LOGGER.debug("Unacknowledged messages: {}", _unacknowledgedMessageMap.size());
         }
 
         _unacknowledgedMessageMap.visit(new Visitor()
@@ -1538,7 +1538,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
         if (association == null)
         {
-            _logger.warn("No message found, unable to DLQ delivery tag: " + deliveryTag);
+            LOGGER.warn("No message found, unable to DLQ delivery tag: " + deliveryTag);
         }
         else
         {
@@ -1596,9 +1596,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     private void sync()
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("sync() called on channel " + debugIdentity());
+            LOGGER.debug("sync() called on channel " + debugIdentity());
         }
 
         AsyncCommand cmd;
@@ -1700,9 +1700,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                      final boolean passive,
                                      final boolean active, final boolean write, final boolean read)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] AccessRequest[" +" realm: " + realm +
+            LOGGER.debug("RECV[" + _channelId + "] AccessRequest[" +" realm: " + realm +
                           " exclusive: " + exclusive +
                           " passive: " + passive +
                           " active: " + active +
@@ -1730,9 +1730,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveBasicAck(final long deliveryTag, final boolean multiple)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] BasicAck[" +" deliveryTag: " + deliveryTag + " multiple: " + multiple + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] BasicAck[" +" deliveryTag: " + deliveryTag + " multiple: " + multiple + " ]");
         }
 
         Collection<MessageConsumerAssociation> ackedMessages = _unacknowledgedMessageMap.acknowledge(deliveryTag, multiple);
@@ -1744,9 +1744,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     public void receiveBasicCancel(final AMQShortString consumerTag, final boolean nowait)
     {
 
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] BasicCancel[" +" consumerTag: " + consumerTag + " noWait: " + nowait + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] BasicCancel[" +" consumerTag: " + consumerTag + " noWait: " + nowait + " ]");
         }
 
         unsubscribeConsumer(consumerTag);
@@ -1767,9 +1767,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                     final boolean exclusive, final boolean nowait, final FieldTable arguments)
     {
 
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] BasicConsume[" +" queue: " + queue +
+            LOGGER.debug("RECV[" + _channelId + "] BasicConsume[" +" queue: " + queue +
                           " consumerTag: " + consumerTag +
                           " noLocal: " + noLocal +
                           " noAck: " + noAck +
@@ -1814,9 +1814,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
         if (sources.isEmpty())
         {
-            if (_logger.isDebugEnabled())
+            if (LOGGER.isDebugEnabled())
             {
-                _logger.debug("No queue for '" + queueName + "'");
+                LOGGER.debug("No queue for '" + queueName + "'");
             }
             if (queueName != null)
             {
@@ -1903,9 +1903,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveBasicGet(final AMQShortString queueName, final boolean noAck)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] BasicGet[" +" queue: " + queueName + " noAck: " + noAck + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] BasicGet[" +" queue: " + queueName + " noAck: " + noAck + " ]");
         }
 
         NamedAddressSpace vHost = _connection.getAddressSpace();
@@ -1913,9 +1913,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         MessageSource queue = queueName == null ? getDefaultQueue() : vHost.getAttainedMessageSource(queueName.toString());
         if (queue == null)
         {
-            if (_logger.isDebugEnabled())
+            if (LOGGER.isDebugEnabled())
             {
-                _logger.debug("No queue for '" + queueName + "'");
+                LOGGER.debug("No queue for '" + queueName + "'");
             }
             if (queueName != null)
             {
@@ -1975,9 +1975,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                     final boolean mandatory,
                                     final boolean immediate)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] BasicPublish[" +" exchange: " + exchangeName +
+            LOGGER.debug("RECV[" + _channelId + "] BasicPublish[" +" exchange: " + exchangeName +
                           " routingKey: " + routingKey +
                           " mandatory: " + mandatory +
                           " immediate: " + immediate + " ]");
@@ -2041,9 +2041,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveBasicQos(final long prefetchSize, final int prefetchCount, final boolean global)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] BasicQos[" +" prefetchSize: " + prefetchSize + " prefetchCount: " + prefetchCount + " global: " + global + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] BasicQos[" +" prefetchSize: " + prefetchSize + " prefetchCount: " + prefetchCount + " global: " + global + " ]");
         }
 
         sync();
@@ -2058,9 +2058,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveBasicRecover(final boolean requeue, final boolean sync)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] BasicRecover[" + " requeue: " + requeue + " sync: " + sync + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] BasicRecover[" + " requeue: " + requeue + " sync: " + sync + " ]");
         }
 
         if (requeue)
@@ -2086,30 +2086,30 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveBasicReject(final long deliveryTag, final boolean requeue)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] BasicReject[" +" deliveryTag: " + deliveryTag + " requeue: " + requeue + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] BasicReject[" +" deliveryTag: " + deliveryTag + " requeue: " + requeue + " ]");
         }
 
         MessageInstance message = getUnacknowledgedMessageMap().get(deliveryTag);
 
         if (message == null)
         {
-            _logger.warn("Dropping reject request as message is null for tag:" + deliveryTag);
+            LOGGER.warn("Dropping reject request as message is null for tag:" + deliveryTag);
         }
         else
         {
 
             if (message.getMessage() == null)
             {
-                _logger.warn("Message has already been purged, unable to Reject.");
+                LOGGER.warn("Message has already been purged, unable to Reject.");
             }
             else
             {
 
-                if (_logger.isDebugEnabled())
+                if (LOGGER.isDebugEnabled())
                 {
-                    _logger.debug("Rejecting: DT:" + deliveryTag
+                    LOGGER.debug("Rejecting: DT:" + deliveryTag
                                                              + "-" + message.getMessage() +
                                   ": Requeue:" + requeue
                                   +
@@ -2129,9 +2129,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     // message.reject();
 
                     final boolean maxDeliveryCountEnabled = isMaxDeliveryCountEnabled(deliveryTag);
-                    if (_logger.isDebugEnabled())
+                    if (LOGGER.isDebugEnabled())
                     {
-                        _logger.debug("maxDeliveryCountEnabled: "
+                        LOGGER.debug("maxDeliveryCountEnabled: "
                                       + maxDeliveryCountEnabled
                                       + " deliveryTag "
                                       + deliveryTag);
@@ -2139,9 +2139,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     if (maxDeliveryCountEnabled)
                     {
                         final boolean deliveredTooManyTimes = isDeliveredTooManyTimes(deliveryTag);
-                        if (_logger.isDebugEnabled())
+                        if (LOGGER.isDebugEnabled())
                         {
-                            _logger.debug("deliveredTooManyTimes: "
+                            LOGGER.debug("deliveredTooManyTimes: "
                                           + deliveredTooManyTimes
                                           + " deliveryTag "
                                           + deliveryTag);
@@ -2174,9 +2174,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                     final int classId,
                                     final int methodId)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] ChannelClose[" +" replyCode: " + replyCode + " replyText: " + replyText + " classId: " + classId + " methodId: " + methodId + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] ChannelClose[" +" replyCode: " + replyCode + " replyText: " + replyText + " classId: " + classId + " methodId: " + methodId + " ]");
         }
 
 
@@ -2190,9 +2190,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveChannelCloseOk()
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] ChannelCloseOk");
+            LOGGER.debug("RECV[" + _channelId + "] ChannelCloseOk");
         }
 
         _connection.closeChannelOk(getChannelId());
@@ -2201,9 +2201,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveMessageContent(final QpidByteBuffer data)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] MessageContent[" +" data: " + hex(data,_connection.getBinaryDataLimit()) + " ] ");
+            LOGGER.debug("RECV[" + _channelId + "] MessageContent[" +" data: " + hex(data,_connection.getBinaryDataLimit()) + " ] ");
         }
 
         if(hasCurrentMessage())
@@ -2221,9 +2221,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveMessageHeader(final BasicContentHeaderProperties properties, final long bodySize)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] MessageHeader[ properties: {" + properties + "} bodySize: " + bodySize + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] MessageHeader[ properties: {" + properties + "} bodySize: " + bodySize + " ]");
         }
 
         if(hasCurrentMessage())
@@ -2254,9 +2254,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveBasicNack(final long deliveryTag, final boolean multiple, final boolean requeue)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] BasicNack[" +" deliveryTag: " + deliveryTag + " multiple: " + multiple + " requeue: " + requeue + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] BasicNack[" +" deliveryTag: " + deliveryTag + " multiple: " + multiple + " requeue: " + requeue + " ]");
         }
 
         Map<Long, MessageConsumerAssociation> nackedMessageMap = new LinkedHashMap<>();
@@ -2267,20 +2267,20 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
             if (unackedMessageConsumerAssociation == null)
             {
-                _logger.warn("Ignoring nack request as message is null for tag:" + deliveryTag);
+                LOGGER.warn("Ignoring nack request as message is null for tag:" + deliveryTag);
             }
             else
             {
                 MessageInstance message = unackedMessageConsumerAssociation.getMessageInstance();
                 if (message.getMessage() == null)
                 {
-                    _logger.warn("Message has already been purged, unable to nack.");
+                    LOGGER.warn("Message has already been purged, unable to nack.");
                 }
                 else
                 {
-                    if (_logger.isDebugEnabled())
+                    if (LOGGER.isDebugEnabled())
                     {
-                        _logger.debug("Nack-ing: DT:" + deliveryTag
+                        LOGGER.debug("Nack-ing: DT:" + deliveryTag
                                       + "-" + message.getMessage() +
                                       ": Requeue:" + requeue
                                       +
@@ -2298,9 +2298,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                         message.reject(unackedMessageConsumerAssociation.getConsumer());
 
                         final boolean maxDeliveryCountEnabled = isMaxDeliveryCountEnabled(deliveryTag);
-                        if (_logger.isDebugEnabled())
+                        if (LOGGER.isDebugEnabled())
                         {
-                            _logger.debug("maxDeliveryCountEnabled: "
+                            LOGGER.debug("maxDeliveryCountEnabled: "
                                           + maxDeliveryCountEnabled
                                           + " deliveryTag "
                                           + deliveryTag);
@@ -2308,9 +2308,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                         if (maxDeliveryCountEnabled)
                         {
                             final boolean deliveredTooManyTimes = isDeliveredTooManyTimes(deliveryTag);
-                            if (_logger.isDebugEnabled())
+                            if (LOGGER.isDebugEnabled())
                             {
-                                _logger.debug("deliveredTooManyTimes: "
+                                LOGGER.debug("deliveredTooManyTimes: "
                                               + deliveredTooManyTimes
                                               + " deliveryTag "
                                               + deliveryTag);
@@ -2340,9 +2340,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveChannelFlow(final boolean active)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] ChannelFlow[" +" active: " + active + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] ChannelFlow[" +" active: " + active + " ]");
         }
 
 
@@ -2365,9 +2365,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveChannelFlowOk(final boolean active)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] ChannelFlowOk[" +" active: " + active + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] ChannelFlowOk[" +" active: " + active + " ]");
         }
 
         // TODO - should we do anything here?
@@ -2378,9 +2378,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                      final AMQShortString routingKey,
                                      final AMQShortString queueName)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] ExchangeBound[" +" exchange: " + exchangeName + " routingKey: " +
+            LOGGER.debug("RECV[" + _channelId + "] ExchangeBound[" +" exchange: " + exchangeName + " routingKey: " +
                           routingKey + " queue: " + queueName + " ]");
         }
 
@@ -2559,9 +2559,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                        final boolean nowait,
                                        final FieldTable arguments)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] ExchangeDeclare[" +" exchange: " + exchangeName +
+            LOGGER.debug("RECV[" + _channelId + "] ExchangeDeclare[" +" exchange: " + exchangeName +
                           " type: " + type +
                           " passive: " + passive +
                           " durable: " + durable +
@@ -2736,9 +2736,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveExchangeDelete(final AMQShortString exchangeStr, final boolean ifUnused, final boolean nowait)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] ExchangeDelete[" +" exchange: " + exchangeStr + " ifUnused: " + ifUnused + " nowait: " + nowait + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] ExchangeDelete[" +" exchange: " + exchangeStr + " ifUnused: " + ifUnused + " nowait: " + nowait + " ]");
         }
 
 
@@ -2805,9 +2805,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                  final boolean nowait,
                                  final FieldTable argumentsTable)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] QueueBind[" +" queue: " + queueName +
+            LOGGER.debug("RECV[" + _channelId + "] QueueBind[" +" queue: " + queueName +
                           " exchange: " + exchange +
                           " bindingKey: " + bindingKey +
                           " nowait: " + nowait + " arguments: " + argumentsTable + " ]");
@@ -2877,9 +2877,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                         }
                     }
 
-                    if (_logger.isDebugEnabled())
+                    if (LOGGER.isDebugEnabled())
                     {
-                        _logger.debug("Binding queue "
+                        LOGGER.debug("Binding queue "
                                      + queue
                                      + " to exchange "
                                      + exch
@@ -2912,9 +2912,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                     final boolean nowait,
                                     final FieldTable arguments)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] QueueDeclare[" +" queue: " + queueStr +
+            LOGGER.debug("RECV[" + _channelId + "] QueueDeclare[" +" queue: " + queueStr +
                           " passive: " + passive +
                           " durable: " + durable +
                           " exclusive: " + exclusive +
@@ -2974,9 +2974,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                                                         queue.getConsumerCount());
                         _connection.writeFrame(responseBody.generateFrame(getChannelId()));
 
-                        if (_logger.isDebugEnabled())
+                        if (LOGGER.isDebugEnabled())
                         {
-                            _logger.debug("Queue " + queueName + " declared successfully");
+                            LOGGER.debug("Queue " + queueName + " declared successfully");
                         }
                     }
                 }
@@ -3040,9 +3040,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                                                     queue.getConsumerCount());
                     _connection.writeFrame(responseBody.generateFrame(getChannelId()));
 
-                    if (_logger.isDebugEnabled())
+                    if (LOGGER.isDebugEnabled())
                     {
-                        _logger.debug("Queue " + queueName + " declared successfully");
+                        LOGGER.debug("Queue " + queueName + " declared successfully");
                     }
                 }
             }
@@ -3099,9 +3099,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                                                         queue.getConsumerCount());
                         _connection.writeFrame(responseBody.generateFrame(getChannelId()));
 
-                        if (_logger.isDebugEnabled())
+                        if (LOGGER.isDebugEnabled())
                         {
-                            _logger.debug("Queue " + queueName + " declared successfully");
+                            LOGGER.debug("Queue " + queueName + " declared successfully");
                         }
                     }
                 }
@@ -3120,9 +3120,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                    final boolean ifEmpty,
                                    final boolean nowait)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] QueueDelete[" +" queue: " + queueName + " ifUnused: " + ifUnused + " ifEmpty: " + ifEmpty + " nowait: " + nowait + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] QueueDelete[" +" queue: " + queueName + " ifUnused: " + ifUnused + " ifEmpty: " + ifEmpty + " nowait: " + nowait + " ]");
         }
 
         NamedAddressSpace virtualHost = _connection.getAddressSpace();
@@ -3190,9 +3190,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveQueuePurge(final AMQShortString queueName, final boolean nowait)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] QueuePurge[" +" queue: " + queueName + " nowait: " + nowait + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] QueuePurge[" +" queue: " + queueName + " nowait: " + nowait + " ]");
         }
 
         NamedAddressSpace virtualHost = _connection.getAddressSpace();
@@ -3240,9 +3240,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                    final AMQShortString bindingKey,
                                    final FieldTable arguments)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] QueueUnbind[" +" queue: " + queueName +
+            LOGGER.debug("RECV[" + _channelId + "] QueueUnbind[" +" queue: " + queueName +
                           " exchange: " + exchange +
                           " bindingKey: " + bindingKey +
                           " arguments: " + arguments + " ]");
@@ -3306,9 +3306,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveTxSelect()
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] TxSelect");
+            LOGGER.debug("RECV[" + _channelId + "] TxSelect");
         }
 
         setLocalTransactional();
@@ -3322,9 +3322,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveTxCommit()
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] TxCommit");
+            LOGGER.debug("RECV[" + _channelId + "] TxCommit");
         }
 
 
@@ -3351,9 +3351,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveTxRollback()
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] TxRollback");
+            LOGGER.debug("RECV[" + _channelId + "] TxRollback");
         }
 
         if (!isTransactional())
@@ -3384,9 +3384,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     @Override
     public void receiveConfirmSelect(final boolean nowait)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + _channelId + "] ConfirmSelect [ nowait: " + nowait + " ]");
+            LOGGER.debug("RECV[" + _channelId + "] ConfirmSelect [ nowait: " + nowait + " ]");
         }
         _confirmOnPublish = true;
 

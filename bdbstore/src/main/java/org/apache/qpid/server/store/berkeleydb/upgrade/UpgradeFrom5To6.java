@@ -68,7 +68,7 @@ import org.apache.qpid.server.store.berkeleydb.FieldTableEncoding;
 public class UpgradeFrom5To6 extends AbstractStoreUpgrade
 {
 
-    private static final Logger _logger = LoggerFactory.getLogger(UpgradeFrom5To6.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpgradeFrom5To6.class);
 
     static final String OLD_CONTENT_DB_NAME = "messageContentDb_v5";
     static final String NEW_CONTENT_DB_NAME = "MESSAGE_CONTENT";
@@ -160,7 +160,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             String newName = newDatabases[i];
             if (databases.contains(oldName))
             {
-                _logger.info("Renaming " + oldName + " into " + newName);
+                LOGGER.info("Renaming " + oldName + " into " + newName);
                 environment.renameDatabase(transaction, oldName, newName);
             }
         }
@@ -169,7 +169,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     private void upgradeMessages(final Environment environment, final UpgradeInteractionHandler handler,
             final Transaction transaction)
     {
-        _logger.info("Message Contents");
+        LOGGER.info("Message Contents");
         if (environment.getDatabaseNames().contains(OLD_CONTENT_DB_NAME))
         {
             DatabaseRunnable contentOperation = new DatabaseRunnable()
@@ -192,7 +192,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
                     };
                     new DatabaseTemplate(environment, OLD_META_DATA_DB_NAME, contentTransaction)
                             .run(metaDataDatabaseOperation);
-                    _logger.info(metaDataDatabaseOperation.getRowCount() + " Message Content Entries");
+                    LOGGER.info(metaDataDatabaseOperation.getRowCount() + " Message Content Entries");
                 }
             };
             new DatabaseTemplate(environment, OLD_CONTENT_DB_NAME, NEW_CONTENT_DB_NAME, transaction).run(contentOperation);
@@ -244,7 +244,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
                     oldMetadataDatabase.delete(txn, key);
                     return;
                 case ABORT:
-                    _logger.error(message);
+                    LOGGER.error(message);
                     throw new StoreException("Unable to upgrade message " + messageId);
                 }
 
@@ -325,7 +325,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     {
         if (environment.getDatabaseNames().contains(OLD_XID_DB_NAME))
         {
-            _logger.info("Xid Records");
+            LOGGER.info("Xid Records");
             final OldPreparedTransactionBinding oldTransactionBinding = new OldPreparedTransactionBinding();
             final NewPreparedTransactionBinding newTransactionBinding = new NewPreparedTransactionBinding();
             CursorOperation xidEntriesCursor = new CursorOperation()
@@ -368,13 +368,13 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             };
             new DatabaseTemplate(environment, OLD_XID_DB_NAME, NEW_XID_DB_NAME, transaction).run(xidEntriesCursor);
             environment.removeDatabase(transaction, OLD_XID_DB_NAME);
-            _logger.info(xidEntriesCursor.getRowCount() + " Xid Entries");
+            LOGGER.info(xidEntriesCursor.getRowCount() + " Xid Entries");
         }
     }
 
     private void upgradeQueueEntries(Environment environment, Transaction transaction, final String virtualHostName)
     {
-        _logger.info("Queue Delivery Records");
+        LOGGER.info("Queue Delivery Records");
         if (environment.getDatabaseNames().contains(OLD_DELIVERY_DB_NAME))
         {
             final OldQueueEntryBinding oldBinding = new OldQueueEntryBinding();
@@ -397,13 +397,13 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             new DatabaseTemplate(environment, OLD_DELIVERY_DB_NAME, NEW_DELIVERY_DB_NAME, transaction)
                     .run(queueEntriesCursor);
             environment.removeDatabase(transaction, OLD_DELIVERY_DB_NAME);
-            _logger.info(queueEntriesCursor.getRowCount() + " Queue Delivery Record Entries");
+            LOGGER.info(queueEntriesCursor.getRowCount() + " Queue Delivery Record Entries");
         }
     }
 
     private void upgradeQueueBindings(Environment environment, Transaction transaction, final UpgradeInteractionHandler handler, final String virtualHostName)
     {
-        _logger.info("Queue Bindings");
+        LOGGER.info("Queue Bindings");
         if (environment.getDatabaseNames().contains(OLD_QUEUE_BINDINGS_DB_NAME))
         {
             final QueueBindingBinding binding = new QueueBindingBinding();
@@ -432,14 +432,14 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             new DatabaseTemplate(environment, OLD_QUEUE_BINDINGS_DB_NAME, CONFIGURED_OBJECTS_DB_NAME, transaction)
                     .run(bindingCursor);
             environment.removeDatabase(transaction, OLD_QUEUE_BINDINGS_DB_NAME);
-            _logger.info(bindingCursor.getRowCount() + " Queue Binding Entries");
+            LOGGER.info(bindingCursor.getRowCount() + " Queue Binding Entries");
         }
     }
 
     private List<String> upgradeExchanges(Environment environment, Transaction transaction, final String virtualHostName)
     {
         final List<String> exchangeNames = new ArrayList<String>();
-        _logger.info("Exchanges");
+        LOGGER.info("Exchanges");
         if (environment.getDatabaseNames().contains(OLD_EXCHANGE_DB_NAME))
         {
             final ExchangeBinding exchangeBinding = new ExchangeBinding();
@@ -468,7 +468,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             new DatabaseTemplate(environment, OLD_EXCHANGE_DB_NAME, CONFIGURED_OBJECTS_DB_NAME, transaction)
                     .run(exchangeCursor);
             environment.removeDatabase(transaction, OLD_EXCHANGE_DB_NAME);
-            _logger.info(exchangeCursor.getRowCount() + " Exchange Entries");
+            LOGGER.info(exchangeCursor.getRowCount() + " Exchange Entries");
         }
         return exchangeNames;
     }
@@ -476,7 +476,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     private List<String> upgradeQueues(Environment environment, Transaction transaction, final String virtualHostName)
     {
         final List<String> queueNames = new ArrayList<String>();
-        _logger.info("Queues");
+        LOGGER.info("Queues");
         if (environment.getDatabaseNames().contains(OLD_QUEUE_DB_NAME))
         {
             final UpgradeQueueBinding queueBinding = new UpgradeQueueBinding();
@@ -501,7 +501,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             };
             new DatabaseTemplate(environment, OLD_QUEUE_DB_NAME, CONFIGURED_OBJECTS_DB_NAME, transaction).run(queueCursor);
             environment.removeDatabase(transaction, OLD_QUEUE_DB_NAME);
-            _logger.info(queueCursor.getRowCount() + " Queue Entries");
+            LOGGER.info(queueCursor.getRowCount() + " Queue Entries");
         }
         return queueNames;
     }
@@ -544,7 +544,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
 
         if (moveNonExclusiveOwnerToDescription(owner, exclusive))
         {
-            _logger.info("Non-exclusive owner " + owner + " for queue " + queueName + " moved to " + QueueArgumentsConverter.X_QPID_DESCRIPTION);
+            LOGGER.info("Non-exclusive owner " + owner + " for queue " + queueName + " moved to " + QueueArgumentsConverter.X_QPID_DESCRIPTION);
 
             attributesMap.put(Queue.OWNER, null);
             argumentsCopy.put(AMQShortString.valueOf(QueueArgumentsConverter.X_QPID_DESCRIPTION), owner);

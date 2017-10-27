@@ -37,7 +37,7 @@ public class BasicContentHeaderProperties
     public static final byte NON_PERSISTENT = 1;
     public static final byte PERSISTENT = 2;
 
-    private static final Logger _logger = LoggerFactory.getLogger(BasicContentHeaderProperties.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BasicContentHeaderProperties.class);
 
     private static final AMQShortString ZERO_STRING = null;
 
@@ -489,9 +489,9 @@ public class BasicContentHeaderProperties
     {
         _propertyFlags = propertyFlags;
 
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug("Property flags: " + _propertyFlags);
+            LOGGER.debug("Property flags: " + _propertyFlags);
         }
         if(_encodedForm != null)
         {

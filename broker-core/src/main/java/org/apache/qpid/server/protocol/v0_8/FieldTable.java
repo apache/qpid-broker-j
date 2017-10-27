@@ -40,7 +40,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public class FieldTable
 {
-    private static final Logger _logger = LoggerFactory.getLogger(FieldTable.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FieldTable.class);
     private static final String STRICT_AMQP_NAME = "STRICT_AMQP";
     private static final boolean STRICT_AMQP = Boolean.valueOf(System.getProperty(STRICT_AMQP_NAME, "false"));
 
@@ -130,7 +130,7 @@ public class FieldTable
         }
         catch (AMQFrameDecodingException e)
         {
-            _logger.error("Error decoding FieldTable in deferred decoding mode ", e);
+            LOGGER.error("Error decoding FieldTable in deferred decoding mode ", e);
             throw new IllegalArgumentException(e);
         }
     }
@@ -824,14 +824,14 @@ public class FieldTable
 
     public void writeToBuffer(QpidByteBuffer buffer)
     {
-        final boolean trace = _logger.isDebugEnabled();
+        final boolean trace = LOGGER.isDebugEnabled();
 
         if (trace)
         {
-            _logger.debug("FieldTable::writeToBuffer: Writing encoded length of " + getEncodedSize() + "...");
+            LOGGER.debug("FieldTable::writeToBuffer: Writing encoded length of " + getEncodedSize() + "...");
             if (_properties != null)
             {
-                _logger.debug(_properties.toString());
+                LOGGER.debug(_properties.toString());
             }
         }
 

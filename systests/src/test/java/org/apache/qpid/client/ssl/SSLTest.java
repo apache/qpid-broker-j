@@ -527,7 +527,7 @@ public class SSLTest extends QpidBrokerTestCase
             {
                 if(shouldSucceed)
                 {
-                    _logger.error("Caught unexpected exception",e);
+                    LOGGER.error("Caught unexpected exception",e);
                     fail("Connection failed, unexpected exception thrown");
                 }
                 else

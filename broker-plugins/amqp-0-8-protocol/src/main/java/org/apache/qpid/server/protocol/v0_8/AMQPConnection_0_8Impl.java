@@ -96,7 +96,7 @@ public class AMQPConnection_0_8Impl
         OPEN
     }
 
-    private static final Logger _logger = LoggerFactory.getLogger(AMQPConnection_0_8Impl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AMQPConnection_0_8Impl.class);
 
     private static final String BROKER_DEBUG_BINARY_DATA_LENGTH = "broker.debug.binaryDataLength";
     private static final int DEFAULT_DEBUG_BINARY_DATA_LENGTH = 80;
@@ -256,7 +256,7 @@ public class AMQPConnection_0_8Impl
                 }
                 catch (AMQFrameDecodingException | IOException e)
                 {
-                    _logger.error("Unexpected exception", e);
+                    LOGGER.error("Unexpected exception", e);
                     throw new ConnectionScopedRuntimeException(e);
                 }
                 catch (StoreException e)
@@ -292,7 +292,7 @@ public class AMQPConnection_0_8Impl
                 {
                     exception = exceptionForThisChannel;
                 }
-                _logger.error("Error informing channel that receiving is complete. Channel: " + channel,
+                LOGGER.error("Error informing channel that receiving is complete. Channel: " + channel,
                               exceptionForThisChannel);
             }
         }
@@ -354,7 +354,7 @@ public class AMQPConnection_0_8Impl
         }
         catch (QpidException e)
         {
-            _logger.debug("Received unsupported protocol initiation for protocol version: {} ", getProtocolVersion());
+            LOGGER.debug("Received unsupported protocol initiation for protocol version: {} ", getProtocolVersion());
 
             writeFrame(new ProtocolInitiation(ProtocolVersion.getLatestSupportedVersion()));
             _sender.flush();
@@ -364,9 +364,9 @@ public class AMQPConnection_0_8Impl
     @Override
     public synchronized void writeFrame(AMQDataBlock frame)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("SEND: " + frame);
+            LOGGER.debug("SEND: " + frame);
         }
 
         frame.writePayload(_sender);
@@ -492,7 +492,7 @@ public class AMQPConnection_0_8Impl
                 {
                     if (!(re instanceof ConnectionScopedRuntimeException))
                     {
-                        _logger.error("Unexpected exception closing channel", re);
+                        LOGGER.error("Unexpected exception closing channel", re);
                     }
                     firstException = re;
                 }
@@ -583,13 +583,13 @@ public class AMQPConnection_0_8Impl
             if (closeWhenNoRoute != null)
             {
                 _closeWhenNoRoute = Boolean.parseBoolean(closeWhenNoRoute);
-                _logger.debug("Client set closeWhenNoRoute={} for connection {}", _closeWhenNoRoute, this);
+                LOGGER.debug("Client set closeWhenNoRoute={} for connection {}", _closeWhenNoRoute, this);
             }
             String compressionSupported = clientProperties.getString(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED);
             if (compressionSupported != null)
             {
                 _compressionSupported = Boolean.parseBoolean(compressionSupported);
-                _logger.debug("Client set compressionSupported={} for connection {}", _compressionSupported, this);
+                LOGGER.debug("Client set compressionSupported={} for connection {}", _compressionSupported, this);
             }
 
             String clientId = clientProperties.getString(ConnectionStartProperties.CLIENT_ID_0_8);
@@ -605,7 +605,7 @@ public class AMQPConnection_0_8Impl
             setSendQueueDeleteOkRegardless(sendQueueDeleteOkRegardless);
             if (sendQueueDeleteOkRegardless)
             {
-                _logger.debug("Peer is an older Qpid client, queue delete-ok response will be sent"
+                LOGGER.debug("Peer is an older Qpid client, queue delete-ok response will be sent"
                               + " regardless for connection {}", this);
             }
 
@@ -684,7 +684,7 @@ public class AMQPConnection_0_8Impl
         }
         catch (ConnectionScopedRuntimeException | TransportException e)
         {
-            _logger.error("Could not close protocol engine", e);
+            LOGGER.error("Could not close protocol engine", e);
         }
         finally
         {
@@ -885,9 +885,9 @@ public class AMQPConnection_0_8Impl
     @Override
     public void receiveChannelOpen(final int channelId)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV[" + channelId + "] ChannelOpen");
+            LOGGER.debug("RECV[" + channelId + "] ChannelOpen");
         }
         assertState(ConnectionState.OPEN);
 
@@ -911,7 +911,7 @@ public class AMQPConnection_0_8Impl
         }
         else
         {
-            _logger.debug("Connecting to: {}", virtualHost.getName());
+            LOGGER.debug("Connecting to: {}", virtualHost.getName());
 
             final AMQChannel channel = new AMQChannel(this, channelId, virtualHost.getMessageStore());
             channel.create();
@@ -943,9 +943,9 @@ public class AMQPConnection_0_8Impl
                                       AMQShortString capabilities,
                                       boolean insist)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV ConnectionOpen[" +" virtualHost: " + virtualHostName + " capabilities: " + capabilities + " insist: " + insist + " ]");
+            LOGGER.debug("RECV ConnectionOpen[" +" virtualHost: " + virtualHostName + " capabilities: " + capabilities + " insist: " + insist + " ]");
         }
 
         assertState(ConnectionState.AWAIT_OPEN);
@@ -1015,9 +1015,9 @@ public class AMQPConnection_0_8Impl
                                        final int classId,
                                        final int methodId)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV ConnectionClose[" +" replyCode: " + replyCode + " replyText: " + replyText + " classId: " + classId + " methodId: " + methodId + " ]");
+            LOGGER.debug("RECV ConnectionClose[" +" replyCode: " + replyCode + " replyText: " + replyText + " classId: " + classId + " methodId: " + methodId + " ]");
         }
 
         try
@@ -1033,7 +1033,7 @@ public class AMQPConnection_0_8Impl
         }
         catch (Exception e)
         {
-            _logger.error("Error closing connection for " + getRemoteAddressString(), e);
+            LOGGER.error("Error closing connection for " + getRemoteAddressString(), e);
         }
         finally
         {
@@ -1044,9 +1044,9 @@ public class AMQPConnection_0_8Impl
     @Override
     public void receiveConnectionCloseOk()
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV ConnectionCloseOk");
+            LOGGER.debug("RECV ConnectionCloseOk");
         }
 
         closeNetworkConnection();
@@ -1055,9 +1055,9 @@ public class AMQPConnection_0_8Impl
     @Override
     public void receiveConnectionSecureOk(final byte[] response)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV ConnectionSecureOk[ response: ******** ] ");
+            LOGGER.debug("RECV ConnectionSecureOk[ response: ******** ] ");
         }
 
         assertState(ConnectionState.AWAIT_SECURE_OK);
@@ -1078,9 +1078,9 @@ public class AMQPConnection_0_8Impl
                                          final byte[] response,
                                          final AMQShortString locale)
     {
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV ConnectionStartOk["
+            LOGGER.debug("RECV ConnectionStartOk["
                           + " clientProperties: "
                           + clientProperties
                           + " mechanism: "
@@ -1093,7 +1093,7 @@ public class AMQPConnection_0_8Impl
 
         assertState(ConnectionState.AWAIT_START_OK);
 
-        _logger.debug("SASL Mechanism selected: {} Locale : {}", mechanism, locale);
+        LOGGER.debug("SASL Mechanism selected: {} Locale : {}", mechanism, locale);
 
         if (mechanism == null || mechanism.length() == 0)
         {
@@ -1130,7 +1130,7 @@ public class AMQPConnection_0_8Impl
             case ERROR:
                 Exception cause = authResult.getCause();
 
-                _logger.debug("Authentication failed: {}", (cause == null ? "" : cause.getMessage()));
+                LOGGER.debug("Authentication failed: {}", (cause == null ? "" : cause.getMessage()));
 
                 sendConnectionClose(ErrorCodes.NOT_ALLOWED, "Authentication failed", 0);
 
@@ -1141,7 +1141,7 @@ public class AMQPConnection_0_8Impl
                 _successfulAuthenticationResult = authResult;
                 if (challenge == null || challenge.length == 0)
                 {
-                    _logger.debug("Connected as: {}", authResult.getSubject());
+                    LOGGER.debug("Connected as: {}", authResult.getSubject());
                     setSubject(authResult.getSubject());
 
                     int frameMax = getDefaultMaxFrameSize();
@@ -1181,9 +1181,9 @@ public class AMQPConnection_0_8Impl
     @Override
     public void receiveConnectionTuneOk(final int channelMax, final long frameMax, final int heartbeat)
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV ConnectionTuneOk[" +" channelMax: " + channelMax + " frameMax: " + frameMax + " heartbeat: " + heartbeat + " ]");
+            LOGGER.debug("RECV ConnectionTuneOk[" +" channelMax: " + channelMax + " frameMax: " + frameMax + " heartbeat: " + heartbeat + " ]");
         }
 
         assertState(ConnectionState.AWAIT_TUNE_OK);
@@ -1326,9 +1326,9 @@ public class AMQPConnection_0_8Impl
     @Override
     public void receiveHeartbeat()
     {
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV Heartbeat");
+            LOGGER.debug("RECV Heartbeat");
         }
 
         // No op
@@ -1338,9 +1338,9 @@ public class AMQPConnection_0_8Impl
     public void receiveProtocolHeader(final ProtocolInitiation protocolInitiation)
     {
 
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug("RECV ProtocolHeader [" + protocolInitiation + " ]");
+            LOGGER.debug("RECV ProtocolHeader [" + protocolInitiation + " ]");
         }
 
         protocolInitiationReceived(protocolInitiation);

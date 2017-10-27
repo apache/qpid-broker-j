@@ -64,7 +64,7 @@ import org.apache.qpid.transport.ExecutionErrorCode;
 
 public class AddressBasedDestinationTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(AddressBasedDestinationTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AddressBasedDestinationTest.class);
     private Connection _connection;
 
     @Override
@@ -578,7 +578,7 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
     {
         if (!isCppBroker())
         {
-            _logger.info("Not C++ broker, exiting test");
+            LOGGER.info("Not C++ broker, exiting test");
             return;
         }
 

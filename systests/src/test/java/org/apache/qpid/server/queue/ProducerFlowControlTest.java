@@ -52,7 +52,7 @@ import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 public class ProducerFlowControlTest extends AbstractTestLogging
 {
-    private static final Logger _logger = LoggerFactory.getLogger(ProducerFlowControlTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProducerFlowControlTest.class);
 
     private Connection _producerConnection;
     private Connection _consumerConnection;

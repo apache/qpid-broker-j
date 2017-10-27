@@ -50,7 +50,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
  */
 public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements ConnectionListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(MultipleBrokersFailoverTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultipleBrokersFailoverTest.class);
 
     private static final String FAILOVER_VIRTUAL_HOST = "failover";
     private static final String NON_FAILOVER_VIRTUAL_HOST = "nonfailover";
@@ -208,7 +208,7 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
 
     private void awaitForFailoverCompletion(long delay) throws Exception
     {
-        _logger.info("Awaiting Failover completion..");
+        LOGGER.info("Awaiting Failover completion..");
         if (!_failoverComplete.await(delay, TimeUnit.MILLISECONDS))
         {
             fail("Failover did not complete within " + delay + "ms.");

@@ -39,7 +39,7 @@ import org.apache.qpid.server.util.Action;
 
 public class RoutingResult<M extends ServerMessage<? extends StorableMessageMetaData>>
 {
-    private static final Logger _logger = LoggerFactory.getLogger(RoutingResult.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RoutingResult.class);
 
     private final M _message;
 
@@ -55,7 +55,7 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
     {
         if(q.isDeleted())
         {
-            _logger.debug("Attempt to enqueue message onto deleted queue {}",  q.getName());
+            LOGGER.debug("Attempt to enqueue message onto deleted queue {}",  q.getName());
         }
         else
         {
@@ -75,7 +75,7 @@ public class RoutingResult<M extends ServerMessage<? extends StorableMessageMeta
                     deletedQueues = true;
                     queues = new ArrayList<>(queues);
                 }
-                _logger.debug("Attempt to enqueue message onto deleted queue {}",  q.getName());
+                LOGGER.debug("Attempt to enqueue message onto deleted queue {}",  q.getName());
 
                 queues.remove(q);
             }

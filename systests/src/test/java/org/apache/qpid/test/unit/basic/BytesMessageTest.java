@@ -44,7 +44,7 @@ import org.apache.qpid.transport.util.Waiter;
 
 public class BytesMessageTest extends QpidBrokerTestCase implements MessageListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(BytesMessageTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BytesMessageTest.class);
 
     private Connection _connection;
     private Destination _destination;
@@ -79,7 +79,7 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
             send(_count);
             waitFor(_count);
             check();
-            _logger.info("Completed without failure");
+            LOGGER.info("Completed without failure");
         }
         finally
         {

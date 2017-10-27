@@ -28,6 +28,9 @@ import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.client.failover.FailoverException;
 
 /**
@@ -36,6 +39,8 @@ import org.apache.qpid.client.failover.FailoverException;
  */
 public class AcknowledgeOnMessageTest extends AcknowledgeTest implements MessageListener
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AcknowledgeOnMessageTest.class);
+
     protected CountDownLatch _receivedAll;
     protected AtomicReference<Exception> _causeOfFailure = new AtomicReference<Exception>(null);
 
@@ -124,12 +129,12 @@ public class AcknowledgeOnMessageTest extends AcknowledgeTest implements Message
             Exception cause = _causeOfFailure.get();
             if (cause != null)
             {
-                _logger.error("Cause of failure is: ", cause);
+                LOGGER.error("Cause of failure is: ", cause);
                 fail(cause.getMessage());
             }
             else
             {
-                _logger.info("AOMT: Check QueueDepth:" + _queue);
+                LOGGER.info("AOMT: Check QueueDepth:" + _queue);
                 long onQueue=getQueueDepth(_connection, _queue);
                 fail("All messages not received missing:" + _receivedAll.getCount() + "/" + NUM_MESSAGES+" On Queue:"+onQueue);
 
@@ -141,7 +146,7 @@ public class AcknowledgeOnMessageTest extends AcknowledgeTest implements Message
         Exception cause = _causeOfFailure.get();
         if (cause != null)
         {
-            _logger.error("Failed due to following exception", cause);
+            LOGGER.error("Failed due to following exception", cause);
             fail(cause.getMessage());
         }
 
@@ -161,7 +166,7 @@ public class AcknowledgeOnMessageTest extends AcknowledgeTest implements Message
 
         _consumerSession.close();
 
-        _logger.info("AOMT: check number of message at end of test.");
+        LOGGER.info("AOMT: check number of message at end of test.");
         assertEquals("Wrong number of messages on queue", 0,
                      getQueueDepth(_connection, _queue));
     }
@@ -182,7 +187,7 @@ public class AcknowledgeOnMessageTest extends AcknowledgeTest implements Message
     public void onMessage(Message message)
     {
         // Log received Message for debugging
-        _logger.info("RECEIVED MESSAGE:" + message);
+        LOGGER.info("RECEIVED MESSAGE:" + message);
 
         try
         {

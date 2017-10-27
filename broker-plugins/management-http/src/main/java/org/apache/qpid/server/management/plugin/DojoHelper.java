@@ -30,7 +30,7 @@ import java.util.Properties;
 
 public class DojoHelper
 {
-    private static final Logger _logger = LoggerFactory.getLogger(DojoHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DojoHelper.class);
 
     public static final String VERSION_FILE = "dojoconfig.properties";
     public static final String DOJO_VERSION_PROPERTY = "dojo-version";
@@ -56,7 +56,7 @@ public class DojoHelper
             InputStream propertyStream = DojoHelper.class.getClassLoader().getResourceAsStream(VERSION_FILE);
             if (propertyStream == null)
             {
-                _logger.warn("Unable to find resource " + VERSION_FILE + " from classloader");
+                LOGGER.warn("Unable to find resource " + VERSION_FILE + " from classloader");
             }
             else
             {
@@ -72,19 +72,19 @@ public class DojoHelper
                     }
                     catch (IOException e)
                     {
-                        _logger.warn("Exception closing InputStream for " + VERSION_FILE + " resource:", e);
+                        LOGGER.warn("Exception closing InputStream for " + VERSION_FILE + " resource:", e);
                     }
                 }
 
-                if (_logger.isDebugEnabled())
+                if (LOGGER.isDebugEnabled())
                 {
-                    _logger.debug("Dumping Dojo Config:");
+                    LOGGER.debug("Dumping Dojo Config:");
                     for (Map.Entry<Object, Object> entry : props.entrySet())
                     {
-                        _logger.debug("Property: " + entry.getKey() + " Value: " + entry.getValue());
+                        LOGGER.debug("Property: " + entry.getKey() + " Value: " + entry.getValue());
                     }
 
-                    _logger.debug("End of property dump");
+                    LOGGER.debug("End of property dump");
                 }
 
                 _version = props.getProperty(DOJO_VERSION_PROPERTY, _version);
@@ -98,7 +98,7 @@ public class DojoHelper
         catch (IOException e)
         {
             // Log a warning about this and leave the values initialized to unknown.
-            _logger.error("Exception loading " + VERSION_FILE + " resource:", e);
+            LOGGER.error("Exception loading " + VERSION_FILE + " resource:", e);
         }
     }
 

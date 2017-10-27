@@ -128,7 +128,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                    MessageGroupManager.ConsumerResetHelper
 {
 
-    private static final Logger _logger = LoggerFactory.getLogger(AbstractQueue.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractQueue.class);
 
     private static final QueueNotificationListener NULL_NOTIFICATION_LISTENER = new QueueNotificationListener()
     {
@@ -568,7 +568,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
             else
             {
-                _logger.warn("Cannot find alternate binding destination '{}' for queue '{}'", alternateDestination, toString());
+                LOGGER.warn("Cannot find alternate binding destination '{}' for queue '{}'", alternateDestination, toString());
             }
         }
 
@@ -1094,7 +1094,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                && !(consumer.isDurable() && _closing))
             {
 
-                _logger.debug("Auto-deleting queue: {}", this);
+                LOGGER.debug("Auto-deleting queue: {}", this);
 
                 Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
                              {
@@ -1746,7 +1746,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         boolean acquiredForDequeueing = entry.acquireOrSteal(() ->
                                                              {
-                                                                 _logger.debug("Dequeuing stolen node {}", entry);
+                                                                 LOGGER.debug("Dequeuing stolen node {}", entry);
                                                                  dequeueEntry(entry);
                                                                  if (postDequeueTask != null)
                                                                  {
@@ -1756,7 +1756,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         if (acquiredForDequeueing)
         {
-            _logger.debug("Dequeuing node {}", entry);
+            LOGGER.debug("Dequeuing node {}", entry);
             dequeueEntry(entry);
             if (postDequeueTask != null)
             {

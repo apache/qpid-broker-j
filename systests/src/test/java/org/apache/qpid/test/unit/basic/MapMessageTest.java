@@ -43,7 +43,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class MapMessageTest extends QpidBrokerTestCase implements MessageListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(MapMessageTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MapMessageTest.class);
 
     private Connection _connection;
     private Destination _destination;
@@ -78,7 +78,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
     @Override
     protected void tearDown() throws Exception
     {
-        _logger.info("Tearing Down unit.basic.MapMessageTest");
+        LOGGER.info("Tearing Down unit.basic.MapMessageTest");
         super.tearDown();
     }
 
@@ -1231,7 +1231,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
     {
         synchronized (received)
         {
-            _logger.info("****************** Recevied Messgage:" + message);
+            LOGGER.info("****************** Recevied Messgage:" + message);
             received.add(message);
             received.notify();
         }

@@ -75,7 +75,7 @@ import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.UpgradeUU
 
 public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(UpgradeFrom5To6Test.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UpgradeFrom5To6Test.class);
     private static final String ARGUMENTS = "arguments";
 
     @Override
@@ -250,7 +250,7 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
                 DatabaseEntry newKey = new DatabaseEntry();
                 binding.objectToEntry(corruptedCompoundKey, newKey);
 
-                _logger.info("Deliberately corrupted message id " + originalCompoundKey.getMessageId()
+                LOGGER.info("Deliberately corrupted message id " + originalCompoundKey.getMessageId()
                         + ", changed offset from " + originalCompoundKey.getOffset() + " to "
                         + corruptedCompoundKey.getOffset());
 

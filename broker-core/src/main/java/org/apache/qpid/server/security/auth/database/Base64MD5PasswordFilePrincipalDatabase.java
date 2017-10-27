@@ -46,7 +46,7 @@ import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
  */
 public class Base64MD5PasswordFilePrincipalDatabase extends AbstractPasswordFilePrincipalDatabase<HashedUser>
 {
-    private final Logger _logger = LoggerFactory.getLogger(Base64MD5PasswordFilePrincipalDatabase.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Base64MD5PasswordFilePrincipalDatabase.class);
     private List<String> _mechanisms = Collections.unmodifiableList(Arrays.asList(CramMd5HashedNegotiator.MECHANISM,
                                                                                   CramMd5HexNegotiator.MECHANISM,
                                                                                   PlainNegotiator.MECHANISM));
@@ -122,7 +122,7 @@ public class Base64MD5PasswordFilePrincipalDatabase extends AbstractPasswordFile
     @Override
     protected Logger getLogger()
     {
-        return _logger;
+        return LOGGER;
     }
 
     @Override

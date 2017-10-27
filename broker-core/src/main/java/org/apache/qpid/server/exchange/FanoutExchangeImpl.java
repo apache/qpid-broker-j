@@ -45,7 +45,7 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements FanoutExchange<FanoutExchangeImpl>
 {
-    private static final Logger _logger = LoggerFactory.getLogger(FanoutExchangeImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FanoutExchangeImpl.class);
 
     private final class BindingSet
     {
@@ -94,7 +94,7 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
                 }
                 catch (AMQInvalidArgumentException e)
                 {
-                    _logger.warn(
+                    LOGGER.warn(
                             "Binding ignored: cannot parse filter on binding of destination '{}' to exchange '{}' with arguments: {}",
                             destination.getName(),
                             FanoutExchangeImpl.this.getName(),

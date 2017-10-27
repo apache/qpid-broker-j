@@ -30,14 +30,14 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractStoreUpgrade implements StoreUpgrade
 {
-    private static final Logger _logger = LoggerFactory.getLogger(AbstractStoreUpgrade.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractStoreUpgrade.class);
 
     protected void reportFinished(Environment environment, int version)
     {
-        _logger.info("Completed upgrade to version " + version);
-        if (_logger.isDebugEnabled())
+        LOGGER.info("Completed upgrade to version " + version);
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug("Upgraded:");
+            LOGGER.debug("Upgraded:");
             reportDatabaseRowCount(environment);
         }
     }
@@ -47,16 +47,16 @@ public abstract class AbstractStoreUpgrade implements StoreUpgrade
         List<String> databases = environment.getDatabaseNames();
         for (String database : databases)
         {
-            _logger.debug("    " + getRowCount(database, environment)  + " rows in " + database);
+            LOGGER.debug("    " + getRowCount(database, environment)  + " rows in " + database);
         }
     }
 
     protected void reportStarting(Environment environment, int version)
     {
-        _logger.info("Starting store upgrade from version " + version);
-        if (_logger.isDebugEnabled())
+        LOGGER.info("Starting store upgrade from version " + version);
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug("Upgrading:");
+            LOGGER.debug("Upgrading:");
             reportDatabaseRowCount(environment);
         }
     }

@@ -45,7 +45,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class FieldTableMessageTest extends QpidBrokerTestCase implements MessageListener
 {
-    private static final Logger _logger = LoggerFactory.getLogger(FieldTableMessageTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FieldTableMessageTest.class);
 
     private Connection _connection;
     private Destination _destination;
@@ -95,7 +95,7 @@ public class FieldTableMessageTest extends QpidBrokerTestCase implements Message
         send(count);
         _waitForCompletion.await(20, TimeUnit.SECONDS);
         check();
-        _logger.info("Completed without failure");
+        LOGGER.info("Completed without failure");
         _connection.close();
     }
 

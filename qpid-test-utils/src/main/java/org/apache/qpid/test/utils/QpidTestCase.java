@@ -57,7 +57,7 @@ public class QpidTestCase extends TestCase
     public static final String TEST_RESOURCES_DIR = TEST_PROFILES_DIR + "test_resources/";
     public static final String TMP_FOLDER = System.getProperty("java.io.tmpdir");
 
-    private static final Logger _logger = LoggerFactory.getLogger(QpidTestCase.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(QpidTestCase.class);
     private static QpidTestCase _currentInstance;
 
     private final Map<String, String> _propertiesSetForTest = new HashMap<>();
@@ -77,7 +77,7 @@ public class QpidTestCase extends TestCase
     {
         if (Boolean.getBoolean("test.exclude"))
         {
-            _logger.info("Some tests should be excluded, building the exclude list");
+            LOGGER.info("Some tests should be excluded, building the exclude list");
             String exclusionListURIs = System.getProperty(TEST_EXCLUDEFILES, "");
             String exclusionListString = System.getProperty(TEST_EXCLUDELIST, "");
             String testExcludes = System.getProperty(TEST_EXCLUDES);
@@ -98,7 +98,7 @@ public class QpidTestCase extends TestCase
                 File file = new File(uri);
                 if (file.exists())
                 {
-                    _logger.info("Using exclude file: " + uri);
+                    LOGGER.info("Using exclude file: " + uri);
                     try(FileReader fileReader = new FileReader(file))
                     {
                         try(BufferedReader in = new BufferedReader(fileReader))
@@ -114,18 +114,18 @@ public class QpidTestCase extends TestCase
                     }
                     catch (IOException e)
                     {
-                        _logger.warn("Exception when reading exclusion list", e);
+                        LOGGER.warn("Exception when reading exclusion list", e);
                     }
                 }
                 else
                 {
-                    _logger.info("Specified exclude file does not exist: " + uri);
+                    LOGGER.info("Specified exclude file does not exist: " + uri);
                 }
             }
 
             if (!exclusionListString.equals(""))
             {
-                _logger.info("Using excludeslist: " + exclusionListString);
+                LOGGER.info("Using excludeslist: " + exclusionListString);
                 for (String test : exclusionListString.split("\\s+"))
                 {
                     exclusionList.add(test);
@@ -146,7 +146,7 @@ public class QpidTestCase extends TestCase
     @Override
     public void run(TestResult testResult)
     {
-        final LoggerContext loggerContext = ((ch.qos.logback.classic.Logger) _logger).getLoggerContext();
+        final LoggerContext loggerContext = ((ch.qos.logback.classic.Logger) LOGGER).getLoggerContext();
         try
         {
             _currentInstance = this;
@@ -156,7 +156,7 @@ public class QpidTestCase extends TestCase
                 _exclusionList.contains(getClass().getName() + "#*") ||
                 _exclusionList.contains(getClass().getName() + "#" + getName()))
             {
-                _logger.info("Test: " + getName() + " is excluded");
+                LOGGER.info("Test: " + getName() + " is excluded");
                 testResult.endTest(this);
             }
             else
@@ -167,7 +167,7 @@ public class QpidTestCase extends TestCase
         }
         finally
         {
-            _logger.info(ClassicConstants.FINALIZE_SESSION_MARKER, "Shutting down sub-appender");
+            LOGGER.info(ClassicConstants.FINALIZE_SESSION_MARKER, "Shutting down sub-appender");
             _currentInstance = null;
             loggerContext.putProperty(LogbackPropertyValueDiscriminator.CLASS_QUALIFIED_TEST_NAME, null);
             revertTestSystemProperties();
@@ -177,7 +177,7 @@ public class QpidTestCase extends TestCase
     @Override
     protected void runTest() throws Throwable
     {
-        _logger.info("========== run " + getTestName() + " ==========");
+        LOGGER.info("========== run " + getTestName() + " ==========");
         super.runTest();
     }
 
@@ -185,9 +185,9 @@ public class QpidTestCase extends TestCase
     {
         final String storeType = System.getProperty(VIRTUAL_HOST_NODE_TYPE);
 
-        if (_logger.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            _logger.debug(VIRTUAL_HOST_NODE_TYPE + "=" + storeType);
+            LOGGER.debug(VIRTUAL_HOST_NODE_TYPE + "=" + storeType);
         }
 
         return storeType != null ? storeType : "TestMemory";
@@ -259,7 +259,7 @@ public class QpidTestCase extends TestCase
             System.setProperty(property, value);
         }
 
-        _logger.info("Set system property \"" + property + "\" to: \"" + value + "\"");
+        LOGGER.info("Set system property \"" + property + "\" to: \"" + value + "\"");
     }
 
     /**
@@ -269,7 +269,7 @@ public class QpidTestCase extends TestCase
     {
         if(!_propertiesSetForTest.isEmpty())
         {
-            _logger.debug("reverting " + _propertiesSetForTest.size() + " test properties");
+            LOGGER.debug("reverting " + _propertiesSetForTest.size() + " test properties");
             for (String key : _propertiesSetForTest.keySet())
             {
                 String value = _propertiesSetForTest.get(key);
@@ -290,14 +290,14 @@ public class QpidTestCase extends TestCase
     @Override
     protected void setUp() throws Exception
     {
-        _logger.info("========== start " + getTestName() + " ==========");
+        LOGGER.info("========== start " + getTestName() + " ==========");
         super.setUp();
     }
 
     @Override
     protected void tearDown() throws Exception
     {
-        _logger.info("========== tearDown " + getTestName() + " ==========");
+        LOGGER.info("========== tearDown " + getTestName() + " ==========");
         for (Runnable runnable : _tearDownRegistry)
         {
             runnable.run();
@@ -327,7 +327,7 @@ public class QpidTestCase extends TestCase
             File file = new File(pathToFileWithOverriddenClientAndBrokerProperties);
             if (file.exists())
             {
-                _logger.info("Loading overridden system properties from {}", file.getAbsolutePath());
+                LOGGER.info("Loading overridden system properties from {}", file.getAbsolutePath());
                 try (InputStream propertiesStream = new FileInputStream(file))
                 {
 

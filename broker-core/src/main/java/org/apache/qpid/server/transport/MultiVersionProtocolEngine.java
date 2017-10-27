@@ -50,7 +50,7 @@ import org.apache.qpid.server.util.Action;
 
 public class MultiVersionProtocolEngine implements ProtocolEngine
 {
-    private static final Logger _logger = LoggerFactory.getLogger(MultiVersionProtocolEngine.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiVersionProtocolEngine.class);
 
     private static final int MINIMUM_REQUIRED_HEADER_BYTES = 8;
 
@@ -94,7 +94,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
     @Override
     public void closed()
     {
-        _logger.debug("Closed");
+        LOGGER.debug("Closed");
 
         try
         {
@@ -269,7 +269,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         @Override
         public void received(QpidByteBuffer msg)
         {
-            _logger.debug("Error processing incoming data, could not negotiate a common protocol");
+            LOGGER.debug("Error processing incoming data, could not negotiate a common protocol");
             msg.position(msg.limit());
         }
 
@@ -454,7 +454,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                     //if a default reply was specified use its reply header instead of the most recent supported version
                     if(_defaultSupportedReply != null && !(_defaultSupportedReply == supportedReplyVersion))
                     {
-                        _logger.debug("Default reply to unsupported protocol version was configured, changing reply from {} to {}",
+                        LOGGER.debug("Default reply to unsupported protocol version was configured, changing reply from {} to {}",
                                       supportedReplyVersion, _defaultSupportedReply);
 
                         supportedReplyBytes = defaultSupportedReplyBytes;
@@ -539,7 +539,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
             try
             {
                 _delegate = new ClosedDelegateProtocolEngine();
-                _logger.debug("Connection from {} was closed before any protocol version was established.",
+                LOGGER.debug("Connection from {} was closed before any protocol version was established.",
                               _network.getRemoteAddress());
             }
             catch(Exception e)
@@ -622,7 +622,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                 }
                 else
                 {
-                    _logger.warn("Connection has taken more than {} ms to send complete protocol header.  Closing as possible DoS.",
+                    LOGGER.warn("Connection has taken more than {} ms to send complete protocol header.  Closing as possible DoS.",
                                  _allowedTime);
                     _broker.getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Protocol header not received within timeout period", true));
                     _network.close();

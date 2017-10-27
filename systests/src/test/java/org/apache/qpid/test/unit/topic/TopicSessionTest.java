@@ -33,13 +33,19 @@ import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.server.logging.ConsumerLoggingTest;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 
 public class TopicSessionTest extends QpidBrokerTestCase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TopicSessionTest.class);
+
     public void testTopicSubscriptionUnsubscription() throws Exception
     {
 
@@ -293,7 +299,7 @@ public class TopicSessionTest extends QpidBrokerTestCase
         m = (TextMessage) noLocal.receive(1000);
         if (m != null)
         {
-            _logger.info("Message:" + m.getText());
+            LOGGER.info("Message:" + m.getText());
         }
         assertNull(m);
 

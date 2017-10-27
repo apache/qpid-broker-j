@@ -32,7 +32,7 @@ import org.apache.qpid.server.plugin.PluggableService;
 @PluggableService
 public class JMSSelectorFilter implements MessageFilter
 {
-    private final static Logger _logger = LoggerFactory.getLogger(JMSSelectorFilter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JMSSelectorFilter.class);
 
     private String _selector;
     private BooleanExpression _matcher;
@@ -56,9 +56,9 @@ public class JMSSelectorFilter implements MessageFilter
     {
 
         boolean match = _matcher.matches(message);
-        if(_logger.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            _logger.debug(message + " match(" + match + ") selector(" + System.identityHashCode(_selector) + "):" + _selector);
+            LOGGER.debug(message + " match(" + match + ") selector(" + System.identityHashCode(_selector) + "):" + _selector);
         }
         return match;
     }

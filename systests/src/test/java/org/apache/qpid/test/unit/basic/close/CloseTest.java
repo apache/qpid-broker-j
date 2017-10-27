@@ -33,7 +33,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class CloseTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(CloseTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CloseTest.class);
 
     public void testCloseQueueReceiver() throws  Exception
     {
@@ -48,11 +48,11 @@ public class CloseTest extends QpidBrokerTestCase
 
         connection.start();
 
-        _logger.info("About to close consumer");
+        LOGGER.info("About to close consumer");
 
         consumer.close();                                
 
-        _logger.info("Closed Consumer");
+        LOGGER.info("Closed Consumer");
         connection.close();
     }
 }

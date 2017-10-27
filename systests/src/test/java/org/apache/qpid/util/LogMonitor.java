@@ -39,7 +39,7 @@ import java.util.Map;
  */
 public class LogMonitor
 {
-    private static final Logger _logger = LoggerFactory.getLogger(LogMonitor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LogMonitor.class);
 
     // The file that the log statements will be written to.
     private final File _logfile;
@@ -74,7 +74,7 @@ public class LogMonitor
             throw new IllegalArgumentException("File to be monitored is not specified.");
         }
 
-        _logger.info("Created LogMonitor. Monitoring file: " + _logfile.getAbsolutePath());
+        LOGGER.info("Created LogMonitor. Monitoring file: " + _logfile.getAbsolutePath());
     }
 
     /**

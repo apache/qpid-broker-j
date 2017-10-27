@@ -33,7 +33,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class BrokerDecoder extends ServerDecoder
 {
-    private static final Logger _logger = LoggerFactory.getLogger(BrokerDecoder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BrokerDecoder.class);
     private final AMQPConnection_0_8Impl _connection;
     /**
      * Creates a new AMQP decoder.
@@ -53,7 +53,7 @@ public class BrokerDecoder extends ServerDecoder
         long startTime = 0;
         try
         {
-            if (_logger.isDebugEnabled())
+            if (LOGGER.isDebugEnabled())
             {
                 startTime = System.currentTimeMillis();
             }
@@ -67,9 +67,9 @@ public class BrokerDecoder extends ServerDecoder
         }
         finally
         {
-            if(_logger.isDebugEnabled())
+            if(LOGGER.isDebugEnabled())
             {
-                _logger.debug("Frame handled in {} ms.", (System.currentTimeMillis() - startTime));
+                LOGGER.debug("Frame handled in {} ms.", (System.currentTimeMillis() - startTime));
             }
         }
     }

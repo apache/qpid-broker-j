@@ -52,7 +52,7 @@ import org.apache.qpid.test.utils.TestFileUtils;
  */
 public class ChartProductionTest extends QpidTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(ChartProductionTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChartProductionTest.class);
     private static final String TEST_CHARTTITLE = "TEST_CHARTTITLE";
     private static final String TEST_CHARTSUBTITLE = "TEST_CHARTSUBTITLE";
     private static final String TEST_XAXIS = "TEST_XAXIS";
@@ -99,7 +99,7 @@ public class ChartProductionTest extends QpidTestCase
         }
         else
         {
-            _logger.info("Charting directory for manual observation " + chartDir);
+            LOGGER.info("Charting directory for manual observation " + chartDir);
         }
 
         _writer.setOutputDirectory(chartDir);

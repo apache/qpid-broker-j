@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class PortHelper
 {
-    private static final Logger _logger = LoggerFactory.getLogger(PortHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PortHelper.class);
 
     public static final int START_PORT_NUMBER = 10000;
 
@@ -100,7 +100,7 @@ public class PortHelper
 
     public void waitUntilPortsAreFree(Set<Integer> ports)
     {
-        _logger.debug("Checking if ports " + ports + " are free...");
+        LOGGER.debug("Checking if ports " + ports + " are free...");
 
         for (Integer port : ports)
         {
@@ -110,7 +110,7 @@ public class PortHelper
             }
         }
 
-        _logger.debug("ports " + ports + " are free");
+        LOGGER.debug("ports " + ports + " are free");
     }
 
     private void waitUntilPortIsFree(int port)
@@ -130,7 +130,7 @@ public class PortHelper
             {
                 if(alreadyFailed)
                 {
-                    _logger.debug("port " + port + " is now available");
+                    LOGGER.debug("port " + port + " is now available");
                 }
                 return;
             }
@@ -163,7 +163,7 @@ public class PortHelper
         }
         catch (IOException e)
         {
-            _logger.debug("port " + port + " is not free");
+            LOGGER.debug("port " + port + " is not free");
             return false;
         }
         finally

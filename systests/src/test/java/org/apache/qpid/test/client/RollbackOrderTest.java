@@ -33,6 +33,8 @@ import javax.jms.Queue;
 import javax.jms.Session;
 
 import junit.framework.AssertionFailedError;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
@@ -87,7 +89,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
  */
 public class RollbackOrderTest extends QpidBrokerTestCase
 {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(RollbackOrderTest.class);
     private Connection _connection;
     private Queue _queue;
     private Session _session;
@@ -153,7 +155,7 @@ public class RollbackOrderTest extends QpidBrokerTestCase
                 }
                 catch (JMSException e)
                 {
-                    _logger.error("Error:" + e.getMessage(), e);
+                    LOGGER.error("Error:" + e.getMessage(), e);
                     exceptions[(int)count.getCount()] = e;
                 }
                 catch (AssertionFailedError cf)
@@ -164,7 +166,7 @@ public class RollbackOrderTest extends QpidBrokerTestCase
                         count.countDown();
                     }
 
-                    _logger.error("Error:" + cf.getMessage(), cf);
+                    LOGGER.error("Error:" + cf.getMessage(), cf);
                     failed.set(true);
                 }
             }
@@ -179,7 +181,7 @@ public class RollbackOrderTest extends QpidBrokerTestCase
         {
             if (e != null)
             {
-                _logger.error("Encountered exception", e);
+                LOGGER.error("Encountered exception", e);
                 failed.set(true);
             }
         }

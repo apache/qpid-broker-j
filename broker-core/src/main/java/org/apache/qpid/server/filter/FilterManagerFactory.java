@@ -32,7 +32,7 @@ import org.apache.qpid.server.filter.selector.TokenMgrError;
 public class FilterManagerFactory
 {
 
-    private final static Logger _logger = LoggerFactory.getLogger(FilterManagerFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FilterManagerFactory.class);
 
     private FilterManagerFactory()
     {
@@ -69,7 +69,7 @@ public class FilterManagerFactory
         }
         else
         {
-            _logger.debug("No Filters found.");
+            LOGGER.debug("No Filters found.");
         }
 
 

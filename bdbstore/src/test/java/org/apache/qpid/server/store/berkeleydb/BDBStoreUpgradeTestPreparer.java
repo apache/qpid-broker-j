@@ -61,7 +61,7 @@ import org.apache.qpid.url.URLSyntaxException;
  */
 public class BDBStoreUpgradeTestPreparer
 {
-    private static final Logger _logger = LoggerFactory.getLogger(BDBStoreUpgradeTestPreparer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BDBStoreUpgradeTestPreparer.class);
 
     public static final String TOPIC_NAME="myUpgradeTopic";
     public static final String SUB_NAME="myDurSubName";
@@ -134,7 +134,7 @@ public class BDBStoreUpgradeTestPreparer
             @Override
             public void onException(JMSException e)
             {
-                _logger.error("Error setting exception listener for connection", e);
+                LOGGER.error("Error setting exception listener for connection", e);
             }
         });
         // Create a session on the connection, transacted to confirm delivery
@@ -256,7 +256,7 @@ public class BDBStoreUpgradeTestPreparer
             @Override
             public void onException(JMSException e)
             {
-                _logger.error("Error setting exception listener for connection", e);
+                LOGGER.error("Error setting exception listener for connection", e);
             }
         });
         // Create a session on the connection, transacted to confirm delivery
@@ -302,7 +302,7 @@ public class BDBStoreUpgradeTestPreparer
             @Override
             public void onException(JMSException e)
             {
-                _logger.error("Error setting exception listener for connection", e);
+                LOGGER.error("Error setting exception listener for connection", e);
             }
         });
         // Create a session on the connection, transacted to confirm delivery

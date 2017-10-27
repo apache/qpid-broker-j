@@ -85,7 +85,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
 {
     public static final FixedKeyMapCreator PUBLISH_ACTION_MAP_CREATOR = new FixedKeyMapCreator("routingKey", "immediate");
-    private static final Logger _logger = LoggerFactory.getLogger(AbstractAMQPConnection.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAMQPConnection.class);
 
     private final Broker<?> _broker;
     private final ServerNetworkConnection _network;
@@ -373,7 +373,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         }
         catch (NullPointerException | IllegalArgumentException e)
         {
-            _logger.warn("Context variable {} has invalid value and cannot be used to restrict maximum message size",
+            LOGGER.warn("Context variable {} has invalid value and cannot be used to restrict maximum message size",
                          MAX_MESSAGE_SIZE,
                          e);
             maxMessageSize = Long.MAX_VALUE;
@@ -914,7 +914,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
             {
                 if (isOpeningInProgress())
                 {
-                    _logger.warn("Connection has taken more than {} ms to establish.  Closing as possible DoS.",
+                    LOGGER.warn("Connection has taken more than {} ms to establish.  Closing as possible DoS.",
                                  _allowedTime);
                     getEventLogger().message(ConnectionMessages.IDLE_CLOSE(
                             "Protocol connection is not established within timeout period", true));

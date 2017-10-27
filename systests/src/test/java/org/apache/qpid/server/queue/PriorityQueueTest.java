@@ -259,7 +259,7 @@ public class PriorityQueueTest extends QpidBrokerTestCase
 
     private static class ReflectingMessageListener implements MessageListener
     {
-        private static final Logger _logger = LoggerFactory.getLogger(PriorityQueueTest.ReflectingMessageListener.class);
+        private static final Logger LOGGER = LoggerFactory.getLogger(PriorityQueueTest.ReflectingMessageListener.class);
 
         private Session _prodSess;
         private Session _consSess;
@@ -285,7 +285,7 @@ public class PriorityQueueTest extends QpidBrokerTestCase
             {
                 _latch.countDown();
                 long msgNum = _origCount - _latch.getCount();
-                _logger.info("Received message " + msgNum + " with ID: " + message.getIntProperty("msg"));
+                LOGGER.info("Received message " + msgNum + " with ID: " + message.getIntProperty("msg"));
 
                 if(_latch.getCount() > 0)
                 {
@@ -302,7 +302,7 @@ public class PriorityQueueTest extends QpidBrokerTestCase
             }
             catch(Throwable t)
             {
-                _logger.error(t.getMessage(), t);
+                LOGGER.error(t.getMessage(), t);
                 _lastThrown = t;
             }
         }

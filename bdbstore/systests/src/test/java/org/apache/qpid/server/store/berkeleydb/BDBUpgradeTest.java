@@ -71,7 +71,7 @@ import org.apache.qpid.util.FileUtils;
  */
 public class BDBUpgradeTest extends QpidBrokerTestCase
 {
-    protected static final Logger _logger = LoggerFactory.getLogger(BDBUpgradeTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BDBUpgradeTest.class);
 
     private static final String STRING_1024 = generateString(1024);
     private static final String STRING_1024_256 = generateString(1024*256);

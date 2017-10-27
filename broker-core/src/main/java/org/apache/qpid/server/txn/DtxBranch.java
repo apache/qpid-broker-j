@@ -40,7 +40,7 @@ import org.apache.qpid.server.util.Action;
 
 public class DtxBranch
 {
-    private static final Logger _logger = LoggerFactory.getLogger(DtxBranch.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DtxBranch.class);
 
     private final Xid _xid;
     private final List<ServerTransaction.Action> _postTransactionActions = new ArrayList<ServerTransaction.Action>();
@@ -103,15 +103,15 @@ public class DtxBranch
 
     public void setTimeout(long timeout)
     {
-        _logger.debug("Setting timeout to {}s for DtxBranch {}", timeout, _xid);
+        LOGGER.debug("Setting timeout to {}s for DtxBranch {}", timeout, _xid);
 
         if(_timeoutFuture != null)
         {
-            _logger.debug("Attempting to cancel previous timeout task future for DtxBranch {}", _xid);
+            LOGGER.debug("Attempting to cancel previous timeout task future for DtxBranch {}", _xid);
 
             boolean succeeded = _timeoutFuture.cancel(false);
 
-            _logger.debug("Cancelling previous timeout task {} for DtxBranch {}", (succeeded ? "succeeded" : "failed"), _xid);
+            LOGGER.debug("Cancelling previous timeout task {} for DtxBranch {}", (succeeded ? "succeeded" : "failed"), _xid);
         }
 
         _timeout = timeout;
@@ -125,14 +125,14 @@ public class DtxBranch
         {
             long delay = 1000*_timeout;
 
-            _logger.debug("Scheduling timeout and rollback after {}s for DtxBranch {}", delay/1000, _xid);
+            LOGGER.debug("Scheduling timeout and rollback after {}s for DtxBranch {}", delay/1000, _xid);
 
             _timeoutFuture = _dtxRegistry.scheduleTask(delay, new Runnable()
             {
                 @Override
                 public void run()
                 {
-                    _logger.debug("Timing out DtxBranch {}", _xid);
+                    LOGGER.debug("Timing out DtxBranch {}", _xid);
 
                     setState(State.TIMEDOUT);
                     rollback();
@@ -209,7 +209,7 @@ public class DtxBranch
 
     public void prepare() throws StoreException
     {
-        _logger.debug("Performing prepare for DtxBranch {}", _xid);
+        LOGGER.debug("Performing prepare for DtxBranch {}", _xid);
 
         Transaction txn = _dtxRegistry.getMessageStore().newTransaction();
         _storedXidRecord = txn.recordXid(_xid.getFormat(),
@@ -224,16 +224,16 @@ public class DtxBranch
 
     public synchronized void rollback() throws StoreException
     {
-        _logger.debug("Performing rollback for DtxBranch {}", _xid);
+        LOGGER.debug("Performing rollback for DtxBranch {}", _xid);
 
         if(_timeoutFuture != null)
         {
-            _logger.debug("Attempting to cancel previous timeout task future for DtxBranch {}", _xid);
+            LOGGER.debug("Attempting to cancel previous timeout task future for DtxBranch {}", _xid);
 
             boolean succeeded = _timeoutFuture.cancel(false);
             _timeoutFuture = null;
 
-            _logger.debug("Cancelling previous timeout task {} for DtxBranch {}", (succeeded ? "succeeded" : "failed"), _xid);
+            LOGGER.debug("Cancelling previous timeout task {} for DtxBranch {}", (succeeded ? "succeeded" : "failed"), _xid);
         }
 
         if(_transaction != null)
@@ -256,16 +256,16 @@ public class DtxBranch
 
     public void commit() throws StoreException
     {
-        _logger.debug("Performing commit for DtxBranch {}", _xid);
+        LOGGER.debug("Performing commit for DtxBranch {}", _xid);
 
         if(_timeoutFuture != null)
         {
-            _logger.debug("Attempting to cancel previous timeout task future for DtxBranch {}", _xid);
+            LOGGER.debug("Attempting to cancel previous timeout task future for DtxBranch {}", _xid);
 
             boolean succeeded = _timeoutFuture.cancel(false);
             _timeoutFuture = null;
 
-            _logger.debug("Cancelling previous timeout task {} for DtxBranch {}", (succeeded ? "succeeded" : "failed"), _xid);
+            LOGGER.debug("Cancelling previous timeout task {} for DtxBranch {}", (succeeded ? "succeeded" : "failed"), _xid);
         }
 
         if(_transaction == null)
