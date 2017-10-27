@@ -117,23 +117,14 @@ public class ConnectionRestTest extends QpidRestTestCase
         Message m = consumer.receive(getReceiveTimeout());
         assertNotNull("Subsequent messages were not received", m);
 
-        @SuppressWarnings("unchecked")
         Map<String, Object> statistics = getConnectionStatistics(connectionUrl);
 
-        assertEquals("Unexpected value of connection statistics attribute messagesIn", 1,
-                     statistics.get("messagesIn"));
-        assertEquals("Unexpected value of connection statistics attribute messagesOut",
-                     1, statistics.get("messagesOut"));
         assertEquals("Unexpected value of statistic attribute localTransactionBegins", 2,
                      statistics.get("localTransactionBegins"));
         assertEquals("Unexpected value of statistic attribute localTransactionRollbacks", 0,
                      statistics.get("localTransactionRollbacks"));
         assertEquals("Unexpected value of statistic attribute localTransactionOpen", 1,
                      statistics.get("localTransactionOpen"));
-        assertEquals("Unexpected value of statistic attribute transactedMessagesIn", 1,
-                     statistics.get("transactedMessagesIn"));
-        assertEquals("Unexpected value of statistic attribute transactedMessagesOut", 1,
-                     statistics.get("transactedMessagesOut"));
 
         _session.rollback();
         m = consumer.receive(getReceiveTimeout());
@@ -141,20 +132,12 @@ public class ConnectionRestTest extends QpidRestTestCase
 
         final Map<String, Object> statistics2 = getConnectionStatistics(connectionUrl);
 
-        assertEquals("Unexpected value of connection statistics attribute messagesIn", 1,
-                     statistics2.get("messagesIn"));
-        assertEquals("Unexpected value of connection statistics attribute messagesOut",
-                     2, statistics2.get("messagesOut"));
         assertEquals("Unexpected value of statistic attribute localTransactionBegins", 3,
                      statistics2.get("localTransactionBegins"));
         assertEquals("Unexpected value of statistic attribute localTransactionRollbacks", 1,
                      statistics2.get("localTransactionRollbacks"));
         assertEquals("Unexpected value of statistic attribute localTransactionOpen", 1,
                      statistics2.get("localTransactionOpen"));
-        assertEquals("Unexpected value of statistic attribute transactedMessagesIn", 1,
-                     statistics2.get("transactedMessagesIn"));
-        assertEquals("Unexpected value of statistic attribute transactedMessagesOut", 2,
-                     statistics2.get("transactedMessagesOut"));
 
         _producer.send(_session.createMessage());
         consumer.close();
@@ -162,20 +145,12 @@ public class ConnectionRestTest extends QpidRestTestCase
 
         final Map<String, Object> statistics3 = getConnectionStatistics(connectionUrl);
 
-        assertEquals("Unexpected value of connection statistics attribute messagesIn", 2,
-                     statistics3.get("messagesIn"));
-        assertEquals("Unexpected value of connection statistics attribute messagesOut",
-                     2, statistics3.get("messagesOut"));
         assertEquals("Unexpected value of statistic attribute localTransactionBegins", 3,
                      statistics3.get("localTransactionBegins"));
         assertEquals("Unexpected value of statistic attribute localTransactionRollbacks", 2,
                      statistics3.get("localTransactionRollbacks"));
         assertEquals("Unexpected value of statistic attribute localTransactionOpen", 0,
                      statistics3.get("localTransactionOpen"));
-        assertEquals("Unexpected value of statistic attribute transactedMessagesIn", 2,
-                     statistics3.get("transactedMessagesIn"));
-        assertEquals("Unexpected value of statistic attribute transactedMessagesOut", 2,
-                     statistics3.get("transactedMessagesOut"));
     }
 
     public void testConnectionMessageCountStatistics() throws Exception
@@ -197,8 +172,12 @@ public class ConnectionRestTest extends QpidRestTestCase
         m = consumer.receive(getReceiveTimeout());
         assertNotNull("First message was not received", m);
 
+        // close session to make sure message ack/disposition reaches the broker before rest request is made
+        _session.close();
+
         String connectionUrl = getVirtualHostConnectionUrl();
-        @SuppressWarnings("unchecked") Map<String, Object> statistics = getConnectionStatistics(connectionUrl);
+
+        Map<String, Object> statistics = getConnectionStatistics(connectionUrl);
         assertTrue("Unexpected value of connection statistics attribute bytesIn",
                    Long.parseLong(String.valueOf(statistics.get("bytesIn"))) > 0);
         assertTrue("Unexpected value of connection statistics attribute bytesOut",
