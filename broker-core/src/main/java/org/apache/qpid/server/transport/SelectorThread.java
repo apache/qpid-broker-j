@@ -652,7 +652,7 @@ class SelectorThread extends Thread
         catch (ClosedChannelException e)
         {
             LOGGER.debug("Failed to unregister with selector for connection {}. " +
-                         "Connection is probably being closed by peer.", connection, e);
+                         "Connection is probably being closed by peer.", connection);
 
         }
         catch (ClosedSelectorException | CancelledKeyException e)
