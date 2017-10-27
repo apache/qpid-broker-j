@@ -210,6 +210,13 @@ class SelectorThread extends Thread
                                     channel.register(_selector, SelectionKey.OP_ACCEPT, transport);
                                     wakeup();
                                 }
+                                catch (ClosedSelectorException e)
+                                {
+                                    LOGGER.info(
+                                            "Failed to register selector on accepting port {} because selector is"
+                                            + " already closed. This is probably a harmless race-condition (QPID-7399)",
+                                            localSocketAddress);
+                                }
                                 catch (ClosedChannelException e)
                                 {
                                     LOGGER.error("Failed to register selector on accepting port {}",
