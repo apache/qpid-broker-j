@@ -250,6 +250,12 @@ public class ManagementAddressSpace implements NamedAddressSpace
     }
 
     @Override
+    public <T extends LinkModel> Collection<T> findSendingLinks(final String linkName)
+    {
+        return _linkRegistry.findSendingLinks(linkName);
+    }
+
+    @Override
     public boolean authoriseCreateConnection(final AMQPConnection<?> connection)
     {
         _broker.authorise(Operation.PERFORM_ACTION("manage"));

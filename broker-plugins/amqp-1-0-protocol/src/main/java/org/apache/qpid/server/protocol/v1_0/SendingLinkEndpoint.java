@@ -23,6 +23,8 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.security.AccessControlException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -46,6 +48,8 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -355,12 +359,39 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
     @Override
     protected void recoverLink(final Attach attach) throws AmqpErrorException
     {
-        if (getSource() == null)
+        Source source = getSource();
+        if (source == null && attach.getDesiredCapabilities() != null)
+        {
+            List<Symbol> capabilities = Arrays.asList(attach.getDesiredCapabilities());
+            if (capabilities.contains(Session_1_0.GLOBAL_CAPABILITY)
+                && capabilities.contains(Session_1_0.SHARED_CAPABILITY)
+                && getLinkName().endsWith("|global"))
+            {
+                NamedAddressSpace namedAddressSpace = getSession().getConnection().getAddressSpace();
+                Collection<Link_1_0<? extends BaseSource, ? extends BaseTarget>>
+                        links = namedAddressSpace.findSendingLinks(getLinkName());
+                for (Link_1_0<? extends BaseSource, ? extends BaseTarget> link : links)
+                {
+                    if (link.getSource() != null)
+                    {
+                        BaseSource baseSource = link.getSource();
+                        if (baseSource instanceof Source)
+                        {
+                            source = ((Source) baseSource);
+                            getLink().setSource(source);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (source == null)
         {
             throw new AmqpErrorException(new Error(AmqpError.NOT_FOUND, ""));
         }
 
-        attach.setSource(getSource());
+        attach.setSource(source);
         receiveAttach(attach);
     }
 

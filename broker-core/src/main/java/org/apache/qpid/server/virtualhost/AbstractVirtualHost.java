@@ -1724,6 +1724,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
+    public <T extends LinkModel> Collection<T> findSendingLinks(final String linkName)
+    {
+        return _linkRegistry.findSendingLinks(linkName);
+    }
+
+    @Override
     public DtxRegistry getDtxRegistry()
     {
         return _dtxRegistry;

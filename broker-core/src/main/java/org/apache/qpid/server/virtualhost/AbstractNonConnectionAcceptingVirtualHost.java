@@ -155,6 +155,13 @@ public abstract class AbstractNonConnectionAcceptingVirtualHost<X extends Abstra
     }
 
     @Override
+    public <T extends LinkModel> Collection<T> findSendingLinks(final String linkName)
+    {
+        throwUnsupported();
+        return null;
+    }
+
+    @Override
     public boolean authoriseCreateConnection(final AMQPConnection<?> connection)
     {
         return false;

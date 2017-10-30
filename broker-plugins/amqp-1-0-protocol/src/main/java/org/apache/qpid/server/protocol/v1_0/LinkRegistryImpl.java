@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,6 +108,16 @@ public class LinkRegistryImpl implements LinkRegistry
     {
         TerminusDurability supportedTerminusDurability = _linkStore.getHighestSupportedTerminusDurability();
         return supportedTerminusDurability == TerminusDurability.UNSETTLED_STATE ? TerminusDurability.CONFIGURATION : supportedTerminusDurability;
+    }
+
+    @Override
+    public Collection<Link_1_0<? extends BaseSource, ? extends BaseTarget>> findSendingLinks(final String linkName)
+    {
+        return _sendingLinkRegistry.entrySet()
+                                   .stream()
+                                   .filter(e -> e.getKey().getLinkName().equals(linkName))
+                                   .map(Map.Entry::getValue)
+                                   .collect(Collectors.toList());
     }
 
     @Override
