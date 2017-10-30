@@ -868,6 +868,7 @@
           <excludes>
             <exclude>test-profiles/test_resources/ssl/**</exclude>
             <exclude>specs/**</exclude>
+            <exclude>**/*.md</exclude>
             <exclude>DEPENDENCIES</exclude>
             <exclude>.travis.yml</exclude>
           </excludes>
