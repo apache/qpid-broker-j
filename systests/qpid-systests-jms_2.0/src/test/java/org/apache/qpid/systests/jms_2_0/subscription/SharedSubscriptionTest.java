@@ -146,7 +146,18 @@ public class SharedSubscriptionTest extends QpidBrokerTestCase
 
     public void testUnsubscribe() throws Exception
     {
-        Connection connection = getConnectionBuilder().setPrefetch(0).setClientId("myClientId").build();
+        sharedDurableSubscriptionUnsubscribeTest("myClientId");
+    }
+
+
+    public void testUnsubscribeForGlobalSharedDurableSubscription() throws Exception
+    {
+        sharedDurableSubscriptionUnsubscribeTest(null);
+    }
+
+    private void sharedDurableSubscriptionUnsubscribeTest(final String clientId) throws Exception
+    {
+        Connection connection = getConnectionBuilder().setPrefetch(0).setClientId(clientId).build();
         Session session = connection.createSession();
 
         connection.start();
@@ -156,7 +167,8 @@ public class SharedSubscriptionTest extends QpidBrokerTestCase
         String subscriptionName = "testSharedSubscription";
         MessageConsumer consumer = session.createSharedDurableConsumer(topic, subscriptionName);
 
-        Map<String, Object> statistics = _restTestHelper.getJsonAsMap("virtualhost/test/test/getStatistics?statistics=[\"queueCount\"]");
+        Map<String, Object>
+                statistics = _restTestHelper.getJsonAsMap("virtualhost/test/test/getStatistics?statistics=[\"queueCount\"]");
         int numberOfQueuesBeforeUnsubscribe = (int) statistics.get("queueCount");
         assertEquals("Unexpected number of Queues", 1, numberOfQueuesBeforeUnsubscribe);
 
@@ -169,7 +181,7 @@ public class SharedSubscriptionTest extends QpidBrokerTestCase
             restartDefaultBroker();
         }
 
-        connection = getConnectionBuilder().setPrefetch(0).setClientId("myClientId").build();
+        connection = getConnectionBuilder().setPrefetch(0).setClientId(clientId).build();
         session = connection.createSession();
         session.unsubscribe(subscriptionName);
 

@@ -62,7 +62,14 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     @Override
     public ConnectionBuilder setClientId(final String clientId)
     {
-        _options.put("jms.clientID", clientId);
+        if (clientId == null)
+        {
+            _options.remove("jms.clientID");
+        }
+        else
+        {
+            _options.put("jms.clientID", clientId);
+        }
         return this;
     }
 

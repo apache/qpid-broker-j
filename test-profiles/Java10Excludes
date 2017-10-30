@@ -220,3 +220,5 @@ org.apache.qpid.server.security.acl.Amqp0xMessagingACLTest#*
 org.apache.qpid.server.security.acl.MessagingACLTest#testCreateTemporaryQueueFailed
 
 
+// QPID-7994 : Temporary excluded due to a bug
+org.apache.qpid.systests.jms_2_0.subscription.SharedSubscriptionTest#testUnsubscribeForGlobalSharedDurableSubscription
