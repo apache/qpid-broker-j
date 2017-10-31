@@ -61,7 +61,7 @@ public class ExchangeSendingDestination extends StandardSendingDestination
     private static final Accepted ACCEPTED = new Accepted();
     private static final Rejected REJECTED = new Rejected();
     private static final Outcome[] OUTCOMES = { ACCEPTED, REJECTED};
-    private static final Symbol TOPIC_CAPABILITY = Symbol.getSymbol("topic");
+    public static final Symbol TOPIC_CAPABILITY = Symbol.getSymbol("topic");
 
     private final Exchange<?> _exchange;
     private final Symbol[] _capabilities;

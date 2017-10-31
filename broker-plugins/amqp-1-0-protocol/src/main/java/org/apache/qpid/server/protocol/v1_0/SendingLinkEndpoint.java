@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
@@ -84,6 +86,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SendingLinkEndpoint.class);
     private static final Symbol PRIORITY = Symbol.valueOf("priority");
+    private static final Pattern ANY_CONTAINER_ID = Pattern.compile(".*");
 
     private final List<Binary> _resumeAcceptedTransfers = new ArrayList<>();
     private final List<MessageInstance> _resumeFullTransfers = new ArrayList<>();
@@ -368,8 +371,9 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                 && getLinkName().endsWith("|global"))
             {
                 NamedAddressSpace namedAddressSpace = getSession().getConnection().getAddressSpace();
-                Collection<Link_1_0<? extends BaseSource, ? extends BaseTarget>>
-                        links = namedAddressSpace.findSendingLinks(getLinkName());
+                Collection<Link_1_0<? extends BaseSource, ? extends BaseTarget>> links =
+                        namedAddressSpace.findSendingLinks(ANY_CONTAINER_ID,
+                                                           Pattern.compile("^" + Pattern.quote(getLinkName()) + "$"));
                 for (Link_1_0<? extends BaseSource, ? extends BaseTarget> link : links)
                 {
                     BaseSource baseSource = link.getSource();
@@ -791,7 +795,8 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             _consumerTarget.close();
         }
 
-        TerminusExpiryPolicy expiryPolicy = (getSource()).getExpiryPolicy();
+        Source source = getSource();
+        TerminusExpiryPolicy expiryPolicy = source.getExpiryPolicy();
         if (close
             || TerminusExpiryPolicy.LINK_DETACH.equals(expiryPolicy)
             || ((expiryPolicy == null || TerminusExpiryPolicy.SESSION_END.equals(expiryPolicy)) && getSession().isClosing())
@@ -799,14 +804,36 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
         {
 
             Error closingError = null;
+            NamedAddressSpace addressSpace = getSession().getConnection().getAddressSpace();
             if (getDestination() instanceof ExchangeSendingDestination
-                && getSession().getConnection().getAddressSpace() instanceof QueueManagingVirtualHost)
+                && addressSpace instanceof QueueManagingVirtualHost)
             {
                 cleanUpUnsettledDeliveries();
                 try
                 {
-                    ((QueueManagingVirtualHost) getSession().getConnection().getAddressSpace()).removeSubscriptionQueue(
+                    ((QueueManagingVirtualHost) addressSpace).removeSubscriptionQueue(
                             ((ExchangeSendingDestination) getDestination()).getQueue().getName());
+                    List<Symbol> sourceCapabilities = source.getCapabilities() == null ? Collections.emptyList() : Arrays.asList(source.getCapabilities());
+
+                    TerminusDurability sourceDurability = source.getDurable();
+                    if (sourceDurability != null
+                        && !TerminusDurability.NONE.equals(sourceDurability)
+                        && sourceCapabilities.contains(Session_1_0.SHARED_CAPABILITY)
+                        && sourceCapabilities.contains(ExchangeSendingDestination.TOPIC_CAPABILITY))
+                    {
+                        Pattern containerIdPattern = sourceCapabilities.contains(Session_1_0.GLOBAL_CAPABILITY)
+                                ? ANY_CONTAINER_ID
+                                : Pattern.compile("^" + Pattern.quote(getSession().getConnection().getRemoteContainerId()) + "$");
+                        Pattern linkNamePattern = Pattern.compile("^" + Pattern.quote(getLinkName()) + "\\|?\\d*$");
+                        final Collection<LinkModel> links = addressSpace.findSendingLinks(containerIdPattern, linkNamePattern);
+                        for (LinkModel link : links)
+                        {
+                            if (link instanceof Link_1_0)
+                            {
+                                ((Link_1_0) link).linkClosed();
+                            }
+                        }
+                    }
                 }
                 catch (AccessControlException e)
                 {

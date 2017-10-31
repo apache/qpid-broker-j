@@ -1724,9 +1724,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public <T extends LinkModel> Collection<T> findSendingLinks(final String linkName)
+    public <T extends LinkModel> Collection<T> findSendingLinks(final Pattern containerIdPattern,
+                                                                final Pattern linkNamePattern)
     {
-        return _linkRegistry.findSendingLinks(linkName);
+        return _linkRegistry.findSendingLinks(containerIdPattern, linkNamePattern);
     }
 
     @Override

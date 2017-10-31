@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
@@ -61,7 +62,8 @@ public interface NamedAddressSpace extends Named
 
     <T extends LinkModel> T getSendingLink(String remoteContainerId, String linkName);
     <T extends LinkModel> T getReceivingLink(String remoteContainerId, String linkName);
-    <T extends LinkModel> Collection<T> findSendingLinks(String linkName);
+    <T extends LinkModel> Collection<T> findSendingLinks(final Pattern containerIdPattern,
+                                                         final Pattern linkNamePattern);
 
     boolean authoriseCreateConnection(AMQPConnection<?> connection);
 

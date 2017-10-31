@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
 
@@ -250,9 +251,10 @@ public class ManagementAddressSpace implements NamedAddressSpace
     }
 
     @Override
-    public <T extends LinkModel> Collection<T> findSendingLinks(final String linkName)
+    public <T extends LinkModel> Collection<T> findSendingLinks(final Pattern containerIdPattern,
+                                                                final Pattern linkNamePattern)
     {
-        return _linkRegistry.findSendingLinks(linkName);
+        return _linkRegistry.findSendingLinks(containerIdPattern, linkNamePattern);
     }
 
     @Override

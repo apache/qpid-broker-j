@@ -21,6 +21,7 @@
 package org.apache.qpid.server.virtualhost;
 
 import java.util.Collection;
+import java.util.regex.Pattern;
 
 import org.apache.qpid.server.protocol.LinkModel;
 
@@ -28,7 +29,8 @@ public interface LinkRegistryModel
 {
     <T extends LinkModel> T getSendingLink(String remoteContainerId, String linkName);
     <T extends LinkModel> T getReceivingLink(String remoteContainerId, String linkName);
-    <T extends LinkModel> Collection<T> findSendingLinks(String linkName);
+    <T extends LinkModel> Collection<T> findSendingLinks(final Pattern containerIdPattern,
+                                                         final Pattern linkNamePattern);
 
     void open();
     void close();

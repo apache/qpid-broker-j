@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -155,7 +156,8 @@ public abstract class AbstractNonConnectionAcceptingVirtualHost<X extends Abstra
     }
 
     @Override
-    public <T extends LinkModel> Collection<T> findSendingLinks(final String linkName)
+    public <T extends LinkModel> Collection<T> findSendingLinks(final Pattern containerIdPattern,
+                                                                final Pattern linkNamePattern)
     {
         throwUnsupported();
         return null;

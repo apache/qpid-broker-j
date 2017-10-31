@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -112,11 +113,13 @@ public class LinkRegistryImpl implements LinkRegistry
     }
 
     @Override
-    public Collection<Link_1_0<? extends BaseSource, ? extends BaseTarget>> findSendingLinks(final String linkName)
+    public Collection<Link_1_0<? extends BaseSource, ? extends BaseTarget>> findSendingLinks(final Pattern containerIdPattern,
+                                                                                             final Pattern linkNamePattern)
     {
         return _sendingLinkRegistry.entrySet()
                                    .stream()
-                                   .filter(e -> e.getKey().getLinkName().equals(linkName))
+                                   .filter(e -> containerIdPattern.matcher(e.getKey().getRemoteContainerId()).matches()
+                                                && linkNamePattern.matcher(e.getKey().getLinkName()).matches())
                                    .map(Map.Entry::getValue)
                                    .collect(Collectors.toList());
     }
