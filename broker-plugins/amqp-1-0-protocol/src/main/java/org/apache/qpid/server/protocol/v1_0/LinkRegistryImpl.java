@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
