@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
@@ -70,6 +71,31 @@ public class Source implements BaseSource
 
     @CompositeTypeField(index = 10)
     private Symbol[] _capabilities;
+
+    public Source()
+    {
+        super();
+    }
+
+    public Source(final Source source)
+    {
+        super();
+        _address = source.getAddress();
+        _durable = source.getDurable();
+        _expiryPolicy = source.getExpiryPolicy();
+        _timeout = source.getTimeout();
+        _dynamic = source.getDynamic();
+        Map<Symbol, Object> dynamicNodeProperties = source.getDynamicNodeProperties();
+        _dynamicNodeProperties = dynamicNodeProperties == null ? null : new LinkedHashMap<>(dynamicNodeProperties);
+        _distributionMode = source.getDistributionMode();
+        Map<Symbol, Filter> filter = source.getFilter();
+        _filter = filter == null ? null : new LinkedHashMap<>(filter);
+        _defaultOutcome = source.getDefaultOutcome();
+        Symbol[] outcomes = source.getOutcomes();
+        _outcomes = outcomes == null ? null : Arrays.copyOf(outcomes, outcomes.length);;
+        Symbol[] capabilities = source.getCapabilities();
+        _capabilities = capabilities == null ? null : Arrays.copyOf(capabilities, capabilities.length);
+    }
 
     public String getAddress()
     {

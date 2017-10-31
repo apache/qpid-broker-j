@@ -372,15 +372,13 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                         links = namedAddressSpace.findSendingLinks(getLinkName());
                 for (Link_1_0<? extends BaseSource, ? extends BaseTarget> link : links)
                 {
-                    if (link.getSource() != null)
+                    BaseSource baseSource = link.getSource();
+                    if (baseSource instanceof Source)
                     {
-                        BaseSource baseSource = link.getSource();
-                        if (baseSource instanceof Source)
-                        {
-                            source = ((Source) baseSource);
-                            getLink().setSource(source);
-                            break;
-                        }
+                        Source linkSource = (Source) baseSource;
+                        source = new Source(linkSource);
+                        getLink().setSource(source);
+                        break;
                     }
                 }
             }
