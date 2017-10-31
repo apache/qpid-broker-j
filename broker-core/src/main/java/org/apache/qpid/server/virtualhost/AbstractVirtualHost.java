@@ -2877,6 +2877,132 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
+    @Override
+    public Object dumpLinkRegistry()
+    {
+        return doSync(doOnConfigThread(new Task<ListenableFuture<Object>, IOException>()
+        {
+            @Override
+            public ListenableFuture<Object> execute() throws IOException
+            {
+                Object dump;
+                if (getState() == State.STOPPED)
+                {
+                    _messageStore.openMessageStore(AbstractVirtualHost.this);
+                    try
+                    {
+                        _linkRegistry.open();
+                        try
+                        {
+                            dump = _linkRegistry.dump();
+                        }
+                        finally
+                        {
+                            _linkRegistry.close();
+                        }
+                    }
+                    finally
+                    {
+                        _messageStore.closeMessageStore();
+                    }
+                }
+                else if (getState() == State.ACTIVE)
+                {
+                    dump = _linkRegistry.dump();
+                }
+                else
+                {
+                    throw new IllegalStateException("The dumpLinkRegistry operation can only be called when the virtual host is active or stopped.");
+                }
+                return Futures.immediateFuture(dump);
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractVirtualHost.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "dumpLinkRegistry";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return null;
+            }
+        }));
+    }
+
+    @Override
+    public void purgeLinkRegistry(final String containerIdPatternString, final String role, final String linkNamePatternString)
+    {
+        doSync(doOnConfigThread(new Task<ListenableFuture<Void>, IOException>()
+        {
+            @Override
+            public ListenableFuture<Void> execute() throws IOException
+            {
+                if (getState() != State.STOPPED)
+                {
+                    throw new IllegalArgumentException(
+                            "The purgeLinkRegistry operation can only be called when the virtual host is stopped.");
+                }
+                Pattern containerIdPattern = Pattern.compile(containerIdPatternString);
+                Pattern linkNamePattern = Pattern.compile(linkNamePatternString);
+
+                _messageStore.openMessageStore(AbstractVirtualHost.this);
+                try
+                {
+                    _linkRegistry.open();
+                    try
+                    {
+                        if ("SENDER".equals(role) || "BOTH".equals(role))
+                        {
+                            _linkRegistry.purgeSendingLinks(containerIdPattern, linkNamePattern);
+                        }
+                        if ("RECEIVER".equals(role) || "BOTH".equals(role))
+                        {
+                            _linkRegistry.purgeReceivingLinks(containerIdPattern, linkNamePattern);
+                        }
+                        return Futures.immediateFuture(null);
+                    }
+                    finally
+                    {
+                        _linkRegistry.close();
+                    }
+                }
+                finally
+                {
+                    _messageStore.closeMessageStore();
+                }
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractVirtualHost.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "purgeLinkRegistry";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return String.format("containerIdPattern='%s',role='%s',linkNamePattern='%s'",
+                                     containerIdPatternString,
+                                     role,
+                                     linkNamePatternString);
+            }
+        }));
+    }
+
     private boolean hasDifferentBindings(final Exchange<?> exchange,
                                          final Queue queue,
                                          final Map<String, Map<String,Object>> bindings)

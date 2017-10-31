@@ -291,6 +291,16 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
             skipAclCheck = true)
     SocketConnectionMetaData getConnectionMetaData();
 
+    @SuppressWarnings("unused")
+    @ManagedOperation(nonModifying = true, description = "Dumps link registry", changesConfiguredObjectState = false)
+    Object dumpLinkRegistry();
+
+    @SuppressWarnings("unused")
+    @ManagedOperation(description = "Removes links with the given name and containerId pattern from the link registry.", changesConfiguredObjectState = false)
+    void purgeLinkRegistry(@Param(name = "containerIdPattern", description = "Regular Expression to match the remote container id.", defaultValue = ".*") String containerIdPattern,
+                           @Param(name = "role", description = "whether to remove only sending links (\"SENDER\"), receiving links (\"RECEIVER\") or both (\"BOTH\")", validValues = {"SENDER", "RECEIVER", "BOTH"}, defaultValue = "BOTH") String role,
+                           @Param(name = "linkNamePattern", description = "Regular Expression to match the link names to be removed.", defaultValue = ".*") String linkNamePattern);
+
     Queue<?> getSubscriptionQueue(final String exchangeName,
                                   final Map<String, Object> attributes,
                                   final Map<String, Map<String, Object>> bindings);

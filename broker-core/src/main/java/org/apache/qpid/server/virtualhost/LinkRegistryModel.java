@@ -31,8 +31,12 @@ public interface LinkRegistryModel
     <T extends LinkModel> T getReceivingLink(String remoteContainerId, String linkName);
     <T extends LinkModel> Collection<T> findSendingLinks(final Pattern containerIdPattern,
                                                          final Pattern linkNamePattern);
+    void purgeSendingLinks(Pattern containerIdPattern, Pattern linkNamePattern);
+    void purgeReceivingLinks(Pattern containerIdPattern, Pattern linkNamePattern);
 
     void open();
     void close();
     void delete();
+
+    Object dump();
 }

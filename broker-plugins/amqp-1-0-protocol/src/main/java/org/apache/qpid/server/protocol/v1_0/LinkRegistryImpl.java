@@ -21,6 +21,8 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -125,6 +127,18 @@ public class LinkRegistryImpl implements LinkRegistry
     }
 
     @Override
+    public void purgeSendingLinks(final Pattern containerIdPattern, final Pattern linkNamePattern)
+    {
+        purgeLinks(_sendingLinkRegistry, containerIdPattern, linkNamePattern);
+    }
+
+    @Override
+    public void purgeReceivingLinks(final Pattern containerIdPattern, final Pattern linkNamePattern)
+    {
+        purgeLinks(_receivingLinkRegistry, containerIdPattern, linkNamePattern);
+    }
+
+    @Override
     public void open()
     {
         Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
@@ -170,6 +184,16 @@ public class LinkRegistryImpl implements LinkRegistry
         return link;
     }
 
+    private void purgeLinks(final ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> linkRegistry,
+                            final Pattern containerIdPattern, final Pattern linkNamePattern)
+    {
+        linkRegistry.entrySet()
+                    .stream()
+                    .filter(e -> containerIdPattern.matcher(e.getKey().getRemoteContainerId()).matches()
+                                 && linkNamePattern.matcher(e.getKey().getLinkName()).matches())
+                    .forEach(e -> e.getValue().linkClosed());
+    }
+
     private ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> getLinkRegistry(final Role role)
     {
         ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> linkRegistry;
@@ -188,5 +212,79 @@ public class LinkRegistryImpl implements LinkRegistry
         }
 
         return linkRegistry;
+    }
+
+    @Override
+    public LinkRegistryDump dump()
+    {
+        LinkRegistryDump dump = new LinkRegistryDump();
+        dumpRegistry(_sendingLinkRegistry, dump);
+        dumpRegistry(_receivingLinkRegistry, dump);
+        return dump;
+    }
+
+    private void dumpRegistry(ConcurrentMap<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> registry,
+                              LinkRegistryDump dump)
+    {
+        for (Map.Entry<LinkKey, Link_1_0<? extends BaseSource, ? extends BaseTarget>> entry : registry.entrySet())
+        {
+            LinkKey linkKey = entry.getKey();
+            LinkRegistryDump.ContainerDump containerLinks =
+                    dump._containers.computeIfAbsent(linkKey.getRemoteContainerId(), k -> new LinkRegistryDump.ContainerDump());
+
+            LinkRegistryDump.ContainerDump.LinkDump linkDump = new LinkRegistryDump.ContainerDump.LinkDump();
+            linkDump._source = String.valueOf(entry.getValue().getSource());
+            linkDump._target = String.valueOf(entry.getValue().getTarget());
+            if (linkKey.getRole().equals(Role.SENDER))
+            {
+                containerLinks._sendingLinks.put(linkKey.getLinkName(), linkDump);
+            }
+            else
+            {
+                containerLinks._receivingLinks.put(linkKey.getLinkName(), linkDump);
+            }
+        }
+    }
+
+    public static class LinkRegistryDump
+    {
+        public static class ContainerDump
+        {
+            public static class LinkDump
+            {
+                private String _source;
+                private String _target;
+
+                public String getSource()
+                {
+                    return _source;
+                }
+
+                public String getTarget()
+                {
+                    return _target;
+                }
+            }
+
+            private Map<String, LinkDump> _sendingLinks = new LinkedHashMap<>();
+            private Map<String, LinkDump> _receivingLinks = new LinkedHashMap<>();
+
+            public Map<String, LinkDump> getSendingLinks()
+            {
+                return Collections.unmodifiableMap(_sendingLinks);
+            }
+
+            public Map<String, LinkDump> getReceivingLinks()
+            {
+                return Collections.unmodifiableMap(_receivingLinks);
+            }
+        }
+
+        private Map<String, ContainerDump> _containers = new LinkedHashMap<>();
+
+        public Map<String, ContainerDump> getContainers()
+        {
+            return Collections.unmodifiableMap(_containers);
+        }
     }
 }
