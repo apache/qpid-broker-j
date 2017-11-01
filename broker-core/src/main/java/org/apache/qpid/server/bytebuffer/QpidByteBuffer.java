@@ -127,14 +127,14 @@ public interface QpidByteBuffer extends AutoCloseable
         return QpidByteBufferFactory.getAllocatedDirectMemorySize();
     }
 
-    static int getNumberOfActivePooledBuffers()
+    static int getNumberOfBuffersInUse()
     {
-        return QpidByteBufferFactory.getNumberOfActivePooledBuffers();
+        return QpidByteBufferFactory.getNumberOfBuffersInUse();
     }
 
-    static int getNumberOfPooledBuffers()
+    static int getNumberOfBuffersInPool()
     {
-        return QpidByteBufferFactory.getNumberOfPooledBuffers();
+        return QpidByteBufferFactory.getNumberOfBuffersInPool();
     }
 
     static long getPooledBufferDisposalCounter()

@@ -838,15 +838,15 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     }
 
     @Override
-    public long getNumberOfActivePooledBuffers()
+    public long getNumberOfBuffersInUse()
     {
-        return QpidByteBuffer.getNumberOfActivePooledBuffers();
+        return QpidByteBuffer.getNumberOfBuffersInUse();
     }
 
     @Override
-    public long getNumberOfPooledBuffers()
+    public long getNumberOfBuffersInPool()
     {
-        return QpidByteBuffer.getNumberOfPooledBuffers();
+        return QpidByteBuffer.getNumberOfBuffersInPool();
     }
 
     @Override
@@ -1104,7 +1104,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private ListenableFuture<Void> compactMemoryInternal()
     {
         LOGGER.debug("Compacting direct memory buffers: numberOfActivePooledBuffers: {}",
-                     QpidByteBuffer.getNumberOfActivePooledBuffers());
+                     QpidByteBuffer.getNumberOfBuffersInUse());
 
         final Collection<VirtualHostNode<?>> vhns = getVirtualHostNodes();
         List<ListenableFuture<Void>> futures = new ArrayList<>(vhns.size());
@@ -1128,7 +1128,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                 if (LOGGER.isDebugEnabled())
                 {
                    LOGGER.debug("After compact direct memory buffers: numberOfActivePooledBuffers: {}",
-                                QpidByteBuffer.getNumberOfActivePooledBuffers());
+                                QpidByteBuffer.getNumberOfBuffersInUse());
                 }
                 resultFuture.set(null);
             }

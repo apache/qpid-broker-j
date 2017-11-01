@@ -279,16 +279,16 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
             units = StatisticUnit.COUNT,
-            label = "Number of Active Pooled Buffers",
-            description = "Number of pooled buffers in use.")
-    long getNumberOfActivePooledBuffers();
+            label = "Number of Buffers In-Use",
+            description = "Number of buffers currently in-use.")
+    long getNumberOfBuffersInUse();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
             units = StatisticUnit.COUNT,
             label = "Number of Pooled Buffers",
-            description = "Number of pooled buffers.")
-    long getNumberOfPooledBuffers();
+            description = "Number of buffers currently in the pool.")
+    long getNumberOfBuffersInPool();
 
     @ManagedOperation(nonModifying = true,
             description = "Restart the broker within the same JVM",
