@@ -51,9 +51,9 @@
                         <groupId>com.agilejava.docbkx</groupId>
                         <artifactId>docbkx-maven-plugin</artifactId>
                         <configuration>
-                            <includes>AMQP-Messaging-Broker-Java-Book.xml</includes>
+                            <includes>Apache-Qpid-Broker-J-Book.xml</includes>
                             <postProcess>
-                                <copy file="${docbook.target}/AMQP-Messaging-Broker-Java-Book.html" tofile="${docbook.target}/index.html" />
+                                <copy file="${docbook.target}/Apache-Qpid-Broker-J-Book.html" tofile="${docbook.target}/index.html" />
                             </postProcess>
                         </configuration>
                     </plugin>
