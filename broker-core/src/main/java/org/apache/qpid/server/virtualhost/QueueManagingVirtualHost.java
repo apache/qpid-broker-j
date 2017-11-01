@@ -96,6 +96,13 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     @ManagedContextDefault(name = VIRTUALHOST_STATISTICS_REPORING_PERIOD)
     int DEFAULT_STATISTICS_REPORTING_PERIOD = 0;
 
+
+    String GLOBAL_SHARED_DURABLE_SUBSCRIPTION_DISABLED = "qpid.feature.disabled:globalSharedDurableSubscription";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = GLOBAL_SHARED_DURABLE_SUBSCRIPTION_DISABLED,
+                           description = "Flag to disable global shared durable subscriptions.")
+    boolean DEFAULT_GLOBAL_SHARED_DURABLE_SUBSCRIPTION_DISABLED = true;
+
     @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_STATISTICS_REPORING_PERIOD + "}", description = "Period (in seconds) of the statistic report.")
     int getStatisticsReportingPeriod();
 
@@ -139,6 +146,9 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     @DerivedAttribute( description = "Time (in milliseconds) between checks whether existing messages "
                                      + "need to be flowed to disk in order to free memory." )
     long getFlowToDiskCheckPeriod();
+
+    @DerivedAttribute( description = "Indicates whether global shared durable subscriptions are disabled")
+    boolean isGlobalSharedDurableSubscriptionDisabled();
 
     String VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE = "virtualhost.connectionThreadPool.size";
     @SuppressWarnings("unused")

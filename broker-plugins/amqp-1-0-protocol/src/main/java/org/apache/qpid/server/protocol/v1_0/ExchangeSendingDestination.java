@@ -142,10 +142,30 @@ public class ExchangeSendingDestination extends StandardSendingDestination
     private static Queue<?> getQueue(Exchange<?> exchange, Source source, String subscriptionName, BindingInfo bindingInfo)
             throws AmqpErrorException
     {
-        Queue<?> queue;
-        final Map<String, Object> attributes = new HashMap<>();
         boolean isDurable = source.getExpiryPolicy() == TerminusExpiryPolicy.NEVER;
         boolean isShared = hasCapability(source.getCapabilities(), SHARED_CAPABILITY);
+        boolean isGlobal = hasCapability(source.getCapabilities(), GLOBAL_CAPABILITY);
+
+        QueueManagingVirtualHost virtualHost;
+        if (exchange.getAddressSpace() instanceof QueueManagingVirtualHost)
+        {
+            virtualHost = (QueueManagingVirtualHost) exchange.getAddressSpace();
+        }
+        else
+        {
+            throw new AmqpErrorException(new Error(AmqpError.INTERNAL_ERROR,
+                                                   "Address space of unexpected type"));
+        }
+
+        if (isDurable && isShared && isGlobal && virtualHost.isGlobalSharedDurableSubscriptionDisabled())
+        {
+            throw new AmqpErrorException(new Error(AmqpError.NOT_IMPLEMENTED,
+                                                   "Support for global shared durable subscription is disabled."));
+        }
+
+
+        Queue<?> queue;
+        final Map<String, Object> attributes = new HashMap<>();
 
         ExclusivityPolicy exclusivityPolicy;
         if (isShared)
@@ -168,22 +188,11 @@ public class ExchangeSendingDestination extends StandardSendingDestination
         Map<String, Map<String, Object>> bindings = bindingInfo.getBindings();
         try
         {
-            if (exchange.getAddressSpace() instanceof QueueManagingVirtualHost)
-            {
-                try
-                {
-                    queue = ((QueueManagingVirtualHost) exchange.getAddressSpace()).getSubscriptionQueue(exchange.getName(), attributes, bindings);
-                }
-                catch (NotFoundException e)
-                {
-                    throw new AmqpErrorException(new Error(AmqpError.NOT_FOUND, e.getMessage()));
-                }
-            }
-            else
-            {
-                throw new AmqpErrorException(new Error(AmqpError.INTERNAL_ERROR,
-                                                       "Address space of unexpected type"));
-            }
+            queue = virtualHost.getSubscriptionQueue(exchange.getName(), attributes, bindings);
+        }
+        catch (NotFoundException e)
+        {
+            throw new AmqpErrorException(new Error(AmqpError.NOT_FOUND, e.getMessage()));
         }
         catch(IllegalStateException e)
         {

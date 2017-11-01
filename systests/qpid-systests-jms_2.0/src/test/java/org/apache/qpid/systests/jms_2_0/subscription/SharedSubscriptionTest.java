@@ -19,6 +19,7 @@
 
 package org.apache.qpid.systests.jms_2_0.subscription;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,8 +31,10 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.Topic;
 
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 public class SharedSubscriptionTest extends QpidBrokerTestCase
 {
@@ -41,7 +44,11 @@ public class SharedSubscriptionTest extends QpidBrokerTestCase
     @Override
     public void setUp() throws Exception
     {
-        getDefaultBrokerConfiguration().addHttpManagementConfiguration();
+        TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
+        brokerConfiguration.addHttpManagementConfiguration();
+        brokerConfiguration.setBrokerAttribute("context",
+                                               Collections.singletonMap(QueueManagingVirtualHost.GLOBAL_SHARED_DURABLE_SUBSCRIPTION_DISABLED,
+                                                                        false));
         super.setUp();
         _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
     }

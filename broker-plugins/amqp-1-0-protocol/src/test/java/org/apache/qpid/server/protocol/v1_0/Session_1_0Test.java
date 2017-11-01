@@ -27,11 +27,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -76,6 +76,8 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.transport.AggregateTicker;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
+import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class Session_1_0Test extends QpidTestCase
@@ -102,7 +104,11 @@ public class Session_1_0Test extends QpidTestCase
     public void setUp() throws Exception
     {
         super.setUp();
-        _virtualHost = BrokerTestHelper.createVirtualHost("testVH");
+        Map<String, Object> virtualHostAttributes = new HashMap<>();
+        virtualHostAttributes.put(QueueManagingVirtualHost.NAME, "testVH");
+        virtualHostAttributes.put(QueueManagingVirtualHost.CONTEXT, Collections.singletonMap(QueueManagingVirtualHost.GLOBAL_SHARED_DURABLE_SUBSCRIPTION_DISABLED, false));
+        virtualHostAttributes.put(QueueManagingVirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
+        _virtualHost = BrokerTestHelper.createVirtualHost(virtualHostAttributes);
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
         _connection = createAmqpConnection_1_0("testContainerId");
