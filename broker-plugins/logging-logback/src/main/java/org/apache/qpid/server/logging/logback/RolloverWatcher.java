@@ -75,7 +75,7 @@ public class RolloverWatcher implements RollingPolicyDecorator.RolloverListener
         {
             _baseFolder = baseFolder;
         }
-        LOGGER.warn("Exceeded maximum number of rescans without detecting rolled over log file.");
+        LOGGER.info("Exceeded maximum number of rescans without detecting rolled over log file.");
     }
 
     public PathContent getFileContent(String fileName)
