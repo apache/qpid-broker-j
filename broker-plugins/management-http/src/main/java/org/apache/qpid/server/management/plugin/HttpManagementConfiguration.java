@@ -83,7 +83,7 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
     String SASL_EXCHANGE_EXPIRY_CONTEXT_NAME = "qpid.httpManagement.saslExchangeExpiry";
     @SuppressWarnings("unused")
     @ManagedContextDefault( name = SASL_EXCHANGE_EXPIRY_CONTEXT_NAME)
-    long DEFAULT_SASL_EXCHANGE_EXPIRY = 3000L;
+    long DEFAULT_SASL_EXCHANGE_EXPIRY = 60000L;
 
     AuthenticationProvider getAuthenticationProvider(HttpServletRequest request);
     Port<?> getPort(HttpServletRequest request);
