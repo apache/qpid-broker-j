@@ -181,7 +181,7 @@ define(["dojo/parser",
             var selection = dgrid.selection;
             for(var item in selection)
             {
-                if (selection.hasOwnProperty(item))
+                if (selection.hasOwnProperty(item) && selection[item])
                 {
                     selected.push(item);
                 }
