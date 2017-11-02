@@ -86,33 +86,30 @@ define(["dojo/query",
         {
             var management = this.management;
             var controller = this.controller;
-            if (queryCreateDialog == null)
+            if (queryCreateDialog === null)
             {
-                require(["qpid/management/query/QueryCreateDialogForm", "dojo/ready"],
-                    function (QueryCreateDialogForm, ready)
+                require(["qpid/management/query/QueryCreateDialogForm"],
+                    function (QueryCreateDialogForm)
                     {
-                        ready(function ()
+                        queryCreateDialogForm =
+                            new QueryCreateDialogForm({management: management, structure: controller.structure});
+                        queryCreateDialogForm.on("create", function (e)
                         {
-                            queryCreateDialogForm =
-                                new QueryCreateDialogForm({management: management, structure: controller.structure});
-                            queryCreateDialogForm.on("create", function (e)
-                            {
-                                queryCreateDialog.hide();
-                                var tabData = {
-                                    tabType: "query",
-                                    modelObject: e.parentObject,
-                                    data: e.preference,
-                                    preferenceId: e.preference.id
-                                };
-                                controller.showTab(tabData);
-                            });
-                            queryCreateDialogForm.on("cancel", function (e)
-                            {
-                                queryCreateDialog.hide();
-                            });
-                            queryCreateDialog = new Dialog({title: "Create query", content: queryCreateDialogForm});
-                            queryCreateDialog.show();
+                            queryCreateDialog.hide();
+                            var tabData = {
+                                tabType: "query",
+                                modelObject: e.parentObject,
+                                data: e.preference,
+                                preferenceId: e.preference.id
+                            };
+                            controller.showTab(tabData);
                         });
+                        queryCreateDialogForm.on("cancel", function (e)
+                        {
+                            queryCreateDialog.hide();
+                        });
+                        queryCreateDialog = new Dialog({title: "Create query", content: queryCreateDialogForm});
+                        queryCreateDialog.show();
                     });
             }
             else
@@ -131,33 +128,30 @@ define(["dojo/query",
         {
             var management = this.management;
             var controller = this.controller;
-            if (dashboardCreateDialog == null)
+            if (dashboardCreateDialog === null)
             {
-                require(["qpid/management/dashboard/DashboardCreateDialogForm", "dojo/ready"],
-                    function (DashboardCreateDialogForm, ready)
+                require(["qpid/management/dashboard/DashboardCreateDialogForm"],
+                    function (DashboardCreateDialogForm)
                     {
-                        ready(function ()
+                        dashboardCreateDialogForm =
+                            new DashboardCreateDialogForm({management: management, structure: controller.structure});
+                        dashboardCreateDialogForm.on("create", function (e)
                         {
-                            dashboardCreateDialogForm =
-                                new DashboardCreateDialogForm({management: management, structure: controller.structure});
-                            dashboardCreateDialogForm.on("create", function (e)
-                            {
-                                dashboardCreateDialog.hide();
-                                var tabData = {
-                                    tabType: "dashboard",
-                                    modelObject: e.parentObject,
-                                    data: e.preference,
-                                    preferenceId: e.preference.id
-                                };
-                                controller.showTab(tabData);
-                            });
-                            dashboardCreateDialogForm.on("cancel", function (e)
-                            {
-                                dashboardCreateDialog.hide();
-                            });
-                            dashboardCreateDialog = new Dialog({title: "Create dashboard", content: dashboardCreateDialogForm});
-                            dashboardCreateDialog.show();
+                            dashboardCreateDialog.hide();
+                            var tabData = {
+                                tabType: "dashboard",
+                                modelObject: e.parentObject,
+                                data: e.preference,
+                                preferenceId: e.preference.id
+                            };
+                            controller.showTab(tabData);
                         });
+                        dashboardCreateDialogForm.on("cancel", function (e)
+                        {
+                            dashboardCreateDialog.hide();
+                        });
+                        dashboardCreateDialog = new Dialog({title: "Create dashboard", content: dashboardCreateDialogForm});
+                        dashboardCreateDialog.show();
                     });
             }
             else
