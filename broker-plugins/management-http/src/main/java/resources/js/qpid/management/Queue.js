@@ -269,11 +269,14 @@ define(["dojo/_base/declare",
                     var parameters = {messageIds: []};
                     for (var i = 0; i < data.length; i++)
                     {
-                        parameters.messageIds.push(data[i].id);
+                        if (data[i])
+                        {
+                            parameters.messageIds.push(data[i].id);
+                        }
                     }
 
                     this.management.update(modelObj, parameters)
-                        .then(lang.hitch(this, function (result)
+                        .then(lang.hitch(this, function ()
                         {
                             this.grid.selection.deselectAll();
                             this.reloadGridData();
@@ -290,7 +293,11 @@ define(["dojo/_base/declare",
                     name: "clearQueue",
                     parent: this.modelObj
                 };
-                this.management.update(modelObj, {}).then(lang.hitch(this, this.reloadGridData));
+                this.management.update(modelObj, {}).then(lang.hitch(this, function ()
+                {
+                    this.grid.selection.deselectAll();
+                    this.reloadGridData();
+                }));
             }
         };
         Queue.prototype.refreshMessages = function ()
@@ -310,7 +317,6 @@ define(["dojo/_base/declare",
         };
         Queue.prototype.moveOrCopyMessages = function (obj)
         {
-            var that = this;
             var move = obj.move;
             var data = this.grid.selection.getSelected();
             if (data.length)
@@ -322,15 +328,19 @@ define(["dojo/_base/declare",
                 }
                 for (i = 0; i < data.length; i++)
                 {
-                    putData.messages.push(data[i].id);
+                    if (data[i])
+                    {
+                        putData.messages.push(data[i].id);
+                    }
                 }
-                moveMessages.show(that.management, that.modelObj, putData, function ()
+                moveMessages.show(this.management, this.modelObj, putData, lang.hitch(this, function ()
                 {
                     if (move)
                     {
-                        that.reloadGridData();
+                        this.grid.selection.deselectAll();
+                        this.reloadGridData();
                     }
-                });
+                }));
 
             }
 
