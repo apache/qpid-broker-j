@@ -64,13 +64,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-/* TODO this program assumes addresses understood by the Qpid JMS Client 0-x. */
 public class MemoryConsumptionTestClient
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(MemoryConsumptionTestClient.class);
 
-    private static final String QUEUE_NAME_PREFIX = "BURL:direct://amq.direct//memory-test-queue";
-    private static final String DURABLE_SUFFIX = "?durable='true'";
+    private static final String JNDI_PROPERTIES_ARG = "jndiProperties";
+    private static final String JNDI_CONNECTION_FACTORY_ARG = "jndiConnectionFactory";
+    private static final String JNDI_DESTINATION_ARG = "jndiDestination";
 
     public static final String CONNECTIONS_ARG = "connections";
     public static final String SESSIONS_ARG = "sessions";
@@ -85,6 +85,9 @@ public class MemoryConsumptionTestClient
     public static final String JMX_USER_ARG = "jmxuser";
     public static final String JMX_USER_PASSWORD_ARG = "jmxpassword";
 
+    private static final String JNDI_PROPERTIES_DEFAULT = "stress-test-client-qpid-jms-client-0-x.properties";
+    private static final String JNDI_CONNECTION_FACTORY_DEFAULT = "qpidConnectionFactory";
+    private static final String JNDI_DESTINATION_DEFAULT = "stressTestQueue";
     public static final String CONNECTIONS_DEFAULT = "1";
     public static final String SESSIONS_DEFAULT = "1";
     public static final String PRODUCERS_DEFAULT = "1";
@@ -101,6 +104,9 @@ public class MemoryConsumptionTestClient
     public static void main(String[] args) throws Exception
     {
         Map<String,String> options = new HashMap<>();
+        options.put(JNDI_PROPERTIES_ARG, JNDI_PROPERTIES_DEFAULT);
+        options.put(JNDI_CONNECTION_FACTORY_ARG, JNDI_CONNECTION_FACTORY_DEFAULT);
+        options.put(JNDI_DESTINATION_ARG, JNDI_DESTINATION_DEFAULT);
         options.put(CONNECTIONS_ARG, CONNECTIONS_DEFAULT);
         options.put(SESSIONS_ARG, SESSIONS_DEFAULT);
         options.put(PRODUCERS_ARG, PRODUCERS_DEFAULT);
@@ -148,12 +154,14 @@ public class MemoryConsumptionTestClient
 
     private void runTest(Map<String,String> options) throws Exception
     {
+        String jndiProperties = options.get(JNDI_PROPERTIES_ARG);
+        String connectionFactoryString = options.get(JNDI_CONNECTION_FACTORY_ARG);
         int numConnections = Integer.parseInt(options.get(CONNECTIONS_ARG));
         int numSessions = Integer.parseInt(options.get(SESSIONS_ARG));
         int numProducers = Integer.parseInt(options.get(PRODUCERS_ARG));
         int numMessage = Integer.parseInt(options.get(MESSAGE_COUNT_ARG));
         int messageSize = Integer.parseInt(options.get(MESSAGE_SIZE_ARG));
-        String queueString = QUEUE_NAME_PREFIX + DURABLE_SUFFIX;
+        String queueString = options.get(JNDI_DESTINATION_ARG);
         int deliveryMode = Boolean.valueOf(options.get(PERSISTENT_ARG)) ? DeliveryMode.PERSISTENT : DeliveryMode.NON_PERSISTENT;
         long receiveTimeout = Long.parseLong(options.get(TIMEOUT_ARG));
         boolean transacted = Boolean.valueOf(options.get(TRANSACTED_ARG));
@@ -162,14 +170,9 @@ public class MemoryConsumptionTestClient
 
 
         // Load JNDI properties
-        Properties properties = new Properties();
-        try(InputStream is = this.getClass().getClassLoader().getResourceAsStream(
-                "stress-test-client-qpid-jms-client-0-x.properties"))
-        {
-            properties.load(is);
-        }
+        Context ctx = getInitialContext(jndiProperties);
+        final ConnectionFactory conFac = (ConnectionFactory) ctx.lookup(connectionFactoryString);
 
-        ConnectionFactory conFac = createConnectionFactory(properties);
         Destination destination = ensureQueueCreated(queueString, conFac);
         Map<Connection, List<Session>> connectionsAndSessions = openConnectionsAndSessions(numConnections, numSessions, transacted, conFac);
         publish(numMessage, messageSize, numProducers, deliveryMode, destination, connectionsAndSessions);
@@ -244,6 +247,22 @@ public class MemoryConsumptionTestClient
             }
         }
         return connectionAndSessions;
+    }
+
+    private Context getInitialContext(final String jndiProperties) throws IOException, NamingException
+    {
+        Properties properties = new Properties();
+        try(InputStream is = this.getClass().getClassLoader().getResourceAsStream(jndiProperties))
+        {
+            if (is != null)
+            {
+                properties.load(is);
+                return new InitialContext(properties);
+            }
+        }
+
+        System.out.printf(MemoryConsumptionTestClient.class.getSimpleName() + ": Failed to find '%s' on classpath, using fallback\n", jndiProperties);
+        return new InitialContext();
     }
 
     private Destination ensureQueueCreated(String queueURL, ConnectionFactory connectionFactory) throws JMSException
