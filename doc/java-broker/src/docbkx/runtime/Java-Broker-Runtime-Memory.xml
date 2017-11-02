@@ -157,7 +157,7 @@
     <section xml:id="Java-Broker-Runtime-Memory-Low-Memory-Direct">
       <title>Low on Direct Memory</title>
       <para>
-        When the broker detects that it uses 40% of available direct memory it will start flowing incoming transient messages to disk and reading them back before delivery.
+        When the broker detects that it uses 75% of available direct memory it will start flowing incoming transient messages to disk and reading them back before delivery.
         This will prevent the broker from running out of direct memory but may degrade performance by requiring disk I/O.
       </para>
     </section>
@@ -174,10 +174,10 @@
           1.5 GB direct memory
         </listitem>
         <listitem>
-          5% of heap reserved for the JE cache.
+          5% of heap reserved for the BDB JE cache.
         </listitem>
         <listitem>
-          Start flow-to-disk at 40% direct memory utilisation.
+          Start flow-to-disk at 75% direct memory utilisation.
         </listitem>
       </itemizedlist>
       As an example, this would accommodate a broker with 50 connections, each serving 5 sessions, and each session having 1000 messages of 1 kB on queues in the broker.

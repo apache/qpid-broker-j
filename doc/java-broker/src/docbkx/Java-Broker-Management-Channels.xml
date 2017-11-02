@@ -38,5 +38,4 @@
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/channels/Java-Broker-Management-Channel-Web-Console.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/channels/Java-Broker-Management-Channel-REST-API.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/channels/Java-Broker-Management-Channel-AMQP-Intrinsic.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/channels/Java-Broker-Management-Channel-QMF.xml"/>
 </chapter>

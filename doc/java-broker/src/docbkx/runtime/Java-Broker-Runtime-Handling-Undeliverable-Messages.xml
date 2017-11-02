@@ -46,39 +46,33 @@
 
  <section role="h2" xml:id="Java-Broker-Runtime-Handling-Undeliverable-Messages-Maximum-Delivery-Count">
   <title>Maximum Delivery Count</title>
-  <para> Maximum delivery count is a property of a queue. If a consumer application is unable to
-   process a message more than the specified number of times, then the broker will either route the
-   message to a dead-letter queue (if one has been defined), or will discard the message. </para>
-  <para> In order for a maximum delivery count to be enforced, the consuming client
+  <para> Maximum delivery count is an attribute of a queue. If a consumer application is unable to
+   process a message more than the specified number of times, then the Broker will either route the
+   message via the queue's <emphasis>alternate binding</emphasis> (if one has been defined), or will
+   discard the message.</para>
+  <para>When using AMQP 1.0 the current delivery count of a message is available to the consuming
+   application via the<literal>message-count</literal> message header (exposed via the
+   <literal>JMSXDeliveryCount</literal> JMS message property when using JMS).  When using the
+   AMQP 0-9..0-10 protocol this information is not available.</para>
+  <note>
+   <para> When using AMQP 0-9..0-10, in order for a maximum delivery count to be enforced, the consuming application
     <emphasis>must</emphasis> call <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/Session.html#rollback()">Session#rollback()</link> (or <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/Session.html#recover()">Session#recover()</link> if the session is not transacted). It is during the Broker's
-   processing of Session#rollback() (or Session#recover()) that if a message has been seen
-   at least the maximum number of times then it will move the message to the DLQ or discard the
-   message.</para>
-  <para>If the consuming client fails in another manner, for instance, closes the connection, the
-   message will not be re-routed and consumer application will see the same poison message again
-   once it reconnects.</para>
-  <para> If the consuming application is using AMQP 0-9-1, 0-9, or 0-8 protocols, it is necessary to
-   set the client system property <varname>qpid.reject.behaviour</varname> or connection or binding
-   URL option <varname>rejectbehaviour</varname> to the value <literal>server</literal>.</para>
-  <para>It is possible to determine the number of times a message has been sent to a consumer via
-   the Management interfaces, but is not possible to determine this information from a message client.
-   Specifically, the optional JMS message header <property>JMSXDeliveryCount</property> is not
-   supported.</para>
-  <para>Maximum Delivery Count can be specified when a new queue is created or using the the
-   queue declare property <property>x-qpid-maximum-delivery-count</property></para>
+    processing of Session#rollback() (or Session#recover()) that if a message has been seen
+    at least the maximum number of times then it will move the message to the DLQ or discard the
+    message. If the consuming application fails in another manner, for instance, closes the connection, the
+    message will not be re-routed and consumer application will see the same poison message again
+    once it reconnects.</para>
+   <para> If the consuming application is using Qpid JMS Client 0-x and using AMQP 0-9-1, 0-9, or 0-8
+    protocols, it is necessary to set the client system property <varname>qpid.reject.behaviour</varname> or
+    connection or binding URL option <varname>rejectbehaviour</varname> to the value <literal>server</literal>.</para>
+  </note>
  </section>
-
  <section role="h2" xml:id="Java-Broker-Runtime-Handling-Undeliverable-Messages-Dead-Letter-Queues">
-  <title>Dead Letter Queues (DLQ)</title>
-  <para>A Dead Letter Queue (DLQ) acts as an destination for messages that have somehow exceeded the
-   normal bounds of processing and is utilised to prevent disruption to flow of other messages. When
-   a DLQ is enabled for a given queue if a consuming client indicates it no longer wishes the
-   receive the message (typically by exceeding a Maximum Delivery Count) then the message is moved
-   onto the DLQ and removed from the original queue. </para>
-  <para>The DLQ feature causes generation of a Dead Letter Exchange and a Dead Letter Queue. These
-   are named convention QueueName<emphasis>_DLE</emphasis> and QueueName<emphasis>_DLQ</emphasis>.</para>
-  <para>DLQs can be enabled when a new queue is created
-   or using the queue declare property <property>x-qpid-dlq-enabled</property>.</para>
+  <title>Alternate Binding</title>
+  <para>Once the maximum delivery count is exceeded, if the queue has an <literal>alternateBinding</literal>
+    specified, the Broker automatically routes the message via the alternate binding.  The alternate binding
+    would normally specify a queue designated for that purpose of receiving the undeliverable messages.
+   By convention such queues are known as a dead-letter queues or simply a DLQs.</para>
   <caution>
    <title>Avoid excessive queue depth</title>
    <para>Applications making use of DLQs <emphasis>should</emphasis> make provision for the frequent

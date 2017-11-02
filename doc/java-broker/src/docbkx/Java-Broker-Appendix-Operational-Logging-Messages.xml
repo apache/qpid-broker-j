@@ -357,30 +357,6 @@
              management credentials that may be used connect to the Broker.</para>
           </entry>
         </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1014">
-          <entry morerows="1">BRK-1014</entry>
-          <entry>Message flow to disk active : Message memory use <replaceable>size of all
-              messages</replaceable> exceeds threshold <replaceable>threshold
-            size</replaceable></entry>
-        </row>
-        <row>
-          <entry>
-            <para>Indicates that the memory space occupied by messages has exceeded the
-              threshold so the flow to disk feature has been activated.</para>
-          </entry>
-        </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1015">
-          <entry morerows="1">BRK-1015</entry>
-          <entry>Message flow to disk inactive : Message memory use <replaceable>size of all
-              messages</replaceable> within threshold <replaceable>threshold
-            size</replaceable></entry>
-        </row>
-        <row>
-          <entry>
-            <para>Indicates that the memory space occupied by messages has fallen below the
-              threshold so the flow to disk feature has been deactivated.</para>
-          </entry>
-        </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1016">
           <entry morerows="1">BRK-1016</entry>
           <entry>Fatal error : <replaceable>root cause</replaceable> : See log file for more information</entry>
@@ -397,6 +373,15 @@
         <row>
           <entry>
             <para>Process identifier (PID) of the Broker process.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1018">
+          <entry morerows="1">BRK-1018</entry>
+          <entry>Operation : <replaceable>operation name</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the named operation has been invoked</para>
           </entry>
         </row>
       </tbody>
@@ -515,28 +500,6 @@
               shutdown.</para>
           </entry>
         </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-VHT-1003">
-          <entry morerows="1">VHT-1003</entry>
-          <entry><replaceable>virtualhostname</replaceable> :
-              <replaceable>delivered|received</replaceable> : <replaceable>size</replaceable> kB/s
-            peak : <replaceable>size</replaceable> bytes total</entry>
-        </row>
-        <row>
-          <entry>
-            <para>Statistic - bytes delivered or received by the virtualhost.</para>
-          </entry>
-        </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-VHT-1004">
-          <entry morerows="1">VHT-1004</entry>
-          <entry><replaceable>virtualhostname</replaceable> :
-              <replaceable>delivered|received</replaceable> : <replaceable>size</replaceable> msg/s
-            peak : <replaceable>size</replaceable> msgs total</entry>
-        </row>
-        <row>
-          <entry>
-            <para>Statistic - messages delivered or received by the virtualhost.</para>
-          </entry>
-        </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-VHT-1005">
           <entry morerows="1">VHT-1005</entry>
           <entry>Unexpected fatal error</entry>
@@ -565,6 +528,15 @@
           <entry>
             <para>Indicates that virtual host flow control is deactivated
                   when the usage of file system containing Virtualhost message falls under predefined limit.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-VHT-1008">
+          <entry morerows="1">VHT-1008</entry>
+          <entry>Operation : <replaceable>operation name</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the named operation has been invoked</para>
           </entry>
         </row>
       </tbody>
@@ -649,28 +621,13 @@
             </para>
           </entry>
         </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1014">
-          <entry morerows="1">QUE-1014</entry>
-          <entry>Message flow to disk active : Message memory use <replaceable>size of all
-            messages</replaceable> exceeds threshold <replaceable>threshold
-              size</replaceable></entry>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1016">
+          <entry morerows="1">QUE-1016</entry>
+          <entry>Operation : <replaceable>operation name</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that the memory space occupied by messages for this queue
-              has exceeded thevthreshold so the flow to disk feature has been activated.</para>
-          </entry>
-        </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1015">
-          <entry morerows="1">QUE-1015</entry>
-          <entry>Message flow to disk inactive : Message memory use <replaceable>size of all
-            messages</replaceable> within threshold <replaceable>threshold
-              size</replaceable></entry>
-        </row>
-        <row>
-          <entry>
-            <para>Indicates that the memory space occupied by messages for this queue has fallen
-              below the threshold so the flow to disk feature has been deactivated.</para>
+            <para>Indicates that the named operation has been invoked</para>
           </entry>
         </row>
       </tbody>
@@ -715,6 +672,15 @@
           <entry>
             <para>Indicates that an exchange received a message that could not be routed to at least
               one queue. queue has exceeded its permitted capacity. See <xref linkend="Java-Broker-Concepts-Exchanges-UnroutableMessage"/> for details.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-EXH-1004">
+          <entry morerows="1">EXH-1004</entry>
+          <entry>Operation : <replaceable>operation name</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the named operation has been invoked</para>
           </entry>
         </row>
       </tbody>
@@ -998,6 +964,15 @@
             </para>
           </entry>
         </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1014">
+          <entry morerows="1">CHN-1014</entry>
+          <entry>Operation : <replaceable>operation name</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the named operation has been invoked</para>
+          </entry>
+        </row>
       </tbody>
     </tgroup>
   </table>
@@ -1045,7 +1020,15 @@
               </para>
           </entry>
         </row>
-
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-SUB-1004">
+          <entry morerows="1">SUB-1004</entry>
+          <entry>Operation : <replaceable>operation name</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the named operation has been invoked</para>
+          </entry>
+        </row>
       </tbody>
     </tgroup>
   </table>
@@ -1518,6 +1501,34 @@
           <entry>
             <para>Ususualy indicates an attempt to make an non-AMQP connection on an AMQP port, for instance,
              with a web browser.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1008">
+          <entry morerows="1">PRT-1008</entry>
+          <entry>Connection from <replaceable>address</replaceable> rejected</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Incoming connection is rejected because the port's connection limits are
+              already reached.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1009">
+          <entry morerows="1">PRT-1009</entry>
+          <entry>FAILED to bind <replaceable>name</replaceable> service to <replaceable>port number</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>The given port number could not be bound because it is already in-use.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1010">
+          <entry morerows="1">PRT-1010</entry>
+          <entry>Operation : <replaceable>operation name</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the named operation has been invoked</para>
           </entry>
         </row>
       </tbody>

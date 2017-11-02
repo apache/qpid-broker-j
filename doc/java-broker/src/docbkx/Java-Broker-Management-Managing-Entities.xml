@@ -80,7 +80,6 @@
       features are described along with the entities key attributes, key context variables, details
       of the entities lifecycle and any other operations.</para>
   </section>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Entities-Matrix.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Broker.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-VirtualhostNodes.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Virtualhosts.xml"/>

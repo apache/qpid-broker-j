@@ -22,23 +22,23 @@
 
 <section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Concepts-Virtualhosts">
   <title>Virtualhosts</title>
-  <para>A virtualhost is a namespace in which messaging is performed. Virtualhosts are independent;
+  <para>A virtualhost is a container in which messaging is performed. Virtualhosts are independent;
     the messaging that goes on within one virtualhost is independent of any messaging that goes on
     in another virtualhost. For instance, a queue named <emphasis>foo</emphasis> defined in one
     virtualhost is completely independent of a queue named <emphasis>foo</emphasis> in another
     virtualhost.</para>
   <para>A virtualhost is identified by a name which must be unique broker-wide. Clients use the name
     to identify the virtualhost to which they wish to connect when they connect.</para>
-  <para>A virtualhost exists in a container called a virtualhost node.</para>
+  <para>A virtualhost exists in a virtualhost node.</para>
   <para>The virtualhost comprises a number of entities. This section summaries the purpose of
     each of the entities and describes the relationships between them. These details are developed
     further in the sub-sections that follow.</para>
   <para><emphasis>Exchanges</emphasis> is a named entity within the Virtual Host which receives
-    messages from producers and routes them to matching Queues.</para>
+    messages from producers and routes them to matching Queues.  When using AMQP 0-8, 0-9, 0-91, 0-10
+    the exchange is the only way ingressing a message into the virtualhost.  When using AMQP 1.0
+    producers may route messages via exchanges or direct to queues.</para>
   <para><emphasis>Queues</emphasis> are named entities that hold messages for delivery to consumer
     applications.</para>
-  <para><emphasis>Bindings</emphasis> are relationships between Exchanges and Queue that facilitate
-    routing of messages from the Exchange to the Queue.</para>
   <para><emphasis>Connections</emphasis> represent a live connection to the virtualhost from a
     messaging client.</para>
   <para>A <emphasis>Session</emphasis> represents a context for the production or consumption of

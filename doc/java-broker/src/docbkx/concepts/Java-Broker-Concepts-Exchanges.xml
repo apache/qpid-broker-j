@@ -24,6 +24,11 @@
 <title>Exchanges</title>
  <para>An <emphasis>Exchange</emphasis> is a named entity within the <emphasis>Virtualhost</emphasis> which receives
   messages from producers and routes them to matching <emphasis>Queue</emphasis>s within the <emphasis>Virtualhost</emphasis>.</para>
+ <para>
+  When using AMQP 0-8, 0-9, 0-91,  or 0-10, the exchange is the only way ingressing a message into the virtualhost.  When using AMQP
+  1.0, the application may route messages using an exchange (to take advantage of exchange's routing behaviours), or it may route direcly
+  to a queue (if point to point messaging is required).
+ </para>
  <para>The server provides a set of exchange types with each exchange type implementing a different routing algorithm. For details of how
   these exchanges types work see <xref linkend="Java-Broker-Concepts-Exchanges-Types"/> below.</para>
  <para>The server predeclares a number of exchange instances with names starting with &quot;<literal>amq.</literal>&quot;. These are defined in
@@ -192,13 +197,12 @@
   <title>Unrouteable Messages</title>
   <para>If an exchange is unable to route a message to any queues, the Broker will:
    <itemizedlist>
-    <listitem><para>If using the AMQP 1.0 protocol, and an alternate exchange has been set on the exchange, the message is routed to the alternate exchange.
-     The alternate exchange routes the message according to its routing algorithm and its binding table.  If the message is still unroutable,
-     the message is discarded unless the sending link has requested the <literal>REJECT_UNROUTABLE</literal> target capability, or the Exchange has its
-     <literal>unroutableMessageBehaviour</literal> attribute set to <literal>REJECT</literal>.</para></listitem>
-    <listitem><para>If using the AMQP 0-10 protocol, and an alternate exchange has been set on the exchange, the message is routed to the alternate exchange.
-    The alternate exchange routes the message according to its routing algorithm and its binding table.  If the message is still unroutable,
-    the message is discarded.</para></listitem>
+    <listitem><para>If using the AMQP 1.0 protocol, and an alternate binding has been set on the exchange, the message is routed to the alternate.
+     If the message is still unroutable after considering the alternate binding, the message is discarded unless the sending link has requested the
+     <literal>REJECT_UNROUTABLE</literal> target capability, or the Exchange has its <literal>unroutableMessageBehaviour</literal> attribute set to
+     <literal>REJECT</literal>.</para></listitem>
+    <listitem><para>If using the AMQP 0-10 protocol, and an alternate binding has been set on the exchange, the message is routed to the alternate.
+     If the message is still unroutable after considering the alternate binding,the message is discarded.</para></listitem>
     <listitem><para>If using AMQP protocols 0-8..0-9-1, and the publisher set the mandatory flag and the<link linkend="Java-Broker-Runtime-Close-Connection-When-No-Route">
      close when no route</link> feature did not close the connection, the message is returned to the Producer.</para></listitem>
     <listitem><para>Otherwise, the message is discarded.</para></listitem>

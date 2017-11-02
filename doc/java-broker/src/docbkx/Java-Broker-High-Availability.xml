@@ -66,8 +66,8 @@
       master currently resides. When in replica role, the node sole responsibility is to consume a
       replication stream in order that it remains up to date with the master.</para>
     <para>Messaging clients discover the active virtualhost.This can be achieved using a static
-      technique (for instance, a failover url (a feature of a Apache Qpid JMS Client for AMQP 0-9-1/0-10)), or a dynamic one
-      utilising some kind of proxy or virtual IP (VIP).</para>
+      technique (for instance, a failover url (a feature of the Apache Qpid JMS and Apache Qpid JMS AMQP 0-x clients),
+      or a dynamic one utilising some kind of proxy or virtual IP (VIP).</para>
     <para>The figure that follows illustrates a group formed of three virtualhost nodes from three
       separate Broker instances. A client is connected to the virtualhost node that is in the master
       role. The two virtualhost nodes <literal>weather1</literal> and <literal>weather3</literal>
@@ -472,9 +472,9 @@
     <title>Client failover</title>
     <para>As mentioned above, the clients need to be able to find the location of the active
       virtualhost within the group.</para>
-    <para>Clients can do this using a static technique, for example , utilising the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJmsClient08Book}JMS-Client-0-8-Connection-URL.html">failover feature of the Qpid connection url</link>
-      where the client has a list of all the nodes, and tries each node in sequence until it
-      discovers the node with the active virtualhost.</para>
+    <para>Clients can do this using a static technique, for example , utilising the failover feature of the Apache Qpid
+      JMS and Apache Qpid JMS AMQP 0-x clients where the client has a list of all the nodes, and tries each node in
+      sequence until it discovers the node with the active virtualhost.</para>
     <para>Another possibility is a dynamic technique utilising a proxy or Virtual IP (VIP). These
       require other software and/or hardware and are outside the scope of this document.</para>
   </section>

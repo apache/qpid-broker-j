@@ -32,9 +32,9 @@
     <section role="h3" xml:id="Java-Broker-Installation-Prerequistes-Java">
       <title>Java Platform</title>
       <para> The Apache Qpid Broker-J is an 100% Java implementation and as such it can be used on any
-        operating system supporting Java 1.8  or higher<footnote><para>Java Cryptography Extension (JCE)
-          Unlimited Strength policy file are required for some features</para></footnote>. This includes Linux, Solaris, Mac OS X, and
-        Windows Vista/7/8/10.</para>
+        operating system supporting Java 1.8 or higher<footnote><para>Java Cryptography Extension (JCE)
+        Unlimited Strength extension must be installed or enabled for some features.</para></footnote>. This includes Linux,
+        Solaris, Mac OS X, andWindows 7/8/10 etc.</para>
       <para> The broker has been tested with Java implementations from both Oracle and IBM. Whatever
         platform you chose, it is recommended that you ensure it is patched with any critical
         updates made available from the vendor. </para>

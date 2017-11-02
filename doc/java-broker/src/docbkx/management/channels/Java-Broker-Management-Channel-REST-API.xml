@@ -25,7 +25,7 @@
   <section xml:id="Java-Broker-Management-Channel-REST-API-Introduction">
     <title>Introduction</title>
     <para>This section describes the REST API provided by the Apache Qpid Broker-J. The REST API is intended
-      for use by developers who wish to automate the management or monitoring of the Qpid Broker. It
+      for use by developers who wish to automate the management or monitoring of the Broker. It
       is also very useful for adhoc monitoring on the command line using tools such as
         <literal>curl</literal>.</para>
     <para>The REST API provides access to all of the Broker's entities using hierarchical paths
@@ -150,28 +150,16 @@
   </section>
   <section xml:id="Java-Broker-Management-Channel-REST-API-Get">
     <title>Retrieving Configured Object details</title>
-    <para>Method GET is used to retrieve ConfiguredObject attributes values and children
-      hierarchy.</para>
-    <para>A particular ConfiguredObject details can be retrieved using full ConfiguredObject URI
-      (the one ending with configured object name)</para>
-    <para>A collection of ConfiguredObjects can be retrieved using parent URI. Request parameters
-      (having the same name as attributes) can be used to filter the returned configured
-      objects.</para>
-    <para>The REST URI (/api/latest/&gt;category&lt;/*) are hierarchical. It is permitted to replace
-      REST URI elements with an "asterisks" in GET requests to denote all object of a particular
-      type. Additionally, trailing object type in the URL hierarchy can be omitted. In this case GET
-      request will return all of the object underneath of the current object.</para>
-    <para>For example, for binding URL <literal>http://localhost:8080/api/latest/binding/&lt;vhost
-        node&gt;/&lt;vhost&gt;/&lt;exchange&gt;/&lt;queue&gt;/&lt;binding&gt;</literal> replacing of
-        <literal>&lt;exchange&gt;</literal> with "asterisks"
-        (<literal>http://localhost:8080/api/&lt;ver&gt;/binding/&lt;vhost
-        node&gt;/&lt;vhost&gt;/*/&lt;queue&gt;/&lt;binding&gt;</literal>) will result in the GET
-      response containing the list of bindings for all of the exchanges in the virtualhost having
-      the given name and given queue.</para>
-    <para>If <literal>&lt;binding&gt;</literal> and <literal>&lt;queue&gt;</literal> are omitted in
-      binding REST URL (<literal>http://localhost:8080/api/&lt;ver&gt;/binding/&lt;vhost
-        node&gt;/&lt;vhost&gt;/&lt;exchangename&gt;</literal>) the GET request will result in
-      returning all bindings for all queues for the given exchange in the virtual host. </para>
+    <para>Method GET is used to retrieve an object's attributes values and statistics.</para>
+    <para>To retrieve a single object, use its full URI. For instance, to retrieve a single queue:</para>
+    <screen>GET /api/latest/queue/vhn/vh/my-queue</screen>
+    <para>To retrieve all objects beneath a parent, pass the parent's URI. For instance, to retrieve
+      all queues beneath the virtualhost called <literal>vh</literal>. A collection will be returned.
+    </para>
+    <screen>GET /api/latest/queue/vhn/vh</screen>
+    <para>Request parameters (with the same name an attribute) are used to filter the returned collection.
+      For instance, to filter those queues of type <literal>standard</literal>:</para>
+    <screen>GET /api/latest/queue/vhn/vh?type=standard</screen>
     <para>Additional parameters supported in GET requests:</para>
     <variablelist>
       <varlistentry>
@@ -324,13 +312,7 @@ curl --user admin -X PUT  -d '{"durable":true}' http://localhost:8080/api/latest
 curl --user admin -X PUT  -d '{"durable":true,"type":"priority"}' http://localhost:8080/api/latest/queue/&lt;vhostnode name&gt;/&lt;vhostname&gt;/&lt;queuename&gt;
             </programlisting>
     </example>
-    <example>
-      <title>Example of binding a queue to an exchange using curl</title>
-      <programlisting>
-curl --user admin -X PUT  -d '{}' http://localhost:8080/api/latest/binding/&lt;vhostnode name&gt;/&lt;vhostname&gt;/&lt;exchangename&gt;/&lt;queue-name&gt;/&lt;binding-name&gt;
-            </programlisting>
-    </example>
-    <para> NOTE: These curl examples utilise unsecure HTTP transport. To use the examples it is
+    <para> NOTE: These curl examples utilise an unsecured HTTP transport. To use the examples it is
       first necessary enable Basic authentication for HTTP within the HTTP Management Configuration
       (it is off by default). For details see <xref linkend="Java-Broker-Management-Managing-Plugin-HTTP"/>
     </para>

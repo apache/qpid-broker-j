@@ -78,15 +78,13 @@
     </example>
     <para>
       Once enabled, an example statistic report output written to the log might look like this:
-      <example>
-        <screen><![CDATA[2017-10-15 13:03:12,993 INFO  [virtualhost-default-pool-0] (q.s.Queue) - Statistics: default/myqueue: queueDepthMessages=0, queueDepthBytes=0 B
+      <screen><![CDATA[2017-10-15 13:03:12,993 INFO  [virtualhost-default-pool-0] (q.s.Queue) - Statistics: default/myqueue: queueDepthMessages=0, queueDepthBytes=0 B
 2017-10-15 13:03:22,979 INFO  [virtualhost-default-pool-2] (q.s.Queue) - Statistics: default/myqueue: queueDepthMessages=3, queueDepthBytes=345 B
 2017-10-15 13:03:32,981 INFO  [virtualhost-default-pool-2] (q.s.Queue) - Statistics: default/myqueue: queueDepthMessages=3, queueDepthBytes=345 B]]></screen>
-      </example>
     </para>
     <para>Removing a statistic report pattern from the same queue:</para>
     <example>
-      <title>Diabling statistics for a single queue using the REST API and cURL</title>
+      <title>Disabling statistics for a single queue using the REST API and cURL</title>
       <screen><![CDATA[curl --user admin --data '{"name" : "qpid.queue.statisticsReportPattern"}' https://localhost:8080/api/latest/queue/default/default/myqueue/setContextVariable]]></screen>
     </example>
     <para>Adding a statistic reporting pattern to all queues:</para>
@@ -96,10 +94,8 @@
     </example>
     <para>
       Once enabled, an  example statistic report for a virtualhost with two queues might look like this:
-      <example>
-        <screen><![CDATA[2017-10-15 13:17:42,918 INFO  [virtualhost-default-pool-1] (q.s.Queue) - Statistics: default/myqueue1: oldestMessageAge=PT1M24S
+      <screen><![CDATA[2017-10-15 13:17:42,918 INFO  [virtualhost-default-pool-1] (q.s.Queue) - Statistics: default/myqueue1: oldestMessageAge=PT1M24S
 2017-10-15 13:17:42,918 INFO  [virtualhost-default-pool-1] (q.s.Queue) - Statistics: default/myqueue2: oldestMessageAge=PT0S]]></screen>
-      </example>
     </para>
   </section>
 </appendix>

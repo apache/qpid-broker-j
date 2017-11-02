@@ -26,9 +26,20 @@
     the entities and describes the relationships between them. These details are developed further
     in the sub-sections that follow.</para>
   <para>The most important entity is the <emphasis>Virtualhost</emphasis>. A virtualhost is an
-    independent namespace in which messaging is performed. A <emphasis>virtualhost</emphasis> exists
+    independent container in which messaging is performed. A <emphasis>virtualhost</emphasis> exists
     in a container called a <emphasis>virtualhost node</emphasis>. A virtualhost node has exactly
     one virtualhost.</para>
+  <para>An <emphasis>Exchange</emphasis> accepts messages from a producer application and routes these
+    to one or more <emphasis>Queues</emphasis> according to pre-arranged criteria called
+    <emphasis>bindings</emphasis>. Exchange are an AMQP 0-8, 0-9, 0-91, 0-10 concept.  They exist to
+    produce useful messaging behaviours such as fanout.  When using AMQP 0-8, 0-9, 0-91,  or 0-10, the
+    exchange is the only way ingressing a message into the virtualhost.  When using AMQP
+    1.0, the application may route messages using an exchange (to take advantage of advanced behaviours)
+    or it may publish messages direct to a queue.
+  </para>
+  <para><emphasis>Queue</emphasis>s are named entities that hold/buffer messages for later delivery to
+    consumer applications.
+  </para>
   <para><emphasis>Ports</emphasis> accept connections for messaging and management. The Broker
     supports any number of ports. When connecting for messaging, the user specifies a virtualhost
     name to indicate the virtualhost to which it is to be connected.</para>

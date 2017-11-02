@@ -49,7 +49,10 @@
         </footnote></para>
     </listitem>
     <listitem>
-      <para>Supports for all versions of the AMQP protocol</para>
+      <para>Supports for all versions of the AMQP protocol (0-8, 0-9, 0-91, 0-10 and 1.0).</para>
+    </listitem>
+    <listitem>
+      <para>Supports for AMQP over websockets.</para>
     </listitem>
     <listitem>
       <para>Automatic message translation, allowing clients using different AMQP versions to communicate with each other.</para>
@@ -62,12 +65,11 @@
       <para>Support for message compression</para>
     </listitem>
     <listitem>
-      <para>Client support for end to end message encryption</para>
-    </listitem>
-    <listitem>
-      <para>Pluggable storage architecture with implementations including <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://db.apache.org/derby/">Apache Derby</link>, <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleBdbProductOverviewUrl}">Oracle BDB JE</link><footnote>
-          <para>Oracle BDB JE must be downloaded separately.</para>
-        </footnote>, and External Database</para>
+      <para>Pluggable storage architecture with implementations including <link
+              xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://db.apache.org/derby/">Apache
+        Derby</link>, <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleBdbProductOverviewUrl}">
+        Oracle BDB JE</link>, and External Databases.
+      </para>
     </listitem>
     <listitem>
       <para>Web based management interface and programmatic management interfaces via REST.</para>
@@ -77,7 +79,7 @@
     </listitem>
     <listitem>
       <para>High availability (HA) support.<footnote>
-          <para>HA currently only available to users of the optional BDB JE HA based message store.</para>
+          <para>HA currently only available with the Oracle BDB JE message store option.</para>
         </footnote></para>
     </listitem>
   </itemizedlist>

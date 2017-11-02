@@ -43,13 +43,6 @@
           <entry>Factor to determine the maximum length of that may elapse between heartbeats being
             received from the peer before a connection is deemed to have been broken.</entry>
         </row>
-        <row xml:id="Java-Broker-Appendix-System-Properties-Broker-Dead-Letter-Exchange-Suffix">
-          <entry>qpid.broker_dead_letter_exchange_suffix</entry>
-          <entry>_DLE</entry>
-          <entry>Used with the <xref linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages-Dead-Letter-Queues"/>
-            feature. Governs the suffix used when generating a name for a Dead Letter
-            Exchange.</entry>
-        </row>
         <row xml:id="Java-Broker-Appendix-System-Properties-Broker-Dead-Letter-Queue-Suffix">
           <entry>qpid.broker_dead_letter_queue_suffix</entry>
           <entry>_DLQ</entry>

@@ -24,6 +24,12 @@
  <title>Producer Transaction Timeout</title>
  <section role="h2" xml:id="Java-Broker-Runtime-Producer-Transaction-Timeout-GeneralInformation">
   <title>General Information</title>
+  <note>
+   <para>
+    This feature is not implemented for producing applications using AMQP 1.0.  If a long running transaction is suspect
+    use the
+   </para>
+  </note>
   <para> The transaction timeout mechanism is used to control broker resources when clients
    producing messages using transactional sessions hang or otherwise become unresponsive, or simply
    begin a transaction and keep using it without ever calling <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/Session.html#commit">Session#commit()</link>.</para>
