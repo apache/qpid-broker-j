@@ -280,14 +280,14 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
             units = StatisticUnit.COUNT,
             label = "Number of Buffers In-Use",
-            description = "Number of buffers currently in-use.")
+            description = "Number of direct memory buffers currently in-use.")
     long getNumberOfBuffersInUse();
 
     @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
             units = StatisticUnit.COUNT,
             label = "Number of Pooled Buffers",
-            description = "Number of buffers currently in the pool.")
+            description = "Number of unused direct memory buffers currently in the pool.")
     long getNumberOfBuffersInPool();
 
     @ManagedOperation(nonModifying = true,
