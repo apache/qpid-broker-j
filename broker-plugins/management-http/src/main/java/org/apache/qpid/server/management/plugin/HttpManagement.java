@@ -78,8 +78,9 @@ import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.management.plugin.filter.AuthenticationCheckFilter;
 import org.apache.qpid.server.management.plugin.filter.ExceptionHandlingFilter;
 import org.apache.qpid.server.management.plugin.filter.ForbiddingTraceFilter;
+import org.apache.qpid.server.management.plugin.filter.InteractiveAuthenticationFilter;
 import org.apache.qpid.server.management.plugin.filter.LoggingFilter;
-import org.apache.qpid.server.management.plugin.filter.RedirectingFilter;
+import org.apache.qpid.server.management.plugin.filter.RedirectFilter;
 import org.apache.qpid.server.management.plugin.filter.RewriteRequestForUncompressedJavascript;
 import org.apache.qpid.server.management.plugin.portunification.TlsOrPlainConnectionFactory;
 import org.apache.qpid.server.management.plugin.servlet.FileServlet;
@@ -348,8 +349,13 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addFilter(restAuthorizationFilter, "/apidocs/*", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(restAuthorizationFilter, "/service/*", EnumSet.of(DispatcherType.REQUEST));
 
-        root.addFilter(new FilterHolder(new RedirectingFilter()), "/index.html", EnumSet.of(DispatcherType.REQUEST));
-        root.addFilter(new FilterHolder(new RedirectingFilter()), "/", EnumSet.of(DispatcherType.REQUEST));
+        root.addFilter(new FilterHolder(new InteractiveAuthenticationFilter()), "/index.html", EnumSet.of(DispatcherType.REQUEST));
+        root.addFilter(new FilterHolder(new InteractiveAuthenticationFilter()), "/", EnumSet.of(DispatcherType.REQUEST));
+
+        FilterHolder redirectFilter = new FilterHolder(new RedirectFilter());
+        redirectFilter.setInitParameter(RedirectFilter.INIT_PARAM_REDIRECT_URI, "/index.html");
+        root.addFilter(redirectFilter, "/login.html", EnumSet.of(DispatcherType.REQUEST));
+
         if (_serveUncompressedDojo)
         {
             root.addFilter(RewriteRequestForUncompressedJavascript.class, "/dojo/dojo/*", EnumSet.of(DispatcherType.REQUEST));

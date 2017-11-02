@@ -43,7 +43,7 @@ import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthentica
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 
-public class RedirectingFilter implements Filter
+public class InteractiveAuthenticationFilter implements Filter
 {
 
     private static final Collection<HttpRequestInteractiveAuthenticator> AUTHENTICATORS;
