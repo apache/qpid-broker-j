@@ -270,7 +270,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             int len = inputStream.read(receivedHeader);
             assertEquals("Unexpected number of bytes available from socket", receivedHeader.length, len);
 
-            sender.send(QpidByteBuffer.wrap("NOTANAMPQFRAME".getBytes()));
+            sender.send(QpidByteBuffer.wrap("NOTANAMQPFRAME".getBytes()));
 
         }
     }

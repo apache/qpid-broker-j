@@ -92,7 +92,7 @@ public class BDBAMQP10V0UpgradeTest extends QpidBrokerTestCase
         }
     }
 
-    public void testRecoverAmpqV0Message() throws Exception
+    public void testRecoverAmqpV0Message() throws Exception
     {
         Connection connection = getConnection();
         connection.start();

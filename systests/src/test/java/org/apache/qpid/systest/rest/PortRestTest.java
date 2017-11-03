@@ -264,23 +264,23 @@ public class PortRestTest extends QpidRestTestCase
         startDefaultBroker(true);
         getRestTestHelper().setUsernameAndPassword(SystemConfig.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
 
-        String ampqPortName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
+        String amqpPortName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
         Map<String, Object> portData =
-                getRestTestHelper().getJsonAsMap("port/" + getRestTestHelper().encodeAsUTF(ampqPortName));
+                getRestTestHelper().getJsonAsMap("port/" + getRestTestHelper().encodeAsUTF(amqpPortName));
         Asserts.assertPortAttributes(portData, State.QUIESCED);
     }
 
     public void testDeletePort() throws Exception
     {
-        String ampqPortName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
+        String amqpPortName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
         Map<String, Object> portData =
-                getRestTestHelper().getJsonAsMap("port/" + getRestTestHelper().encodeAsUTF(ampqPortName));
+                getRestTestHelper().getJsonAsMap("port/" + getRestTestHelper().encodeAsUTF(amqpPortName));
         assertFalse("Port data are not found", portData.isEmpty());
 
-        int deleteResponseCode = getRestTestHelper().submitRequest("port/" + ampqPortName, "DELETE");
+        int deleteResponseCode = getRestTestHelper().submitRequest("port/" + amqpPortName, "DELETE");
         assertEquals("Port deletion should be allowed", 200, deleteResponseCode);
 
-        getRestTestHelper().submitRequest("port/" + getRestTestHelper().encodeAsUTF(ampqPortName), "GET", HttpServletResponse.SC_NOT_FOUND);
+        getRestTestHelper().submitRequest("port/" + getRestTestHelper().encodeAsUTF(amqpPortName), "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testNewPortCreationFailsWhenPortIsAlreadyBound() throws Exception

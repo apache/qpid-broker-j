@@ -74,15 +74,15 @@ public class AmqpManagementTest extends QpidBrokerTestCase
     {
         TestBrokerConfiguration config = getDefaultBrokerConfiguration();
 
-        Map<String, Object> ampqSslPort = new HashMap<>();
-        ampqSslPort.put(Port.TRANSPORTS, Collections.singletonList(Transport.SSL));
-        ampqSslPort.put(Port.PORT, DEFAULT_SSL_PORT);
-        ampqSslPort.put(Port.NAME, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT);
-        ampqSslPort.put(Port.KEY_STORE, TestBrokerConfiguration.ENTRY_NAME_SSL_KEYSTORE);
-        ampqSslPort.put(Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
-        ampqSslPort.put(Port.PROTOCOLS, System.getProperty(TEST_AMQP_PORT_PROTOCOLS_PROPERTY));
+        Map<String, Object> amqpSslPort = new HashMap<>();
+        amqpSslPort.put(Port.TRANSPORTS, Collections.singletonList(Transport.SSL));
+        amqpSslPort.put(Port.PORT, DEFAULT_SSL_PORT);
+        amqpSslPort.put(Port.NAME, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT);
+        amqpSslPort.put(Port.KEY_STORE, TestBrokerConfiguration.ENTRY_NAME_SSL_KEYSTORE);
+        amqpSslPort.put(Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
+        amqpSslPort.put(Port.PROTOCOLS, System.getProperty(TEST_AMQP_PORT_PROTOCOLS_PROPERTY));
 
-        config.addObjectConfiguration(Port.class, ampqSslPort);
+        config.addObjectConfiguration(Port.class, amqpSslPort);
 
         Map<String, Object> aliasAttributes = new HashMap<>();
         aliasAttributes.put(VirtualHostAlias.NAME, "defaultAlias");
