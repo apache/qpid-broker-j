@@ -43,7 +43,8 @@ function awaitBroker()
 function startBroker()
 {
   echo "Starting broker"
-  ${QPID_HOME}/bin/qpid-server -prop qpid.rmi_port=$RMI_PORT 2>${QPID_WORK}/log/qpid.stderr > ${QPID_WORK}/log/qpid.stdout &
+  export QPID_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=${RMI_PORT} -Dcom.sun.management.jmxremote.local.only=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+  ${QPID_HOME}/bin/qpid-server 2>${QPID_WORK}/log/qpid.stderr > ${QPID_WORK}/log/qpid.stdout &
   brokerpid=$!
   echo "Broker started: PID $brokerpid"
 }
@@ -60,7 +61,7 @@ function stopBroker()
   (kill -9 $brokerpid 2>&1) > /dev/null
   grep BRK-1014 ${QPID_WORK}/log/qpid.log | sed 's/,/ /g' | sed 's/^/# /' >> $resultFile
   mv  ${QPID_WORK}/log/qpid.log  ${QPID_WORK}/log/qpid.log.$messageSize_$messageCount
-  rm -fr  $QPID_WORK/default/messages
+  rm -fr ${QPID_WORK}/default/messages
 }
 
 function performTest()
@@ -75,9 +76,13 @@ function performTest()
   startBroker
   awaitBroker
   echo "Running test: messageSize=$messageSize messageNumber=$messageCount connections=${connections} sessions=${sessions}"
-  java -cp "${TOOLS_DIR}/target/qpid-tools-6.0.0-SNAPSHOT.jar:${TOOLS_DIR}/target/dependency/*" -Dqpid.amqp.version=${PROTOCOL} org.apache.qpid.tools.MemoryConsumptionTestClient \
-     connections=${connections} sessions=${sessions} producers=${producers} \
-     messagecount=${messageCount} size=${messageSize} jmxuser=admin jmxpassword=admin jmxhost=${BROKER_HOSTNAME} jmxport=${RMI_PORT} >> $resultFile
+
+  tmp=$(mktemp)
+  mvn -f ${TOOLS_DIR}/pom.xml \
+       exec:java \
+       -Dmemorytest=${PROFILE} \
+       -Dexec.args="jndiProperties=${JNDI_PROPERTIES} jmxhost=${BROKER_HOSTNAME} jmxport=${RMI_PORT} jmxuser=guest jmxpassword=guest jndiConnectionFactory=qpidConnectionFactoryTls connections=${connections} sessions=${sessions} producers=${producers} messagecount=${messageCount} size=${messageSize} resultsFile=${tmp}"
+  cat ${tmp} >> $resultFile
   stopBroker $messageSize $messageCount $resultFile
 }
 
@@ -130,21 +135,25 @@ else
 fi
 echo "Tools module folder ${TOOLS_DIR}"
 
-if [ ! -d ${TOOLS_DIR}/target ]
-then
-  echo "target directory does not exists run: mvn package"
-  exit 1
-fi
-
-if [ ! -d ${TOOLS_DIR}/target/dependency ]
-then
-  echo "target dependencies directory does not exists run: mvn dependency:copy-dependencies"
-  exit 1
-fi
-
 PROTOCOL=${1:-0-9}
 BROKER_HOSTNAME=${2:-"localhost"}
 RMI_PORT=${3:-8999}
+
+case ${PROTOCOL} in
+0-9|0-10)
+  JNDI_PROPERTIES=stress-test-client-qpid-jms-client-0-x.properties
+  PROFILE=jms-client-${PROTOCOL}
+  ;;
+1-0)
+  JNDI_PROPERTIES=stress-test-client-qpid-jms-client.properties
+  PROFILE=qpid-jms-client
+  ;;
+*)
+  echo "Unrecognised protocol ${PROTOCOL}"
+  exit 1
+  ;;
+esac
+
 
 brokerVersion=`$QPID_HOME/bin/qpid-server -v | grep "qpid -" | awk '{print $3 " rev" $5}'`
 javaVersion=`java -version 2>&1 | grep "java version" | awk '{print $3}' | sed -e "s/\"//g"`
@@ -154,7 +163,7 @@ resultFile="${TOOLS_DIR}/target/results-${PROTOCOL}-${javaVersion}-${startTimeFi
 
 echo "Results will be written into ${resultFile}"
 
-rm -fr $QPID_WORK
+rm -fr  ${QPID_WORK}/default/messages
 mkdir -p ${QPID_WORK}/log
 
 echo "# $startTime" > ${resultFile}

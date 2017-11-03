@@ -74,13 +74,24 @@
 
   <profiles>
     <profile>
-      <id>qpid-jms-client</id>
+      <id>stresstest_qpid-jms-client</id>
       <activation>
         <property>
             <name>stresstest</name>
             <value>qpid-jms-client</value>
         </property>
       </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <configuration>
+              <mainClass>org.apache.qpid.tools.StressTestClient</mainClass>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
       <dependencies>
         <dependency>
           <groupId>org.apache.qpid</groupId>
@@ -90,7 +101,7 @@
       </dependencies>
     </profile>
     <profile>
-      <id>jms-client-0-9</id>
+      <id>stresstest_jms-client-0-9</id>
       <activation>
         <property>
             <name>stresstest</name>
@@ -103,6 +114,7 @@
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
             <configuration>
+              <mainClass>org.apache.qpid.tools.StressTestClient</mainClass>
               <systemProperties>
                 <systemProperty>
                   <key>qpid.amqp.version</key><value>0-9</value>
@@ -126,7 +138,7 @@
       </dependencies>
     </profile>
     <profile>
-      <id>jms-client-0-10</id>
+      <id>stresstest_jms-client-0-10</id>
       <activation>
         <property>
             <name>stresstest</name>
@@ -139,6 +151,108 @@
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
             <configuration>
+              <mainClass>org.apache.qpid.tools.StressTestClient</mainClass>
+              <systemProperties>
+                <systemProperty>
+                  <key>qpid.amqp.version</key><value>0-10</value>
+                </systemProperty>
+              </systemProperties>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.qpid</groupId>
+          <artifactId>qpid-client</artifactId>
+          <scope>compile</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.geronimo.specs</groupId>
+          <artifactId>geronimo-jms_1.1_spec</artifactId>
+          <scope>compile</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>memorytest_qpid-jms-client</id>
+      <activation>
+        <property>
+          <name>memorytest</name>
+          <value>qpid-jms-client</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <configuration>
+              <mainClass>org.apache.qpid.tools.MemoryConsumptionTestClient</mainClass>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.qpid</groupId>
+          <artifactId>qpid-jms-client</artifactId>
+          <scope>runtime</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>memorytest_jms-client-0-9</id>
+      <activation>
+        <property>
+          <name>memorytest</name>
+          <value>jms-client-0-9</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <configuration>
+              <mainClass>org.apache.qpid.tools.MemoryConsumptionTestClient</mainClass>
+              <systemProperties>
+                <systemProperty>
+                  <key>qpid.amqp.version</key><value>0-9</value>
+                </systemProperty>
+              </systemProperties>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.qpid</groupId>
+          <artifactId>qpid-client</artifactId>
+          <scope>compile</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.geronimo.specs</groupId>
+          <artifactId>geronimo-jms_1.1_spec</artifactId>
+          <scope>compile</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>memorytest_jms-client-0-10</id>
+      <activation>
+        <property>
+          <name>memorytest</name>
+          <value>jms-client-0-10</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <configuration>
+              <mainClass>org.apache.qpid.tools.MemoryConsumptionTestClient</mainClass>
               <systemProperties>
                 <systemProperty>
                   <key>qpid.amqp.version</key><value>0-10</value>

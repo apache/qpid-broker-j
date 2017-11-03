@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.tools;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -32,12 +33,12 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
-import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -48,8 +49,6 @@ import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
-import javax.management.Notification;
-import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
@@ -68,34 +67,37 @@ public class MemoryConsumptionTestClient
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(MemoryConsumptionTestClient.class);
 
+    private static final String RESULTS_FILE_ARG = "resultsFile";
+
     private static final String JNDI_PROPERTIES_ARG = "jndiProperties";
     private static final String JNDI_CONNECTION_FACTORY_ARG = "jndiConnectionFactory";
     private static final String JNDI_DESTINATION_ARG = "jndiDestination";
 
-    public static final String CONNECTIONS_ARG = "connections";
-    public static final String SESSIONS_ARG = "sessions";
-    public static final String PRODUCERS_ARG = "producers";
-    public static final String MESSAGE_COUNT_ARG = "messagecount";
-    public static final String MESSAGE_SIZE_ARG = "size";
-    public static final String PERSISTENT_ARG = "persistent";
-    public static final String TIMEOUT_ARG = "timeout";
-    public static final String TRANSACTED_ARG = "transacted";
-    public static final String JMX_HOST_ARG = "jmxhost";
-    public static final String JMX_PORT_ARG = "jmxport";
-    public static final String JMX_USER_ARG = "jmxuser";
-    public static final String JMX_USER_PASSWORD_ARG = "jmxpassword";
+    private static final String CONNECTIONS_ARG = "connections";
+    private static final String SESSIONS_ARG = "sessions";
+    private static final String PRODUCERS_ARG = "producers";
+    private static final String MESSAGE_COUNT_ARG = "messagecount";
+    private static final String MESSAGE_SIZE_ARG = "size";
+    private static final String PERSISTENT_ARG = "persistent";
+    private static final String TIMEOUT_ARG = "timeout";
+    private static final String TRANSACTED_ARG = "transacted";
+    private static final String JMX_HOST_ARG = "jmxhost";
+    private static final String JMX_PORT_ARG = "jmxport";
+    private static final String JMX_USER_ARG = "jmxuser";
+    private static final String JMX_USER_PASSWORD_ARG = "jmxpassword";
 
+    private static final String RESULTS_FILE_DEFAULT = "results.csv";
     private static final String JNDI_PROPERTIES_DEFAULT = "stress-test-client-qpid-jms-client-0-x.properties";
     private static final String JNDI_CONNECTION_FACTORY_DEFAULT = "qpidConnectionFactory";
     private static final String JNDI_DESTINATION_DEFAULT = "stressTestQueue";
-    public static final String CONNECTIONS_DEFAULT = "1";
-    public static final String SESSIONS_DEFAULT = "1";
-    public static final String PRODUCERS_DEFAULT = "1";
-    public static final String MESSAGE_COUNT_DEFAULT = "1";
-    public static final String MESSAGE_SIZE_DEFAULT = "256";
-    public static final String PERSISTENT_DEFAULT = "false";
-    public static final String TIMEOUT_DEFAULT = "1000";
-    public static final String TRANSACTED_DEFAULT = "false";
+    private static final String CONNECTIONS_DEFAULT = "1";
+    private static final String SESSIONS_DEFAULT = "1";
+    private static final String PRODUCERS_DEFAULT = "1";
+    private static final String MESSAGE_COUNT_DEFAULT = "1";
+    private static final String MESSAGE_SIZE_DEFAULT = "256";
+    private static final String PERSISTENT_DEFAULT = "false";
+    private static final String TIMEOUT_DEFAULT = "1000";
+    private static final String TRANSACTED_DEFAULT = "false";
 
     private static final String JMX_HOST_DEFAULT = "localhost";
     private static final String JMX_PORT_DEFAULT = "8999";
@@ -104,6 +106,7 @@ public class MemoryConsumptionTestClient
     public static void main(String[] args) throws Exception
     {
         Map<String,String> options = new HashMap<>();
+        options.put(RESULTS_FILE_ARG, RESULTS_FILE_DEFAULT);
         options.put(JNDI_PROPERTIES_ARG, JNDI_PROPERTIES_DEFAULT);
         options.put(JNDI_CONNECTION_FACTORY_ARG, JNDI_CONNECTION_FACTORY_DEFAULT);
         options.put(JNDI_DESTINATION_ARG, JNDI_DESTINATION_DEFAULT);
@@ -134,7 +137,7 @@ public class MemoryConsumptionTestClient
         testClient.runTest(options);
     }
 
-    public static void parseArgumentsIntoConfig(Map<String, String> initialValues, String[] args)
+    private static void parseArgumentsIntoConfig(Map<String, String> initialValues, String[] args)
     {
         for(String arg: args)
         {
@@ -154,6 +157,7 @@ public class MemoryConsumptionTestClient
 
     private void runTest(Map<String,String> options) throws Exception
     {
+        String resultsFile = options.get(RESULTS_FILE_ARG);
         String jndiProperties = options.get(JNDI_PROPERTIES_ARG);
         String connectionFactoryString = options.get(JNDI_CONNECTION_FACTORY_ARG);
         int numConnections = Integer.parseInt(options.get(CONNECTIONS_ARG));
@@ -177,17 +181,47 @@ public class MemoryConsumptionTestClient
         Map<Connection, List<Session>> connectionsAndSessions = openConnectionsAndSessions(numConnections, numSessions, transacted, conFac);
         publish(numMessage, messageSize, numProducers, deliveryMode, destination, connectionsAndSessions);
         MemoryStatistic memoryStatistics = collectMemoryStatistics(options);
-        generateCSV(memoryStatistics, numConnections, numSessions, transacted, numMessage, messageSize, numProducers, deliveryMode);
+        generateCSV(memoryStatistics, numConnections, numSessions, transacted, numMessage, messageSize, numProducers, deliveryMode, resultsFile);
         purgeQueue(conFac, queueString, receiveTimeout);
         closeConnections(connectionsAndSessions.keySet());
+        System.exit(0);
     }
 
-    private void generateCSV(MemoryStatistic memoryStatistics, int numConnections, int numSessions, boolean transacted, int numMessage, int messageSize, int numProducers, int deliveryMode)
+    private void generateCSV(MemoryStatistic memoryStatistics,
+                             int numConnections,
+                             int numSessions,
+                             boolean transacted,
+                             int numMessage,
+                             int messageSize,
+                             int numProducers,
+                             int deliveryMode,
+                             final String resultsFile) throws IOException
     {
-        System.out.println(memoryStatistics.getHeapUsage() + "," + memoryStatistics.getDirectMemoryUsage()
-                + "," + numConnections  + "," + numSessions  + "," + numProducers + "," + transacted + "," + numMessage
-                + "," + messageSize + "," + deliveryMode + "," + toUserFriendlyName(memoryStatistics.getHeapUsage())
-                + "," + toUserFriendlyName(memoryStatistics.getDirectMemoryUsage()));
+        try (FileWriter writer = new FileWriter(resultsFile))
+        {
+            writer.write(memoryStatistics.getHeapUsage()
+                         + ","
+                         + memoryStatistics.getDirectMemoryUsage()
+                         + ","
+                         + numConnections
+                         + ","
+                         + numSessions
+                         + ","
+                         + numProducers
+                         + ","
+                         + transacted
+                         + ","
+                         + numMessage
+                         + ","
+                         + messageSize
+                         + ","
+                         + deliveryMode
+                         + ","
+                         + toUserFriendlyName(memoryStatistics.getHeapUsage())
+                         + ","
+                         + toUserFriendlyName(memoryStatistics.getDirectMemoryUsage())
+                         + System.lineSeparator());
+        }
     }
 
     private void publish(int numberOfMessages, int messageSize, int numberOfProducers, int deliveryMode,
@@ -227,14 +261,9 @@ public class MemoryConsumptionTestClient
         for (int i= 0; i < numConnections ; i++)
         {
             Connection connection = conFac.createConnection();
-            connection.setExceptionListener(new ExceptionListener()
-            {
-                @Override
-                public void onException(JMSException jmse)
-                {
-                    LOGGER.error("The sample received an exception through the ExceptionListener", jmse);
-                    System.exit(1);
-                }
+            connection.setExceptionListener(jmse -> {
+                LOGGER.error("The sample received an exception through the ExceptionListener", jmse);
+                System.exit(1);
             });
 
             List<Session> sessions = new ArrayList<>();
@@ -268,7 +297,7 @@ public class MemoryConsumptionTestClient
     private Destination ensureQueueCreated(String queueURL, ConnectionFactory connectionFactory) throws JMSException
     {
         Connection connection = connectionFactory.createConnection();
-        Destination destination = null;
+        Destination destination;
         try
         {
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -282,21 +311,6 @@ public class MemoryConsumptionTestClient
             connection.close();
         }
         return destination;
-    }
-
-    private ConnectionFactory createConnectionFactory(Properties properties) throws NamingException
-    {
-        ConnectionFactory connectionFactory = null;
-        Context ctx = new InitialContext(properties);
-        try
-        {
-            connectionFactory = (ConnectionFactory) ctx.lookup("qpidConnectionfactory");
-        }
-        finally
-        {
-            ctx.close();
-        }
-        return connectionFactory;
     }
 
     private void closeConnections(Collection<Connection> connections) throws JMSException, NamingException
@@ -318,13 +332,13 @@ public class MemoryConsumptionTestClient
         connection.start();
 
         int count = 0;
-        while(true)
+        while (true)
         {
             BytesMessage msg = (BytesMessage) consumer.receive(receiveTimeout);
 
             if(msg == null)
             {
-                LOGGER.debug("Received {} message(s)", connection);
+                LOGGER.debug("Received {} message(s)", count);
                 break;
             }
             else
@@ -348,10 +362,10 @@ public class MemoryConsumptionTestClient
         if (!"".equals(host) && !"".equals(port) && !"".equals(user) && !"".equals(password))
         {
             Map<String, Object> environment = Collections.<String, Object>singletonMap(JMXConnector.CREDENTIALS, new String[]{user, password});
-            JMXConnector jmxConnector = JMXConnectorFactory.newJMXConnector(new JMXServiceURL("rmi", "", 0, "/jndi/rmi://" + host + ":" + port + "/jmxrmi"), environment);
-            jmxConnector.connect();
-            try
+
+            try(JMXConnector jmxConnector = JMXConnectorFactory.newJMXConnector(new JMXServiceURL("rmi", "", 0, "/jndi/rmi://" + host + ":" + port + "/jmxrmi"), environment))
             {
+                jmxConnector.connect();
                 final MBeanServerConnection mBeanServerConnection = jmxConnector.getMBeanServerConnection();
                 final ObjectName memoryMBean = new ObjectName("java.lang:type=Memory");
                 String gcCollectorMBeanName = options.get(JMX_GARBAGE_COLLECTOR_MBEAN);
@@ -376,11 +390,6 @@ public class MemoryConsumptionTestClient
                     }
                 }
             }
-            finally
-            {
-                jmxConnector.close();
-            }
-
         }
         return null;
     }
@@ -391,36 +400,31 @@ public class MemoryConsumptionTestClient
         final MemoryStatistic memoryStatistics = new MemoryStatistic();
         final CountDownLatch notificationReceived = new CountDownLatch(1);
         final ObjectName memoryMBean = new ObjectName("java.lang:type=Memory");
-        mBeanServerConnection.addNotificationListener(gcMBean, new NotificationListener()
-        {
-            @Override
-            public void handleNotification(Notification notification, Object handback)
+        mBeanServerConnection.addNotificationListener(gcMBean, (notification, handback) -> {
+            if (notification.getType().equals("com.sun.management.gc.notification"))
             {
-                if (notification.getType().equals("com.sun.management.gc.notification"))
+                CompositeData userData = (CompositeData) notification.getUserData();
+                try
                 {
-                    CompositeData userData = (CompositeData) notification.getUserData();
-                    try
+                    Object gcAction = userData.get("gcAction");
+                    Object gcCause = userData.get("gcCause");
+                    if ("System.gc()".equals(gcCause) && String.valueOf(gcAction).contains("end of major GC"))
                     {
-                        Object gcAction = userData.get("gcAction");
-                        Object gcCause = userData.get("gcCause");
-                        if ("System.gc()".equals(gcCause) && String.valueOf(gcAction).contains("end of major GC"))
+                        try
                         {
-                            try
-                            {
-                                collectMemoryStatistics(memoryStatistics, mBeanServerConnection, memoryMBean);
-                            }
-                            finally
-                            {
-                                notificationReceived.countDown();
-                            }
-
+                            collectMemoryStatistics(memoryStatistics, mBeanServerConnection, memoryMBean);
                         }
+                        finally
+                        {
+                            notificationReceived.countDown();
+                        }
+
                     }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                        notificationReceived.countDown();
-                    }
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                    notificationReceived.countDown();
                 }
             }
         }, null, null);
@@ -453,13 +457,13 @@ public class MemoryConsumptionTestClient
         {
             return String.valueOf(value/1024) + "kB";
         }
-        else if (value <= 1024l * 1024l * 1024l)
+        else if (value <= 1024L * 1024L * 1024L)
         {
-            return String.valueOf(value/1024l/1024l) + "MB";
+            return String.valueOf(value/1024L/1024L) + "MB";
         }
         else
         {
-            return String.valueOf(value/1024l/1024l/1024l) + "GB";
+            return String.valueOf(value/1024L/1024L/1024L) + "GB";
         }
     }
 
@@ -479,22 +483,22 @@ public class MemoryConsumptionTestClient
         private long heapUsage;
         private long directMemoryUsage;
 
-        public long getHeapUsage()
+        long getHeapUsage()
         {
             return heapUsage;
         }
 
-        public void setHeapUsage(long heapUsage)
+        void setHeapUsage(long heapUsage)
         {
             this.heapUsage = heapUsage;
         }
 
-        public long getDirectMemoryUsage()
+        long getDirectMemoryUsage()
         {
             return directMemoryUsage;
         }
 
-        public void setDirectMemoryUsage(long directMemoryUsage)
+        void setDirectMemoryUsage(long directMemoryUsage)
         {
             this.directMemoryUsage = directMemoryUsage;
         }
