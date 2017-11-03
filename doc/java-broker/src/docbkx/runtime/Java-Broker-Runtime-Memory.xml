@@ -217,7 +217,7 @@
       </itemizedlist>
     </section>
     <section>
-      <title>Formulas</title>
+      <title>Formulae</title>
       <para>
         We developed a simple formula which estimates the <emphasis>minimum</emphasis> memory usage of the broker under certain usage.
         These are rough estimate so we strongly recommend testing your configuration extensively.
@@ -227,7 +227,7 @@
       <para>
         <informalequation>
           <mathphrase>
-            memory<subscript>heap</subscript> = 15 MB + 15 kB * N<subscript>sessions</subscript> + 1.5 kB * N<subscript>messages</subscript> + 17 kB * N<subscript>connections</subscript>
+            memory<subscript>heap</subscript> = 15 MB + 20 KB * N<subscript>sessions</subscript> + 1.5 KB * N<subscript>messages</subscript> + 100 KB * N<subscript>connections</subscript>
           </mathphrase>
         </informalequation>
       </para>
@@ -242,7 +242,7 @@
         Where <mathphrase>N</mathphrase> denotes the total number of connections/sessions/messages on the broker. Furthermore, for direct memory only the messages that have not been flowed to disk are relevant.
       </para>
       <note>
-        <para>The formulae assume the worst case in terms of memory usage: persistent messages and TLS connections. Transient messages consume less heap memory than peristent and plain connections consume less direct memory than TLS
+        <para>The formulae assume the worst case in terms of memory usage: persistent messages and TLS connections. Transient messages consume less heap memory than persistent and plain connections consume less direct memory than TLS
           connections.
         </para>
       </note>
