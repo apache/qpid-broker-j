@@ -23,12 +23,15 @@ define(["dojo/query",
         "dojox/html/entities",
         "qpid/common/Structure",
         "qpid/common/updater",
-        "qpid/management/Management",
         "qpid/common/util",
+        "qpid/management/Management",
+        "qpid/management/treeView",
+        "qpid/management/controller",
         "dijit/Dialog",
         "dojo/dom-class",
         "dojo/dom",
-        "dojo/domReady!"], function (query, registry, entities, Structure, updater, Management, util, Dialog, domClass, dom)
+        "dojo/domReady!"],
+    function (query, registry, entities, Structure, updater, util, Management, TreeView, controller, Dialog, domClass, dom)
 {
 
     var documentationUrl = null;
@@ -166,7 +169,7 @@ define(["dojo/query",
                 tabType: "dashboardBrowser"
             });
         },
-        init: function (controller, TreeView)
+        init: function ()
         {
             this.controller = controller;
             this.management = new Management("", util.xhrErrorHandler);

@@ -50,6 +50,7 @@
         }
 
         var dojoConfig = {
+            parseOnLoad: false,
             tlmSiblingOfDojo: false,
             async: true,
             baseUrl: getContextPath(),
@@ -88,9 +89,7 @@
         var management = null;
         require([
                     "dojo/parser",
-                    "qpid/common/ConsoleHelper",
-                    "qpid/management/treeView",
-                    "qpid/management/controller",
+                    "dojo/ready",
                     "qpid/common/LoginForm",
                     "dijit/layout/BorderContainer",
                     "dijit/layout/TabContainer",
@@ -104,12 +103,20 @@
                     "dijit/MenuItem",
                     "qpid/common/footer"
                 ],
-                function (parser, ConsoleHelper, treeView, controller)
+                function (parser, ready)
                 {
-                    qpidManagementHelper = ConsoleHelper;
-                    parser.parse();
-                    qpidManagementHelper.init(controller, treeView);
-                    management = qpidManagementHelper.management;
+                    ready(function()
+                    {
+                        parser.parse().then(function ()
+                        {
+                             require(["qpid/common/ConsoleHelper"], function (ConsoleHelper)
+                                        {
+                                          qpidManagementHelper = ConsoleHelper;
+                                          qpidManagementHelper.init();
+                                          management = qpidManagementHelper.management;
+                                        });
+                        });
+                    });
                 });
     </script>
 </head>
