@@ -334,8 +334,8 @@
       <properties>
         <java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</java.naming.factory.initial>
         <java.naming.provider.url>${project.build.directory}/test-classes/qpid-jms-client/jndi.properties</java.naming.provider.url>
-        <qpid.amqp.version></qpid.amqp.version>
-        <qpid.dest_syntax></qpid.dest_syntax>
+        <qpid.amqp.version />
+        <qpid.dest_syntax />
       </properties>
       <dependencies>
         <dependency>

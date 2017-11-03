@@ -18,9 +18,7 @@
   ~ under the License.
   ~
   -->
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.apache.qpid</groupId>
@@ -94,7 +92,7 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <id>0-9-1 -> 1.0</id>
+                        <id>0-9-1 -&gt; 1.0</id>
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
@@ -102,7 +100,7 @@
                                 <qpid.systests.end_to_end_conversion.publisherGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
                                 <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>-Dqpid.amqp.version=0-9-1</qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
                                 <qpid.systests.end_to_end_conversion.subscriberGavs>${amqp10ClientGavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
-                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments></qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments />
                             </systemPropertyVariables>
                         </configuration>
                         <goals>
@@ -110,13 +108,13 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>1.0 -> 0-9-1</id>
+                        <id>1.0 -&gt; 0-9-1</id>
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
                                 <qpid.systests.end_to_end_conversion.executionId>1.0_to_0-9-1</qpid.systests.end_to_end_conversion.executionId>
                                 <qpid.systests.end_to_end_conversion.publisherGavs>${amqp10ClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
-                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments></qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments />
                                 <qpid.systests.end_to_end_conversion.subscriberGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
                                 <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>-Dqpid.amqp.version=0-9-1</qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
                             </systemPropertyVariables>
@@ -126,7 +124,7 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>0-10 -> 1.0</id>
+                        <id>0-10 -&gt; 1.0</id>
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
@@ -134,7 +132,7 @@
                                 <qpid.systests.end_to_end_conversion.publisherGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
                                 <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>-Dqpid.amqp.version=0-10</qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
                                 <qpid.systests.end_to_end_conversion.subscriberGavs>${amqp10ClientGavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
-                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments></qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments />
                             </systemPropertyVariables>
                         </configuration>
                         <goals>
@@ -142,13 +140,13 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>1.0 -> 0-10</id>
+                        <id>1.0 -&gt; 0-10</id>
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
                                 <qpid.systests.end_to_end_conversion.executionId>1.0_to_0-10</qpid.systests.end_to_end_conversion.executionId>
                                 <qpid.systests.end_to_end_conversion.publisherGavs>${amqp10ClientGavs}</qpid.systests.end_to_end_conversion.publisherGavs>
-                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments></qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments>
+                                <qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments />
                                 <qpid.systests.end_to_end_conversion.subscriberGavs>${amqp0xClientGavs}</qpid.systests.end_to_end_conversion.subscriberGavs>
                                 <qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>-Dqpid.amqp.version=0-10</qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments>
                             </systemPropertyVariables>
@@ -158,7 +156,7 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>0-9-1 -> 0-10</id>
+                        <id>0-9-1 -&gt; 0-10</id>
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
@@ -174,7 +172,7 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>0-10 -> 0-9-1</id>
+                        <id>0-10 -&gt; 0-9-1</id>
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
