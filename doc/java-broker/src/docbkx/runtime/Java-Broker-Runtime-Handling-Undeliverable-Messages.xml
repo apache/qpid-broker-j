@@ -53,16 +53,16 @@
   <para>When using AMQP 1.0 the current delivery count of a message is available to the consuming
    application via the<literal>message-count</literal> message header (exposed via the
    <literal>JMSXDeliveryCount</literal> JMS message property when using JMS).  When using the
-   AMQP 0-9..0-10 protocol this information is not available.</para>
+   AMQP 0-8..0-10 protocols this information is not available.</para>
   <note>
-   <para> When using AMQP 0-9..0-10, in order for a maximum delivery count to be enforced, the consuming application
+   <para> When using AMQP 0-8..0-10, in order for a maximum delivery count to be enforced, the consuming application
     <emphasis>must</emphasis> call <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/Session.html#rollback()">Session#rollback()</link> (or <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/Session.html#recover()">Session#recover()</link> if the session is not transacted). It is during the Broker's
     processing of Session#rollback() (or Session#recover()) that if a message has been seen
     at least the maximum number of times then it will move the message to the DLQ or discard the
     message. If the consuming application fails in another manner, for instance, closes the connection, the
     message will not be re-routed and consumer application will see the same poison message again
     once it reconnects.</para>
-   <para> If the consuming application is using Qpid JMS Client 0-x and using AMQP 0-9-1, 0-9, or 0-8
+   <para> If the consuming application is using Qpid JMS Client 0-x and using AMQP 0-8, 0-9, or 0-9-1
     protocols, it is necessary to set the client system property <varname>qpid.reject.behaviour</varname> or
     connection or binding URL option <varname>rejectbehaviour</varname> to the value <literal>server</literal>.</para>
   </note>
@@ -72,7 +72,7 @@
   <para>Once the maximum delivery count is exceeded, if the queue has an <literal>alternateBinding</literal>
     specified, the Broker automatically routes the message via the alternate binding.  The alternate binding
     would normally specify a queue designated for that purpose of receiving the undeliverable messages.
-   By convention such queues are known as a dead-letter queues or simply a DLQs.</para>
+    By convention such queues are known as dead-letter queues or simply DLQs.</para>
   <caution>
    <title>Avoid excessive queue depth</title>
    <para>Applications making use of DLQs <emphasis>should</emphasis> make provision for the frequent

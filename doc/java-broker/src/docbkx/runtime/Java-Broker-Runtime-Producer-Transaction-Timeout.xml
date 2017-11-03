@@ -26,8 +26,8 @@
   <title>General Information</title>
   <note>
    <para>
-    This feature is not implemented for producing applications using AMQP 1.0.  If a long running transaction is suspect
-    use the
+    This feature is not implemented for producing applications using AMQP 1.0.  If a long running transaction is suspected
+    examine the connection statistic <literal>oldestTransactionStartTime</literal> to confirm if this is the case.
    </para>
   </note>
   <para> The transaction timeout mechanism is used to control broker resources when clients

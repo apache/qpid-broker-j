@@ -38,5 +38,5 @@
     their cumulative size falls beneath 750MB.</para>
   <para>Flow to disk is configured by Broker context variable
       <literal>broker.flowToDiskThreshold</literal>. It is expressed as a size in bytes and defaults
-    to 40% of the JVM maximum heap size.</para>
+    to 75% of the JVM maximum heap size.</para>
 </section>

@@ -34,7 +34,7 @@
     each of the entities and describes the relationships between them. These details are developed
     further in the sub-sections that follow.</para>
   <para><emphasis>Exchanges</emphasis> is a named entity within the Virtual Host which receives
-    messages from producers and routes them to matching Queues.  When using AMQP 0-8, 0-9, 0-91, 0-10
+    messages from producers and routes them to matching Queues.  When using AMQP 0-8, 0-9, 0-9-1, 0-10
     the exchange is the only way ingressing a message into the virtualhost.  When using AMQP 1.0
     producers may route messages via exchanges or direct to queues.</para>
   <para><emphasis>Queues</emphasis> are named entities that hold messages for delivery to consumer

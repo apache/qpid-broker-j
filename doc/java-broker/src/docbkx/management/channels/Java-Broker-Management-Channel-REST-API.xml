@@ -157,7 +157,7 @@
       all queues beneath the virtualhost called <literal>vh</literal>. A collection will be returned.
     </para>
     <screen>GET /api/latest/queue/vhn/vh</screen>
-    <para>Request parameters (with the same name an attribute) are used to filter the returned collection.
+    <para>Request parameters (with the same name as an attribute) are used to filter the returned collection.
       For instance, to filter those queues of type <literal>standard</literal>:</para>
     <screen>GET /api/latest/queue/vhn/vh?type=standard</screen>
     <para>Additional parameters supported in GET requests:</para>

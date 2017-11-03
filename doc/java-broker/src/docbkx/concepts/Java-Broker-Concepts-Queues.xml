@@ -26,7 +26,7 @@
      hold/buffer messages for later delivery to consumer applications.</para>
  <para>Messages arrive on queues either from <link linkend="Java-Broker-Concepts-Exchanges">Exchanges</link>, or when
      using the AMQP 1.0 protocol, the producing application can direct messages straight to the queue.  For
-     AMQP 0-8, 0-9, 0-91,  or 0-10, the exchange is the only way ingressing a message into a queue.</para>
+     AMQP 0-8, 0-9, 0-9-1,  or 0-10, the exchange is the only way ingressing a message into a queue.</para>
  <para>Consumers subscribe to a queue in order to receive messages from it.</para>
  <para>The Broker supports different queue types, each with different delivery semantics.  Queues also have a range of other
    features such as the ability to group messages together for delivery to a single consumer.  These additional features

@@ -31,8 +31,8 @@
     one virtualhost.</para>
   <para>An <emphasis>Exchange</emphasis> accepts messages from a producer application and routes these
     to one or more <emphasis>Queues</emphasis> according to pre-arranged criteria called
-    <emphasis>bindings</emphasis>. Exchange are an AMQP 0-8, 0-9, 0-91, 0-10 concept.  They exist to
-    produce useful messaging behaviours such as fanout.  When using AMQP 0-8, 0-9, 0-91,  or 0-10, the
+    <emphasis>bindings</emphasis>. Exchange are an AMQP 0-8, 0-9, 0-9-1, 0-10 concept.  They exist to
+    produce useful messaging behaviours such as fanout.  When using AMQP 0-8, 0-9, 0-9-1,  or 0-10, the
     exchange is the only way ingressing a message into the virtualhost.  When using AMQP
     1.0, the application may route messages using an exchange (to take advantage of advanced behaviours)
     or it may publish messages direct to a queue.

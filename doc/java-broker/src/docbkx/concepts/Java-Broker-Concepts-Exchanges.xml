@@ -25,7 +25,7 @@
  <para>An <emphasis>Exchange</emphasis> is a named entity within the <emphasis>Virtualhost</emphasis> which receives
   messages from producers and routes them to matching <emphasis>Queue</emphasis>s within the <emphasis>Virtualhost</emphasis>.</para>
  <para>
-  When using AMQP 0-8, 0-9, 0-91,  or 0-10, the exchange is the only way ingressing a message into the virtualhost.  When using AMQP
+  When using AMQP 0-8, 0-9, 0-9-1,  or 0-10, the exchange is the only way ingressing a message into the virtualhost.  When using AMQP
   1.0, the application may route messages using an exchange (to take advantage of exchange's routing behaviours), or it may route direcly
   to a queue (if point to point messaging is required).
  </para>
