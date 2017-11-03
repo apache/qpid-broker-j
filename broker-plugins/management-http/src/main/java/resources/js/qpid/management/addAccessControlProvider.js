@@ -154,7 +154,8 @@ define(["dojo/_base/lang",
                             containerNode: typeFieldsContainer,
                             parent: that,
                             data: that.initialData,
-                            effectiveData: that.effectiveData
+                            effectiveData: that.effectiveData,
+                            metadata: that.management.metadata
                         });
                         util.applyMetadataToWidgets(typeFieldsContainer, category, type, that.management.metadata);
                     }
