@@ -35,10 +35,6 @@
             environments that have many.</para>
         </listitem>
         <listitem>
-          <para><emphasis>Heartbeating</emphasis>. Enables heartbeats between Broker and Clients.
-            Heartbeats help discover severed TCP/IP connections in a timely manner.</para>
-        </listitem>
-        <listitem>
           <para><emphasis>Confidential configuration encryption provider</emphasis>. The name of the
             provider used to encrypt passwords and other secrets within the configuration. See <xref linkend="Java-Broker-Security-Configuration-Encryption"/>.</para>
         </listitem>

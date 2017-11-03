@@ -84,26 +84,20 @@
             a threshold, message size exceeded a threshold. These thresholds are soft. See <xref linkend="Java-Broker-Appendix-Queue-Alerts"/></para>
         </listitem>
         <listitem>
-          <para><emphasis>Maximum Delivery Count/Alternate Exchange</emphasis>. See <xref linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages"/></para>
-        </listitem>
-        <listitem>
           <para><emphasis>Message Groups</emphasis>. See <xref linkend="Java-Broker-Concepts-Queues-Message-Grouping"/></para>
         </listitem>
-      </itemizedlist></para>
-  </section>
-  <section xml:id="Java-Broker-Management-Managing-Queue-Children">
-    <title>Children</title>
-    <para>
-      <itemizedlist>
         <listitem>
-          <para>Binding</para>
+            <para><emphasis>maximumDeliveryAttempts</emphasis>. See <xref linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages"/></para>
         </listitem>
-      </itemizedlist>
-    </para>
+        <listitem>
+            <para><emphasis>alternateBinding</emphasis>. Provides an alternate destination that will be used when the
+              number of delivery attempts exceeds the <emphasis>maximumDeliveryAttempts</emphasis> configured on this
+              queue.  Messages are also routed to this destination if this queue is deleted.</para>
+        </listitem>
+      </itemizedlist></para>
   </section>
   <section xml:id="Java-Broker-Management-Managing-Queue-Lifecycle">
     <title>Lifecycle</title>
     <para>Not supported</para>
   </section>
-
 </section>

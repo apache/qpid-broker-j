@@ -45,6 +45,12 @@
                         <footnote><para>Some Linux distributions govern the ceiling with a <literal>sysctl</literal>
                             setting <literal>net.core.somaxconn</literal>.</para></footnote></para>
                 </listitem>
+                <listitem>
+                    <para><emphasis>qpid.port.heartbeatDelay</emphasis>. For AMQP 0-8..0-10 the default period with
+                        which Broker and client will exchange heartbeat messages (in seconds). Clients may negotiate a
+                        different heartbeat frequency or disable it altogether. For AMQP 1.0 this setting controls the
+                        incoming idle timeout only.  A value of 0 disables.</para>
+                </listitem>
             </itemizedlist>
         </para>
     </section>

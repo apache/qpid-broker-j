@@ -110,7 +110,9 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
             description = "the ExclusivityPolicy to apply to queues where none is explicitly set")
     String DEFAULT_EXCLUSIVITY = "NONE";
 
-    @ManagedAttribute
+    @ManagedAttribute(description = "Provides an alternate destination that will be used when the number of delivery "
+                                    + "attempts exceeds the maximumDeliveryAttempt configured on this queue.  Messages "
+                                    + "are also routed to this destination if this queue is deleted.")
     AlternateBinding getAlternateBinding();
 
     @ManagedAttribute( defaultValue = "${queue.defaultExclusivityPolicy}")

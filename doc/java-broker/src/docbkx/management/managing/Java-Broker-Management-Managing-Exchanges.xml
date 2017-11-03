@@ -55,21 +55,22 @@
         <listitem>
           <para><emphasis>Durable</emphasis>. Whether the exchange survives a restart.</para>
         </listitem>
-      </itemizedlist></para>
-  </section>
-  <section xml:id="Java-Broker-Management-Managing-Exchanges-Children">
-    <title>Children</title>
-    <para>
-      <itemizedlist>
         <listitem>
-          <para>Binding</para>
+            <para><emphasis>Durable</emphasis>. Whether the exchange survives a restart.</para>
         </listitem>
-      </itemizedlist>
-    </para>
+        <listitem>
+            <para><emphasis>alternateBinding</emphasis>. Provides an alternate destination that, depending on behaviour
+              requested by the producer, may be used if a message arriving at this exchange cannot be routed to at least
+              one queue.</para>
+        </listitem>
+        <listitem>
+            <para><emphasis>unroutableMessageBehaviour</emphasis>. (AMQP 1.0 only) Default behaviour to apply when a
+                message is not routed to any queues.</para>
+        </listitem>
+      </itemizedlist></para>
   </section>
   <section xml:id="Java-Broker-Management-Managing-Exchanges-Lifecycle">
     <title>Lifecycle</title>
     <para>Not supported</para>
   </section>
-
 </section>

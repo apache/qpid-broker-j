@@ -53,7 +53,9 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
 
     // Attributes
 
-    @ManagedAttribute
+    @ManagedAttribute(description = "Provides an alternate destination that, depending on behaviour requested by the "
+                                    + "producer, may be used if a message arriving at this exchange cannot be routed "
+                                    + "to at least one queue.")
     AlternateBinding getAlternateBinding();
 
     @ManagedAttribute(description = "(AMQP 1.0 only) Default behaviour to apply when a message is not routed to any queues", defaultValue = "DISCARD")
