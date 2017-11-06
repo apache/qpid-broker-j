@@ -96,12 +96,12 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     @ManagedContextDefault(name = VIRTUALHOST_STATISTICS_REPORING_PERIOD)
     int DEFAULT_STATISTICS_REPORTING_PERIOD = 0;
 
-
-    String GLOBAL_SHARED_DURABLE_SUBSCRIPTION_DISABLED = "qpid.feature.disabled:globalSharedDurableSubscription";
+    String DISCARD_GLOBAL_SHARED_SUBSCRIPTION_LINKS_ON_DETACH = "qpid.jms.discardGlobalSharedSubscriptionLinksOnDetach";
     @SuppressWarnings("unused")
-    @ManagedContextDefault(name = GLOBAL_SHARED_DURABLE_SUBSCRIPTION_DISABLED,
-                           description = "Flag to disable global shared durable subscriptions.")
-    boolean DEFAULT_GLOBAL_SHARED_DURABLE_SUBSCRIPTION_DISABLED = true;
+    @ManagedContextDefault(name = DISCARD_GLOBAL_SHARED_SUBSCRIPTION_LINKS_ON_DETACH,
+                           description = "If true AMQP 1.0 links of global shared subscriptions are discarded when the"
+                                         + " link detaches. This is to avoid leaking links with the Qpid JMS client.")
+    boolean DEFAULT_DISCARD_GLOBAL_SHARED_SUBSCRIPTION_LINKS_ON_DETACH = true;
 
     @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_STATISTICS_REPORING_PERIOD + "}", description = "Period (in seconds) of the statistic report.")
     int getStatisticsReportingPeriod();
@@ -148,7 +148,7 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     long getFlowToDiskCheckPeriod();
 
     @DerivedAttribute( description = "Indicates whether global shared durable subscriptions are disabled")
-    boolean isGlobalSharedDurableSubscriptionDisabled();
+    boolean isDiscardGlobalSharedSubscriptionLinksOnDetach();
 
     String VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE = "virtualhost.connectionThreadPool.size";
     @SuppressWarnings("unused")

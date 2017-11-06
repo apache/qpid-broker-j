@@ -106,7 +106,6 @@ public class Session_1_0Test extends QpidTestCase
         super.setUp();
         Map<String, Object> virtualHostAttributes = new HashMap<>();
         virtualHostAttributes.put(QueueManagingVirtualHost.NAME, "testVH");
-        virtualHostAttributes.put(QueueManagingVirtualHost.CONTEXT, Collections.singletonMap(QueueManagingVirtualHost.GLOBAL_SHARED_DURABLE_SUBSCRIPTION_DISABLED, false));
         virtualHostAttributes.put(QueueManagingVirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
         _virtualHost = BrokerTestHelper.createVirtualHost(virtualHostAttributes);
         _taskExecutor = new CurrentThreadTaskExecutor();

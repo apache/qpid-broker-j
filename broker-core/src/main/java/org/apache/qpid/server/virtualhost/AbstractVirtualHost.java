@@ -274,7 +274,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private Collection<VirtualHostLogger> _virtualHostLoggersToClose;
     private PreferenceStore _preferenceStore;
     private long _flowToDiskCheckPeriod;
-    private volatile boolean _isGlobalSharedDurableSubscriptionDisabled;
+    private volatile boolean _isDiscardGlobalSharedSubscriptionLinksOnDetach;
 
     public AbstractVirtualHost(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
@@ -597,7 +597,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         _fileSystemMaxUsagePercent = getContextValue(Integer.class, Broker.STORE_FILESYSTEM_MAX_USAGE_PERCENT);
         _flowToDiskCheckPeriod = getContextValue(Long.class, FLOW_TO_DISK_CHECK_PERIOD);
-        _isGlobalSharedDurableSubscriptionDisabled = getContextValue(Boolean.class, GLOBAL_SHARED_DURABLE_SUBSCRIPTION_DISABLED);
+        _isDiscardGlobalSharedSubscriptionLinksOnDetach = getContextValue(Boolean.class, DISCARD_GLOBAL_SHARED_SUBSCRIPTION_LINKS_ON_DETACH);
 
         QpidServiceLoader serviceLoader = new QpidServiceLoader();
         for(ConnectionValidator validator : serviceLoader.instancesOf(ConnectionValidator.class))
@@ -2188,9 +2188,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public boolean isGlobalSharedDurableSubscriptionDisabled()
+    public boolean isDiscardGlobalSharedSubscriptionLinksOnDetach()
     {
-        return _isGlobalSharedDurableSubscriptionDisabled;
+        return _isDiscardGlobalSharedSubscriptionLinksOnDetach;
     }
 
     @Override

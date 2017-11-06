@@ -797,14 +797,15 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 
         Source source = getSource();
         TerminusExpiryPolicy expiryPolicy = source.getExpiryPolicy();
+        NamedAddressSpace addressSpace = getSession().getConnection().getAddressSpace();
+        List<Symbol> sourceCapabilities = source.getCapabilities() == null ? Collections.emptyList() : Arrays.asList(source.getCapabilities());
+
         if (close
             || TerminusExpiryPolicy.LINK_DETACH.equals(expiryPolicy)
             || ((expiryPolicy == null || TerminusExpiryPolicy.SESSION_END.equals(expiryPolicy)) && getSession().isClosing())
             || (TerminusExpiryPolicy.CONNECTION_CLOSE.equals(expiryPolicy) && getSession().getConnection().isClosing()))
         {
-
             Error closingError = null;
-            NamedAddressSpace addressSpace = getSession().getConnection().getAddressSpace();
             if (getDestination() instanceof ExchangeSendingDestination
                 && addressSpace instanceof QueueManagingVirtualHost)
             {
@@ -813,7 +814,6 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                 {
                     ((QueueManagingVirtualHost) addressSpace).removeSubscriptionQueue(
                             ((ExchangeSendingDestination) getDestination()).getQueue().getName());
-                    List<Symbol> sourceCapabilities = source.getCapabilities() == null ? Collections.emptyList() : Arrays.asList(source.getCapabilities());
 
                     TerminusDurability sourceDurability = source.getDurable();
                     if (sourceDurability != null
@@ -856,6 +856,28 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             else
             {
                 LOGGER.warn("Unexpected error on detaching endpoint {}: {}", getLinkName(), error);
+            }
+        }
+        else if (addressSpace instanceof QueueManagingVirtualHost
+                 && ((QueueManagingVirtualHost) addressSpace).isDiscardGlobalSharedSubscriptionLinksOnDetach()
+                 && sourceCapabilities.contains(Session_1_0.SHARED_CAPABILITY)
+                 && sourceCapabilities.contains(Session_1_0.GLOBAL_CAPABILITY)
+                 && sourceCapabilities.contains(ExchangeSendingDestination.TOPIC_CAPABILITY))
+        {
+            // For JMS 2.0 global shared subscriptions we do not want to keep the links hanging around.
+            // However, we keep one link (ending with "|global") to perform a null-source lookup upon un-subscription.
+            if (!getLinkName().endsWith("|global"))
+            {
+                getLink().linkClosed();
+            }
+            else
+            {
+                Pattern linkNamePattern = Pattern.compile("^" + Pattern.quote(getLinkName()) + "$");
+                final Collection<LinkModel> links = addressSpace.findSendingLinks(ANY_CONTAINER_ID, linkNamePattern);
+                if (links.size() > 1)
+                {
+                    getLink().linkClosed();
+                }
             }
         }
         super.detach(error, close);
