@@ -46,9 +46,6 @@ public class SharedSubscriptionTest extends QpidBrokerTestCase
     {
         TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
         brokerConfiguration.addHttpManagementConfiguration();
-        brokerConfiguration.setBrokerAttribute("context",
-                                               Collections.singletonMap(QueueManagingVirtualHost.GLOBAL_SHARED_DURABLE_SUBSCRIPTION_DISABLED,
-                                                                        false));
         super.setUp();
         _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
     }

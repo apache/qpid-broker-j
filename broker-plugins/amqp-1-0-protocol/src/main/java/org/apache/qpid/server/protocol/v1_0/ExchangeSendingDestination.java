@@ -144,7 +144,6 @@ public class ExchangeSendingDestination extends StandardSendingDestination
     {
         boolean isDurable = source.getExpiryPolicy() == TerminusExpiryPolicy.NEVER;
         boolean isShared = hasCapability(source.getCapabilities(), SHARED_CAPABILITY);
-        boolean isGlobal = hasCapability(source.getCapabilities(), GLOBAL_CAPABILITY);
 
         QueueManagingVirtualHost virtualHost;
         if (exchange.getAddressSpace() instanceof QueueManagingVirtualHost)
@@ -156,13 +155,6 @@ public class ExchangeSendingDestination extends StandardSendingDestination
             throw new AmqpErrorException(new Error(AmqpError.INTERNAL_ERROR,
                                                    "Address space of unexpected type"));
         }
-
-        if (isDurable && isShared && isGlobal && virtualHost.isGlobalSharedDurableSubscriptionDisabled())
-        {
-            throw new AmqpErrorException(new Error(AmqpError.NOT_IMPLEMENTED,
-                                                   "Support for global shared durable subscription is disabled."));
-        }
-
 
         Queue<?> queue;
         final Map<String, Object> attributes = new HashMap<>();
