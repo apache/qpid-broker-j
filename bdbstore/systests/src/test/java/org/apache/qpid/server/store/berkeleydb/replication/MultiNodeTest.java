@@ -56,6 +56,7 @@ import org.apache.qpid.jms.ConnectionListener;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHARemoteReplicationNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.NodeRole;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
@@ -680,7 +681,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
         Set<Integer> ports = _groupCreator.getBrokerPortNumbersForNodes();
         for (Integer port : ports)
         {
-            if (activeBrokerPort != port.intValue())
+            if (activeBrokerPort != port)
             {
                 priority = priority + 1;
                 highestPriorityBrokerPort = port;
@@ -691,6 +692,36 @@ public class MultiNodeTest extends QpidBrokerTestCase
         }
 
         LOGGER.info("Broker on port " + highestPriorityBrokerPort + " has the highest priority of " + priority);
+
+        // make sure all remote nodes are materialized on the master
+        // in order to make sure that DBPing is not invoked
+        for (Integer port : ports)
+        {
+            if (activeBrokerPort != port)
+            {
+                _groupCreator.awaitNodeToAttainAttributeValue(activeBrokerPort, port, BDBHARemoteReplicationNode.ROLE, "REPLICA");
+            }
+        }
+
+        // do work on master
+        assertProducingConsuming(connection);
+
+        Map<String, Object> masterNodeAttributes = _groupCreator.getNodeAttributes(activeBrokerPort);
+
+        Object lastTransactionId = masterNodeAttributes.get(BDBHAVirtualHostNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID);
+        assertTrue("Unexpected last transaction id: " + lastTransactionId, lastTransactionId instanceof Number);
+
+        // make sure all remote nodes have the same transaction id as master
+        for (Integer port : ports)
+        {
+            if (activeBrokerPort != port)
+            {
+                _groupCreator.awaitNodeToAttainAttributeValue(activeBrokerPort,
+                                                              port,
+                                                              BDBHARemoteReplicationNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID,
+                                                              String.valueOf(lastTransactionId));
+            }
+        }
 
         LOGGER.info("Shutting down the MASTER");
         _groupCreator.stopNode(activeBrokerPort);
