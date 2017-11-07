@@ -72,7 +72,7 @@ define(["dojo/query",
                         }
                         else
                         {
-                            documentationUrl = "http://qpid.apache.org/components/java-broker/";
+                            documentationUrl = "http://qpid.apache.org/components/broker-j/";
                         }
                         openWindow(documentationUrl, "Qpid Documentation")
                     });
