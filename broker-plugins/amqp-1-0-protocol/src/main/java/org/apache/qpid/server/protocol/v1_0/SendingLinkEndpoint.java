@@ -873,10 +873,17 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             else
             {
                 Pattern linkNamePattern = Pattern.compile("^" + Pattern.quote(getLinkName()) + "$");
-                final Collection<LinkModel> links = addressSpace.findSendingLinks(ANY_CONTAINER_ID, linkNamePattern);
-                if (links.size() > 1)
+                // TODO: locking on the addressSpace is not nice! Without we have a race which could mean that the last
+                // two links from different connections detach concurrently and both get removed from the registry.
+                // If the client then tries to do a null-source lookup (for unsubscribe) the attach would be rejected
+                // with 'not-found' and the subscription queue would leak potentially accumulating messages.
+                synchronized (addressSpace)
                 {
-                    getLink().linkClosed();
+                    final Collection<LinkModel> links = addressSpace.findSendingLinks(ANY_CONTAINER_ID, linkNamePattern);
+                    if (links.size() > 1)
+                    {
+                        getLink().linkClosed();
+                    }
                 }
             }
         }
