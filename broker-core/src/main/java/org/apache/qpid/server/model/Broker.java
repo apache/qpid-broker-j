@@ -115,7 +115,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String DEFAULT_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST = "[]";
 
     @ManagedContextDefault(name = QPID_DOCUMENTATION_URL)
-    String DEFAULT_DOCUMENTATION_URL = "http://qpid.apache.org/releases/qpid-java-${qpid.version}/java-broker/book/";
+    String DEFAULT_DOCUMENTATION_URL = "http://qpid.apache.org/releases/qpid-broker-j-${qpid.version}/book/";
 
     @ManagedContextDefault(name = BROKER_STATISTICS_REPORING_PERIOD)
     int DEFAULT_STATISTICS_REPORTING_PERIOD = 0;
