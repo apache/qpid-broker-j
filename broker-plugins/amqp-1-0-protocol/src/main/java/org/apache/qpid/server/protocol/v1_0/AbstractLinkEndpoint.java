@@ -465,7 +465,10 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
                 _state = State.DETACHED;
                 break;
             default:
-                // "silent link stealing"
+                // "silent link stealing": If a link is attached on a different connection (i.e., it is "stolen") then
+                //  the spec say we must close the link with a link:stolen error. This only makes sense if the link is
+                //  attached at the time it is stolen. If it is detached we call it "silent link stealing" and simply
+                //  disassociate the link from the session so that the new connection can use it.
                 if (close)
                 {
                     getSession().dissociateEndpoint(this);
