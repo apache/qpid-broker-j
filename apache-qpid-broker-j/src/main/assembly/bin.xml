@@ -30,16 +30,7 @@
   <baseDirectory>qpid-broker/${project.version}</baseDirectory>
   <fileSets>
     <fileSet>
-      <directory>${project.basedir}</directory>
-      <outputDirectory/>
-      <includes>
-        <include>etc/</include>
-      </includes>
-      <fileMode>0644</fileMode>
-      <directoryMode>0755</directoryMode>
-    </fileSet>
-    <fileSet>
-      <directory>${basedir}/src/main/assembly/</directory>
+      <directory>${project.basedir}/src/main/assembly/</directory>
       <outputDirectory/>
       <includes>
         <include>LICENSE</include>
@@ -50,7 +41,7 @@
       <directoryMode>0755</directoryMode>
     </fileSet>
     <fileSet>
-      <directory>${project.basedir}</directory>
+      <directory>${project.basedir}/../broker</directory>
       <outputDirectory/>
       <includes>
         <include>bin/</include>
@@ -59,19 +50,19 @@
       <directoryMode>0755</directoryMode>
     </fileSet>
     <fileSet>
-      <directory>${project.basedir}/../common</directory>
+      <directory>${project.basedir}/../broker</directory>
       <outputDirectory/>
       <includes>
-        <include>bin/qpid-run</include>
+        <include>etc/</include>
       </includes>
-      <fileMode>0755</fileMode>
+      <fileMode>0644</fileMode>
       <directoryMode>0755</directoryMode>
     </fileSet>
   </fileSets>
   <dependencySets>
     <dependencySet>
       <outputDirectory>/lib</outputDirectory>
-      <useProjectArtifact>true</useProjectArtifact>
+      <useProjectArtifact>false</useProjectArtifact>
     </dependencySet>
   </dependencySets>
 </assembly>

@@ -164,7 +164,7 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>org.apache.qpid</groupId>
-                  <artifactId>qpid-broker</artifactId>
+                  <artifactId>apache-qpid-broker-j</artifactId>
                   <version>${project.version}</version>
                   <classifier>bin</classifier>
                   <type>tar.gz</type>
