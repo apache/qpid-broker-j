@@ -842,7 +842,23 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                 }
                 catch (IllegalStateException e)
                 {
-                    closingError = new Error(AmqpError.RESOURCE_LOCKED, e.getMessage());
+                    String message;
+                    if(sourceCapabilities.contains(Session_1_0.SHARED_CAPABILITY)
+                       && sourceCapabilities.contains(ExchangeSendingDestination.TOPIC_CAPABILITY))
+                    {
+                        String subscriptionName = getLinkName();
+                        int separator = subscriptionName.indexOf("|");
+                        if (separator > 0)
+                        {
+                            subscriptionName = subscriptionName.substring(0, separator);
+                        }
+                        message = "There are active consumers on the shared subscription '"+subscriptionName+"'";
+                    }
+                    else
+                    {
+                        message = e.getMessage();
+                    }
+                    closingError = new Error(AmqpError.RESOURCE_LOCKED, message);
                 }
                 catch (NotFoundException e)
                 {
