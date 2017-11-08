@@ -36,6 +36,7 @@ public interface FileKeyStore<X extends FileKeyStore<X>> extends KeyStore<X>
     String KEY_STORE_TYPE = "keyStoreType";
     String PASSWORD = "password";
     String STORE_URL = "storeUrl";
+    String USE_HOST_NAME_MATCHING = "useHostNameMatching";
 
     @ManagedContextDefault(name = "keyStoreFile.keyStoreType")
     String DEFAULT_KEYSTORE_TYPE = java.security.KeyStore.getDefaultType();
@@ -64,4 +65,7 @@ public interface FileKeyStore<X extends FileKeyStore<X>> extends KeyStore<X>
 
     @ManagedAttribute( secure = true, mandatory = true )
     String getPassword();
+
+    @ManagedAttribute( defaultValue = "true")
+    boolean isUseHostNameMatching();
 }

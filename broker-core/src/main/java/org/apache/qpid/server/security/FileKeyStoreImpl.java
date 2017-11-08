@@ -51,10 +51,11 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.transport.network.security.ssl.QpidBestFitX509KeyManager;
+import org.apache.qpid.server.transport.network.security.ssl.QpidServerX509KeyManager;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
-import org.apache.qpid.server.transport.network.security.ssl.QpidClientX509KeyManager;
-import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 
 @ManagedObject( category = false )
 public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> implements FileKeyStore<FileKeyStoreImpl>
@@ -70,6 +71,8 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
     private String _keyManagerFactoryAlgorithm;
     @ManagedAttributeField(afterSet = "postSetStoreUrl")
     private String _storeUrl;
+    @ManagedAttributeField
+    private boolean _useHostNameMatching;
     private String _path;
 
     @ManagedAttributeField
@@ -79,6 +82,7 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
     {
         Handler.register();
     }
+
 
     @ManagedObjectFactoryConstructor
     public FileKeyStoreImpl(Map<String, Object> attributes, Broker<?> broker)
@@ -221,6 +225,12 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
         return _password;
     }
 
+    @Override
+    public boolean isUseHostNameMatching()
+    {
+        return _useHostNameMatching;
+    }
+
     public void setPassword(String password)
     {
         _password = password;
@@ -233,11 +243,18 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
         try
         {
             URL url = getUrlFromString(_storeUrl);
-            if (_certificateAlias != null)
+            if(isUseHostNameMatching())
             {
                 return new KeyManager[] {
-                        new QpidClientX509KeyManager( _certificateAlias, url, _keyStoreType, getPassword(),
+                        new QpidBestFitX509KeyManager(_certificateAlias, url, _keyStoreType, getPassword(),
                                                       _keyManagerFactoryAlgorithm)
+                };
+            }
+            else if (_certificateAlias != null)
+            {
+                return new KeyManager[] {
+                        new QpidServerX509KeyManager(_certificateAlias, url, _keyStoreType, getPassword(),
+                                                     _keyManagerFactoryAlgorithm)
                                         };
 
             }

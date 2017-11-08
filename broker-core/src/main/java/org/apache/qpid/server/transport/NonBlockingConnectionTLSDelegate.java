@@ -24,10 +24,12 @@ import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
+import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
@@ -99,6 +101,9 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                     if (hostName != null)
                     {
                         _parent.setSelectedHost(hostName);
+                        SSLParameters sslParameters = _sslEngine.getSSLParameters();
+                        sslParameters.setServerNames(Collections.singletonList(new SNIHostName(hostName)));
+                        _sslEngine.setSSLParameters(sslParameters);
                     }
                     _hostChecked = true;
                 }

@@ -27,7 +27,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.net.URL;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
@@ -38,6 +42,7 @@ import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.PrivateKey;
+import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -49,8 +54,10 @@ import java.security.spec.RSAPrivateCrtKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -80,7 +87,105 @@ public class SSLUtil
     private static final Logger LOGGER = LoggerFactory.getLogger(SSLUtil.class);
 
     private static final Integer DNS_NAME_TYPE = 2;
-    public static final String[] TLS_PROTOCOL_PREFERENCES = new String[]{"TLSv1.2", "TLSv1.1", "TLS", "TLSv1"};
+    private static final String[] TLS_PROTOCOL_PREFERENCES = new String[]{"TLSv1.2", "TLSv1.1", "TLS", "TLSv1"};
+
+
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+
+    private static final Constructor<?> CONSTRUCTOR;
+    private static final Method GENERATE_METHOD;
+    private static final Method GET_PRIVATE_KEY_METHOD;
+    private static final Method GET_SELF_CERTIFICATE_METHOD;
+    private static final Constructor<?> X500_NAME_CONSTRUCTOR;
+    private static final Constructor<?> DNS_NAME_CONSTRUCTOR;
+    private static final Constructor<?> IP_ADDR_NAME_CONSTRUCTOR;
+    private static final Constructor<?> GENERAL_NAMES_CONSTRUCTOR;
+    private static final Constructor<?> GENERAL_NAME_CONSTRUCTOR;
+    private static final Method ADD_NAME_TO_NAMES_METHOD;
+    private static final Constructor<?> ALT_NAMES_CONSTRUCTOR;
+    private static final Constructor<?> CERTIFICATE_EXTENSIONS_CONSTRUCTOR;
+    private static final Method SET_EXTENSION_METHOD;
+    private static final Method EXTENSION_GET_NAME_METHOD;
+    private static final boolean CAN_GENERATE_CERTS;
+
+
+    static
+    {
+
+        Constructor<?> constructor = null;
+        Method generateMethod = null;
+        Method getPrivateKeyMethod = null;
+        Method getSelfCertificateMethod = null;
+        Constructor<?> x500NameConstructor = null;
+        Constructor<?> dnsNameConstructor = null;
+        Constructor<?> ipAddrNameConstructor = null;
+        Constructor<?> generalNamesConstructor = null;
+        Constructor<?> generalNameConstructor = null;
+        Method addNameToNamesMethod = null;
+        Constructor<?> altNamesConstructor = null;
+        Constructor<?> certificateExtensionsConstructor = null;
+        Method setExtensionMethod = null;
+        Method extensionGetNameMethod = null;
+        boolean canGenerateCerrts = false;
+
+        try
+        {
+            Class<?> certAndKeyGenClass;
+            try
+            {
+                certAndKeyGenClass = Class.forName("sun.security.x509.CertAndKeyGen");
+            }
+            catch (ClassNotFoundException e)
+            {
+                certAndKeyGenClass = Class.forName("sun.security.tools.keytool.CertAndKeyGen");
+            }
+
+            final Class<?> x500NameClass = Class.forName("sun.security.x509.X500Name");
+            final Class<?> certificateExtensionsClass = Class.forName("sun.security.x509.CertificateExtensions");
+            final Class<?> generalNamesClass = Class.forName("sun.security.x509.GeneralNames");
+            final Class<?> generalNameClass = Class.forName("sun.security.x509.GeneralName");
+            final Class<?> extensionClass = Class.forName("sun.security.x509.SubjectAlternativeNameExtension");
+
+            constructor = certAndKeyGenClass.getConstructor(String.class, String.class);
+            generateMethod = certAndKeyGenClass.getMethod("generate", Integer.TYPE);
+            getPrivateKeyMethod = certAndKeyGenClass.getMethod("getPrivateKey");
+            getSelfCertificateMethod = certAndKeyGenClass.getMethod("getSelfCertificate", x500NameClass,
+                                                                    Date.class, Long.TYPE, certificateExtensionsClass);
+            x500NameConstructor = x500NameClass.getConstructor(String.class);
+            dnsNameConstructor = Class.forName("sun.security.x509.DNSName").getConstructor(String.class);
+            ipAddrNameConstructor = Class.forName("sun.security.x509.IPAddressName").getConstructor(String.class);
+            generalNamesConstructor = generalNamesClass.getConstructor();
+            generalNameConstructor = generalNameClass.getConstructor(Class.forName("sun.security.x509.GeneralNameInterface"));
+            addNameToNamesMethod = generalNamesClass.getMethod("add", generalNameClass);
+            altNamesConstructor = extensionClass.getConstructor(generalNamesClass);
+            certificateExtensionsConstructor = certificateExtensionsClass.getConstructor();
+            setExtensionMethod = certificateExtensionsClass.getMethod("set", String.class, Object.class);
+            extensionGetNameMethod = extensionClass.getMethod("getName");
+            canGenerateCerrts = true;
+
+        }
+        catch (ClassNotFoundException | LinkageError | NoSuchMethodException e)
+        {
+            // ignore
+        }
+        GET_SELF_CERTIFICATE_METHOD = getSelfCertificateMethod;
+        CONSTRUCTOR = constructor;
+        GENERATE_METHOD = generateMethod;
+        GET_PRIVATE_KEY_METHOD = getPrivateKeyMethod;
+        X500_NAME_CONSTRUCTOR = x500NameConstructor;
+        DNS_NAME_CONSTRUCTOR = dnsNameConstructor;
+        IP_ADDR_NAME_CONSTRUCTOR = ipAddrNameConstructor;
+        GENERAL_NAMES_CONSTRUCTOR = generalNamesConstructor;
+        GENERAL_NAME_CONSTRUCTOR = generalNameConstructor;
+        ADD_NAME_TO_NAMES_METHOD = addNameToNamesMethod;
+        ALT_NAMES_CONSTRUCTOR = altNamesConstructor;
+        CERTIFICATE_EXTENSIONS_CONSTRUCTOR = certificateExtensionsConstructor;
+        SET_EXTENSION_METHOD = setExtensionMethod;
+        EXTENSION_GET_NAME_METHOD = extensionGetNameMethod;
+        CAN_GENERATE_CERTS = canGenerateCerrts;
+    }
+
 
     private SSLUtil()
     {
@@ -109,59 +214,17 @@ public class SSLUtil
 
     public static void verifyHostname(final String hostnameExpected, final X509Certificate cert)
     {
-        Principal p = cert.getSubjectDN();
 
-        SortedSet<String> names = new TreeSet<>();
-        String dn = p.getName();
         try
         {
-            LdapName ldapName = new LdapName(dn);
-            for (Rdn part : ldapName.getRdns())
-            {
-                if (part.getType().equalsIgnoreCase("CN"))
-                {
-                    names.add(part.getValue().toString());
-                    break;
-                }
-            }
-
-            if(cert.getSubjectAlternativeNames() != null)
-            {
-                for (List<?> entry : cert.getSubjectAlternativeNames())
-                {
-                    if (DNS_NAME_TYPE.equals(entry.get(0)))
-                    {
-                        names.add((String) entry.get(1));
-                    }
-                }
-            }
+            SortedSet<String> names = getNamesFromCert(cert);
 
             if (names.isEmpty())
             {
                 throw new TransportException("SSL hostname verification failed. Certificate for did not contain CN or DNS subjectAlt");
             }
 
-            boolean match = false;
-
-            final String hostName = hostnameExpected.trim().toLowerCase();
-            for (String cn : names)
-            {
-
-                boolean doWildcard = cn.startsWith("*.") &&
-                                     cn.lastIndexOf('.') >= 3 &&
-                                     !cn.matches("\\*\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}");
-
-
-                match = doWildcard
-                        ? hostName.endsWith(cn.substring(1)) && hostName.indexOf(".") == (1 + hostName.length() - cn.length())
-                        : hostName.equals(cn);
-
-                if (match)
-                {
-                    break;
-                }
-
-            }
+            boolean match = verifyHostname(hostnameExpected, names);
             if (!match)
             {
                 throw new TransportException("SSL hostname verification failed." +
@@ -172,12 +235,81 @@ public class SSLUtil
         }
         catch (InvalidNameException e)
         {
+            Principal p = cert.getSubjectDN();
+            String dn = p.getName();
             throw new TransportException("SSL hostname verification failed. Could not parse name " + dn, e);
         }
         catch (CertificateParsingException e)
         {
             throw new TransportException("SSL hostname verification failed. Could not parse certificate:  " + e.getMessage(), e);
         }
+    }
+
+    public static boolean checkHostname(String hostname, X509Certificate cert)
+    {
+        try
+        {
+            return verifyHostname(hostname, getNamesFromCert(cert));
+        }
+        catch (InvalidNameException | CertificateParsingException e)
+        {
+            return false;
+        }
+    }
+
+    private static boolean verifyHostname(final String hostnameExpected, final SortedSet<String> names)
+    {
+        boolean match = false;
+
+        final String hostName = hostnameExpected.trim().toLowerCase();
+        for (String cn : names)
+        {
+
+            boolean doWildcard = cn.startsWith("*.") &&
+                                 cn.lastIndexOf('.') >= 3 &&
+                                 !cn.matches("\\*\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}");
+
+
+            match = doWildcard
+                    ? hostName.endsWith(cn.substring(1)) && hostName.indexOf(".") == (1 + hostName.length() - cn.length())
+                    : hostName.equals(cn);
+
+            if (match)
+            {
+                break;
+            }
+
+        }
+        return match;
+    }
+
+    private static SortedSet<String> getNamesFromCert(final X509Certificate cert)
+            throws InvalidNameException, CertificateParsingException
+    {
+        Principal p = cert.getSubjectDN();
+        String dn = p.getName();
+        SortedSet<String> names = new TreeSet<>();
+        LdapName ldapName = new LdapName(dn);
+        for (Rdn part : ldapName.getRdns())
+        {
+            if (part.getType().equalsIgnoreCase("CN"))
+            {
+                names.add(part.getValue().toString());
+                break;
+            }
+        }
+
+        if(cert.getSubjectAlternativeNames() != null)
+        {
+            for (List<?> entry : cert.getSubjectAlternativeNames())
+            {
+                if (DNS_NAME_TYPE.equals(entry.get(0)))
+                {
+                    names.add((String) entry.get(1));
+                }
+            }
+        }
+        return names;
     }
 
     public static String getIdFromSubjectDN(String dn)
@@ -817,5 +949,84 @@ public class SSLUtil
             throw new IllegalArgumentException(String.format("Cannot configure TLS on port '%s'", portName), e);
         }
         return sslContext;
+    }
+
+    public static boolean canGenerateCerts()
+    {
+        return CAN_GENERATE_CERTS;
+    }
+
+    public static KeyCertPair generateSelfSignedCertificate(final String keyAlgorithm,
+                                                            final String signatureAlgorithm,
+                                                            final int keyLength,
+                                                            long startTime,
+                                                            long duration,
+                                                            String x500Name,
+                                                            Set<String> dnsNames,
+                                                            Set<InetAddress> addresses)
+            throws IllegalAccessException, InvocationTargetException, InstantiationException
+    {
+        Object certAndKeyGen = CONSTRUCTOR.newInstance(keyAlgorithm, signatureAlgorithm);
+        GENERATE_METHOD.invoke(certAndKeyGen, keyLength);
+        final PrivateKey _privateKey = (PrivateKey) GET_PRIVATE_KEY_METHOD.invoke(certAndKeyGen);
+
+        Object generalNames = GENERAL_NAMES_CONSTRUCTOR.newInstance();
+
+        for(String dnsName : dnsNames)
+        {
+            if(dnsName.matches("[\\w&&[^\\d]][\\w\\d.-]*"))
+            {
+                ADD_NAME_TO_NAMES_METHOD.invoke(generalNames,
+                                                GENERAL_NAME_CONSTRUCTOR.newInstance(DNS_NAME_CONSTRUCTOR.newInstance(
+                                                        dnsName)));
+            }
+        }
+
+        for(InetAddress inetAddress : addresses)
+        {
+            ADD_NAME_TO_NAMES_METHOD.invoke(generalNames, GENERAL_NAME_CONSTRUCTOR.newInstance(IP_ADDR_NAME_CONSTRUCTOR.newInstance(inetAddress.getHostAddress())));
+        }
+        Object certificateExtensions;
+        if(dnsNames.isEmpty() && addresses.isEmpty())
+        {
+            certificateExtensions = null;
+        }
+        else
+        {
+            Object altNamesExtension = ALT_NAMES_CONSTRUCTOR.newInstance(generalNames);
+            certificateExtensions = CERTIFICATE_EXTENSIONS_CONSTRUCTOR.newInstance();
+            SET_EXTENSION_METHOD.invoke(certificateExtensions,
+                                        EXTENSION_GET_NAME_METHOD.invoke(altNamesExtension),
+                                        altNamesExtension);
+        }
+
+        final X509Certificate _certificate = (X509Certificate) GET_SELF_CERTIFICATE_METHOD.invoke(certAndKeyGen,
+                                                                                                  X500_NAME_CONSTRUCTOR
+                                                                                                          .newInstance(x500Name),
+                                                                                                  new Date(startTime),
+                                                                                                  duration,
+                                                                                                  certificateExtensions);
+
+        return new KeyCertPair()
+        {
+            @Override
+            public PrivateKey getPrivateKey()
+            {
+                return _privateKey;
+            }
+
+            @Override
+            public X509Certificate getCertificate()
+            {
+                return _certificate;
+            }
+        };
+
+    }
+
+    public interface KeyCertPair
+    {
+        PrivateKey getPrivateKey();
+        X509Certificate getCertificate();
     }
 }
