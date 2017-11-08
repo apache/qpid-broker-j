@@ -525,6 +525,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                     }
                 }
                 baseQueues = uniqueQueues.toArray(new BaseQueue[uniqueQueues.size()]);
+                queues = uniqueQueues;
             }
             else
             {
