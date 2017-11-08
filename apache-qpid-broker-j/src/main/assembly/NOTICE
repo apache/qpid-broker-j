@@ -7,7 +7,7 @@ The Apache Software Foundation (http://www.apache.org/).
 ###############################################
 
 Apache Derby
-Copyright 2004-2014 The Apache Software Foundation
+Copyright 2004-2016 The Apache Software Foundation
 
 Portions of Derby were originally developed by
 International Business Machines Corporation and are
@@ -26,7 +26,7 @@ and are placed here unaltered.
 
 ==============================================================
  Jetty Web Container
- Copyright 1995-2014 Mort Bay Consulting Pty Ltd.
+ Copyright 1995-2017 Mort Bay Consulting Pty Ltd.
 ==============================================================
 
 The Jetty Web Container is Copyright Mort Bay Consulting Pty Ltd
@@ -57,22 +57,8 @@ granted provided that the copyright notice appears in all copies.
 
 ###############################################
 
-Geronimo Servlet Spec 3.0
-Copyright (c) 2003-2010 The Apache Software Foundation
-
-This product includes software developed by
-The W3C Consortium (http://www.w3.org/).
-
-Copyright (C) 1994-2002 World Wide Web Consortium,
-(Massachusetts Institute of Technology, Institut National
-de Recherche en Informatique et en Automatique, Keio
-University). All Rights Reserved.
-http://www.w3.org/Consortium/Legal/
-
-###############################################
-
-Apache Commons Codec
-Copyright (c) 2002-2013 The Apache Software Foundation
+GlassFish Java Servlet API 3.1.0
+Copyright (C) 2002-2017, Oracle  and/or its affiliates.
 
 ###############################################
 
@@ -87,12 +73,12 @@ Copyright (c) 2004-2015 The Apache Software Foundation
 ###############################################
 
 Jackson JSON processor
-Copyright (c) 2009-2011 FasterXML, LLC. All rights reserved
+Copyright (c) 2009-2016 FasterXML, LLC. All rights reserved
 
 ###############################################
 
 Google Core Libraries for Java
-Copyright (c) 2008-2014 The Guava Authors
+Copyright (c) 2008-2017 The Guava Authors
 
 ###############################################
 
@@ -102,14 +88,29 @@ Copyright (c) 2009-2011 Wallace Wadge
 ###############################################
 
 Dojo Toolkit
-Copyright (c) 2005-2015, The Dojo Foundation
+Copyright (c) 2005-2017, The Dojo Foundation
+
+###############################################
+
+dgrid
+Copyright (c) 2010-2016, The Dojo Foundation
+
+###############################################
+
+dstore
+Copyright (c) 2010-2016, The Dojo Foundationt)
 
 ###############################################
 
 slf4j-api
-Copyright (c) 2004-2014 QOS.ch
+Copyright (c) 2004-2017 QOS.ch
 
 ###############################################
 
 Logback
-Copyright (c) 1999-2012, QOS.ch
+Copyright (c) 1999-2017, QOS.ch
+
+###############################################
+
+Oracle Berkeley DB Java Edition
+Copyright (C) 2002-2017, Oracle  and/or its affiliates.
