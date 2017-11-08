@@ -65,12 +65,6 @@ public class FrameHandler implements ProtocolHandler
             {
 
                 size = in.getInt();
-                if(remaining < size)
-                {
-                    in.position(in.position()-4);
-                    break;
-                }
-                int dataOffset = (in.get() << 2) & 0x3FF;
 
                 if (size < 8)
                 {
@@ -89,6 +83,13 @@ public class FrameHandler implements ProtocolHandler
                             _connection.getMaxFrameSize());
                     break;
                 }
+
+                if(remaining < size)
+                {
+                    in.position(in.position()-4);
+                    break;
+                }
+                int dataOffset = (in.get() << 2) & 0x3FF;
 
                 if (dataOffset < 8)
                 {
