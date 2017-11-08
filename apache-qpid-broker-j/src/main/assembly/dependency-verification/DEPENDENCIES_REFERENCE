@@ -21,7 +21,7 @@
 # TRIMMED 3RD PARTY DEPENDENCY INFORMATION FOR MODIFICATION CHECKS
 #// ------------------------------------------------------------------
 
-Apache Qpid Broker-J
+Apache Qpid Broker-J Bundles
 
 
 From: 'an unknown organization'
@@ -74,6 +74,8 @@ From: 'The Apache Software Foundation' (http://www.apache.org/)
 
 From: 'The Apache Software Foundation' (https://www.apache.org/)
   - Apache Qpid Broker-J BDB Message Store Plug-in (http://qpid.apache.org/components/qpid-bdbstore) org.apache.qpid:qpid-bdbstore:jar
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Apache Qpid Broker-J (http://qpid.apache.org/components/qpid-broker) org.apache.qpid:qpid-broker:jar
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J Core (http://qpid.apache.org/components/qpid-broker-core) org.apache.qpid:qpid-broker-core:jar
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)

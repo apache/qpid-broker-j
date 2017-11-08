@@ -28,10 +28,6 @@
   <name>Apache Qpid Broker-J</name>
   <description>Broker configuration and executable</description>
 
-  <properties>
-    <dependency-change-verification>true</dependency-change-verification>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.apache.qpid</groupId>
@@ -163,27 +159,4 @@
     </dependency>
   </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <!--version specified in parent pluginManagement -->
-        <configuration>
-          <descriptors>
-            <descriptor>src/main/assembly/qpid-broker-bin.xml</descriptor>
-          </descriptors>
-        </configuration>
-        <executions>
-          <execution>
-            <id>make-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 </project>

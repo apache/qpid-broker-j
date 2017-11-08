@@ -29,7 +29,7 @@
   <version>7.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>Apache Qpid Broker-J</name>
+  <name>Apache Qpid Broker-J Parent</name>
   <url>http://qpid.apache.org/components</url>
   <description>Apache Qpid Broker-J</description>
   <inceptionYear>2006</inceptionYear>
@@ -171,6 +171,7 @@
     <module>broker-codegen</module>
     <module>broker-core</module>
     <module>broker</module>
+    <module>apache-qpid-broker-j</module>
     <module>broker-plugins/access-control</module>
     <module>broker-plugins/amqp-0-8-protocol</module>
     <module>broker-plugins/amqp-0-10-protocol</module>
@@ -397,6 +398,12 @@
       <dependency>
         <groupId>org.apache.qpid</groupId>
         <artifactId>qpid-test-utils</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>apache-qpid-broker-j</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1382,17 +1389,8 @@
             <executions>
               <execution>
                 <id>source-release-assembly</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
                 <configuration>
-                  <formats>
-                    <format>tar.gz</format>
-                  </formats>
-                  <tarLongFileMode>gnu</tarLongFileMode>
-                  <finalName>qpid-java-${project.version}</finalName>
-                  <appendAssemblyId>false</appendAssemblyId>
+                  <skipAssembly>true</skipAssembly>
                 </configuration>
               </execution>
             </executions>
@@ -1506,7 +1504,7 @@
                         # TRIMMED 3RD PARTY DEPENDENCY INFORMATION FOR MODIFICATION CHECKS
                         #
                       </header>
-                      <path path="${project.build.outputDirectory}/META-INF/DEPENDENCIES" />
+                      <path path="${project.build.directory}/maven-shared-archive-resources/META-INF/DEPENDENCIES" />
                     </concat>
 
                     <replaceregexp file="${dependency-verification-output-file}" flags="gm" replace="">
