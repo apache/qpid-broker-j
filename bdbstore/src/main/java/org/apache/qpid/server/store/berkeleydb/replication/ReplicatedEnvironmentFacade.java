@@ -1551,7 +1551,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         replicationEnvironmentParameters.putAll(_configuration.getReplicationParameters());
 
         ReplicationConfig replicationConfig = new ReplicationConfig(groupName, nodeName, hostPort);
-        replicationConfig.setHelperHosts(helperHostPort);
+        replicationConfig.setHelperHostsVoid(helperHostPort);
         replicationConfig.setDesignatedPrimary(designatedPrimary);
         replicationConfig.setNodePriority(priority);
         replicationConfig.setElectableGroupSizeOverride(quorumOverride);

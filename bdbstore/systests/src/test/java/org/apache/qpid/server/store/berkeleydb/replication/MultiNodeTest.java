@@ -718,7 +718,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
             environmentPathFile.mkdirs();
             ReplicationConfig replicationConfig =
                     new ReplicationConfig(_groupCreator.getGroupName(), nodeName, nodeHostPort);
-            replicationConfig.setHelperHosts(_groupCreator.getHelperHostPort());
+            replicationConfig.setHelperHostsVoid(_groupCreator.getHelperHostPort());
             EnvironmentConfig envConfig = new EnvironmentConfig();
             envConfig.setAllowCreate(true);
             envConfig.setTransactional(true);
