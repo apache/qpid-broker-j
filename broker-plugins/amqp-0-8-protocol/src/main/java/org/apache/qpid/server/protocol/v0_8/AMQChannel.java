@@ -3361,24 +3361,18 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             closeChannel(ErrorCodes.COMMAND_INVALID,
                          "Fatal error: rollback called on non-transactional channel");
         }
-
-        final MethodRegistry methodRegistry = _connection.getMethodRegistry();
-        final AMQMethodBody responseBody = methodRegistry.createTxRollbackOkBody();
-
-        Runnable task = new Runnable()
+        else
         {
+            final MethodRegistry methodRegistry = _connection.getMethodRegistry();
+            final AMQMethodBody responseBody = methodRegistry.createTxRollbackOkBody();
 
-            @Override
-            public void run()
-            {
-                _connection.writeFrame(responseBody.generateFrame(_channelId));
-            }
-        };
+            Runnable task = () -> _connection.writeFrame(responseBody.generateFrame(_channelId));
 
-        rollback(task);
+            rollback(task);
 
-        // TODO: This is not spec compliant but we currently seem to rely on this behaviour
-        resend();
+            // TODO: This is not spec compliant but we currently seem to rely on this behaviour
+            resend();
+        }
     }
 
     @Override
