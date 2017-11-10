@@ -21,6 +21,8 @@
 package org.apache.qpid.server.protocol.converter.v0_8_v1_0;
 
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -88,7 +90,16 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
         final AMQShortString correlationId = contentHeader.getCorrelationId();
         if(correlationId != null)
         {
-            props.setCorrelationId(correlationId.toString());
+            final byte[] correlationIdAsBytes = correlationId.getBytes();
+            final String correlationIdAsString = contentHeader.getCorrelationIdAsString();
+            if (Arrays.equals(correlationIdAsBytes, correlationIdAsString.getBytes(StandardCharsets.UTF_8)))
+            {
+                props.setCorrelationId(correlationIdAsString);
+            }
+            else
+            {
+                props.setCorrelationId(correlationIdAsBytes);
+            }
         }
 
         final AMQShortString messageId = contentHeader.getMessageId();
