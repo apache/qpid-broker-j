@@ -37,10 +37,10 @@ import javax.jms.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.framing.AMQFrameDecodingException;
-import org.apache.qpid.framing.FieldTable;
-import org.apache.qpid.framing.FieldTableFactory;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
+import org.apache.qpid.server.protocol.v0_8.FieldTable;
+import org.apache.qpid.server.protocol.v0_8.FieldTableFactory;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class FieldTableMessageTest extends QpidBrokerTestCase implements MessageListener
