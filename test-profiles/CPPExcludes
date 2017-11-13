@@ -184,9 +184,6 @@ org.apache.qpid.server.queue.QueueBindTest#testQueueCanBeReboundOnTopicExchange
 // Tests queue message durability settings which are a Qpid Broker-J specific feature
 org.apache.qpid.server.queue.QueueMessageDurabilityTest#*
 
-// QPID-4429 : C++ Broker does not enforce max frame size negotiation rules as per the spec
-org.apache.qpid.transport.MaxFrameSizeTest#*
-
 // CPP Broker does not timeout connections with no activity like the Qpid Broker-J
 org.apache.qpid.transport.ProtocolNegotiationTest#testNoProtocolHeaderSent_BrokerClosesConnection
 org.apache.qpid.transport.ProtocolNegotiationTest#testNoConnectionOpenSent_BrokerClosesConnection
@@ -226,10 +223,6 @@ org.apache.qpid.test.unit.client.temporaryqueue.TemporaryQueueTest#testClosingSe
 
 # QPID-7156: Test requires a Broker with a virtualhost
 org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest#testClientCloseOnVirtualHostStop
-
-# cpp broker allows anonymous access by default
-# the following test requires running broker with authentication enabled
-org.apache.qpid.transport.ConnectionEstablishmentTest#testAuthenticationBypass
 
 #Node Creation Policy Tests use Qpid Broker-J Specific Config
 org.apache.qpid.server.queue.NodeAutoCreationPolicyTest#*
