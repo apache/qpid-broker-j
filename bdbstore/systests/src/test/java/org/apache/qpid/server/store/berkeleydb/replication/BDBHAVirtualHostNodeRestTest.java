@@ -302,7 +302,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
         File environmentPathFile = new File(node1StorePath, nodeName);
         environmentPathFile.mkdirs();
         ReplicationConfig replicationConfig = new ReplicationConfig((String)nodeData.get(BDBHAVirtualHostNode.GROUP_NAME), nodeName, nodeHostPort);
-        replicationConfig.setHelperHosts((String)nodeData.get(BDBHAVirtualHostNode.ADDRESS));
+        replicationConfig.setHelperHostsVoid((String)nodeData.get(BDBHAVirtualHostNode.ADDRESS));
         replicationConfig.setConsistencyPolicy(NoConsistencyRequiredPolicy.NO_CONSISTENCY);
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setAllowCreate(true);

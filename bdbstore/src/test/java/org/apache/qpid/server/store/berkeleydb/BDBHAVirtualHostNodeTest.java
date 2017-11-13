@@ -809,7 +809,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
 
         ReplicationConfig replicationConfig = new ReplicationConfig(groupName, nodeName, "localhost:" + nodePortNumber );
         replicationConfig.setNodePriority(0);
-        replicationConfig.setHelperHosts(helperAddress);
+        replicationConfig.setHelperHostsVoid(helperAddress);
         replicationConfig.setConsistencyPolicy(NoConsistencyRequiredPolicy.NO_CONSISTENCY);
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setAllowCreate(true);

@@ -1045,7 +1045,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         environmentPathFile.mkdirs();
 
         ReplicationConfig replicationConfig = new ReplicationConfig(TEST_GROUP_NAME, nodeName, node1NodeHostPort);
-        replicationConfig.setHelperHosts(TEST_NODE_HOST_PORT);
+        replicationConfig.setHelperHostsVoid(TEST_NODE_HOST_PORT);
         replicationConfig.setConsistencyPolicy(NoConsistencyRequiredPolicy.NO_CONSISTENCY);
 
         EnvironmentConfig envConfig = new EnvironmentConfig();
