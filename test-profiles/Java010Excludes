@@ -73,9 +73,6 @@ org.apache.qpid.client.prefetch.PrefetchBehaviourTest#testPrefetchWindowExpandsO
 org.apache.qpid.client.failover.FailoverBehaviourTest#testConnectionCloseInterruptsFailover
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testConnectionCloseInterruptsFailover
 
-// This test does not make sense because on 0-10 maxFrameSize is 64kB and the Qpid Broker-J sets the networkBufferSize to a minimum of 64kB.
-org.apache.qpid.transport.MaxFrameSizeTest#testTooLargeFrameSize
-
 org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_08091_HeadersFillContentHeaderFrame
 org.apache.qpid.test.unit.basic.PropertyValueTest#testOverlyLargeHeaderRejected_08091
 
