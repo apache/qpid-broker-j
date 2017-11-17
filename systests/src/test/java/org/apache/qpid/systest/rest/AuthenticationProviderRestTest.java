@@ -222,12 +222,13 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
     {
         stopDefaultBroker();
 
-        File file = new File(TMP_FOLDER, getTestName());
+        final File file = new File(TMP_FOLDER, getTestName());
+        file.deleteOnExit();
         if (file.exists())
         {
             file.delete();
         }
-        assertFalse("Group file should not exist", file.exists());
+        assertFalse(String.format("File '%s' should not exist", file), file.exists());
 
         TestBrokerConfiguration config = getDefaultBrokerConfiguration();
 
@@ -276,6 +277,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
             {
                 principalDatabase.delete();
             }
+            file.delete();
         }
     }
 

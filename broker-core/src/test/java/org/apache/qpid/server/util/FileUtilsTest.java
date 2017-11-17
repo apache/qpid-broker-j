@@ -188,7 +188,7 @@ public class FileUtilsTest extends QpidTestCase
     /**
      * Helper method to create a temporary file with test content.
      *
-     * @param test_data The data to store in the file
+     * @param testData The data to store in the file
      *
      * @return The File reference
      */
@@ -634,15 +634,23 @@ public class FileUtilsTest extends QpidTestCase
      */
     public void testSearchSucceed() throws IOException
     {
-        File _logfile = File.createTempFile("FileUtilsTest-testSearchSucceed", ".out");
+        final File logfile = File.createTempFile("FileUtilsTest-testSearchSucceed", ".out");
+        logfile.deleteOnExit();
 
-        prepareFileForSearchTest(_logfile);
+        try
+        {
+            prepareFileForSearchTest(logfile);
 
-        List<String> results = FileUtils.searchFile(_logfile, SEARCH_STRING);
+            List<String> results = FileUtils.searchFile(logfile, SEARCH_STRING);
 
-        assertNotNull("Null result set returned", results);
+            assertNotNull("Null result set returned", results);
 
-        assertEquals("Results do not contain expected count", 1, results.size());
+            assertEquals("Results do not contain expected count", 1, results.size());
+        }
+        finally
+        {
+            logfile.delete();
+        }
     }
 
     /**
@@ -653,27 +661,35 @@ public class FileUtilsTest extends QpidTestCase
      */
     public void testSearchFail() throws IOException
     {
-        File _logfile = File.createTempFile("FileUtilsTest-testSearchFail", ".out");
+        final File logfile = File.createTempFile("FileUtilsTest-testSearchFail", ".out");
+        logfile.deleteOnExit();
 
-        prepareFileForSearchTest(_logfile);
-
-        List<String> results = FileUtils.searchFile(_logfile, "Hello");
-
-        assertNotNull("Null result set returned", results);
-
-        //Validate we only got one message
-        if (results.size() > 0)
+        try
         {
-            System.err.println("Unexpected messages");
+            prepareFileForSearchTest(logfile);
 
-            for (String msg : results)
+            List<String> results = FileUtils.searchFile(logfile, "Hello");
+
+            assertNotNull("Null result set returned", results);
+
+            //Validate we only got one message
+            if (results.size() > 0)
             {
-                System.err.println(msg);
-            }
-        }
+                System.err.println("Unexpected messages");
 
-        assertEquals("Results contains data when it was not expected",
-                     0, results.size());
+                for (String msg : results)
+                {
+                    System.err.println(msg);
+                }
+            }
+
+            assertEquals("Results contains data when it was not expected",
+                         0, results.size());
+        }
+        finally
+        {
+            logfile.delete();
+        }
     }
 
     /**
