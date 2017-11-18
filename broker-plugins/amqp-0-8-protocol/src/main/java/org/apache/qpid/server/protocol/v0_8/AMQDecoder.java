@@ -217,11 +217,11 @@ public abstract class AMQDecoder<T extends MethodProcessor>
     }
 
 
-    abstract void processMethod(int channelId,
+    protected abstract void processMethod(int channelId,
                                QpidByteBuffer in)
             throws AMQFrameDecodingException;
 
-    AMQFrameDecodingException newUnknownMethodException(final int classId,
+    protected AMQFrameDecodingException newUnknownMethodException(final int classId,
                                                         final int methodId,
                                                         ProtocolVersion protocolVersion)
     {

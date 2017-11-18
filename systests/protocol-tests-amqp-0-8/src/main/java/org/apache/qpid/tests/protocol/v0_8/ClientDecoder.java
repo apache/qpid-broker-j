@@ -18,12 +18,14 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.protocol.v0_8;
+package org.apache.qpid.tests.protocol.v0_8;
 
 import java.nio.ByteBuffer;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.ProtocolVersion;
+import org.apache.qpid.server.protocol.v0_8.AMQDecoder;
+import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
 import org.apache.qpid.server.protocol.v0_8.transport.*;
 
 public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends ClientChannelMethodProcessor>>
