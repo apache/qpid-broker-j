@@ -17,9 +17,30 @@
  * under the License.
  */
 
-package org.apache.qpid.tests.protocol.v1_0;
+package org.apache.qpid.tests.protocol;
 
-public interface Response<T>
+import java.util.Arrays;
+
+public class HeaderResponse implements Response<byte[]>
 {
-    T getBody();
+    private final byte[] _header;
+
+    public HeaderResponse(final byte[] header)
+    {
+        _header = header;
+    }
+
+    @Override
+    public byte[] getBody()
+    {
+        return _header;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "HeaderResponse{" +
+               "_header=" + Arrays.toString(_header) +
+               '}';
+    }
 }

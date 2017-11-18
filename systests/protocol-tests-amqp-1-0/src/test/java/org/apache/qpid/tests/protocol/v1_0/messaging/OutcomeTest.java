@@ -37,7 +37,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
+import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
@@ -99,7 +99,7 @@ public class OutcomeTest extends BrokerAdminUsingTestBase
             assertThat(secondDeliveryPayload, is(equalTo("message2")));
 
             // verify that no unexpected performative is received by closing
-            transport.doCloseConnection();
+            interaction.doCloseConnection();
         }
     }
 }

@@ -20,6 +20,7 @@
 package org.apache.qpid.tests.protocol.v1_0;
 
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.tests.protocol.Response;
 
 public class PerformativeResponse implements Response<FrameBody>
 {

@@ -20,19 +20,18 @@
 
 package org.apache.qpid.tests.protocol.v1_0;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
-import io.netty.channel.ChannelPromise;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
 import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.transport.ByteBufferSender;
+import org.apache.qpid.tests.protocol.OutputEncoder;
 
-public class OutputHandler extends ChannelOutboundHandlerAdapter
+public class FrameEncoder implements OutputEncoder
 {
     private static final AMQPDescribedTypeRegistry TYPE_REGISTRY = AMQPDescribedTypeRegistry.newInstance()
                                                                                             .registerTransportLayer()
@@ -41,13 +40,12 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
                                                                                             .registerSecurityLayer()
                                                                                             .registerExtensionSoleconnLayer();
 
-
     @Override
-    public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise) throws Exception
+    public ByteBuffer encode(final Object msg)
     {
-
         if (msg instanceof AMQFrame)
         {
+            List<ByteBuffer> buffers = new ArrayList<>();
             FrameWriter _frameWriter = new FrameWriter(TYPE_REGISTRY, new ByteBufferSender()
             {
                 @Override
@@ -61,16 +59,7 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
                 {
                     byte[] data = new byte[msg.remaining()];
                     msg.get(data);
-                    ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
-                    buffer.writeBytes(data);
-                    try
-                    {
-                        OutputHandler.super.write(ctx, buffer, promise);
-                    }
-                    catch (Exception e)
-                    {
-                        promise.setFailure(e);
-                    }
+                    buffers.add(ByteBuffer.wrap(data));
                 }
 
                 @Override
@@ -85,12 +74,20 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
                 }
             });
             _frameWriter.send(((AMQFrame) msg));
+
+            int remaining = 0;
+            for (ByteBuffer byteBuffer: buffers)
+            {
+                remaining += byteBuffer.remaining();
+            }
+            ByteBuffer result = ByteBuffer.allocate(remaining);
+            for (ByteBuffer byteBuffer: buffers)
+            {
+                result.put(byteBuffer);
+            }
+            result.flip();
+            return result;
         }
-        else
-        {
-            super.write(ctx, msg, promise);
-        }
+        return null;
     }
-
-
 }

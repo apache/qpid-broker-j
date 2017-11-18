@@ -69,9 +69,9 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.v1_0.Response;
-import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
+import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
+import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
@@ -459,7 +459,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                 }
             }
 
-            transport.doCloseConnection();
+            interaction.doCloseConnection();
         }
     }
 
@@ -588,7 +588,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                            .disposition();
             }
 
-            transport.doCloseConnection();
+            interaction.doCloseConnection();
 
             if (getBrokerAdmin().isQueueDepthSupported())
             {
@@ -672,7 +672,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
                        .dispositionRole(Role.RECEIVER)
                        .disposition();
 
-            transport.doCloseConnection();
+            interaction.doCloseConnection();
 
             if (getBrokerAdmin().isQueueDepthSupported())
             {
@@ -771,7 +771,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             }
             while (!settled);
 
-            transport.doCloseConnection();
+            interaction.doCloseConnection();
         }
     }
 }

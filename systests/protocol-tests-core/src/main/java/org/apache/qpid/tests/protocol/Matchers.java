@@ -18,7 +18,7 @@
  *
  */
 
-package org.apache.qpid.tests.protocol.v1_0;
+package org.apache.qpid.tests.protocol;
 
 import java.util.Arrays;
 
