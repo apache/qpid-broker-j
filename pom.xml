@@ -196,6 +196,7 @@
     <module>systests</module>
     <module>systests/systests-utils</module>
     <module>systests/qpid-systests-jms_2.0</module>
+    <module>systests/protocol-tests-core</module>
     <module>systests/protocol-tests-amqp-1-0</module>
     <module>systests/end-to-end-conversion-tests</module>
     <module>perftests</module>
@@ -404,6 +405,18 @@
       <dependency>
         <groupId>org.apache.qpid</groupId>
         <artifactId>apache-qpid-broker-j</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>protocol-tests-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>protocol-tests-amqp-1-0</artifactId>
         <version>${project.version}</version>
       </dependency>
 

@@ -76,8 +76,8 @@ import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.MessageDecoder;
 import org.apache.qpid.tests.protocol.v1_0.MessageEncoder;
-import org.apache.qpid.tests.protocol.v1_0.Response;
-import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
+import org.apache.qpid.tests.protocol.SpecificationTest;
+import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
@@ -439,7 +439,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .disposition();
 
             // verify that no unexpected performative is received by closing
-            transport.doCloseConnection();
+            interaction.doCloseConnection();
         }
     }
 
@@ -688,8 +688,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
             assertThat(isSettled.get(), is(true));
 
             // verify no unexpected performative received by closing the connection
-           transport.doCloseConnection();
-
+            interaction.doCloseConnection();
         }
     }
 
@@ -796,7 +795,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .transfer()
                        .sync();
 
-            transport.doCloseConnection();
+            interaction.doCloseConnection();
 
             assumeThat(getBrokerAdmin().isQueueDepthSupported(), is(true));
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(2)));

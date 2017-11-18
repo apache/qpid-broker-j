@@ -39,10 +39,11 @@ import org.junit.Test;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
+import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
-import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
+import org.apache.qpid.tests.protocol.SpecificationTest;
 
 public class WebSocketTest extends BrokerAdminUsingTestBase
 {
@@ -73,7 +74,8 @@ public class WebSocketTest extends BrokerAdminUsingTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
         try (FrameTransport transport = new WebSocketFrameTransport(addr).splitAmqpFrames().connect())
         {
-            final Open responseOpen = transport.newInteraction()
+            Interaction interaction = transport.newInteraction();
+            final Open responseOpen = interaction
                                                .negotiateProtocol().consumeResponse()
                                                .open().consumeResponse()
                                                .getLatestResponse(Open.class);
@@ -84,7 +86,7 @@ public class WebSocketTest extends BrokerAdminUsingTestBase
             assertThat(responseOpen.getChannelMax().intValue(),
                        is(both(greaterThanOrEqualTo(0)).and(lessThan(UnsignedShort.MAX_VALUE.intValue()))));
 
-            transport.doCloseConnection();
+            interaction.doCloseConnection();
         }
     }
 
@@ -97,7 +99,8 @@ public class WebSocketTest extends BrokerAdminUsingTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
         try (FrameTransport transport = new WebSocketFrameTransport(addr).connect())
         {
-            final Open responseOpen = transport.newInteraction()
+            Interaction interaction = transport.newInteraction();
+            final Open responseOpen = interaction
                                                .negotiateProtocol().consumeResponse()
                                                .open().consumeResponse()
                                                .getLatestResponse(Open.class);
@@ -108,7 +111,7 @@ public class WebSocketTest extends BrokerAdminUsingTestBase
             assertThat(responseOpen.getChannelMax().intValue(),
                        is(both(greaterThanOrEqualTo(0)).and(lessThan(UnsignedShort.MAX_VALUE.intValue()))));
 
-            transport.doCloseConnection();
+            interaction.doCloseConnection();
         }
     }
 }

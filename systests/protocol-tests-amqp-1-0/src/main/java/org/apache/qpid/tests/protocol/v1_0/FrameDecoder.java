@@ -19,13 +19,13 @@
 
 package org.apache.qpid.tests.protocol.v1_0;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,99 +54,69 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.tests.protocol.HeaderResponse;
+import org.apache.qpid.tests.protocol.InputDecoder;
+import org.apache.qpid.tests.protocol.Response;
 
-public class InputHandler extends ChannelInboundHandlerAdapter
+public class FrameDecoder implements InputDecoder
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(InputHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FrameDecoder.class);
     private static final AMQPDescribedTypeRegistry TYPE_REGISTRY = AMQPDescribedTypeRegistry.newInstance()
                                                                                             .registerTransportLayer()
                                                                                             .registerMessagingLayer()
                                                                                             .registerTransactionLayer()
                                                                                             .registerSecurityLayer()
                                                                                             .registerExtensionSoleconnLayer();
+    private final MyConnectionHandler _connectionHandler;
+    private volatile FrameHandler _frameHandler;
 
     private enum ParsingState
     {
         HEADER,
-        PERFORMATIVES
+        PERFORMATIVES;
     }
 
-    private final MyConnectionHandler _connectionHandler;
     private final ValueHandler _valueHandler;
-    private final BlockingQueue<Response<?>> _responseQueue;
 
-    private QpidByteBuffer _inputBuffer = QpidByteBuffer.allocate(0);
-    private volatile FrameHandler _frameHandler;
     private volatile ParsingState _state = ParsingState.HEADER;
 
-    public InputHandler(final BlockingQueue<Response<?>> queue, final boolean isSasl)
+    public FrameDecoder(final boolean isSasl)
     {
-
         _valueHandler = new ValueHandler(TYPE_REGISTRY);
         _connectionHandler = new MyConnectionHandler();
         _frameHandler = new FrameHandler(_valueHandler, _connectionHandler, isSasl);
-
-        _responseQueue = queue;
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception
+    public Collection<Response<?>> decode(final ByteBuffer inputBuffer)
     {
-        ByteBuf buf = (ByteBuf) msg;
-        QpidByteBuffer qpidBuf = QpidByteBuffer.allocate(buf.readableBytes());
-        qpidBuf.put(buf.nioBuffer());
-        qpidBuf.flip();
-        LOGGER.debug("Incoming {} byte(s)", qpidBuf.remaining());
-
-        if (_inputBuffer.hasRemaining())
-        {
-            QpidByteBuffer old = _inputBuffer;
-            _inputBuffer = QpidByteBuffer.allocate(_inputBuffer.remaining() + qpidBuf.remaining());
-            _inputBuffer.put(old);
-            _inputBuffer.put(qpidBuf);
-            old.dispose();
-            qpidBuf.dispose();
-            _inputBuffer.flip();
-        }
-        else
-        {
-            _inputBuffer.dispose();
-            _inputBuffer = qpidBuf;
-        }
-
-        doParsing();
-
-        LOGGER.debug("After parsing, {} byte(s) remained", _inputBuffer.remaining());
-
-        if (_inputBuffer.hasRemaining())
-        {
-            _inputBuffer.compact();
-            _inputBuffer.flip();
-        }
-
-        ReferenceCountUtil.release(msg);
-    }
-
-    private void doParsing()
-    {
+        List<Response<?>> responses = new ArrayList<>();
+        QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(inputBuffer);
         switch(_state)
         {
             case HEADER:
-                if (_inputBuffer.remaining() >= 8)
+                if (inputBuffer.remaining() >= 8)
                 {
                     byte[] header = new byte[8];
-                    _inputBuffer.get(header);
-                    _responseQueue.add(new HeaderResponse(header));
+                    inputBuffer.get(header);
+                    responses.add(new HeaderResponse(header));
                     _state = ParsingState.PERFORMATIVES;
-                    doParsing();
+                    _frameHandler.parse(qpidByteBuffer);
                 }
                 break;
             case PERFORMATIVES:
-                _frameHandler.parse(_inputBuffer);
+                _frameHandler.parse(qpidByteBuffer);
                 break;
             default:
                 throw new IllegalStateException("Unexpected state : " + _state);
         }
+
+        Response<?> r;
+        while((r = _connectionHandler._responseQueue.poll())!=null)
+        {
+            responses.add(r);
+        }
+        return responses;
     }
 
     private void resetInputHandlerAfterSaslOutcome()
@@ -158,6 +128,7 @@ public class InputHandler extends ChannelInboundHandlerAdapter
     private class MyConnectionHandler implements ConnectionHandler
     {
         private volatile int _frameSize = 512;
+        private Queue<Response<?>> _responseQueue = new ConcurrentLinkedQueue<>();
 
         @Override
         public void receiveOpen(final int channel, final Open close)

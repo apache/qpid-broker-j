@@ -17,39 +17,9 @@
  * under the License.
  */
 
-package org.apache.qpid.tests.protocol.v1_0;
+package org.apache.qpid.tests.protocol;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import java.net.InetSocketAddress;
-
-public class FrameTransport extends org.apache.qpid.tests.protocol.FrameTransport
+public interface Response<T>
 {
-    public FrameTransport(final InetSocketAddress brokerAddress)
-    {
-        this(brokerAddress, false);
-    }
-
-    public FrameTransport(final InetSocketAddress brokerAddress, boolean isSasl)
-    {
-        super(brokerAddress, new FrameDecoder(isSasl), new FrameEncoder());
-    }
-
-    @Override
-    public FrameTransport connect()
-    {
-        super.connect();
-        return this;
-    }
-
-    @Override
-    public byte[] getProtocolHeader()
-    {
-        return "AMQP\0\1\0\0".getBytes(UTF_8);
-    }
-
-    public Interaction newInteraction()
-    {
-        return new Interaction(this);
-    }
+    T getBody();
 }

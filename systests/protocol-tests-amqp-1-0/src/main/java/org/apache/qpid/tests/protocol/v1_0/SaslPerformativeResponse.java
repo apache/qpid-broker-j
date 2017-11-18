@@ -21,6 +21,7 @@
 package org.apache.qpid.tests.protocol.v1_0;
 
 import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
+import org.apache.qpid.tests.protocol.Response;
 
 public class SaslPerformativeResponse implements Response<SaslFrameBody>
 {

@@ -20,8 +20,6 @@
 
 package org.apache.qpid.tests.protocol.v1_0;
 
-import static com.google.common.util.concurrent.Futures.allAsList;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -30,21 +28,19 @@ import static org.hamcrest.Matchers.is;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.framing.SASLFrame;
+import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
@@ -81,8 +77,9 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.tests.protocol.Response;
 
-public class Interaction
+public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Interaction>
 {
     private static final Set<String> CONTAINER_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Begin _begin;
@@ -94,14 +91,11 @@ public class Interaction
     private final Flow _flow;
     private final Transfer _transfer;
     private final Disposition _disposition;
-    private final FrameTransport _transport;
     private final SaslInit _saslInit;
     private final SaslResponse _saslResponse;
     private byte[] _protocolHeader;
     private UnsignedShort _connectionChannel;
     private UnsignedShort _sessionChannel;
-    private Response<?> _latestResponse;
-    private ListenableFuture<?> _latestFuture;
     private int _deliveryIdCounter;
     private List<Transfer> _latestDelivery;
     private Object _decodedLatestDelivery;
@@ -109,10 +103,10 @@ public class Interaction
 
     Interaction(final FrameTransport frameTransport)
     {
+        super(frameTransport);
         final UnsignedInteger defaultLinkHandle = UnsignedInteger.ZERO;
-        _transport = frameTransport;
 
-        _protocolHeader = "AMQP\0\1\0\0".getBytes(UTF_8);
+        _protocolHeader = frameTransport.getProtocolHeader();
 
         _saslInit = new SaslInit();
         _saslResponse = new SaslResponse();
@@ -154,6 +148,19 @@ public class Interaction
         _disposition.setFirst(UnsignedInteger.ZERO);
     }
 
+    public void doCloseConnection() throws Exception
+    {
+        Close close = new Close();
+
+        sendPerformative(close, UnsignedShort.valueOf((short) 0));
+        Response<?> response = getNextResponse();
+        if (!(response.getBody() instanceof Close))
+        {
+            throw new IllegalStateException(String.format(
+                    "Unexpected response to connection Close. Expected Close got '%s'", response.getBody()));
+        }
+    }
+
     /////////////////////////
     // Protocol Negotiation //
     /////////////////////////
@@ -164,17 +171,15 @@ public class Interaction
         return this;
     }
 
-    public Interaction negotiateProtocol() throws Exception
+    @Override
+    protected byte[] getProtocolHeader()
     {
-        final ListenableFuture<Void> future = _transport.sendProtocolHeader(_protocolHeader);
-        if (_latestFuture != null)
-        {
-            _latestFuture = allAsList(_latestFuture, future);
-        }
-        else
-        {
-            _latestFuture = future;
-        }
+        return _protocolHeader;
+    }
+
+    @Override
+    protected Interaction getInteraction()
+    {
         return this;
     }
 
@@ -977,83 +982,35 @@ public class Interaction
 
     private void sendPerformativeAndChainFuture(final SaslFrameBody frameBody) throws Exception
     {
-        final ListenableFuture<Void> future = _transport.sendPerformative(frameBody);
-        if (_latestFuture != null)
-        {
-            _latestFuture = allAsList(_latestFuture, future);
-        }
-        else
-        {
-            _latestFuture = future;
-        }
+        SASLFrame transportFrame = new SASLFrame(frameBody);
+        sendPerformativeAndChainFuture(transportFrame, true);
     }
 
     private void sendPerformativeAndChainFuture(final FrameBody frameBody, final UnsignedShort channel) throws Exception
     {
-        final ListenableFuture<Void> future = _transport.sendPerformative(frameBody, channel);
-        if (_latestFuture != null)
+        final TransportFrame transportFrame;
+        try (QpidByteBuffer payload = frameBody instanceof Transfer ? ((Transfer) frameBody).getPayload() : null)
         {
-            _latestFuture = allAsList(_latestFuture, future);
-        }
-        else
-        {
-            _latestFuture = future;
-        }
-    }
-
-    public Interaction consumeResponse(final Class<?>... responseTypes) throws Exception
-    {
-        sync();
-        _latestResponse = _transport.getNextResponse();
-        final Set<Class<?>> acceptableResponseClasses = new HashSet<>(Arrays.asList(responseTypes));
-        if ((acceptableResponseClasses.isEmpty() && _latestResponse != null)
-            || (acceptableResponseClasses.contains(null) && _latestResponse == null))
-        {
-            return this;
-        }
-        acceptableResponseClasses.remove(null);
-        if (_latestResponse != null)
-        {
-            for (Class<?> acceptableResponseClass : acceptableResponseClasses)
+            final QpidByteBuffer duplicate;
+            if (payload == null)
             {
-                if (acceptableResponseClass.isAssignableFrom(_latestResponse.getBody().getClass()))
-                {
-                    return this;
-                }
+                duplicate = null;
+            }
+            else
+            {
+                duplicate = payload.duplicate();
+            }
+            transportFrame = new TransportFrame(channel.shortValue(), frameBody, duplicate);
+            ListenableFuture<Void> listenableFuture = sendPerformativeAndChainFuture(transportFrame, false);
+            if (frameBody instanceof Transfer)
+            {
+                listenableFuture.addListener(() -> ((Transfer) frameBody).dispose(), MoreExecutors.directExecutor());
+            }
+            if (duplicate != null)
+            {
+                listenableFuture.addListener(() -> duplicate.dispose(), MoreExecutors.directExecutor());
             }
         }
-        throw new IllegalStateException(String.format("Unexpected response. Expected one of '%s' got '%s'.",
-                                                      acceptableResponseClasses,
-                                                      _latestResponse == null ? null : _latestResponse.getBody()));
-    }
-
-    public Interaction sync() throws InterruptedException, ExecutionException, TimeoutException
-    {
-        if (_latestFuture != null)
-        {
-            _latestFuture.get(FrameTransport.RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
-            _latestFuture = null;
-        }
-        return this;
-    }
-
-    public Response<?> getLatestResponse() throws Exception
-    {
-        sync();
-        return _latestResponse;
-    }
-
-    public <T> T getLatestResponse(Class<T> type) throws Exception
-    {
-        sync();
-        if (!type.isAssignableFrom(_latestResponse.getBody().getClass()))
-        {
-            throw new IllegalStateException(String.format("Unexpected response. Expected '%s' got '%s'.",
-                                                          type.getSimpleName(),
-                                                          _latestResponse.getBody()));
-        }
-
-        return (T) _latestResponse.getBody();
     }
 
     public Interaction flowHandleFromLinkHandle()

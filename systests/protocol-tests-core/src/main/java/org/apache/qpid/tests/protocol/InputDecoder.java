@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,32 +16,15 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
 
-package org.apache.qpid.tests.protocol.v1_0;
+package org.apache.qpid.tests.protocol;
 
-import java.util.Arrays;
+import java.nio.ByteBuffer;
+import java.util.Collection;
 
-public class HeaderResponse implements Response<byte[]>
+public interface InputDecoder
 {
-    private final byte[] _header;
-
-    public HeaderResponse(final byte[] header)
-    {
-        _header = header;
-    }
-
-    @Override
-    public byte[] getBody()
-    {
-        return _header;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "HeaderResponse{" +
-               "_header=" + Arrays.toString(_header) +
-               '}';
-    }
+    Collection<Response<?>> decode(final ByteBuffer inputBuffer) throws Exception;
 }

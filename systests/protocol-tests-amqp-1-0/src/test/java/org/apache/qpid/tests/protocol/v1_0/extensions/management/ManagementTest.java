@@ -46,10 +46,9 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
-import org.apache.qpid.tests.protocol.v1_0.SpecificationTest;
+import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
-import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
@@ -125,7 +124,7 @@ public class ManagementTest extends BrokerAdminUsingTestBase
             assertThat(flow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
             assertThat(flow.getHandle(), is(equalTo(receiverResponse.getHandle())));
 
-            transport.doCloseConnection();
+            interaction.doCloseConnection();
         }
     }
 }
