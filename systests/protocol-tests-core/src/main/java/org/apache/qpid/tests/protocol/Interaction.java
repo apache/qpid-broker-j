@@ -92,6 +92,14 @@ public abstract class Interaction<I extends Interaction>
     public <T> T getLatestResponse(Class<T> type) throws Exception
     {
         sync();
+
+        if (_latestResponse.getBody() == null)
+        {
+            throw new IllegalStateException(String.format("Unexpected response. Expected '%s' got '%s'.",
+                                                          type.getSimpleName(),
+                                                          _latestResponse.getClass()));
+        }
+
         if (!type.isAssignableFrom(_latestResponse.getBody().getClass()))
         {
             throw new IllegalStateException(String.format("Unexpected response. Expected '%s' got '%s'.",
