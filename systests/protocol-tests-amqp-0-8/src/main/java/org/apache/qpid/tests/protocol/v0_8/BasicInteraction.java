@@ -134,12 +134,14 @@ public class BasicInteraction
         frames.add(new AMQFrame(_interaction.getChannelId(), contentHeaderBody));
         if (contentSize > 0)
         {
+            final byte[] contentCopy = new byte[contentSize];
+            System.arraycopy(_content, 0, contentCopy, 0, contentSize);
             final int framePayloadMax = _interaction.getMaximumFrameSize() - 8;
             int offset = 0;
             do
             {
                 int contentToCopyLength = Math.min(framePayloadMax, contentSize - offset);
-                ContentBody contentBody = new ContentBody(ByteBuffer.wrap(_content, offset,
+                ContentBody contentBody = new ContentBody(ByteBuffer.wrap(contentCopy, offset,
                                                                           contentToCopyLength));
                 frames.add(new AMQFrame(_interaction.getChannelId(), contentBody));
                 offset += contentToCopyLength;

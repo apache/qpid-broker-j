@@ -25,7 +25,9 @@ import java.net.InetSocketAddress;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -41,14 +43,32 @@ public class ChannelTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    @SpecificationTest(section = "1.4.2.1", description = "start connection negotiation")
+    @SpecificationTest(section = "1.5.2.1", description = "open a channel for use")
     public void channelOpen() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
+
             interaction.openAnonymousConnection()
+                       .channelId(1)
                        .channel().open().consumeResponse(ChannelOpenOkBody.class);
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.5.2.5", description = "request a channel close")
+    public void channelClose() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+
+            interaction.openAnonymousConnection()
+                       .channelId(1)
+                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                       .channel().close().consumeResponse(ChannelCloseOkBody.class)
+                       .channel().flow(true).consumeResponse(ConnectionCloseBody.class);
         }
     }
 }

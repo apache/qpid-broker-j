@@ -47,7 +47,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    @SpecificationTest(section = "1.4.2.1", description = "start connection negotiation")
+    @SpecificationTest(section = "1.7.2.1", description = "declare queue, create if needed")
     public void queueDeclare() throws Exception
     {
         try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())

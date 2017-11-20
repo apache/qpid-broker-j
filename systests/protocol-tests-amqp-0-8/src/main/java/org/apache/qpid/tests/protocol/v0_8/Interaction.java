@@ -32,10 +32,18 @@ public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Inte
 
     private int _channelId;
     private int _maximumPayloadSize = 512;
+    private ConnectionInteraction _connectionInteraction;
+    private ChannelInteraction _channelInteraction;
+    private QueueInteraction _queueInteraction;
+    private BasicInteraction _basicInteraction;
 
     Interaction(final FrameTransport transport)
     {
         super(transport);
+        _connectionInteraction = new ConnectionInteraction(this);
+        _channelInteraction = new ChannelInteraction(this);
+        _queueInteraction = new QueueInteraction(this);
+        _basicInteraction = new BasicInteraction(this);
     }
 
     @Override
@@ -52,7 +60,7 @@ public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Inte
 
     public Interaction sendPerformative(final AMQBody amqBody) throws Exception
     {
-        return sendPerformative(getChannelId(), amqBody);
+        return sendPerformative(_channelId, amqBody);
     }
 
     public Interaction sendPerformative(int channel, final AMQBody amqBody) throws Exception
@@ -79,22 +87,28 @@ public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Inte
 
     public ConnectionInteraction connection()
     {
-        return new ConnectionInteraction(this);
+        return _connectionInteraction;
     }
 
     public ChannelInteraction channel()
     {
-        return new ChannelInteraction(this);
+        return _channelInteraction;
     }
 
     public QueueInteraction queue()
     {
-        return new QueueInteraction(this);
+        return _queueInteraction;
     }
 
     public int getChannelId()
     {
         return _channelId;
+    }
+
+    public Interaction channelId(final int channelId)
+    {
+        _channelId = channelId;
+        return this;
     }
 
     public int getMaximumFrameSize()
@@ -104,6 +118,6 @@ public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Inte
 
     public BasicInteraction basic()
     {
-        return new BasicInteraction(this);
+        return _basicInteraction;
     }
 }

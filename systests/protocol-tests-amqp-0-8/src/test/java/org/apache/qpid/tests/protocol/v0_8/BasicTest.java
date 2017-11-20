@@ -88,7 +88,7 @@ public class BasicTest extends BrokerAdminUsingTestBase
 
 
     @Test
-    @SpecificationTest(section = "1.8.3.3", description = " start a queue consumer")
+    @SpecificationTest(section = "1.8.3.3", description = "start a queue consumer")
     public void consumeMessage() throws Exception
     {
         try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
@@ -102,20 +102,25 @@ public class BasicTest extends BrokerAdminUsingTestBase
             byte deliveryMode = (byte) 1;
             byte priority = (byte) 2;
             interaction.openAnonymousConnection()
-                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
-                       .basic().qosPrefetchCount(1).qos().consumeResponse(BasicQosOkBody.class)
+                       .channel().open()
+                       .consumeResponse(ChannelOpenOkBody.class)
+                       .basic().qosPrefetchCount(1)
+                               .qos()
+                       .consumeResponse(BasicQosOkBody.class)
                        .basic().consumeConsumerTag(consumerTag)
-                       .consumeQueue(queueName)
-                       .consume().consumeResponse(BasicConsumeOkBody.class)
-                       .channel().flow(true).consumeResponse(ChannelFlowOkBody.class)
+                               .consumeQueue(queueName)
+                               .consume()
+                       .consumeResponse(BasicConsumeOkBody.class)
+                       .channel().flow(true)
+                       .consumeResponse(ChannelFlowOkBody.class)
                        .basic().contentHeaderPropertiesContentType(messageContentType)
-                       .contentHeaderPropertiesHeaders(messageHeaders)
-                       .contentHeaderPropertiesDeliveryMode(deliveryMode)
-                       .contentHeaderPropertiesPriority(priority)
-                       .publishExchange("")
-                       .publishRoutingKey(queueName)
-                       .content(messageContent)
-                       .publishMessage()
+                               .contentHeaderPropertiesHeaders(messageHeaders)
+                               .contentHeaderPropertiesDeliveryMode(deliveryMode)
+                               .contentHeaderPropertiesPriority(priority)
+                               .publishExchange("")
+                               .publishRoutingKey(queueName)
+                               .content(messageContent)
+                               .publishMessage()
                        .consumeResponse(BasicDeliverBody.class);
 
             BasicDeliverBody delivery = interaction.getLatestResponse(BasicDeliverBody.class);

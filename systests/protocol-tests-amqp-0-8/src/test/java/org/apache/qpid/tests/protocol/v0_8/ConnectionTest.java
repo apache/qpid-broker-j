@@ -80,7 +80,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    @SpecificationTest(section = "1.4.2.5", description = "select security mechanism and locale")
+    @SpecificationTest(section = "1.4.2.6", description = "negotiate connection tuning parameters")
     public void connectionTuneOkAndOpen() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
@@ -102,7 +102,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    @SpecificationTest(section = "1.4.2.5", description = "[...] the minimum negotiated value for frame-max is also"
+    @SpecificationTest(section = "1.4.2.6", description = "[...] the minimum negotiated value for frame-max is also"
                                                           + " frame-min-size [4096].")
     public void tooSmallFrameSize() throws Exception
     {
@@ -124,7 +124,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    @SpecificationTest(section = "1.4.2.5.2.", description = "If the client specifies a frame max that is higher than"
+    @SpecificationTest(section = "1.4.2.6.2.", description = "If the client specifies a frame max that is higher than"
                                                              + " the value provided by the server, the server MUST"
                                                              + " close the connection without attempting a negotiated"
                                                              + " close. The server may report the error in some fashion"
