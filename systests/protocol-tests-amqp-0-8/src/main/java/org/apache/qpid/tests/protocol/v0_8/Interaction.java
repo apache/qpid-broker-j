@@ -58,13 +58,13 @@ public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Inte
     public Interaction sendPerformative(int channel, final AMQBody amqBody) throws Exception
     {
         final AMQFrame frameBody = new AMQFrame(channel, amqBody);
-        sendPerformativeAndChainFuture(frameBody, false);
+        sendPerformativeAndChainFuture(frameBody);
         return this;
     }
 
     public Interaction sendPerformative(final AMQDataBlock dataBlock) throws Exception
     {
-        sendPerformativeAndChainFuture(dataBlock, false);
+        sendPerformativeAndChainFuture(dataBlock);
         return this;
     }
 

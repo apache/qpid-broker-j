@@ -106,7 +106,8 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
                             .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                             .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                      CLOSE_EXISTING))
-                            .open();
+                            .open()
+                            .sync();
 
                 final Close close1 = interaction1.consumeResponse().getLatestResponse(Close.class);
                 assertThat(close1.getError(), is(notNullValue()));
@@ -145,7 +146,8 @@ public class CloseExistingPolicy extends BrokerAdminUsingTestBase
                             .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
                             .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                      CLOSE_EXISTING))
-                            .open();
+                            .open()
+                            .sync();
 
                 final Close close1 = interaction1.consumeResponse().getLatestResponse(Close.class);
                 assertThat(close1.getError(), is(notNullValue()));

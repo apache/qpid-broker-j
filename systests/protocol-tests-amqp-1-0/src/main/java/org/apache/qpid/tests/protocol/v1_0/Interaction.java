@@ -153,7 +153,7 @@ public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Inte
         Close close = new Close();
 
         sendPerformative(close, UnsignedShort.valueOf((short) 0));
-        Response<?> response = getNextResponse();
+        Response<?> response = consumeResponse().getLatestResponse();
         if (!(response.getBody() instanceof Close))
         {
             throw new IllegalStateException(String.format(
@@ -983,7 +983,7 @@ public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Inte
     private void sendPerformativeAndChainFuture(final SaslFrameBody frameBody) throws Exception
     {
         SASLFrame transportFrame = new SASLFrame(frameBody);
-        sendPerformativeAndChainFuture(transportFrame, true);
+        sendPerformativeAndChainFuture(transportFrame);
     }
 
     private void sendPerformativeAndChainFuture(final FrameBody frameBody, final UnsignedShort channel) throws Exception
@@ -1001,7 +1001,7 @@ public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Inte
                 duplicate = payload.duplicate();
             }
             transportFrame = new TransportFrame(channel.shortValue(), frameBody, duplicate);
-            ListenableFuture<Void> listenableFuture = sendPerformativeAndChainFuture(transportFrame, false);
+            ListenableFuture<Void> listenableFuture = sendPerformativeAndChainFuture(transportFrame);
             if (frameBody instanceof Transfer)
             {
                 listenableFuture.addListener(() -> ((Transfer) frameBody).dispose(), MoreExecutors.directExecutor());
