@@ -37,6 +37,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -45,11 +46,12 @@ import org.apache.qpid.server.protocol.v1_0.type.security.SaslChallenge;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslCode;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslMechanisms;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslOutcome;
-import org.apache.qpid.tests.utils.BrokerAdmin;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
+import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
-import org.apache.qpid.tests.protocol.SpecificationTest;
 
 public class SaslTest extends BrokerAdminUsingTestBase
 {
@@ -101,6 +103,47 @@ public class SaslTest extends BrokerAdminUsingTestBase
             assertThat(headerResponse, is(equalTo(AMQP_HEADER_BYTES)));
 
             transport.assertNoMoreResponses();
+        }
+    }
+
+    @Ignore("QPID-8042")
+    @Test
+    @SpecificationTest(section = "2.4.2",
+            description = "For applications that use many short-lived connections,"
+                          + " it MAY be desirable to pipeline the connection negotiation process."
+                          + " A peer MAY do this by starting to send subsequent frames before receiving"
+                          + " the partner’s connection header or open frame")
+    public void saslSuccessfulAuthenticationWithPipelinedFrames() throws Exception
+    {
+        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
+        try (FrameTransport transport = new FrameTransport(addr, true).connect())
+        {
+            final Binary initialResponse = new Binary(String.format("\0%s\0%s", _username, _password).getBytes(StandardCharsets.US_ASCII));
+            final Interaction interaction = transport.newInteraction();
+            interaction.protocolHeader(SASL_AMQP_HEADER_BYTES)
+                       .negotiateProtocol()
+                       .saslMechanism(PLAIN)
+                       .saslInitialResponse(initialResponse)
+                       .saslInit()
+                       .protocolHeader(AMQP_HEADER_BYTES)
+                       .negotiateProtocol()
+                       .openContainerId("testContainerId")
+                       .open();
+
+            final byte[] saslHeaderResponse = interaction.consumeResponse().getLatestResponse(byte[].class);
+            assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
+
+            SaslMechanisms saslMechanismsResponse = interaction.consumeResponse().getLatestResponse(SaslMechanisms.class);
+            assertThat(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms()), hasItem(PLAIN));
+
+            SaslOutcome saslOutcome = interaction.consumeResponse().getLatestResponse(SaslOutcome.class);
+            assertThat(saslOutcome.getCode(), equalTo(SaslCode.OK));
+
+            final byte[] headerResponse = interaction.consumeResponse().getLatestResponse(byte[].class);
+            assertThat(headerResponse, is(equalTo(AMQP_HEADER_BYTES)));
+
+            interaction.consumeResponse().getLatestResponse(Open.class);
+            interaction.doCloseConnection();
         }
     }
 
