@@ -258,7 +258,7 @@ public class SaslTest extends BrokerAdminUsingTestBase
             assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
 
             interaction.consumeResponse(SaslMechanisms.class);
-            interaction.open();
+            interaction.open().sync();
 
             transport.assertNoMoreResponsesAndChannelClosed();
         }

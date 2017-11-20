@@ -75,6 +75,7 @@ public abstract class Interaction<I extends Interaction>
 
     public I sync() throws InterruptedException, ExecutionException, TimeoutException
     {
+        _transport.flush();
         if (_latestFuture != null)
         {
             _latestFuture.get(FrameTransport.RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
@@ -85,14 +86,11 @@ public abstract class Interaction<I extends Interaction>
 
     public Response<?> getLatestResponse() throws Exception
     {
-        sync();
         return _latestResponse;
     }
 
     public <T> T getLatestResponse(Class<T> type) throws Exception
     {
-        sync();
-
         if (_latestResponse.getBody() == null)
         {
             throw new IllegalStateException(String.format("Unexpected response. Expected '%s' got '%s'.",
@@ -110,9 +108,9 @@ public abstract class Interaction<I extends Interaction>
         return (T) _latestResponse.getBody();
     }
 
-    protected ListenableFuture<Void> sendPerformativeAndChainFuture(final Object frameBody, boolean sync) throws Exception
+    protected ListenableFuture<Void> sendPerformativeAndChainFuture(final Object frameBody) throws Exception
     {
-        final ListenableFuture<Void> future = _transport.sendPerformative(frameBody, sync);
+        final ListenableFuture<Void> future = _transport.sendPerformative(frameBody);
         if (_latestFuture != null)
         {
             _latestFuture = allAsList(_latestFuture, future);

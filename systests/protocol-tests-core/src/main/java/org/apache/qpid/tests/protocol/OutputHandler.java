@@ -21,6 +21,8 @@
 package org.apache.qpid.tests.protocol;
 
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -31,10 +33,14 @@ import io.netty.channel.ChannelPromise;
 public class OutputHandler extends ChannelOutboundHandlerAdapter
 {
     private final OutputEncoder _outputEncoder;
+    private Queue<ByteBufferPromisePair> _cachedEncodedFramePromisePairs;
+    private int _encodedSize;
 
     OutputHandler(final OutputEncoder outputEncoder)
     {
         _outputEncoder = outputEncoder;
+        _cachedEncodedFramePromisePairs = new LinkedList<>();
+        _encodedSize = 0;
     }
 
     @Override
@@ -51,12 +57,44 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
         }
     }
 
-    private void send(ChannelHandlerContext ctx, final ByteBuffer dataByteBuffer, final ChannelPromise promise)
+    private synchronized void send(ChannelHandlerContext ctx, final ByteBuffer dataByteBuffer, final ChannelPromise promise)
     {
-        byte[] data = new byte[dataByteBuffer.remaining()];
-        dataByteBuffer.get(data);
+        _cachedEncodedFramePromisePairs.add(new ByteBufferPromisePair(dataByteBuffer, promise));
+        _encodedSize += dataByteBuffer.remaining();
+    }
+
+
+    @Override
+    public synchronized void flush(final ChannelHandlerContext ctx) throws Exception
+    {
+        final ChannelPromise promise = ctx.channel().newPromise();
+        byte[] data  = new byte[_encodedSize];
+
+        int offset = 0;
+        while(offset < _encodedSize)
+        {
+            ByteBufferPromisePair currentPair = _cachedEncodedFramePromisePairs.poll();
+            int remaining = currentPair.byteBuffer.remaining();
+            currentPair.byteBuffer.get(data, offset, remaining) ;
+            offset += remaining;
+
+            promise.addListener(future -> {
+                if (future.isSuccess())
+                {
+                    currentPair.channelPromise.setSuccess();
+                }
+                else
+                {
+                    currentPair.channelPromise.setFailure(future.cause());
+                }
+            });
+        }
+
+        _encodedSize = 0;
+
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         buffer.writeBytes(data);
+
         try
         {
             OutputHandler.super.write(ctx, buffer, promise);
@@ -65,5 +103,20 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
         {
             promise.setFailure(e);
         }
+
+        super.flush(ctx);
     }
+
+    class ByteBufferPromisePair
+    {
+        private ByteBuffer byteBuffer;
+        private ChannelPromise channelPromise;
+
+        ByteBufferPromisePair(final ByteBuffer byteBuffer, final ChannelPromise channelPromise)
+        {
+            this.byteBuffer = byteBuffer;
+            this.channelPromise = channelPromise;
+        }
+    }
+
 }

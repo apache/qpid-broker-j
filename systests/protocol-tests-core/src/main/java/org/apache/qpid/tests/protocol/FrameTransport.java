@@ -31,14 +31,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.JdkFutureAdapters;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
@@ -138,26 +136,15 @@ public abstract class FrameTransport implements AutoCloseable
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         buffer.writeBytes(bytes);
         _channel.write(buffer, promise);
-        _channel.flush();
         return JdkFutureAdapters.listenInPoolThread(promise);
     }
 
-    public ListenableFuture<Void> sendPerformative(final Object data, boolean sync) throws Exception
+    public ListenableFuture<Void> sendPerformative(final Object data) throws Exception
     {
         Preconditions.checkState(_channel != null, "Not connected");
-        if (!sync)
-        {
-            ChannelPromise promise = _channel.newPromise();
-            _channel.write(data, promise);
-            _channel.flush();
-            return JdkFutureAdapters.listenInPoolThread(promise);
-        }
-        else
-        {
-            ChannelFuture channelFuture = _channel.writeAndFlush(data);
-            channelFuture.sync();
-            return Futures.immediateFuture(null);
-        }
+        ChannelPromise promise = _channel.newPromise();
+        _channel.write(data, promise);
+        return JdkFutureAdapters.listenInPoolThread(promise);
     }
 
     public <T extends Response<?>> T getNextResponse() throws Exception
@@ -175,6 +162,11 @@ public abstract class FrameTransport implements AutoCloseable
     {
         assertNoMoreResponses();
         assertThat(_channelClosedSeen, is(true));
+    }
+
+    public void flush()
+    {
+        _channel.flush();
     }
 
     private static class ChannelClosedResponse implements Response<Void>
