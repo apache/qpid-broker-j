@@ -77,9 +77,10 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.tests.protocol.AbstractInteraction;
 import org.apache.qpid.tests.protocol.Response;
 
-public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Interaction>
+public class Interaction extends AbstractInteraction<Interaction>
 {
     private static final Set<String> CONTAINER_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Begin _begin;
@@ -175,12 +176,6 @@ public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Inte
     protected byte[] getProtocolHeader()
     {
         return _protocolHeader;
-    }
-
-    @Override
-    protected Interaction getInteraction()
-    {
-        return this;
     }
 
     //////////

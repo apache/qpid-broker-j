@@ -31,13 +31,13 @@ import java.util.concurrent.TimeoutException;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-public abstract class Interaction<I extends Interaction>
+public abstract class AbstractInteraction<I extends AbstractInteraction<I>>
 {
-    private final FrameTransport _transport;
+    private final AbstractFrameTransport<I> _transport;
     private ListenableFuture<?> _latestFuture;
     private Response<?> _latestResponse;
 
-    public Interaction(final FrameTransport frameTransport)
+    public AbstractInteraction(final AbstractFrameTransport<I> frameTransport)
     {
         _transport = frameTransport;
     }
@@ -78,7 +78,7 @@ public abstract class Interaction<I extends Interaction>
         _transport.flush();
         if (_latestFuture != null)
         {
-            _latestFuture.get(FrameTransport.RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
+            _latestFuture.get(AbstractFrameTransport.RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
             _latestFuture = null;
         }
         return getInteraction();
@@ -136,12 +136,15 @@ public abstract class Interaction<I extends Interaction>
         return getInteraction();
     }
 
-    protected FrameTransport getTransport()
+    protected AbstractFrameTransport getTransport()
     {
         return _transport;
     }
 
     protected abstract byte[] getProtocolHeader();
 
-    protected abstract I getInteraction();
+    private I getInteraction()
+    {
+        return (I) this;
+    }
 }

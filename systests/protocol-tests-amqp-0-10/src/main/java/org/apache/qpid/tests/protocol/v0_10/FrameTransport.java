@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,26 +16,36 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
-
-package org.apache.qpid.tests.protocol.v1_0;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
+package org.apache.qpid.tests.protocol.v0_10;
 
 import java.net.InetSocketAddress;
 
+import org.apache.qpid.server.protocol.v0_10.ProtocolEngineCreator_0_10;
 import org.apache.qpid.tests.protocol.AbstractFrameTransport;
+
 
 public class FrameTransport extends AbstractFrameTransport<Interaction>
 {
+    private final byte[] _protocolHeader;
+
     public FrameTransport(final InetSocketAddress brokerAddress)
     {
-        this(brokerAddress, false);
+        super(brokerAddress, new FrameDecoder(new ProtocolEngineCreator_0_10().getHeaderIdentifier()), new FrameEncoder());
+        _protocolHeader = new ProtocolEngineCreator_0_10().getHeaderIdentifier();
     }
 
-    public FrameTransport(final InetSocketAddress brokerAddress, boolean isSasl)
+    @Override
+    public byte[] getProtocolHeader()
     {
-        super(brokerAddress, new FrameDecoder(isSasl), new FrameEncoder());
+        return _protocolHeader;
+    }
+
+    @Override
+    public Interaction newInteraction()
+    {
+        return new Interaction(this);
     }
 
     @Override
@@ -44,14 +55,4 @@ public class FrameTransport extends AbstractFrameTransport<Interaction>
         return this;
     }
 
-    @Override
-    public byte[] getProtocolHeader()
-    {
-        return "AMQP\0\1\0\0".getBytes(UTF_8);
-    }
-
-    public Interaction newInteraction()
-    {
-        return new Interaction(this);
-    }
 }

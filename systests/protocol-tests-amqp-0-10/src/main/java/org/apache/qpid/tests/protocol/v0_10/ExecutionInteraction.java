@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,43 +16,32 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
+package org.apache.qpid.tests.protocol.v0_10;
 
-package org.apache.qpid.tests.protocol.v1_0;
+import org.apache.qpid.server.protocol.v0_10.transport.ExecutionSync;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import java.net.InetSocketAddress;
-
-import org.apache.qpid.tests.protocol.AbstractFrameTransport;
-
-public class FrameTransport extends AbstractFrameTransport<Interaction>
+public class ExecutionInteraction
 {
-    public FrameTransport(final InetSocketAddress brokerAddress)
+    private final Interaction _interaction;
+    private final ExecutionSync _sync;
+
+    public ExecutionInteraction(final Interaction interaction)
     {
-        this(brokerAddress, false);
+        _interaction = interaction;
+        _sync = new ExecutionSync();
     }
 
-    public FrameTransport(final InetSocketAddress brokerAddress, boolean isSasl)
+    public ExecutionInteraction syncId(final int id)
     {
-        super(brokerAddress, new FrameDecoder(isSasl), new FrameEncoder());
-    }
-
-    @Override
-    public FrameTransport connect()
-    {
-        super.connect();
+        _sync.setId(id);
         return this;
     }
 
-    @Override
-    public byte[] getProtocolHeader()
+    public Interaction sync() throws Exception
     {
-        return "AMQP\0\1\0\0".getBytes(UTF_8);
-    }
-
-    public Interaction newInteraction()
-    {
-        return new Interaction(this);
+        _interaction.sendPerformative(_sync);
+        return _interaction;
     }
 }

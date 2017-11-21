@@ -58,7 +58,7 @@ public class ChannelTest extends BrokerAdminUsingTestBase
 
     @Test
     @SpecificationTest(section = "1.5.2.5", description = "request a channel close")
-    public void channelClose() throws Exception
+    public void noFrameCanBeSentOnClosedChannel() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {

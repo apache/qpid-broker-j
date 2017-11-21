@@ -26,8 +26,9 @@ import org.apache.qpid.server.protocol.v0_8.transport.AMQFrame;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionStartBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionTuneBody;
+import org.apache.qpid.tests.protocol.AbstractInteraction;
 
-public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Interaction>
+public class Interaction extends AbstractInteraction<Interaction>
 {
 
     private int _channelId;
@@ -36,6 +37,8 @@ public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Inte
     private ChannelInteraction _channelInteraction;
     private QueueInteraction _queueInteraction;
     private BasicInteraction _basicInteraction;
+    private TxInteraction _txInteraction;
+    private ExchangeInteraction _exchangeInteraction;
 
     Interaction(final FrameTransport transport)
     {
@@ -44,18 +47,14 @@ public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Inte
         _channelInteraction = new ChannelInteraction(this);
         _queueInteraction = new QueueInteraction(this);
         _basicInteraction = new BasicInteraction(this);
+        _txInteraction = new TxInteraction(this);
+        _exchangeInteraction = new ExchangeInteraction(this);
     }
 
     @Override
     protected byte[] getProtocolHeader()
     {
         return getTransport().getProtocolHeader();
-    }
-
-    @Override
-    protected Interaction getInteraction()
-    {
-        return this;
     }
 
     public Interaction sendPerformative(final AMQBody amqBody) throws Exception
@@ -119,5 +118,15 @@ public class Interaction extends org.apache.qpid.tests.protocol.Interaction<Inte
     public BasicInteraction basic()
     {
         return _basicInteraction;
+    }
+
+    public TxInteraction tx()
+    {
+        return _txInteraction;
+    }
+
+    public ExchangeInteraction exchange()
+    {
+        return _exchangeInteraction;
     }
 }

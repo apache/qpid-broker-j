@@ -31,8 +31,10 @@ import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionOpenOkBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionSecureBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionStartBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionTuneBody;
+import org.apache.qpid.tests.protocol.ChannelClosedResponse;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -119,7 +121,8 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                        .tuneOkFrameMax(1024)
                        .tuneOkHeartbeat(response.getHeartbeat())
                        .tuneOk()
-                       .consumeResponse().getLatestResponse(ConnectionCloseBody.class);
+                       .connection().open()
+                       .consumeResponse(ConnectionCloseBody.class, ChannelClosedResponse.class);
         }
     }
 
@@ -144,7 +147,8 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                        .tuneOkFrameMax(Long.MAX_VALUE)
                        .tuneOkHeartbeat(response.getHeartbeat())
                        .tuneOk()
-                       .consumeResponse().getLatestResponse(ConnectionCloseBody.class);
+                       .connection().open()
+                       .consumeResponse(ConnectionCloseBody.class, ChannelClosedResponse.class);
         }
     }
 
@@ -179,5 +183,23 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
         }
     }
 
+
+    @Test
+    @SpecificationTest(section = "9",
+            description = "open-connection = C:protocol-header S:START C:START-OK *challenge S:TUNE C:TUNE-OK C:OPEN S:OPEN-OK")
+    public void authenticationBypassAfterSendingStartOk() throws Exception
+    {
+        InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
+        try(FrameTransport transport = new FrameTransport(brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.negotiateProtocol()
+                       .consumeResponse(ConnectionStartBody.class)
+                       .connection().startOkMechanism("PLAIN").startOk().consumeResponse(ConnectionSecureBody.class)
+                       .connection().tuneOk()
+                       .connection().open()
+                       .consumeResponse(ConnectionCloseBody.class, ChannelClosedResponse.class);
+        }
+    }
 
 }

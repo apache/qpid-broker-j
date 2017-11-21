@@ -26,18 +26,20 @@ import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.protocol.ProtocolVersion;
+import org.apache.qpid.tests.protocol.AbstractFrameTransport;
 
 
-public class FrameTransport extends org.apache.qpid.tests.protocol.FrameTransport
+public class FrameTransport extends AbstractFrameTransport<Interaction>
 {
     private final byte[] _protocolHeader;
     private ProtocolVersion _protocolVersion;
 
-    public FrameTransport(final InetSocketAddress brokerAddress)
+    FrameTransport(final InetSocketAddress brokerAddress)
     {
         this(brokerAddress, Protocol.AMQP_0_9_1);
     }
-    public FrameTransport(final InetSocketAddress brokerAddress, Protocol protocol)
+
+    FrameTransport(final InetSocketAddress brokerAddress, Protocol protocol)
     {
         super(brokerAddress, new FrameDecoder(getProtocolVersion(protocol)), new FrameEncoder());
         _protocolVersion = getProtocolVersion(protocol);
@@ -74,12 +76,12 @@ public class FrameTransport extends org.apache.qpid.tests.protocol.FrameTranspor
         return _protocolHeader;
     }
 
-    public ProtocolVersion getProtocolVersion()
+    ProtocolVersion getProtocolVersion()
     {
         return _protocolVersion;
     }
 
-    public static ProtocolVersion getProtocolVersion(Protocol protocol)
+    private static ProtocolVersion getProtocolVersion(Protocol protocol)
     {
         final ProtocolVersion protocolVersion;
         switch (protocol)

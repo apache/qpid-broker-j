@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,43 +16,21 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
+package org.apache.qpid.tests.protocol;
 
-package org.apache.qpid.tests.protocol.v1_0;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import java.net.InetSocketAddress;
-
-import org.apache.qpid.tests.protocol.AbstractFrameTransport;
-
-public class FrameTransport extends AbstractFrameTransport<Interaction>
+public class ChannelClosedResponse implements Response<ChannelClosedResponse>
 {
-    public FrameTransport(final InetSocketAddress brokerAddress)
+    @Override
+    public String toString()
     {
-        this(brokerAddress, false);
-    }
-
-    public FrameTransport(final InetSocketAddress brokerAddress, boolean isSasl)
-    {
-        super(brokerAddress, new FrameDecoder(isSasl), new FrameEncoder());
+        return "ChannelClosed";
     }
 
     @Override
-    public FrameTransport connect()
+    public ChannelClosedResponse getBody()
     {
-        super.connect();
         return this;
-    }
-
-    @Override
-    public byte[] getProtocolHeader()
-    {
-        return "AMQP\0\1\0\0".getBytes(UTF_8);
-    }
-
-    public Interaction newInteraction()
-    {
-        return new Interaction(this);
     }
 }

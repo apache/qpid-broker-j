@@ -198,6 +198,7 @@
     <module>systests/qpid-systests-jms_2.0</module>
     <module>systests/protocol-tests-core</module>
     <module>systests/protocol-tests-amqp-0-8</module>
+    <module>systests/protocol-tests-amqp-0-10</module>
     <module>systests/protocol-tests-amqp-1-0</module>
     <module>systests/end-to-end-conversion-tests</module>
     <module>perftests</module>
@@ -424,6 +425,12 @@
       <dependency>
         <groupId>org.apache.qpid</groupId>
         <artifactId>protocol-tests-amqp-0-8</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>protocol-tests-amqp-0-10</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1332,26 +1339,26 @@
       </properties>
     </profile>
 
-      <profile>
-          <id>java-json.0-10</id>
-          <activation>
-              <property>
-                  <name>profile</name>
-                  <value>java-json.0-10</value>
-              </property>
-          </activation>
-          <properties>
-              <profile>java-json.0-10</profile>
-              <profile.specific.excludes>JavaPersistentExcludes JavaJsonExcludes XAExcludes Java010Excludes</profile.specific.excludes>
-              <profile.broker.version>v0_10</profile.broker.version>
-              <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
-              <profile.broker.persistent>true</profile.broker.persistent>
-              <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
-              <profile.virtualhostnode.context.blueprint>{"type":"BDB","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
-          </properties>
-      </profile>
+    <profile>
+      <id>java-json.0-10</id>
+      <activation>
+        <property>
+          <name>profile</name>
+          <value>java-json.0-10</value>
+        </property>
+      </activation>
+      <properties>
+        <profile>java-json.0-10</profile>
+        <profile.specific.excludes>JavaPersistentExcludes JavaJsonExcludes XAExcludes Java010Excludes</profile.specific.excludes>
+        <profile.broker.version>v0_10</profile.broker.version>
+        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
+        <profile.broker.persistent>true</profile.broker.persistent>
+        <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
+        <profile.virtualhostnode.context.blueprint>{"type":"BDB","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
+      </properties>
+    </profile>
 
-      <profile>
+    <profile>
       <id>cpp</id>
       <activation>
         <property>

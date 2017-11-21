@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,43 +16,29 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
+package org.apache.qpid.tests.protocol.v0_8;
 
-package org.apache.qpid.tests.protocol.v1_0;
+import org.apache.qpid.server.protocol.v0_8.transport.TxCommitBody;
+import org.apache.qpid.server.protocol.v0_8.transport.TxSelectBody;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import java.net.InetSocketAddress;
-
-import org.apache.qpid.tests.protocol.AbstractFrameTransport;
-
-public class FrameTransport extends AbstractFrameTransport<Interaction>
+public class TxInteraction
 {
-    public FrameTransport(final InetSocketAddress brokerAddress)
+    private Interaction _interaction;
+
+    public TxInteraction(final Interaction interaction)
     {
-        this(brokerAddress, false);
+        _interaction = interaction;
     }
 
-    public FrameTransport(final InetSocketAddress brokerAddress, boolean isSasl)
+    public Interaction select() throws Exception
     {
-        super(brokerAddress, new FrameDecoder(isSasl), new FrameEncoder());
+        return _interaction.sendPerformative(TxSelectBody.INSTANCE);
     }
 
-    @Override
-    public FrameTransport connect()
+    public Interaction commit() throws Exception
     {
-        super.connect();
-        return this;
-    }
-
-    @Override
-    public byte[] getProtocolHeader()
-    {
-        return "AMQP\0\1\0\0".getBytes(UTF_8);
-    }
-
-    public Interaction newInteraction()
-    {
-        return new Interaction(this);
+        return _interaction.sendPerformative(TxCommitBody.INSTANCE);
     }
 }

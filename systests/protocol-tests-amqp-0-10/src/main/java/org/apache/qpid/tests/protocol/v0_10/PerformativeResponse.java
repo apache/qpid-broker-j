@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,43 +16,33 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
+package org.apache.qpid.tests.protocol.v0_10;
 
-package org.apache.qpid.tests.protocol.v1_0;
+import org.apache.qpid.server.protocol.v0_10.transport.Method;
+import org.apache.qpid.tests.protocol.Response;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import java.net.InetSocketAddress;
-
-import org.apache.qpid.tests.protocol.AbstractFrameTransport;
-
-public class FrameTransport extends AbstractFrameTransport<Interaction>
+public class PerformativeResponse implements Response<Method>
 {
-    public FrameTransport(final InetSocketAddress brokerAddress)
-    {
-        this(brokerAddress, false);
-    }
+    private Method _method;
 
-    public FrameTransport(final InetSocketAddress brokerAddress, boolean isSasl)
+    public PerformativeResponse(final Method method)
     {
-        super(brokerAddress, new FrameDecoder(isSasl), new FrameEncoder());
+        _method = method;
     }
 
     @Override
-    public FrameTransport connect()
+    public Method getBody()
     {
-        super.connect();
-        return this;
+        return _method;
     }
 
     @Override
-    public byte[] getProtocolHeader()
+    public String toString()
     {
-        return "AMQP\0\1\0\0".getBytes(UTF_8);
-    }
-
-    public Interaction newInteraction()
-    {
-        return new Interaction(this);
+        return "PerformativeResponse{" +
+               "_method=" + _method +
+               '}';
     }
 }
