@@ -31,12 +31,18 @@ import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 
 public class OAuth2Negotiator implements SaslNegotiator
 {
+    enum State
+    {
+        INITIAL,
+        CHALLENGE_SENT,
+        COMPLETE
+    }
 
     public static final String MECHANISM = "XOAUTH2";
     private static final String BEARER_PREFIX = "Bearer ";
     private final NamedAddressSpace _addressSpace;
     private OAuth2AuthenticationProvider<?> _authenticationProvider;
-    private volatile boolean _isComplete;
+    private volatile State _state = State.INITIAL;
 
     public OAuth2Negotiator(OAuth2AuthenticationProvider<?> authenticationProvider,
                             final NamedAddressSpace addressSpace)
@@ -48,16 +54,24 @@ public class OAuth2Negotiator implements SaslNegotiator
     @Override
     public AuthenticationResult handleResponse(final byte[] response)
     {
-        if (_isComplete)
+        if (_state == State.COMPLETE)
         {
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR,
-                                            new IllegalStateException(
-                                                    "Multiple Authentications not permitted."));
+                                            new IllegalStateException("Multiple Authentications not permitted."));
         }
-        else
+        else if (_state == State.INITIAL && (response == null || response.length == 0))
         {
-            _isComplete = true;
+            _state = State.CHALLENGE_SENT;
+            return new AuthenticationResult(new byte[0], AuthenticationResult.AuthenticationStatus.CONTINUE);
         }
+
+        _state = State.COMPLETE;
+        if (response == null || response.length == 0)
+        {
+            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR,
+                                            new IllegalArgumentException("Invalid OAuth2 client response."));
+        }
+
         Map<String, String> responsePairs = splitResponse(response);
 
         String auth = responsePairs.get("auth");

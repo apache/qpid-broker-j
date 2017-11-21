@@ -20,6 +20,7 @@
 
 package org.apache.qpid.server.security.auth.sasl.plain;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -71,5 +72,25 @@ public class PlainNegotiatorTest extends QpidTestCase
         assertEquals("Unexpected first authentication result", _expectedResult, firstResult);
         final AuthenticationResult secondResult = _negotiator.handleResponse(VALID_RESPONSE.getBytes());
         assertEquals("Unexpected second authentication result", AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus());
+    }
+
+    public void testHandleNoInitialResponse() throws Exception
+    {
+        final AuthenticationResult result = _negotiator.handleResponse(new byte[0]);
+        assertEquals("Unexpected authentication status", AuthenticationResult.AuthenticationStatus.CONTINUE, result.getStatus());
+        assertArrayEquals("Unexpected authentication challenge", new byte[0], result.getChallenge());
+
+        final AuthenticationResult firstResult = _negotiator.handleResponse(VALID_RESPONSE.getBytes());
+        assertEquals("Unexpected first authentication result", _expectedResult, firstResult);
+    }
+
+    public void testHandleNoInitialResponseNull() throws Exception
+    {
+        final AuthenticationResult result = _negotiator.handleResponse(null);
+        assertEquals("Unexpected authentication status", AuthenticationResult.AuthenticationStatus.CONTINUE, result.getStatus());
+        assertArrayEquals("Unexpected authentication challenge", new byte[0], result.getChallenge());
+
+        final AuthenticationResult firstResult = _negotiator.handleResponse(VALID_RESPONSE.getBytes());
+        assertEquals("Unexpected first authentication result", _expectedResult, firstResult);
     }
 }
