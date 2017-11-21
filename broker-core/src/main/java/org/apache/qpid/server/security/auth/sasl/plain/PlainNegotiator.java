@@ -29,11 +29,18 @@ import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 
 public class PlainNegotiator implements SaslNegotiator
 {
+    enum State
+    {
+        INITIAL,
+        CHALLENGE_SENT,
+        COMPLETE
+    }
+
     public static final String MECHANISM = "PLAIN";
     private static final String UTF8 = StandardCharsets.UTF_8.name();
 
     private UsernamePasswordAuthenticationProvider _usernamePasswordAuthenticationProvider;
-    private volatile boolean _isComplete;
+    private volatile State _state = State.INITIAL;
     private volatile String _username;
 
     public PlainNegotiator(final UsernamePasswordAuthenticationProvider usernamePasswordAuthenticationProvider)
@@ -44,16 +51,25 @@ public class PlainNegotiator implements SaslNegotiator
     @Override
     public AuthenticationResult handleResponse(final byte[] response)
     {
-        if (_isComplete)
+        if (_state == State.COMPLETE)
         {
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR,
-                                            new IllegalStateException(
-                                                    "Multiple Authentications not permitted."));
+                                            new IllegalStateException("Multiple Authentications not permitted."));
         }
-        else
+        else if (_state == State.INITIAL && (response == null || response.length == 0))
         {
-            _isComplete = true;
+            _state = State.CHALLENGE_SENT;
+            return new AuthenticationResult(new byte[0], AuthenticationResult.AuthenticationStatus.CONTINUE);
         }
+
+        _state = State.COMPLETE;
+        if (response == null || response.length == 0)
+        {
+            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR,
+                                            new IllegalArgumentException(
+                                                    "Invalid PLAIN encoding, authzid null terminator not found"));
+        }
+
         int authzidNullPosition = findNullPosition(response, 0);
         if (authzidNullPosition < 0)
         {

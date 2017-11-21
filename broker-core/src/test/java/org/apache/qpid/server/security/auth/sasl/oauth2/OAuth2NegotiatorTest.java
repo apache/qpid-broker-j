@@ -21,6 +21,7 @@
 package org.apache.qpid.server.security.auth.sasl.oauth2;
 
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -29,7 +30,6 @@ import static org.mockito.Mockito.when;
 
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
-
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class OAuth2NegotiatorTest extends QpidTestCase
@@ -94,4 +94,17 @@ public class OAuth2NegotiatorTest extends QpidTestCase
                      secondResult.getStatus());
     }
 
+    public void testHandleNoInitialResponse() throws Exception
+    {
+        final AuthenticationResult result = _negotiator.handleResponse(new byte[0]);
+        assertEquals("Unexpected authentication status", AuthenticationResult.AuthenticationStatus.CONTINUE, result.getStatus());
+        assertArrayEquals("Unexpected authentication challenge", new byte[0], result.getChallenge());
+    }
+
+    public void testHandleNoInitialResponseNull() throws Exception
+    {
+        final AuthenticationResult result = _negotiator.handleResponse(null);
+        assertEquals("Unexpected authentication status", AuthenticationResult.AuthenticationStatus.CONTINUE, result.getStatus());
+        assertArrayEquals("Unexpected authentication challenge", new byte[0], result.getChallenge());
+    }
 }
