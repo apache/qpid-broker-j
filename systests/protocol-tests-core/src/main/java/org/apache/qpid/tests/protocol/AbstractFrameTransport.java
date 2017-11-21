@@ -46,9 +46,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
-public abstract class FrameTransport implements AutoCloseable
+public abstract class AbstractFrameTransport<I extends AbstractInteraction<I>> implements AutoCloseable
 {
-    public static final long RESPONSE_TIMEOUT =
+    static final long RESPONSE_TIMEOUT =
             Long.getLong("qpid.tests.protocol.frameTransport.responseTimeout", 6000);
     private static final Response CHANNEL_CLOSED_RESPONSE = new ChannelClosedResponse();
 
@@ -61,7 +61,7 @@ public abstract class FrameTransport implements AutoCloseable
     private volatile Channel _channel;
     private volatile boolean _channelClosedSeen = false;
 
-    public FrameTransport(final InetSocketAddress brokerAddress, InputDecoder inputDecoder, OutputEncoder outputEncoder)
+    public AbstractFrameTransport(final InetSocketAddress brokerAddress, InputDecoder inputDecoder, OutputEncoder outputEncoder)
     {
         _brokerAddress = brokerAddress;
         _inputHandler = new InputHandler(_queue, inputDecoder);
@@ -74,7 +74,7 @@ public abstract class FrameTransport implements AutoCloseable
         return _brokerAddress;
     }
 
-    public FrameTransport connect()
+    public AbstractFrameTransport<I> connect()
     {
         try
         {
@@ -129,7 +129,7 @@ public abstract class FrameTransport implements AutoCloseable
         }
     }
 
-    public ListenableFuture<Void> sendProtocolHeader(final byte[] bytes) throws Exception
+    ListenableFuture<Void> sendProtocolHeader(final byte[] bytes) throws Exception
     {
         Preconditions.checkState(_channel != null, "Not connected");
         ChannelPromise promise = _channel.newPromise();
@@ -147,7 +147,7 @@ public abstract class FrameTransport implements AutoCloseable
         return JdkFutureAdapters.listenInPoolThread(promise);
     }
 
-    public <T extends Response<?>> T getNextResponse() throws Exception
+    <T extends Response<?>> T getNextResponse() throws Exception
     {
         return (T) _queue.poll(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS);
     }
@@ -169,22 +169,7 @@ public abstract class FrameTransport implements AutoCloseable
         _channel.flush();
     }
 
-    private static class ChannelClosedResponse implements Response<Void>
-    {
-        @Override
-        public String toString()
-        {
-            return "ChannelClosed";
-        }
-
-        @Override
-        public Void getBody()
-        {
-            return null;
-        }
-    }
-
     public abstract byte[] getProtocolHeader();
 
-    protected abstract Interaction newInteraction();
+    public abstract I newInteraction();
 }
