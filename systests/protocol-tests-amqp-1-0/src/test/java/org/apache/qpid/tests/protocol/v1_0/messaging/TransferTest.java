@@ -847,7 +847,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
             while (payloadSize < maxMessageSizeLimit.longValue())
             {
                 payloadSize += chunkSize;
-                interaction.transfer();
+                interaction.transfer().sync();
             }
 
             while (true)
