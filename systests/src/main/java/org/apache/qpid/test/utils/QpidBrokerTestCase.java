@@ -75,7 +75,7 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     private final Map<String, String> _propertiesSetForBroker = new HashMap<>();
     private final List<Connection> _connections = new ArrayList<>();
-    private final AmqpManagementFacade _managementFacade = new AmqpManagementFacade(this);
+    private AmqpManagementFacade _managementFacade;
     private BrokerHolder _defaultBroker;
     private MessageType _messageType = MessageType.TEXT;
     private JmsProvider _jmsProvider;
@@ -85,6 +85,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     {
         try
         {
+            _managementFacade = new AmqpManagementFacade(isBroker10() ? "$management" : "ADDR:$management");
             _jmsProvider = isBroker10() ? new QpidJmsClientProvider(_managementFacade) : new QpidJmsClient0xProvider(_managementFacade);
 
             _defaultBroker = new BrokerHolderFactory().create(DEFAULT_BROKER_TYPE, DEFAULT_PORT, this);
@@ -223,7 +224,7 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     public ConnectionBuilder getConnectionBuilder()
     {
-        return _jmsProvider.getConnectionBuilder();
+        return _jmsProvider.getConnectionBuilder().setVirtualHost("test");
     }
 
     /**

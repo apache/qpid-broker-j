@@ -46,6 +46,30 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     private boolean _enableFailover;
     private final Map<String, Object> _options = new TreeMap<>();
     private int _reconnectAttempts = 20;
+    private String _host;
+    private int _port;
+    private int _sslPort;
+
+    @Override
+    public ConnectionBuilder setHost(final String host)
+    {
+        _host = host;
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setPort(final int port)
+    {
+        _port = port;
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setSslPort(final int port)
+    {
+        _sslPort = port;
+        return this;
+    }
 
     @Override
     public ConnectionBuilder setPrefetch(final int prefetch)
@@ -120,6 +144,12 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     @Override
     public Connection build() throws JMSException, NamingException, URLSyntaxException
     {
+        return buildConnectionFactory().createConnection(_username, _password);
+    }
+
+    @Override
+    public ConnectionFactory buildConnectionFactory() throws NamingException, URLSyntaxException
+    {
         Properties contextProperties = new Properties();
         contextProperties.put(Context.INITIAL_CONTEXT_FACTORY, "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
         contextProperties.put(Context.PROVIDER_URL, System.getProperty(Context.PROVIDER_URL));
@@ -170,8 +200,6 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
 
         curl = new AMQConnectionURL(curl.toString());
         connectionFactory = new AMQConnectionFactory(curl);
-
-
-        return connectionFactory.createConnection(_username, _password);
+        return connectionFactory;
     }
 }

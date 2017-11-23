@@ -19,6 +19,10 @@ package org.apache.qpid.systests.jms_2_0.deliverycount;/*
  *
  */
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,39 +34,42 @@ import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.junit.Before;
+import org.junit.Test;
 
-public class DeliveryCountTest extends QpidBrokerTestCase
+import org.apache.qpid.systests.jms_2_0.Jms2TestBase;
+import org.apache.qpid.systests.jms_2_0.Utils;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.tests.utils.BrokerAdmin;
+
+public class DeliveryCountTest extends Jms2TestBase
 {
     private static final int MAX_DELIVERY_ATTEMPTS = 3;
     private static final String JMSX_DELIVERY_COUNT = "JMSXDeliveryCount";
     private Queue _queue;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
-        try (Connection connection = getConnectionWithPrefetch(0))
+        String testQueueName = BrokerAdmin.TEST_QUEUE_NAME;
+        final Map<String, Object> attributes = new HashMap<>();
+        attributes.put(org.apache.qpid.server.model.Queue.NAME, testQueueName);
+        attributes.put(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS, MAX_DELIVERY_ATTEMPTS);
+        createEntityUsingAmqpManagement(testQueueName, "org.apache.qpid.StandardQueue", attributes);
+        try (Connection connection = getConnectionBuilder().setPrefetch(0).build())
         {
-            String testQueueName = getTestQueueName();
             connection.start();
             Session session = connection.createSession(Session.CLIENT_ACKNOWLEDGE);
-            final Map<String, Object> attributes = new HashMap<>();
-            attributes.put(org.apache.qpid.server.model.Queue.NAME, testQueueName);
-            attributes.put(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS, MAX_DELIVERY_ATTEMPTS);
-            createEntityUsingAmqpManagement(testQueueName,
-                                            session,
-                                            "org.apache.qpid.StandardQueue",
-                                            attributes);
            _queue = session.createQueue(testQueueName);
-            sendMessage(session, _queue, 1);
+            Utils.sendMessage(session, _queue, 1);
         }
     }
 
 
+    @Test
     public void testDeliveryCountChangedOnRollback() throws Exception
     {
-        try (Connection connection = getConnectionWithPrefetch(0))
+        try (Connection connection = getConnectionBuilder().setPrefetch(0).build())
         {
             Session session = connection.createSession(JMSContext.SESSION_TRANSACTED);
             MessageConsumer consumer = session.createConsumer(_queue);
@@ -78,9 +85,10 @@ public class DeliveryCountTest extends QpidBrokerTestCase
         }
     }
 
+    @Test
     public void testDeliveryCountChangedOnSessionClose() throws Exception
     {
-        try (Connection connection = getConnectionWithPrefetch(0))
+        try (Connection connection = getConnectionBuilder().setPrefetch(0).build())
         {
             connection.start();
             for (int i = 0; i < MAX_DELIVERY_ATTEMPTS; i++)

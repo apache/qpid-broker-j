@@ -37,8 +37,9 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
 {
 
     private static final AtomicInteger CLIENTID_COUNTER = new AtomicInteger();
-    private String _username;
-    private String _password;
+    private String _host;
+    private int _port;
+    private int _sslPort;
     private Map<String, Object> _options;
     private boolean _enableTls;
     private boolean _enableFailover;
@@ -47,9 +48,32 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     {
         _options = new TreeMap<>();
         _options.put("jms.clientID", getNextClientId());
-        _options.put("amqp.vhost", "test");
-        _username = "guest";
-        _password = "guest";
+        _options.put("jms.username", "guest");
+        _options.put("jms.password", "guest");
+        _port = Integer.getInteger("test.port");
+        _sslPort = Integer.getInteger("test.port.ssl");
+        _host = "localhost";
+    }
+
+    @Override
+    public ConnectionBuilder setHost(final String host)
+    {
+        _host = host;
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setPort(final int port)
+    {
+        _port = port;
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setSslPort(final int port)
+    {
+        _sslPort = port;
+        return this;
     }
 
     @Override
@@ -76,14 +100,28 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     @Override
     public ConnectionBuilder setUsername(final String username)
     {
-        _username = username;
+        if (username == null)
+        {
+            _options.remove("jms.username");
+        }
+        else
+        {
+            _options.put("jms.username", username);
+        }
         return this;
     }
 
     @Override
     public ConnectionBuilder setPassword(final String password)
     {
-        _password = password;
+        if (password == null)
+        {
+            _options.remove("jms.password");
+        }
+        else
+        {
+            _options.put("jms.password", password);
+        }
         return this;
     }
 
@@ -125,6 +163,12 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     @Override
     public Connection build() throws NamingException, JMSException
     {
+        return buildConnectionFactory().createConnection();
+    }
+
+    @Override
+    public ConnectionFactory buildConnectionFactory() throws NamingException
+    {
         final Hashtable<Object, Object> initialContextEnvironment = new Hashtable<>();
         final String factoryName;
 
@@ -136,8 +180,10 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
             {
                 options.put("failover.maxReconnectAttempts", "2");
             }
-            final StringBuilder stem = new StringBuilder("failover:(amqp://localhost:")
-                    .append(System.getProperty("test.port"))
+            final StringBuilder stem = new StringBuilder("failover:(amqp://")
+                    .append(_host)
+                    .append(":")
+                    .append(_port)
                     .append(",amqp://localhost:")
                     .append(System.getProperty("test.port.alt"))
                     .append(")");
@@ -150,7 +196,7 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
         else if (!_enableTls)
         {
             final StringBuilder stem =
-                    new StringBuilder("amqp://localhost:").append(System.getProperty("test.port"));
+                    new StringBuilder("amqp://").append(_host).append(":").append(_port);
 
             appendOptions(options, stem);
 
@@ -159,19 +205,13 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
         }
         else
         {
-
-            final StringBuilder stem = new StringBuilder("amqps://localhost:").append(String.valueOf(System.getProperty("test.port.ssl")));
+            final StringBuilder stem = new StringBuilder("amqps://").append(_host).append(":").append(_sslPort);
             appendOptions(options, stem);
             initialContextEnvironment.put("connectionfactory.default.ssl", stem.toString());
             factoryName = "default.ssl";
         }
-        final ConnectionFactory connectionFactory =
-                (ConnectionFactory) new InitialContext(initialContextEnvironment).lookup(factoryName);
-
-        return connectionFactory.createConnection(_username, _password);
+        return (ConnectionFactory) new InitialContext(initialContextEnvironment).lookup(factoryName);
     }
-
-
 
     private void appendOptions(final Map<String, Object> actualOptions, final StringBuilder stem)
     {

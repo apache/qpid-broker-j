@@ -43,11 +43,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class AmqpManagementFacade
 {
-    private final QpidBrokerTestCase _qpidBrokerTestCase;
+    private final String _managementAddress;
 
-    public AmqpManagementFacade(QpidBrokerTestCase _qpidBrokerTestCase)
+    public AmqpManagementFacade(final String managementAddress)
     {
-        this._qpidBrokerTestCase = _qpidBrokerTestCase;
+        _managementAddress = managementAddress;
     }
 
     public void createEntityUsingAmqpManagement(final String name, final Session session, final String type)
@@ -62,9 +62,7 @@ public class AmqpManagementFacade
                                                 Map<String, Object> attributes)
             throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue(_qpidBrokerTestCase.isBroker10()
-                                                                                      ? "$management"
-                                                                                      : "ADDR:$management"));
+        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
 
         MapMessage createMessage = session.createMapMessage();
         createMessage.setStringProperty("type", type);
@@ -89,9 +87,7 @@ public class AmqpManagementFacade
                                                 Map<String, Object> attributes)
             throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue(_qpidBrokerTestCase.isBroker10()
-                                                                                      ? "$management"
-                                                                                      : "ADDR:$management"));
+        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
 
         MapMessage createMessage = session.createMapMessage();
         createMessage.setStringProperty("type", type);
@@ -113,9 +109,7 @@ public class AmqpManagementFacade
     public void deleteEntityUsingAmqpManagement(final String name, final Session session, final String type)
             throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue(_qpidBrokerTestCase.isBroker10()
-                                                                                      ? "$management"
-                                                                                      : "ADDR:$management"));
+        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
 
         MapMessage createMessage = session.createMapMessage();
         createMessage.setStringProperty("type", type);
@@ -137,9 +131,7 @@ public class AmqpManagementFacade
                                                                          Map<String, Object> arguments)
             throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue(_qpidBrokerTestCase.isBroker10()
-                                                                                      ? "$management"
-                                                                                      : "ADDR:$management"));
+        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
         final TemporaryQueue responseQ = session.createTemporaryQueue();
         MessageConsumer consumer = session.createConsumer(responseQ);
         MapMessage opMessage = session.createMapMessage();
@@ -275,9 +267,7 @@ public class AmqpManagementFacade
                                                              final String name,
                                                              final boolean actuals) throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue(_qpidBrokerTestCase.isBroker10()
-                                                                                      ? "$management"
-                                                                                      : "ADDR:$management"));
+        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
 
         final TemporaryQueue responseQueue = session.createTemporaryQueue();
         MessageConsumer consumer = session.createConsumer(responseQueue);

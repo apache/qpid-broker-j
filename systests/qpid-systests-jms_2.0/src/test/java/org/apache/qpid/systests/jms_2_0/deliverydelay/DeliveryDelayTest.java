@@ -20,55 +20,58 @@
 
 package org.apache.qpid.systests.jms_2_0.deliverydelay;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.JMSConsumer;
 import javax.jms.JMSContext;
-import javax.jms.JMSException;
 import javax.jms.JMSProducer;
 import javax.jms.JMSRuntimeException;
 import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.Session;
-import javax.naming.NamingException;
 
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.url.URLSyntaxException;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class DeliveryDelayTest extends QpidBrokerTestCase
+import org.apache.qpid.systests.jms_2_0.Jms2TestBase;
+import org.apache.qpid.tests.utils.BrokerAdmin;
+
+public class DeliveryDelayTest extends Jms2TestBase
 {
     private static final int DELIVERY_DELAY = 3000;
 
-    @Override
-    public void setUp() throws Exception
+    @BeforeClass
+    public static void setUpClass() throws Exception
     {
-        setTestSystemProperty("virtualhost.housekeepingCheckPeriod", "100");
-        super.setUp();
+        System.setProperty("virtualhost.housekeepingCheckPeriod", "100");
     }
 
+    @AfterClass
+    public static void tearDownClass()
+    {
+        System.clearProperty("virtualhost.housekeepingCheckPeriod");
+    }
+
+    @Test
     public void testDeliveryDelay() throws Exception
     {
-        try (JMSContext context = getConnectionFactory().createContext(GUEST_USERNAME, GUEST_PASSWORD);
-             Connection utilityConnection = createUtilityConnection())
+        try (JMSContext context = getConnectionBuilder().buildConnectionFactory().createContext())
         {
-            Destination queue = createQueue(utilityConnection, getTestQueueName(), true);
+            Destination queue = createQueue(context, BrokerAdmin.TEST_QUEUE_NAME, true);
 
             final AtomicLong messageReceiptTime = new AtomicLong();
             final CountDownLatch receivedLatch = new CountDownLatch(1);
-            context.createConsumer(queue).setMessageListener(new MessageListener()
-            {
-                @Override
-                public void onMessage(final Message message)
-                {
-                    messageReceiptTime.set(System.currentTimeMillis());
-                    receivedLatch.countDown();
-                }
+            context.createConsumer(queue).setMessageListener(message -> {
+                messageReceiptTime.set(System.currentTimeMillis());
+                receivedLatch.countDown();
             });
 
             JMSProducer producer = context.createProducer().setDeliveryDelay(DELIVERY_DELAY);
@@ -89,12 +92,12 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
      * The target queue, which is addressed directly by the client, does not have
      * holdsOnPublish turned on.  The Broker must reject the message.
      */
+    @Test
     public void testDeliveryDelayNotSupportedByQueue_MessageRejected() throws Exception
     {
-        try (JMSContext context = getConnectionFactory().createContext(GUEST_USERNAME, GUEST_PASSWORD);
-             Connection utilityConnection = createUtilityConnection())
+        try (JMSContext context = getConnectionBuilder().buildConnectionFactory().createContext())
         {
-            Destination queue = createQueue(utilityConnection, getTestQueueName(), false);
+            Destination queue = createQueue(context, BrokerAdmin.TEST_QUEUE_NAME, false);
             JMSProducer producer = context.createProducer().setDeliveryDelay(DELIVERY_DELAY);
 
             try
@@ -114,17 +117,17 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
      * The client sends a messagge to a fanout exchange instance which is bound to a queue with
      * holdsOnPublish turned off. The Broker must reject the message.
      */
+    @Test
     public void testDeliveryDelayNotSupportedByQueueViaExchange_MessageRejected() throws Exception
     {
-        try (JMSContext context = getConnectionFactory().createContext(GUEST_USERNAME, GUEST_PASSWORD);
-             Connection utilityConnection = createUtilityConnection())
+        try (JMSContext context = getConnectionBuilder().buildConnectionFactory().createContext())
         {
-            String testQueueName = getTestQueueName();
-            String testExchangeName = getTestName() + "_exch";
+            String testQueueName = BrokerAdmin.TEST_QUEUE_NAME;
+            String testExchangeName = "test_exch";
 
-            Destination consumeDest = createQueue(utilityConnection, testQueueName, false);
-            Destination publishDest = createExchange(utilityConnection, testExchangeName);
-            bindQueueToExchange(utilityConnection, testExchangeName, testQueueName);
+            Destination consumeDest = createQueue(context, testQueueName, false);
+            Destination publishDest = createExchange(context, testExchangeName);
+            bindQueueToExchange(testExchangeName, testQueueName);
 
 
             JMSConsumer consumer = context.createConsumer(consumeDest);
@@ -150,56 +153,37 @@ public class DeliveryDelayTest extends QpidBrokerTestCase
         }
     }
 
-    private Destination createQueue(Connection utilityConnection, String queueName, boolean holdsOnPublish) throws Exception
+    private Destination createQueue(final JMSContext context, String queueName,
+                                    boolean holdsOnPublish) throws Exception
     {
-        try (Session session = utilityConnection.createSession(Session.SESSION_TRANSACTED))
-        {
-            Map<String, Object> attributes = new HashMap<>();
-            attributes.put(org.apache.qpid.server.model.Queue.HOLD_ON_PUBLISH_ENABLED, holdsOnPublish);
-            createEntityUsingAmqpManagement(queueName,
-                                            session,
-                                            "org.apache.qpid.Queue",
-                                            attributes);
-            return session.createQueue(queueName);
-        }
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(org.apache.qpid.server.model.Queue.HOLD_ON_PUBLISH_ENABLED, holdsOnPublish);
+        createEntityUsingAmqpManagement(queueName,
+                                        "org.apache.qpid.Queue",
+                                        attributes);
+        return context.createQueue(queueName);
     }
 
-    private Destination createExchange(Connection utilityConnection, String exchangeName) throws Exception
+    private Destination createExchange(final JMSContext context, String exchangeName) throws Exception
     {
-        try (Session session = utilityConnection.createSession(Session.SESSION_TRANSACTED))
-        {
-            Map<String, Object> attributes = new HashMap<>();
-            attributes.put(org.apache.qpid.server.model.Exchange.UNROUTABLE_MESSAGE_BEHAVIOUR, "REJECT");
-            createEntityUsingAmqpManagement(exchangeName,
-                                            session,
-                                            "org.apache.qpid.FanoutExchange",
-                                            attributes);
-            return session.createQueue(exchangeName);
-        }
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(org.apache.qpid.server.model.Exchange.UNROUTABLE_MESSAGE_BEHAVIOUR, "REJECT");
+        createEntityUsingAmqpManagement(exchangeName,
+                                        "org.apache.qpid.FanoutExchange",
+                                        attributes);
+        return context.createQueue(exchangeName);
     }
 
-    private void bindQueueToExchange(Connection utilityConnection,
-                                     String exchangeName,
+    private void bindQueueToExchange(String exchangeName,
                                      String queueName) throws Exception
     {
-        try (Session session = utilityConnection.createSession(Session.SESSION_TRANSACTED))
-        {
-            final Map<String, Object> arguments = new HashMap<>();
-            arguments.put("destination", queueName);
-            arguments.put("bindingKey", queueName);
-            performOperationUsingAmqpManagement(exchangeName,
-                                                "bind",
-                                                session,
-                                                "org.apache.qpid.FanoutExchange",
-                                                arguments);
-        }
-    }
-
-    private Connection createUtilityConnection() throws JMSException, NamingException, URLSyntaxException
-    {
-        Connection connection = getConnectionBuilder().build();
-        connection.start();
-        return connection;
+        final Map<String, Object> arguments = new HashMap<>();
+        arguments.put("destination", queueName);
+        arguments.put("bindingKey", queueName);
+        performOperationUsingAmqpManagement(exchangeName,
+                                            "bind",
+                                            "org.apache.qpid.FanoutExchange",
+                                            arguments);
     }
 
 }

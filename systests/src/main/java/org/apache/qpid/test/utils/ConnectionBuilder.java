@@ -21,6 +21,7 @@
 package org.apache.qpid.test.utils;
 
 import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.naming.NamingException;
 
@@ -28,6 +29,9 @@ import org.apache.qpid.url.URLSyntaxException;
 
 public interface ConnectionBuilder
 {
+    ConnectionBuilder setHost(String host);
+    ConnectionBuilder setPort(int port);
+    ConnectionBuilder setSslPort(int port);
     ConnectionBuilder setPrefetch(int prefetch);
     ConnectionBuilder setClientId(String clientId);
     ConnectionBuilder setUsername(String username);
@@ -39,5 +43,5 @@ public interface ConnectionBuilder
     ConnectionBuilder setSyncPublish(boolean syncPublish);
 
     Connection build() throws NamingException, JMSException, URLSyntaxException;
-
+    ConnectionFactory buildConnectionFactory() throws NamingException, URLSyntaxException;
 }

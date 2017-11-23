@@ -193,7 +193,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         {
             throw new IllegalStateException(String.format("Could not find port with name '%s' on the Broker", portType.name()));
         }
-        return new InetSocketAddress(port);
+        return InetSocketAddress.createUnresolved("localhost", port);
     }
 
     @Override

@@ -1,0 +1,98 @@
+/*
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ */
+{
+  "name" : "${broker.name}",
+  "modelVersion" : "7.0",
+  "authenticationproviders" : [ {
+    "name" : "anon",
+    "type" : "Anonymous"
+  }, {
+    "name" : "plain",
+    "type" : "Plain",
+    "secureOnlyMechanisms" : [],
+    "users" : [ {
+      "name" : "admin",
+      "type" : "managed",
+      "password" : "admin"
+    }, {
+      "name" : "guest",
+      "type" : "managed",
+      "password" : "guest"
+    } ]
+  } ],
+  "ports" : [ {
+    "name" : "AMQP",
+    "type" : "AMQP",
+    "authenticationProvider" : "plain",
+    "port" : "0",
+    "protocols" : [ "AMQP_1_0" ],
+    "virtualhostaliases" : [ {
+      "name" : "defaultAlias",
+      "type" : "defaultAlias"
+    }, {
+      "name" : "hostnameAlias",
+      "type" : "hostnameAlias"
+    }, {
+      "name" : "nameAlias",
+      "type" : "nameAlias"
+    } ]
+  }, {
+    "name" : "ANONYMOUS_AMQP",
+    "type" : "AMQP",
+    "authenticationProvider" : "anon",
+    "port" : "0",
+    "protocols" : [ "AMQP_1_0" ],
+    "virtualhostaliases" : [ {
+      "name" : "defaultAlias",
+      "type" : "defaultAlias",
+      "durable" : true
+    }, {
+      "name" : "hostnameAlias",
+      "type" : "hostnameAlias",
+      "durable" : true
+    }, {
+      "name" : "nameAlias",
+      "type" : "nameAlias",
+      "durable" : true
+    } ]
+  }, {
+    "name" : "ANONYMOUS_AMQPWS",
+    "type" : "AMQP",
+    "authenticationProvider" : "anon",
+    "port" : "0",
+    "transports" : ["WS"],
+    "protocols" : [ "AMQP_1_0" ],
+    "virtualhostaliases" : [ {
+      "name" : "defaultAlias",
+      "type" : "defaultAlias",
+      "durable" : true
+    }, {
+      "name" : "hostnameAlias",
+      "type" : "hostnameAlias",
+      "durable" : true
+    }, {
+      "name" : "nameAlias",
+      "type" : "nameAlias",
+      "durable" : true
+    } ]
+  } ],
+  "virtualhostnodes" : []
+}

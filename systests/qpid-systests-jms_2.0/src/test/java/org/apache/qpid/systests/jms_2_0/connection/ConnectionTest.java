@@ -20,12 +20,17 @@
 
 package org.apache.qpid.systests.jms_2_0.connection;
 
+import static org.junit.Assert.assertNotNull;
+
 import javax.jms.Connection;
 
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.junit.Test;
 
-public class ConnectionTest extends QpidBrokerTestCase
+import org.apache.qpid.systests.jms_2_0.Jms2TestBase;
+
+public class ConnectionTest extends Jms2TestBase
 {
+    @Test
     public void testConnection() throws Exception
     {
         Connection con = getConnection();
