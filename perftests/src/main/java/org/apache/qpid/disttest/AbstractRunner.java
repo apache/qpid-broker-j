@@ -20,9 +20,16 @@
  */
 package org.apache.qpid.disttest;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Properties;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -41,19 +48,19 @@ public class AbstractRunner
     protected Context getContext()
     {
         String jndiConfig = getJndiConfig();
-        Hashtable env = new Hashtable();
-        env.put(Context.PROVIDER_URL, jndiConfig);
-        // Java allows this to be overridden with a system property of the same name
-        if (!System.getProperties().containsKey(InitialContext.INITIAL_CONTEXT_FACTORY))
-        {
-            env.put(InitialContext.INITIAL_CONTEXT_FACTORY, "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
-        }
 
         try
         {
-            return  new InitialContext(env);
+            Properties properties = new Properties();
+            properties.put(Context.PROVIDER_URL, jndiConfig);
+            try(InputStream is = getJndiConfigurationInputStream(jndiConfig))
+            {
+                properties.load(is);
+            }
+
+            return  new InitialContext(properties);
         }
-        catch (NamingException e)
+        catch (IOException | NamingException e)
         {
             throw new DistributedTestException("Exception whilst creating InitialContext from URL '"
                                                + jndiConfig + "'", e);
@@ -74,5 +81,18 @@ public class AbstractRunner
     protected Map<String,String> getCliOptions()
     {
         return _cliOptions;
+    }
+
+    private InputStream getJndiConfigurationInputStream(final String providerUrl) throws IOException
+    {
+        try
+        {
+            URL url = new URL(providerUrl);
+            return url.openStream();
+        }
+        catch (MalformedURLException mue)
+        {
+            return new FileInputStream(new File(providerUrl));
+        }
     }
 }
