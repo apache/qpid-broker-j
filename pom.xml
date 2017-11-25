@@ -105,7 +105,7 @@
     <profile.broker.command.windows>"${qpid.home}${file.separator}bin${file.separator}qpid-server.bat" -sp "${at.sign}STORE_PATH" -st ${at.sign}STORE_TYPE -prop test.port=${at.sign}PORT -prop "qpid.work_dir=${at.sign}QPID_WORK"</profile.broker.command.windows>
     <profile.test.excludes>Excludes JavaExcludes ${profile}.excludes ${profile.specific.excludes}</profile.test.excludes>
     <profile.specific.excludes>JavaTransientExcludes Java010Excludes</profile.specific.excludes>
-    <profile.broker.version>v0_10</profile.broker.version>
+    <profile.broker.version>1.0</profile.broker.version>
     <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
     <profile.broker.persistent>false</profile.broker.persistent>
     <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
@@ -1007,7 +1007,7 @@
       <properties>
         <profile>java-mms.0-10</profile>
         <profile.specific.excludes>JavaTransientExcludes Java010Excludes</profile.specific.excludes>
-        <profile.broker.version>v0_10</profile.broker.version>
+        <profile.broker.version>0-10</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>false</profile.broker.persistent>
         <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
@@ -1027,7 +1027,7 @@
       <properties>
         <profile>java-mms.0-9-1</profile>
         <profile.specific.excludes>JavaTransientExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
-        <profile.broker.version>v0_9_1</profile.broker.version>
+        <profile.broker.version>0-9-1</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>false</profile.broker.persistent>
         <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
@@ -1047,7 +1047,7 @@
       <properties>
         <profile>java-mms.0-9</profile>
         <profile.specific.excludes>JavaTransientExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
-        <profile.broker.version>v0_9</profile.broker.version>
+        <profile.broker.version>0-9</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>false</profile.broker.persistent>
         <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
@@ -1067,7 +1067,7 @@
       <properties>
         <profile>java-bdb.0-10</profile>
         <profile.specific.excludes>JavaPersistentExcludes Java010Excludes JavaBDBExcludes</profile.specific.excludes>
-        <profile.broker.version>v0_10</profile.broker.version>
+        <profile.broker.version>0-10</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>BDB</profile.virtualhostnode.type>
@@ -1086,7 +1086,7 @@
       <properties>
         <profile>java-bdb.0-9-1</profile>
         <profile.specific.excludes>JavaPersistentExcludes XAExcludes JavaPre010Excludes JavaBDBExcludes</profile.specific.excludes>
-        <profile.broker.version>v0_9_1</profile.broker.version>
+        <profile.broker.version>0-9-1</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>BDB</profile.virtualhostnode.type>
@@ -1105,7 +1105,7 @@
       <properties>
         <profile>java-bdb.0-9</profile>
         <profile.specific.excludes>JavaPersistentExcludes XAExcludes JavaPre010Excludes JavaBDBExcludes</profile.specific.excludes>
-        <profile.broker.version>v0_9</profile.broker.version>
+        <profile.broker.version>0-9</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>BDB</profile.virtualhostnode.type>
@@ -1124,7 +1124,7 @@
       <properties>
         <profile>java-dby-mem.0-10</profile>
         <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes Java010Excludes</profile.specific.excludes>
-        <profile.broker.version>v0_10</profile.broker.version>
+        <profile.broker.version>0-10</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
@@ -1143,7 +1143,7 @@
       <properties>
         <profile>java-dby-mem.0-9-1</profile>
         <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
-        <profile.broker.version>v0_9_1</profile.broker.version>
+        <profile.broker.version>0-9-1</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
@@ -1162,7 +1162,7 @@
       <properties>
         <profile>java-dby-mem.0-9</profile>
         <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
-        <profile.broker.version>v0_9</profile.broker.version>
+        <profile.broker.version>0-9</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
@@ -1181,7 +1181,7 @@
       <properties>
         <profile>java-dby.0-10</profile>
         <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes Java010Excludes</profile.specific.excludes>
-        <profile.broker.version>v0_10</profile.broker.version>
+        <profile.broker.version>0-10</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
@@ -1201,7 +1201,7 @@
       <properties>
         <profile>java-dby.0-9-1</profile>
         <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
-        <profile.broker.version>v0_9_1</profile.broker.version>
+        <profile.broker.version>0-9-1</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
@@ -1221,7 +1221,7 @@
       <properties>
         <profile>java-dby.0-9</profile>
         <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
-        <profile.broker.version>v0_9</profile.broker.version>
+        <profile.broker.version>0-9</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
@@ -1242,7 +1242,7 @@
       <properties>
         <profile>java-mms.1-0</profile>
         <profile.specific.excludes>JavaTransientExcludes Java10Excludes Java10BrokenTestsExcludes Java10UninvestigatedTestsExcludes</profile.specific.excludes>
-        <profile.broker.version>v1_0</profile.broker.version>
+        <profile.broker.version>1.0</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10","AMQP_1_0"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>false</profile.broker.persistent>
         <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
@@ -1264,7 +1264,7 @@
       <properties>
         <profile>java-bdb.1-0</profile>
         <profile.specific.excludes>JavaPersistentExcludes JavaBDBExcludes Java10Excludes Java10BrokenTestsExcludes Java10UninvestigatedTestsExcludes</profile.specific.excludes>
-        <profile.broker.version>v1_0</profile.broker.version>
+        <profile.broker.version>1.0</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_1_0"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>BDB</profile.virtualhostnode.type>
@@ -1285,7 +1285,7 @@
       <properties>
         <profile>java-dby.1-0</profile>
         <profile.specific.excludes>JavaPersistentExcludes JavaDerbyExcludes Java10Excludes Java10BrokenTestsExcludes Java10UninvestigatedTestsExcludes</profile.specific.excludes>
-        <profile.broker.version>v1_0</profile.broker.version>
+        <profile.broker.version>1.0</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_1_0"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
@@ -1311,7 +1311,7 @@
       <properties>
         <profile>java-json.1-0</profile>
         <profile.specific.excludes>JavaPersistentExcludes JavaJsonExcludes Java10Excludes Java10BrokenTestsExcludes Java10UninvestigatedTestsExcludes</profile.specific.excludes>
-        <profile.broker.version>v1_0</profile.broker.version>
+        <profile.broker.version>1.0</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_1_0"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
@@ -1331,7 +1331,7 @@
       <properties>
         <profile>java-json.0-9-1</profile>
         <profile.specific.excludes>JavaPersistentExcludes JavaJsonExcludes XAExcludes JavaPre010Excludes</profile.specific.excludes>
-        <profile.broker.version>v0_9_1</profile.broker.version>
+        <profile.broker.version>0-9-1</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
@@ -1350,7 +1350,7 @@
       <properties>
         <profile>java-json.0-10</profile>
         <profile.specific.excludes>JavaPersistentExcludes JavaJsonExcludes XAExcludes Java010Excludes</profile.specific.excludes>
-        <profile.broker.version>v0_10</profile.broker.version>
+        <profile.broker.version>0-10</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
@@ -1380,7 +1380,7 @@
         <profile.broker.command.windows />
         <profile.test.excludes>Excludes CPPExcludes ${profile}.excludes ${profile.specific.excludes} cpp.excludes</profile.test.excludes>
         <profile.specific.excludes>CPPPrefetchExcludes CPPTransientExcludes</profile.specific.excludes>
-        <profile.broker.version>v0_10</profile.broker.version>
+        <profile.broker.version>0-10</profile.broker.version>
         <profile.broker.persistent>false</profile.broker.persistent>
       </properties>
       <build>

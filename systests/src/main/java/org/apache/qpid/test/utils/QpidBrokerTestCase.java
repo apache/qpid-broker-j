@@ -73,7 +73,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     private static final Boolean BROKER_CLEAN_BETWEEN_TESTS = Boolean.getBoolean("broker.clean.between.tests");
     private static final Boolean BROKER_PERSISTENT = Boolean.getBoolean("broker.persistent");
     private static final Protocol BROKER_PROTOCOL =
-            Protocol.valueOf("AMQP_" + System.getProperty("broker.version", "v0_9").substring(1));
+            Protocol.valueOf("AMQP_" + System.getProperty("broker.version", "0-9-1").replace('-', '_').replace('.', '_'));
     private static List<BrokerHolder> _brokerList = new ArrayList<>();
 
     private final Map<String, String> _propertiesSetForBroker = new HashMap<>();
