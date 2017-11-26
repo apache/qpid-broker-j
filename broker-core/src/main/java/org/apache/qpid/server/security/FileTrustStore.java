@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.security;
 
+import static org.apache.qpid.server.model.Initialization.materialize;
+
 import javax.net.ssl.KeyManagerFactory;
 
 import org.apache.qpid.server.model.DerivedAttribute;
@@ -52,10 +54,10 @@ public interface FileTrustStore<X extends FileTrustStore<X>> extends TrustStore<
     @DerivedAttribute
     String getPath();
 
-    @ManagedAttribute( defaultValue = "${trustStoreFile.trustManagerFactoryAlgorithm}")
+    @ManagedAttribute( defaultValue = "${trustStoreFile.trustManagerFactoryAlgorithm}", initialization = materialize )
     String getTrustManagerFactoryAlgorithm();
 
-    @ManagedAttribute( defaultValue = "${trustStoreFile.trustStoreType}")
+    @ManagedAttribute( defaultValue = "${trustStoreFile.trustStoreType}", initialization = materialize)
     String getTrustStoreType();
 
     @ManagedAttribute( defaultValue = "false",

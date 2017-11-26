@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.security;
 
+import static org.apache.qpid.server.model.Initialization.materialize;
+
 import javax.net.ssl.KeyManagerFactory;
 
 import org.apache.qpid.server.model.DerivedAttribute;
@@ -57,10 +59,10 @@ public interface FileKeyStore<X extends FileKeyStore<X>> extends KeyStore<X>
     @ManagedAttribute
     String getCertificateAlias();
 
-    @ManagedAttribute( defaultValue = "${keyStoreFile.keyManagerFactoryAlgorithm}" )
+    @ManagedAttribute( defaultValue = "${keyStoreFile.keyManagerFactoryAlgorithm}" , initialization = materialize)
     String getKeyManagerFactoryAlgorithm();
 
-    @ManagedAttribute( defaultValue = "${keyStoreFile.keyStoreType}" )
+    @ManagedAttribute( defaultValue = "${keyStoreFile.keyStoreType}", initialization = materialize)
     String getKeyStoreType();
 
     @ManagedAttribute( secure = true, mandatory = true )
