@@ -111,8 +111,6 @@
     <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
     <profile.broker.clean.between.tests>true</profile.broker.clean.between.tests>
     <profile.test_receive_timeout>1000</profile.test_receive_timeout>
-    <profile.java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</profile.java.naming.factory.initial>
-    <profile.java.naming.provider.url>test-profiles${file.separator}test-provider.properties</profile.java.naming.provider.url>
     <profile.qpid.tests.mms.messagestore.persistence>true</profile.qpid.tests.mms.messagestore.persistence>
 
     <dollar.sign>$</dollar.sign>
@@ -810,8 +808,6 @@
             <broker.clean.between.tests>true</broker.clean.between.tests>
             <qpid.test_receive_timeout>${profile.test_receive_timeout}</qpid.test_receive_timeout>
             <qpid.tests.mms.messagestore.persistence>${profile.qpid.tests.mms.messagestore.persistence}</qpid.tests.mms.messagestore.persistence>
-            <java.naming.factory.initial>${profile.java.naming.factory.initial}</java.naming.factory.initial>
-            <java.naming.provider.url>${profile.java.naming.provider.url}</java.naming.provider.url>
             <java.io.tmpdir>${java.io.tmpdir}</java.io.tmpdir>
           </systemPropertyVariables>
         </configuration>
@@ -1247,8 +1243,6 @@
         <profile.broker.persistent>false</profile.broker.persistent>
         <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
-        <profile.java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</profile.java.naming.factory.initial>
-        <profile.java.naming.provider.url>test-profiles${file.separator}test-provider-1-0.properties</profile.java.naming.provider.url>
         <profile.qpid.tests.mms.messagestore.persistence>true</profile.qpid.tests.mms.messagestore.persistence>
       </properties>
     </profile>
@@ -1269,8 +1263,6 @@
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>BDB</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
-        <profile.java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</profile.java.naming.factory.initial>
-        <profile.java.naming.provider.url>test-profiles${file.separator}test-provider-1-0.properties</profile.java.naming.provider.url>
       </properties>
     </profile>
 
@@ -1290,8 +1282,6 @@
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
-        <profile.java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</profile.java.naming.factory.initial>
-        <profile.java.naming.provider.url>test-profiles${file.separator}test-provider-1-0.properties</profile.java.naming.provider.url>
       </properties>
     </profile>
 
@@ -1316,8 +1306,6 @@
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"BDB","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
-        <profile.java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</profile.java.naming.factory.initial>
-        <profile.java.naming.provider.url>test-profiles${file.separator}test-provider-1-0.properties</profile.java.naming.provider.url>
       </properties>
     </profile>
     <profile>
