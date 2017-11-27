@@ -205,7 +205,7 @@ public class ObjectMessageClassWhitelistingTest extends QpidBrokerTestCase
         doTestBlackListedEnclosedClassTest(c, new NestedClass(TEST_VALUE));
     }
 
-    private void doTestWhiteListedEnclosedClassTest(Connection c, Serializable content) throws JMSException
+    private void doTestWhiteListedEnclosedClassTest(Connection c, Serializable content) throws Exception
     {
         c.start();
         Session s = c.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -225,7 +225,7 @@ public class ObjectMessageClassWhitelistingTest extends QpidBrokerTestCase
         assertEquals("Received object has unexpected content", content, receivedObject);
     }
 
-    private void doTestBlackListedEnclosedClassTest(final Connection c, final Serializable content) throws JMSException
+    private void doTestBlackListedEnclosedClassTest(final Connection c, final Serializable content) throws Exception
     {
         c.start();
         Session s = c.createSession(false, Session.AUTO_ACKNOWLEDGE);

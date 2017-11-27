@@ -19,6 +19,9 @@ package org.apache.qpid.test.utils;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -224,7 +227,16 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     public ConnectionBuilder getConnectionBuilder()
     {
-        return _jmsProvider.getConnectionBuilder().setVirtualHost("test");
+        final ConnectionBuilder connectionBuilder = _jmsProvider.getConnectionBuilder()
+                                                                .setVirtualHost("test")
+                                                                .setTls(Boolean.getBoolean(PROFILE_USE_SSL))
+                                                                .setPopulateJMSXUserID(true)
+                                                                .setUsername(GUEST_USERNAME)
+                                                                .setPassword(GUEST_PASSWORD);
+
+        return (ConnectionBuilder) Proxy.newProxyInstance(getClass().getClassLoader(),
+                                                          new Class<?>[]{ConnectionBuilder.class},
+                                                          new ConectionBuilderHandler(connectionBuilder, _connections));
     }
 
     /**
@@ -244,59 +256,36 @@ public class QpidBrokerTestCase extends QpidTestCase
         return _jmsProvider.getConnectionFactory(options);
     }
 
-    public ConnectionFactory getConnectionFactory(String factoryName)
-            throws NamingException
-    {
-        return _jmsProvider.getConnectionFactory(factoryName);
-    }
-
-    public ConnectionFactory getConnectionFactory(String factoryName, String vhost, String clientId)
-            throws NamingException
-    {
-        return _jmsProvider.getConnectionFactory(factoryName, vhost, clientId);
-    }
-
     public Connection getConnection() throws JMSException, NamingException
     {
-        Connection connection = _jmsProvider.getConnection();
-        _connections.add(connection);
-        return connection;
+        return getConnection(GUEST_USERNAME, GUEST_PASSWORD);
     }
 
     public Connection getConnection(String username, String password) throws JMSException, NamingException
     {
-        Connection connection = _jmsProvider.getConnection(username, password);
-        _connections.add(connection);
-        return connection;
+        return getConnectionBuilder().setUsername(username).setPassword(password).build();
     }
 
     public Connection getConnectionWithPrefetch(int prefetch) throws Exception
     {
-        Connection connection = _jmsProvider.getConnectionWithPrefetch(prefetch);
-        _connections.add(connection);
-        return connection;
+        return getConnectionBuilder().setPrefetch(prefetch).build();
     }
 
     public Connection getConnectionWithOptions(Map<String, String> options) throws Exception
     {
-        Connection connection = _jmsProvider.getConnectionWithOptions(options);
-        _connections.add(connection);
-        return connection;
+        return getConnectionBuilder().setOptions(options).build();
     }
 
     public Connection getConnectionWithOptions(String vhost, Map<String, String> options) throws Exception
     {
-
-        Connection connection = _jmsProvider.getConnectionWithOptions(vhost, options);
-        _connections.add(connection);
-        return connection;
+        return getConnectionBuilder().setOptions(options)
+                                     .setVirtualHost(vhost)
+                                     .build();
     }
 
     public Connection getConnectionForVHost(String vhost) throws Exception
     {
-        Connection connection = _jmsProvider.getConnectionForVHost(vhost);
-        _connections.add(connection);
-        return connection;
+        return getConnectionBuilder().setVirtualHost(vhost).build();
     }
 
     public Connection getConnection(String urlString) throws Exception
@@ -306,7 +295,7 @@ public class QpidBrokerTestCase extends QpidTestCase
         return connection;
     }
 
-    public Queue getTestQueue()
+    public Queue getTestQueue() throws NamingException
     {
         return _jmsProvider.getTestQueue(getTestQueueName());
     }
@@ -395,12 +384,12 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     public long getQueueDepth(final Connection con, final Queue destination) throws Exception
     {
-        return _jmsProvider.getQueueDepth(con, destination);
+        return _jmsProvider.getQueueDepth(destination);
     }
 
     public boolean isQueueExist(final Connection con, final Queue destination) throws Exception
     {
-        return _jmsProvider.isQueueExist(con, destination);
+        return _jmsProvider.isQueueExist(destination);
     }
 
     /**
@@ -742,14 +731,13 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     protected Connection getConnectionWithSyncPublishing() throws Exception
     {
-        return _jmsProvider.getConnectionWithSyncPublishing();
+        return getConnectionBuilder().setSyncPublish(true).build();
     }
 
     protected Connection getClientConnection(String username, String password, String id)
             throws Exception
     {
-        //add the connection in the list of connections
-        return _jmsProvider.getClientConnection(username, password, id);
+        return getConnectionBuilder().setClientId(id).setUsername(username).setPassword(password).build();
     }
 
     /**
@@ -912,4 +900,36 @@ public class QpidBrokerTestCase extends QpidTestCase
         }
     }
 
+    private static class ConectionBuilderHandler implements InvocationHandler
+    {
+        private final ConnectionBuilder _connectionBuilder;
+        private final List<Connection> _connections;
+
+        public ConectionBuilderHandler(final ConnectionBuilder connectionBuilder,
+                                       final List<Connection> connections)
+        {
+            _connectionBuilder = connectionBuilder;
+            _connections = connections;
+        }
+
+        @Override
+        public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable
+        {
+            if (method.getName().equals("build"))
+            {
+                Connection connection = _connectionBuilder.build();
+                _connections.add(connection);
+                return connection;
+            }
+            else if (method.getName().equals("buildConnectionFactory"))
+            {
+                return _connectionBuilder.buildConnectionFactory();
+            }
+            else
+            {
+                method.invoke(_connectionBuilder, args);
+                return proxy;
+            }
+        }
+    }
 }

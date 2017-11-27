@@ -339,7 +339,7 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
         Connection connection = null;
         try
         {
-            connection = getConnectionFactory("failover").createConnection(GUEST_USERNAME, GUEST_PASSWORD);
+            connection = getConnectionBuilder().setFailover(true).build();
             connection.start();
             session = connection.createSession(true, Session.SESSION_TRANSACTED);
 

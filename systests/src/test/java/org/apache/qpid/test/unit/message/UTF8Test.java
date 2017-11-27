@@ -25,15 +25,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 import javax.jms.Connection;
 import javax.jms.Destination;
+import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
-import javax.naming.InitialContext;
 
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
@@ -91,43 +90,42 @@ public class UTF8Test extends QpidBrokerTestCase
 
     private Destination getReceivingDestination(String exch, String routkey, String qname, final Session session) throws Exception
     {
-        Properties props = new Properties();
+        createEntitiesUsingAmqpManagement(exch, routkey, qname, session);
         if(isBroker10())
         {
-            props.setProperty("queue.recvDest", qname);
-            createTestQueue(session, qname);
+            return session.createQueue(qname);
         }
         else
         {
-            props.setProperty("destination.recvDest",
-                              "direct://" + exch + "//" + qname + "?autodelete='false'&durable='false'"
-                              + "&routingkey='" + routkey + "'");
+            return session.createQueue("BURL:direct://" + exch + "//" + qname + "?autodelete='false'&durable='false'"
+                                       + "&routingkey='" + routkey + "'");
         }
-        // Get our connection context
-        InitialContext ctx = new InitialContext(props);
-        return (Destination) ctx.lookup("recvDest");
     }
 
     private Destination getSendingDestination(String exch, String routkey, String qname, final Session session) throws Exception
     {
-        Properties props = new Properties();
+        createEntitiesUsingAmqpManagement(exch, routkey, qname, session);
         if(isBroker10())
         {
-            props.setProperty("topic.sendDest", exch +"/" + routkey);
-            createEntityUsingAmqpManagement(exch, session, "org.apache.qpid.DirectExchange");
-            final Map<String, Object> arguments = new HashMap<>();
-            arguments.put("destination",qname);
-            arguments.put("bindingKey", routkey);
-            performOperationUsingAmqpManagement(exch, "bind", session, "org.apache.qpid.DirectExchange", arguments);
+            return session.createQueue(exch +"/" + routkey);
         }
         else
         {
-            props.setProperty("destination.sendDest",
-                              "direct://" + exch + "//" + qname + "?autodelete='false'&durable='false'"
-                              + "&routingkey='" + routkey + "'");
+            return session.createQueue("BURL:direct://" + exch + "//" + qname + "?autodelete='false'&durable='false'"
+                                       + "&routingkey='" + routkey + "'");
         }
-        // Get our connection context
-        InitialContext ctx = new InitialContext(props);
-        return (Destination) ctx.lookup("sendDest");
+    }
+
+    private void createEntitiesUsingAmqpManagement(final String exch,
+                                                   final String routkey,
+                                                   final String qname,
+                                                   final Session session) throws JMSException
+    {
+        createEntityUsingAmqpManagement(exch, session, "org.apache.qpid.DirectExchange");
+        createEntityUsingAmqpManagement(qname, session, "org.apache.qpid.Queue");
+        final Map<String, Object> arguments = new HashMap<>();
+        arguments.put("destination",qname);
+        arguments.put("bindingKey", routkey);
+        performOperationUsingAmqpManagement(exch, "bind", session, "org.apache.qpid.DirectExchange", arguments);
     }
 }

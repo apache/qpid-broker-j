@@ -20,29 +20,18 @@
 
 package org.apache.qpid.test.utils;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
-import javax.jms.MapMessage;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
-import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.Session;
-import javax.jms.TemporaryQueue;
 import javax.jms.Topic;
-import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 public class QpidJmsClientProvider implements JmsProvider
@@ -58,54 +47,13 @@ public class QpidJmsClientProvider implements JmsProvider
     @Override
     public ConnectionFactory getConnectionFactory() throws NamingException
     {
-        return getConnectionFactory(Collections.<String, String>emptyMap());
-    }
-
-    @Override
-    public ConnectionFactory getConnectionFactory(String factoryName) throws NamingException
-    {
-        return getConnectionFactory(factoryName, Collections.<String, String>emptyMap());
+        return getConnectionFactory(Collections.emptyMap());
     }
 
     @Override
     public ConnectionFactory getConnectionFactory(Map<String, String> options) throws NamingException
     {
-
-        if (Boolean.getBoolean(QpidBrokerTestCase.PROFILE_USE_SSL))
-        {
-            return getConnectionFactory("default.ssl", options);
-        }
-        else
-        {
-            return getConnectionFactory("default", options);
-        }
-    }
-
-    @Override
-    public ConnectionFactory getConnectionFactory(String factoryName, String vhost, String clientId) throws NamingException
-    {
-        return getConnectionFactory(factoryName, vhost, clientId, Collections.<String, String>emptyMap());
-    }
-
-    @Override
-    public ConnectionFactory getConnectionFactory(String factoryName,
-                                                  String vhost,
-                                                  String clientId,
-                                                  Map<String, String> options)
-            throws NamingException
-    {
-
-        Map<String, String> actualOptions = new LinkedHashMap<>();
-        actualOptions.put("amqp.vhost", vhost);
-        actualOptions.put("jms.clientID", clientId);
-        actualOptions.putAll(options);
-        return getConnectionFactory(factoryName, actualOptions);
-    }
-
-    private ConnectionFactory getConnectionFactory(final String factoryName, Map<String, String> options)
-            throws NamingException
-    {
-
+        boolean useSsl = Boolean.getBoolean(QpidBrokerTestCase.PROFILE_USE_SSL);
         if (!options.containsKey("amqp.vhost"))
         {
             options = new HashMap<>(options);
@@ -131,99 +79,18 @@ public class QpidJmsClientProvider implements JmsProvider
             options.put("jms.populateJMSXUserID", "true");
         }
 
-        final Hashtable<Object, Object> initialContextEnvironment = new Hashtable<>();
-        if ("failover".equals(factoryName))
-        {
-            if (!options.containsKey("failover.maxReconnectAttempts"))
-            {
-                options.put("failover.maxReconnectAttempts", "2");
-            }
-            final StringBuilder stem = new StringBuilder("failover:(amqp://localhost:")
-                    .append(System.getProperty("test.port"))
-                    .append(",amqp://localhost:")
-                    .append(System.getProperty("test.port.alt"))
-                    .append(")");
-            appendOptions(options, stem);
-
-            initialContextEnvironment.put("property.connectionfactory.failover.remoteURI",
-                                           stem.toString());
-        }
-        else if ("default".equals(factoryName))
-        {
-            final StringBuilder stem =
-                    new StringBuilder("amqp://localhost:").append(System.getProperty("test.port"));
-
-            appendOptions(options, stem);
-
-            initialContextEnvironment.put("property.connectionfactory.default.remoteURI", stem.toString());
-        }
-        else if ("default.ssl".equals(factoryName))
-        {
-
-            final StringBuilder stem = new StringBuilder("amqps://localhost:").append(String.valueOf(System.getProperty("test.port.ssl")));
-            appendOptions(options, stem);
-            initialContextEnvironment.put("connectionfactory.default.ssl", stem.toString());
-        }
-        return (ConnectionFactory) new InitialContext(initialContextEnvironment).lookup(factoryName);
+        return getConnectionBuilder().setTls(useSsl).setOptions(options).buildConnectionFactory();
     }
 
-    @Override
-    public Connection getConnection() throws JMSException, NamingException
+    private Connection getConnection() throws JMSException, NamingException
     {
         return getConnection(QpidBrokerTestCase.GUEST_USERNAME, QpidBrokerTestCase.GUEST_PASSWORD);
     }
 
-    @Override
-    public Connection getConnection(String username, String password) throws JMSException, NamingException
-    {
-        Connection con = getConnectionFactory().createConnection(username, password);
-        return con;
-    }
 
-    @Override
-    public Connection getConnectionWithPrefetch(int prefetch) throws Exception
+    private Connection getConnection(String username, String password) throws JMSException, NamingException
     {
-        String factoryName = Boolean.getBoolean(QpidBrokerTestCase.PROFILE_USE_SSL) ? "default.ssl" : "default";
-
-        final Map<String, String> options =
-                Collections.singletonMap("jms.prefetchPolicy.all", String.valueOf(prefetch));
-        final ConnectionFactory connectionFactory = getConnectionFactory(factoryName, "test", getNextClientId(), options);
-        return connectionFactory.createConnection(QpidBrokerTestCase.GUEST_USERNAME,
-                                                  QpidBrokerTestCase.GUEST_PASSWORD);
-    }
-
-    @Override
-    public Connection getConnectionWithOptions(Map<String, String> options) throws Exception
-    {
-        return getConnectionWithOptions("test", options);
-    }
-
-    @Override
-    public Connection getConnectionWithOptions(String vhost, Map<String, String> options) throws Exception
-    {
-        return getConnectionFactory(Boolean.getBoolean(QpidBrokerTestCase.PROFILE_USE_SSL)
-                                            ? "default.ssl"
-                                            : "default",
-                                    vhost,
-                                    getNextClientId(),
-                                    options).createConnection(QpidBrokerTestCase.GUEST_USERNAME,
-                                                              QpidBrokerTestCase.GUEST_PASSWORD);
-    }
-
-    @Override
-    public Connection getConnectionForVHost(String vhost)
-            throws Exception
-    {
-        return getConnectionForVHost(vhost, QpidBrokerTestCase.GUEST_USERNAME, QpidBrokerTestCase.GUEST_PASSWORD);
-    }
-
-    @Override
-    public Connection getConnectionForVHost(String vhost, String username, String password)
-            throws Exception
-    {
-        return getConnectionFactory(Boolean.getBoolean(QpidBrokerTestCase.PROFILE_USE_SSL)
-                                            ? "default.ssl"
-                                            : "default", vhost, getNextClientId()).createConnection(username, password);
+        return getConnectionFactory().createConnection(username, password);
     }
 
     @Override
@@ -328,122 +195,73 @@ public class QpidJmsClientProvider implements JmsProvider
     }
 
     @Override
-    public long getQueueDepth(final Connection con, final Queue destination) throws Exception
+    public long getQueueDepth(final Queue destination) throws Exception
     {
-        Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final String escapedName = destination.getQueueName().replaceAll("([/\\\\])", "\\\\$1");
+        Connection connection = getConnection();
         try
         {
-
-            MessageProducer producer = session.createProducer(session.createQueue("$management"));
-            final TemporaryQueue responseQ = session.createTemporaryQueue();
-            MessageConsumer consumer = session.createConsumer(responseQ);
-            MapMessage message = session.createMapMessage();
-            message.setStringProperty("index", "object-path");
-            final String escapedName = destination.getQueueName().replaceAll("([/\\\\])", "\\\\$1");
-            message.setStringProperty("key", escapedName);
-            message.setStringProperty("type", "org.apache.qpid.Queue");
-            message.setStringProperty("operation", "getStatistics");
-            message.setStringProperty("statistics", "[\"queueDepthMessages\"]");
-
-            message.setJMSReplyTo(responseQ);
-
-            producer.send(message);
-
-            Message response = consumer.receive();
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             try
             {
-                if (response instanceof MapMessage)
+                Map<String, Object> arguments = Collections.singletonMap("statistics",
+                                                                         Collections.singletonList("queueDepthMessages"));
+                Object statistics = _managementFacade.performOperationUsingAmqpManagement(escapedName,
+                                                                                          "getStatistics",
+                                                                                          session,
+                                                                                          "org.apache.qpid.Queue",
+                                                                                          arguments);
+
+                Map<String, Object> statisticsMap = (Map<String, Object>) statistics;
+                return ((Number) statisticsMap.get("queueDepthMessages")).intValue();
+            }
+            finally
+            {
+                session.close();
+            }
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    @Override
+    public boolean isQueueExist(final Queue destination) throws Exception
+    {
+        final String escapedName = destination.getQueueName().replaceAll("([/\\\\])", "\\\\$1");
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                _managementFacade.performOperationUsingAmqpManagement(escapedName,
+                                                                      "READ",
+                                                                      session,
+                                                                      "org.apache.qpid.Queue",
+                                                                      Collections.emptyMap());
+                return true;
+            }
+            catch (AmqpManagementFacade.OperationUnsuccessfulException e)
+            {
+                if (e.getStatusCode() == 404)
                 {
-                    return ((MapMessage) response).getLong("queueDepthMessages");
-                }
-                else if (response instanceof ObjectMessage)
-                {
-                    Object body = ((ObjectMessage) response).getObject();
-                    if (body instanceof Map)
-                    {
-                        return Long.valueOf(((Map) body).get("queueDepthMessages").toString());
-                    }
-                    else
-                    {
-                        throw new IllegalArgumentException("Cannot parse the results from a management operation."
-                                                           + " Unexpected message object type : " + body);
-                    }
+                    return false;
                 }
                 else
                 {
-                    throw new IllegalArgumentException("Cannot parse the results from a management operation."
-                                                       + " Unexpected response message type : " + response.getClass());
+                    throw e;
                 }
-            }
-            finally
-            {
-                consumer.close();
-                responseQ.delete();
             }
         }
         finally
         {
-            session.close();
+            connection.close();
         }
-    }
 
-    @Override
-    public boolean isQueueExist(final Connection con, final Queue destination) throws Exception
-    {
-        Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        try
-        {
-            MessageProducer producer = session.createProducer(session.createQueue("$management"));
-            final TemporaryQueue responseQ = session.createTemporaryQueue();
-            MessageConsumer consumer = session.createConsumer(responseQ);
-            MapMessage message = session.createMapMessage();
-            message.setStringProperty("index", "object-path");
-            final String escapedName = destination.getQueueName().replaceAll("([/\\\\])", "\\\\$1");
-            message.setStringProperty("key", escapedName);
-            message.setStringProperty("type", "org.apache.qpid.Queue");
-            message.setStringProperty("operation", "READ");
-
-            message.setJMSReplyTo(responseQ);
-
-            producer.send(message);
-
-            Message response = consumer.receive();
-            try
-            {
-                int statusCode = response.getIntProperty("statusCode");
-                switch(statusCode)
-                {
-                    case 200:
-                        return true;
-                    case 404:
-                        return false;
-                    default:
-                        throw new RuntimeException(String.format("Unexpected response for queue query '%s' :  %d", destination.getQueueName(), statusCode));
-                }
-            }
-            finally
-            {
-                consumer.close();
-                responseQ.delete();
-            }
-        }
-        finally
-        {
-            session.close();
-        }
-    }
-
-    @Override
-    public Connection getConnectionWithSyncPublishing() throws Exception
-    {
-        return getConnection();
-    }
-
-    @Override
-    public Connection getClientConnection(String username, String password, String id)
-            throws Exception
-    {
-        return getConnectionFactory("default", "test", id).createConnection(username, password);
     }
 
     @Override
@@ -456,31 +274,6 @@ public class QpidJmsClientProvider implements JmsProvider
     public ConnectionBuilder getConnectionBuilder()
     {
         return new QpidJmsClientConnectionBuilder();
-    }
-
-    private void appendOptions(final Map<String, String> actualOptions, final StringBuilder stem)
-    {
-        boolean first = true;
-        for(Map.Entry<String, String> option : actualOptions.entrySet())
-        {
-            if(first)
-            {
-                stem.append('?');
-                first = false;
-            }
-            else
-            {
-                stem.append('&');
-            }
-            try
-            {
-                stem.append(option.getKey()).append('=').append(URLEncoder.encode(option.getValue(), "UTF-8"));
-            }
-            catch (UnsupportedEncodingException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
     private String getNextClientId()

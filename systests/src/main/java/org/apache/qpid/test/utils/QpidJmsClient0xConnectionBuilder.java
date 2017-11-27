@@ -20,8 +20,8 @@
 
 package org.apache.qpid.test.utils;
 
+import java.util.Hashtable;
 import java.util.Map;
-import java.util.Properties;
 import java.util.TreeMap;
 
 import javax.jms.Connection;
@@ -30,11 +30,6 @@ import javax.jms.JMSException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-
-import org.apache.qpid.client.AMQConnectionFactory;
-import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.jms.ConnectionURL;
-import org.apache.qpid.url.URLSyntaxException;
 
 public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
 {
@@ -46,9 +41,9 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     private boolean _enableFailover;
     private final Map<String, Object> _options = new TreeMap<>();
     private int _reconnectAttempts = 20;
-    private String _host;
-    private int _port;
-    private int _sslPort;
+    private String _host = "localhost";
+    private int _port = Integer.getInteger("test.port");
+    private int _sslPort = Integer.getInteger("test.port.ssl");
 
     @Override
     public ConnectionBuilder setHost(final String host)
@@ -132,74 +127,117 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     {
         if (syncPublish)
         {
-            _options.put(ConnectionURL.OPTIONS_SYNC_PUBLISH, "all");
+            _options.put("sync_publish", "all");
         }
         else
         {
-            _options.remove(ConnectionURL.OPTIONS_SYNC_PUBLISH);
+            _options.remove("sync_publish");
         }
         return this;
     }
 
     @Override
-    public Connection build() throws JMSException, NamingException, URLSyntaxException
+    public ConnectionBuilder setOptions(final Map<String, String> options)
+    {
+        _options.putAll(options);
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setPopulateJMSXUserID(final boolean populateJMSXUserID)
+    {
+        _options.put("populateJMSXUserID", String.valueOf(populateJMSXUserID));
+        return this;
+    }
+
+    @Override
+    public Connection build() throws JMSException, NamingException
     {
         return buildConnectionFactory().createConnection(_username, _password);
     }
 
     @Override
-    public ConnectionFactory buildConnectionFactory() throws NamingException, URLSyntaxException
+    public ConnectionFactory buildConnectionFactory() throws NamingException
     {
-        Properties contextProperties = new Properties();
-        contextProperties.put(Context.INITIAL_CONTEXT_FACTORY, "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
-        contextProperties.put(Context.PROVIDER_URL, System.getProperty(Context.PROVIDER_URL));
-        InitialContext initialContext = null;
-        ConnectionFactory connectionFactory;
-        try
+        StringBuilder cUrlBuilder = new StringBuilder("amqp://");
+        if (_username != null)
         {
-            initialContext = new InitialContext(contextProperties);
-            String jndiName = "default";
-            if (_enableFailover)
-            {
-                jndiName = "failover";
-            }
-
-            if (_enableTls)
-            {
-                jndiName += ".ssl";
-            }
-            connectionFactory = (ConnectionFactory) initialContext.lookup(jndiName);
+            cUrlBuilder.append(_username);
         }
 
-        finally
+        if (_username != null || _password != null)
         {
-            if (initialContext != null)
-            {
-                initialContext.close();
-            }
+            cUrlBuilder.append(":");
         }
-        AMQConnectionURL curl =
-                new AMQConnectionURL(((AMQConnectionFactory) connectionFactory).getConnectionURLString());
+
+        if (_password != null)
+        {
+            cUrlBuilder.append(_password);
+        }
+
+        if (_username != null || _password != null)
+        {
+            cUrlBuilder.append("@");
+        }
+
+        if (_clientId != null)
+        {
+            cUrlBuilder.append(_clientId);
+        }
+
+        cUrlBuilder.append("/");
 
         if (_virtualHost != null)
         {
-            curl.setVirtualHost("/" + _virtualHost);
+            cUrlBuilder.append(_virtualHost);
         }
 
-        for (Map.Entry<String, Object> entry: _options.entrySet())
+        cUrlBuilder.append("?brokerlist='tcp://").append(_host).append(":");
+        if (_enableTls)
         {
-            curl.setOption(entry.getKey(), String.valueOf(entry.getValue()));
+            cUrlBuilder.append(_sslPort).append("?ssl='true'");
+        }
+        else
+        {
+            cUrlBuilder.append(_port);
         }
 
         if (_enableFailover)
         {
-            curl.setFailoverOption("cyclecount", String.valueOf(_reconnectAttempts));
+            cUrlBuilder.append(";tcp://").append(_host).append(":");
+            if (_enableTls)
+            {
+                cUrlBuilder.append(System.getProperty("test.port.alt.ssl")).append("?ssl='true'");
+            }
+            else
+            {
+                cUrlBuilder.append(System.getProperty("test.port.alt"));
+            }
+            cUrlBuilder.append("'")
+                       .append("&sync_ack='true'&sync_publish='all'&failover='roundrobin?cyclecount='")
+                       .append(_reconnectAttempts)
+                       .append("''");
+        }
+        else
+        {
+            cUrlBuilder.append("'");
         }
 
-        curl.setClientName(_clientId);
+        for (Map.Entry<String, Object> entry : _options.entrySet())
+        {
+            cUrlBuilder.append("&").append(entry.getKey()).append("='").append(entry.getValue()).append("'");
+        }
 
-        curl = new AMQConnectionURL(curl.toString());
-        connectionFactory = new AMQConnectionFactory(curl);
-        return connectionFactory;
+        final Hashtable<Object, Object> initialContextEnvironment = new Hashtable<>();
+        initialContextEnvironment.put(Context.INITIAL_CONTEXT_FACTORY,
+                                      "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
+        final String factoryName = "connectionFactory";
+        initialContextEnvironment.put("connectionfactory." + factoryName, cUrlBuilder.toString());
+        return (ConnectionFactory) new InitialContext(initialContextEnvironment).lookup(factoryName);
+    }
+
+    String getBrokerDetails()
+    {
+        return "tcp://" + _host + ":" + _port;
     }
 }

@@ -29,50 +29,18 @@ import javax.jms.JMSException;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
-import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 
 public interface JmsProvider
 {
-
     ConnectionFactory getConnectionFactory() throws NamingException;
 
     ConnectionFactory getConnectionFactory(Map<String, String> options) throws NamingException;
 
-    ConnectionFactory getConnectionFactory(String factoryName) throws NamingException;
-
-    ConnectionFactory getConnectionFactory(String factoryName, String vhost, String clientId) throws NamingException;
-
-    ConnectionFactory getConnectionFactory(String factoryName,
-                                           String vhost,
-                                           String clientId,
-                                           Map<String, String> options)
-                            throws NamingException;
-
-    Connection getConnection() throws JMSException, NamingException;
-
-    Connection getConnectionWithPrefetch(int prefetch) throws Exception;
-
-    Connection getConnectionWithOptions(Map<String, String> options) throws Exception;
-
-    Connection getConnectionWithOptions(String vhost, Map<String, String> options) throws Exception;
-
-    Connection getConnectionForVHost(String vhost)
-                                    throws Exception;
-
-    Connection getConnectionForVHost(String vhost, String username, String password)
-                                            throws Exception;
-
     Connection getConnection(String urlString) throws Exception;
 
-    Connection getConnection(String username, String password) throws JMSException, NamingException;
-
-    Connection getConnectionWithSyncPublishing() throws Exception;
-
-    Connection getClientConnection(String username, String password, String id) throws Exception;
-
-    Queue getTestQueue(String testQueueName);
+    Queue getTestQueue(String testQueueName) throws NamingException;
 
     Queue getQueueFromName(Session session, String name) throws JMSException;
 
@@ -86,9 +54,9 @@ public interface JmsProvider
 
     Topic createTopicOnFanout(Connection con, String topicName) throws JMSException, URISyntaxException;
 
-    long getQueueDepth(Connection con, Queue destination) throws Exception;
+    long getQueueDepth(Queue destination) throws Exception;
 
-    boolean isQueueExist(Connection con, Queue destination) throws Exception;
+    boolean isQueueExist(Queue destination) throws Exception;
 
     String getBrokerDetailsFromDefaultConnectionUrl();
 

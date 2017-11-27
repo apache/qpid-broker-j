@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
+import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
@@ -161,6 +162,20 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
+    public ConnectionBuilder setOptions(final Map<String, String> options)
+    {
+        _options.putAll(options);
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setPopulateJMSXUserID(final boolean populateJMSXUserID)
+    {
+        _options.put("jms.populateJMSXUserID", String.valueOf(populateJMSXUserID));
+        return this;
+    }
+
+    @Override
     public Connection build() throws NamingException, JMSException
     {
         return buildConnectionFactory().createConnection();
@@ -170,7 +185,10 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     public ConnectionFactory buildConnectionFactory() throws NamingException
     {
         final Hashtable<Object, Object> initialContextEnvironment = new Hashtable<>();
-        final String factoryName;
+        initialContextEnvironment.put(Context.INITIAL_CONTEXT_FACTORY,
+                                      "org.apache.qpid.jms.jndi.JmsInitialContextFactory");
+
+        final StringBuilder connectionUrlBuilder = new StringBuilder();
 
         final Map<String, Object> options = new TreeMap<>();
         options.putAll(_options);
@@ -180,36 +198,30 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
             {
                 options.put("failover.maxReconnectAttempts", "2");
             }
-            final StringBuilder stem = new StringBuilder("failover:(amqp://")
+            connectionUrlBuilder.append("failover:(amqp://")
                     .append(_host)
                     .append(":")
                     .append(_port)
                     .append(",amqp://localhost:")
                     .append(System.getProperty("test.port.alt"))
                     .append(")");
-            appendOptions(options, stem);
-
-            initialContextEnvironment.put("property.connectionfactory.failover.remoteURI",
-                                           stem.toString());
-            factoryName = "failover";
+            appendOptions(options, connectionUrlBuilder);
         }
         else if (!_enableTls)
         {
-            final StringBuilder stem =
-                    new StringBuilder("amqp://").append(_host).append(":").append(_port);
+            connectionUrlBuilder.append("amqp://").append(_host).append(":").append(_port);
 
-            appendOptions(options, stem);
-
-            initialContextEnvironment.put("property.connectionfactory.default.remoteURI", stem.toString());
-            factoryName = "default";
+            appendOptions(options, connectionUrlBuilder);
         }
         else
         {
-            final StringBuilder stem = new StringBuilder("amqps://").append(_host).append(":").append(_sslPort);
-            appendOptions(options, stem);
-            initialContextEnvironment.put("connectionfactory.default.ssl", stem.toString());
-            factoryName = "default.ssl";
+            connectionUrlBuilder.append("amqps://").append(_host).append(":").append(_sslPort);
+            appendOptions(options, connectionUrlBuilder);
         }
+
+        final String factoryName = "connection";
+        initialContextEnvironment.put("connectionfactory." + factoryName, connectionUrlBuilder.toString());
+
         return (ConnectionFactory) new InitialContext(initialContextEnvironment).lookup(factoryName);
     }
 

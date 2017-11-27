@@ -174,6 +174,11 @@ public class AmqpManagementFacade
         Message response = consumer.receive(5000);
         try
         {
+            int statusCode = response.getIntProperty("statusCode");
+            if (statusCode < 200 || statusCode > 299)
+            {
+                throw new OperationUnsuccessfulException(statusCode);
+            }
             if (response instanceof MapMessage)
             {
                 MapMessage bodyMap = (MapMessage) response;
@@ -338,5 +343,21 @@ public class AmqpManagementFacade
             results.add(result);
         }
         return results;
+    }
+
+    public static class OperationUnsuccessfulException extends RuntimeException
+    {
+        private final int _statusCode;
+
+        private OperationUnsuccessfulException(final int statusCode)
+        {
+            super();
+            _statusCode = statusCode;
+        }
+
+        public int getStatusCode()
+        {
+            return _statusCode;
+        }
     }
 }

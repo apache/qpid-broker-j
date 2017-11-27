@@ -20,12 +20,12 @@
 
 package org.apache.qpid.test.utils;
 
+import java.util.Map;
+
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.naming.NamingException;
-
-import org.apache.qpid.url.URLSyntaxException;
 
 public interface ConnectionBuilder
 {
@@ -41,7 +41,9 @@ public interface ConnectionBuilder
     ConnectionBuilder setFailoverReconnectAttempts(int reconnectAttempts);
     ConnectionBuilder setTls(boolean enableTls);
     ConnectionBuilder setSyncPublish(boolean syncPublish);
+    ConnectionBuilder setOptions(Map<String, String> options);
+    ConnectionBuilder setPopulateJMSXUserID(boolean populateJMSXUserID);
 
-    Connection build() throws NamingException, JMSException, URLSyntaxException;
-    ConnectionFactory buildConnectionFactory() throws NamingException, URLSyntaxException;
+    Connection build() throws NamingException, JMSException;
+    ConnectionFactory buildConnectionFactory() throws NamingException;
 }

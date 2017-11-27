@@ -107,7 +107,7 @@ public class SSLTest extends QpidBrokerTestCase
                 options.put("transport.trustStoreLocation", TRUSTSTORE);
                 options.put("transport.trustStorePassword", TRUSTSTORE_PASSWORD);
 
-                con = getConnectionWithOptions(options);
+                con = getConnectionBuilder().setTls(true).setOptions(options).build();
             }
             else
             {
@@ -432,7 +432,7 @@ public class SSLTest extends QpidBrokerTestCase
                 final Map<String, String> options = new HashMap<>();
                 options.put("transport.trustStoreLocation", TRUSTSTORE);
                 options.put("transport.trustStorePassword", TRUSTSTORE_PASSWORD);
-                con = getConnectionWithOptions(options);
+                con = getConnectionBuilder().setTls(true).setOptions(options).build();
             }
             else
             {
@@ -499,7 +499,7 @@ public class SSLTest extends QpidBrokerTestCase
                     options.put("transport.trustStoreLocation", TRUSTSTORE);
                     options.put("transport.trustStorePassword", TRUSTSTORE_PASSWORD);
 
-                    con = getConnectionWithOptions(options);
+                    con = getConnectionBuilder().setTls(true).setOptions(options).build();
 
 
                 }
@@ -562,7 +562,7 @@ public class SSLTest extends QpidBrokerTestCase
                 options.put("transport.trustStoreLocation", TRUSTSTORE);
                 options.put("transport.trustStorePassword", TRUSTSTORE_PASSWORD);
 
-                con = getConnectionWithOptions(options);
+                con = getConnectionBuilder().setTls(true).setOptions(options).build();
             }
             else
             {

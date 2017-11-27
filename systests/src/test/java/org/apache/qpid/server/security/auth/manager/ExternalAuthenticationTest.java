@@ -373,7 +373,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
     {
         if(isBroker10())
         {
-            System.setProperty("test.port.ssl", ""+getDefaultBroker().getAmqpTlsPort());
+            System.setProperty("test.port.ssl", "" + getDefaultBroker().getAmqpTlsPort());
 
             Map<String, String> options = new HashMap<>();
 

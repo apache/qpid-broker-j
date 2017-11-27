@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
 import javax.jms.ConnectionMetaData;
 import javax.jms.JMSException;
 import javax.jms.MapMessage;
@@ -139,11 +138,10 @@ public class AmqpManagementTest extends QpidBrokerTestCase
 
     private void setupBrokerManagementConnection() throws Exception
     {
-        ConnectionFactory management =
-                isBroker10() ? getConnectionFactory("default", "$management", UUID.randomUUID().toString())
-                        : getConnectionFactory("management");
-
-        _connection = management.createConnection(GUEST_USERNAME, GUEST_PASSWORD);
+        _connection = getConnectionBuilder().setVirtualHost("$management")
+                                            .setTls(true)
+                                            .setClientId(UUID.randomUUID().toString())
+                                            .build();
         setupSession();
     }
 

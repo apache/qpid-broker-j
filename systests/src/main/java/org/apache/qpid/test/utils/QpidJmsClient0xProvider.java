@@ -20,9 +20,11 @@
 
 package org.apache.qpid.test.utils;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
+import java.security.AccessControlException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
@@ -36,29 +38,9 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import org.apache.qpid.client.AMQConnectionFactory;
-import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.AMQTopic;
-import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.jms.ConnectionURL;
 
 public class QpidJmsClient0xProvider implements JmsProvider
 {
-    private static final String DEFAULT_INITIAL_CONTEXT = "org.apache.qpid.jndi.PropertiesFileInitialContextFactory";
-    static
-    {
-        String initialContext = System.getProperty(Context.INITIAL_CONTEXT_FACTORY);
-
-        if (initialContext == null || initialContext.length() == 0)
-        {
-            System.setProperty(Context.INITIAL_CONTEXT_FACTORY, DEFAULT_INITIAL_CONTEXT);
-        }
-    }
-
-    private final Hashtable<Object, Object> _initialContextEnvironment = new Hashtable<>();
     private final AmqpManagementFacade _managementFacade;
 
     public QpidJmsClient0xProvider(AmqpManagementFacade managementFacade)
@@ -69,14 +51,8 @@ public class QpidJmsClient0xProvider implements JmsProvider
     @Override
     public ConnectionFactory getConnectionFactory() throws NamingException
     {
-        if (Boolean.getBoolean(QpidBrokerTestCase.PROFILE_USE_SSL))
-        {
-            return getConnectionFactory("default.ssl");
-        }
-        else
-        {
-            return getConnectionFactory("default");
-        }
+        return getConnectionBuilder().setTls(Boolean.getBoolean(QpidBrokerTestCase.PROFILE_USE_SSL))
+                                     .buildConnectionFactory();
     }
 
     @Override
@@ -85,142 +61,54 @@ public class QpidJmsClient0xProvider implements JmsProvider
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public ConnectionFactory getConnectionFactory(String factoryName)
-            throws NamingException
-    {
-        return getConnectionFactory(factoryName, "test", "clientid");
-    }
-
-    @Override
-    public ConnectionFactory getConnectionFactory(String factoryName, String vhost, String clientId)
-            throws NamingException
-    {
-        return getConnectionFactory(factoryName, vhost, clientId, Collections.<String, String>emptyMap());
-    }
-
-    @Override
-    public ConnectionFactory getConnectionFactory(String factoryName,
-                                                  String vhost,
-                                                  String clientId,
-                                                  Map<String, String> options)
-            throws NamingException
-    {
-
-        return (ConnectionFactory) new InitialContext(_initialContextEnvironment).lookup(factoryName);
-    }
-
-    @Override
-    public Connection getConnection() throws JMSException, NamingException
+    private Connection getConnection() throws JMSException, NamingException
     {
         return getConnection(QpidBrokerTestCase.GUEST_USERNAME, QpidBrokerTestCase.GUEST_PASSWORD);
     }
 
-    @Override
-    public Connection getConnection(String username, String password) throws JMSException, NamingException
+    private Connection getConnection(String username, String password) throws JMSException, NamingException
     {
-        Connection con = getConnectionFactory().createConnection(username, password);
-        return con;
-    }
-
-    @Override
-    public Connection getClientConnection(String username, String password, String id)
-            throws Exception
-    {
-        Connection con = ((AMQConnectionFactory) getConnectionFactory()).createConnection(username,
-                                                                                          password,
-                                                                                          id);
-        return con;
-    }
-
-    @Override
-    public Connection getConnectionWithPrefetch(int prefetch) throws Exception
-    {
-        return getConnectionWithOptions(Collections.singletonMap("maxprefetch", String.valueOf(prefetch)));
-    }
-
-    @Override
-    public Connection getConnectionWithOptions(Map<String, String> options) throws Exception
-    {
-        return getConnectionWithOptions("test", options);
-    }
-
-    @Override
-    public Connection getConnectionWithOptions(String vhost, Map<String, String> options) throws Exception
-    {
-        ConnectionURL curl =
-                new AMQConnectionURL(((AMQConnectionFactory) getConnectionFactory()).getConnectionURLString());
-        for (Map.Entry<String, String> entry : options.entrySet())
-        {
-            curl.setOption(entry.getKey(), entry.getValue());
-        }
-
-        curl = new AMQConnectionURL(curl.toString());
-        curl.setUsername(QpidBrokerTestCase.GUEST_USERNAME);
-        curl.setPassword(QpidBrokerTestCase.GUEST_PASSWORD);
-        curl.setVirtualHost(vhost);
-        Connection connection = new AMQConnectionFactory(curl).createConnection(curl.getUsername(), curl.getPassword());
-
-        return connection;
-    }
-
-    @Override
-    public Connection getConnectionForVHost(String vhost)
-            throws Exception
-    {
-        return getConnectionForVHost(vhost, QpidBrokerTestCase.GUEST_USERNAME, QpidBrokerTestCase.GUEST_PASSWORD);
-    }
-    @Override
-    public Connection getConnectionForVHost(String vhost, String username, String password)
-            throws Exception
-    {
-        ConnectionURL curl =
-                new AMQConnectionURL(((AMQConnectionFactory) getConnectionFactory()).getConnectionURLString());
-        curl.setVirtualHost("/" + vhost);
-        curl = new AMQConnectionURL(curl.toString());
-
-        curl.setUsername(username);
-        curl.setPassword(password);
-        Connection connection =
-                new AMQConnectionFactory(curl).createConnection(curl.getUsername(), curl.getPassword());
-
-        return connection;
+        return getConnectionBuilder().setUsername(username).setPassword(password).build();
     }
 
     @Override
     public Connection getConnection(String urlString) throws Exception
     {
-        ConnectionURL url = new AMQConnectionURL(urlString);
-        Connection connection = new AMQConnectionFactory(url).createConnection(url.getUsername(), url.getPassword());
-        return connection;
-    }
-
-    @Override
-    public Connection getConnectionWithSyncPublishing() throws Exception
-    {
-        Map<String, String> options = new HashMap<>();
-        options.put(ConnectionURL.OPTIONS_SYNC_PUBLISH, "all");
-        return getConnectionWithOptions(options);
+        final Hashtable<Object, Object> initialContextEnvironment = new Hashtable<>();
+        initialContextEnvironment.put(Context.INITIAL_CONTEXT_FACTORY, "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
+        final String factoryName = "connectionFactory";
+        initialContextEnvironment.put("connectionfactory." + factoryName, urlString);
+        ConnectionFactory connectionFactory =
+                (ConnectionFactory) new InitialContext(initialContextEnvironment).lookup(factoryName);
+        return connectionFactory.createConnection();
     }
 
 
     @Override
-    public Queue getTestQueue(final String testQueueName)
+    public Queue getTestQueue(final String testQueueName) throws NamingException
     {
-        return new AMQQueue(ExchangeDefaults.DIRECT_EXCHANGE_NAME, testQueueName);
+        return createReflectively("org.apache.qpid.client.AMQQueue", "amq.direct", testQueueName);
     }
 
     @Override
     public Queue getQueueFromName(Session session, String name) throws JMSException
     {
-        return new AMQQueue("", name);
+        return createReflectively("org.apache.qpid.client.AMQQueue", "", name);
     }
 
     @Override
     public Queue createTestQueue(Session session, String queueName) throws JMSException
     {
 
-        Queue amqQueue = getTestQueue(queueName);
+        Queue amqQueue = null;
+        try
+        {
+            amqQueue = getTestQueue(queueName);
+        }
+        catch (NamingException e)
+        {
+            throw new RuntimeException(e);
+        }
         session.createConsumer(amqQueue).close();
         return amqQueue;
     }
@@ -228,7 +116,7 @@ public class QpidJmsClient0xProvider implements JmsProvider
     @Override
     public Topic getTestTopic(final String testQueueName)
     {
-        return new AMQTopic(ExchangeDefaults.TOPIC_EXCHANGE_NAME, testQueueName);
+        return createReflectively("org.apache.qpid.client.AMQTopic", "amq.topic", testQueueName);
     }
 
     @Override
@@ -240,84 +128,129 @@ public class QpidJmsClient0xProvider implements JmsProvider
     @Override
     public Topic createTopicOnDirect(final Connection con, String topicName) throws JMSException, URISyntaxException
     {
-        return new AMQTopic(
-                "direct://amq.direct/"
-                + topicName
-                + "/"
-                + topicName
-                + "?routingkey='"
-                + topicName
-                + "',exclusive='true',autodelete='true'");
+        return createReflectively("org.apache.qpid.client.AMQTopic",
+                                  "direct://amq.direct/"
+                                  + topicName
+                                  + "/"
+                                  + topicName
+                                  + "?routingkey='"
+                                  + topicName
+                                  + "',exclusive='true',autodelete='true'");
+    }
+
+    private <T> T createReflectively(String className, Object ...args)
+    {
+        try
+        {
+            Class<?> topicClass = Class.forName(className);
+            Class[] classes = new Class[args.length];
+            for (int i = 0; i < args.length; ++i)
+            {
+                classes[i] = args[i].getClass();
+            }
+            Constructor<?> constructor = topicClass.getConstructor(classes);
+            return (T) constructor.newInstance(args);
+        }
+        catch (IllegalAccessException | AccessControlException | InvocationTargetException | InstantiationException | NoSuchMethodException | ClassNotFoundException e)
+        {
+            throw new RuntimeException(e);
+        }
+
     }
 
     @Override
     public Topic createTopicOnFanout(final Connection con, String topicName) throws JMSException, URISyntaxException
     {
-        return new AMQTopic(
-                "fanout://amq.fanout/"
-                + topicName
-                + "/"
-                + topicName
-                + "?routingkey='"
-                + topicName
-                + "',exclusive='true',autodelete='true'");
+        return createReflectively("org.apache.qpid.client.AMQTopic", "fanout://amq.fanout/"
+                                                                     + topicName
+                                                                     + "/"
+                                                                     + topicName
+                                                                     + "?routingkey='"
+                                                                     + topicName
+                                                                     + "',exclusive='true',autodelete='true'");
     }
 
     @Override
-    public long getQueueDepth(final Connection con, final Queue destination) throws Exception
+    public long getQueueDepth(final Queue destination) throws Exception
     {
-        Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final String escapedName = destination.getQueueName().replaceAll("([/\\\\])", "\\\\$1");
+        Connection connection = getConnection();
         try
         {
-            return ((AMQSession<?, ?>) session).getQueueDepth((AMQDestination) destination);
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                Map<String, Object> arguments = Collections.singletonMap("statistics",
+                                                                         Collections.singletonList("queueDepthMessages"));
+                Object statistics = _managementFacade.performOperationUsingAmqpManagement(escapedName,
+                                                                                             "getStatistics",
+                                                                                             session,
+                                                                                             "org.apache.qpid.Queue",
+                                                                                             arguments);
+
+                Map<String, Object> statisticsMap = (Map<String, Object>) statistics;
+                return ((Number) statisticsMap.get("queueDepthMessages")).intValue();
+            }
+            finally
+            {
+                session.close();
+            }
         }
         finally
         {
-            session.close();
+            connection.close();
         }
     }
 
     @Override
-    public boolean isQueueExist(final Connection con, final Queue destination) throws Exception
+    public boolean isQueueExist(final Queue destination) throws Exception
     {
-        Queue queue = new AMQQueue("", destination.getQueueName());
-        Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final String escapedName = destination.getQueueName().replaceAll("([/\\\\])", "\\\\$1");
+        Connection connection = getConnection();
         try
         {
-            return ((AMQSession<?, ?>) session).isQueueBound((AMQDestination) queue);
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                _managementFacade.performOperationUsingAmqpManagement(escapedName,
+                                                                      "READ",
+                                                                      session,
+                                                                      "org.apache.qpid.Queue",
+                                                                      Collections.emptyMap());
+                return true;
+            }
+            catch (AmqpManagementFacade.OperationUnsuccessfulException e)
+            {
+                if (e.getStatusCode() == 404)
+                {
+                    return false;
+                }
+                else
+                {
+                    throw e;
+                }
+            }
+            finally
+            {
+                session.close();
+            }
         }
         finally
         {
-            session.close();
+            connection.close();
         }
     }
 
     @Override
     public String getBrokerDetailsFromDefaultConnectionUrl()
     {
-        try
-        {
-            AMQConnectionFactory factory = (AMQConnectionFactory) getConnectionFactory();
-            ConnectionURL connectionURL = factory.getConnectionURL();
-            if (connectionURL.getBrokerCount() > 0)
-            {
-                return connectionURL
-                              .getBrokerDetails(0)
-                              .toString();
-            }
-            else
-            {
-                throw new RuntimeException("No broker details are available.");
-            }
-        }
-        catch (NamingException e)
-        {
-            throw new RuntimeException("No broker details are available.", e);
-        }
+        return getConnectionBuilder().getBrokerDetails();
     }
 
     @Override
-    public ConnectionBuilder getConnectionBuilder()
+    public QpidJmsClient0xConnectionBuilder getConnectionBuilder()
     {
         return new QpidJmsClient0xConnectionBuilder();
     }

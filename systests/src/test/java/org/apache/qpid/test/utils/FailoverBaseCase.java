@@ -46,7 +46,6 @@ public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionLi
     protected BrokerHolder _alternativeBroker;
     protected int _port;
     protected int _alternativePort;
-    private ConnectionFactory _connectionFactory;
     private final List<Connection> _connections = new ArrayList<>();
 
     @Override
@@ -97,18 +96,9 @@ public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionLi
     public ConnectionFactory getConnectionFactory() throws NamingException
     {
         LOGGER.info("get ConnectionFactory");
-        if (_connectionFactory == null)
-        {
-            if (Boolean.getBoolean("profile.use_ssl"))
-            {
-                _connectionFactory = getConnectionFactory("failover.ssl");
-            }
-            else
-            {
-                _connectionFactory = getConnectionFactory("failover");
-            }
-        }
-        return _connectionFactory;
+        return getConnectionBuilder().setFailover(true)
+                                     .setTls(Boolean.getBoolean("profile.use_ssl"))
+                                     .buildConnectionFactory();
     }
 
     @Override

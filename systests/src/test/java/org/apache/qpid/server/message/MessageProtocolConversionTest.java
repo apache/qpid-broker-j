@@ -25,6 +25,8 @@ import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 import javax.jms.*;
+import javax.naming.NamingException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,18 +60,19 @@ public class MessageProtocolConversionTest extends QpidBrokerTestCase
         _connection_0_9_1 = getConnection();
     }
 
-    public void test0_9_1_to_0_10_conversion() throws JMSException, QpidException
+    public void test0_9_1_to_0_10_conversion() throws JMSException, QpidException, NamingException
     {
         doConversionTests(_connection_0_9_1, _connection_0_10);
     }
 
-    public void test_0_10_to_0_9_1_conversion() throws JMSException, QpidException
+    public void test_0_10_to_0_9_1_conversion() throws JMSException, QpidException, NamingException
     {
 
         doConversionTests(_connection_0_10, _connection_0_9_1);
     }
 
-    private void doConversionTests(Connection producerConn, Connection consumerConn) throws JMSException, QpidException
+    private void doConversionTests(Connection producerConn, Connection consumerConn)
+            throws JMSException, QpidException, NamingException
     {
         Session producerSession = producerConn.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Session consumerSession = consumerConn.createSession(false, Session.AUTO_ACKNOWLEDGE);

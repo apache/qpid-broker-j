@@ -1162,8 +1162,6 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Exception
 
     private AMQConnection createConnectionWithFailover(Map<String,String> connectionOptions) throws NamingException, JMSException, URLSyntaxException
     {
-        BrokerDetails origBrokerDetails =  ((AMQConnectionFactory) getConnectionFactory("default")).getConnectionURL().getBrokerDetails(0);
-
         String retries = "200";
         String connectdelay = "1000";
         String cycleCount = "2";
@@ -1171,7 +1169,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Exception
         String newUrlFormat="amqp://username:password@clientid/test?brokerlist=" +
                             "'tcp://%s:%s?retries='%s'&connectdelay='%s''&failover='singlebroker?cyclecount='%s''";
 
-        String newUrl = String.format(newUrlFormat, origBrokerDetails.getHost(), origBrokerDetails.getPort(),
+        String newUrl = String.format(newUrlFormat, "localhost", getDefaultAmqpPort(),
                                                     retries, connectdelay, cycleCount);
 
         if (connectionOptions != null)

@@ -223,7 +223,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         setSystemProperty("test.port", String.valueOf(localPort));
         setSystemProperty("test.port.alt", String.valueOf(localPort));
 
-        Connection tunneledConnection = getConnectionFactory("default").createConnection(GUEST_USERNAME, GUEST_PASSWORD);
+        Connection tunneledConnection = getConnection();
         _tcpTunneler.addClientListener(clientMonitor);
         final AtomicReference<JMSException> _exception = new AtomicReference<>();
         tunneledConnection.setExceptionListener(new ExceptionListener()

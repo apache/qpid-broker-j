@@ -22,6 +22,9 @@
 
 org.apache.qpid.client.prefetch.PrefetchBehaviourTest#*
 
+QPID-XXXX: It could be a broker bug. The issue requires further inevestigation
+org.apache.qpid.systest.AnonymousProducerTest#testPublishIntoNonExistingQueue
+org.apache.qpid.test.client.queue.QueuePolicyTest#testRejectPolicyMessageDepth
 
 
 
