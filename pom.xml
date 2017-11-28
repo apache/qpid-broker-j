@@ -193,6 +193,7 @@
     <module>qpid-test-utils</module>
     <module>systests</module>
     <module>systests/systests-utils</module>
+    <module>systests/qpid-systests-jms-core</module>
     <module>systests/qpid-systests-jms_1.1</module>
     <module>systests/qpid-systests-jms_2.0</module>
     <module>systests/protocol-tests-core</module>
@@ -430,6 +431,24 @@
       <dependency>
         <groupId>org.apache.qpid</groupId>
         <artifactId>protocol-tests-amqp-0-10</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-systests-jms-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-systests-jms_1.1</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-systests-jms_2.0</artifactId>
         <version>${project.version}</version>
       </dependency>
 

@@ -43,7 +43,6 @@
     "type" : "AMQP",
     "authenticationProvider" : "plain",
     "port" : "0",
-    "protocols" : [ "AMQP_1_0" ],
     "virtualhostaliases" : [ {
       "name" : "defaultAlias",
       "type" : "defaultAlias"
@@ -59,7 +58,7 @@
     "type" : "AMQP",
     "authenticationProvider" : "anon",
     "port" : "0",
-    "protocols" : [ "AMQP_1_0" ],
+    "protocols" : [ "AMQP_0_8", "AMQP_0_9", "AMQP_0_9_1", "AMQP_0_10", "AMQP_1_0" ],
     "virtualhostaliases" : [ {
       "name" : "defaultAlias",
       "type" : "defaultAlias",

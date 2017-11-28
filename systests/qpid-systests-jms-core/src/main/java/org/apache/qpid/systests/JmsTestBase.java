@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.systests.jms_1_1;
+package org.apache.qpid.systests;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -33,15 +33,10 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
-import org.apache.qpid.test.utils.AmqpManagementFacade;
-import org.apache.qpid.test.utils.ConnectionBuilder;
-import org.apache.qpid.test.utils.JmsProvider;
-import org.apache.qpid.test.utils.QpidJmsClient0xProvider;
-import org.apache.qpid.test.utils.QpidJmsClientProvider;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
-public abstract class Jms1TestBase extends BrokerAdminUsingTestBase
+public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 {
     private static JmsProvider _jmsProvider;
     private static AmqpManagementFacade _managementFacade;
@@ -60,7 +55,7 @@ public abstract class Jms1TestBase extends BrokerAdminUsingTestBase
         else
         {
             _managementFacade = new AmqpManagementFacade("ADDR:$management");
-            _jmsProvider = new QpidJmsClient0xProvider(_managementFacade);
+            _jmsProvider = new QpidJmsClient0xProvider();
         }
     }
 

@@ -37,12 +37,11 @@ import javax.jms.Session;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.apache.qpid.systests.jms_2_0.Jms2TestBase;
-import org.apache.qpid.systests.jms_2_0.Utils;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.systests.JmsTestBase;
+import org.apache.qpid.systests.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 
-public class DeliveryCountTest extends Jms2TestBase
+public class DeliveryCountTest extends JmsTestBase
 {
     private static final int MAX_DELIVERY_ATTEMPTS = 3;
     private static final String JMSX_DELIVERY_COUNT = "JMSXDeliveryCount";

@@ -18,7 +18,7 @@
  *
  */
 
-package org.apache.qpid.test.utils;
+package org.apache.qpid.systests;
 
 import java.util.Map;
 
@@ -29,6 +29,9 @@ import javax.naming.NamingException;
 
 public interface ConnectionBuilder
 {
+    String USERNAME = "guest";
+    String PASSWORD = "guest";
+
     ConnectionBuilder setHost(String host);
     ConnectionBuilder setPort(int port);
     ConnectionBuilder setSslPort(int port);

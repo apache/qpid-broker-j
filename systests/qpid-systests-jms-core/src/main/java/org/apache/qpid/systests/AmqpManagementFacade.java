@@ -18,7 +18,7 @@
  *
  */
 
-package org.apache.qpid.test.utils;
+package org.apache.qpid.systests;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,6 +35,7 @@ import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.ObjectMessage;
+import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 
@@ -125,10 +126,10 @@ public class AmqpManagementFacade
     }
 
     public Object performOperationUsingAmqpManagement(final String name,
-                                                                         final String operation,
-                                                                         final Session session,
-                                                                         final String type,
-                                                                         Map<String, Object> arguments)
+                                                      final String operation,
+                                                      final Session session,
+                                                      final String type,
+                                                      Map<String, Object> arguments)
             throws JMSException
     {
         MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
@@ -159,7 +160,8 @@ public class AmqpManagementFacade
                 catch (JsonProcessingException e)
                 {
                     throw new IllegalArgumentException(String.format(
-                            "Cannot convert the argument '%s' to JSON to meet JMS type restrictions", argument.getKey()));
+                            "Cannot convert the argument '%s' to JSON to meet JMS type restrictions",
+                            argument.getKey()));
                 }
                 opMessage.setObjectProperty(argument.getKey(), jsonifiedValue);
             }
@@ -209,7 +211,8 @@ public class AmqpManagementFacade
                     return buf;
                 }
             }
-            throw new IllegalArgumentException("Cannot parse the results from a management operation.  JMS response message : " + response);
+            throw new IllegalArgumentException(
+                    "Cannot parse the results from a management operation.  JMS response message : " + response);
         }
         finally
         {
@@ -222,7 +225,8 @@ public class AmqpManagementFacade
         }
     }
 
-    public List<Map<String, Object>> managementQueryObjects(final Session session, final String type) throws JMSException
+    public List<Map<String, Object>> managementQueryObjects(final Session session, final String type)
+            throws JMSException
     {
         MessageProducer producer = session.createProducer(session.createQueue("$management"));
         final TemporaryQueue responseQ = session.createTemporaryQueue();
@@ -321,7 +325,10 @@ public class AmqpManagementFacade
                     return new HashMap<>(bodyMap);
                 }
             }
-            throw new IllegalArgumentException("Management read failed : " + response.getStringProperty("statusCode") + " - " + response.getStringProperty("statusDescription"));
+            throw new IllegalArgumentException("Management read failed : "
+                                               + response.getStringProperty("statusCode")
+                                               + " - "
+                                               + response.getStringProperty("statusDescription"));
         }
         finally
         {
@@ -330,7 +337,53 @@ public class AmqpManagementFacade
         }
     }
 
-    private List<Map<String, Object>> getResultsAsMaps(final List<String> attributeNames, final List<List<Object>> attributeValues)
+    public long getQueueDepth(final Queue destination, final Session session) throws Exception
+    {
+        final String escapedName = getEscapedName(destination);
+        Map<String, Object> arguments = Collections.singletonMap("statistics",
+                                                                 Collections.singletonList("queueDepthMessages"));
+        Object statistics = performOperationUsingAmqpManagement(escapedName,
+                                                                "getStatistics",
+                                                                session,
+                                                                "org.apache.qpid.Queue",
+                                                                arguments);
+
+        Map<String, Object> statisticsMap = (Map<String, Object>) statistics;
+        return ((Number) statisticsMap.get("queueDepthMessages")).intValue();
+    }
+
+    public boolean isQueueExist(final Queue destination, final Session session) throws Exception
+    {
+        final String escapedName = getEscapedName(destination);
+        try
+        {
+            performOperationUsingAmqpManagement(escapedName,
+                                                "READ",
+                                                session,
+                                                "org.apache.qpid.Queue",
+                                                Collections.emptyMap());
+            return true;
+        }
+        catch (AmqpManagementFacade.OperationUnsuccessfulException e)
+        {
+            if (e.getStatusCode() == 404)
+            {
+                return false;
+            }
+            else
+            {
+                throw e;
+            }
+        }
+    }
+
+    private String getEscapedName(final Queue destination) throws JMSException
+    {
+        return destination.getQueueName().replaceAll("([/\\\\])", "\\\\$1");
+    }
+
+    private List<Map<String, Object>> getResultsAsMaps(final List<String> attributeNames,
+                                                       final List<List<Object>> attributeValues)
     {
         List<Map<String, Object>> results = new ArrayList<>();
         for (List<Object> resultObject : attributeValues)

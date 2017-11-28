@@ -32,6 +32,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
@@ -369,6 +371,31 @@ public class EndToEndTest extends QpidBrokerTestCase
         else
         {
             return new File(JNDI_CONFIG_FILE);
+        }
+    }
+
+    private void appendOptions(final Map<String, String> actualOptions, final StringBuilder stem)
+    {
+        boolean first = true;
+        for(Map.Entry<String, String> option : actualOptions.entrySet())
+        {
+            if(first)
+            {
+                stem.append('?');
+                first = false;
+            }
+            else
+            {
+                stem.append('&');
+            }
+            try
+            {
+                stem.append(option.getKey()).append('=').append(URLEncoder.encode(option.getValue(), "UTF-8"));
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

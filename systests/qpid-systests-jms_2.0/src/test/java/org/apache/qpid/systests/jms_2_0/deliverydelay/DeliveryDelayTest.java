@@ -41,10 +41,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.apache.qpid.systests.jms_2_0.Jms2TestBase;
+import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 
-public class DeliveryDelayTest extends Jms2TestBase
+public class DeliveryDelayTest extends JmsTestBase
 {
     private static final int DELIVERY_DELAY = 3000;
 

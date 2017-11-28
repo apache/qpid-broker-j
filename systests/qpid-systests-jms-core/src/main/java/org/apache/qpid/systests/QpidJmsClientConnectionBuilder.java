@@ -18,7 +18,7 @@
  *
  */
 
-package org.apache.qpid.test.utils;
+package org.apache.qpid.systests;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -36,7 +36,6 @@ import javax.naming.NamingException;
 
 public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
 {
-
     private static final AtomicInteger CLIENTID_COUNTER = new AtomicInteger();
     private String _host;
     private int _port;
@@ -45,14 +44,12 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     private boolean _enableTls;
     private boolean _enableFailover;
 
-    public QpidJmsClientConnectionBuilder()
+    QpidJmsClientConnectionBuilder()
     {
         _options = new TreeMap<>();
         _options.put("jms.clientID", getNextClientId());
-        _options.put("jms.username", "guest");
-        _options.put("jms.password", "guest");
-        _port = Integer.getInteger("test.port");
-        _sslPort = Integer.getInteger("test.port.ssl");
+        _options.put("jms.username", USERNAME);
+        _options.put("jms.password", PASSWORD);
         _host = "localhost";
     }
 
@@ -222,7 +219,15 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
         final String factoryName = "connection";
         initialContextEnvironment.put("connectionfactory." + factoryName, connectionUrlBuilder.toString());
 
-        return (ConnectionFactory) new InitialContext(initialContextEnvironment).lookup(factoryName);
+        InitialContext initialContext = new InitialContext(initialContextEnvironment);
+        try
+        {
+            return (ConnectionFactory) initialContext.lookup(factoryName);
+        }
+        finally
+        {
+            initialContext.close();
+        }
     }
 
     private void appendOptions(final Map<String, Object> actualOptions, final StringBuilder stem)

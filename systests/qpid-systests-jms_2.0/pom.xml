@@ -29,9 +29,10 @@
   <description>JMS 2.0 system tests</description>
 
   <dependencies>
+
     <dependency>
       <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-systests</artifactId>
+      <artifactId>qpid-systests-jms-core</artifactId>
       <exclusions>
         <exclusion>
           <groupId>org.apache.geronimo.specs</groupId>
@@ -41,21 +42,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-bdbstore</artifactId>
-      <scope>test</scope>
-      <optional>true</optional>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
       <artifactId>geronimo-jms_2.0_spec</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-broker-plugins-amqp-1-0-protocol-bdb-link-store</artifactId>
-      <optional>true</optional>
     </dependency>
 
     <dependency>
@@ -112,7 +100,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <systemPropertyVariables>
-            <qpid.initialConfigurationLocation>classpath:config-jms2-tests.json</qpid.initialConfigurationLocation>
+            <qpid.initialConfigurationLocation>classpath:config-jms-tests.json</qpid.initialConfigurationLocation>
           </systemPropertyVariables>
         </configuration>
       </plugin>

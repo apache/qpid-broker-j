@@ -45,9 +45,9 @@ import javax.jms.TopicSubscriber;
 
 import org.junit.Test;
 
-import org.apache.qpid.systests.jms_1_1.Jms1TestBase;
+import org.apache.qpid.systests.JmsTestBase;
 
-public class DurableSubscribtionTest extends Jms1TestBase
+public class DurableSubscribtionTest extends JmsTestBase
 {
     @Test
     public void publishedMessagesAreSavedAfterSubscriberClose() throws Exception

@@ -18,21 +18,16 @@
  * under the License.
  *
  */
-package org.apache.qpid.systests.jms_2_0;
+package org.apache.qpid.systests;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.jms.BytesMessage;
 import javax.jms.Destination;
 import javax.jms.JMSException;
-import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
-import javax.jms.ObjectMessage;
 import javax.jms.Session;
-import javax.jms.StreamMessage;
-import javax.jms.TextMessage;
 
 public class Utils
 {

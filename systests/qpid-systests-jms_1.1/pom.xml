@@ -29,9 +29,10 @@
     <description>JMS 1.1 system tests</description>
 
     <dependencies>
+
         <dependency>
             <groupId>org.apache.qpid</groupId>
-            <artifactId>qpid-systests</artifactId>
+            <artifactId>qpid-systests-jms-core</artifactId>
         </dependency>
 
         <dependency>
@@ -106,7 +107,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <qpid.initialConfigurationLocation>classpath:config-jms1-tests.json</qpid.initialConfigurationLocation>
+                        <qpid.initialConfigurationLocation>classpath:config-jms-tests.json</qpid.initialConfigurationLocation>
                         <qpid.amqp.version>${profile.broker.version}</qpid.amqp.version>
                     </systemPropertyVariables>
                 </configuration>

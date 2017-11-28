@@ -36,6 +36,11 @@
       <artifactId>qpid-test-utils</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-systests-jms-core</artifactId>
+    </dependency>
+
     <!-- Many systests have a compile/runtime dependency on qpid-client -->
     <dependency>
       <groupId>org.apache.qpid</groupId>

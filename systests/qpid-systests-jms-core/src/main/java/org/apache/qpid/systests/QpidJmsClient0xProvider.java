@@ -18,15 +18,13 @@
  *
  */
 
-package org.apache.qpid.test.utils;
+package org.apache.qpid.systests;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.security.AccessControlException;
-import java.util.Collections;
 import java.util.Hashtable;
-import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -41,34 +39,9 @@ import javax.naming.NamingException;
 
 public class QpidJmsClient0xProvider implements JmsProvider
 {
-    private final AmqpManagementFacade _managementFacade;
 
-    public QpidJmsClient0xProvider(AmqpManagementFacade managementFacade)
+    public QpidJmsClient0xProvider()
     {
-        _managementFacade = managementFacade;
-    }
-
-    @Override
-    public ConnectionFactory getConnectionFactory() throws NamingException
-    {
-        return getConnectionBuilder().setTls(Boolean.getBoolean(QpidBrokerTestCase.PROFILE_USE_SSL))
-                                     .buildConnectionFactory();
-    }
-
-    @Override
-    public ConnectionFactory getConnectionFactory(final Map<String, String> options) throws NamingException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    private Connection getConnection() throws JMSException, NamingException
-    {
-        return getConnection(QpidBrokerTestCase.GUEST_USERNAME, QpidBrokerTestCase.GUEST_PASSWORD);
-    }
-
-    private Connection getConnection(String username, String password) throws JMSException, NamingException
-    {
-        return getConnectionBuilder().setUsername(username).setPassword(password).build();
     }
 
     @Override
@@ -168,85 +141,6 @@ public class QpidJmsClient0xProvider implements JmsProvider
                                                                      + "?routingkey='"
                                                                      + topicName
                                                                      + "',exclusive='true',autodelete='true'");
-    }
-
-    @Override
-    public long getQueueDepth(final Queue destination) throws Exception
-    {
-        final String escapedName = destination.getQueueName().replaceAll("([/\\\\])", "\\\\$1");
-        Connection connection = getConnection();
-        try
-        {
-            connection.start();
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            try
-            {
-                Map<String, Object> arguments = Collections.singletonMap("statistics",
-                                                                         Collections.singletonList("queueDepthMessages"));
-                Object statistics = _managementFacade.performOperationUsingAmqpManagement(escapedName,
-                                                                                             "getStatistics",
-                                                                                             session,
-                                                                                             "org.apache.qpid.Queue",
-                                                                                             arguments);
-
-                Map<String, Object> statisticsMap = (Map<String, Object>) statistics;
-                return ((Number) statisticsMap.get("queueDepthMessages")).intValue();
-            }
-            finally
-            {
-                session.close();
-            }
-        }
-        finally
-        {
-            connection.close();
-        }
-    }
-
-    @Override
-    public boolean isQueueExist(final Queue destination) throws Exception
-    {
-        final String escapedName = destination.getQueueName().replaceAll("([/\\\\])", "\\\\$1");
-        Connection connection = getConnection();
-        try
-        {
-            connection.start();
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            try
-            {
-                _managementFacade.performOperationUsingAmqpManagement(escapedName,
-                                                                      "READ",
-                                                                      session,
-                                                                      "org.apache.qpid.Queue",
-                                                                      Collections.emptyMap());
-                return true;
-            }
-            catch (AmqpManagementFacade.OperationUnsuccessfulException e)
-            {
-                if (e.getStatusCode() == 404)
-                {
-                    return false;
-                }
-                else
-                {
-                    throw e;
-                }
-            }
-            finally
-            {
-                session.close();
-            }
-        }
-        finally
-        {
-            connection.close();
-        }
-    }
-
-    @Override
-    public String getBrokerDetailsFromDefaultConnectionUrl()
-    {
-        return getConnectionBuilder().getBrokerDetails();
     }
 
     @Override

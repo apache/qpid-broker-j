@@ -18,7 +18,7 @@
  *
  */
 
-package org.apache.qpid.test.utils;
+package org.apache.qpid.systests;
 
 import java.util.Hashtable;
 import java.util.Map;
@@ -34,16 +34,16 @@ import javax.naming.NamingException;
 public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
 {
     private String _clientId = "clientid";
-    private String _username = "guest";
-    private String _password = "guest";
+    private String _username = USERNAME;
+    private String _password = PASSWORD;
     private String _virtualHost;
     private boolean _enableTls;
     private boolean _enableFailover;
     private final Map<String, Object> _options = new TreeMap<>();
     private int _reconnectAttempts = 20;
     private String _host = "localhost";
-    private int _port = Integer.getInteger("test.port");
-    private int _sslPort = Integer.getInteger("test.port.ssl");
+    private int _port;
+    private int _sslPort;
 
     @Override
     public ConnectionBuilder setHost(final String host)
@@ -233,7 +233,15 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
                                       "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
         final String factoryName = "connectionFactory";
         initialContextEnvironment.put("connectionfactory." + factoryName, cUrlBuilder.toString());
-        return (ConnectionFactory) new InitialContext(initialContextEnvironment).lookup(factoryName);
+        InitialContext initialContext = new InitialContext(initialContextEnvironment);
+        try
+        {
+            return (ConnectionFactory) initialContext.lookup(factoryName);
+        }
+        finally
+        {
+            initialContext.close();
+        }
     }
 
     String getBrokerDetails()

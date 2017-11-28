@@ -37,10 +37,10 @@ import javax.jms.Topic;
 
 import org.junit.Test;
 
-import org.apache.qpid.systests.jms_2_0.Jms2TestBase;
-import org.apache.qpid.systests.jms_2_0.Utils;
+import org.apache.qpid.systests.JmsTestBase;
+import org.apache.qpid.systests.Utils;
 
-public class SharedSubscriptionTest extends Jms2TestBase
+public class SharedSubscriptionTest extends JmsTestBase
 {
     @Test
     public void testSharedNonDurableSubscription() throws Exception

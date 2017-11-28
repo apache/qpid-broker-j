@@ -26,9 +26,9 @@ import javax.jms.Connection;
 
 import org.junit.Test;
 
-import org.apache.qpid.systests.jms_2_0.Jms2TestBase;
+import org.apache.qpid.systests.JmsTestBase;
 
-public class ConnectionTest extends Jms2TestBase
+public class ConnectionTest extends JmsTestBase
 {
     @Test
     public void testConnection() throws Exception

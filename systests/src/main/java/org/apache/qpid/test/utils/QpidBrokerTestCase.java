@@ -18,13 +18,12 @@
 package org.apache.qpid.test.utils;
 
 import java.io.File;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -32,7 +31,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.jms.*;
+import javax.jms.BytesMessage;
+import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.MapMessage;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageProducer;
+import javax.jms.ObjectMessage;
+import javax.jms.Queue;
+import javax.jms.Session;
+import javax.jms.StreamMessage;
+import javax.jms.TextMessage;
+import javax.jms.Topic;
 import javax.naming.NamingException;
 
 import ch.qos.logback.classic.sift.SiftingAppender;
@@ -44,6 +57,11 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.store.MemoryConfigurationStore;
+import org.apache.qpid.systests.AmqpManagementFacade;
+import org.apache.qpid.systests.ConnectionBuilder;
+import org.apache.qpid.systests.JmsProvider;
+import org.apache.qpid.systests.QpidJmsClient0xProvider;
+import org.apache.qpid.systests.QpidJmsClientProvider;
 
 /**
  * Qpid base class for system testing test cases.
@@ -89,7 +107,7 @@ public class QpidBrokerTestCase extends QpidTestCase
         try
         {
             _managementFacade = new AmqpManagementFacade(isBroker10() ? "$management" : "ADDR:$management");
-            _jmsProvider = isBroker10() ? new QpidJmsClientProvider(_managementFacade) : new QpidJmsClient0xProvider(_managementFacade);
+            _jmsProvider = isBroker10() ? new QpidJmsClientProvider(_managementFacade) : new QpidJmsClient0xProvider();
 
             _defaultBroker = new BrokerHolderFactory().create(DEFAULT_BROKER_TYPE, DEFAULT_PORT, this);
             super.runBare();
@@ -199,35 +217,11 @@ public class QpidBrokerTestCase extends QpidTestCase
         getDefaultBroker().restart();
     }
 
-    protected void appendOptions(final Map<String, String> actualOptions, final StringBuilder stem)
-    {
-        boolean first = true;
-        for(Map.Entry<String, String> option : actualOptions.entrySet())
-        {
-            if(first)
-            {
-                stem.append('?');
-                first = false;
-            }
-            else
-            {
-                stem.append('&');
-            }
-            try
-            {
-                stem.append(option.getKey()).append('=').append(URLEncoder.encode(option.getValue(), "UTF-8"));
-            }
-            catch (UnsupportedEncodingException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-
     public ConnectionBuilder getConnectionBuilder()
     {
         final ConnectionBuilder connectionBuilder = _jmsProvider.getConnectionBuilder()
+                                                                .setPort(Integer.getInteger("test.port"))
+                                                                .setSslPort(Integer.getInteger("test.port.ssl"))
                                                                 .setVirtualHost("test")
                                                                 .setTls(Boolean.getBoolean(PROFILE_USE_SSL))
                                                                 .setPopulateJMSXUserID(true)
@@ -248,12 +242,12 @@ public class QpidBrokerTestCase extends QpidTestCase
      */
     public ConnectionFactory getConnectionFactory() throws NamingException
     {
-        return _jmsProvider.getConnectionFactory();
+        return getConnectionFactory(Collections.emptyMap());
     }
 
     public ConnectionFactory getConnectionFactory(final Map<String, String> options) throws NamingException
     {
-        return _jmsProvider.getConnectionFactory(options);
+        return getConnectionBuilder().setOptions(options).buildConnectionFactory();
     }
 
     public Connection getConnection() throws JMSException, NamingException
@@ -319,7 +313,7 @@ public class QpidBrokerTestCase extends QpidTestCase
      * Return a Topic specific for this test.
      * Uses getTestQueueName() as the name of the topic
      */
-    public Topic getTestTopic()
+    public Topic getTestTopic() throws NamingException
     {
         return _jmsProvider.getTestTopic(getTestQueueName());
     }
@@ -384,12 +378,48 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     public long getQueueDepth(final Connection con, final Queue destination) throws Exception
     {
-        return _jmsProvider.getQueueDepth(destination);
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                return _managementFacade.getQueueDepth(destination, session);
+            }
+
+            finally
+            {
+                session.close();
+            }
+        }
+        finally
+        {
+            connection.close();
+        }
     }
 
     public boolean isQueueExist(final Connection con, final Queue destination) throws Exception
     {
-        return _jmsProvider.isQueueExist(destination);
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                return _managementFacade.isQueueExist(destination, session);
+            }
+
+            finally
+            {
+                session.close();
+            }
+        }
+        finally
+        {
+            connection.close();
+        }
     }
 
     /**
@@ -524,7 +554,9 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     public String getBrokerDetailsFromDefaultConnectionUrl()
     {
-        return _jmsProvider.getBrokerDetailsFromDefaultConnectionUrl();
+        return "tcp://localhost:" + (getDefaultBroker().getAmqpTlsPort() > 0
+                ? getDefaultBroker().getAmqpTlsPort()
+                : getDefaultBroker().getAmqpPort());
     }
 
     /**

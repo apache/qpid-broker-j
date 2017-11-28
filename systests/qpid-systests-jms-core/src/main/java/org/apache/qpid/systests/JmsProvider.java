@@ -18,13 +18,11 @@
  *
  */
 
-package org.apache.qpid.test.utils;
+package org.apache.qpid.systests;
 
 import java.net.URISyntaxException;
-import java.util.Map;
 
 import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.Queue;
 import javax.jms.Session;
@@ -34,10 +32,6 @@ import javax.naming.NamingException;
 
 public interface JmsProvider
 {
-    ConnectionFactory getConnectionFactory() throws NamingException;
-
-    ConnectionFactory getConnectionFactory(Map<String, String> options) throws NamingException;
-
     Connection getConnection(String urlString) throws Exception;
 
     Queue getTestQueue(String testQueueName) throws NamingException;
@@ -46,19 +40,13 @@ public interface JmsProvider
 
     Queue createTestQueue(Session session, String queueName) throws JMSException;
 
-    Topic getTestTopic(String testQueueName);
+    Topic getTestTopic(String testQueueName) throws NamingException;
 
     Topic createTopic(Connection con, String topicName) throws JMSException;
 
     Topic createTopicOnDirect(Connection con, String topicName) throws JMSException, URISyntaxException;
 
     Topic createTopicOnFanout(Connection con, String topicName) throws JMSException, URISyntaxException;
-
-    long getQueueDepth(Queue destination) throws Exception;
-
-    boolean isQueueExist(Queue destination) throws Exception;
-
-    String getBrokerDetailsFromDefaultConnectionUrl();
 
     ConnectionBuilder getConnectionBuilder();
 }
