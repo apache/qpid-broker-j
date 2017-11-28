@@ -17,9 +17,6 @@
 // under the License.
 //
 
-// those tests need durable subscribe states to be persisted
-org.apache.qpid.test.unit.topic.DurableSubscriptionTest#testDurSubRestoredAfterNonPersistentMessageSent
-
 // those tests require broker recovery
 org.apache.qpid.test.unit.ct.DurableSubscriberTest#*
 

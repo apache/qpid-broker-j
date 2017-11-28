@@ -47,12 +47,8 @@ import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
- * @todo Code to check that a consumer gets only one particular method could be factored into a re-usable method (as
- *       a static on a base test helper class, e.g. TestUtils.
- *
- * @todo Code to create test end-points using session per connection, or all sessions on one connection, to be factored
- *       out to make creating this test variation simpler. Want to make this variation available through LocalCircuit,
- *       driven by the test model.
+ *  The tests in the suite only test 0-x client specific behaviour.
+ *  The tests should be moved into client or removed
  */
 public class DurableSubscriptionTest extends QpidBrokerTestCase
 {
@@ -61,80 +57,6 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
     private static final String MY_TOPIC = "MyTopic";
 
     private static final String MY_SUBSCRIPTION = "MySubscription";
-
-    public void testUnsubscribe() throws Exception
-    {
-        TopicConnection con = (TopicConnection) getConnection();
-        Topic topic = createTopic(con, "MyDurableSubscriptionTestTopic");
-        LOGGER.info("Create Session 1");
-        Session session1 = con.createSession(false, AMQSession.NO_ACKNOWLEDGE);
-        LOGGER.info("Create Consumer on Session 1");
-        MessageConsumer consumer1 = session1.createConsumer(topic);
-        LOGGER.info("Create Producer on Session 1");
-        MessageProducer producer = session1.createProducer(topic);
-
-        LOGGER.info("Create Session 2");
-        Session session2 = con.createSession(false, AMQSession.NO_ACKNOWLEDGE);
-        LOGGER.info("Create Durable Subscriber on Session 2");
-        TopicSubscriber consumer2 = session2.createDurableSubscriber(topic, MY_SUBSCRIPTION);
-
-        LOGGER.info("Starting connection");
-        con.start();
-
-        LOGGER.info("Producer sending message A");
-        producer.send(session1.createTextMessage("A"));
-
-        //check the dur sub's underlying queue now has msg count 1
-        AMQQueue subQueue = new AMQQueue("amq.topic", "clientid" + ":" + MY_SUBSCRIPTION);
-        assertEquals("Msg count should be 1", 1, ((AMQSession<?, ?>) session1).getQueueDepth(subQueue, true));
-
-        Message msg;
-        LOGGER.info("Receive message on consumer 1:expecting A");
-        msg = consumer1.receive(getReceiveTimeout());
-        assertNotNull("Message should have been received",msg);
-        assertEquals("A", ((TextMessage) msg).getText());
-        LOGGER.info("Receive message on consumer 1 :expecting null");
-        msg = consumer1.receive(getShortReceiveTimeout());
-        assertEquals(null, msg);
-
-        LOGGER.info("Receive message on consumer 2:expecting A");
-        msg = consumer2.receive(getReceiveTimeout());
-        assertNotNull("Message should have been received",msg);
-        assertEquals("A", ((TextMessage) msg).getText());
-        msg = consumer2.receive(getShortReceiveTimeout());
-        LOGGER.info("Receive message on consumer 1 :expecting null");
-        assertEquals(null, msg);
-
-        //check the dur sub's underlying queue now has msg count 0
-        assertEquals("Msg count should be 0", 0, ((AMQSession<?, ?>) session2).getQueueDepth(subQueue, true));
-
-        consumer2.close();
-        LOGGER.info("Unsubscribe session2/consumer2");
-        session2.unsubscribe(MY_SUBSCRIPTION);
-        
-        ((AMQSession<?, ?>) session2).sync();
-        
-        if(isJavaBroker())
-        {
-            assertFalse("Queue " + subQueue + " exists", ((AMQSession<?, ?>) session2).isQueueBound(subQueue));
-        }
-        
-        //verify unsubscribing the durable subscriber did not affect the non-durable one
-        LOGGER.info("Producer sending message B");
-        producer.send(session1.createTextMessage("B"));
-
-        LOGGER.info("Receive message on consumer 1 :expecting B");
-        msg = consumer1.receive(getReceiveTimeout());
-        assertNotNull("Message should have been received",msg);
-        assertEquals("B", ((TextMessage) msg).getText());
-        LOGGER.info("Receive message on consumer 1 :expecting null");
-        msg = consumer1.receive(getShortReceiveTimeout());
-        assertEquals(null, msg);
-
-        LOGGER.info("Close connection");
-        con.close();
-    }
-
 
     /**
      * Specifically uses a subscriber with a selector because QPID-4731 found that selectors
@@ -514,171 +436,6 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
 
         session.unsubscribe("testDurableWithInvalidDestinationsub");
     }
-    
-    /**
-     * Creates a durable subscription with a selector, then changes that selector on resubscription
-     * <p>
-     * QPID-1202, QPID-2418
-     */
-    public void testResubscribeWithChangedSelector() throws Exception
-    {
-        Connection conn = getConnection();
-        conn.start();
-        Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Topic topic = createTopic(conn, "testResubscribeWithChangedSelector");
-        MessageProducer producer = session.createProducer(topic);
-        
-        // Create durable subscriber that matches A
-        TopicSubscriber subA = session.createDurableSubscriber(topic, 
-                "testResubscribeWithChangedSelector",
-                "Match = True", false);
-
-        // Send 1 matching message and 1 non-matching message
-        sendMatchingAndNonMatchingMessage(session, producer);
-
-        Message rMsg = subA.receive(getShortReceiveTimeout());
-        assertNotNull(rMsg);
-        assertEquals("Content was wrong", 
-                     "testResubscribeWithChangedSelector1",
-                     ((TextMessage) rMsg).getText());
-        
-        rMsg = subA.receive(getShortReceiveTimeout());
-        assertNull(rMsg);
-        
-        // Disconnect subscriber
-        subA.close();
-        
-        // Reconnect with new selector that matches B
-        TopicSubscriber subB = session.createDurableSubscriber(topic, 
-                "testResubscribeWithChangedSelector","Match = False", false);
-
-        //verify no messages are now received.
-        rMsg = subB.receive(getShortReceiveTimeout());
-        assertNull("Should not have received message as the selector was changed", rMsg);
-
-        // Check that new messages are received properly
-        sendMatchingAndNonMatchingMessage(session, producer);
-        rMsg = subB.receive(getReceiveTimeout());
-
-        assertNotNull("Message should have been received", rMsg);
-        assertEquals("Content was wrong", 
-                     "testResubscribeWithChangedSelector2",
-                     ((TextMessage) rMsg).getText());
-        
-        
-        rMsg = subB.receive(getShortReceiveTimeout());
-        assertNull("Message should not have been received",rMsg);
-        session.unsubscribe("testResubscribeWithChangedSelector");
-    }
-
-    public void testDurableSubscribeWithTemporaryTopic() throws Exception
-    {
-        Connection conn = getConnection();
-        conn.start();
-        Session ssn = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Topic topic = ssn.createTemporaryTopic();
-        try
-        {
-            ssn.createDurableSubscriber(topic, "test");
-            fail("expected InvalidDestinationException");
-        }
-        catch (InvalidDestinationException ex)
-        {
-            // this is expected
-        }
-        try
-        {
-            ssn.createDurableSubscriber(topic, "test", null, false);
-            fail("expected InvalidDestinationException");
-        }
-        catch (InvalidDestinationException ex)
-        {
-            // this is expected
-        }
-    }
-
-    private void sendMatchingAndNonMatchingMessage(Session session, MessageProducer producer) throws JMSException
-    {
-        TextMessage msg = session.createTextMessage("testResubscribeWithChangedSelector1");
-        msg.setBooleanProperty("Match", true);
-        producer.send(msg);
-        msg = session.createTextMessage("testResubscribeWithChangedSelector2");
-        msg.setBooleanProperty("Match", false);
-        producer.send(msg);
-    }
-
-
-    /**
-     * create and register a durable subscriber with a message selector and then close it
-     * create a publisher and send  5 right messages and 5 wrong messages
-     * create another durable subscriber with the same selector and name
-     * check messages are still there
-     * <p>
-     * QPID-2418
-     */
-    public void testDurSubSameMessageSelector() throws Exception
-    {        
-        Connection conn = getConnection();
-        conn.start();
-        Session session = conn.createSession(true, Session.SESSION_TRANSACTED);
-        Topic topic = createTopic(conn, "sameMessageSelector");
-                
-        //create and register a durable subscriber with a message selector and then close it
-        TopicSubscriber subOne = session.createDurableSubscriber(topic, "sameMessageSelector", "testprop = TRUE", false);
-        subOne.close();
-
-        MessageProducer producer = session.createProducer(topic);
-        for (int i = 0; i < 5; i++)
-        {
-            Message message = session.createMessage();
-            message.setBooleanProperty("testprop", true);
-            producer.send(message);
-            message = session.createMessage();
-            message.setBooleanProperty("testprop", false);
-            producer.send(message);
-        }
-        session.commit();
-        producer.close();
-
-        // should be 5 or 10 messages on queue now
-        // (5 for the Apache Qpid Broker-J due to use of server side selectors, and 10 for the cpp broker due to client side selectors only)
-        AMQQueue queue = new AMQQueue("amq.topic", "clientid" + ":" + "sameMessageSelector");
-        assertEquals("Queue depth is wrong", isJavaBroker() ? 5 : 10, ((AMQSession<?, ?>) session).getQueueDepth(queue, true));
-
-        // now recreate the durable subscriber and check the received messages
-        TopicSubscriber subTwo = session.createDurableSubscriber(topic, "sameMessageSelector", "testprop = TRUE", false);
-
-        for (int i = 0; i < 5; i++)
-        {
-            Message message = subTwo.receive(getReceiveTimeout());
-            if (message == null)
-            {
-                fail("sameMessageSelector test failed. no message was returned");
-            }
-            else
-            {
-                assertEquals("sameMessageSelector test failed. message selector not reset",
-                        "true", message.getStringProperty("testprop"));
-            }
-        }
-        
-        session.commit();
-        
-        // Check queue has no messages
-        if (isJavaBroker())
-        {
-            assertEquals("Queue should be empty", 0, ((AMQSession<?, ?>) session).getQueueDepth(queue));
-        }
-        else
-        {
-            assertTrue("At most the queue should have only 1 message", ((AMQSession<?, ?>) session).getQueueDepth(queue) <= 1);
-        }
-        
-        // Unsubscribe
-        session.unsubscribe("sameMessageSelector");
-        
-        conn.close();
-    }
 
     /**
      * <ul>
@@ -690,6 +447,9 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
      * </ul>
      * <p>
      * QPID-2418
+     *
+     * TODO: it seems that client behaves in not jms spec compliant:
+     * the client allows subscription recreation with a new selector whilst an active subscriber is connected
      */
     public void testResubscribeWithChangedSelectorNoClose() throws Exception
     {
@@ -762,6 +522,9 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
      * </ul>
      * <p>
      * QPID-2418
+     *
+     * TODO: it seems that client behaves in not jms spec compliant:
+     * the client allows subscription recreation with a new selector whilst active subscriber is connected
      */
     public void testDurSubAddMessageSelectorNoClose() throws Exception
     {        
@@ -820,176 +583,4 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         conn.close();
     }
 
-    /**
-     * <ul>
-     * <li>create and register a durable subscriber with no message selector
-     * <li>try to create another durable with the same name, should fail
-     * </ul>
-     * <p>
-     * QPID-2418
-     */
-    public void testDurSubNoSelectorResubscribeNoClose() throws Exception
-    {        
-        Connection conn = getConnection();
-        conn.start();
-        Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Topic topic = createTopic(conn, "subscriptionName");
-                
-        // create and register a durable subscriber with no message selector
-        session.createDurableSubscriber(topic, "subscriptionName", null, false);
-
-        // try to recreate the durable subscriber
-        try
-        {
-            session.createDurableSubscriber(topic, "subscriptionName", null, false);
-            fail("Subscription should not have been created");
-        }
-        catch (Exception e)
-        {
-            LOGGER.error("Error creating durable subscriber",e);
-        }
-    }
-
-    /**
-     * Tests that a subscriber created on a same <i>session</i> as producer with
-     * no local true does not receive messages.
-     */
-    public void testNoLocalOnSameSession() throws Exception
-    {
-        Connection connection = getConnection();
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Topic topic = session.createTopic(getTestQueueName());
-        MessageProducer producer = session.createProducer(topic);
-        TopicSubscriber subscriber =  null;
-        try
-        {
-            subscriber = session.createDurableSubscriber(topic, getTestName(), null, true);
-            connection.start();
-
-            producer.send(createNextMessage(session, 1));
-
-            Message m = subscriber.receive(getShortReceiveTimeout());
-            assertNull("Unexpected message received", m);
-        }
-        finally
-        {
-            session.unsubscribe(getTestName());
-        }
-    }
-
-
-    /**
-     * Tests that a subscriber created on a same <i>connection</i> but separate
-     * <i>sessionM</i> as producer with no local true does not receive messages.
-     */
-    public void testNoLocalOnSameConnection() throws Exception
-    {
-        Connection connection = getConnection();
-
-        Session consumerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Session producerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Topic topic = consumerSession.createTopic(getTestQueueName());
-        MessageProducer producer = producerSession.createProducer(topic);
-
-        TopicSubscriber subscriber =  null;
-        try
-        {
-            subscriber = consumerSession.createDurableSubscriber(topic, getTestName(), null, true);
-            connection.start();
-
-            producer.send(createNextMessage(producerSession, 1));
-
-            Message m = subscriber.receive(getShortReceiveTimeout());
-            assertNull("Unexpected message received", m);
-        }
-        finally
-        {
-            consumerSession.unsubscribe(getTestName());
-        }
-    }
-
-    /**
-     * Tests that if no-local is in use, that the messages are delivered when
-     * the client reconnects.
-     *
-     * Currently fails on the Apache Qpid Broker-J due to QPID-3605.
-     */
-    public void testNoLocalMessagesNotDeliveredAfterReconnection() throws Exception
-    {
-        Connection connection = getConnection();
-
-        Session consumerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Session producerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Topic topic = consumerSession.createTopic(getTestQueueName());
-        MessageProducer producer = producerSession.createProducer(topic);
-
-        TopicSubscriber subscriber =  null;
-        try
-        {
-            subscriber = consumerSession.createDurableSubscriber(topic, getTestName(), null, true);
-            connection.start();
-
-            producer.send(createNextMessage(producerSession, 1));
-
-            Message m = subscriber.receive(getShortReceiveTimeout());
-            assertNull("Unexpected message received", m);
-
-            connection.close();
-
-            connection = getConnection();
-
-            consumerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            subscriber = consumerSession.createDurableSubscriber(topic, getTestName(), null, true);
-            connection.start();
-            m = subscriber.receive(getShortReceiveTimeout());
-            assertNull("Message should not be received on a new connection", m);
-        }
-        finally
-        {
-            consumerSession.unsubscribe(getTestName());
-        }
-    }
-
-    /**
-     * Tests that messages are delivered normally to a subscriber on a separate connection despite
-     * the use of durable subscriber with no-local on the first connection.
-     */
-    public void testNoLocalSubscriberAndSubscriberOnSeparateConnection() throws Exception
-    {
-        Connection noLocalConnection = getConnection();
-        Connection connection = getConnection();
-
-        String noLocalSubId1 = getTestName() + "subId1";
-        String subId = getTestName() + "subId2";
-
-        Session noLocalSession = noLocalConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Topic noLocalTopic = noLocalSession.createTopic(getTestQueueName());
-
-        Session consumerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Topic topic = consumerSession.createTopic(getTestQueueName());
-
-        TopicSubscriber noLocalSubscriber =  null;
-        TopicSubscriber subscriber =  null;
-        try
-        {
-            MessageProducer producer = noLocalSession.createProducer(noLocalTopic);
-            noLocalSubscriber = noLocalSession.createDurableSubscriber(noLocalTopic, noLocalSubId1, null, true);
-            subscriber = consumerSession.createDurableSubscriber(topic, subId, null, true);
-            noLocalConnection.start();
-            connection.start();
-
-            producer.send(createNextMessage(noLocalSession, 1));
-
-            Message m1 = noLocalSubscriber.receive(getShortReceiveTimeout());
-            assertNull("Subscriber on nolocal connection should not receive message", m1);
-
-            Message m2 = subscriber.receive(getShortReceiveTimeout());
-            assertNotNull("Subscriber on non-nolocal connection should receive message", m2);
-        }
-        finally
-        {
-            noLocalSession.unsubscribe(noLocalSubId1);
-            consumerSession.unsubscribe(subId);
-        }
-    }
 }

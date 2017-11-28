@@ -193,6 +193,7 @@
     <module>qpid-test-utils</module>
     <module>systests</module>
     <module>systests/systests-utils</module>
+    <module>systests/qpid-systests-jms_1.1</module>
     <module>systests/qpid-systests-jms_2.0</module>
     <module>systests/protocol-tests-core</module>
     <module>systests/protocol-tests-amqp-0-8</module>
