@@ -31,6 +31,7 @@ import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQFrame;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicAckBody;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicCancelBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicConsumeBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicPublishBody;
@@ -63,6 +64,9 @@ public class BasicInteraction
     private Map<String, Object> _consumeArguments = new HashMap<>();
     private long _ackDeliveryTag;
     private boolean _ackMultiple;
+
+    private String _consumeCancelTag;
+    private boolean _consumeCancelNoWait;
 
     public BasicInteraction(final Interaction interaction)
     {
@@ -211,6 +215,18 @@ public class BasicInteraction
     public BasicInteraction ackDeliveryTag(final long deliveryTag)
     {
         _ackDeliveryTag = deliveryTag;
+        return this;
+    }
+
+    public Interaction cancel() throws Exception
+    {
+        return _interaction.sendPerformative(new BasicCancelBody(AMQShortString.valueOf(_consumeCancelTag),
+                                                                 _consumeCancelNoWait));
+    }
+
+    public BasicInteraction consumeCancelTag(final String consumeCancelTag)
+    {
+        _consumeCancelTag = consumeCancelTag;
         return this;
     }
 }

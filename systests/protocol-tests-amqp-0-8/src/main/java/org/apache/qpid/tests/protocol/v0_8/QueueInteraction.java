@@ -26,6 +26,7 @@ import java.util.Map;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueDeclareBody;
+import org.apache.qpid.server.protocol.v0_8.transport.QueueDeleteBody;
 
 public class QueueInteraction
 {
@@ -38,6 +39,11 @@ public class QueueInteraction
     private boolean _declareNowait;
     private Map<String, Object> _declareArguments = new HashMap<>();
 
+    private String _deleteName;
+    private boolean _deleteIfUnused;
+    private boolean _deleteIfEmpty;
+    private boolean _deleteNowait;
+
     public QueueInteraction(final Interaction interaction)
     {
         _interaction = interaction;
@@ -46,6 +52,18 @@ public class QueueInteraction
     public QueueInteraction declareName(String name)
     {
         _declareName = name;
+        return this;
+    }
+
+    public QueueInteraction declarePassive(final boolean declarePassive)
+    {
+        _declarePassive = declarePassive;
+        return this;
+    }
+
+    public QueueInteraction declareDurable(final boolean declareDurable)
+    {
+        _declareDurable = declareDurable;
         return this;
     }
 
@@ -59,5 +77,26 @@ public class QueueInteraction
                                                                   _declareAutoDelete,
                                                                   _declareNowait,
                                                                   FieldTable.convertToFieldTable(_declareArguments)));
+    }
+
+    public QueueInteraction deleteName(final String name)
+    {
+        _deleteName = name;
+        return this;
+    }
+
+    public QueueInteraction deleteIfUnused(final boolean deleteIfUnused)
+    {
+        _deleteIfUnused = deleteIfUnused;
+        return this;
+    }
+
+    public Interaction delete() throws Exception
+    {
+        return _interaction.sendPerformative(new QueueDeleteBody(0,
+                                                                 AMQShortString.valueOf(_deleteName),
+                                                                 _deleteIfUnused,
+                                                                 _deleteIfEmpty,
+                                                                 _deleteNowait));
     }
 }

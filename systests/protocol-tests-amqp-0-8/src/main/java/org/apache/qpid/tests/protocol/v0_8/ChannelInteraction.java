@@ -22,6 +22,7 @@ package org.apache.qpid.tests.protocol.v0_8;
 
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelFlowBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenBody;
 
@@ -42,6 +43,11 @@ public class ChannelInteraction
     public Interaction close() throws Exception
     {
         return _interaction.sendPerformative(new ChannelCloseBody(200, AMQShortString.valueOf(""), 0, 0));
+    }
+
+    public Interaction closeOk() throws Exception
+    {
+        return _interaction.sendPerformative(ChannelCloseOkBody.INSTANCE);
     }
 
     public Interaction flow(final boolean active) throws Exception
