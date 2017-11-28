@@ -279,10 +279,10 @@ public class DurableSubscribtionTest extends Jms1TestBase
         Topic topic = createTopic(getTestName());
         String clientId = "testClientId";
 
-        Connection connection = getConnectionBuilder().setClientId(clientId).build();
+        Connection publishingConnection = getConnectionBuilder().setClientId("publishingConnection").build();
         try
         {
-            Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+            Session session = publishingConnection.createSession(true, Session.SESSION_TRANSACTED);
             MessageProducer sessionProducer = session.createProducer(topic);
 
             Connection noLocalConnection = getConnectionBuilder().setClientId(clientId).build();
@@ -294,7 +294,7 @@ public class DurableSubscribtionTest extends Jms1TestBase
                 TopicSubscriber noLocalSubscriber =
                         noLocalSession.createDurableSubscriber(topic, noLocalSubscriptionName, null, true);
                 noLocalConnection.start();
-                connection.start();
+                publishingConnection.start();
 
                 noLocalSessionProducer.send(noLocalSession.createTextMessage("Message1"));
                 noLocalSession.commit();
@@ -345,7 +345,7 @@ public class DurableSubscribtionTest extends Jms1TestBase
         }
         finally
         {
-            connection.close();
+            publishingConnection.close();
         }
     }
 
