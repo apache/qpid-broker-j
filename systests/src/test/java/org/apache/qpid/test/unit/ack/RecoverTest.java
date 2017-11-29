@@ -20,7 +20,6 @@
 package org.apache.qpid.test.unit.ack;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jms.Connection;
 import javax.jms.Destination;
@@ -28,10 +27,8 @@ import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
-import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
-import javax.jms.TextMessage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +36,9 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
+/**
+ * Legacy JMS client specific tests
+ */
 public class RecoverTest extends QpidBrokerTestCase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(RecoverTest.class);
@@ -46,7 +46,6 @@ public class RecoverTest extends QpidBrokerTestCase
     private static final int SENT_COUNT = 4;
 
     private volatile Exception _error;
-    private AtomicInteger _count;
     private long _timeout;
     private Connection _connection;
     private Session _consumerSession;
@@ -57,7 +56,6 @@ public class RecoverTest extends QpidBrokerTestCase
     {
         super.setUp();
         _error = null;
-        _count = new AtomicInteger();
         _timeout = getReceiveTimeout();
     }
 
@@ -116,25 +114,6 @@ public class RecoverTest extends QpidBrokerTestCase
         LOGGER.info("No messages redelivered as is expected");
     }
 
-    public void testRecoverResendsMsgs() throws Exception
-    {
-        initTest();
-
-        Message message = validateNextMessages(1, 0);
-        message.acknowledge();
-        LOGGER.info("Received and acknowledged first message");
-
-        _consumer.receive();
-        _consumer.receive();
-        _consumer.receive();
-        LOGGER.info("Received all four messages. Calling recover with three outstanding messages");
-        // no ack for last three messages so when I call recover I expect to get three messages back
-
-        _consumerSession.recover();
-
-        validateRemainingMessages(3);
-    }
-
     public void testRecoverResendsMsgsAckOnEarlier() throws Exception
     {
         initTest();
@@ -173,189 +152,6 @@ public class RecoverTest extends QpidBrokerTestCase
         validateRemainingMessages(0);
     }
 
-    public void testAcknowledgePerConsumer() throws Exception
-    {
-        Connection con = getConnection();
-
-        Session consumerSession = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        Queue queue = createTestQueue(consumerSession, "Q1");
-        Queue queue2 = createTestQueue(consumerSession, "Q2");
-        MessageConsumer consumer = consumerSession.createConsumer(queue);
-        MessageConsumer consumer2 = consumerSession.createConsumer(queue2);
-
-        Connection con2 = getConnection();
-        Session producerSession = con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        MessageProducer producer = producerSession.createProducer(queue);
-        MessageProducer producer2 = producerSession.createProducer(queue2);
-
-        producer.send(producerSession.createTextMessage("msg1"));
-        producer2.send(producerSession.createTextMessage("msg2"));
-
-        con2.close();
-
-        LOGGER.info("Starting connection");
-        con.start();
-
-        TextMessage tm2 = (TextMessage) consumer2.receive(_timeout);
-        assertNotNull(tm2);
-        assertEquals("msg2", tm2.getText());
-
-        tm2.acknowledge();
-        consumerSession.recover();
-
-        TextMessage tm1 = (TextMessage) consumer.receive(_timeout);
-        assertNotNull(tm1);
-        assertEquals("msg1", tm1.getText());
-
-        con.close();
-
-    }
-
-    public void testRecoverInAutoAckListener() throws Exception
-    {
-        Connection con = getConnection();
-
-        final Session consumerSession = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue queue = createTestQueue(consumerSession, "Q3");
-        MessageConsumer consumer = consumerSession.createConsumer(queue);
-        MessageProducer producer = consumerSession.createProducer(queue);
-        producer.send(consumerSession.createTextMessage("hello"));
-
-        final Object lock = new Object();
-
-        consumer.setMessageListener(new MessageListener()
-        {
-
-            @Override
-            public void onMessage(Message message)
-            {
-                try
-                {
-                    _count.incrementAndGet();
-                    if (_count.get() == 1)
-                    {
-                        if (message.getJMSRedelivered())
-                        {
-                            setError(new Exception("Message marked as redelivered on what should be first delivery attempt"));
-                        }
-
-                        consumerSession.recover();
-                    }
-                    else if (_count.get() == 2)
-                    {
-                        if (!message.getJMSRedelivered())
-                        {
-                            setError(new Exception("Message not marked as redelivered on what should be second delivery attempt"));
-                        }
-                    }
-                    else
-                    {
-                        LOGGER.error(message.toString());
-                        setError(new Exception("Message delivered too many times!: " + _count));
-                    }
-                }
-                catch (JMSException e)
-                {
-                    LOGGER.error("Error recovering session: " + e, e);
-                    setError(e);
-                }
-
-                synchronized (lock)
-                {
-                    lock.notify();
-                }
-            }
-        });
-
-        con.start();
-
-        long waitTime = 30000L;
-        long waitUntilTime = System.currentTimeMillis() + waitTime;
-
-        synchronized (lock)
-        {
-            while ((_count.get() <= 1) && (waitTime > 0))
-            {
-                lock.wait(waitTime);
-                if (_count.get() <= 1)
-                {
-                    waitTime = waitUntilTime - System.currentTimeMillis();
-                }
-            }
-        }
-
-        Thread.sleep(1000);
-
-        if (_error != null)
-        {
-            throw _error;
-        }
-
-        assertEquals("Message not received the correct number of times.",
-                     2, _count.get());
-    }
-
-    private void setError(Exception e)
-    {
-        _error = e;
-    }
-    
-    /**
-     * Goal : Check if ordering is preserved when doing recovery under reasonable circumstances.
-     *        Refer QPID-2471 for more details. 
-     * Test strategy :
-     * Send 8 messages to a topic.
-     * The consumer will call recover until it sees a message 5 times,
-     * at which point it will ack that message.
-     * It will continue the above until it acks all the messages.
-     * While doing so it will verify that the messages are not 
-     * delivered out of order.
-     */
-    public void testOrderingWithSyncConsumer() throws Exception
-    {
-        Connection con = getConnection();
-        Session session = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        Destination topic = createTopic(con, "myTopic");
-        MessageConsumer cons = session.createConsumer(topic);
-        
-        sendMessage(session,topic,8);
-        con.start();
-
-        int messageSeen = 0;
-        int expectedIndex = 0;
-        long startTime = System.currentTimeMillis();
-        
-        while(expectedIndex < 8)
-        {
-            // Based on historical data, on average the test takes about 6 secs to complete.
-            if (System.currentTimeMillis() - startTime > 8000)
-            {
-                fail("Test did not complete on time. Received " + 
-                     expectedIndex + " msgs so far. Please check the logs");
-            }
-            
-            Message message = cons.receive(_timeout);
-            int actualIndex = message.getIntProperty(INDEX);
-            
-            assertEquals("Received Message Out Of Order",expectedIndex, actualIndex);
-                        
-            //don't ack the message until we receive it 5 times
-            if( messageSeen < 5 ) 
-            {
-                LOGGER.debug("Ignoring message " + actualIndex + " and calling recover");
-                session.recover();
-                messageSeen++;
-            }
-            else
-            {
-                messageSeen = 0;
-                expectedIndex++;
-                message.acknowledge();
-                LOGGER.debug("Acknowledging message " + actualIndex);
-            }
-        }        
-    }
-    
     /**
      * Goal : Same as testOderingWithSyncConsumer
      * Test strategy :
