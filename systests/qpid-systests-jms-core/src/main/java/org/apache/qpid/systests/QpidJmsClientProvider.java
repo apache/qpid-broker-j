@@ -61,7 +61,7 @@ public class QpidJmsClientProvider implements JmsProvider
     }
 
     @Override
-    public Queue createTestQueue(Session session, String queueName) throws JMSException
+    public Queue createQueue(Session session, String queueName) throws JMSException
     {
         _managementFacade.createEntityUsingAmqpManagement(queueName, session, "org.apache.qpid.Queue");
 

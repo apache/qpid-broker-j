@@ -25,6 +25,7 @@ import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
+import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
 import javax.naming.NamingException;
@@ -133,6 +134,28 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         try
         {
             return _jmsProvider.createTopic(connection, topicName);
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    protected Queue createQueue(final String queueName) throws Exception
+    {
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                return _jmsProvider.createQueue(session, queueName);
+            }
+            finally
+            {
+                session.close();
+            }
         }
         finally
         {

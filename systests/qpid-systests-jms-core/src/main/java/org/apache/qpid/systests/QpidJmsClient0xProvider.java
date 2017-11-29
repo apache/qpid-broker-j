@@ -70,7 +70,7 @@ public class QpidJmsClient0xProvider implements JmsProvider
     }
 
     @Override
-    public Queue createTestQueue(Session session, String queueName) throws JMSException
+    public Queue createQueue(Session session, String queueName) throws JMSException
     {
 
         Queue amqQueue = null;

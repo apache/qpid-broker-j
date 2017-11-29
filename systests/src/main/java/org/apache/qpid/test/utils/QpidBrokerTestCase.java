@@ -301,12 +301,12 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     public Queue createTestQueue(Session session) throws JMSException
     {
-        return _jmsProvider.createTestQueue(session, getTestQueueName());
+        return _jmsProvider.createQueue(session, getTestQueueName());
     }
 
     public Queue createTestQueue(Session session, String queueName) throws JMSException
     {
-        return _jmsProvider.createTestQueue(session, queueName);
+        return _jmsProvider.createQueue(session, queueName);
     }
 
     /**

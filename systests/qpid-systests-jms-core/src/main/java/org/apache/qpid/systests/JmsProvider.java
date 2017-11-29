@@ -38,7 +38,7 @@ public interface JmsProvider
 
     Queue getQueueFromName(Session session, String name) throws JMSException;
 
-    Queue createTestQueue(Session session, String queueName) throws JMSException;
+    Queue createQueue(Session session, String queueName) throws JMSException;
 
     Topic getTestTopic(String testQueueName) throws NamingException;
 
