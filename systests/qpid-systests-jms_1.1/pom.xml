@@ -77,27 +77,19 @@
         </profile>
 
         <profile>
-            <id>excludesTestsIfNotAmqp1-0</id>
+            <id>addJms11IfNecessary</id>
             <activation>
                 <property>
                     <name>enableAmqp0-x</name>
                 </property>
             </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <excludes>
-                                <exclude>**/*</exclude>
-                            </excludes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.qpid</groupId>
+                    <artifactId>qpid-client</artifactId>
+                </dependency>
+            </dependencies>
         </profile>
-
     </profiles>
 
     <build>
