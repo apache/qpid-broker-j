@@ -433,7 +433,8 @@ public class CommitRollbackTest extends JmsTestBase
         }
     }
 
-    public void testCommitWithinOnMessage() throws Exception
+    @Test
+    public void commitWithinMessageListener() throws Exception
     {
         final Queue queue = createQueue(getTestName());
         Connection connection = getConnection();
@@ -451,7 +452,7 @@ public class CommitRollbackTest extends JmsTestBase
                 try
                 {
                     LOGGER.info("received message " + message);
-                    assertEquals("Wrong message received", message.getJMSCorrelationID(), "m1");
+                    assertEquals("Unexpected message received", commitCounter.get(), message.getIntProperty(INDEX));
                     LOGGER.info("commit session");
                     session.commit();
                     commitCounter.incrementAndGet();
