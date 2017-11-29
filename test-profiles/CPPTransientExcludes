@@ -17,8 +17,3 @@
 // under the License.
 //
 
-// those tests require broker recovery
-org.apache.qpid.test.unit.ct.DurableSubscriberTest#*
-
-// test requires a persistent store
-org.apache.qpid.test.unit.ack.ClientAcknowledgeTest#testClientAckWithLargeFlusherPeriod
