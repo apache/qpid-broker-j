@@ -247,6 +247,12 @@ org.apache.qpid.systest.AnonymousProducerTest#testSyncPublishIntoNonExistingQueu
 
 # Tests require AMQP management
 org.apache.qpid.server.routing.AlternateBindingRoutingTest#*
+org.apache.qpid.server.queue.LastValueQueueTest#testConflatedQueueDepth
+org.apache.qpid.server.queue.QueueDepthWithSelectorTest#test
+org.apache.qpid.test.unit.ack.Acknowledge2ConsumersTest#*
+org.apache.qpid.test.unit.ack.AcknowledgeOnMessageTest#*
+org.apache.qpid.test.unit.ack.AcknowledgeTest#*
+org.apache.qpid.test.unit.message.UTF8Test#*
 
 # Tests AMQP 1.0 specific routing semantics
 org.apache.qpid.systest.MessageRoutingTest#*
