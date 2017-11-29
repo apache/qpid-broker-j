@@ -60,7 +60,7 @@ public class DeliveryCountTest extends JmsTestBase
             connection.start();
             Session session = connection.createSession(Session.CLIENT_ACKNOWLEDGE);
            _queue = session.createQueue(testQueueName);
-            Utils.sendMessage(session, _queue, 1);
+            Utils.sendMessages(session, _queue, 1);
         }
     }
 

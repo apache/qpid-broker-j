@@ -60,7 +60,7 @@ public class RecoverTest extends JmsTestBase
         {
             Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
             MessageConsumer consumer = session.createConsumer(queue);
-            produceTestMessages(connection, queue, SENT_COUNT);
+            Utils.sendMessages(connection, queue, SENT_COUNT);
             connection.start();
 
             Message message = receiveAndValidateMessage(consumer, 0);
@@ -89,7 +89,7 @@ public class RecoverTest extends JmsTestBase
         {
             Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
             MessageConsumer consumer = session.createConsumer(queue);
-            produceTestMessages(connection, queue, SENT_COUNT);
+            Utils.sendMessages(connection, queue, SENT_COUNT);
             connection.start();
 
             int messageSeen = 0;
@@ -175,7 +175,7 @@ public class RecoverTest extends JmsTestBase
         {
             Session consumerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             MessageConsumer consumer = consumerSession.createConsumer(queue);
-            produceTestMessages(connection, queue, 1);
+            Utils.sendMessages(connection, queue, 1);
 
             final CountDownLatch awaitMessages = new CountDownLatch(2);
             final AtomicReference<Throwable> listenerCaughtException = new AtomicReference<>();
@@ -224,20 +224,6 @@ public class RecoverTest extends JmsTestBase
         assertNotNull(String.format("Expected message '%d' is not received", messageIndex), message);
         assertEquals("Received message out of order", messageIndex, message.getIntProperty(INDEX));
         return message;
-    }
-
-    private void produceTestMessages(final Connection connection, final Queue queue, final int messageNumber)
-            throws Exception
-    {
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        try
-        {
-            Utils.sendMessage(session, queue, messageNumber);
-        }
-        finally
-        {
-            session.close();
-        }
     }
 
 }

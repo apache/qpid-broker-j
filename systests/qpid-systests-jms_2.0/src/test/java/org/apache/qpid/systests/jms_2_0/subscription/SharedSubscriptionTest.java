@@ -57,7 +57,7 @@ public class SharedSubscriptionTest extends JmsTestBase
             MessageConsumer consumer1 = subscriber1Session.createSharedConsumer(topic, "subscription");
             MessageConsumer consumer2 = subscriber2Session.createSharedConsumer(topic, "subscription");
 
-            Utils.sendMessage(publishingSession, topic, 2);
+            Utils.sendMessages(publishingSession, topic, 2);
 
             connection.start();
 
@@ -94,7 +94,7 @@ public class SharedSubscriptionTest extends JmsTestBase
             MessageConsumer consumer1 = subscriber1Session.createSharedDurableConsumer(topic, "subscription");
             MessageConsumer consumer2 = subscriber2Session.createSharedDurableConsumer(topic, "subscription");
 
-            Utils.sendMessage(publishingSession, topic, 4);
+            Utils.sendMessages(publishingSession, topic, 4);
 
             connection.start();
 
@@ -224,7 +224,7 @@ public class SharedSubscriptionTest extends JmsTestBase
             MessageConsumer consumer2 = subscriberSession.createSharedConsumer(topic, "testSharedSubscription");
             connection.start();
 
-            Utils.sendMessage(publishingSession, topic, 1);
+            Utils.sendMessages(publishingSession, topic, 1);
 
             Message message1 = consumer1.receive(getReceiveTimeout());
             Message message2 = consumer2.receive(getReceiveTimeout());
@@ -254,7 +254,7 @@ public class SharedSubscriptionTest extends JmsTestBase
             connection.start();
             connection2.start();
 
-            Utils.sendMessage(publishingSession, topic, 1);
+            Utils.sendMessages(publishingSession, topic, 1);
 
             Message message1 = consumer1.receive(getReceiveTimeout());
             Message message2 = consumer2.receive(getReceiveTimeout());
@@ -283,7 +283,7 @@ public class SharedSubscriptionTest extends JmsTestBase
             MessageConsumer consumer1 =
                     subscriber1Session.createSharedDurableConsumer(topic, "subscription", "index>1");
 
-            Utils.sendMessage(publishingSession, topic, 4);
+            Utils.sendMessages(publishingSession, topic, 4);
 
             connection.start();
             connection2.start();
@@ -320,7 +320,7 @@ public class SharedSubscriptionTest extends JmsTestBase
                     "No message should be received as re-subscribing with different topic or selector is equivalent to unsubscribe/subscribe",
                     message2);
 
-            Utils.sendMessage(publishingSession, topic, 4);
+            Utils.sendMessages(publishingSession, topic, 4);
 
             Message message3 = consumer2.receive(getReceiveTimeout());
             assertNotNull("Should receive message 3", message3);
@@ -335,7 +335,7 @@ public class SharedSubscriptionTest extends JmsTestBase
                     "No message should be received as re-subscribing with different topic or selector is equivalent to unsubscribe/subscribe",
                     message4);
 
-            Utils.sendMessage(publishingSession, topic2, 4);
+            Utils.sendMessages(publishingSession, topic2, 4);
 
             Message message5 = consumer3.receive(getReceiveTimeout());
             assertEquals("Unexpected index for message 5", 3, message5.getIntProperty(Utils.INDEX));

@@ -54,7 +54,7 @@ public class AcknowledgeTest extends JmsTestBase
             MessageConsumer consumer = session.createConsumer(queue);
             connection.start();
 
-            Utils.sendMessage(session, queue, 2);
+            Utils.sendMessages(session, queue, 2);
 
             Message message = consumer.receive(getReceiveTimeout());
             assertNotNull("Message has not been received", message);

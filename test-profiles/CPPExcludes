@@ -112,8 +112,6 @@ org.apache.qpid.client.failover.FailoverBehaviourTest#testFlowControlFlagResetOn
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testFailoverHandlerTimeoutExpires
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testFlowControlFlagResetOnFailover
 
-org.apache.qpid.test.client.RollbackOrderTest#testOrderingAfterRollbackOnMessage#*
-
 // Excluded because plugins from Qpid Broker-J are not used in CPP broker
 org.apache.qpid.server.virtualhost.plugin.*
 org.apache.qpid.info.test.*

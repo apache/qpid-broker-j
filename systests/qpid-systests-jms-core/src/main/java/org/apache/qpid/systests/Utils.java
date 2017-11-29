@@ -23,10 +23,12 @@ package org.apache.qpid.systests;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
+import javax.jms.Queue;
 import javax.jms.Session;
 
 public class Utils
@@ -35,7 +37,36 @@ public class Utils
     public static final String INDEX = "index";
     private static final String DEFAULT_MESSAGE_PAYLOAD = createString(DEFAULT_MESSAGE_SIZE);
 
-    public static List<Message> sendMessage(Session session, Destination destination, int count) throws Exception
+    public static void sendTextMessage(final Connection connection, final Destination destination, String message)
+            throws JMSException
+    {
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        try
+        {
+            MessageProducer producer = session.createProducer(destination);
+            producer.send(session.createTextMessage(message));
+        }
+        finally
+        {
+            session.close();
+        }
+    }
+
+    public static void sendMessages(final Connection connection, final Destination destination, final int messageNumber)
+            throws JMSException
+    {
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        try
+        {
+            sendMessages(session, destination, messageNumber);
+        }
+        finally
+        {
+            session.close();
+        }
+    }
+
+    public static List<Message> sendMessages(Session session, Destination destination, int count) throws JMSException
     {
         List<Message> messages = new ArrayList<>(count);
         MessageProducer producer = session.createProducer(destination);
