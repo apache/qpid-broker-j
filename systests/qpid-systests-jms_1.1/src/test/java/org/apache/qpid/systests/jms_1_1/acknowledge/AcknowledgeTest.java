@@ -42,7 +42,7 @@ public class AcknowledgeTest extends JmsTestBase
 {
 
     @Test
-    public void testClientAckWithLargeFlusherPeriod() throws Exception
+    public void messageAcknowledgement() throws Exception
     {
         assumeThat(getBrokerAdmin().supportsRestart(), is(true));
 

@@ -105,7 +105,7 @@ public class StreamMessageTest extends JmsTestBase
     {
         Queue queue = createQueue(getTestName());
         final CountDownLatch awaitMessages = new CountDownLatch(1);
-        final AtomicReference<Throwable> listenerCaughtException = new AtomicReference<Throwable>();
+        final AtomicReference<Throwable> listenerCaughtException = new AtomicReference<>();
 
         Connection consumerConnection = getConnection();
         try

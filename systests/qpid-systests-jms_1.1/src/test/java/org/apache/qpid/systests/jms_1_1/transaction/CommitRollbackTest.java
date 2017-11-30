@@ -20,20 +20,14 @@
  */
 package org.apache.qpid.systests.jms_1_1.transaction;
 
-import static junit.framework.TestCase.fail;
 import static org.apache.qpid.systests.Utils.INDEX;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -45,10 +39,6 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -552,7 +542,7 @@ public class CommitRollbackTest extends JmsTestBase
                     {
                         Message remaining = consumer.receive(getReceiveTimeout());
                         assertNotNull(String.format("Expected remaining message '%d' is not received", m), message);
-                        assertEquals("Received remained message out of order", m, remaining.getIntProperty(INDEX));
+                        assertEquals("Received remaining message out of order", m, remaining.getIntProperty(INDEX));
                     }
 
                     LOGGER.debug(String.format("Rolling back transaction for message with index %d", expectedIndex));
@@ -574,84 +564,4 @@ public class CommitRollbackTest extends JmsTestBase
         }
     }
 
-    @Test
-    public void testRollbackSoak() throws Exception
-    {
-        final int messageNumber = 20;
-        final int maximumRollbacks = messageNumber * 2;
-        final int numberOfConsumers = 2;
-        long timeout = getReceiveTimeout() * (maximumRollbacks + messageNumber);
-        final AtomicInteger rollbackCounter = new AtomicInteger();
-        final AtomicInteger commitCounter = new AtomicInteger();
-        final AtomicBoolean shutdown = new AtomicBoolean();
-        List<ListenableFuture<Void>> consumerFutures = new ArrayList<>(numberOfConsumers);
-        final Queue queue = createQueue(getTestName());
-        final Connection connection = getConnectionBuilder().setPrefetch(messageNumber / numberOfConsumers).build();
-        try
-        {
-            Utils.sendMessages(connection, queue, messageNumber);
-            final ListeningExecutorService threadPool =
-                    MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(numberOfConsumers));
-            try
-            {
-                for (int i = 0; i < numberOfConsumers; ++i)
-                {
-                    final Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-                    final MessageConsumer consumer = session.createConsumer(queue);
-                    consumerFutures.add(threadPool.submit(() -> {
-                        do
-                        {
-                            Message m = consumer.receive(getReceiveTimeout());
-                            if (m != null)
-                            {
-                                if (rollbackCounter.incrementAndGet() <= maximumRollbacks)
-                                {
-                                    session.rollback();
-                                }
-                                else
-                                {
-                                    session.commit();
-                                    commitCounter.incrementAndGet();
-                                }
-                            }
-                        }
-                        while (commitCounter.get() < messageNumber
-                               && !Thread.currentThread().isInterrupted()
-                               && !shutdown.get());
-                        return null;
-                    }));
-                }
-                connection.start();
-
-                final ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(consumerFutures);
-                try
-                {
-                    combinedFuture.get(timeout, TimeUnit.MILLISECONDS);
-                }
-                catch (TimeoutException e)
-                {
-                    fail(String.format(
-                            "Test took more than %.1f seconds. All consumers probably starved."
-                            + " Performed %d rollbacks, consumed %d/%d messages",
-                            timeout / 1000.,
-                            rollbackCounter.get(),
-                            commitCounter.get(),
-                            messageNumber));
-                }
-                finally
-                {
-                    shutdown.set(true);
-                }
-            }
-            finally
-            {
-                threadPool.shutdown();
-                threadPool.awaitTermination(timeout, TimeUnit.MILLISECONDS);
-            }
-        }
-        finally
-        {
-            connection.close();
-        }
-    }
 }
