@@ -17,7 +17,5 @@
 // under the License.
 //
 
-org.apache.qpid.test.unit.transacted.TransactedTest#testRollback
-
 org.apache.qpid.test.unit.topic.DurableSubscriptionTest#testDurabilityNOACK
 org.apache.qpid.test.unit.topic.DurableSubscriptionTest#testDurabilityNOACKSessionPerConnection

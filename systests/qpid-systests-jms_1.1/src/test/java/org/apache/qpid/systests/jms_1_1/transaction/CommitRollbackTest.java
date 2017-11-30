@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jms.Connection;
+import javax.jms.IllegalStateException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
@@ -51,7 +53,7 @@ public class CommitRollbackTest extends JmsTestBase
     private static final Logger LOGGER = LoggerFactory.getLogger(CommitRollbackTest.class);
 
     @Test
-    public void produceMessageAndAbortTransaction() throws Exception
+    public void produceMessageAndAbortTransactionByClosingConnection() throws Exception
     {
         final Queue queue = createQueue(getTestName());
         Connection connection = getConnection();
@@ -83,6 +85,34 @@ public class CommitRollbackTest extends JmsTestBase
         finally
         {
             connection2.close();
+        }
+    }
+
+    @Test
+    public void produceMessageAndAbortTransactionByClosingSession() throws Exception
+    {
+        final Queue queue = createQueue(getTestName());
+        Connection connection = getConnection();
+        try
+        {
+            Session transactedSession = connection.createSession(true, Session.SESSION_TRANSACTED);
+            MessageProducer transactedProducer = transactedSession.createProducer(queue);
+            transactedProducer.send(transactedSession.createTextMessage("A"));
+            transactedSession.close();
+
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            MessageProducer messageProducer = session.createProducer(queue);
+            messageProducer.send(session.createTextMessage("B"));
+
+            connection.start();
+            MessageConsumer messageConsumer = session.createConsumer(queue);
+            Message message = messageConsumer.receive(getReceiveTimeout());
+            assertTrue("Text message should be received", message instanceof TextMessage);
+            assertEquals("Unexpected message received", "B", ((TextMessage) message).getText());
+        }
+        finally
+        {
+            connection.close();
         }
     }
 
@@ -160,7 +190,7 @@ public class CommitRollbackTest extends JmsTestBase
     }
 
     @Test
-    public void receiveMessageAndAbortTransaction() throws Exception
+    public void receiveMessageAndAbortTransactionByClosingConnection() throws Exception
     {
         final Queue queue = createQueue(getTestName());
         Connection connection = getConnection();
@@ -196,6 +226,38 @@ public class CommitRollbackTest extends JmsTestBase
         finally
         {
             connection2.close();
+        }
+    }
+
+    @Test
+    public void receiveMessageAndAbortTransactionByClosingSession() throws Exception
+    {
+        final Queue queue = createQueue(getTestName());
+        Connection connection = getConnection();
+        try
+        {
+            Utils.sendTextMessage(connection, queue, "A");
+
+            connection.start();
+            Session transactedSession = connection.createSession(true, Session.SESSION_TRANSACTED);
+            MessageConsumer transactedConsumer = transactedSession.createConsumer(queue);
+            Message message = transactedConsumer.receive(getReceiveTimeout());
+            assertTrue("Text message should be received", message instanceof TextMessage);
+            TextMessage textMessage = (TextMessage) message;
+            assertEquals("Unexpected message received", "A", textMessage.getText());
+
+            transactedSession.close();
+
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            MessageConsumer messageConsumer = session.createConsumer(queue);
+
+            Message message2 = messageConsumer.receive(getReceiveTimeout());
+            assertTrue("Text message should be received", message2 instanceof TextMessage);
+            assertEquals("Unexpected message received", "A", ((TextMessage) message2).getText());
+        }
+        finally
+        {
+            connection.close();
         }
     }
 
@@ -563,5 +625,104 @@ public class CommitRollbackTest extends JmsTestBase
             connection.close();
         }
     }
+
+    @Test
+    public void testCommitOnClosedConnection() throws Exception
+    {
+        Session transactedSession;
+        Connection connection = getConnection();
+        try
+        {
+            transactedSession = connection.createSession(true, Session.SESSION_TRANSACTED);
+        }
+        finally
+        {
+            connection.close();
+        }
+
+        assertNotNull("Session cannot be null", transactedSession);
+        try
+        {
+            transactedSession.commit();
+            fail("Commit on closed connection should throw IllegalStateException!");
+        }
+        catch(IllegalStateException e)
+        {
+            // passed
+        }
+    }
+
+    @Test
+    public void testCommitOnClosedSession() throws Exception
+    {
+        Connection connection = getConnection();
+        try
+        {
+            Session transactedSession = connection.createSession(true, Session.SESSION_TRANSACTED);
+            transactedSession.close();
+            try
+            {
+                transactedSession.commit();
+                fail("Commit on closed session should throw IllegalStateException!");
+            }
+            catch (IllegalStateException e)
+            {
+                // passed
+            }
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    @Test
+    public void testRollbackOnClosedSession() throws Exception
+    {
+        Connection connection = getConnection();
+        try
+        {
+            Session transactedSession = connection.createSession(true, Session.SESSION_TRANSACTED);
+            transactedSession.close();
+            try
+            {
+                transactedSession.rollback();
+                fail("Rollback on closed session should throw IllegalStateException!");
+            }
+            catch (IllegalStateException e)
+            {
+                // passed
+            }
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    @Test
+    public void testGetTransactedOnClosedSession() throws Exception
+    {
+        Connection connection = getConnection();
+        try
+        {
+            Session transactedSession = connection.createSession(true, Session.SESSION_TRANSACTED);
+            transactedSession.close();
+            try
+            {
+                transactedSession.getTransacted();
+                fail("According to Sun TCK invocation of Session#getTransacted on closed session should throw IllegalStateException!");
+            }
+            catch (IllegalStateException e)
+            {
+                // passed
+            }
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
 
 }
