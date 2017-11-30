@@ -27,6 +27,7 @@ import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueDeclareBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueDeleteBody;
+import org.apache.qpid.server.protocol.v0_8.transport.QueuePurgeBody;
 
 public class QueueInteraction
 {
@@ -43,6 +44,9 @@ public class QueueInteraction
     private boolean _deleteIfUnused;
     private boolean _deleteIfEmpty;
     private boolean _deleteNowait;
+
+    private String _purgeName;
+    private boolean _purgeNowait;
 
     public QueueInteraction(final Interaction interaction)
     {
@@ -110,5 +114,17 @@ public class QueueInteraction
                                                                  _deleteIfUnused,
                                                                  _deleteIfEmpty,
                                                                  _deleteNowait));
+    }
+    public QueueInteraction purgeName(final String name)
+    {
+        _purgeName = name;
+        return this;
+    }
+
+    public Interaction purge() throws Exception
+    {
+        return _interaction.sendPerformative(new QueuePurgeBody(0,
+                                                                AMQShortString.valueOf(_purgeName),
+                                                                _purgeNowait));
     }
 }

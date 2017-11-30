@@ -23,7 +23,9 @@ package org.apache.qpid.tests.protocol.v0_8;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
@@ -42,6 +44,7 @@ import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueDeclareOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueDeleteOkBody;
+import org.apache.qpid.server.protocol.v0_8.transport.QueuePurgeOkBody;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -71,6 +74,38 @@ public class QueueTest extends BrokerAdminUsingTestBase
             assertThat(response.getQueue(), is(equalTo(AMQShortString.valueOf(BrokerAdmin.TEST_QUEUE_NAME))));
             assertThat(response.getMessageCount(), is(equalTo(0L)));
             assertThat(response.getConsumerCount(), is(equalTo(0L)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.7.2.1", description = "If not set and the queue exists, the server MUST check "
+                                                          + "that the existing queue has the same values for durable, "
+                                                          + "exclusive, auto-delete, and arguments fields.")
+    public void queueDeclareEquivalent() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            QueueInteraction queueInteraction = interaction.openAnonymousConnection()
+                                                .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                                                .queue();
+            QueueDeclareOkBody response = queueInteraction.declareName(BrokerAdmin.TEST_QUEUE_NAME)
+                                                          .declareExclusive(false).declare()
+                                                          .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
+
+            assertThat(response.getQueue(), is(equalTo(AMQShortString.valueOf(BrokerAdmin.TEST_QUEUE_NAME))));
+
+            QueueDeclareOkBody equalDeclareResponse = queueInteraction.declareName(BrokerAdmin.TEST_QUEUE_NAME)
+                                                                      .declareExclusive(false).declare()
+                                                                      .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
+            assertThat(equalDeclareResponse.getQueue(), is(equalTo(AMQShortString.valueOf(BrokerAdmin.TEST_QUEUE_NAME))));
+
+            ChannelCloseBody unequalDeclareResponse = queueInteraction.declareName(BrokerAdmin.TEST_QUEUE_NAME)
+                                                                      .declareExclusive(true).declare()
+                                                                      .consumeResponse().getLatestResponse(ChannelCloseBody.class);
+            assertThat(unequalDeclareResponse.getReplyCode(), is(equalTo(ErrorCodes.ALREADY_EXISTS)));
+
+            interaction.channel().closeOk();
         }
     }
 
@@ -247,6 +282,31 @@ public class QueueTest extends BrokerAdminUsingTestBase
     }
 
     @Test
+    @SpecificationTest(section = "1.7.2.1",
+            description = "The queue name MAY be empty, in which case the server MUST create a new queue with a unique "
+                          + "generated name and return this to the client in the Declare-Ok method.")
+    public void queueDeclareServerAssignedName() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            QueueDeclareOkBody response = interaction.openAnonymousConnection()
+                                                     .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                                                     .queue().declare()
+                                                     .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
+
+            String serverAssignedQueueName = response.getQueue().toString();
+            assertThat(serverAssignedQueueName, is(not(isEmptyString())));
+
+            QueueDeclareOkBody passive = interaction.queue()
+                                                    .declareName(serverAssignedQueueName)
+                                                    .declarePassive(true).declare()
+                                                    .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
+            assertThat(passive.getQueue(), is(equalTo(AMQShortString.valueOf(serverAssignedQueueName))));
+        }
+    }
+
+    @Test
     @SpecificationTest(section = "1.7.2.9", description = "delete a queue")
     public void queueDelete() throws Exception
     {
@@ -321,4 +381,32 @@ public class QueueTest extends BrokerAdminUsingTestBase
                               .consumeResponse().getLatestResponse(QueueDeleteOkBody.class);
         }
     }
+
+    @Test
+    @SpecificationTest(section = "1.7.2.7", description = "purge a queue")
+    public void queuePurge() throws Exception
+    {
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "message");
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            QueuePurgeOkBody response = interaction.openAnonymousConnection()
+                                                   .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                                                   .queue().purgeName(BrokerAdmin.TEST_QUEUE_NAME).purge()
+                                                   .consumeResponse().getLatestResponse(QueuePurgeOkBody.class);
+
+            /* TODO purge currently always returns 0 */
+            //assertThat(response.getMessageCount(), is(equalTo(1L)));
+
+            QueueDeclareOkBody passive = interaction.queue()
+                                                    .declareName(BrokerAdmin.TEST_QUEUE_NAME)
+                                                    .declarePassive(true).declare()
+                                                    .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
+            assertThat(passive.getQueue(), is(equalTo(AMQShortString.valueOf(BrokerAdmin.TEST_QUEUE_NAME))));
+            assertThat(response.getMessageCount(), is(equalTo(0L)));
+        }
+    }
+
 }
