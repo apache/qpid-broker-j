@@ -67,6 +67,18 @@ public class QueueInteraction
         return this;
     }
 
+    public QueueInteraction declareAutoDelete(final boolean autoDelete)
+    {
+        _declareAutoDelete = autoDelete;
+        return this;
+    }
+
+    public QueueInteraction declareExclusive(final boolean exclusive)
+    {
+        _declareExclusive = exclusive;
+        return this;
+    }
+
     public Interaction declare() throws Exception
     {
         return _interaction.sendPerformative(new QueueDeclareBody(0,

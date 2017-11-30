@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,6 +30,7 @@ import java.net.InetSocketAddress;
 
 import org.hamcrest.Matchers;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.ErrorCodes;
@@ -37,6 +39,7 @@ import org.apache.qpid.server.protocol.v0_8.transport.BasicCancelOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicConsumeOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueDeclareOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueDeleteOkBody;
 import org.apache.qpid.tests.protocol.SpecificationTest;
@@ -102,7 +105,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
 
     @Test
     @SpecificationTest(section = "1.7.2.1",
-            description = "If [declareDurable is] set when creating a new queue, the queue will be marked as durable."
+            description = "If [durable is] set when creating a new queue, the queue will be marked as durable."
                           + "Durable queues remain active when a server restarts.")
     public void queueDeclareDurable() throws Exception
     {
@@ -133,6 +136,113 @@ public class QueueTest extends BrokerAdminUsingTestBase
             assertThat(response.getQueue(), is(equalTo(AMQShortString.valueOf(BrokerAdmin.TEST_QUEUE_NAME))));
             assertThat(response.getMessageCount(), is(equalTo(0L)));
             assertThat(response.getConsumerCount(), is(equalTo(0L)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.7.2.1",
+            description = "If [auto-delete] set, the queue is deleted when all consumers have finished using it. The "
+                          + "last consumer can be cancelled either explicitly or because its channel is closed. "
+                          + "If there was no consumer ever on the queue, it won't be deleted.")
+    public void queueDeclareAutoDelete() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            QueueDeclareOkBody response = interaction.openAnonymousConnection()
+                                                     .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                                                     .queue().declareAutoDelete(true).declareName(BrokerAdmin.TEST_QUEUE_NAME).declare()
+                                                     .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
+
+            assertThat(response.getQueue(), is(equalTo(AMQShortString.valueOf(BrokerAdmin.TEST_QUEUE_NAME))));
+        }
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+
+            QueueDeclareOkBody response = interaction.openAnonymousConnection()
+                                                     .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                                                     .queue().declarePassive(true).declareName(BrokerAdmin.TEST_QUEUE_NAME).declare()
+                                                     .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
+            assertThat(response.getQueue(), is(equalTo(AMQShortString.valueOf(BrokerAdmin.TEST_QUEUE_NAME))));
+
+            final String consumerTag = "lastConsumer";
+            interaction.basic()
+                       .consumeConsumerTag(consumerTag).consumeQueue(BrokerAdmin.TEST_QUEUE_NAME).consume()
+                       .consumeResponse(BasicConsumeOkBody.class)
+                       .basic().consumeCancelTag(consumerTag).cancel()
+                       .consumeResponse().getLatestResponse(BasicCancelOkBody.class);
+
+            ChannelCloseBody closeResponse = interaction.queue()
+                                                        .declarePassive(true)
+                                                        .declareName(BrokerAdmin.TEST_QUEUE_NAME)
+                                                        .declare()
+                                                        .consumeResponse()
+                                                        .getLatestResponse(ChannelCloseBody.class);
+            assertThat(closeResponse.getReplyCode(), is(equalTo(ErrorCodes.NOT_FOUND)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.7.2.1",
+            description = "The server MUST ignore the auto-delete field if the queue already exists.")
+    @Ignore("The server does not implement this rule.")
+    public void queueDeclareAutoDeletePreexistingQueue() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            QueueDeclareOkBody response = interaction.openAnonymousConnection()
+                                                     .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                                                     .queue().declareName(BrokerAdmin.TEST_QUEUE_NAME).declare()
+                                                     .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
+
+            assertThat(response.getQueue(), is(equalTo(AMQShortString.valueOf(BrokerAdmin.TEST_QUEUE_NAME))));
+
+            QueueDeclareOkBody passiveResponse =
+                    interaction.queue().declareAutoDelete(true).declareName(BrokerAdmin.TEST_QUEUE_NAME).declare()
+                               .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
+            assertThat(passiveResponse.getQueue(), is(equalTo(AMQShortString.valueOf(BrokerAdmin.TEST_QUEUE_NAME))));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.7.2.1",
+            description = "The client MAY NOT attempt to use a queue that was declared as exclusive by another "
+                          + "still-open connection.")
+    public void queueDeclareExclusive() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            QueueDeclareOkBody response = interaction.openAnonymousConnection()
+                                                     .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                                                     .queue().declareName(BrokerAdmin.TEST_QUEUE_NAME).declareExclusive(true).declare()
+                                                     .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
+
+            assertThat(response.getQueue(), is(equalTo(AMQShortString.valueOf(BrokerAdmin.TEST_QUEUE_NAME))));
+
+            try(FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
+            {
+                final Interaction interaction2 = transport2.newInteraction();
+                ConnectionCloseBody closeResponse = interaction2.openAnonymousConnection()
+                                                                .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                                                                .queue().declareName(BrokerAdmin.TEST_QUEUE_NAME).declare()
+                                                                .consumeResponse().getLatestResponse(ConnectionCloseBody.class);
+                /* TODO: 0-91 specification requires 'resource-locked' (405) but server uses (530) */
+                assertThat(closeResponse.getReplyCode(), anyOf(equalTo(ErrorCodes.NOT_ALLOWED), equalTo(405)));
+            }
+        }
+
+        try(FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction2 = transport2.newInteraction();
+            QueueDeclareOkBody response = interaction2.openAnonymousConnection()
+                                                            .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                                                            .queue().declareName(BrokerAdmin.TEST_QUEUE_NAME).declare()
+                                                            .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
+            assertThat(response.getQueue(), is(equalTo(AMQShortString.valueOf(BrokerAdmin.TEST_QUEUE_NAME))));
         }
     }
 
@@ -174,7 +284,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
 
     @Test
     @SpecificationTest(section = "1.7.2.9",
-            description = "If [deleteIfUnused is] set, the server will only delete the queue if it has no consumers. "
+            description = "If [if-unused is] set, the server will only delete the queue if it has no consumers. "
                           + "If the queue has consumers the server does does not delete it but raises a channel "
                           + "exception instead..")
     public void queueDeleteWithConsumer() throws Exception
