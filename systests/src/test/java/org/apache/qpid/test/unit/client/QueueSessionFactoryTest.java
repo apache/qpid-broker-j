@@ -32,8 +32,6 @@ import javax.jms.TopicSession;
  * Ensures that queue specific session factory method {@link QueueConnection#createQueueSession()} create sessions
  * of type {@link QueueSession} and that those sessions correctly restrict the available JMS operations
  * operations to exclude those applicable to only topics.
- *
- * @see TopicSessionFactoryTest
  */
 public class QueueSessionFactoryTest extends QpidBrokerTestCase
 {

@@ -18,78 +18,87 @@
  * under the License.
  *
  */
-package org.apache.qpid.test.unit.client;
+package org.apache.qpid.systests.jms_1_1.topic;
 
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import static org.junit.Assert.fail;
 
+import javax.jms.JMSException;
 import javax.jms.Queue;
-import javax.jms.QueueSession;
 import javax.jms.Session;
 import javax.jms.TopicConnection;
 import javax.jms.TopicSession;
+import javax.naming.NamingException;
 
-/**
- * Ensures that topic specific session factory method {@link TopicConnection#createTopicSession()} create sessions
- * of type {@link TopicSession} and that those sessions correctly restrict the available JMS operations
- * operations to exclude those applicable to only queues.
- *
- * @see QueueSessionFactoryTest
- */
-public class TopicSessionFactoryTest extends QpidBrokerTestCase
+import org.junit.Test;
+
+import org.apache.qpid.systests.JmsTestBase;
+
+public class TopicSessionTest extends JmsTestBase
 {
-    public void testTopicSessionIsNotAQueueSession() throws Exception
-    {
-        TopicSession topicSession = getTopicSession();
-        assertFalse(topicSession instanceof QueueSession);
-    }
-
+    @Test
     public void testTopicSessionCannotCreateCreateBrowser() throws Exception
     {
-        TopicSession topicSession = getTopicSession();
-        Queue queue = getTestQueue();
+        Queue queue = createQueue(getTestName());
+        TopicConnection topicConnection = getTopicConnection();
         try
         {
+            TopicSession topicSession = topicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
             topicSession.createBrowser(queue);
-            fail("expected exception did not occur");
+            fail("Expected exception was not thrown");
         }
         catch (javax.jms.IllegalStateException s)
         {
             // PASS
         }
+        finally
+        {
+            topicConnection.close();
+        }
     }
 
+    @Test
     public void testTopicSessionCannotCreateQueues() throws Exception
     {
-        TopicSession topicSession =  getTopicSession();
+        TopicConnection topicConnection = getTopicConnection();
         try
         {
+            TopicSession topicSession = topicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
             topicSession.createQueue("abc");
-            fail("expected exception did not occur");
+            fail("Expected exception was not thrown");
         }
         catch (javax.jms.IllegalStateException s)
         {
             // PASS
         }
+        finally
+        {
+            topicConnection.close();
+        }
     }
 
+    @Test
     public void testTopicSessionCannotCreateTemporaryQueues() throws Exception
     {
-        TopicSession topicSession = getTopicSession();
+        TopicConnection topicConnection = getTopicConnection();
         try
         {
+            TopicSession topicSession = topicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
             topicSession.createTemporaryQueue();
-            fail("expected exception did not occur");
+            fail("Expected exception was not thrown");
         }
         catch (javax.jms.IllegalStateException s)
         {
             // PASS
         }
+        finally
+        {
+            topicConnection.close();
+        }
     }
 
-    private TopicSession getTopicSession() throws Exception
+    private TopicConnection getTopicConnection() throws JMSException, NamingException
     {
-        TopicConnection topicConnection = (TopicConnection)getConnection();
-        return topicConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
+        return (TopicConnection)getConnection();
     }
 
 }
