@@ -22,11 +22,7 @@ package org.apache.qpid.systests.jms_2_0.subscription;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import java.util.Collections;
-import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -192,22 +188,6 @@ public class SharedSubscriptionTest extends JmsTestBase
             int numberOfQueuesAfterUnsubscribe = getQueueCount();
             assertEquals("Queue should be deleted", numberOfQueuesBeforeTest, numberOfQueuesAfterUnsubscribe);
         }
-    }
-
-    private int getQueueCount() throws Exception
-    {
-        Map<String, Object> arguments = Collections.singletonMap("statistics",
-                                                                 Collections.singletonList("queueCount"));
-        Object statistics = performOperationUsingAmqpManagement(getVirtualHostName(),
-                                                                "getStatistics",
-                                                                "org.apache.qpid.VirtualHost",
-                                                                arguments);
-
-        assertNotNull("Statistics is null", statistics);
-        assertTrue("Statistics is not map", statistics instanceof Map);
-        @SuppressWarnings("unchecked")
-        Map<String, Object> statisticsMap = (Map<String, Object>) statistics;
-        return ((Number) statisticsMap.get("queueCount")).intValue();
     }
 
     @Test

@@ -19,15 +19,12 @@ package org.apache.qpid.systests.jms_1_1.topic;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.InvalidDestinationException;
@@ -895,32 +892,5 @@ public class DurableSubscribtionTest extends JmsTestBase
         {
             connection2.close();
         }
-    }
-
-    private int getQueueCount() throws Exception
-    {
-        Map<String, Object> statisticsMap = getVirtualHostStatistics("queueCount");
-        return ((Number) statisticsMap.get("queueCount")).intValue();
-    }
-
-    private long getTotalDepthOfQueuesMessages() throws Exception
-    {
-        Map<String, Object> statisticsMap = getVirtualHostStatistics("totalDepthOfQueuesMessages");
-        return ((Number) statisticsMap.get("totalDepthOfQueuesMessages")).intValue();
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> getVirtualHostStatistics(final String... statisticsName) throws Exception
-    {
-        Map<String, Object> arguments = Collections.singletonMap("statistics", Arrays.asList(statisticsName));
-        Object statistics = performOperationUsingAmqpManagement(getVirtualHostName(),
-                                                                "getStatistics",
-                                                                "org.apache.qpid.VirtualHost",
-                                                                arguments);
-
-        assertNotNull("Statistics is null", statistics);
-        assertTrue("Statistics is not map", statistics instanceof Map);
-
-        return (Map<String, Object>) statistics;
     }
 }

@@ -20,7 +20,12 @@
  */
 package org.apache.qpid.systests;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 
 import javax.jms.Connection;
@@ -161,5 +166,32 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         {
             connection.close();
         }
+    }
+
+    protected int getQueueCount() throws Exception
+    {
+        Map<String, Object> statisticsMap = getVirtualHostStatistics("queueCount");
+        return ((Number) statisticsMap.get("queueCount")).intValue();
+    }
+
+    protected long getTotalDepthOfQueuesMessages() throws Exception
+    {
+        Map<String, Object> statisticsMap = getVirtualHostStatistics("totalDepthOfQueuesMessages");
+        return ((Number) statisticsMap.get("totalDepthOfQueuesMessages")).intValue();
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Map<String, Object> getVirtualHostStatistics(final String... statisticsName) throws Exception
+    {
+        Map<String, Object> arguments = Collections.singletonMap("statistics", Arrays.asList(statisticsName));
+        Object statistics = performOperationUsingAmqpManagement(getVirtualHostName(),
+                                                                "getStatistics",
+                                                                "org.apache.qpid.VirtualHost",
+                                                                arguments);
+
+        assertNotNull("Statistics is null", statistics);
+        assertTrue("Statistics is not map", statistics instanceof Map);
+
+        return (Map<String, Object>) statistics;
     }
 }
