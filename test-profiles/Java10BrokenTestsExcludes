@@ -27,11 +27,6 @@
 org.apache.qpid.test.unit.transacted.TransactionTimeoutTest#*
 org.apache.qpid.test.unit.transacted.TransactionTimeoutDisabledTest#*
 
-
-// Testing behaviour of changing the topic associated with a durable subscriber
-org.apache.qpid.test.unit.topic.TopicSessionTest#testSubscriptionNameReuseForDifferentTopicSingleConnection
-org.apache.qpid.test.unit.topic.TopicSessionTest#testSubscriptionNameReuseForDifferentTopicTwoConnections
-
 // the received message is being treated as an object message (because it lacks the necessary JMS annotation?)
 org.apache.qpid.systest.rest.PublishMessageRestTest#testPublishMapMessage
 org.apache.qpid.systest.rest.PublishMessageRestTest#testPublishListMessage

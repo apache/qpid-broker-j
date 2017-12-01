@@ -200,6 +200,51 @@ public class DurableSubscribtionTest extends JmsTestBase
         assertEquals("Unexpected number of queues", numberOfQueuesBeforeTest, numberOfQueuesAfterTest);
     }
 
+    @Test
+    public void unsubscribeTwice() throws Exception
+    {
+        Topic topic = createTopic(getTestName());
+        Connection connection = getConnection();
+        String subscriptionName = getTestName() + "_sub";
+        try
+        {
+
+            Session subscriberSession = connection.createSession(true, Session.AUTO_ACKNOWLEDGE);
+            TopicSubscriber subscriber = subscriberSession.createDurableSubscriber(topic, subscriptionName);
+            MessageProducer publisher = subscriberSession.createProducer(topic);
+
+            connection.start();
+
+            publisher.send(subscriberSession.createTextMessage("Test"));
+            subscriberSession.commit();
+
+            Message message =  subscriber.receive(getReceiveTimeout());
+            assertTrue("TextMessage should be received", message instanceof TextMessage);
+            assertEquals("Unexpected message", "Test", ((TextMessage)message).getText());
+            subscriberSession.commit();
+            subscriber.close();
+            subscriberSession.unsubscribe(subscriptionName);
+
+            try
+            {
+                subscriberSession.unsubscribe(subscriptionName);
+                fail("expected InvalidDestinationException when unsubscribing from unknown subscription");
+            }
+            catch (InvalidDestinationException e)
+            {
+                // PASS
+            }
+            catch (Exception e)
+            {
+                fail("expected InvalidDestinationException when unsubscribing from unknown subscription, got: " + e);
+            }
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
     /**
      * <ul>
      * <li>create and register a durable subscriber with no message selector
