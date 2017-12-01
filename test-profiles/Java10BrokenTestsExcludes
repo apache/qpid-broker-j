@@ -39,11 +39,6 @@ org.apache.qpid.test.unit.basic.BytesMessageTest#testModificationAfterSend
 // the InternalMessage and back
 org.apache.qpid.systest.management.amqp.AmqpManagementTest#testGetTypesOnVhostManagement
 
-
-// client issue - the other tests demonstrate that it is not fulfilling the requirements of a TopicSession,
-// so it shouldn't implement it ...
-org.apache.qpid.test.unit.client.QueueSessionFactoryTest#testQueueSessionIsNotATopicSession
-
 // Test uses AMQP 0-x ack modes and assumes the name of the queues backing subscriptions
 org.apache.qpid.test.unit.topic.DurableSubscriptionTest#*
 
