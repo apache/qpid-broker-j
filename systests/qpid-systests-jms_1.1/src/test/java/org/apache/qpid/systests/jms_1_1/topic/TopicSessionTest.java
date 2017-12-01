@@ -25,7 +25,9 @@ import static org.junit.Assert.fail;
 import javax.jms.JMSException;
 import javax.jms.Queue;
 import javax.jms.Session;
+import javax.jms.Topic;
 import javax.jms.TopicConnection;
+import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.naming.NamingException;
 
@@ -93,6 +95,32 @@ public class TopicSessionTest extends JmsTestBase
         finally
         {
             topicConnection.close();
+        }
+    }
+
+    @Test
+    public void publisherGetDeliveryModeAfterConnectionClose() throws Exception
+    {
+        Topic topic = createTopic(getTestName());
+        TopicConnection connection =  getTopicConnection();
+        try
+        {
+            TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
+            TopicPublisher publisher = session.createPublisher(topic);
+            connection.close();
+            try
+            {
+                publisher.getDeliveryMode();
+                fail("Expected exception not thrown");
+            }
+            catch (javax.jms.IllegalStateException e)
+            {
+                // PASS
+            }
+        }
+        finally
+        {
+            connection.close();
         }
     }
 

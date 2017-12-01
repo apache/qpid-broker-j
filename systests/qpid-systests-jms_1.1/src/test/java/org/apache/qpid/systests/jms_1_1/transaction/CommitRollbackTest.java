@@ -533,6 +533,51 @@ public class CommitRollbackTest extends JmsTestBase
     }
 
     @Test
+    public void rollbackWithinMessageListener() throws Exception
+    {
+        Queue queue = createQueue(getTestName());
+        Connection connection = getConnection();
+        try
+        {
+            final Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+            final MessageConsumer consumer = session.createConsumer(queue);
+            Utils.sendMessages(session, queue, 2);
+            connection.start();
+            final CountDownLatch receiveLatch = new CountDownLatch(2);
+            final AtomicInteger receiveCounter = new AtomicInteger();
+            final AtomicReference<Throwable> messageListenerThrowable = new AtomicReference<>();
+            consumer.setMessageListener(message -> {
+                try
+                {
+                    if (receiveCounter.incrementAndGet()<3)
+                    {
+                        session.rollback();
+                    }
+                    else
+                    {
+                        session.commit();
+                        receiveLatch.countDown();
+                    }
+                }
+                catch (Throwable e)
+                {
+                    messageListenerThrowable.set(e);
+                }
+            });
+
+            assertTrue("Timeout waiting for messages",
+                       receiveLatch.await(getReceiveTimeout() * 4, TimeUnit.MILLISECONDS));
+            assertNull("Exception occurred: " + messageListenerThrowable.get(),
+                       messageListenerThrowable.get());
+            assertEquals("Unexpected number of received messages", 4, receiveCounter.get());
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    @Test
     public void exhaustedPrefetchInTransaction() throws Exception
     {
         final int maxPrefetch = 2;
@@ -646,7 +691,7 @@ public class CommitRollbackTest extends JmsTestBase
             transactedSession.commit();
             fail("Commit on closed connection should throw IllegalStateException!");
         }
-        catch(IllegalStateException e)
+        catch (IllegalStateException e)
         {
             // passed
         }
@@ -723,6 +768,4 @@ public class CommitRollbackTest extends JmsTestBase
             connection.close();
         }
     }
-
-
 }
