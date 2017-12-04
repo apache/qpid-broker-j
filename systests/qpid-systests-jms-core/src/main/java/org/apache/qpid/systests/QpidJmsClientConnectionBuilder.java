@@ -173,6 +173,12 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
+    public ConnectionBuilder setMessageRedelivery(final boolean redelivery)
+    {
+        return this;
+    }
+
+    @Override
     public Connection build() throws NamingException, JMSException
     {
         return buildConnectionFactory().createConnection();

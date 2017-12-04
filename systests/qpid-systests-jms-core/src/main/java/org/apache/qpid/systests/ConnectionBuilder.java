@@ -46,6 +46,7 @@ public interface ConnectionBuilder
     ConnectionBuilder setSyncPublish(boolean syncPublish);
     ConnectionBuilder setOptions(Map<String, String> options);
     ConnectionBuilder setPopulateJMSXUserID(boolean populateJMSXUserID);
+    ConnectionBuilder setMessageRedelivery(final boolean redelivery);
 
     Connection build() throws NamingException, JMSException;
     ConnectionFactory buildConnectionFactory() throws NamingException;

@@ -151,6 +151,20 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
+    public ConnectionBuilder setMessageRedelivery(final boolean redelivery)
+    {
+        if (redelivery)
+        {
+            _options.put("rejectbehaviour", "server");
+        }
+        else
+        {
+            _options.remove("rejectbehaviour");
+        }
+        return this;
+    }
+
+    @Override
     public Connection build() throws JMSException, NamingException
     {
         return buildConnectionFactory().createConnection(_username, _password);
