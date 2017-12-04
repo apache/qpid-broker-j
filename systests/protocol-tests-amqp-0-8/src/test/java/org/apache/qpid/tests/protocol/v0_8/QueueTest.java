@@ -140,7 +140,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
 
     @Test
     @SpecificationTest(section = "1.7.2.1",
-            description = "If [durable is] set when creating a new queue, the queue will be marked as durable."
+            description = "If [durable is] set when creating a new queue, the queue will be marked as durable. "
                           + "Durable queues remain active when a server restarts.")
     public void queueDeclareDurable() throws Exception
     {

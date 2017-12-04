@@ -67,7 +67,7 @@ public class TransactionTest extends BrokerAdminUsingTestBase
                        .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
                        .content("Test")
                        .publishMessage()
-                       .exchange().declare().consumeResponse(ExchangeDeclareOkBody.class);
+                       .exchange().declarePassive(true).declare().consumeResponse(ExchangeDeclareOkBody.class);
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
 
             interaction.tx().commit().consumeResponse(TxCommitOkBody.class);

@@ -25,9 +25,11 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
+import org.apache.qpid.server.protocol.v0_8.transport.QueueBindBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueDeclareBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueDeleteBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueuePurgeBody;
+import org.apache.qpid.server.protocol.v0_8.transport.QueueUnbindBody;
 
 public class QueueInteraction
 {
@@ -47,6 +49,16 @@ public class QueueInteraction
 
     private String _purgeName;
     private boolean _purgeNowait;
+
+    private String _bindQueueName;
+    private String _bindExchangeName;
+    private String _bindRoutingKey;
+    private Map<String, Object> _bindArguments = new HashMap<>();
+
+    private String _unbindQueueName;
+    private String _unbindExchangeName;
+    private String _unbindRoutingKey;
+    private Map<String, Object> _unbindArguments = new HashMap<>();
 
     public QueueInteraction(final Interaction interaction)
     {
@@ -115,16 +127,71 @@ public class QueueInteraction
                                                                  _deleteIfEmpty,
                                                                  _deleteNowait));
     }
+
     public QueueInteraction purgeName(final String name)
     {
         _purgeName = name;
         return this;
     }
-
     public Interaction purge() throws Exception
     {
         return _interaction.sendPerformative(new QueuePurgeBody(0,
                                                                 AMQShortString.valueOf(_purgeName),
                                                                 _purgeNowait));
+    }
+
+    public QueueInteraction bindQueueName(final String bindQueueName)
+    {
+        _bindQueueName = bindQueueName;
+        return this;
+    }
+
+    public QueueInteraction bindName(final String name)
+    {
+        _bindExchangeName = name;
+        return this;
+    }
+
+    public QueueInteraction bindRoutingKey(final String bindRoutingKey)
+    {
+        _bindRoutingKey = bindRoutingKey;
+        return this;
+    }
+
+    public Interaction bind() throws Exception
+    {
+        return _interaction.sendPerformative(new QueueBindBody(0,
+                                                               AMQShortString.valueOf(_bindQueueName),
+                                                               AMQShortString.valueOf(_bindExchangeName),
+                                                               AMQShortString.valueOf(_bindRoutingKey),
+                                                               _deleteNowait,
+                                                               FieldTable.convertToFieldTable(_bindArguments)));
+    }
+
+    public QueueInteraction unbindName(final String name)
+    {
+        _unbindExchangeName = name;
+        return this;
+    }
+
+    public QueueInteraction unbindQueueName(final String name)
+    {
+        _unbindQueueName = name;
+        return this;
+    }
+
+    public QueueInteraction unbindRoutingKey(final String routingKey)
+    {
+        _unbindRoutingKey = routingKey;
+        return this;
+    }
+
+    public Interaction unbind() throws Exception
+    {
+        return _interaction.sendPerformative(new QueueUnbindBody(0,
+                                                                 AMQShortString.valueOf(_unbindQueueName),
+                                                                 AMQShortString.valueOf(_unbindExchangeName),
+                                                                 AMQShortString.valueOf(_unbindRoutingKey),
+                                                                 FieldTable.convertToFieldTable(_unbindArguments)));
     }
 }

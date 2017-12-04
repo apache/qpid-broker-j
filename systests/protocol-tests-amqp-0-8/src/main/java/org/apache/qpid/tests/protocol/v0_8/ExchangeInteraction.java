@@ -25,28 +25,56 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
+import org.apache.qpid.server.protocol.v0_8.transport.ExchangeBoundBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ExchangeDeclareBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ExchangeDeleteBody;
 
 public class ExchangeInteraction
 {
     private Interaction _interaction;
-    private String _decalreExchange = "amq.direct";
+    private String _declareExchange = "amq.direct";
     private String _declareType = "direct";
-    private boolean _declarePassive = true;
-    private boolean _declareDurable = true;
+    private boolean _declarePassive = false;
+    private boolean _declareDurable = false;
     private boolean _declareAutoDelete = false;
     private boolean _declareNoWait = false;
     private Map<String, Object> _declareArguments = new HashMap<>();
+
+    private String _boundQueue;
+    private String _boundRoutingKey;
+    private String _boundExchange;
+
+    private String _deleteExchange;
+    private boolean _deleteIfUnused = false;
+    private boolean _deleteNoWait = false;
 
     public ExchangeInteraction(final Interaction interaction)
     {
         _interaction = interaction;
     }
 
+    public ExchangeInteraction declareName(final String name)
+    {
+        _declareExchange = name;
+        return this;
+    }
+
+    public ExchangeInteraction declarePassive(final boolean passive)
+    {
+        _declarePassive = passive;
+        return this;
+    }
+
+    public ExchangeInteraction declareDurable(final boolean durable)
+    {
+        _declareDurable = durable;
+        return this;
+    }
+
     public Interaction declare() throws Exception
     {
         return _interaction.sendPerformative(new ExchangeDeclareBody(0,
-                                                                     AMQShortString.valueOf(_decalreExchange),
+                                                                     AMQShortString.valueOf(_declareExchange),
                                                                      AMQShortString.valueOf(_declareType),
                                                                      _declarePassive,
                                                                      _declareDurable,
@@ -54,5 +82,38 @@ public class ExchangeInteraction
                                                                      false,
                                                                      _declareNoWait,
                                                                      FieldTable.convertToFieldTable(_declareArguments)));
+    }
+
+    public ExchangeInteraction boundExchangeName(final String name)
+    {
+        _boundExchange = name;
+        return this;
+    }
+
+    public Interaction bound() throws Exception
+    {
+        return _interaction.sendPerformative(new ExchangeBoundBody(AMQShortString.valueOf(_boundExchange),
+                                                                   AMQShortString.valueOf(_boundRoutingKey),
+                                                                   AMQShortString.valueOf(_boundQueue)));
+    }
+
+    public ExchangeInteraction deleteExchangeName(final String name)
+    {
+        _deleteExchange = name;
+        return this;
+    }
+
+    public ExchangeInteraction deleteIfUnused(final boolean deleteIfUnused)
+    {
+        _deleteIfUnused = deleteIfUnused;
+        return this;
+    }
+
+    public Interaction delete() throws Exception
+    {
+        return _interaction.sendPerformative(new ExchangeDeleteBody(0,
+                                                                    AMQShortString.valueOf(_deleteExchange),
+                                                                    _deleteIfUnused,
+                                                                    _deleteNoWait));
     }
 }
