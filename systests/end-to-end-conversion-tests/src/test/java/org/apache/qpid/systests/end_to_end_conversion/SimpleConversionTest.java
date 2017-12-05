@@ -165,11 +165,6 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void correlationIdAsBytes() throws Exception
     {
-        assumeTrue("This test is known to fail for pre 0-10 subscribers (QPID-7897)",
-                   EnumSet.of(Protocol.AMQP_0_10, Protocol.AMQP_1_0).contains(getSubscriberProtocolVersion()));
-        assumeTrue("This test is known to fail for pre 0-10 subscribers (QPID-7899)",
-                   EnumSet.of(Protocol.AMQP_0_10, Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()));
-
         final byte[] correlationId = new byte[]{(byte) 0xFF, 0x00, (byte) 0xC3};
         final MessageDescription messageDescription = new MessageDescription();
         messageDescription.setHeader(MessageDescription.MessageHeader.CORRELATION_ID, correlationId);

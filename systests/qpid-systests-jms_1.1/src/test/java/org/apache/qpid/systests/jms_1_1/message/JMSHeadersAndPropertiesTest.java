@@ -19,7 +19,6 @@
  */
 package org.apache.qpid.systests.jms_1_1.message;
 
-import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
@@ -33,7 +32,6 @@ import static org.junit.Assume.assumeThat;
 import java.util.Enumeration;
 
 import javax.jms.Connection;
-import javax.jms.ConnectionMetaData;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.JMSException;
@@ -45,7 +43,6 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
@@ -53,7 +50,6 @@ import org.apache.qpid.systests.JmsTestBase;
 public class JMSHeadersAndPropertiesTest extends JmsTestBase
 {
 
-    @Ignore("QPID-8031")
     @Test
     public void testResentJMSMessageGetsReplacementJMSMessageID() throws Exception
     {
@@ -63,7 +59,6 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
         {
             connection.start();
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            ConnectionMetaData metaData = connection.getMetaData();
 
             MessageProducer producer = session.createProducer(queue);
 
