@@ -80,6 +80,7 @@ public class Interaction extends AbstractInteraction<Interaction>
         final BBDecoder decoder = new BBDecoder();
         decoder.init(buffer);
         dst.read(decoder);
+        dst.setChannel(src.getChannel());
         return dst;
     }
 

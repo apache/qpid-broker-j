@@ -92,8 +92,6 @@ public class SessionTest extends BrokerAdminUsingTestBase
         }
     }
 
-
-    @Ignore("QPID-8047")
     @Test
     @SpecificationTest(section = "9.session",
             description = "The transport MUST be attached in order to use any control other than"
