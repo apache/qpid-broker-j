@@ -158,4 +158,38 @@ public class BasicTest extends BrokerAdminUsingTestBase
             assertThat(getBrokerAdmin().getQueueDepthMessages(queueName), is(equalTo(0)));
         }
     }
+
+    @Test
+    @SpecificationTest(section = "1.8.3.13",
+            description = "The server MUST validate that a non-zero delivery-tag refers to a delivered message,"
+                          + " and raise a channel exception if this is not the case. On a transacted channel,"
+                          + " this check MUST be done immediately and not delayed until a Tx.Commit. Specifically,"
+                          + " a client MUST not acknowledge the same message more than once."
+                          + ""
+                          + "Note current broker behaviour is spec incompliant: broker ignores not valid delivery tags")
+    public void ackWithInvalidDeliveryTag() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            String consumerTag = "A";
+            final long deliveryTag = 12345L;
+            String queueName = BrokerAdmin.TEST_QUEUE_NAME;
+            interaction.openAnonymousConnection()
+                       .channel().open()
+                       .consumeResponse(ChannelOpenOkBody.class)
+                       .basic().qosPrefetchCount(1)
+                       .qos()
+                       .consumeResponse(BasicQosOkBody.class)
+                       .basic().consumeConsumerTag(consumerTag)
+                       .consumeQueue(queueName)
+                       .consume()
+                       .consumeResponse(BasicConsumeOkBody.class)
+                       .channel().flow(true)
+                       .consumeResponse(ChannelFlowOkBody.class)
+                       .basic().ackDeliveryTag(deliveryTag).ack()
+                       .channel().close().consumeResponse(ChannelCloseOkBody.class);
+        }
+    }
+
 }

@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
@@ -180,16 +181,15 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
         else
         {
             final MessageConsumerAssociation association = remove(deliveryTag, true);
-            final MessageInstance messageInstance = association.getMessageInstance();
-            if(association != null && messageInstance.makeAcquisitionUnstealable(association.getConsumer()))
+            if (association != null)
             {
-                return Collections.singleton(association);
+                final MessageInstance messageInstance = association.getMessageInstance();
+                if (messageInstance != null && messageInstance.makeAcquisitionUnstealable(association.getConsumer()))
+                {
+                    return Collections.singleton(association);
+                }
             }
-            else
-            {
-                return Collections.emptySet();
-            }
-
+            return Collections.emptySet();
         }
     }
 
