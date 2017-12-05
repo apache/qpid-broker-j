@@ -188,9 +188,6 @@ public class MaxDeliveryTest extends JmsTestBase
             assertTrue("Messages were not received in timely manner",
                        deliveryLatch.await(expectedNumberOfDeliveries * getReceiveTimeout(), TimeUnit.MILLISECONDS));
             assertNull("Unexpected throwable in MessageListener", messageListenerThrowable.get());
-            assertEquals("Unexpected number of total queue messages",
-                         numberOfEvenMessages,
-                         getTotalDepthOfQueuesMessages());
 
             verifyDeadLetterQueueMessages(connection, dlqName, numberOfEvenMessages);
         }
