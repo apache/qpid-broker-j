@@ -363,17 +363,31 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     @Override
     public void sessionDetach(ServerConnection conn, SessionDetach dtc)
     {
-        stopAllSubscriptions(conn, dtc);
-        ServerSession ssn = conn.getSession(dtc.getChannel());
-        ssn.setClose(true);
-        ssn.sessionDetached(dtc.getName(), ssn.getDetachCode() == null? SessionDetachCode.NORMAL: ssn.getDetachCode());
-        conn.unmap(ssn);
-        ssn.closed();
+        int channel = dtc.getChannel();
+        ServerSession ssn = conn.getSession(channel);
+        if (ssn != null)
+        {
+            stopAllSubscriptions(ssn);
+            ssn.setClose(true);
+            ssn.sessionDetached(dtc.getName(),
+                                ssn.getDetachCode() == null ? SessionDetachCode.NORMAL : ssn.getDetachCode());
+            conn.unmap(ssn);
+            ssn.closed();
+        }
+        else
+        {
+            if(LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("SessionDetach received on unattached channel : {}", channel);
+            }
+            SessionDetached sessionDetached = new SessionDetached(dtc.getName(), SessionDetachCode.NOT_ATTACHED);
+            sessionDetached.setChannel(channel);
+            conn.invoke(sessionDetached);
+        }
     }
 
-    private void stopAllSubscriptions(ServerConnection conn, SessionDetach dtc)
+    private void stopAllSubscriptions(final ServerSession ssn)
     {
-        final ServerSession ssn = conn.getSession(dtc.getChannel());
         final Collection<ConsumerTarget_0_10> subs = ssn.getSubscriptions();
         for (ConsumerTarget_0_10 subscription_0_10 : subs)
         {
