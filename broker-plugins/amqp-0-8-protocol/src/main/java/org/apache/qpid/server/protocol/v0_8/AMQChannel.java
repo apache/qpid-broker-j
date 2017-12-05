@@ -1736,8 +1736,29 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
 
         Collection<MessageConsumerAssociation> ackedMessages = _unacknowledgedMessageMap.acknowledge(deliveryTag, multiple);
-        final Collection<MessageInstance> messages = Collections2.transform(ackedMessages, MESSAGE_INSTANCE_FUNCTION);
-        _transaction.dequeue(messages, new MessageAcknowledgeAction(ackedMessages));
+
+        if (!ackedMessages.isEmpty())
+        {
+            final Collection<MessageInstance> messages =
+                    Collections2.transform(ackedMessages, MESSAGE_INSTANCE_FUNCTION);
+            _transaction.dequeue(messages, new MessageAcknowledgeAction(ackedMessages));
+        }
+
+        /*
+        The AMQP 0-9-1 spec requires to raise a channel exception "precondition-failed"
+        when delivery tag is not valid:
+        {quote}
+          The server MUST validate that a non-zero delivery-tag refers to a delivered message, and raise a channel
+          exception if this is not the case. On a transacted channel, this check MUST be done immediately and not
+          delayed until a Tx.Commit. Specifically, a client MUST not acknowledge the same message more than once.
+        {quote}
+
+        The current broker behaviour is spec incompliant but it is kept for backward compatibility.
+        It should close the channel as below:
+
+        if (ackedMessages.isEmpty())
+            closeChannel(ErrorCodes.NOT_ALLOWED, "precondition-failed: Delivery tag '%d' is not valid.");
+        */
     }
 
     @Override
