@@ -192,6 +192,11 @@ class SelectorThread extends Thread
                         LOGGER.error("Failed to register selector on accepting port {} ",
                                      localSocketAddress, e);
                     }
+                    catch (CancelledKeyException e)
+                    {
+                        LOGGER.info("Failed to register selector on accepting port {}"
+                                    + " because selector key is already cancelled", localSocketAddress, e);
+                    }
 
                     _workQueue.add(new Runnable()
                     {
@@ -222,6 +227,11 @@ class SelectorThread extends Thread
                                     LOGGER.error("Failed to register selector on accepting port {}",
                                                  localSocketAddress, e);
                                 }
+                                catch (CancelledKeyException e)
+                                {
+                                    LOGGER.info("Failed to register selector on accepting port {}"
+                                                + " because selector key is already cancelled", localSocketAddress, e);
+                                }
                                 finally
                                 {
                                     _scheduler.decrementRunningCount();
@@ -239,7 +249,7 @@ class SelectorThread extends Thread
                         {
                             key.channel().register(_selector, 0, connection);
                         }
-                        catch (ClosedChannelException e)
+                        catch (ClosedChannelException | CancelledKeyException e)
                         {
                             // Ignore - we will schedule the connection anyway
                         }
