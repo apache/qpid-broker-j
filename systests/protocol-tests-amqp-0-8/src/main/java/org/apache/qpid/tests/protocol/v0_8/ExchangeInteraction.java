@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -68,6 +69,24 @@ public class ExchangeInteraction
     public ExchangeInteraction declareDurable(final boolean durable)
     {
         _declareDurable = durable;
+        return this;
+    }
+
+    public ExchangeInteraction declareType(final String type)
+    {
+        _declareType = type;
+        return this;
+    }
+
+    public ExchangeInteraction declareAutoDelete(final boolean autoDelete)
+    {
+        _declareAutoDelete = autoDelete;
+        return this;
+    }
+
+    public ExchangeInteraction declareArguments(final Map<String,Object> args)
+    {
+        _declareArguments = args == null ? Collections.emptyMap() : new HashMap<>(args);
         return this;
     }
 
