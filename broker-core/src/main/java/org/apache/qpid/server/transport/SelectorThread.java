@@ -285,7 +285,7 @@ class SelectorThread extends Thread
                 {
                     unregisteredConnection.getSocketChannel().register(_selector, ops, unregisteredConnection);
                 }
-                catch (ClosedChannelException e)
+                catch (ClosedChannelException | CancelledKeyException e)
                 {
                     unregisterableConnections.add(unregisteredConnection);
                 }
@@ -503,7 +503,7 @@ class SelectorThread extends Thread
                     {
                         selectionKey = socketChannel.register(_selectionTasks[0].getSelector(), 0);
                     }
-                    catch (ClosedChannelException e)
+                    catch (ClosedChannelException | CancelledKeyException e)
                     {
                         LOGGER.error("Failed to deregister selector on accepting port {}",
                                      socketChannel.socket().getLocalSocketAddress(), e);
