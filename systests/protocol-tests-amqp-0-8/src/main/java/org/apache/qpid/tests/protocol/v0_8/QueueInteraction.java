@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -92,6 +93,12 @@ public class QueueInteraction
     public QueueInteraction declareExclusive(final boolean exclusive)
     {
         _declareExclusive = exclusive;
+        return this;
+    }
+
+    public QueueInteraction declareArguments(final Map<String,Object> args)
+    {
+        _declareArguments = args == null ? Collections.emptyMap() : new HashMap<>(args);
         return this;
     }
 

@@ -109,6 +109,18 @@ public class ExchangeInteraction
         return this;
     }
 
+    public ExchangeInteraction boundQueue(final String name)
+    {
+        _boundQueue = name;
+        return this;
+    }
+
+    public ExchangeInteraction boundRoutingKey(final String routingKey)
+    {
+        _boundRoutingKey = routingKey;
+        return this;
+    }
+
     public Interaction bound() throws Exception
     {
         return _interaction.sendPerformative(new ExchangeBoundBody(AMQShortString.valueOf(_boundExchange),
