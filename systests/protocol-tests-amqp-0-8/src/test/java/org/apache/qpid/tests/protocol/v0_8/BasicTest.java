@@ -41,6 +41,8 @@ import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicConsumeOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicDeliverBody;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicGetEmptyBody;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicGetOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicQosOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelFlowOkBody;
@@ -143,11 +145,7 @@ public class BasicTest extends BrokerAdminUsingTestBase
 
             ContentBody content = interaction.consumeResponse(ContentBody.class).getLatestResponse(ContentBody.class);
 
-            QpidByteBuffer payload = content.getPayload();
-            byte[] contentData = new byte[payload.remaining()];
-            payload.get(contentData);
-            payload.dispose();
-            String receivedContent = new String(contentData, StandardCharsets.UTF_8);
+            String receivedContent = getContent(content);
 
             assertThat(receivedContent, is(equalTo(messageContent)));
             assertThat(getBrokerAdmin().getQueueDepthMessages(queueName), is(equalTo(1)));
@@ -192,4 +190,87 @@ public class BasicTest extends BrokerAdminUsingTestBase
         }
     }
 
+    @Test
+    @SpecificationTest(section = "1.8.3.10", description = "direct access to a queue")
+    public void get() throws Exception
+    {
+        String messageContent = "message";
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageContent);
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            BasicGetOkBody response = interaction.openAnonymousConnection()
+                                                 .channel().open()
+                                                 .consumeResponse(ChannelOpenOkBody.class)
+                                                 .basic().getQueueName(BrokerAdmin.TEST_QUEUE_NAME).get()
+                                                 .consumeResponse().getLatestResponse(BasicGetOkBody.class);
+
+            long deliveryTag = response.getDeliveryTag();
+            ContentBody content = interaction.consumeResponse(ContentHeaderBody.class)
+                                             .consumeResponse().getLatestResponse(ContentBody.class);
+
+            String receivedContent = getContent(content);
+            assertThat(receivedContent, is(equalTo(messageContent)));
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
+
+            interaction.basic().ackDeliveryTag(deliveryTag).ack()
+                       .channel().close().consumeResponse(ChannelCloseOkBody.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.8.3.10", description = "direct access to a queue")
+    public void getNoAck() throws Exception
+    {
+        String messageContent = "message";
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageContent);
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.openAnonymousConnection()
+                       .channel().open()
+                       .consumeResponse(ChannelOpenOkBody.class)
+                       .basic().getQueueName(BrokerAdmin.TEST_QUEUE_NAME).getNoAck(true).get()
+                       .consumeResponse(BasicGetOkBody.class);
+
+            ContentBody content = interaction.consumeResponse(ContentHeaderBody.class)
+                                             .consumeResponse().getLatestResponse(ContentBody.class);
+
+            String receivedContent = getContent(content);
+            assertThat(receivedContent, is(equalTo(messageContent)));
+
+            interaction.channel().close().consumeResponse(ChannelCloseOkBody.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.8.3.10", description = "direct access to a queue")
+    public void getEmptyQueue() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.openAnonymousConnection()
+                       .channel().open()
+                       .consumeResponse(ChannelOpenOkBody.class)
+                       .basic().getQueueName(BrokerAdmin.TEST_QUEUE_NAME).get()
+                       .consumeResponse().getLatestResponse(BasicGetEmptyBody.class);
+        }
+    }
+
+    private String getContent(final ContentBody content)
+    {
+        QpidByteBuffer payload = content.getPayload();
+        byte[] contentData = new byte[payload.remaining()];
+        payload.get(contentData);
+        payload.dispose();
+        return new String(contentData, StandardCharsets.UTF_8);
+    }
 }

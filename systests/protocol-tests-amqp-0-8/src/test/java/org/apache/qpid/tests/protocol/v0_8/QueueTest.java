@@ -389,6 +389,28 @@ public class QueueTest extends BrokerAdminUsingTestBase
     }
 
     @Test
+    @SpecificationTest(section = "1.7.2.9",
+            description = "The client MUST either specify a queue name or have previously declared a queue on the "
+                          + "same channel")
+    public void queueDeleteDefaultQueue() throws Exception
+    {
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "message");
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            QueueDeleteOkBody deleteResponse = interaction.openAnonymousConnection()
+                                                          .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                                                          .queue().declareName(BrokerAdmin.TEST_QUEUE_NAME).declare()
+                                                          .consumeResponse(QueueDeclareOkBody.class)
+                                                          .queue().delete()
+                                                          .consumeResponse().getLatestResponse(QueueDeleteOkBody.class);
+            assertThat(deleteResponse.getMessageCount(), is(equalTo(1L)));
+        }
+    }
+
+    @Test
     @SpecificationTest(section = "1.7.2.7", description = "purge a queue")
     public void queuePurge() throws Exception
     {
@@ -412,6 +434,21 @@ public class QueueTest extends BrokerAdminUsingTestBase
                                                     .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
             assertThat(passive.getQueue(), is(equalTo(AMQShortString.valueOf(BrokerAdmin.TEST_QUEUE_NAME))));
             assertThat(response.getMessageCount(), is(equalTo(0L)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.7.2.7", description = "The client MUST NOT attempt to purge a queue that does not exist.")
+    public void queuePurgeQueueNotFound() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            ChannelCloseBody response = interaction.openAnonymousConnection()
+                                                   .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                                                   .queue().purgeName(BrokerAdmin.TEST_QUEUE_NAME).purge()
+                                                   .consumeResponse().getLatestResponse(ChannelCloseBody.class);
+            assertThat(response.getReplyCode(), is(equalTo(ErrorCodes.NOT_FOUND)));
         }
     }
 
@@ -493,6 +530,34 @@ public class QueueTest extends BrokerAdminUsingTestBase
                                               .bind()
                                               .consumeResponse().getLatestResponse(ChannelCloseBody.class);
             assertThat(response.getReplyCode(), is(equalTo(ErrorCodes.NOT_FOUND)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.7.2.3",
+            description = "The client MUST either specify a queue name or have previously declared a queue on the same channel")
+    public void queueBindDefaultQueue() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            String testExchange = "testExchange";
+            final Interaction interaction = transport.newInteraction();
+            interaction.openAnonymousConnection()
+                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                       .queue().declareName(BrokerAdmin.TEST_QUEUE_NAME).declare()
+                       .consumeResponse(QueueDeclareOkBody.class)
+                       .exchange().declareName(testExchange).declare()
+                       .consumeResponse(ExchangeDeclareOkBody.class)
+                       .queue().bindName(testExchange).bind()
+                       .consumeResponse(QueueBindOkBody.class);
+
+            ExchangeBoundOkBody response = interaction.exchange()
+                                                      .boundExchangeName(testExchange)
+                                                      .boundQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                                                      .bound()
+                                                      .consumeResponse()
+                                                      .getLatestResponse(ExchangeBoundOkBody.class);
+            assertThat(response.getReplyCode(), is(equalTo(ExchangeBoundOkBody.OK)));
         }
     }
 
@@ -594,6 +659,29 @@ public class QueueTest extends BrokerAdminUsingTestBase
                        .queue().bindName(testExchange).bindQueueName(BrokerAdmin.TEST_QUEUE_NAME).bindRoutingKey("rk1").bind()
                        .consumeResponse(QueueBindOkBody.class)
                        .queue().unbindName(testExchange).unbindQueueName(BrokerAdmin.TEST_QUEUE_NAME).unbindRoutingKey("rk1").unbind()
+                       .consumeResponse(QueueUnbindOkBody.class);
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.7.2.5",
+            description = "The client MUST either specify a queue name or have previously declared a queue on the "
+                          + "same channel")
+    public void queueUnbindDefaultQueue() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            String testExchange = "testExchange";
+            interaction.openAnonymousConnection()
+                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                       .queue().declareName(BrokerAdmin.TEST_QUEUE_NAME).declare()
+                       .consumeResponse(QueueDeclareOkBody.class)
+                       .exchange().declareName(testExchange).declare()
+                       .consumeResponse(ExchangeDeclareOkBody.class)
+                       .queue().bindName(testExchange).bindQueueName(BrokerAdmin.TEST_QUEUE_NAME).bindRoutingKey("rk1").bind()
+                       .consumeResponse(QueueBindOkBody.class)
+                       .queue().unbindName(testExchange).unbindRoutingKey("rk1").unbind()
                        .consumeResponse(QueueUnbindOkBody.class);
         }
     }

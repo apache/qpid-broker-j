@@ -34,6 +34,7 @@ import org.apache.qpid.server.protocol.v0_8.transport.BasicAckBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicCancelBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicConsumeBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicGetBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicPublishBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicQosBody;
 import org.apache.qpid.server.protocol.v0_8.transport.CompositeAMQDataBlock;
@@ -67,6 +68,9 @@ public class BasicInteraction
 
     private String _consumeCancelTag;
     private boolean _consumeCancelNoWait;
+
+    private String _getQueueName;
+    private boolean _getNoAck;
 
     public BasicInteraction(final Interaction interaction)
     {
@@ -223,10 +227,28 @@ public class BasicInteraction
         return _interaction.sendPerformative(new BasicCancelBody(AMQShortString.valueOf(_consumeCancelTag),
                                                                  _consumeCancelNoWait));
     }
-
     public BasicInteraction consumeCancelTag(final String consumeCancelTag)
     {
         _consumeCancelTag = consumeCancelTag;
+        return this;
+    }
+
+    public Interaction get() throws Exception
+    {
+        return _interaction.sendPerformative(new BasicGetBody(0,
+                                                              AMQShortString.valueOf(_getQueueName),
+                                                              _getNoAck));
+    }
+
+    public BasicInteraction getQueueName(final String queueName)
+    {
+        _getQueueName = queueName;
+        return this;
+    }
+
+    public BasicInteraction getNoAck(final boolean noAck)
+    {
+        _getNoAck = noAck;
         return this;
     }
 }
