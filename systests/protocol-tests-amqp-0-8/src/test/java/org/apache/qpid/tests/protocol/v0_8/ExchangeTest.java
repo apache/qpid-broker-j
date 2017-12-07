@@ -423,7 +423,6 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
 
     /** Qpid specific extension */
     @Test
-    @Ignore("TODO - server fails if exchange is declared with unknown alternate exchange")
     public void exchangeDeclareWithUnknownAlternateExchange() throws Exception
     {
         try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())

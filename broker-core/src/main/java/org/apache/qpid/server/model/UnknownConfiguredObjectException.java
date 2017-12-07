@@ -28,11 +28,20 @@ public class UnknownConfiguredObjectException extends IllegalArgumentException
     private String _name;
     private UUID _id;
 
-    public UnknownConfiguredObjectException(final Class<? extends ConfiguredObject> category, final String name)
+    public UnknownConfiguredObjectException(String exceptionMessage,
+                                            final Class<? extends ConfiguredObject> category,
+                                            final String name)
     {
-        super("Could not find object of category " + category.getSimpleName() + " with name '" + name + "'");
+        super(exceptionMessage);
         _category = category;
         _name = name;
+    }
+
+    public UnknownConfiguredObjectException(final Class<? extends ConfiguredObject> category, final String name)
+    {
+        this("Could not find object of category " + category.getSimpleName() + " with name '" + name + "'",
+             category,
+             name);
     }
 
     public UnknownConfiguredObjectException(final Class<? extends ConfiguredObject> category, final UUID id)
