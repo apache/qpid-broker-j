@@ -3126,7 +3126,16 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             {
                 _connection.sendConnectionClose(ErrorCodes.ACCESS_REFUSED, e.getMessage(), getChannelId());
             }
-
+            catch (UnknownConfiguredObjectException e)
+            {
+                final String message = String.format("Unknown alternate exchange: '%s'", e.getName());
+                _connection.sendConnectionClose(ErrorCodes.NOT_FOUND, message, getChannelId());
+            }
+            catch (IllegalArgumentException | IllegalConfigurationException e)
+            {
+                String message = String.format("Error creating queue '%s': %s", queueName, e.getMessage());
+                _connection.sendConnectionClose(ErrorCodes.COMMAND_INVALID, message, getChannelId());
+            }
         }
     }
 

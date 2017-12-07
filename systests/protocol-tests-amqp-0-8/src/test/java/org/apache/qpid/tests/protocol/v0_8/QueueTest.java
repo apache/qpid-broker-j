@@ -734,7 +734,6 @@ public class QueueTest extends BrokerAdminUsingTestBase
 
     /** Qpid specific extension */
     @Test
-    @Ignore("TODO - server fails if queue is declared with unknown alternate exchange")
     public void queueDeclareWithUnknownAlternateExchange() throws Exception
     {
         try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
