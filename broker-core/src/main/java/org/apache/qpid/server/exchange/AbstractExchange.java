@@ -71,6 +71,7 @@ import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.model.UnknownConfiguredObjectException;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.queue.CreatingLinkInfo;
 import org.apache.qpid.server.security.SecurityToken;
@@ -1054,9 +1055,9 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                     _virtualHost.getAttainedMessageDestination(destinationName, mayCreate);
             if (messageDestination == null)
             {
-                throw new IllegalConfigurationException(String.format(
+                throw new UnknownConfiguredObjectException(String.format(
                         "Cannot create alternate binding for '%s' : Alternate binding destination '%s' cannot be found.",
-                        getName(), destinationName));
+                        getName(), destinationName), ConfiguredObject.class, destinationName);
             }
             else if (messageDestination == this)
             {

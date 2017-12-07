@@ -83,7 +83,6 @@ import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NoFactoryForTypeException;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.UnknownConfiguredObjectException;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.ProtocolVersion;
@@ -2723,15 +2722,11 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 }
                 catch (UnknownConfiguredObjectException e)
                 {
-                    // note - since 0-8/9/9-1 can't set the alt. exchange this exception should never occur
-                    final String message = "Unknown alternate exchange "
-                                           + (e.getName() != null
-                            ? "name: '" + e.getName() + "'"
-                            : "id: " + e.getId());
+                    final String message = String.format("Unknown alternate exchange '%s'", e.getName());
                     _connection.sendConnectionClose(ErrorCodes.NOT_FOUND, message, getChannelId());
 
                 }
-                catch (IllegalArgumentException e)
+                catch (IllegalArgumentException | IllegalConfigurationException e)
                 {
                     _connection.sendConnectionClose(ErrorCodes.COMMAND_INVALID, "Error creating exchange '"
                                                                                 + exchangeName
