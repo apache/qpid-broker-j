@@ -1603,7 +1603,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
             {
                 exception(session, method, ExecutionErrorCode.UNAUTHORIZED_ACCESS, e.getMessage());
             }
-            catch (IllegalConfigurationException e)
+            catch (IllegalArgumentException | IllegalConfigurationException e)
             {
                 exception(session, method, ExecutionErrorCode.ILLEGAL_ARGUMENT, e.getMessage());
             }
