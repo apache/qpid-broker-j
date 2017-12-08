@@ -202,19 +202,26 @@ public class FrameHandler implements ProtocolHandler
                             return frameBody;
                         }
                     });
+
+                    if (_isSasl)
+                    {
+                        break;
+                    }
                 }
                 catch (AmqpErrorException ex)
                 {
                     frameParsingError = ex.getError();
                 }
             }
-            _connectionHandler.receive(channelFrameBodies);
 
             if (frameParsingError != null)
             {
                 _connectionHandler.handleError(frameParsingError);
                 _errored = true;
-
+            }
+            else
+            {
+                _connectionHandler.receive(channelFrameBodies);
             }
         }
         catch (RuntimeException e)
