@@ -39,6 +39,7 @@ import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.UnknownConfiguredObjectException;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
@@ -175,7 +176,7 @@ public class DirectExchangeTest extends QpidTestCase
             _vhost.createChild(Exchange.class, attributes);
             fail("Expected exception is not thrown");
         }
-        catch (IllegalConfigurationException e)
+        catch (UnknownConfiguredObjectException e)
         {
             // pass
         }
