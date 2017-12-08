@@ -90,27 +90,34 @@ public class FrameDecoder implements InputDecoder
     @Override
     public Collection<Response<?>> decode(final ByteBuffer inputBuffer)
     {
-        List<Response<?>> responses = new ArrayList<>();
-        QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(inputBuffer);
-        switch(_state)
-        {
-            case HEADER:
-                if (inputBuffer.remaining() >= 8)
-                {
-                    byte[] header = new byte[8];
-                    inputBuffer.get(header);
-                    responses.add(new HeaderResponse(header));
-                    _state = ParsingState.PERFORMATIVES;
-                    _frameHandler.parse(qpidByteBuffer);
-                }
-                break;
-            case PERFORMATIVES:
-                _frameHandler.parse(qpidByteBuffer);
-                break;
-            default:
-                throw new IllegalStateException("Unexpected state : " + _state);
-        }
 
+        QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(inputBuffer);
+        int remaining;
+
+        do
+        {
+            remaining = qpidByteBuffer.remaining();
+            switch(_state)
+            {
+                case HEADER:
+                    if (inputBuffer.remaining() >= 8)
+                    {
+                        byte[] header = new byte[8];
+                        inputBuffer.get(header);
+                        _connectionHandler._responseQueue.add(new HeaderResponse(header));
+                        _state = ParsingState.PERFORMATIVES;
+                    }
+                    break;
+                case PERFORMATIVES:
+                    _frameHandler.parse(qpidByteBuffer);
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected state : " + _state);
+            }
+        }
+        while (qpidByteBuffer.remaining() != remaining);
+
+        List<Response<?>> responses = new ArrayList<>();
         Response<?> r;
         while((r = _connectionHandler._responseQueue.poll())!=null)
         {
