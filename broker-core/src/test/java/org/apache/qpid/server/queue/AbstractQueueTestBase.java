@@ -67,6 +67,7 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
+import org.apache.qpid.server.model.UnknownConfiguredObjectException;
 import org.apache.qpid.server.queue.AbstractQueue.QueueEntryFilter;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -981,7 +982,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
             _virtualHost.createChild(Queue.class, attributes);
             fail("Expected exception is not thrown");
         }
-        catch (IllegalConfigurationException e)
+        catch (UnknownConfiguredObjectException e)
         {
             // pass
         }
