@@ -93,6 +93,10 @@ class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanc
                 return new MessageContainer(managementResponse, managementResponse.getMessageReference());
             }
         }
+        else
+        {
+            _target.noMessagesAvailable();
+        }
         return null;
     }
 

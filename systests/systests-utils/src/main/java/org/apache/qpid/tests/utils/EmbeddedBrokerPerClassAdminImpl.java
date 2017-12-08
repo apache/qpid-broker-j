@@ -364,6 +364,12 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public boolean isManagementSupported()
+    {
+        return true;
+    }
+
+    @Override
     public String getValidUsername()
     {
         return "guest";

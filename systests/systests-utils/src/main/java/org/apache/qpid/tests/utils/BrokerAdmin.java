@@ -51,6 +51,7 @@ public interface BrokerAdmin extends Pluggable
     boolean isSASLMechanismSupported(String mechanismName);
     boolean isWebSocketSupported();
     boolean isQueueDepthSupported();
+    boolean isManagementSupported();
 
     String getValidUsername();
     String getValidPassword();
