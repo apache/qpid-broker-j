@@ -619,7 +619,7 @@ public class DurableSubscribtionTest extends JmsTestBase
 
         getBrokerAdmin().restart();
 
-        TopicConnection publisherConnection = (TopicConnection) getConnection();
+        TopicConnection publisherConnection = getTopicConnection();
         try
         {
             TopicSession session = publisherConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -740,7 +740,7 @@ public class DurableSubscribtionTest extends JmsTestBase
         }
 
         //send messages matching and not matching the original used selector
-        TopicConnection publisherConnection = (TopicConnection) getConnection();
+        TopicConnection publisherConnection = getTopicConnection();
         try
         {
             TopicSession session = publisherConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);

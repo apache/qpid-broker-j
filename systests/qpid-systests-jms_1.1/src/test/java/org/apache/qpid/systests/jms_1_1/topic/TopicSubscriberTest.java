@@ -47,7 +47,7 @@ public class TopicSubscriberTest extends JmsTestBase
     public void messageDeliveredToAllSubscribers() throws Exception
     {
         Topic topic = createTopic(getTestName());
-        final TopicConnection connection = (TopicConnection) getConnection();
+        final TopicConnection connection = getTopicConnection();
         try
         {
             final TopicSession session = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);

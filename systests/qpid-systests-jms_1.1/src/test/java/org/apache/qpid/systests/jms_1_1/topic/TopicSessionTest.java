@@ -22,14 +22,12 @@ package org.apache.qpid.systests.jms_1_1.topic;
 
 import static org.junit.Assert.fail;
 
-import javax.jms.JMSException;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
 import javax.jms.TopicConnection;
 import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
-import javax.naming.NamingException;
 
 import org.junit.Test;
 
@@ -122,11 +120,6 @@ public class TopicSessionTest extends JmsTestBase
         {
             connection.close();
         }
-    }
-
-    private TopicConnection getTopicConnection() throws JMSException, NamingException
-    {
-        return (TopicConnection)getConnection();
     }
 
 }

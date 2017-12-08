@@ -33,6 +33,7 @@ import javax.jms.JMSException;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
+import javax.jms.TopicConnection;
 import javax.naming.NamingException;
 
 import org.junit.BeforeClass;
@@ -193,5 +194,10 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         assertTrue("Statistics is not map", statistics instanceof Map);
 
         return (Map<String, Object>) statistics;
+    }
+
+    protected TopicConnection getTopicConnection() throws JMSException, NamingException
+    {
+        return (TopicConnection) getConnection();
     }
 }
