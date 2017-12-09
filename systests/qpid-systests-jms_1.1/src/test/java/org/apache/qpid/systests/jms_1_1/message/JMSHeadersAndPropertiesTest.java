@@ -88,13 +88,13 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
     public void JMSRedelivered() throws Exception
     {
         Queue queue = createQueue(getTestName());
-        Connection connection = getConnection();
+        Connection connection = getConnectionBuilder().setPrefetch(1).build();
         try
         {
             Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
             MessageProducer producer = session.createProducer(queue);
-            String messageText = "Test";
-            producer.send(session.createTextMessage(messageText));
+            producer.send(session.createTextMessage("A"));
+            producer.send(session.createTextMessage("B"));
             session.commit();
 
             MessageConsumer consumer = session.createConsumer(queue);
@@ -103,14 +103,19 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
             Message message = consumer.receive(getReceiveTimeout());
             assertTrue("TextMessage should be received", message instanceof TextMessage);
             assertFalse("Unexpected JMSRedelivered after first receive", message.getJMSRedelivered());
-            assertEquals("Unexpected message content", messageText, ((TextMessage) message).getText());
+            assertEquals("Unexpected message content", "A", ((TextMessage) message).getText());
 
             session.rollback();
 
             message = consumer.receive(getReceiveTimeout());
             assertTrue("TextMessage should be received", message instanceof TextMessage);
             assertTrue("Unexpected JMSRedelivered after second receive", message.getJMSRedelivered());
-            assertEquals("Unexpected message content", messageText, ((TextMessage) message).getText());
+            assertEquals("Unexpected message content", "A", ((TextMessage) message).getText());
+
+            message = consumer.receive(getReceiveTimeout());
+            assertTrue("TextMessage should be received", message instanceof TextMessage);
+            assertFalse("Unexpected JMSRedelivered for second message", message.getJMSRedelivered());
+            assertEquals("Unexpected message content", "B", ((TextMessage) message).getText());
 
             session.commit();
         }
