@@ -235,4 +235,47 @@ public class TemporaryQueueTest extends JmsTestBase
             connection.close();
         }
     }
+
+    @Test
+    public void delete() throws Exception
+    {
+        Connection connection = getConnectionBuilder().setSyncPublish(true).build();
+        try
+        {
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            TemporaryQueue queue = session.createTemporaryQueue();
+            MessageProducer producer = session.createProducer(queue);
+            try
+            {
+                producer.send(session.createTextMessage("hello"));
+            }
+            catch (JMSException e)
+            {
+                fail("Send to temporary queue should succeed");
+            }
+
+            try
+            {
+                queue.delete();
+            }
+            catch (JMSException e)
+            {
+                fail("temporary queue should be deletable");
+            }
+
+            try
+            {
+                producer.send(session.createTextMessage("hello"));
+                fail("Send to deleted temporary queue should not succeed");
+            }
+            catch (JMSException e)
+            {
+                // pass
+            }
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
 }
