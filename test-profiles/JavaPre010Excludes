@@ -23,7 +23,6 @@
 
 // These tests requires a broker capable of 0-8/0-9/0-9-1 and 0-10 concurrently
 org.apache.qpid.test.client.message.JMSDestinationTest#testReceiveResend
-org.apache.qpid.server.message.MessageProtocolConversionTest#*
 
 //QPID-3422: test fails because ring queue is not implemented on Apache Qpid Broker-J
 org.apache.qpid.test.client.destination.AddressBasedDestinationTest#testBrowseMode
