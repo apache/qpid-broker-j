@@ -20,19 +20,14 @@
  */
 package org.apache.qpid.test.client.message;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
-import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
-import javax.jms.Topic;
 
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.CustomJMSXProperty;
@@ -51,9 +46,6 @@ public class JMSDestinationTest extends QpidBrokerTestCase
     private Connection _connection;
     private Session _session;
 
-    private CountDownLatch _receiveMessage;
-    private Message _message;
-
     @Override
     public void setUp() throws Exception
     {
@@ -62,100 +54,6 @@ public class JMSDestinationTest extends QpidBrokerTestCase
         _connection = getConnection();
 
         _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-    }
-
-    /**
-     * Test a message sent to a queue comes back with JMSDestination queue
-     *
-     * @throws Exception
-     */
-    public void testQueue() throws Exception
-    {
-
-        Queue queue = createTestQueue(_session);
-
-        MessageConsumer consumer = _session.createConsumer(queue);
-
-        sendMessage(_session, queue, 1);
-
-        _connection.start();
-
-        Message receivedMessage = consumer.receive(10000);
-
-        assertNotNull("Message should not be null", receivedMessage);
-
-        Destination receivedDestination = receivedMessage.getJMSDestination();
-
-        assertNotNull("JMSDestination should not be null", receivedDestination);
-
-        assertEquals("Incorrect Destination type", queue.getClass(), receivedDestination.getClass());
-    }
-
-    /**
-     * Test a message sent to a topic comes back with JMSDestination topic
-     *
-     * @throws Exception
-     */
-    public void testTopic() throws Exception
-    {
-
-        Topic topic = createTopic(_connection, getTestQueueName() + "Topic");
-
-        MessageConsumer consumer = _session.createConsumer(topic);
-
-        sendMessage(_session, topic, 1);
-
-        _connection.start();
-
-        Message receivedMessage = consumer.receive(10000);
-
-        assertNotNull("Message should not be null", receivedMessage);
-
-        Destination receivedDestination = receivedMessage.getJMSDestination();
-
-        assertNotNull("JMSDestination should not be null", receivedDestination);
-        assertEquals("Incorrect Destination type", topic.getClass(), receivedDestination.getClass());
-    }
-
-    /**
-     * Test a message sent to a queue comes back with JMSDestination queue
-     * when received via a message listener
-     *
-     * @throws Exception
-     */
-    public void testQueueAsync() throws Exception
-    {
-
-        Queue queue = createTestQueue(_session);
-
-        MessageConsumer consumer = _session.createConsumer(queue);
-
-        sendMessage(_session, queue, 1);
-
-        _connection.start();
-
-        _message = null;
-        _receiveMessage = new CountDownLatch(1);
-
-        consumer.setMessageListener(new MessageListener()
-        {
-            @Override
-            public void onMessage(Message message)
-            {
-                _message = message;
-                _receiveMessage.countDown();
-            }
-        });
-
-        assertTrue("Timed out waiting for message to be received ", _receiveMessage.await(1, TimeUnit.SECONDS));
-
-        assertNotNull("Message should not be null", _message);
-
-        Destination receivedDestination = _message.getJMSDestination();
-
-        assertNotNull("JMSDestination should not be null", receivedDestination);
-
-        assertEquals("Incorrect Destination type", queue.getClass(), receivedDestination.getClass());
     }
 
     /**
