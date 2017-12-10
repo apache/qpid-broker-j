@@ -25,6 +25,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -32,10 +33,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicConsumeOkBody;
@@ -44,11 +47,13 @@ import org.apache.qpid.server.protocol.v0_8.transport.BasicDeliverBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicGetEmptyBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicGetOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicQosOkBody;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicReturnBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelFlowOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
+import org.apache.qpid.server.protocol.v0_8.transport.QueueDeclareOkBody;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -88,6 +93,141 @@ public class BasicTest extends BrokerAdminUsingTestBase
         }
     }
 
+    @Test
+    @SpecificationTest(section = "1.8.3.7", description = "indicate mandatory routing")
+    public void publishMandatoryMessage() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.openAnonymousConnection()
+                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                       .basic().publishExchange("")
+                               .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
+                               .publishMandatory(true)
+                               .content("Test")
+                               .publishMessage()
+                       .channel().close()
+                       .consumeResponse(ChannelCloseOkBody.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.8.3.7",
+            description = "This flag [mandatory] tells the server how to react if the message cannot be routed to a "
+                          + "queue. If this flag is set, the server will return an unroutable message with a "
+                          + "Return method.")
+    public void publishUnrouteableMandatoryMessage() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            String messageContent = "Test";
+            BasicReturnBody returned = interaction.openAnonymousConnection()
+                                                  .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                                                  .basic().publishExchange("")
+                                                  .publishRoutingKey("unrouteable")
+                                                  .publishMandatory(true)
+                                                  .content(messageContent)
+                                                  .publishMessage()
+                                                  .consumeResponse().getLatestResponse(BasicReturnBody.class);
+            assertThat(returned.getReplyCode(), is(equalTo(ErrorCodes.NO_ROUTE)));
+
+            ContentBody content = interaction.consumeResponse(ContentHeaderBody.class)
+                                             .consumeResponse().getLatestResponse(ContentBody.class);
+
+            assertThat(getContent(content), is(equalTo(messageContent)));
+
+            interaction.channel().close().consumeResponse(ChannelCloseOkBody.class);
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.8.3.7",
+            description = "This flag [mandatory] tells the server how to react if the message cannot be routed to a "
+                          + "queue. If this flag is zero, the server silently drops the message.")
+    public void publishUnrouteableMessage() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.openAnonymousConnection()
+                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                       .basic().publishExchange("")
+                       .publishRoutingKey("unrouteable")
+                       .publishMandatory(false)
+                       .content("Test")
+                       .publishMessage()
+                       .channel().close().consumeResponse(ChannelCloseOkBody.class);
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.8",
+            description = "The server SHOULD respect the persistent property of basic messages and SHOULD make a best "
+                          + "effort to hold persistent basic messages on a reliable storage mechanism.")
+    public void messagePersistence() throws Exception
+    {
+        String queueName = "durableQueue";
+        String messageContent = "Test";
+        String messageContentType = "text/plain";
+        byte deliveryMode = (byte) 2;
+        Map<String, Object> messageHeaders = Collections.singletonMap("test", "testValue");
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.openAnonymousConnection()
+                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                       .queue().declareName(queueName).declareDurable(true).declare()
+                       .consumeResponse(QueueDeclareOkBody.class)
+                       .basic().contentHeaderPropertiesContentType(messageContentType)
+                       .contentHeaderPropertiesHeaders(messageHeaders)
+                       .contentHeaderPropertiesDeliveryMode(deliveryMode)
+                       .publishExchange("")
+                       .publishRoutingKey(queueName)
+                       .content(messageContent)
+                       .publishMessage()
+                       .channel().close()
+                       .consumeResponse(ChannelCloseOkBody.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(queueName), is(equalTo(1)));
+        }
+
+        assumeThat(getBrokerAdmin().supportsRestart(), Matchers.is(true));
+        getBrokerAdmin().restart();
+        assertThat(getBrokerAdmin().getQueueDepthMessages(queueName), is(equalTo(1)));
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+
+            interaction.openAnonymousConnection()
+                       .channel().open()
+                       .consumeResponse(ChannelOpenOkBody.class)
+                       .basic().getQueueName(queueName).getNoAck(true).get()
+                       .consumeResponse(BasicGetOkBody.class);
+
+            ContentHeaderBody header = interaction.consumeResponse().getLatestResponse(ContentHeaderBody.class);
+            ContentBody content = interaction.consumeResponse().getLatestResponse(ContentBody.class);
+
+            String receivedContent = getContent(content);
+            BasicContentHeaderProperties properties = header.getProperties();
+
+            assertThat(receivedContent, is(equalTo(messageContent)));
+
+            Map<String, Object> receivedHeaders = new HashMap<>(FieldTable.convertToMap(properties.getHeaders()));
+            assertThat(receivedHeaders, is(equalTo(new HashMap<>(messageHeaders))));
+            assertThat(properties.getContentTypeAsString(), is(equalTo(messageContentType)));
+            assertThat(properties.getDeliveryMode(), is(equalTo(deliveryMode)));
+
+            interaction.channel().close().consumeResponse(ChannelCloseOkBody.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(queueName), is(equalTo(0)));
+        }
+    }
 
     @Test
     @SpecificationTest(section = "1.8.3.3", description = "start a queue consumer")

@@ -21,7 +21,9 @@
 package org.apache.qpid.tests.protocol.v0_8;
 
 import org.apache.qpid.server.protocol.v0_8.transport.TxCommitBody;
+import org.apache.qpid.server.protocol.v0_8.transport.TxRollbackBody;
 import org.apache.qpid.server.protocol.v0_8.transport.TxSelectBody;
+import org.apache.qpid.tests.protocol.AbstractInteraction;
 
 public class TxInteraction
 {
@@ -40,5 +42,10 @@ public class TxInteraction
     public Interaction commit() throws Exception
     {
         return _interaction.sendPerformative(TxCommitBody.INSTANCE);
+    }
+
+    public Interaction rollback() throws Exception
+    {
+        return _interaction.sendPerformative(TxRollbackBody.INSTANCE);
     }
 }

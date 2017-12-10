@@ -174,6 +174,18 @@ public class BasicInteraction
         return this;
     }
 
+    public BasicInteraction publishMandatory(final boolean mandatory)
+    {
+        _publishMandatory = mandatory;
+        return this;
+    }
+
+    public BasicInteraction publishImmediate(final boolean immediate)
+    {
+        _publishImmediate = immediate;
+        return this;
+    }
+
     public BasicInteraction qosPrefetchCount(final int prefetchCount)
     {
         _qosPrefetchCount = prefetchCount;
@@ -211,6 +223,12 @@ public class BasicInteraction
         return this;
     }
 
+    public BasicInteraction consumeNoAck(final boolean noAck)
+    {
+        _consumeNoAck = noAck;
+        return this;
+    }
+
     public Interaction ack() throws Exception
     {
         return _interaction.sendPerformative(new BasicAckBody(_ackDeliveryTag, _ackMultiple));
@@ -227,6 +245,7 @@ public class BasicInteraction
         return _interaction.sendPerformative(new BasicCancelBody(AMQShortString.valueOf(_consumeCancelTag),
                                                                  _consumeCancelNoWait));
     }
+
     public BasicInteraction consumeCancelTag(final String consumeCancelTag)
     {
         _consumeCancelTag = consumeCancelTag;

@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,7 +34,7 @@ public class ConnectionInteraction
 {
     private final Interaction _interaction;
 
-    private final Map<String, Object> _startOkClientProperties = new HashMap<>();
+    private Map<String, Object> _startOkClientProperties = new HashMap<>();
     private String _startOkMechanism;
     private byte[] _startOkResponse;
     private String _startOkLocale;
@@ -54,6 +55,11 @@ public class ConnectionInteraction
         return this;
     }
 
+    public ConnectionInteraction startOkClientProperties(final Map<String, Object> clientProperties)
+    {
+        _startOkClientProperties = clientProperties == null ? Collections.emptyMap() : new HashMap<>(clientProperties);
+        return this;
+    }
 
     public Interaction startOk() throws Exception
     {
