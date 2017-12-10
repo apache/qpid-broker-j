@@ -34,7 +34,7 @@ public class FrameTransport extends AbstractFrameTransport<Interaction>
     private final byte[] _protocolHeader;
     private ProtocolVersion _protocolVersion;
 
-    FrameTransport(final InetSocketAddress brokerAddress)
+    public FrameTransport(final InetSocketAddress brokerAddress)
     {
         this(brokerAddress, Protocol.AMQP_0_9_1);
     }

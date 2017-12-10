@@ -38,6 +38,7 @@ import org.apache.qpid.server.protocol.v0_8.transport.BasicGetBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicPublishBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicQosBody;
 import org.apache.qpid.server.protocol.v0_8.transport.CompositeAMQDataBlock;
+import org.apache.qpid.server.protocol.v0_8.transport.ConfirmSelectBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 
@@ -71,6 +72,8 @@ public class BasicInteraction
 
     private String _getQueueName;
     private boolean _getNoAck;
+
+    private boolean _confirmSelectNoWait;
 
     public BasicInteraction(final Interaction interaction)
     {
@@ -269,5 +272,10 @@ public class BasicInteraction
     {
         _getNoAck = noAck;
         return this;
+    }
+
+    public Interaction confirmSelect() throws Exception
+    {
+        return _interaction.sendPerformative(new ConfirmSelectBody(_confirmSelectNoWait));
     }
 }
