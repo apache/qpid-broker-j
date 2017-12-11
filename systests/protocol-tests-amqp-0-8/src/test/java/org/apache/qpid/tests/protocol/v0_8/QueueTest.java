@@ -833,7 +833,6 @@ public class QueueTest extends BrokerAdminUsingTestBase
                                                       .declareName(BrokerAdmin.TEST_QUEUE_NAME)
                                                       .declareArguments(Collections.singletonMap("alternateExchange", "notKnown")).declare()
                                                       .consumeResponse().getLatestResponse(ConnectionCloseBody.class);
-            // TODO server fails - jira required
             assertThat(response.getReplyCode(), is(equalTo(ErrorCodes.NOT_FOUND)));
         }
     }
