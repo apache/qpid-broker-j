@@ -23,6 +23,7 @@ package org.apache.qpid.tests.protocol.v0_10;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAccept;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcceptMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcquireMode;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageCancel;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageCreditUnit;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageFlow;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageSubscribe;
@@ -34,6 +35,7 @@ public class MessageInteraction
     private final Interaction _interaction;
     private MessageTransfer _transfer;
     private MessageSubscribe _subscribe;
+    private MessageCancel _cancel;
     private MessageFlow _flow;
     private MessageAccept _accept;
 
@@ -42,6 +44,7 @@ public class MessageInteraction
         _interaction = interaction;
         _transfer = new MessageTransfer();
         _subscribe = new MessageSubscribe();
+        _cancel = new MessageCancel();
         _flow = new MessageFlow();
         _accept = new MessageAccept();
     }
@@ -52,7 +55,7 @@ public class MessageInteraction
         return this;
     }
 
-    public MessageInteraction transferDesitnation(final String destination)
+    public MessageInteraction transferDestination(final String destination)
     {
         _transfer.setDestination(destination);
         return this;
@@ -79,6 +82,24 @@ public class MessageInteraction
     public Interaction subscribe() throws Exception
     {
         return _interaction.sendPerformative(_subscribe);
+    }
+
+    public MessageInteraction cancelId(final int id)
+    {
+        _cancel.setId(id);
+        return this;
+    }
+
+    public MessageInteraction cancelDestination(final String destination)
+    {
+        _cancel.setDestination(destination);
+        return this;
+    }
+
+    public Interaction cancel() throws Exception
+    {
+        _interaction.sendPerformative(_cancel);
+        return _interaction;
     }
 
     public MessageInteraction subscribeDestination(final String destination)

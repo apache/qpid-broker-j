@@ -38,6 +38,7 @@ public class Interaction extends AbstractInteraction<Interaction>
     private SessionInteraction _sessionInteraction;
     private MessageInteraction _messageInteraction;
     private ExecutionInteraction _executionInteraction;
+    private QueueInteraction _queueInteraction;
     private int _channelId;
     private TxInteraction _txInteraction;
 
@@ -49,6 +50,7 @@ public class Interaction extends AbstractInteraction<Interaction>
         _messageInteraction = new MessageInteraction(this);
         _executionInteraction = new ExecutionInteraction(this);
         _txInteraction = new TxInteraction(this);
+        _queueInteraction = new QueueInteraction(this);
     }
 
     @Override
@@ -135,5 +137,10 @@ public class Interaction extends AbstractInteraction<Interaction>
     public TxInteraction tx()
     {
         return _txInteraction;
+    }
+
+    public QueueInteraction queue()
+    {
+        return _queueInteraction;
     }
 }

@@ -75,7 +75,7 @@ public class MessageTest extends BrokerAdminUsingTestBase
                                                     .channelId(1)
                                                     .attachSession(sessionName)
                                                     .message()
-                                                    .transferDesitnation(BrokerAdmin.TEST_QUEUE_NAME)
+                                                    .transferDestination(BrokerAdmin.TEST_QUEUE_NAME)
                                                     .transferId(0)
                                                     .transfer()
                                                     .session()

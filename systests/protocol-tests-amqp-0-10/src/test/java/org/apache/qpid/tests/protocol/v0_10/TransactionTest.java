@@ -60,7 +60,7 @@ public class TransactionTest extends BrokerAdminUsingTestBase
                        .attachSession(sessionName)
                        .tx().selectId(0).select()
                        .message()
-                       .transferDesitnation(BrokerAdmin.TEST_QUEUE_NAME)
+                       .transferDestination(BrokerAdmin.TEST_QUEUE_NAME)
                        .transferId(1)
                        .transfer()
                        .session()
