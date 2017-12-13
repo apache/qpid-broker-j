@@ -39,11 +39,11 @@ import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.UnknownConfiguredObjectException;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
+import org.apache.qpid.server.virtualhost.UnknownAlternateBindingException;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class DirectExchangeTest extends QpidTestCase
@@ -176,7 +176,7 @@ public class DirectExchangeTest extends QpidTestCase
             _vhost.createChild(Exchange.class, attributes);
             fail("Expected exception is not thrown");
         }
-        catch (UnknownConfiguredObjectException e)
+        catch (UnknownAlternateBindingException e)
         {
             // pass
         }

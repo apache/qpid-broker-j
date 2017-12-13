@@ -120,6 +120,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
+import org.apache.qpid.server.virtualhost.UnknownAlternateBindingException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
 public abstract class AbstractQueue<X extends AbstractQueue<X>>
@@ -3534,9 +3535,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     _virtualHost.getAttainedMessageDestination(destinationName, mayCreate);
             if (messageDestination == null)
             {
-                throw new UnknownConfiguredObjectException(String.format(
+                throw new UnknownAlternateBindingException(String.format(
                         "Cannot create alternate binding for '%s' : Alternate binding destination '%s' cannot be found.",
-                        getName(), destinationName), ConfiguredObject.class, destinationName);
+                        getName(), destinationName));
             }
             else if (messageDestination == this)
             {
