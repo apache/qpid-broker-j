@@ -62,7 +62,6 @@ import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NoFactoryForTypeException;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.UnknownConfiguredObjectException;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_10.transport.*;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
@@ -86,6 +85,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
+import org.apache.qpid.server.virtualhost.UnknownAlternateBindingException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
 public class ServerSessionDelegate extends MethodDelegate<ServerSession> implements ProtocolDelegate<ServerSession>
@@ -952,11 +952,11 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                                                                                    + exchangeName + " which begins with reserved name or prefix.");
                     }
                 }
-                catch(UnknownConfiguredObjectException e)
+                catch(UnknownAlternateBindingException e)
                 {
 
                     exception(session, method, ExecutionErrorCode.NOT_FOUND,
-                                                                "Unknown alternate exchange " + e.getName());
+                                                                "Unknown alternate exchange " + alternateExchangeName);
                 }
                 catch(NoFactoryForTypeException e)
                 {
@@ -1541,11 +1541,9 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         else
         {
 
+            final String alternateExchangeName = method.getAlternateExchange();
             try
             {
-
-                final String alternateExchangeName = method.getAlternateExchange();
-
                 final Map<String, Object> arguments = QueueArgumentsConverter.convertWireArgsToModel(queueName,
                                                                                                      method.getArguments());
 
@@ -1602,6 +1600,11 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
             catch (AccessControlException e)
             {
                 exception(session, method, ExecutionErrorCode.UNAUTHORIZED_ACCESS, e.getMessage());
+            }
+            catch (UnknownAlternateBindingException e)
+            {
+                exception(session, method, ExecutionErrorCode.NOT_FOUND,
+                          "Unknown alternate exchange " + alternateExchangeName);
             }
             catch (IllegalArgumentException | IllegalConfigurationException e)
             {

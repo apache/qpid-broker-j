@@ -71,7 +71,6 @@ import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.model.UnknownConfiguredObjectException;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.queue.CreatingLinkInfo;
 import org.apache.qpid.server.security.SecurityToken;
@@ -85,6 +84,7 @@ import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
+import org.apache.qpid.server.virtualhost.UnknownAlternateBindingException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
 public abstract class AbstractExchange<T extends AbstractExchange<T>>
@@ -1055,9 +1055,9 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                     _virtualHost.getAttainedMessageDestination(destinationName, mayCreate);
             if (messageDestination == null)
             {
-                throw new UnknownConfiguredObjectException(String.format(
+                throw new UnknownAlternateBindingException(String.format(
                         "Cannot create alternate binding for '%s' : Alternate binding destination '%s' cannot be found.",
-                        getName(), destinationName), ConfiguredObject.class, destinationName);
+                        getName(), destinationName));
             }
             else if (messageDestination == this)
             {

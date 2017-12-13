@@ -67,7 +67,6 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
-import org.apache.qpid.server.model.UnknownConfiguredObjectException;
 import org.apache.qpid.server.queue.AbstractQueue.QueueEntryFilter;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -75,6 +74,7 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
+import org.apache.qpid.server.virtualhost.UnknownAlternateBindingException;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 abstract class AbstractQueueTestBase extends QpidTestCase
@@ -982,7 +982,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
             _virtualHost.createChild(Queue.class, attributes);
             fail("Expected exception is not thrown");
         }
-        catch (UnknownConfiguredObjectException e)
+        catch (UnknownAlternateBindingException e)
         {
             // pass
         }
