@@ -165,6 +165,10 @@ public abstract class AbstractSystemMessageSource implements MessageSource
                                                 propertiesMessageInstance.getMessageReference());
                 }
             }
+            else
+            {
+                _target.noMessagesAvailable();
+            }
             return null;
         }
 
