@@ -125,8 +125,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
                                                      .consumeResponse()
                                                      .getLatestResponse(ExecutionException.class);
 
-            // TODO Specification says ExecutionErrorCode.NOT_FOUND must be used.
-            assertThat(response.getErrorCode(), is(equalTo(ExecutionErrorCode.ILLEGAL_ARGUMENT)));
+            assertThat(response.getErrorCode(), is(equalTo(ExecutionErrorCode.NOT_FOUND)));
         }
     }
 
