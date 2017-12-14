@@ -22,6 +22,7 @@ package org.apache.qpid.tests.protocol.v0_10;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assume.assumeThat;
@@ -34,9 +35,12 @@ import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v0_10.transport.ExecutionErrorCode;
 import org.apache.qpid.server.protocol.v0_10.transport.ExecutionException;
+import org.apache.qpid.server.protocol.v0_10.transport.ExecutionResult;
+import org.apache.qpid.server.protocol.v0_10.transport.QueueQueryResult;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionCommandPoint;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionCompleted;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionDetached;
+import org.apache.qpid.server.protocol.v0_10.transport.SessionFlush;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -529,7 +533,6 @@ public class QueueTest extends BrokerAdminUsingTestBase
             assertThat(response.getErrorCode(), is(equalTo(ExecutionErrorCode.NOT_FOUND)));
         }
     }
-
     @Test
     @SpecificationTest(section = "10.queue.delete",
             description = "If set, the server will only delete the queue if it has no consumers. If the queue has "
@@ -592,6 +595,110 @@ public class QueueTest extends BrokerAdminUsingTestBase
                                .flushCompleted()
                                .flush()
                                .consumeResponse(SessionCompleted.class);
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "10.queue.purge", description = "This command removes all messages from a queue.")
+    public void queuePurge() throws Exception
+    {
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "message");
+
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            ExecutionResult result = interaction.openAnonymousConnection()
+                                                .channelId(1)
+                                                .attachSession(SESSION_NAME)
+                                                .queue()
+                                                .queryQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                                                .queryId(1)
+                                                .query()
+                                                .session()
+                                                .flushCompleted()
+                                                .flush()
+                                                .consumeResponse(SessionCommandPoint.class)
+                                                .consumeResponse().getLatestResponse(ExecutionResult.class);
+            assertThat(((QueueQueryResult) result.getValue()).getMessageCount(), is(1L));
+
+            interaction.queue()
+                    .purgeQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                    .purgeId(0)
+                    .purge()
+                    .session()
+                    .flushCompleted()
+                    .flush()
+                    .consumeResponse(SessionFlush.class)
+                    .consumeResponse(SessionCompleted.class);
+
+            result = interaction.queue()
+                                .queryQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                                .queryId(1)
+                                .query()
+                                .session()
+                                .flushCompleted()
+                                .flush()
+                                .consumeResponse(SessionCompleted.class)
+                                .consumeResponse().getLatestResponse(ExecutionResult.class);
+            assertThat(((QueueQueryResult) result.getValue()).getMessageCount(), is(0L));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "10.queue.purge",
+            description = "The queue must exist. If the client attempts to purge a non-existing queue the server "
+                          + "MUST raise an exception.")
+    public void queuePurgeQueueNotFound() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            ExecutionException response = interaction.openAnonymousConnection()
+                                                     .channelId(1)
+                                                     .attachSession(SESSION_NAME)
+                                                     .queue()
+                                                     .purgeQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                                                     .purgeId(0)
+                                                     .purge()
+                                                     .session()
+                                                     .flushCompleted()
+                                                     .flush()
+                                                     .consumeResponse(SessionCommandPoint.class)
+                                                     .consumeResponse()
+                                                     .getLatestResponse(ExecutionException.class);
+
+            assertThat(response.getErrorCode(), is(equalTo(ExecutionErrorCode.NOT_FOUND)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "10.queue.query",
+            description = "This command requests information about a queue.")
+    public void queueQuery() throws Exception
+    {
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "message");
+
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            ExecutionResult result = interaction.openAnonymousConnection()
+                                                        .channelId(1)
+                                                        .attachSession(SESSION_NAME)
+                                                        .queue()
+                                                        .queryQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                                                        .queryId(0)
+                                                        .query()
+                                                        .session()
+                                                        .flushCompleted()
+                                                        .flush()
+                                                        .consumeResponse(SessionCommandPoint.class)
+                                                        .consumeResponse().getLatestResponse(ExecutionResult.class);
+            QueueQueryResult queryResult = (QueueQueryResult) result.getValue();
+            assertThat(queryResult.getQueue(), is(equalTo(BrokerAdmin.TEST_QUEUE_NAME)));
+            assertThat(queryResult.getAlternateExchange(), is(nullValue()));
+            assertThat(queryResult.getMessageCount(), is(1L));
         }
     }
 }

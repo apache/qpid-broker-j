@@ -22,20 +22,24 @@ package org.apache.qpid.tests.protocol.v0_10;
 
 import org.apache.qpid.server.protocol.v0_10.transport.QueueDeclare;
 import org.apache.qpid.server.protocol.v0_10.transport.QueueDelete;
-import org.apache.qpid.server.protocol.v0_10.transport.TxCommit;
-import org.apache.qpid.server.protocol.v0_10.transport.TxSelect;
+import org.apache.qpid.server.protocol.v0_10.transport.QueuePurge;
+import org.apache.qpid.server.protocol.v0_10.transport.QueueQuery;
 
 public class QueueInteraction
 {
     private final Interaction _interaction;
     private final QueueDeclare _declare;
     private final QueueDelete _delete;
+    private final QueuePurge _purge;
+    private final QueueQuery _query;
 
     public QueueInteraction(final Interaction interaction)
     {
         _interaction = interaction;
         _declare = new QueueDeclare();
         _delete = new QueueDelete();
+        _purge = new QueuePurge();
+        _query = new QueueQuery();
     }
 
     public QueueInteraction declareQueue(final String queue)
@@ -105,5 +109,38 @@ public class QueueInteraction
     public Interaction delete() throws Exception
     {
         return _interaction.sendPerformative(_delete);
+    }
+
+    public QueueInteraction purgeQueue(final String queueName)
+    {
+        _purge.setQueue(queueName);
+        return this;
+    }
+
+    public QueueInteraction purgeId(final int id)
+    {
+        _purge.setId(id);
+        return this;
+    }
+    public Interaction purge() throws Exception
+    {
+        return _interaction.sendPerformative(_purge);
+    }
+
+    public QueueInteraction queryQueue(final String queueName)
+    {
+        _query.setQueue(queueName);
+        return this;
+    }
+
+    public QueueInteraction queryId(final int id)
+    {
+        _query.setId(id);
+        return this;
+    }
+
+    public Interaction query() throws Exception
+    {
+        return _interaction.sendPerformative(_query);
     }
 }
