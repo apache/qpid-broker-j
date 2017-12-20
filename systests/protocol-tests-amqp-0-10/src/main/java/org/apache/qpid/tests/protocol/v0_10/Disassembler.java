@@ -184,6 +184,7 @@ public final class Disassembler implements ProtocolEventSender, ProtocolDelegate
                 {
                     body = ByteBuffer.allocate(qpidByteBuffer.remaining());
                     qpidByteBuffer.copyTo(body);
+                    body.flip();
                 }
                 ByteBuffer headerBuf = view(copy, methodLimit, headerLimit);
                 fragment(body == null ? LAST_SEG : 0x0, SegmentType.HEADER, method, headerBuf);

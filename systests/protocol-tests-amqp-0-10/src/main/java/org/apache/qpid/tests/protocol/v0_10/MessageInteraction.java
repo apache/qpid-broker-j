@@ -20,12 +20,16 @@
  */
 package org.apache.qpid.tests.protocol.v0_10;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.Header;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAccept;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcceptMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcquireMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageCancel;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageCreditUnit;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageFlow;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageSubscribe;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
 import org.apache.qpid.server.protocol.v0_10.transport.RangeSet;
@@ -58,6 +62,36 @@ public class MessageInteraction
     public MessageInteraction transferDestination(final String destination)
     {
         _transfer.setDestination(destination);
+        return this;
+    }
+
+    public MessageInteraction transferHeader(final DeliveryProperties deliveryProperties,
+                                             final MessageProperties messageProperties)
+    {
+        if (deliveryProperties == null && messageProperties == null)
+        {
+            _transfer.setHeader(null);
+        }
+        else
+        {
+            _transfer.setHeader(new Header(deliveryProperties, messageProperties));
+        }
+        return this;
+    }
+
+    public MessageInteraction transferBody(final byte[] messageContent)
+    {
+        if (messageContent != null)
+        {
+            try (QpidByteBuffer buf = QpidByteBuffer.wrap(messageContent))
+            {
+                _transfer.setBody(buf);
+            }
+        }
+        else
+        {
+            _transfer.setBody(null);
+        }
         return this;
     }
 

@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
 
+import org.apache.qpid.server.protocol.v0_10.FrameSizeObserver;
 import org.apache.qpid.server.protocol.v0_10.transport.Frame;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolError;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolHeader;
@@ -33,7 +34,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.SegmentType;
 import org.apache.qpid.tests.protocol.InputDecoder;
 import org.apache.qpid.tests.protocol.Response;
 
-public class FrameDecoder implements InputDecoder
+public class FrameDecoder implements InputDecoder, FrameSizeObserver
 {
 
     private final ProtocolEventReceiver _receiver;
@@ -62,7 +63,7 @@ public class FrameDecoder implements InputDecoder
 
     FrameDecoder(final byte[] headerBytes)
     {
-        _receiver = new ProtocolEventReceiver(headerBytes);
+        _receiver = new ProtocolEventReceiver(headerBytes, this);
         this._assembler = new Assembler(_receiver);
         this._state = State.PROTO_HDR;
         _needed = 8;
@@ -183,6 +184,7 @@ public class FrameDecoder implements InputDecoder
         _assembler.received(new ProtocolError(Frame.L1, fmt, args));
     }
 
+    @Override
     public void setMaxFrameSize(final int maxFrameSize)
     {
         _maxFrameSize = maxFrameSize;

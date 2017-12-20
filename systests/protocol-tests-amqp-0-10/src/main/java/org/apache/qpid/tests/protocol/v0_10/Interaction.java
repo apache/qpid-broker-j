@@ -27,6 +27,9 @@ import org.apache.qpid.server.protocol.v0_10.transport.BBEncoder;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionOpenOk;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStart;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionTune;
+import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.Header;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.Method;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionAttached;
 import org.apache.qpid.tests.protocol.AbstractFrameTransport;
@@ -85,6 +88,48 @@ public class Interaction extends AbstractInteraction<Interaction>
         decoder.init(buffer);
         dst.read(decoder);
         dst.setChannel(src.getChannel());
+
+        if (src.getHeader() != null)
+        {
+            Header srcHeader = src.getHeader();
+            MessageProperties dstMessageProperties = null;
+            DeliveryProperties dstDeliveryProperties = null;
+
+            if (srcHeader.getMessageProperties() != null)
+            {
+                MessageProperties properties = srcHeader.getMessageProperties();
+                dstMessageProperties = new MessageProperties();
+
+                encoder.init();
+                properties.write(encoder);
+
+                decoder.init(encoder.buffer());
+                dstMessageProperties.read(decoder);
+            }
+
+            if (srcHeader.getDeliveryProperties() != null)
+            {
+                DeliveryProperties properties = srcHeader.getDeliveryProperties();
+                dstDeliveryProperties = new DeliveryProperties();
+
+                encoder.init();
+                properties.write(encoder);
+
+                decoder.init(encoder.buffer());
+                dstDeliveryProperties.read(decoder);
+            }
+
+            if (dstMessageProperties != null || dstDeliveryProperties != null)
+            {
+                dst.setHeader(new Header(dstDeliveryProperties, dstMessageProperties));
+            }
+        }
+
+        if (src.getBody() != null)
+        {
+            dst.setBody(src.getBody());
+        }
+
         return dst;
     }
 

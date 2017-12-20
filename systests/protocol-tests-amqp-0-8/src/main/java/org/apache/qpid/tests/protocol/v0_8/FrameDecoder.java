@@ -29,6 +29,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQDataBlock;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQFrame;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionTuneBody;
 import org.apache.qpid.server.protocol.v0_8.transport.FrameCreatingMethodProcessor;
 import org.apache.qpid.server.protocol.v0_8.transport.ProtocolInitiation;
 import org.apache.qpid.server.transport.ByteBufferSender;
@@ -60,6 +61,12 @@ public class FrameDecoder implements InputDecoder
             if (frame instanceof AMQFrame)
             {
                 AMQFrame amqFrame = (AMQFrame) frame;
+                if (amqFrame.getBodyFrame() instanceof ConnectionTuneBody)
+                {
+                    ConnectionTuneBody tuneBody = (ConnectionTuneBody) amqFrame.getBodyFrame();
+                    _clientDecoder.setMaxFrameSize((int) tuneBody.getFrameMax());
+                }
+
                 result.add(new PerformativeResponse(amqFrame.getChannel(), amqFrame.getSize(), amqFrame.getBodyFrame()));
             }
             else if (frame instanceof ProtocolInitiation)

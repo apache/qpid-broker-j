@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.apache.qpid.server.protocol.v0_10.FrameSizeObserver;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionTune;
 import org.apache.qpid.server.protocol.v0_10.transport.Method;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolError;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolEvent;
@@ -34,12 +36,15 @@ import org.apache.qpid.tests.protocol.Response;
 
 public class ProtocolEventReceiver
 {
-    private Queue<Response<?>> _events = new ConcurrentLinkedQueue<>();
+    private final Queue<Response<?>> _events = new ConcurrentLinkedQueue<>();
     private final byte[] _headerBytes;
+    private FrameSizeObserver _frameSizeObserver;
 
-    public ProtocolEventReceiver(final byte[] headerBytes)
+    public ProtocolEventReceiver(final byte[] headerBytes,
+                                 final FrameSizeObserver frameSizeObserver)
     {
         _headerBytes = headerBytes;
+        _frameSizeObserver = frameSizeObserver;
     }
 
     void received(ProtocolEvent msg)
@@ -50,6 +55,11 @@ public class ProtocolEventReceiver
         }
         else if (msg instanceof Method)
         {
+            if (msg instanceof ConnectionTune)
+            {
+                int maxFrameSize = ((ConnectionTune) msg).getMaxFrameSize();
+                _frameSizeObserver.setMaxFrameSize(maxFrameSize);
+            }
             _events.add(new PerformativeResponse((Method) msg));
         }
         else if (msg instanceof ProtocolError)
