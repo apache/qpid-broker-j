@@ -39,7 +39,6 @@ org.apache.qpid.test.client.destination.AddressBasedDestinationTest#testJMSDesti
 
 // The new addressing based syntax is not supported for AMQP 0-8/0-9 versions
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#*
-org.apache.qpid.test.unit.message.JMSPropertiesTest#testApplicationProperties
 org.apache.qpid.server.queue.AddressBasedSortedQueueTest#*
 
 // Those tests are written against the 0.10 path
@@ -51,9 +50,6 @@ org.apache.qpid.client.ssl.SSLTest#testMultipleCertsInSingleStore
 
 // Tests 0.10 client feature
 org.apache.qpid.test.unit.client.connection.ConnectionTest#testUnsupportedSASLMechanism
-
-// uses AMQP 0-10 related properties
-org.apache.qpid.test.unit.message.JMSPropertiesTest#testQpidExtensionProperties
 
 // Verification of unique client id is 0-10 specific
 org.apache.qpid.test.unit.client.connection.ConnectionTest#testClientIDVerificationForSameUser
