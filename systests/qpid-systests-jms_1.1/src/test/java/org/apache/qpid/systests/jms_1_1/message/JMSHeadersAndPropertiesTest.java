@@ -72,11 +72,6 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
             final String firstResendID = sentMessage.getJMSMessageID();
             assertNotNull("JMSMessageID must be set after first resend", firstResendID);
             assertNotSame("JMSMessageID must be changed second publish", originalId, firstResendID);
-
-            producer.setDisableMessageID(true);
-            producer.send(sentMessage);
-            final String secondResendID = sentMessage.getJMSMessageID();
-            assertNull("JMSMessageID must be unset after second resend with IDs disabled", secondResendID);
         }
         finally
         {
@@ -293,6 +288,43 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
             connection.close();
         }
     }
+
+    @Test
+    public void disableJMSMessageId() throws Exception
+    {
+        Queue queue = createQueue(getTestName());
+        Connection connection = getConnection();
+        try
+        {
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            MessageProducer producer = session.createProducer(queue);
+            Message message = session.createMessage();
+            producer.send(message);
+            assertNotNull("Produced message is expected to have a JMSMessageID", message.getJMSMessageID());
+
+            final MessageConsumer consumer = session.createConsumer(queue);
+            connection.start();
+
+            final Message receivedMessageWithId = consumer.receive(getReceiveTimeout());
+            assertNotNull(receivedMessageWithId);
+
+            assertNotNull("Received message is expected to have a JMSMessageID", receivedMessageWithId.getJMSMessageID());
+            assertEquals("Received message JMSMessageID should match the sent", message.getJMSMessageID(), receivedMessageWithId.getJMSMessageID());
+
+            producer.setDisableMessageID(true);
+            producer.send(message);
+            assertNull("Produced message is expected to not have a JMSMessageID", message.getJMSMessageID());
+
+            final Message receivedMessageWithoutId = consumer.receive(getReceiveTimeout());
+            assertNotNull(receivedMessageWithoutId);
+            assertNull("Received message is not expected to have a JMSMessageID", receivedMessageWithoutId.getJMSMessageID());
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
 
     private boolean isJMSXPropertySupported(final Connection connection, final String propertyName) throws JMSException
     {
