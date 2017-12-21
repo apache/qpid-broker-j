@@ -51,7 +51,7 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
 {
 
     @Test
-    public void testResentJMSMessageGetsReplacementJMSMessageID() throws Exception
+    public void resentJMSMessageGetsReplacementJMSMessageID() throws Exception
     {
         Queue queue = createQueue(getTestName());
         Connection connection = getConnection();
@@ -85,7 +85,7 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
     }
 
     @Test
-    public void JMSRedelivered() throws Exception
+    public void redelivered() throws Exception
     {
         Queue queue = createQueue(getTestName());
         Connection connection = getConnectionBuilder().setPrefetch(1).build();
@@ -126,7 +126,7 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
     }
 
     @Test
-    public void testJMSHeaders() throws Exception
+    public void headers() throws Exception
     {
         final Queue queue = createQueue(getTestName());
         final Destination replyTo = createQueue(getTestName() + "_replyTo");
@@ -184,9 +184,8 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
         }
     }
 
-
     @Test
-    public void testJMSXGroupIDAndJMSXGroupSeq() throws Exception
+    public void groupIDAndGroupSeq() throws Exception
     {
         final Connection connection = getConnection();
         try
@@ -220,13 +219,52 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
     }
 
     @Test
+    public void propertyValues() throws Exception
+    {
+        Queue queue = createQueue(getTestName());
+        Connection connection = getConnection();
+        try
+        {
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            MessageProducer producer = session.createProducer(queue);
+            Message message = session.createMessage();
+
+            message.setBooleanProperty("boolean", true);
+            message.setByteProperty("byte", Byte.MAX_VALUE);
+            message.setShortProperty("short", Short.MAX_VALUE);
+            message.setIntProperty("int", Integer.MAX_VALUE);
+            message.setFloatProperty("float", Float.MAX_VALUE);
+            message.setDoubleProperty("double", Double.MAX_VALUE);
+
+            producer.send(message);
+
+            final MessageConsumer consumer = session.createConsumer(queue);
+            connection.start();
+
+            final Message receivedMessage = consumer.receive(getReceiveTimeout());
+            assertNotNull(receivedMessage);
+
+            assertEquals("Unexpected boolean property value", Boolean.TRUE, message.getBooleanProperty("boolean"));
+            assertEquals("Unexpected byte property value", Byte.MAX_VALUE, message.getByteProperty("byte"));
+            assertEquals("Unexpected short property value", Short.MAX_VALUE, message.getShortProperty("short"));
+            assertEquals("Unexpected int property value", Integer.MAX_VALUE, message.getIntProperty("int"));
+            assertEquals("Unexpected float property value", Float.MAX_VALUE, message.getFloatProperty("float"), 0f);
+            assertEquals("Unexpected double property value", Double.MAX_VALUE, message.getDoubleProperty("double"), 0d);
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    @Test
     public void unsupportedObjectPropertyValue() throws Exception
     {
         Queue queue = createQueue(getTestName());
         Connection connection = getConnection();
         try
         {
-            Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             MessageProducer producer = session.createProducer(queue);
             Message message = session.createMessage();
             try
@@ -240,7 +278,6 @@ public class JMSHeadersAndPropertiesTest extends JmsTestBase
             String validValue = "validValue";
             message.setObjectProperty("validObject", validValue);
             producer.send(message);
-            session.commit();
 
             final MessageConsumer consumer = session.createConsumer(queue);
             connection.start();

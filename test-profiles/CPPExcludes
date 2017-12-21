@@ -194,13 +194,6 @@ org.apache.qpid.server.virtualhostnode.berkeleydb.*
 // Qpid Broker-J Derby Tests
 org.apache.qpid.server.store.derby.*
 
-// These tests are 0-8..0-91 specific
-org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_08091_HeadersFillContentHeaderFrame
-org.apache.qpid.test.unit.basic.PropertyValueTest#testOverlyLargeHeaderRejected_08091
-
-// QPID-6786 Sending headers larger than [first] transfer/frame size (which is outside the spec) isn't supported against the C++ broker
-org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_010_HeadersFillContentHeaderFrame
-
 # QPID-7156: Test requires a Broker with a virtualhost
 org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest#testClientCloseOnVirtualHostStop
 

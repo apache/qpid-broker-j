@@ -82,11 +82,6 @@ org.apache.qpid.client.session.ExchangeDeleteTest#*
 org.apache.qpid.client.session.QueueDeclareTest#*
 org.apache.qpid.client.session.QueueDeleteTest#*
 
-// The tests are Protocol version specific constraints on total header property size
-org.apache.qpid.test.unit.basic.PropertyValueTest#testOverlyLargeHeaderRejected_08091
-org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_08091_HeadersFillContentHeaderFrame
-org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_010_HeadersFillContentHeaderFrame
-
 // This test concerns 0-8/0-10 bytes limiting flow control
 org.apache.qpid.test.client.ConsumerFlowControlTest#*
 

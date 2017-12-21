@@ -67,9 +67,6 @@ org.apache.qpid.client.prefetch.PrefetchBehaviourTest#testPrefetchWindowExpandsO
 org.apache.qpid.client.failover.FailoverBehaviourTest#testConnectionCloseInterruptsFailover
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testConnectionCloseInterruptsFailover
 
-org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_08091_HeadersFillContentHeaderFrame
-org.apache.qpid.test.unit.basic.PropertyValueTest#testOverlyLargeHeaderRejected_08091
-
 // There is no way in the 0-10 client to cause a send to fail when the message does not reach any queue
 org.apache.qpid.server.queue.NodeAutoCreationPolicyTest#testSendingToNonMatchingQueuePatternBURL
 
