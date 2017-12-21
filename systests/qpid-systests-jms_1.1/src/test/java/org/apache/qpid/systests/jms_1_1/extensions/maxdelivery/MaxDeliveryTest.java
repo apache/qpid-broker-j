@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.systests.jms_1_1.transaction;
+package org.apache.qpid.systests.jms_1_1.extensions.maxdelivery;
 
 import static org.apache.qpid.systests.Utils.INDEX;
 import static org.junit.Assert.assertEquals;
