@@ -50,9 +50,6 @@ org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testFailoverHa
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testFailoverHandlerTimeoutReconnected
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testFlowControlFlagResetOnFailover
 
-// QPID-3604: Immediate Prefetch no longer supported by 0-10
-org.apache.qpid.client.AsynchMessageListenerTest#testImmediatePrefetchWithMessageListener
-
 // JMS 0-10 client does not support re-binding the queue to the same exchange
 org.apache.qpid.server.queue.QueueBindTest#testQueueCanBeReboundOnTopicExchange
 

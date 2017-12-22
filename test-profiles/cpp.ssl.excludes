@@ -21,5 +21,3 @@
 //in this test profile as it demands client certificate authentication
 org.apache.qpid.client.ssl.SSLTest#testCreateSSLConnectionUsingConnectionURLParamsTrustStoreOnly
 
-//QPID-3431: excluding because this takes 30+ mins to run on the C++ SSL profile for some reason
-org.apache.qpid.client.SessionCreateTest#testSessionCreationLimit

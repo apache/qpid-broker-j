@@ -17,8 +17,5 @@
 // under the License.
 //
 
-// QPID-1823: this takes ages to run
-org.apache.qpid.client.SessionCreateTest#*
-
 // Test runs for 2 minutes testing that subtraction works
 org.apache.qpid.server.util.SerialTest#testCorollary1
