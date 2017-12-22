@@ -40,6 +40,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
@@ -73,8 +74,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
                            .setHost(brokerAddress.getHostName())
                            .setPort(brokerAddress.getPort())
                            .setUsername(getBrokerAdmin().getValidUsername())
-                           .setPassword(getBrokerAdmin().getValidPassword())
-                ;
+                           .setPassword(getBrokerAdmin().getValidPassword());
     }
 
     protected void createEntityUsingAmqpManagement(final String entityName,
@@ -199,5 +199,10 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
     protected TopicConnection getTopicConnection() throws JMSException, NamingException
     {
         return (TopicConnection) getConnection();
+    }
+
+    public Protocol getProtocol()
+    {
+        return Protocol.valueOf("AMQP_" + System.getProperty("broker.version", "0-9-1").replace('-', '_').replace('.', '_'));
     }
 }

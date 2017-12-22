@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.systests.jms_1_1.topic;
+package org.apache.qpid.systests.jms_1_1.topicconnection;
 
 import static org.junit.Assert.fail;
 

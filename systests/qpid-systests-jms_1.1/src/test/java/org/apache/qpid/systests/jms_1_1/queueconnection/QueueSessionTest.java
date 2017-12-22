@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.systests.jms_1_1.queue;
+package org.apache.qpid.systests.jms_1_1.queueconnection;
 
 import static org.junit.Assert.fail;
 
@@ -108,7 +108,7 @@ public class QueueSessionTest extends JmsTestBase
     }
 
     @Test
-    public void testQueueSessionCannoutUnsubscribe() throws Exception
+    public void testQueueSessionCannotUnsubscribe() throws Exception
     {
         QueueConnection queueConnection = getQueueConnection();
         try
