@@ -60,13 +60,6 @@ org.apache.qpid.server.logging.ChannelLoggingTest#testChannelStartConsumerFlowSt
 // This test is testing AMQP 0-x specific behaviour
 org.apache.qpid.server.logging.ChannelLoggingTest#testChannelClosedOnExclusiveQueueDeclaredOnDifferentSession
 
-
-// These tests test acknowledge modes that are 0-8/9/10 client specific
-org.apache.qpid.test.unit.ack.AcknowledgeTest#testNoAck
-org.apache.qpid.test.unit.ack.AcknowledgeTest#testPreAck
-org.apache.qpid.test.unit.ack.AcknowledgeOnMessageTest#testNoAck
-org.apache.qpid.test.unit.ack.AcknowledgeOnMessageTest#testPreAck
-
 // This test is checking features of the 0-x client specific implementation of Session
 org.apache.qpid.test.unit.client.AMQSessionTest#*
 

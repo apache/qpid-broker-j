@@ -35,6 +35,9 @@ import javax.jms.Session;
 
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
+/**
+ * TODO KW acknowledgement persistence
+ */
 public class PersistentStoreTest extends QpidBrokerTestCase
 {
     private static final int NUM_MESSAGES = 100;
