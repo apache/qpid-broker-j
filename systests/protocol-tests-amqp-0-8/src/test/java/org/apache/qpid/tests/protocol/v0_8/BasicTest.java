@@ -38,6 +38,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
@@ -53,6 +54,7 @@ import org.apache.qpid.server.protocol.v0_8.transport.ChannelFlowOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ExchangeDeclareOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueDeclareOkBody;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -403,6 +405,135 @@ public class BasicTest extends BrokerAdminUsingTestBase
                        .basic().getQueueName(BrokerAdmin.TEST_QUEUE_NAME).get()
                        .consumeResponse().getLatestResponse(BasicGetEmptyBody.class);
         }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.8.3.3",
+            description = "This field specifies the prefetch window size in octets. The server will send a message "
+                          + "in advance if it is equal to or smaller in size than the available prefetch size (and "
+                          + "also falls into other prefetch limits).")
+    public void qosBytesPrefetch() throws Exception
+    {
+        String messageContent1 = String.join("", Collections.nCopies(128, "1"));
+        String messageContent2 = String.join("", Collections.nCopies(128, "2"));
+        String messageContent3 = String.join("", Collections.nCopies(256, "3"));
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            String consumerTag = "A";
+
+            interaction.openAnonymousConnection()
+                       .channel().open()
+                       .consumeResponse(ChannelOpenOkBody.class)
+                       .basic()
+                       .publishExchange("").publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
+                       .content(messageContent1).publishMessage()
+                       .basic()
+                       .content(messageContent2).publishMessage()
+                       .basic()
+                       .content(messageContent3).publishMessage()
+                       .channel().flow(true)
+                       .consumeResponse(ChannelFlowOkBody.class)
+                       .basic().qosPrefetchSize(256)
+                       .qos()
+                       .consumeResponse(BasicQosOkBody.class)
+                       .basic().consumeConsumerTag(consumerTag)
+                       .consumeQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                       .consume()
+                       .consumeResponse(BasicConsumeOkBody.class);
+
+            BasicDeliverBody delivery1 = interaction.consumeResponse()
+                                                    .getLatestResponse(BasicDeliverBody.class);
+            ContentBody content1 = interaction.consumeResponse(ContentHeaderBody.class)
+                                              .consumeResponse().getLatestResponse(ContentBody.class);
+
+            BasicDeliverBody delivery2 = interaction.consumeResponse()
+                                                    .getLatestResponse(BasicDeliverBody.class);
+            ContentBody content2 = interaction.consumeResponse(ContentHeaderBody.class)
+                                              .consumeResponse().getLatestResponse(ContentBody.class);
+
+            assertThat(getContent(content1), is(equalTo(messageContent1)));
+            assertThat(getContent(content2), is(equalTo(messageContent2)));
+
+            ensureSync(interaction);
+
+            // Ack first.  There will be insufficient bytes credit for the third to be sent.
+            interaction.basic().ackDeliveryTag(delivery1.getDeliveryTag()).ack();
+            ensureSync(interaction);
+
+            // Ack second.  Now there will be sufficient bytes credit so expect the third.
+            interaction.basic().ackDeliveryTag(delivery2.getDeliveryTag()).ack();
+
+            BasicDeliverBody delivery3 = interaction.consumeResponse()
+                                                    .getLatestResponse(BasicDeliverBody.class);
+            ContentBody content3 = interaction.consumeResponse(ContentHeaderBody.class)
+                                              .consumeResponse().getLatestResponse(ContentBody.class);
+
+            assertThat(getContent(content3), is(equalTo(messageContent3)));
+
+            interaction.basic().ackDeliveryTag(delivery3.getDeliveryTag()).ack()
+                       .channel().close().consumeResponse(ChannelCloseOkBody.class);
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.8.3.3",
+            description = "The server MUST ignore this setting when the client is not processing any messages - i.e. "
+                          + "the prefetch size does not limit the transfer of single messages to a client, only "
+                          + "the sending in advance of more messages while the client still has one or more "
+                          + "unacknowledged messages.")
+    public void qosBytesSizeQosDoesNotPreventFirstMessage() throws Exception
+    {
+        String messageContent = String.join("", Collections.nCopies(1024, "*"));
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageContent);
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            String consumerTag = "A";
+
+            interaction.openAnonymousConnection()
+                       .channel().open()
+                       .consumeResponse(ChannelOpenOkBody.class)
+                       .channel().flow(true)
+                       .consumeResponse(ChannelFlowOkBody.class)
+                       .basic().qosPrefetchSize(512)
+                       .qos()
+                       .consumeResponse(BasicQosOkBody.class)
+                       .basic().consumeConsumerTag(consumerTag)
+                       .consumeQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                       .consume()
+                       .consumeResponse(BasicConsumeOkBody.class)
+                       .consumeResponse(BasicDeliverBody.class);
+
+            BasicDeliverBody delivery = interaction.getLatestResponse(BasicDeliverBody.class);
+
+            ContentHeaderBody header = interaction.consumeResponse()
+                                                  .getLatestResponse(ContentHeaderBody.class);
+
+            assertThat(header.getBodySize(), is(equalTo((long)messageContent.length())));
+
+            ContentBody content = interaction.consumeResponse()
+                                             .getLatestResponse(ContentBody.class);
+
+            String receivedContent = getContent(content);
+
+            assertThat(receivedContent, is(equalTo(messageContent)));
+
+            interaction.basic().ackDeliveryTag(delivery.getDeliveryTag())
+                       .ack()
+                       .channel().close().consumeResponse(ChannelCloseOkBody.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+        }
+    }
+
+    private void ensureSync(final Interaction interaction) throws Exception
+    {
+        interaction.exchange()
+                   .declarePassive(true).declareName(ExchangeDefaults.DIRECT_EXCHANGE_NAME).declare()
+                   .consumeResponse(ExchangeDeclareOkBody.class);
     }
 
     private String getContent(final ContentBody content)

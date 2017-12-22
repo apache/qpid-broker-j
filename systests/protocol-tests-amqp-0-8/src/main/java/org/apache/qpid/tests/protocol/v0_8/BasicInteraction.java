@@ -195,6 +195,12 @@ public class BasicInteraction
         return this;
     }
 
+    public BasicInteraction qosPrefetchSize(final int prefetchSize)
+    {
+        _qosPrefetchSize = prefetchSize;
+        return this;
+    }
+
     public Interaction qos() throws Exception
     {
         return _interaction.sendPerformative(new BasicQosBody(_qosPrefetchSize,
