@@ -82,9 +82,6 @@ org.apache.qpid.client.session.ExchangeDeleteTest#*
 org.apache.qpid.client.session.QueueDeclareTest#*
 org.apache.qpid.client.session.QueueDeleteTest#*
 
-// This test concerns 0-8/0-10 bytes limiting flow control
-org.apache.qpid.test.client.ConsumerFlowControlTest#*
-
 // Tests are tests of the 0-x client behaviour
 org.apache.qpid.test.client.ProducerFlowControlTest#*
 
