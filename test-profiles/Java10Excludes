@@ -47,10 +47,6 @@ org.apache.qpid.test.unit.ack.RecoverTest#testRecoverResendsMsgsAckOnEarlier
 // Tests the effect of setting the prefetch value
 org.apache.qpid.test.unit.ack.RecoverTest#testRecoverSessionAfterCreditExhausted
 
-// 0-x specific acknowledge modes
-org.apache.qpid.test.client.QueueBrowserNoAckTest#*
-org.apache.qpid.test.client.QueueBrowserPreAckTest#*
-
 // The new client does not (and should not) support our custom MD5 HEXED / HASHED mechanisms
 org.apache.qpid.server.security.auth.manager.MD5AuthenticationManagerTest#*
 
