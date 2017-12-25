@@ -20,9 +20,7 @@
 // This file should eventually be removed as all the systests are moved to either
 // working, defined as broken, or excluded as they test version specific functionality
 
-org.apache.qpid.client.prefetch.PrefetchBehaviourTest#*
-
-QPID-XXXX: It could be a broker bug. The issue requires further inevestigation
+QPID-XXXX: It could be a broker bug. The issue requires further investigation
 org.apache.qpid.systest.AnonymousProducerTest#testPublishIntoNonExistingQueue
 org.apache.qpid.test.client.queue.QueuePolicyTest#testRejectPolicyMessageDepth
 

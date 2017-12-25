@@ -52,13 +52,13 @@ public class Utils
         }
     }
 
-    public static void sendMessages(final Connection connection, final Destination destination, final int messageNumber)
+    public static void sendMessages(final Connection connection, final Destination destination, final int count)
             throws JMSException
     {
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         try
         {
-            sendMessages(session, destination, messageNumber);
+            sendMessages(session, destination, count);
         }
         finally
         {

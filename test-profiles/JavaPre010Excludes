@@ -55,9 +55,6 @@ org.apache.qpid.test.unit.client.connection.ConnectionTest#testUnsupportedSASLMe
 org.apache.qpid.test.unit.client.connection.ConnectionTest#testClientIDVerificationForSameUser
 org.apache.qpid.test.unit.client.connection.ConnectionTest#testClientIDVerificationForDifferentUsers
 
-// QPID-3604 This fix is applied only to the 0-10 code, hence this test does not work for pre 0-10.
-org.apache.qpid.client.prefetch.PrefetchBehaviourTest#testConnectionStop
-
 // QPID-3396
 org.apache.qpid.test.unit.client.connection.ConnectionTest#testExceptionWhenUserPassIsRequired
 
