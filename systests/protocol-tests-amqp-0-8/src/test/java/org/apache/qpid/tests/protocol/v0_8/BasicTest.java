@@ -529,6 +529,138 @@ public class BasicTest extends BrokerAdminUsingTestBase
         }
     }
 
+    /**
+     * The Qpid JMS AMQP 0-x client relies on being able to raise and lower qos count during a channels lifetime
+     * to prevent channel starvation. This test supports this qos use-case.
+     */
+    @Test
+    public void qosCountResized() throws Exception
+    {
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "A", "B", "C", "D", "E", "F");
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            String consumerTag = "A";
+
+            interaction.openAnonymousConnection()
+                       .channel().open()
+                       .consumeResponse(ChannelOpenOkBody.class)
+                       .channel().flow(true)
+                       .consumeResponse(ChannelFlowOkBody.class)
+                       .basic().qosPrefetchCount(3)
+                       .qos()
+                       .consumeResponse(BasicQosOkBody.class)
+                       .basic().consumeConsumerTag(consumerTag)
+                       .consumeQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                       .consume()
+                       .consumeResponse(BasicConsumeOkBody.class);
+
+            final long deliveryTagA = receiveDeliveryHeaderAndBody(interaction, "A");
+            receiveDeliveryHeaderAndBody(interaction, "B");
+            final long deliveryTagC = receiveDeliveryHeaderAndBody(interaction, "C");
+
+            ensureSync(interaction);
+
+            // Raise qos count by one, expect D to arrive
+            interaction.basic().qosPrefetchCount(4).qos()
+                       .consumeResponse(BasicQosOkBody.class);
+
+            long deliveryTagD = receiveDeliveryHeaderAndBody(interaction, "D");
+            ensureSync(interaction);
+
+            // Ack A, expect E to arrive
+            interaction.basic().ackDeliveryTag(deliveryTagA).ack();
+
+            receiveDeliveryHeaderAndBody(interaction, "E");
+            ensureSync(interaction);
+
+            // Lower qos back to 2 and ensure no more messages arrive (message credit will be negative at this point).
+            interaction.basic().qosPrefetchCount(2).qos()
+                       .consumeResponse(BasicQosOkBody.class);
+            ensureSync(interaction);
+
+            // Ack B and C and ensure still no more messages arrive (message credit will now be zero)
+            interaction.basic()
+                       .ackMultiple(true).ackDeliveryTag(deliveryTagC).ack();
+            ensureSync(interaction);
+
+            // Ack D and ensure F delivery arrives
+            interaction.basic()
+                       .ackMultiple(false).ackDeliveryTag(deliveryTagD).ack();
+
+            receiveDeliveryHeaderAndBody(interaction, "F");
+
+            interaction.channel().close().consumeResponse(ChannelCloseOkBody.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(2)));
+        }
+    }
+
+    /**
+     * The Qpid JMS AMQP 0-x client is capable of polling fors message.  It does this using a combination of
+     * basic.qos (count one) and regulating the flow using channel.flow. This test supports this use-case.
+     */
+    @Test
+    public void pollingUsingFlow() throws Exception
+    {
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "A", "B", "C");
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            String consumerTag = "A";
+
+            interaction.openAnonymousConnection()
+                       .channel().open()
+                       .consumeResponse(ChannelOpenOkBody.class)
+                       .basic().qosPrefetchCount(1)
+                       .qos()
+                       .consumeResponse(BasicQosOkBody.class)
+                       .channel().flow(false)
+                       .consumeResponse(ChannelFlowOkBody.class)
+                       .basic().consumeConsumerTag(consumerTag)
+                       .consumeQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                       .consume()
+                       .consumeResponse(BasicConsumeOkBody.class);
+
+            ensureSync(interaction);
+
+            interaction.channel().flow(true)
+                       .consumeResponse(ChannelFlowOkBody.class);
+
+            long deliveryTagA = receiveDeliveryHeaderAndBody(interaction, "A");
+
+            interaction.channel().flow(false)
+                       .consumeResponse(ChannelFlowOkBody.class)
+                       .basic().ackDeliveryTag(deliveryTagA).ack();
+
+            ensureSync(interaction);
+
+            interaction.channel().flow(true)
+                       .consumeResponse(ChannelFlowOkBody.class);
+
+            long deliveryTagB = receiveDeliveryHeaderAndBody(interaction, "B");
+
+            interaction.channel().flow(false)
+                       .consumeResponse(ChannelFlowOkBody.class)
+                       .basic().ackDeliveryTag(deliveryTagB).ack()
+                       .channel().close().consumeResponse(ChannelCloseOkBody.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
+        }
+    }
+
+    private long receiveDeliveryHeaderAndBody(final Interaction interaction, String expectedMessageContent) throws Exception
+    {
+        BasicDeliverBody delivery = interaction.consumeResponse().getLatestResponse(BasicDeliverBody.class);
+        ContentBody content = interaction.consumeResponse(ContentHeaderBody.class)
+                                         .consumeResponse().getLatestResponse(ContentBody.class);
+
+        assertThat(getContent(content), is(equalTo(expectedMessageContent)));
+        return delivery.getDeliveryTag();
+    }
+
     private void ensureSync(final Interaction interaction) throws Exception
     {
         interaction.exchange()

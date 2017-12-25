@@ -243,6 +243,12 @@ public class BasicInteraction
         return _interaction.sendPerformative(new BasicAckBody(_ackDeliveryTag, _ackMultiple));
     }
 
+    public BasicInteraction ackMultiple(final boolean multiple)
+    {
+        _ackMultiple = multiple;
+        return this;
+    }
+
     public BasicInteraction ackDeliveryTag(final long deliveryTag)
     {
         _ackDeliveryTag = deliveryTag;
