@@ -68,9 +68,5 @@ org.apache.qpid.systests.jms_2_0.*
 // Exclude 1.0 protocol tests
 org.apache.qpid.tests.protocol.v1_0.*
 
-// QPID-7818: Messages published into non existing queue are discarded on 0-10 path
-org.apache.qpid.systest.AnonymousProducerTest#testPublishIntoNonExistingQueue
-org.apache.qpid.systest.AnonymousProducerTest#testSyncPublishIntoNonExistingQueue
-
 // Tests AMQP 1.0 specific routing semantics
 org.apache.qpid.systest.MessageRoutingTest#*
