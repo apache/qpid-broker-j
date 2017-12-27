@@ -25,12 +25,10 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jms.Connection;
 import javax.jms.ExceptionListener;
-import javax.jms.IllegalStateException;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -41,129 +39,14 @@ import javax.jms.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQConnectionClosedException;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.transport.ConnectionException;
-
+/*
+ *   AMQP 0.x client specific test
+ */
 public class ExceptionListenerTest extends QpidBrokerTestCase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExceptionListenerTest.class);
-
-    private volatile Throwable _lastExceptionListenerException = null;
-
-    public void testExceptionListenerHearsBrokerShutdown() throws  Exception
-    {
-        final CountDownLatch exceptionReceivedLatch  = new CountDownLatch(1);
-        final AtomicInteger exceptionCounter = new AtomicInteger(0);
-        final ExceptionListener listener = new ExceptionListener()
-        {
-            @Override
-            public void onException(JMSException exception)
-            {
-                exceptionCounter.incrementAndGet();
-                _lastExceptionListenerException = exception;
-                exceptionReceivedLatch.countDown();
-            }
-        };
-
-        Connection connection = getConnection();
-        connection.setExceptionListener(listener);
-
-        stopDefaultBroker();
-
-        exceptionReceivedLatch.await(10, TimeUnit.SECONDS);
-
-        assertEquals("Unexpected number of exceptions received", 1, exceptionCounter.intValue());
-        LOGGER.debug("exception was", _lastExceptionListenerException);
-        if(!isBroker10())
-        {
-            assertNotNull("Exception should have cause", _lastExceptionListenerException.getCause());
-            Class<? extends Exception> expectedExceptionClass = isBroker010() ? ConnectionException.class : AMQConnectionClosedException.class;
-            assertEquals(expectedExceptionClass, _lastExceptionListenerException.getCause().getClass());
-        }
-    }
-
-    /**
-     * It is reasonable for an application to perform Connection#close within the exception
-     * listener.  This test verifies that close is allowed, and proceeds without generating
-     * further exceptions.
-     */
-    public void testExceptionListenerClosesConnection_IsAllowed() throws  Exception
-    {
-        final CountDownLatch exceptionReceivedLatch  = new CountDownLatch(1);
-        final Connection connection = getConnection();
-        final ExceptionListener listener = new ExceptionListener()
-        {
-            @Override
-            public void onException(JMSException exception)
-            {
-                try
-                {
-                    connection.close();
-                    // PASS
-                }
-                catch (Throwable t)
-                {
-                    _lastExceptionListenerException = t;
-                }
-                finally
-                {
-                    exceptionReceivedLatch.countDown();
-                }
-            }
-        };
-        connection.setExceptionListener(listener);
-
-
-        stopDefaultBroker();
-
-        boolean exceptionReceived = exceptionReceivedLatch.await(10, TimeUnit.SECONDS);
-        assertTrue("Exception listener did not hear exception within timeout", exceptionReceived);
-        assertNull("Connection#close() should not have thrown exception", _lastExceptionListenerException);
-    }
-
-    /**
-     * Spring's SingleConnectionFactory installs an ExceptionListener that calls stop()
-     * and ignores any IllegalStateException that result.  This test serves to test this
-     * scenario.
-     */
-    public void testExceptionListenerStopsConnection_ThrowsIllegalStateException() throws  Exception
-    {
-        final CountDownLatch exceptionReceivedLatch  = new CountDownLatch(1);
-        final Connection connection = getConnection();
-        final ExceptionListener listener = new ExceptionListener()
-        {
-            @Override
-            public void onException(JMSException exception)
-            {
-                try
-                {
-                    connection.stop();
-                    fail("Exception not thrown");
-                }
-                catch (IllegalStateException ise)
-                {
-                    // PASS
-                }
-                catch (Throwable t)
-                {
-                    _lastExceptionListenerException = t;
-                }
-                finally
-                {
-                    exceptionReceivedLatch.countDown();
-                }
-            }
-        };
-        connection.setExceptionListener(listener);
-
-        stopDefaultBroker();
-
-        boolean exceptionReceived = exceptionReceivedLatch.await(10, TimeUnit.SECONDS);
-        assertTrue("Exception listener did not hear exception within timeout", exceptionReceived);
-        assertNull("Connection#stop() should not have thrown unexpected exception", _lastExceptionListenerException);
-    }
 
     /**
      * This test reproduces a deadlock that was the subject of a support call. A Spring based
