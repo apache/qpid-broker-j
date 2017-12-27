@@ -168,8 +168,9 @@ public class DirectExchangeTest extends QpidTestCase
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(Exchange.NAME, getTestName());
         attributes.put(Exchange.TYPE, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
+        String alternateBinding = "nonExisting";
         attributes.put(Exchange.ALTERNATE_BINDING,
-                       Collections.singletonMap(AlternateBinding.DESTINATION, "nonExisting"));
+                       Collections.singletonMap(AlternateBinding.DESTINATION, alternateBinding));
 
         try
         {
@@ -178,7 +179,7 @@ public class DirectExchangeTest extends QpidTestCase
         }
         catch (UnknownAlternateBindingException e)
         {
-            // pass
+            assertEquals("Unexpected exception alternate binding", alternateBinding, e.getAlternateBindingName());
         }
     }
 

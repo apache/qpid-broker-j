@@ -2642,7 +2642,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             {
                 String name = exchangeName.toString();
                 String typeString = type == null ? null : type.toString();
-                String alternateExchangeName = null;
                 try
                 {
 
@@ -2660,7 +2659,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     Object alternateExchange = attributes.remove(ALTERNATE_EXCHANGE);
                     if (alternateExchange != null)
                     {
-                        alternateExchangeName = String.valueOf(alternateExchange);
+                        String alternateExchangeName = String.valueOf(alternateExchange);
                         validateAlternateExchangeIsNotQueue(virtualHost, alternateExchangeName);
                         attributes.put(Exchange.ALTERNATE_BINDING,
                                        Collections.singletonMap(AlternateBinding.DESTINATION, alternateExchangeName));
@@ -2724,7 +2723,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 }
                 catch (UnknownAlternateBindingException e)
                 {
-                    final String message = String.format("Unknown alternate exchange '%s'", alternateExchangeName);
+                    final String message = String.format("Unknown alternate exchange '%s'", e.getAlternateBindingName());
                     _connection.sendConnectionClose(ErrorCodes.NOT_FOUND, message, getChannelId());
 
                 }
@@ -3002,7 +3001,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
         else
         {
-            String alternateExchangeName = null;
             try
             {
                 final String queueNameString = AMQShortString.toString(queueName);
@@ -3010,7 +3008,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 Object alternateExchange = wireArguments.get(ALTERNATE_EXCHANGE);
                 if (alternateExchange != null)
                 {
-                    alternateExchangeName = String.valueOf(alternateExchange);
+                    String alternateExchangeName = String.valueOf(alternateExchange);
                     validateAlternateExchangeIsNotQueue(virtualHost, alternateExchangeName);
                 }
 
@@ -3131,7 +3129,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             }
             catch (UnknownAlternateBindingException e)
             {
-                final String message = String.format("Unknown alternate exchange: '%s'", alternateExchangeName);
+                final String message = String.format("Unknown alternate exchange: '%s'", e.getAlternateBindingName());
                 _connection.sendConnectionClose(ErrorCodes.NOT_FOUND, message, getChannelId());
             }
             catch (IllegalArgumentException | IllegalConfigurationException e)

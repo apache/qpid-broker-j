@@ -952,11 +952,12 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                                                                                    + exchangeName + " which begins with reserved name or prefix.");
                     }
                 }
-                catch(UnknownAlternateBindingException e)
+                catch (UnknownAlternateBindingException e)
                 {
-
-                    exception(session, method, ExecutionErrorCode.NOT_FOUND,
-                                                                "Unknown alternate exchange " + alternateExchangeName);
+                    exception(session,
+                              method,
+                              ExecutionErrorCode.NOT_FOUND,
+                              String.format("Unknown alternate exchange '%s'", e.getAlternateBindingName()));
                 }
                 catch(NoFactoryForTypeException e)
                 {
@@ -1540,13 +1541,11 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         }
         else
         {
-
-            final String alternateExchangeName = method.getAlternateExchange();
             try
             {
                 final Map<String, Object> arguments = QueueArgumentsConverter.convertWireArgsToModel(queueName,
                                                                                                      method.getArguments());
-
+                final String alternateExchangeName = method.getAlternateExchange();
                 if (method.hasAlternateExchange() && !nameNullOrEmpty(alternateExchangeName))
                 {
                     validateAlternateExchangeIsNotQueue(addressSpace, alternateExchangeName);
@@ -1603,8 +1602,10 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
             }
             catch (UnknownAlternateBindingException e)
             {
-                exception(session, method, ExecutionErrorCode.NOT_FOUND,
-                          "Unknown alternate exchange " + alternateExchangeName);
+                exception(session,
+                          method,
+                          ExecutionErrorCode.NOT_FOUND,
+                          String.format("Unknown alternate exchange '%s'", e.getAlternateBindingName()));
             }
             catch (IllegalArgumentException | IllegalConfigurationException e)
             {
