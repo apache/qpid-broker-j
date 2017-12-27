@@ -975,7 +975,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     {
         Map<String, Object> attributes = new HashMap<>(_arguments);
         attributes.put(Queue.NAME, getTestName());
-        attributes.put(Queue.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, "nonExisting"));
+        String alternateBinding = "nonExisting";
+        attributes.put(Queue.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, alternateBinding));
 
         try
         {
@@ -984,7 +985,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         }
         catch (UnknownAlternateBindingException e)
         {
-            // pass
+            assertEquals("Unexpected exception alternate binding", alternateBinding, e.getAlternateBindingName());
         }
     }
 

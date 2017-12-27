@@ -1055,9 +1055,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                     _virtualHost.getAttainedMessageDestination(destinationName, mayCreate);
             if (messageDestination == null)
             {
-                throw new UnknownAlternateBindingException(String.format(
-                        "Cannot create alternate binding for '%s' : Alternate binding destination '%s' cannot be found.",
-                        getName(), destinationName));
+                throw new UnknownAlternateBindingException(destinationName);
             }
             else if (messageDestination == this)
             {

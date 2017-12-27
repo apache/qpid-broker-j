@@ -24,8 +24,16 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 
 public class UnknownAlternateBindingException extends IllegalConfigurationException
 {
-    public UnknownAlternateBindingException(final String message)
+    private final String _alternateBindingName;
+
+    public UnknownAlternateBindingException(final String alternateBindingName)
     {
-        super(message);
+        super(String.format("Alternate binding destination '%s' is not found.", alternateBindingName));
+        _alternateBindingName = alternateBindingName;
+    }
+
+    public String getAlternateBindingName()
+    {
+        return _alternateBindingName;
     }
 }
