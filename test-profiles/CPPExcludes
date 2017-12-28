@@ -151,9 +151,6 @@ org.apache.qpid.client.ssl.SSLTest#testCreateSSLandTCPonSamePort
 org.apache.qpid.client.HeartbeatTest#testUnidirectionalHeartbeating
 org.apache.qpid.client.HeartbeatTest#testHeartbeatsEnabledBrokerSide
 
-// Exclude Qpid Broker-J specific behavior allowing queue re-bind to topic exchanges on 0.8/0-10 paths
-org.apache.qpid.server.queue.QueueBindTest#testQueueCanBeReboundOnTopicExchange
-
 // Tests queue message durability settings which are a Qpid Broker-J specific feature
 org.apache.qpid.server.queue.QueueMessageDurabilityTest#*
 

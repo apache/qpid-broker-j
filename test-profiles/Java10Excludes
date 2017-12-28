@@ -75,9 +75,6 @@ org.apache.qpid.client.failover.MultipleBrokersFailoverTest#*
 org.apache.qpid.test.client.failover.FailoverTest#*
 
 
-// Tests explicit binding using the mechanisms of the 0-x client/protocol
-org.apache.qpid.server.queue.QueueBindTest#*
-
 // Tests the issue of connection exceptions being generated for unroutable messages in the 0-x client
 org.apache.qpid.test.unit.client.connection.ExceptionListenerTest#testExceptionListenerConnectionStopDeadlock
 

@@ -50,9 +50,6 @@ org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testFailoverHa
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testFailoverHandlerTimeoutReconnected
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testFlowControlFlagResetOnFailover
 
-// JMS 0-10 client does not support re-binding the queue to the same exchange
-org.apache.qpid.server.queue.QueueBindTest#testQueueCanBeReboundOnTopicExchange
-
 org.apache.qpid.test.unit.client.AMQSessionTest#testQueueDepthForQueueThatDoesNotExistLegacyBehaviour_08_091
 
 // QPID-6722: Race client side means that session close can end in exception when failover is in progress.
