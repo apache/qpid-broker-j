@@ -165,6 +165,12 @@ public class QueueInteraction
         return this;
     }
 
+    public QueueInteraction bindArguments(final Map<String, Object> args)
+    {
+        _bindArguments = args == null ? Collections.emptyMap() : new HashMap<>(args);
+        return this;
+    }
+
     public Interaction bind() throws Exception
     {
         return _interaction.sendPerformative(new QueueBindBody(0,

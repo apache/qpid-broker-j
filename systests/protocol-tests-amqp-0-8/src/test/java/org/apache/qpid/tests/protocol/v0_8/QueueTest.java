@@ -30,12 +30,15 @@ import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
+import java.util.Map;
 
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.apache.qpid.server.exchange.ExchangeDefaults;
+import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicCancelOkBody;
@@ -51,6 +54,8 @@ import org.apache.qpid.server.protocol.v0_8.transport.QueueDeclareOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueDeleteOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueuePurgeOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueUnbindOkBody;
+import org.apache.qpid.server.protocol.v0_8.transport.TxCommitOkBody;
+import org.apache.qpid.server.protocol.v0_8.transport.TxSelectOkBody;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -834,6 +839,59 @@ public class QueueTest extends BrokerAdminUsingTestBase
                                                       .declareArguments(Collections.singletonMap("alternateExchange", "notKnown")).declare()
                                                       .consumeResponse().getLatestResponse(ConnectionCloseBody.class);
             assertThat(response.getReplyCode(), is(equalTo(ErrorCodes.NOT_FOUND)));
+        }
+    }
+
+    /** Qpid specific extension */
+    @Test
+    public void topicExchangeInstancesAllowRebindWithDifferentArguments() throws Exception
+    {
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
+
+        final String content = "content";
+        final String routingKey = "rk1";
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            final Map<String, Object> messageProps = Collections.singletonMap("prop", 0);
+            interaction.openAnonymousConnection()
+                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                       .tx().select()
+                       .consumeResponse(TxSelectOkBody.class)
+                       .queue()
+                       .bindName(ExchangeDefaults.TOPIC_EXCHANGE_NAME)
+                       .bindRoutingKey(routingKey)
+                       .bindQueueName(BrokerAdmin.TEST_QUEUE_NAME)
+                       .bindArguments(Collections.singletonMap(AMQPFilterTypes.JMS_SELECTOR.getValue(), "prop = 1"))
+                       .bind()
+                       .consumeResponse(QueueBindOkBody.class)
+                       .basic()
+                       .publishExchange(ExchangeDefaults.TOPIC_EXCHANGE_NAME)
+                       .publishRoutingKey(routingKey)
+                       .content(content)
+                       .contentHeaderPropertiesHeaders(messageProps)
+                       .publishMessage()
+                       .tx().commit()
+                       .consumeResponse(TxCommitOkBody.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+
+            interaction.queue()
+                       .bindName(ExchangeDefaults.TOPIC_EXCHANGE_NAME)
+                       .bindRoutingKey(routingKey)
+                       .bindQueueName(BrokerAdmin.TEST_QUEUE_NAME)
+                       .bindArguments(Collections.singletonMap(AMQPFilterTypes.JMS_SELECTOR.getValue(), "prop = 0"))
+                       .bind()
+                       .consumeResponse(QueueBindOkBody.class)
+                       .basic().publishExchange(ExchangeDefaults.TOPIC_EXCHANGE_NAME)
+                       .publishRoutingKey(routingKey)
+                       .content(content)
+                       .contentHeaderPropertiesHeaders(messageProps)
+                       .publishMessage()
+                       .tx().commit()
+                       .consumeResponse(TxCommitOkBody.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
         }
     }
 }
