@@ -184,9 +184,6 @@ org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest#tes
 #Node Creation Policy Tests use Qpid Broker-J Specific Config
 org.apache.qpid.server.queue.NodeAutoCreationPolicyTest#*
 
-# The consumer x-priority feature is Java Broker Specific
-org.apache.qpid.server.queue.ConsumerPriorityTest#*
-
 #The C++ broker does not implement AMQP management
 org.apache.qpid.systest.management.amqp.*
 

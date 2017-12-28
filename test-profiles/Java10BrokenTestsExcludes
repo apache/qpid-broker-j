@@ -42,5 +42,3 @@ org.apache.qpid.systest.management.amqp.AmqpManagementTest#testGetTypesOnVhostMa
 // Test uses AMQP 0-x ack modes and assumes the name of the queues backing subscriptions
 org.apache.qpid.test.unit.topic.DurableSubscriptionTest#*
 
-// These tests require some way to set properties on the link established by the client
-org.apache.qpid.server.queue.ConsumerPriorityTest#*
