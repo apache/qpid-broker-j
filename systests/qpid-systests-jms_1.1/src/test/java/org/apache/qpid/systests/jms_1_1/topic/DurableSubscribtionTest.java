@@ -463,6 +463,68 @@ public class DurableSubscribtionTest extends JmsTestBase
         }
     }
 
+
+    @Test
+    public void testResubscribeWithChangedNoLocal() throws Exception
+    {
+        String subscriptionName = getTestName() + "_sub";
+        Topic topic = createTopic(getTestName());
+        String clientId = "testClientId";
+        Connection connection = getConnectionBuilder().setClientId(clientId).build();
+        try
+        {
+            Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+            TopicSubscriber durableSubscriber =
+                    session.createDurableSubscriber(topic, subscriptionName, null, false);
+
+            MessageProducer producer = session.createProducer(topic);
+            producer.send(session.createTextMessage("A"));
+            producer.send(session.createTextMessage("B"));
+            session.commit();
+
+            connection.start();
+
+            Message receivedMessage = durableSubscriber.receive(getReceiveTimeout());
+            assertTrue("TextMessage should be received", receivedMessage instanceof TextMessage);
+            assertEquals("Unexpected message received", "A", ((TextMessage)receivedMessage).getText());
+
+            session.commit();
+        }
+        finally
+        {
+            connection.close();
+        }
+
+        connection = getConnectionBuilder().setClientId(clientId).build();
+        try
+        {
+            connection.start();
+
+            Session session2 = connection.createSession(true, Session.SESSION_TRANSACTED);
+            TopicSubscriber noLocalSubscriber2 = session2.createDurableSubscriber(topic, subscriptionName, null, true);
+
+            Connection secondConnection = getConnectionBuilder().setClientId("secondConnection").build();
+            try
+            {
+                Session secondSession = secondConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                MessageProducer secondProducer = secondSession.createProducer(topic);
+                secondProducer.send(secondSession.createTextMessage("C"));
+            }
+            finally
+            {
+                secondConnection.close();
+            }
+
+            Message noLocalSubscriberMessage = noLocalSubscriber2.receive(getReceiveTimeout());
+            assertTrue("TextMessage should be received", noLocalSubscriberMessage instanceof TextMessage);
+            assertEquals("Unexpected message received", "C", ((TextMessage)noLocalSubscriberMessage).getText());
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
     /**
      * create and register a durable subscriber with a message selector and then close it
      * crash the broker

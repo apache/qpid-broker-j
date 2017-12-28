@@ -63,9 +63,6 @@ org.apache.qpid.test.client.QueueBrowsingFlowToDiskTest#*
 // This test currently does not pick up the runtime location of the nonVm queueBacking store.
 org.apache.qpid.test.unit.close.FlowToDiskBackingQueueDeleteTest#*
 
-//QPID-1818 : 0-10 Client code path does not correctly restore a transacted session after failover.
-org.apache.qpid.server.persistent.NoLocalAfterRecoveryTest#*
-
 // QPID-1730: the C++ server has a totally different logging mechanism. We should split this file differently
 org.apache.qpid.server.AlertingTest#*
 
