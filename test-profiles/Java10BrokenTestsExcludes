@@ -44,5 +44,3 @@ org.apache.qpid.test.unit.topic.DurableSubscriptionTest#*
 
 // These tests require some way to set properties on the link established by the client
 org.apache.qpid.server.queue.ConsumerPriorityTest#*
-org.apache.qpid.server.queue.ArrivalTimeFilterTest#*
-

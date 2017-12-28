@@ -134,6 +134,11 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         return _testName.getMethodName();
     }
 
+    protected Queue getQueue(String queueName) throws Exception
+    {
+        return _jmsProvider.getTestQueue(queueName);
+    }
+
     protected Topic createTopic(final String topicName) throws Exception
     {
         Connection connection = getConnection();
