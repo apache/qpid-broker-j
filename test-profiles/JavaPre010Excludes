@@ -39,7 +39,6 @@ org.apache.qpid.test.client.destination.AddressBasedDestinationTest#testJMSDesti
 
 // The new addressing based syntax is not supported for AMQP 0-8/0-9 versions
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#*
-org.apache.qpid.server.queue.AddressBasedSortedQueueTest#*
 
 // Those tests are written against the 0.10 path
 org.apache.qpid.client.SynchReceiveTest#testReceiveNoWait
