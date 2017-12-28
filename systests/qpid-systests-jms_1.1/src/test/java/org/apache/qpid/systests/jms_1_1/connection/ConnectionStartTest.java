@@ -92,7 +92,7 @@ public class ConnectionStartTest extends JmsTestBase
             connection.start();
 
             assertTrue("Message is not received in timely manner", awaitMessage.await(getReceiveTimeout(), TimeUnit.MILLISECONDS));
-            assertTrue("Message received before connection start", deliveryTime.get() > beforeStartTime);
+            assertTrue("Message received before connection start", deliveryTime.get() >= beforeStartTime);
         }
         finally
         {
