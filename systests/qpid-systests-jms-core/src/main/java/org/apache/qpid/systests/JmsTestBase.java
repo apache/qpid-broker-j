@@ -201,6 +201,63 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         return (Map<String, Object>) statistics;
     }
 
+    protected void updateEntityUsingAmqpManagement(final String entityName,
+                                                   final String entityType,
+                                                   final Map<String, Object> attributes)
+            throws Exception
+    {
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+            _managementFacade.updateEntityUsingAmqpManagement(entityName, session, entityType, attributes);
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    protected void deleteEntityUsingAmqpManagement(final String entityName,
+                                                   final String entityType)
+            throws Exception
+    {
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+            _managementFacade.deleteEntityUsingAmqpManagement(entityName, session, entityType);
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    protected Map<String, Object> readEntityUsingAmqpManagement(String type, String name, boolean actuals) throws Exception
+    {
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                return _managementFacade.readEntityUsingAmqpManagement(session, type, name, actuals);
+            }
+            finally
+            {
+                session.close();
+            }
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
     protected TopicConnection getTopicConnection() throws JMSException, NamingException
     {
         return (TopicConnection) getConnection();

@@ -79,7 +79,6 @@ org.apache.qpid.server.queue.LiveQueueOperationsTest#*
 org.apache.qpid.test.client.message.SelectorTest#testRuntimeSelectorError
 
 //QPID-942 : Implemented Channel.Flow based Producer Side flow control to the Qpid Broker-J (not in CPP Broker)
-org.apache.qpid.server.queue.ProducerFlowControlTest#*
 org.apache.qpid.test.client.ProducerFlowControlTest#*
 
 //QPID-3986 : Flow control invoked on total store disk usage
