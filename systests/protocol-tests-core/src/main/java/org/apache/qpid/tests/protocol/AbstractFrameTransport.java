@@ -131,6 +131,11 @@ public abstract class AbstractFrameTransport<I extends AbstractInteraction<I>> i
 
     ListenableFuture<Void> sendProtocolHeader(final byte[] bytes) throws Exception
     {
+        return sendBytes(bytes);
+    }
+
+    public ListenableFuture<Void> sendBytes(final byte[] bytes)
+    {
         Preconditions.checkState(_channel != null, "Not connected");
         ChannelPromise promise = _channel.newPromise();
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
