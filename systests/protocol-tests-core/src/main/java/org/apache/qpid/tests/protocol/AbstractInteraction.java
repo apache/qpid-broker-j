@@ -141,6 +141,8 @@ public abstract class AbstractInteraction<I extends AbstractInteraction<I>>
         return _transport;
     }
 
+    public abstract I protocolHeader(final byte[] header);
+
     protected abstract byte[] getProtocolHeader();
 
     private I getInteraction()

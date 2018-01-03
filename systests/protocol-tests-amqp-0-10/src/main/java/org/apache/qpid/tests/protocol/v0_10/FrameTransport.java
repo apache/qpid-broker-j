@@ -22,6 +22,7 @@ package org.apache.qpid.tests.protocol.v0_10;
 
 import java.net.InetSocketAddress;
 
+import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_10.ProtocolEngineCreator_0_10;
 import org.apache.qpid.tests.protocol.AbstractFrameTransport;
 

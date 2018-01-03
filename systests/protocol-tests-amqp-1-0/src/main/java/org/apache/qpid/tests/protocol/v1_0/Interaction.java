@@ -166,6 +166,7 @@ public class Interaction extends AbstractInteraction<Interaction>
     // Protocol Negotiation //
     /////////////////////////
 
+    @Override
     public Interaction protocolHeader(byte[] header)
     {
         _protocolHeader = header;

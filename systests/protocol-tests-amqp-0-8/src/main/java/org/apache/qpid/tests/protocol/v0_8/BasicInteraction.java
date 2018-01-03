@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQFrame;
@@ -125,6 +126,25 @@ public class BasicInteraction
         return this;
     }
 
+    public Interaction contentHeader(int contentSize) throws Exception
+    {
+        final BasicContentHeaderProperties basicContentHeaderProperties = new BasicContentHeaderProperties();
+        basicContentHeaderProperties.setHeaders(FieldTable.convertToFieldTable(_contentHeaderPropertiesHeaders));
+        basicContentHeaderProperties.setContentType(_contentHeaderPropertiesContentType);
+        basicContentHeaderProperties.setDeliveryMode(_contentHeaderPropertiesDeliveryMode);
+        basicContentHeaderProperties.setPriority(_contentHeaderPropertiesPriority);
+        ContentHeaderBody contentHeaderBody = new ContentHeaderBody(basicContentHeaderProperties, contentSize);
+        return _interaction.sendPerformative(contentHeaderBody);
+    }
+
+    public Interaction contentBody(final byte[] bytes) throws Exception
+    {
+        try (QpidByteBuffer buf = QpidByteBuffer.wrap(bytes))
+        {
+            final ContentBody contentBody = new ContentBody(buf);
+            return _interaction.sendPerformative(contentBody);
+        }
+    }
 
     public Interaction publishMessage() throws Exception
     {

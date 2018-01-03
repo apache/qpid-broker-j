@@ -30,7 +30,7 @@ import org.apache.qpid.tests.protocol.AbstractInteraction;
 
 public class Interaction extends AbstractInteraction<Interaction>
 {
-
+    private byte[] _protocolHeader;
     private int _channelId;
     private int _maximumPayloadSize = 512;
     private ConnectionInteraction _connectionInteraction;
@@ -49,12 +49,20 @@ public class Interaction extends AbstractInteraction<Interaction>
         _basicInteraction = new BasicInteraction(this);
         _txInteraction = new TxInteraction(this);
         _exchangeInteraction = new ExchangeInteraction(this);
+        _protocolHeader = getTransport().getProtocolHeader();
+    }
+
+    @Override
+    public Interaction protocolHeader(final byte[] header)
+    {
+        _protocolHeader = header;
+        return this;
     }
 
     @Override
     protected byte[] getProtocolHeader()
     {
-        return getTransport().getProtocolHeader();
+        return _protocolHeader;
     }
 
     public Interaction sendPerformative(final AMQBody amqBody) throws Exception

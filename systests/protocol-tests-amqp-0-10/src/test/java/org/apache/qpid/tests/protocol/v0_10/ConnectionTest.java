@@ -20,17 +20,12 @@
  */
 package org.apache.qpid.tests.protocol.v0_10;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
 
-import org.hamcrest.core.IsEqual;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,8 +35,6 @@ import org.apache.qpid.server.protocol.v0_10.transport.ConnectionSecure;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStart;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionTune;
 import org.apache.qpid.tests.protocol.ChannelClosedResponse;
-import org.apache.qpid.tests.protocol.HeaderResponse;
-import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -55,29 +48,6 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     public void setUp()
     {
         _brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
-    }
-
-    @Test
-    @SpecificationTest(section = "4.3. Version Negotiation",
-            description = "When the client opens a new socket connection to an AMQP server,"
-                          + " it MUST send a protocol header with the client's preferred protocol version."
-                          + "If the requested protocol version is supported, the server MUST send its own protocol"
-                          + " header with the requested version to the socket, and then implement the protocol accordingly")
-    public void versionNegotiation() throws Exception
-    {
-        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
-        {
-            final Interaction interaction = transport.newInteraction();
-            Response<?> response = interaction.negotiateProtocol().consumeResponse().getLatestResponse();
-            assertThat(response, is(instanceOf(HeaderResponse.class)));
-            assertThat(response.getBody(), is(IsEqual.equalTo(transport.getProtocolHeader())));
-
-            ConnectionStart connectionStart = interaction.consumeResponse().getLatestResponse(ConnectionStart.class);
-            assertThat(connectionStart.getMechanisms(), is(notNullValue()));
-            assertThat(connectionStart.getMechanisms(), contains(ConnectionInteraction.SASL_MECHANISM_ANONYMOUS));
-            assertThat(connectionStart.getLocales(), is(notNullValue()));
-            assertThat(connectionStart.getLocales(), contains(DEFAULT_LOCALE));
-        }
     }
 
     @Test

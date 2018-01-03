@@ -76,7 +76,7 @@ public class FrameTransport extends AbstractFrameTransport<Interaction>
         return _protocolHeader;
     }
 
-    ProtocolVersion getProtocolVersion()
+    public ProtocolVersion getProtocolVersion()
     {
         return _protocolVersion;
     }

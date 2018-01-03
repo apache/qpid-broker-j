@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionSecureBody;
@@ -153,6 +154,50 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     }
 
     @Test
+    @SpecificationTest(section = "4.2.3",
+            description = "A peer MUST NOT send frames larger than the agreed-upon size. A peer that receives an "
+                          + "oversized frame MUST signal a connection exception with reply code 501 (frame error).")
+    public void overlySizedContentBodyFrame() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            ConnectionTuneBody response = interaction.negotiateProtocol()
+                                                     .consumeResponse(ConnectionStartBody.class)
+                                                     .connection().startOkMechanism("ANONYMOUS")
+                                                     .startOk()
+                                                     .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
+
+            final long frameMax = response.getFrameMax();
+            // Older Qpid JMS Client 0-x had a defect that meant they could send content body frames that were too
+            // large.  Rather then limiting the user content of each frame to frameSize - 8, it sent frameSize bytes
+            // of user content meaning the resultant frame was too big.  The server accommodates this behaviour
+            // by reducing the frame-size advertised to the client.
+            final int overlyLargeFrameBodySize = (int) (frameMax + 1);  // Should be frameMax - 8 + 1.
+            final byte[] bodyBytes = new byte[overlyLargeFrameBodySize];
+
+            interaction.connection()
+                       .tuneOkChannelMax(response.getChannelMax())
+                       .tuneOkFrameMax(frameMax)
+                       .tuneOkHeartbeat(response.getHeartbeat())
+                       .tuneOk()
+                       .connection().open()
+                       .consumeResponse(ConnectionOpenOkBody.class)
+                       .channel().open()
+                       .consumeResponse(ChannelOpenOkBody.class)
+                       .basic().publish()
+                       .basic().contentHeader(bodyBytes.length)
+                       .basic().contentBody(bodyBytes)
+                       .sync();
+
+            final ChannelClosedResponse closeResponse = interaction.consumeResponse()
+                                                                   .getLatestResponse(ChannelClosedResponse.class);
+            //TODO: The ChannelClosedResponse is wrong.
+            //assertThat(res.getReplyCode(), CoreMatchers.is(CoreMatchers.equalTo(ErrorCodes.COMMAND_INVALID)));
+        }
+    }
+
+    @Test
     @SpecificationTest(section = "1.4.", description = "open connection = C:protocolheader S:START C:START OK"
                                                        + " *challenge S:TUNE C:TUNE OK C:OPEN S:OPEN OK")
     public void authenticationBypassBySendingTuneOk() throws Exception
@@ -201,5 +246,4 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                        .consumeResponse(ConnectionCloseBody.class, ChannelClosedResponse.class);
         }
     }
-
 }
