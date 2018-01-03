@@ -47,6 +47,8 @@ public interface ConnectionBuilder
     ConnectionBuilder setOptions(Map<String, String> options);
     ConnectionBuilder setPopulateJMSXUserID(boolean populateJMSXUserID);
     ConnectionBuilder setMessageRedelivery(final boolean redelivery);
+    ConnectionBuilder setDeserializationPolicyWhiteList(String whiteList);
+    ConnectionBuilder setDeserializationPolicyBlackList(String blackList);
 
     Connection build() throws NamingException, JMSException;
     ConnectionFactory buildConnectionFactory() throws NamingException;

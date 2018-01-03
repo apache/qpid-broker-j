@@ -179,6 +179,20 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
+    public ConnectionBuilder setDeserializationPolicyWhiteList(final String whiteList)
+    {
+        _options.put("jms.deserializationPolicy.whiteList", whiteList);
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setDeserializationPolicyBlackList(final String blackList)
+    {
+        _options.put("jms.deserializationPolicy.blackList", blackList);
+        return this;
+    }
+
+    @Override
     public Connection build() throws NamingException, JMSException
     {
         return buildConnectionFactory().createConnection();
