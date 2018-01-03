@@ -17,6 +17,7 @@
  */
 package org.apache.qpid.systests.jms_1_1.topic;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -42,6 +43,7 @@ import javax.jms.TopicSubscriber;
 
 import org.junit.Test;
 
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.JmsTestBase;
 
 public class DurableSubscribtionTest extends JmsTestBase
@@ -467,6 +469,7 @@ public class DurableSubscribtionTest extends JmsTestBase
     @Test
     public void testResubscribeWithChangedNoLocal() throws Exception
     {
+        assumeThat("QPID-8068", getProtocol(), is(equalTo(Protocol.AMQP_1_0)));
         String subscriptionName = getTestName() + "_sub";
         Topic topic = createTopic(getTestName());
         String clientId = "testClientId";

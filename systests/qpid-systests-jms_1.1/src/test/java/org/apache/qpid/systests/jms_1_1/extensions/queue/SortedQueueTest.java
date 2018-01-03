@@ -146,6 +146,10 @@ public class SortedQueueTest extends JmsTestBase
             assertTrue("Messages were not received during expected time",
                        receiveLatch.await(getReceiveTimeout() * NUMBER_OF_MESSAGES, TimeUnit.MILLISECONDS));
             assertNull("Unexpected exception in message listener", listener.getException());
+
+            // make sure that all received messages are acknowledged before closing the session/connection
+            // otherwise session close can timeout for auto-ack
+            consumerSession.createTemporaryQueue().delete();
         }
         finally
         {

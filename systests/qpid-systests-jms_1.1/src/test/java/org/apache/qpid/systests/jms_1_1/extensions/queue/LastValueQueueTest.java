@@ -517,6 +517,10 @@ public class LastValueQueueTest extends JmsTestBase
                         shutdownMessage.setStringProperty(KEY_PROPERTY, _threadName);
 
                         backgroundProducer.send(shutdownMessage);
+
+                        // make sure that all in-flight messages reach the Broker
+                        // before closing the connection
+                        producerSession.createTemporaryQueue().delete();
                     }
                     finally
                     {
@@ -528,6 +532,7 @@ public class LastValueQueueTest extends JmsTestBase
                 catch (Exception e)
                 {
                     _exception = e;
+                    LOGGER.warn("Unexpected exception in publisher", e);
                 }
             };
 
