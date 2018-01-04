@@ -241,6 +241,10 @@ public class FrameDecoder implements InputDecoder
                         resetInputHandlerAfterSaslOutcome();
                     }
                 }
+                else if (val == null)
+                {
+                    response = new EmptyResponse();
+                }
                 else
                 {
                     throw new UnsupportedOperationException("Unexpected frame type : " + val.getClass());

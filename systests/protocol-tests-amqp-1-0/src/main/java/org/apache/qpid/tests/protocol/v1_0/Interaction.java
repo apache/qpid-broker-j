@@ -82,6 +82,10 @@ import org.apache.qpid.tests.protocol.Response;
 
 public class Interaction extends AbstractInteraction<Interaction>
 {
+    private static final FrameBody EMPTY_FRAME = (channel, conn) -> {
+        throw new UnsupportedOperationException();
+    };
+
     private static final Set<String> CONTAINER_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Begin _begin;
     private final End _end;
@@ -265,6 +269,12 @@ public class Interaction extends AbstractInteraction<Interaction>
     public Interaction openDesiredCapabilities(final Symbol... desiredCapabilities)
     {
         _open.setDesiredCapabilities(desiredCapabilities);
+        return this;
+    }
+
+    public Interaction openIdleTimeOut(final int idleTimeOut)
+    {
+        _open.setIdleTimeOut(UnsignedInteger.valueOf(idleTimeOut));
         return this;
     }
 
@@ -1068,6 +1078,16 @@ public class Interaction extends AbstractInteraction<Interaction>
     public InteractionTransactionalState createTransactionalState(final UnsignedInteger handle)
     {
         return new InteractionTransactionalState(handle);
+    }
+
+    ///////////
+    // Empty //
+    ///////////
+
+    public Interaction emptyFrame() throws Exception
+    {
+        sendPerformative(EMPTY_FRAME, UnsignedShort.ZERO);
+        return this;
     }
 
 }
