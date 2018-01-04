@@ -175,12 +175,10 @@ org.apache.qpid.systests.jms_2_0.*
 org.apache.qpid.tests.protocol.v1_0.*
 
 # Tests require AMQP management
-org.apache.qpid.server.routing.AlternateBindingRoutingTest#*
 org.apache.qpid.server.queue.QueueDepthWithSelectorTest#test
 org.apache.qpid.test.unit.message.UTF8Test#*
 
 # Tests AMQP 1.0 specific routing semantics
 org.apache.qpid.systest.MessageRoutingTest#*
 
-# Exchange to Exchange bindings not support by CPP Broker.
-org.apache.qpid.server.routing.ExchangeRoutingTest#*
+
