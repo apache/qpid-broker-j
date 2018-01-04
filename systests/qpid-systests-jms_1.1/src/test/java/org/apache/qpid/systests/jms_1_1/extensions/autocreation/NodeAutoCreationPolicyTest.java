@@ -18,7 +18,18 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.queue;
+package org.apache.qpid.systests.jms_1_1.extensions.autocreation;
+
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -27,7 +38,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.jms.Connection;
-import javax.jms.InvalidDestinationException;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -38,34 +48,28 @@ import javax.jms.TextMessage;
 import javax.jms.Topic;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Test;
 
-import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.test.utils.TestBrokerConfiguration;
+import org.apache.qpid.systests.JmsTestBase;
 
-public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
+public class NodeAutoCreationPolicyTest extends JmsTestBase
 {
     private static final String DEAD_LETTER_QUEUE_SUFFIX = "_DLQ";
     private static final String DEAD_LETTER_EXCHANGE_SUFFIX = "_DLE";
-
-    private Connection _connection;
-    private Session _session;
+    private static final String AUTO_CREATION_POLICIES = createAutoCreationPolicies();
 
 
-    @Override
-    public String getTestProfileVirtualHostNodeBlueprint()
+    private static String createAutoCreationPolicies()
     {
-        String blueprint = super.getTestProfileVirtualHostNodeBlueprint();
         ObjectMapper mapper = new ObjectMapper();
         try
         {
-            Map blueprintMap = mapper.readValue(blueprint, Map.class);
 
             NodeAutoCreationPolicy[] policies = new NodeAutoCreationPolicy[] {
                     new NodeAutoCreationPolicy()
@@ -200,9 +204,7 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
                     }
             };
 
-            blueprintMap.put(QueueManagingVirtualHost.NODE_AUTO_CREATION_POLICIES, Arrays.asList(policies));
-            String newprint = mapper.writeValueAsString(blueprintMap);
-            return newprint;
+            return mapper.writeValueAsString(Arrays.asList(policies));
         }
         catch (IOException e)
         {
@@ -210,144 +212,195 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
         }
     }
 
-
-    @Override
-    protected void setUp() throws Exception
+    private void updateAutoCreationPolicies() throws Exception
     {
-        getDefaultBrokerConfiguration().removeObjectConfiguration(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST);
-
-        createTestVirtualHostNode(TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST);
-
-        super.setUp();
-
-        _connection = getConnection();
-        _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        _connection.start();
+        updateEntityUsingAmqpManagement(getVirtualHostName(), "org.apache.qpid.VirtualHost", Collections.singletonMap(QueueManagingVirtualHost.NODE_AUTO_CREATION_POLICIES, AUTO_CREATION_POLICIES));
     }
 
+    @Test
     public void testSendingToQueuePattern() throws Exception
     {
-        final Queue queue = _session.createQueue(isBroker10() ? "fooQueue" : "ADDR: fooQueue ; { assert: never, node: { type: queue } }");
-        final MessageProducer producer = _session.createProducer(queue);
-        producer.send(_session.createTextMessage("Hello world!"));
+        updateAutoCreationPolicies();
 
-        final MessageConsumer consumer = _session.createConsumer(queue);
-        Message received = consumer.receive(getReceiveTimeout());
-        assertNotNull(received);
-        assertTrue(received instanceof TextMessage);
-        assertEquals("Hello world!", ((TextMessage)received).getText());
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Queue queue = session.createQueue(getProtocol() == Protocol.AMQP_1_0
+                                                             ? "fooQueue"
+                                                             : "ADDR: fooQueue ; { assert: never, node: { type: queue } }");
+            final MessageProducer producer = session.createProducer(queue);
+            producer.send(session.createTextMessage("Hello world!"));
+
+            final MessageConsumer consumer = session.createConsumer(queue);
+            Message received = consumer.receive(getReceiveTimeout());
+            assertNotNull(received);
+            assertTrue(received instanceof TextMessage);
+            assertEquals("Hello world!", ((TextMessage) received).getText());
+        }
+        finally
+        {
+            connection.close();
+        }
     }
 
-
+    @Test
     public void testSendingToNonMatchingQueuePattern() throws Exception
     {
-        final Queue queue = _session.createQueue(isBroker10() ? "foQueue" : "ADDR: foQueue ; { assert: never, node: { type: queue } }");
+        updateAutoCreationPolicies();
+
+        Connection connection = getConnection();
         try
         {
-            final MessageProducer producer = _session.createProducer(queue);
-            fail("Creating producer should fail");
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Queue queue = session.createQueue(getProtocol() == Protocol.AMQP_1_0
+                                                            ? "foQueue"
+                                                            : "ADDR: foQueue ; { assert: never, node: { type: queue } }");
+            try
+            {
+                session.createProducer(queue);
+                fail("Creating producer should fail");
+            }
+            catch (JMSException e)
+            {
+                // pass
+            }
         }
-        catch(JMSException e)
+        finally
         {
-            if(isBroker10())
-            {
-                assertTrue(e instanceof InvalidDestinationException);
-            }
-            else
-            {
-                assertNotNull(e.getLinkedException());
-                assertEquals("The name 'foQueue' supplied in the address doesn't resolve to an exchange or a queue",
-                             e.getLinkedException().getMessage());
-            }
+            connection.close();
         }
     }
 
-
+    @Test
     public void testSendingToExchangePattern() throws Exception
     {
-        final Topic topic = _session.createTopic(isBroker10() ? "barExchange/foo" : "ADDR: barExchange/foo ; { assert: never, node: { type: topic } }");
-        final MessageProducer producer = _session.createProducer(topic);
-        producer.send(_session.createTextMessage("Hello world!"));
+        updateAutoCreationPolicies();
 
-        final MessageConsumer consumer = _session.createConsumer(topic);
-        Message received = consumer.receive(getShortReceiveTimeout());
-        assertNull(received);
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Topic topic = session.createTopic(getProtocol() == Protocol.AMQP_1_0
+                                                            ? "barExchange/foo"
+                                                            : "ADDR: barExchange/foo ; { assert: never, node: { type: topic } }");
+            final MessageProducer producer = session.createProducer(topic);
+            producer.send(session.createTextMessage("Hello world!"));
 
-        producer.send(_session.createTextMessage("Hello world2!"));
-        received = consumer.receive(getReceiveTimeout());
+            final MessageConsumer consumer = session.createConsumer(topic);
+            Message received = consumer.receive(getReceiveTimeout() / 4);
+            assertNull(received);
 
-        assertNotNull(received);
+            producer.send(session.createTextMessage("Hello world2!"));
+            received = consumer.receive(getReceiveTimeout());
 
-        assertTrue(received instanceof TextMessage);
-        assertEquals("Hello world2!", ((TextMessage)received).getText());
+            assertNotNull(received);
+
+            assertTrue(received instanceof TextMessage);
+            assertEquals("Hello world2!", ((TextMessage) received).getText());
+        }
+        finally
+        {
+            connection.close();
+        }
     }
 
-
+    @Test
     public void testSendingToNonMatchingTopicPattern() throws Exception
     {
-        final Topic topic = _session.createTopic(isBroker10() ? "baa" : "ADDR: baa ; { assert: never, node: { type: topic } }");
+        updateAutoCreationPolicies();
+
+        Connection connection = getConnection();
         try
         {
-            final MessageProducer producer = _session.createProducer(topic);
-            fail("Creating producer should fail");
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Topic topic = session.createTopic(getProtocol() == Protocol.AMQP_1_0
+                                                            ? "baa"
+                                                            : "ADDR: baa ; { assert: never, node: { type: topic } }");
+            try
+            {
+                session.createProducer(topic);
+                fail("Creating producer should fail");
+            }
+            catch (JMSException e)
+            {
+                // pass
+            }
         }
-        catch(JMSException e)
+        finally
         {
-            if(isBroker10())
-            {
-                assertTrue(e instanceof InvalidDestinationException);
-            }
-            else
-            {
-                assertNotNull(e.getLinkedException());
-                assertEquals("The name 'baa' supplied in the address doesn't resolve to an exchange or a queue",
-                             e.getLinkedException().getMessage());
-            }
+            connection.close();
         }
     }
 
-
+    @Test
     public void testSendingToQueuePatternBURL() throws Exception
     {
-        final Queue queue = _session.createQueue("BURL:direct:///fooQ/fooQ");
-        final MessageProducer producer = _session.createProducer(queue);
-        producer.send(_session.createTextMessage("Hello world!"));
+        assumeThat("Qpid JMS Client does not support BURL syntax",
+                   getProtocol(),
+                   is(not(equalTo(Protocol.AMQP_1_0))));
+        updateAutoCreationPolicies();
 
-        final MessageConsumer consumer = _session.createConsumer(queue);
-        Message received = consumer.receive(getReceiveTimeout());
-        assertNotNull(received);
-        assertTrue(received instanceof TextMessage);
-        assertEquals("Hello world!", ((TextMessage)received).getText());
-    }
-
-
-    public void testSendingToNonMatchingQueuePatternBURL() throws Exception
-    {
-        final Queue queue = _session.createQueue("BURL:direct:///fo/fo");
+        Connection connection = getConnection();
         try
         {
-            _connection.close();
-            _connection = getConnectionWithSyncPublishing();
-            _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            _connection.start();
-            final MessageProducer producer = _session.createProducer(queue);
-            producer.send(_session.createTextMessage("Hello world!"));
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Queue queue = session.createQueue("BURL:direct:///fooQ/fooQ");
+            final MessageProducer producer = session.createProducer(queue);
+            producer.send(session.createTextMessage("Hello world!"));
 
-            fail("Sending a message should fail");
+            final MessageConsumer consumer = session.createConsumer(queue);
+            Message received = consumer.receive(getReceiveTimeout());
+            assertNotNull(received);
+            assertTrue(received instanceof TextMessage);
+            assertEquals("Hello world!", ((TextMessage) received).getText());
         }
-        catch(JMSException e)
+        finally
         {
-            // pass
+            connection.close();
         }
     }
 
+    @Test
+    public void testSendingToNonMatchingQueuePatternBURL() throws Exception
+    {
+        assumeThat("Using AMQP 0-8..0-9-1 to test BURL syntax",
+                   getProtocol(),
+                   is(not(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10)))));
+        updateAutoCreationPolicies();
+
+        Connection connection = getConnectionBuilder().setSyncPublish(true).build();
+        try
+        {
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Queue queue = session.createQueue("BURL:direct:///fo/fo");
+            try
+            {
+                final MessageProducer producer = session.createProducer(queue);
+                producer.send(session.createTextMessage("Hello world!"));
+
+                fail("Sending a message should fail");
+            }
+            catch (JMSException e)
+            {
+                // pass
+            }
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    @Test
     public void testQueueAlternateBindingCreation() throws Exception
     {
-        Connection connection = getConnection();
-        connection.start();
-        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        updateAutoCreationPolicies();
 
-        String queueName = getTestQueueName();
+        String queueName = getTestName();
         String deadLetterQueueName = queueName + DEAD_LETTER_QUEUE_SUFFIX;
 
         final Map<String, Object> attributes = new HashMap<>();
@@ -355,12 +408,9 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
                 Collections.singletonMap(AlternateBinding.DESTINATION, deadLetterQueueName);
         attributes.put(org.apache.qpid.server.model.Queue.ALTERNATE_BINDING,
                        new ObjectMapper().writeValueAsString(expectedAlternateBinding));
-        createEntityUsingAmqpManagement(queueName,
-                                        session,
-                                        "org.apache.qpid.Queue", attributes);
+        createEntityUsingAmqpManagement(queueName, "org.apache.qpid.Queue", attributes);
 
-        Map<String, Object> queueAttributes =
-                managementReadObject(connection.createSession(false, Session.AUTO_ACKNOWLEDGE), "org.apache.qpid.Queue", queueName, true);
+        Map<String, Object> queueAttributes = readEntityUsingAmqpManagement(queueName, "org.apache.qpid.Queue", true);
 
         Object actualAlternateBinding = queueAttributes.get(org.apache.qpid.server.model.Queue.ALTERNATE_BINDING);
         Map<String, Object> actualAlternateBindingMap = convertIfNecessary(actualAlternateBinding);
@@ -368,17 +418,17 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
                      new HashMap<>(expectedAlternateBinding),
                      new HashMap<>(actualAlternateBindingMap));
 
-        assertNotNull("Cannot get dead letter queue",
-                      managementReadObject(connection.createSession(false, Session.AUTO_ACKNOWLEDGE), "org.apache.qpid.Queue", deadLetterQueueName, true));
+        Map<String, Object> dlqAttributes =
+                readEntityUsingAmqpManagement(deadLetterQueueName, "org.apache.qpid.Queue", true);
+        assertNotNull("Cannot get dead letter queue", dlqAttributes);
     }
 
+    @Test
     public void testExchangeAlternateBindingCreation() throws Exception
     {
-        Connection connection = getConnection();
-        connection.start();
-        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        updateAutoCreationPolicies();
 
-        String exchangeName = getTestQueueName();
+        String exchangeName = getTestName();
         String deadLetterExchangeName = exchangeName + DEAD_LETTER_EXCHANGE_SUFFIX;
 
         final Map<String, Object> attributes = new HashMap<>();
@@ -386,12 +436,9 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
                 Collections.singletonMap(AlternateBinding.DESTINATION, deadLetterExchangeName);
         attributes.put(Exchange.ALTERNATE_BINDING, new ObjectMapper().writeValueAsString(expectedAlternateBinding));
         attributes.put(Exchange.TYPE, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
-        createEntityUsingAmqpManagement(exchangeName,
-                                        session,
-                                        "org.apache.qpid.DirectExchange", attributes);
+        createEntityUsingAmqpManagement(exchangeName, "org.apache.qpid.DirectExchange", attributes);
 
-        Map<String, Object> exchangeAttributes =
-                managementReadObject(connection.createSession(false, Session.AUTO_ACKNOWLEDGE), "org.apache.qpid.Exchange", exchangeName, true);
+        Map<String, Object> exchangeAttributes = readEntityUsingAmqpManagement(exchangeName, "org.apache.qpid.Exchange", true);
 
         Object actualAlternateBinding = exchangeAttributes.get(Exchange.ALTERNATE_BINDING);
         Map<String, Object> actualAlternateBindingMap = convertIfNecessary(actualAlternateBinding);
@@ -399,32 +446,14 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
                      new HashMap<>(expectedAlternateBinding),
                      new HashMap<>(actualAlternateBindingMap));
 
-        assertNotNull("Cannot get dead letter exchange",
-                      managementReadObject(connection.createSession(false, Session.AUTO_ACKNOWLEDGE), "org.apache.qpid.FanoutExchange", deadLetterExchangeName, true));
+        Map<String, Object> dlqExchangeAttributes = readEntityUsingAmqpManagement(
+                deadLetterExchangeName,
+                "org.apache.qpid.FanoutExchange",
+                true);
+        assertNotNull("Cannot get dead letter exchange", dlqExchangeAttributes);
     }
 
-    public void testLegacyQueueDeclareArgumentAlternateBindingCreation() throws Exception
-    {
-        Connection connection = getConnection();
-        connection.start();
-        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-
-        final Map<String, Object> arguments = Collections.singletonMap(QueueArgumentsConverter.X_QPID_DLQ_ENABLED, true);
-        String testQueueName = getTestQueueName();
-        ((AMQSession<?,?>) session).createQueue(testQueueName, false, true, false, arguments);
-
-
-        Map<String, Object> queueAttributes =
-                managementReadObject(connection.createSession(false, Session.AUTO_ACKNOWLEDGE), "org.apache.qpid.Queue", testQueueName, true);
-
-        Object actualAlternateBinding = queueAttributes.get(Exchange.ALTERNATE_BINDING);
-        assertTrue("Unexpected alternate binding", actualAlternateBinding instanceof Map);
-        Object deadLetterQueueName = ((Map<String, Object>) actualAlternateBinding).get(AlternateBinding.DESTINATION);
-
-        assertNotNull("Cannot get dead letter queue",
-                      managementReadObject(connection.createSession(false, Session.AUTO_ACKNOWLEDGE), "org.apache.qpid.Queue", String.valueOf(deadLetterQueueName), true));
-    }
-
+    @SuppressWarnings("unchecked")
     private Map<String, Object> convertIfNecessary(final Object actualAlternateBinding) throws IOException
     {
         Map<String, Object> actualAlternateBindingMap;
