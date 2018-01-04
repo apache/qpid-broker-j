@@ -20,8 +20,12 @@
  */
 package org.apache.qpid.tests.protocol.v0_10;
 
+import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
@@ -30,6 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionClose;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionHeartbeat;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionOpenOk;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionSecure;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStart;
@@ -181,4 +186,81 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
         }
     }
 
+    @Test
+    @SpecificationTest(section = "9.connection",
+            description = "The heartbeat control may be used to generate artificial network traffic when a connection "
+                          + "is idle.")
+    public void heartbeating() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            ConnectionTune response = interaction.negotiateProtocol().consumeResponse()
+                                                 .consumeResponse(ConnectionStart.class)
+                                                 .connection().startOkMechanism(ConnectionInteraction.SASL_MECHANISM_ANONYMOUS).startOk()
+                                                 .consumeResponse().getLatestResponse(ConnectionTune.class);
+
+            assumeThat(response.hasHeartbeatMin(), is(true));
+            assumeThat(response.hasHeartbeatMax(), is(true));
+            assumeThat(response.getHeartbeatMin(), is(greaterThanOrEqualTo(0)));
+            assumeThat(response.getHeartbeatMax(), is(greaterThanOrEqualTo(1)));
+
+            final int heartbeatPeriod = 1;
+
+            interaction.connection()
+                       .tuneOkChannelMax(response.getChannelMax())
+                       .tuneOkMaxFrameSize(response.getMaxFrameSize())
+                       .tuneOkHeartbeat(heartbeatPeriod)
+                       .tuneOk()
+                       .connection().open()
+                       .consumeResponse(ConnectionOpenOk.class);
+
+            final long startTime = System.currentTimeMillis();
+            interaction.consumeResponse().getLatestResponse(ConnectionHeartbeat.class);
+            final long actualHeartbeatDelay = System.currentTimeMillis() - startTime;
+            assertThat("Heartbeat not received within expected time frame",
+                       ((int)actualHeartbeatDelay / 1000),
+                       is(both(greaterThanOrEqualTo(heartbeatPeriod)).and(lessThanOrEqualTo(heartbeatPeriod * 2))));
+            interaction.connection().heartbeat();
+
+            interaction.consumeResponse(ConnectionHeartbeat.class)
+                       .connection().heartbeat();
+        }
+    }
+
+
+    @Test
+    @SpecificationTest(section = "9.connection",
+            description = "If a connection is idle for more than twice the negotiated heartbeat delay, the peers MAY "
+                          + "be considered disconnected.")
+    public void heartbeatingIncomingIdle() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            ConnectionTune response = interaction.negotiateProtocol().consumeResponse()
+                                                 .consumeResponse(ConnectionStart.class)
+                                                 .connection().startOkMechanism(ConnectionInteraction.SASL_MECHANISM_ANONYMOUS).startOk()
+                                                 .consumeResponse().getLatestResponse(ConnectionTune.class);
+
+            assumeThat(response.hasHeartbeatMin(), is(true));
+            assumeThat(response.hasHeartbeatMax(), is(true));
+            assumeThat(response.getHeartbeatMin(), is(greaterThanOrEqualTo(0)));
+            assumeThat(response.getHeartbeatMax(), is(greaterThanOrEqualTo(1)));
+
+            final int heartbeatPeriod = 1;
+
+            interaction.connection()
+                       .tuneOkChannelMax(response.getChannelMax())
+                       .tuneOkMaxFrameSize(response.getMaxFrameSize())
+                       .tuneOkHeartbeat(heartbeatPeriod)
+                       .tuneOk()
+                       .connection().open()
+                       .consumeResponse(ConnectionOpenOk.class);
+
+            interaction.consumeResponse().getLatestResponse(ConnectionHeartbeat.class);
+
+            transport.assertNoMoreResponsesAndChannelClosed();
+        }
+    }
 }

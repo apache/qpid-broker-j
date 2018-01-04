@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.tests.protocol.v0_10;
 
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionHeartbeat;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionOpen;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStartOk;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionTuneOk;
@@ -33,6 +34,7 @@ public class ConnectionInteraction
     private ConnectionStartOk _startOk;
     private ConnectionTuneOk _tuneOk;
     private ConnectionOpen _open;
+    private ConnectionHeartbeat _connectionHeartbeat;
 
     public ConnectionInteraction(final Interaction interaction)
     {
@@ -40,6 +42,7 @@ public class ConnectionInteraction
         _startOk = new ConnectionStartOk();
         _tuneOk = new ConnectionTuneOk();
         _open = new ConnectionOpen();
+        _connectionHeartbeat = new ConnectionHeartbeat();
     }
 
     public Interaction startOk() throws Exception
@@ -69,6 +72,12 @@ public class ConnectionInteraction
         return this;
     }
 
+    public ConnectionInteraction tuneOkHeartbeat(final int heartbeat)
+    {
+        _tuneOk.setHeartbeat(heartbeat);
+        return this;
+    }
+
     public ConnectionInteraction tuneOkMaxFrameSize(final int maxFrameSize)
     {
         _tuneOk.setMaxFrameSize(maxFrameSize);
@@ -79,5 +88,10 @@ public class ConnectionInteraction
     {
         _startOk.setResponse(response);
         return this;
+    }
+
+    public Interaction heartbeat() throws Exception
+    {
+        return _interaction.sendPerformative(_connectionHeartbeat);
     }
 }

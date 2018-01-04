@@ -84,6 +84,12 @@ public class ExchangeInteraction
         return this;
     }
 
+    public ExchangeInteraction declareNoWait(final boolean noWait)
+    {
+        _declareNoWait = noWait;
+        return this;
+    }
+
     public ExchangeInteraction declareArguments(final Map<String,Object> args)
     {
         _declareArguments = args == null ? Collections.emptyMap() : new HashMap<>(args);

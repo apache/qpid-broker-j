@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
+import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQBody;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQDataBlock;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQFrame;
@@ -63,6 +64,11 @@ public class Interaction extends AbstractInteraction<Interaction>
     protected byte[] getProtocolHeader()
     {
         return _protocolHeader;
+    }
+
+    public ProtocolVersion getProtocolVersion()
+    {
+        return ((FrameTransport) getTransport()).getProtocolVersion();
     }
 
     public Interaction sendPerformative(final AMQBody amqBody) throws Exception

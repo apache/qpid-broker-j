@@ -24,8 +24,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionOpenBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionStartOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionTuneOkBody;
@@ -42,6 +44,11 @@ public class ConnectionInteraction
     private long _tuneOkFrameMax;
     private int _tuneOkHeartbeat;
     private String _openVirtualHost;
+
+    private int _closeReplyCode = ErrorCodes.REPLY_SUCCESS;
+    private String _closeReplyText;
+    private int _closeClassId;
+    private int _closeMethodId;
 
     public ConnectionInteraction(final Interaction interaction)
     {
@@ -105,5 +112,14 @@ public class ConnectionInteraction
         return _interaction.sendPerformative(new ConnectionOpenBody(AMQShortString.valueOf(_openVirtualHost),
                                                                     null,
                                                                     false));
+    }
+
+    public Interaction close() throws Exception
+    {
+        return _interaction.sendPerformative(new ConnectionCloseBody(_interaction.getProtocolVersion(),
+                                                                     _closeReplyCode,
+                                                                     AMQShortString.valueOf(_closeReplyText),
+                                                                     _closeClassId,
+                                                                     _closeMethodId));
     }
 }

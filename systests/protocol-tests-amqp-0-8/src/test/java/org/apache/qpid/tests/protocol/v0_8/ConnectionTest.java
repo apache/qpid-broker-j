@@ -20,9 +20,12 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
+import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 import java.net.InetSocketAddress;
 
@@ -31,10 +34,12 @@ import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionSecureBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionStartBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionTuneBody;
+import org.apache.qpid.server.protocol.v0_8.transport.HeartbeatBody;
 import org.apache.qpid.tests.protocol.ChannelClosedResponse;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -244,6 +249,112 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                        .connection().tuneOk()
                        .connection().open()
                        .consumeResponse(ConnectionCloseBody.class, ChannelClosedResponse.class);
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "4.2.7",
+            description = "Heartbeat frames tell the recipient that the sender is still alive. The rate and timing of"
+                          + " heartbeat frames is negotiated during connection tuning.")
+    public void heartbeating() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            ConnectionTuneBody response = interaction.negotiateProtocol()
+                                                     .consumeResponse(ConnectionStartBody.class)
+                                                     .connection().startOkMechanism("ANONYMOUS")
+                                                     .startOk()
+                                                     .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
+
+            final Long heartbeatPeriod = 1L;
+
+            interaction.connection()
+                       .tuneOkChannelMax(response.getChannelMax())
+                       .tuneOkFrameMax(response.getFrameMax())
+                       .tuneOkHeartbeat(heartbeatPeriod.intValue())
+                       .tuneOk()
+                       .connection().open()
+                       .consumeResponse(ConnectionOpenOkBody.class);
+
+            final long startTime = System.currentTimeMillis();
+            interaction.consumeResponse().getLatestResponse(HeartbeatBody.class);
+            final long actualHeartbeatDelay = System.currentTimeMillis() - startTime;
+            assertThat("Heartbeat not received within expected time frame",
+                       actualHeartbeatDelay / 1000,
+                       is(both(greaterThanOrEqualTo(heartbeatPeriod)).and(lessThanOrEqualTo(heartbeatPeriod * 2))));
+            interaction.sendPerformative(new HeartbeatBody());
+
+            interaction.consumeResponse(HeartbeatBody.class)
+                       .sendPerformative(new HeartbeatBody());
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "4.2.7", description = "Any sent octet is a valid substitute for a heartbeat")
+    public void heartbeatingIncomingTrafficIsNonHeartbeat() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            ConnectionTuneBody response = interaction.negotiateProtocol()
+                                                     .consumeResponse(ConnectionStartBody.class)
+                                                     .connection().startOkMechanism("ANONYMOUS")
+                                                     .startOk()
+                                                     .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
+
+            final Long heartbeatPeriod = 1L;
+
+            interaction.connection()
+                       .tuneOkChannelMax(response.getChannelMax())
+                       .tuneOkFrameMax(response.getFrameMax())
+                       .tuneOkHeartbeat(heartbeatPeriod.intValue())
+                       .tuneOk()
+                       .connection().open()
+                       .consumeResponse(ConnectionOpenOkBody.class)
+                       .channel().open()
+                       .consumeResponse(ChannelOpenOkBody.class)
+                       .consumeResponse(HeartbeatBody.class)
+                       .exchange().declarePassive(true).declareNoWait(true).declare()
+                       .consumeResponse(HeartbeatBody.class)
+                       .sendPerformative(new HeartbeatBody())
+                       .exchange().declarePassive(true).declareNoWait(true).declare();
+
+            interaction.connection()
+                       .close()
+                       .consumeResponse().getLatestResponse(ConnectionCloseOkBody.class);
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "4.2.7",
+            description = " If a peer detects no incoming traffic (i.e. received octets) for two heartbeat intervals "
+                          + "or longer, it should close the connection without following the Connection.Close/Close-Ok handshaking")
+    public void heartbeatingNoIncomingTraffic() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            ConnectionTuneBody response = interaction.negotiateProtocol()
+                                                     .consumeResponse(ConnectionStartBody.class)
+                                                     .connection().startOkMechanism("ANONYMOUS")
+                                                     .startOk()
+                                                     .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
+
+            final Long heartbeatPeriod = 1L;
+
+            interaction.connection()
+                       .tuneOkChannelMax(response.getChannelMax())
+                       .tuneOkFrameMax(response.getFrameMax())
+                       .tuneOkHeartbeat(heartbeatPeriod.intValue())
+                       .tuneOk()
+                       .connection().open()
+                       .consumeResponse(ConnectionOpenOkBody.class)
+                       .consumeResponse(HeartbeatBody.class);
+
+            // Do not reflect a heartbeat so incoming line will be silent thus
+            // requiring the broker to close the connection.
+            transport.assertNoMoreResponsesAndChannelClosed();
         }
     }
 }
