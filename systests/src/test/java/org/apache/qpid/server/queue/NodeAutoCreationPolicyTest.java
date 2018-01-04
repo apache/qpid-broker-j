@@ -360,7 +360,7 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
                                         "org.apache.qpid.Queue", attributes);
 
         Map<String, Object> queueAttributes =
-                managementReadObject(session, "org.apache.qpid.Queue", queueName, true);
+                managementReadObject(connection.createSession(false, Session.AUTO_ACKNOWLEDGE), "org.apache.qpid.Queue", queueName, true);
 
         Object actualAlternateBinding = queueAttributes.get(org.apache.qpid.server.model.Queue.ALTERNATE_BINDING);
         Map<String, Object> actualAlternateBindingMap = convertIfNecessary(actualAlternateBinding);
@@ -369,7 +369,7 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
                      new HashMap<>(actualAlternateBindingMap));
 
         assertNotNull("Cannot get dead letter queue",
-                      managementReadObject(session, "org.apache.qpid.Queue", deadLetterQueueName, true));
+                      managementReadObject(connection.createSession(false, Session.AUTO_ACKNOWLEDGE), "org.apache.qpid.Queue", deadLetterQueueName, true));
     }
 
     public void testExchangeAlternateBindingCreation() throws Exception
@@ -391,7 +391,7 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
                                         "org.apache.qpid.DirectExchange", attributes);
 
         Map<String, Object> exchangeAttributes =
-                managementReadObject(session, "org.apache.qpid.Exchange", exchangeName, true);
+                managementReadObject(connection.createSession(false, Session.AUTO_ACKNOWLEDGE), "org.apache.qpid.Exchange", exchangeName, true);
 
         Object actualAlternateBinding = exchangeAttributes.get(Exchange.ALTERNATE_BINDING);
         Map<String, Object> actualAlternateBindingMap = convertIfNecessary(actualAlternateBinding);
@@ -400,7 +400,7 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
                      new HashMap<>(actualAlternateBindingMap));
 
         assertNotNull("Cannot get dead letter exchange",
-                      managementReadObject(session, "org.apache.qpid.FanoutExchange", deadLetterExchangeName, true));
+                      managementReadObject(connection.createSession(false, Session.AUTO_ACKNOWLEDGE), "org.apache.qpid.FanoutExchange", deadLetterExchangeName, true));
     }
 
     public void testLegacyQueueDeclareArgumentAlternateBindingCreation() throws Exception
@@ -415,14 +415,14 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
 
 
         Map<String, Object> queueAttributes =
-                managementReadObject(session, "org.apache.qpid.Queue", testQueueName, true);
+                managementReadObject(connection.createSession(false, Session.AUTO_ACKNOWLEDGE), "org.apache.qpid.Queue", testQueueName, true);
 
         Object actualAlternateBinding = queueAttributes.get(Exchange.ALTERNATE_BINDING);
         assertTrue("Unexpected alternate binding", actualAlternateBinding instanceof Map);
         Object deadLetterQueueName = ((Map<String, Object>) actualAlternateBinding).get(AlternateBinding.DESTINATION);
 
         assertNotNull("Cannot get dead letter queue",
-                      managementReadObject(session, "org.apache.qpid.Queue", String.valueOf(deadLetterQueueName), true));
+                      managementReadObject(connection.createSession(false, Session.AUTO_ACKNOWLEDGE), "org.apache.qpid.Queue", String.valueOf(deadLetterQueueName), true));
     }
 
     private Map<String, Object> convertIfNecessary(final Object actualAlternateBinding) throws IOException

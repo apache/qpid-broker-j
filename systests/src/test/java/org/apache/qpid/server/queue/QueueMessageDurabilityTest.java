@@ -77,10 +77,10 @@ public class QueueMessageDurabilityTest extends QpidBrokerTestCase
         arguments.put(org.apache.qpid.server.model.Queue.DURABLE, false);
         _nonDurableAlwaysPersist = createQueueWithArguments(session, NONDURABLE_ALWAYS_PERSIST_NAME, arguments);
 
-        bindQueue(session, "amq.topic", DURABLE_ALWAYS_PERSIST_NAME, "Y.*.*.*");
-        bindQueue(session, "amq.topic", DURABLE_NEVER_PERSIST_NAME, "*.Y.*.*");
-        bindQueue(session, "amq.topic", DURABLE_DEFAULT_PERSIST_NAME, "*.*.Y.*");
-        bindQueue(session, "amq.topic", NONDURABLE_ALWAYS_PERSIST_NAME, "*.*.*.Y");
+        bindQueue(conn.createSession(false, Session.AUTO_ACKNOWLEDGE), "amq.topic", DURABLE_ALWAYS_PERSIST_NAME, "Y.*.*.*");
+        bindQueue(conn.createSession(false, Session.AUTO_ACKNOWLEDGE), "amq.topic", DURABLE_NEVER_PERSIST_NAME, "*.Y.*.*");
+        bindQueue(conn.createSession(false, Session.AUTO_ACKNOWLEDGE), "amq.topic", DURABLE_DEFAULT_PERSIST_NAME, "*.*.Y.*");
+        bindQueue(conn.createSession(false, Session.AUTO_ACKNOWLEDGE), "amq.topic", NONDURABLE_ALWAYS_PERSIST_NAME, "*.*.*.Y");
 
         _topicNameFormat = isBroker10() ? "amq.topic/%s" : "%s";
 

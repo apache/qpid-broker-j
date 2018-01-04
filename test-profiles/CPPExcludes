@@ -132,11 +132,6 @@ org.apache.qpid.systest.rest.acl.*
 // Exclude failover tests requiring virtual host functionality
 org.apache.qpid.client.failover.MultipleBrokersFailoverTest#*
 
-// Uses Qpid Broker-J specific configuration
-org.apache.qpid.client.ssl.SSLTest#testClientCertMissingWhilstWanting
-org.apache.qpid.client.ssl.SSLTest#testCreateSSLandTCPonSamePort
-
-
 // QPID-2796 : JMS client for AMQP 0-10 only sends heartbeats in response to heartbeats from the server, not timeout based
 org.apache.qpid.client.HeartbeatTest#testUnidirectionalHeartbeating
 org.apache.qpid.client.HeartbeatTest#testHeartbeatsEnabledBrokerSide

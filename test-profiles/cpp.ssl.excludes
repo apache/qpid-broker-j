@@ -17,7 +17,4 @@
 // under the License.
 //
 
-//This test does not supply a client keystore, therefore it cant login to the C++ broker
-//in this test profile as it demands client certificate authentication
-org.apache.qpid.client.ssl.SSLTest#testCreateSSLConnectionUsingConnectionURLParamsTrustStoreOnly
 

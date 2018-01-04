@@ -49,6 +49,12 @@ public interface ConnectionBuilder
     ConnectionBuilder setMessageRedelivery(final boolean redelivery);
     ConnectionBuilder setDeserializationPolicyWhiteList(String whiteList);
     ConnectionBuilder setDeserializationPolicyBlackList(String blackList);
+    ConnectionBuilder setKeyStoreLocation(String keyStoreLocation);
+    ConnectionBuilder setKeyStorePassword(String keyStorePassword);
+    ConnectionBuilder setTrustStoreLocation(String trustStoreLocation);
+    ConnectionBuilder setTrustStorePassword(String trustStorePassword);
+    ConnectionBuilder setVerifyHostName(boolean verifyHostName);
+    ConnectionBuilder setKeyAlias(String alias);
 
     Connection build() throws NamingException, JMSException;
     ConnectionFactory buildConnectionFactory() throws NamingException;

@@ -44,9 +44,6 @@ org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#*
 org.apache.qpid.client.SynchReceiveTest#testReceiveNoWait
 org.apache.qpid.server.logging.ChannelLoggingTest#testChannelClosedOnExclusiveQueueDeclaredOnDifferentSession
 
-// Makes explicit use of 0-10 connection object
-org.apache.qpid.client.ssl.SSLTest#testMultipleCertsInSingleStore
-
 // Tests 0.10 client feature
 org.apache.qpid.test.unit.client.connection.ConnectionTest#testUnsupportedSASLMechanism
 

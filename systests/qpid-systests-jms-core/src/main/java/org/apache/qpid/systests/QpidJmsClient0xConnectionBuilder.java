@@ -20,6 +20,9 @@
 
 package org.apache.qpid.systests;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.TreeMap;
@@ -44,6 +47,12 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     private String _host = "localhost";
     private int _port;
     private int _sslPort;
+    private String _keyStoreLocation;
+    private String _keyStorePassword;
+    private String _trustStoreLocation;
+    private String _trustStorePassword;
+    private Boolean _verifyHostName;
+    private String _keyAlias;
 
     @Override
     public ConnectionBuilder setHost(final String host)
@@ -179,6 +188,48 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
+    public ConnectionBuilder setKeyStoreLocation(final String keyStoreLocation)
+    {
+        _keyStoreLocation = keyStoreLocation;
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setKeyStorePassword(final String keyStorePassword)
+    {
+        _keyStorePassword = keyStorePassword;
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setTrustStoreLocation(final String trustStoreLocation)
+    {
+        _trustStoreLocation = trustStoreLocation;
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setTrustStorePassword(final String trustStorePassword)
+    {
+        _trustStorePassword = trustStorePassword;
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setVerifyHostName(final boolean verifyHostName)
+    {
+        _verifyHostName = verifyHostName;
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setKeyAlias(final String alias)
+    {
+        _keyAlias = alias;
+        return this;
+    }
+
+    @Override
     public Connection build() throws JMSException, NamingException
     {
         return buildConnectionFactory().createConnection(_username, _password);
@@ -224,6 +275,30 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
         if (_enableTls)
         {
             cUrlBuilder.append(_sslPort).append("?ssl='true'");
+            if (_keyStoreLocation != null)
+            {
+                cUrlBuilder.append("&key_store='").append(encodePathOption(_keyStoreLocation)).append('\'');
+            }
+            if (_keyStorePassword != null)
+            {
+                cUrlBuilder.append("&key_store_password='").append(_keyStorePassword).append('\'');
+            }
+            if (_trustStoreLocation != null)
+            {
+                cUrlBuilder.append("&trust_store='").append(encodePathOption(_trustStoreLocation)).append('\'');
+            }
+            if (_trustStorePassword != null)
+            {
+                cUrlBuilder.append("&trust_store_password='").append(_trustStorePassword).append('\'');
+            }
+            if (_verifyHostName != null)
+            {
+                cUrlBuilder.append("&ssl_verify_hostname='").append(_verifyHostName).append('\'');
+            }
+            if (_keyAlias != null)
+            {
+                cUrlBuilder.append("&ssl_cert_alias='").append(_keyAlias).append('\'');
+            }
         }
         else
         {
@@ -272,8 +347,16 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
         }
     }
 
-    String getBrokerDetails()
+    private String encodePathOption(final String canonicalPath)
     {
-        return "tcp://" + _host + ":" + _port;
+        try
+        {
+            return URLEncoder.encode(URLEncoder.encode(canonicalPath, StandardCharsets.UTF_8.name()).replace("+", "%20"),
+                                     StandardCharsets.UTF_8.name());
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 }

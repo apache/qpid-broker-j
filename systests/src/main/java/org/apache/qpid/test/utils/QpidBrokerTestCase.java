@@ -106,7 +106,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     {
         try
         {
-            _managementFacade = new AmqpManagementFacade(isBroker10() ? "$management" : "ADDR:$management");
+            _managementFacade = new AmqpManagementFacade(BROKER_PROTOCOL);
             _jmsProvider = isBroker10() ? new QpidJmsClientProvider(_managementFacade) : new QpidJmsClient0xProvider();
 
             _defaultBroker = new BrokerHolderFactory().create(DEFAULT_BROKER_TYPE, DEFAULT_PORT, this);

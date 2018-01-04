@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import javax.jms.BytesMessage;
+import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.MapMessage;
 import javax.jms.Message;
@@ -42,13 +43,20 @@ import javax.jms.TemporaryQueue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.apache.qpid.server.model.Protocol;
+
 public class AmqpManagementFacade
 {
+    private static final String AMQP_0_X_REPLY_TO_DESTINATION = "ADDR:!response";
+    private static final String AMQP_0_X_CONSUMER_REPLY_DESTINATION =
+            "ADDR:$management ; {assert : never, node: { type: queue }, link:{name: \"!response\"}}";
     private final String _managementAddress;
+    private final Protocol _protocol;
 
-    public AmqpManagementFacade(final String managementAddress)
+    public AmqpManagementFacade(final Protocol protocol)
     {
-        _managementAddress = managementAddress;
+        _managementAddress = protocol == Protocol.AMQP_1_0 ? "$management" : "ADDR:$management";
+        _protocol = protocol;
     }
 
     public void createEntityUsingAmqpManagement(final String name, final Session session, final String type)
@@ -80,6 +88,96 @@ public class AmqpManagementFacade
             session.commit();
         }
         producer.close();
+    }
+
+    public Map<String, Object> createEntityAndAssertResponse(final String name,
+                                            final String type,
+                                            final Map<String, Object> attributes,
+                                            final Session session)
+            throws JMSException
+    {
+        Destination replyToDestination;
+        Destination replyConsumerDestination;
+        if (_protocol == Protocol.AMQP_1_0)
+        {
+            replyToDestination = session.createTemporaryQueue();
+            replyConsumerDestination = replyToDestination;
+        }
+        else
+        {
+            replyToDestination = session.createQueue(AMQP_0_X_REPLY_TO_DESTINATION);
+            replyConsumerDestination = session.createQueue(AMQP_0_X_CONSUMER_REPLY_DESTINATION);
+        }
+
+        MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
+
+        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
+
+        MapMessage createMessage = session.createMapMessage();
+        createMessage.setStringProperty("type", type);
+        createMessage.setStringProperty("operation", "CREATE");
+        createMessage.setString("name", name);
+        createMessage.setString("object-path", name);
+        createMessage.setJMSReplyTo(replyToDestination);
+        for (Map.Entry<String, Object> entry : attributes.entrySet())
+        {
+            createMessage.setObject(entry.getKey(), entry.getValue());
+        }
+        producer.send(createMessage);
+        if (session.getTransacted())
+        {
+            session.commit();
+        }
+        producer.close();
+
+        Message response = consumer.receive(5000);
+        try
+        {
+            if (response != null)
+            {
+                int statusCode = response.getIntProperty("statusCode");
+                if (statusCode == 201)
+                {
+                    if (response instanceof MapMessage)
+                    {
+                        MapMessage bodyMap = (MapMessage) response;
+                        Map<String, Object> result = new HashMap<>();
+                        Enumeration keys = bodyMap.getMapNames();
+                        while (keys.hasMoreElements())
+                        {
+                            final String key = String.valueOf(keys.nextElement());
+                            Object value = bodyMap.getObject(key);
+                            result.put(key, value);
+                        }
+                        return result;
+                    }
+                    else if (response instanceof ObjectMessage)
+                    {
+                        Object body = ((ObjectMessage) response).getObject();
+                        if (body instanceof Map)
+                        {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> bodyMap = (Map<String, Object>) body;
+                            return new HashMap<>(bodyMap);
+                        }
+                    }
+                }
+                else
+                {
+                    throw new OperationUnsuccessfulException(response.getStringProperty("statusDescription"), statusCode);
+                }
+            }
+
+            throw new IllegalArgumentException("Cannot parse the results from a management query");
+        }
+        finally
+        {
+            consumer.close();
+            if (_protocol == Protocol.AMQP_1_0)
+            {
+                ((TemporaryQueue) replyToDestination).delete();
+            }
+        }
     }
 
     public void updateEntityUsingAmqpManagement(final String name,
@@ -132,14 +230,28 @@ public class AmqpManagementFacade
                                                       Map<String, Object> arguments)
             throws JMSException
     {
+        Destination replyToDestination;
+        Destination replyConsumerDestination;
+        if (_protocol == Protocol.AMQP_1_0)
+        {
+            replyToDestination = session.createTemporaryQueue();
+            replyConsumerDestination = replyToDestination;
+        }
+        else
+        {
+            replyToDestination = session.createQueue(AMQP_0_X_REPLY_TO_DESTINATION);
+            replyConsumerDestination = session.createQueue(AMQP_0_X_CONSUMER_REPLY_DESTINATION);
+        }
+
+        MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
+
         MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
-        final TemporaryQueue responseQ = session.createTemporaryQueue();
-        MessageConsumer consumer = session.createConsumer(responseQ);
+
         MapMessage opMessage = session.createMapMessage();
         opMessage.setStringProperty("type", type);
         opMessage.setStringProperty("operation", operation);
         opMessage.setStringProperty("index", "object-path");
-        opMessage.setJMSReplyTo(responseQ);
+        opMessage.setJMSReplyTo(replyToDestination);
 
         opMessage.setStringProperty("key", name);
         for (Map.Entry<String, Object> argument : arguments.entrySet())
@@ -179,7 +291,7 @@ public class AmqpManagementFacade
             int statusCode = response.getIntProperty("statusCode");
             if (statusCode < 200 || statusCode > 299)
             {
-                throw new OperationUnsuccessfulException(statusCode);
+                throw new OperationUnsuccessfulException(response.getStringProperty("statusDescription"), statusCode);
             }
             if (response instanceof MapMessage)
             {
@@ -221,24 +333,39 @@ public class AmqpManagementFacade
                 session.commit();
             }
             consumer.close();
-            responseQ.delete();
+            if(_protocol == Protocol.AMQP_1_0)
+            {
+                ((TemporaryQueue)replyToDestination).delete();
+            }
         }
     }
 
     public List<Map<String, Object>> managementQueryObjects(final Session session, final String type)
             throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue("$management"));
-        final TemporaryQueue responseQ = session.createTemporaryQueue();
-        MessageConsumer consumer = session.createConsumer(responseQ);
+        Destination replyToDestination;
+        Destination replyConsumerDestination;
+        if(_protocol == Protocol.AMQP_1_0)
+        {
+            replyToDestination = session.createTemporaryQueue();
+            replyConsumerDestination = replyToDestination;
+        }
+        else
+        {
+            replyToDestination = session.createQueue(AMQP_0_X_REPLY_TO_DESTINATION);
+            replyConsumerDestination = session.createQueue(AMQP_0_X_CONSUMER_REPLY_DESTINATION);
+        }
+
+        MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
         MapMessage message = session.createMapMessage();
         message.setStringProperty("identity", "self");
         message.setStringProperty("type", "org.amqp.management");
         message.setStringProperty("operation", "QUERY");
         message.setStringProperty("entityType", type);
         message.setString("attributeNames", "[]");
-        message.setJMSReplyTo(responseQ);
+        message.setJMSReplyTo(replyToDestination);
 
+        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
         producer.send(message);
 
         Message response = consumer.receive(5000);
@@ -267,7 +394,10 @@ public class AmqpManagementFacade
         finally
         {
             consumer.close();
-            responseQ.delete();
+            if(_protocol == Protocol.AMQP_1_0)
+            {
+                ((TemporaryQueue)replyToDestination).delete();
+            }
         }
     }
 
@@ -276,10 +406,23 @@ public class AmqpManagementFacade
                                                              final String name,
                                                              final boolean actuals) throws JMSException
     {
+        Destination replyToDestination;
+        Destination replyConsumerDestination;
+        if(_protocol == Protocol.AMQP_1_0)
+        {
+            replyToDestination = session.createTemporaryQueue();
+            replyConsumerDestination = replyToDestination;
+        }
+        else
+        {
+            replyToDestination = session.createQueue(AMQP_0_X_REPLY_TO_DESTINATION);
+            replyConsumerDestination = session.createQueue(AMQP_0_X_CONSUMER_REPLY_DESTINATION);
+        }
+
+        MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
+
         MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
 
-        final TemporaryQueue responseQueue = session.createTemporaryQueue();
-        MessageConsumer consumer = session.createConsumer(responseQueue);
 
         MapMessage request = session.createMapMessage();
         request.setStringProperty("type", type);
@@ -289,7 +432,7 @@ public class AmqpManagementFacade
         request.setStringProperty("index", "object-path");
         request.setStringProperty("key", name);
         request.setBooleanProperty("actuals", actuals);
-        request.setJMSReplyTo(responseQueue);
+        request.setJMSReplyTo(replyToDestination);
 
         producer.send(request);
         if (session.getTransacted())
@@ -308,6 +451,7 @@ public class AmqpManagementFacade
             {
                 MapMessage bodyMap = (MapMessage) response;
                 Map<String, Object> data = new HashMap<>();
+                @SuppressWarnings("unchecked")
                 Enumeration<String> keys = bodyMap.getMapNames();
                 while (keys.hasMoreElements())
                 {
@@ -321,6 +465,7 @@ public class AmqpManagementFacade
                 Object body = ((ObjectMessage) response).getObject();
                 if (body instanceof Map)
                 {
+                    @SuppressWarnings("unchecked")
                     Map<String, ?> bodyMap = (Map<String, ?>) body;
                     return new HashMap<>(bodyMap);
                 }
@@ -333,7 +478,10 @@ public class AmqpManagementFacade
         finally
         {
             consumer.close();
-            responseQueue.delete();
+            if(_protocol == Protocol.AMQP_1_0)
+            {
+                ((TemporaryQueue)replyToDestination).delete();
+            }
         }
     }
 
@@ -347,7 +495,7 @@ public class AmqpManagementFacade
                                                                 session,
                                                                 "org.apache.qpid.Queue",
                                                                 arguments);
-
+        @SuppressWarnings("unchecked")
         Map<String, Object> statisticsMap = (Map<String, Object>) statistics;
         return ((Number) statisticsMap.get("queueDepthMessages")).intValue();
     }
@@ -402,9 +550,9 @@ public class AmqpManagementFacade
     {
         private final int _statusCode;
 
-        private OperationUnsuccessfulException(final int statusCode)
+        private OperationUnsuccessfulException(final String message, final int statusCode)
         {
-            super();
+            super(message == null ? String.format("Unexpected status code %d", statusCode): message);
             _statusCode = statusCode;
         }
 

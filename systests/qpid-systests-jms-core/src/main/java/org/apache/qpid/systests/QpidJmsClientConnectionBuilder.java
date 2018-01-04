@@ -193,6 +193,48 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
+    public ConnectionBuilder setKeyStoreLocation(final String keyStoreLocation)
+    {
+        _options.put("transport.keyStoreLocation", keyStoreLocation);
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setKeyStorePassword(final String keyStorePassword)
+    {
+        _options.put("transport.keyStorePassword", keyStorePassword);
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setTrustStoreLocation(final String trustStoreLocation)
+    {
+        _options.put("transport.trustStoreLocation", trustStoreLocation);
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setTrustStorePassword(final String trustStorePassword)
+    {
+        _options.put("transport.trustStorePassword", trustStorePassword);
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setVerifyHostName(final boolean verifyHostName)
+    {
+        _options.put("transport.verifyHost", verifyHostName);
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setKeyAlias(final String alias)
+    {
+        _options.put("transport.keyAlias", alias);
+        return this;
+    }
+
+    @Override
     public Connection build() throws NamingException, JMSException
     {
         return buildConnectionFactory().createConnection();

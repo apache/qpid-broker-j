@@ -58,7 +58,7 @@ public class MessageRoutingTest extends QpidBrokerTestCase
         final Map<String, Object> arguments = new HashMap<>();
         arguments.put("destination", QUEUE_NAME);
         arguments.put("bindingKey", ROUTING_KEY);
-        performOperationUsingAmqpManagement(EXCHANGE_NAME, "bind", _session, "org.apache.qpid.Exchange",
+        performOperationUsingAmqpManagement(EXCHANGE_NAME, "bind", _connection.createSession(false, Session.AUTO_ACKNOWLEDGE), "org.apache.qpid.Exchange",
                                             arguments);
     }
 

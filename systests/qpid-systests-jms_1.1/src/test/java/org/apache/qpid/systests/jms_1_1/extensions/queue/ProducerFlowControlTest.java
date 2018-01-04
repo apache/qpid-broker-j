@@ -407,7 +407,7 @@ public class ProducerFlowControlTest extends JmsTestBase
 
     private boolean isFlowStopped(final String queueName) throws Exception
     {
-        Map<String, Object> attributes = readEntityUsingAmqpManagement("org.apache.qpid.Queue", queueName, false);
+        Map<String, Object> attributes = readEntityUsingAmqpManagement(queueName, "org.apache.qpid.Queue", false);
         return Boolean.TRUE.equals(attributes.get("queueFlowStopped"));
     }
 
@@ -467,7 +467,7 @@ public class ProducerFlowControlTest extends JmsTestBase
         boolean found = false;
         do
         {
-            Map<String, Object> attributes = readEntityUsingAmqpManagement("org.apache.qpid.Queue", queueName, false);
+            Map<String, Object> attributes = readEntityUsingAmqpManagement(queueName, "org.apache.qpid.Queue", false);
             Object actualValue = attributes.get(attributeName);
             if (expectedValue == null)
             {

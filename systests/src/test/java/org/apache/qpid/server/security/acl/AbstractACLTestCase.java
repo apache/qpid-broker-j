@@ -141,7 +141,7 @@ public abstract class AbstractACLTestCase extends QpidBrokerTestCase
 
         performOperationUsingAmqpManagement(exchangeName,
                                             "bind",
-                                            getAdminSession(),
+                                            _adminConnection.createSession(false, Session.AUTO_ACKNOWLEDGE),
                                             "org.apache.qpid.Exchange",
                                             bindingArguments);
     }

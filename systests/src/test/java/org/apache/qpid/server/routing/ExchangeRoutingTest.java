@@ -89,7 +89,7 @@ public class ExchangeRoutingTest extends QpidBrokerTestCase
 
         performOperationUsingAmqpManagement(_exchName1,
                                             "bind",
-                                            _session,
+                                            _connection.createSession(false, Session.AUTO_ACKNOWLEDGE),
                                             "org.apache.qpid.Exchange",
                                             bindingArguments);
 
@@ -110,7 +110,7 @@ public class ExchangeRoutingTest extends QpidBrokerTestCase
 
         performOperationUsingAmqpManagement(_exchName1,
                                             "bind",
-                                            _session,
+                                            _connection.createSession(false, Session.AUTO_ACKNOWLEDGE),
                                             "org.apache.qpid.Exchange",
                                             binding1Arguments);
 
@@ -120,7 +120,7 @@ public class ExchangeRoutingTest extends QpidBrokerTestCase
 
         performOperationUsingAmqpManagement(_exchName2,
                                             "bind",
-                                            _session,
+                                            _connection.createSession(false, Session.AUTO_ACKNOWLEDGE),
                                             "org.apache.qpid.Exchange",
                                             binding2Arguments);
 
@@ -144,7 +144,7 @@ public class ExchangeRoutingTest extends QpidBrokerTestCase
 
         performOperationUsingAmqpManagement(_exchName1,
                                             "bind",
-                                            _session,
+                                            _connection.createSession(false, Session.AUTO_ACKNOWLEDGE),
                                             "org.apache.qpid.Exchange",
                                             binding1Arguments);
 
@@ -155,7 +155,7 @@ public class ExchangeRoutingTest extends QpidBrokerTestCase
 
         performOperationUsingAmqpManagement(_exchName2,
                                             "bind",
-                                            _session,
+                                            _connection.createSession(false, Session.AUTO_ACKNOWLEDGE),
                                             "org.apache.qpid.Exchange",
                                             binding2Arguments);
 

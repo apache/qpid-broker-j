@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import javax.jms.Connection;
@@ -55,14 +56,14 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
     @BeforeClass
     public static void setUpTestBase()
     {
-        if ("1.0".equals(System.getProperty("broker.version", "1.0")))
+        Protocol protocol = getProtocol();
+        _managementFacade = new AmqpManagementFacade(protocol);
+        if (protocol == Protocol.AMQP_1_0)
         {
-            _managementFacade = new AmqpManagementFacade("$management");
             _jmsProvider = new QpidJmsClientProvider(_managementFacade);
         }
         else
         {
-            _managementFacade = new AmqpManagementFacade("ADDR:$management");
             _jmsProvider = new QpidJmsClient0xProvider();
         }
     }
@@ -119,7 +120,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         return getConnectionBuilder().build();
     }
 
-    protected long getReceiveTimeout()
+    protected static long getReceiveTimeout()
     {
         return Long.getLong("qpid.test_receive_timeout", 1000L);
     }
@@ -236,25 +237,65 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         }
     }
 
-    protected Map<String, Object> readEntityUsingAmqpManagement(String type, String name, boolean actuals) throws Exception
+    protected Map<String, Object> readEntityUsingAmqpManagement(String name, String type, boolean actuals)
+            throws Exception
     {
         Connection connection = getConnection();
         try
         {
             connection.start();
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            try
-            {
-                return _managementFacade.readEntityUsingAmqpManagement(session, type, name, actuals);
-            }
-            finally
-            {
-                session.close();
-            }
+            return readEntityUsingAmqpManagement(name, type, actuals, connection);
         }
         finally
         {
             connection.close();
+        }
+    }
+
+    protected Map<String, Object> readEntityUsingAmqpManagement(final String name,
+                                                                final String type,
+                                                                final boolean actuals,
+                                                                final Connection connection)
+            throws JMSException
+    {
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        try
+        {
+            return _managementFacade.readEntityUsingAmqpManagement(session, type, name, actuals);
+        }
+        finally
+        {
+            session.close();
+        }
+    }
+
+    protected List<Map<String, Object>> queryEntitiesUsingAmqpManagement(final String type, final Connection connection)
+            throws JMSException
+    {
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        try
+        {
+            return _managementFacade.managementQueryObjects(session, type);
+        }
+        finally
+        {
+            session.close();
+        }
+    }
+
+    protected Map<String, Object> createEntity(final String entityName,
+                                               final String entityType,
+                                               final Map<String, Object> attributes, final Connection connection)
+            throws Exception
+    {
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        try
+        {
+            return _managementFacade.createEntityAndAssertResponse(entityName, entityType, attributes, session);
+        }
+        finally
+        {
+            session.close();
         }
     }
 
@@ -263,8 +304,10 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         return (TopicConnection) getConnection();
     }
 
-    public Protocol getProtocol()
+    protected static Protocol getProtocol()
     {
-        return Protocol.valueOf("AMQP_" + System.getProperty("broker.version", "0-9-1").replace('-', '_').replace('.', '_'));
+        return Protocol.valueOf("AMQP_" + System.getProperty("broker.version", "0-9-1")
+                                                .replace('-', '_')
+                                                .replace('.', '_'));
     }
 }
