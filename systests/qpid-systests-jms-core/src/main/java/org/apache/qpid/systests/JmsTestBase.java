@@ -40,6 +40,8 @@ import javax.naming.NamingException;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -47,6 +49,7 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JmsTestBase.class);
     private static JmsProvider _jmsProvider;
     private static AmqpManagementFacade _managementFacade;
 
@@ -66,6 +69,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         {
             _jmsProvider = new QpidJmsClient0xProvider();
         }
+        LOGGER.debug("Test receive timeout is {} milliseconds", getReceiveTimeout());
     }
 
     protected ConnectionBuilder getConnectionBuilder()

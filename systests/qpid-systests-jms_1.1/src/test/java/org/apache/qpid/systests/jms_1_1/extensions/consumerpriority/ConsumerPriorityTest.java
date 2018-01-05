@@ -60,7 +60,7 @@ public class ConsumerPriorityTest extends JmsTestBase
         final Connection consumingConnection = getConnection();
         try
         {
-            final Connection producingConnection = getConnection();
+            final Connection producingConnection = getConnectionBuilder().setSyncPublish(true).build();
             try
             {
                 final Session consumingSession = consumingConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -116,7 +116,7 @@ public class ConsumerPriorityTest extends JmsTestBase
         final Connection consumingConnection = getConnection();
         try
         {
-            final Connection producingConnection = getConnection();
+            final Connection producingConnection = getConnectionBuilder().setSyncPublish(true).build();
             try
             {
                 final Session consumingSession = consumingConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -175,7 +175,7 @@ public class ConsumerPriorityTest extends JmsTestBase
         final Connection consumingConnection = getConnection();
         try
         {
-            final Connection producingConnection = getConnection();
+            final Connection producingConnection = getConnectionBuilder().setSyncPublish(true).build();
             try
             {
                 final Session consumingSession = consumingConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -238,7 +238,7 @@ public class ConsumerPriorityTest extends JmsTestBase
         Connection consumingConnection = getConnection();
         try
         {
-            Connection producingConnection = getConnection();
+            Connection producingConnection = getConnectionBuilder().setSyncPublish(true).build();
             try
             {
                 Session consumingSession = consumingConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
