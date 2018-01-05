@@ -117,9 +117,6 @@ org.apache.qpid.server.failover.FailoverMethodTest#*
 // passwd script is a Qpid Broker-J specific command line tool
 org.apache.qpid.scripts.QpidPasswdTest#*
 
-// Qpid Broker-J has an extenstion to allow it to influence the prefix of temporary queue names
-org.apache.qpid.client.TemporaryQueuePrefixTest#*
-
 // QPID-3936: Exclude Performance Test Framework tests
 org.apache.qpid.systest.disttest.*
 org.apache.qpid.disttest.*
