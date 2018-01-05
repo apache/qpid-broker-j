@@ -136,9 +136,6 @@ org.apache.qpid.client.failover.MultipleBrokersFailoverTest#*
 org.apache.qpid.client.HeartbeatTest#testUnidirectionalHeartbeating
 org.apache.qpid.client.HeartbeatTest#testHeartbeatsEnabledBrokerSide
 
-// Tests queue message durability settings which are a Qpid Broker-J specific feature
-org.apache.qpid.server.queue.QueueMessageDurabilityTest#*
-
 // CPP Broker does not timeout connections with no activity like the Qpid Broker-J
 org.apache.qpid.transport.ProtocolNegotiationTest#testNoProtocolHeaderSent_BrokerClosesConnection
 org.apache.qpid.transport.ProtocolNegotiationTest#testNoConnectionOpenSent_BrokerClosesConnection
