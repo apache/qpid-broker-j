@@ -175,7 +175,5 @@ org.apache.qpid.tests.protocol.v1_0.*
 org.apache.qpid.server.queue.QueueDepthWithSelectorTest#test
 org.apache.qpid.test.unit.message.UTF8Test#*
 
-# Tests AMQP 1.0 specific routing semantics
-org.apache.qpid.systest.MessageRoutingTest#*
 
 

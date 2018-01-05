@@ -62,5 +62,3 @@ org.apache.qpid.systests.jms_2_0.*
 // Exclude 1.0 protocol tests
 org.apache.qpid.tests.protocol.v1_0.*
 
-// Tests AMQP 1.0 specific routing semantics
-org.apache.qpid.systest.MessageRoutingTest#*
