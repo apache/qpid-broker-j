@@ -20,6 +20,7 @@
 
 package org.apache.qpid.tests.protocol.v1_0.transport.security.sasl;
 
+import static org.apache.qpid.tests.protocol.SaslUtils.generateCramMD5ClientResponse;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -31,10 +32,6 @@ import static org.junit.Assume.assumeThat;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -169,7 +166,7 @@ public class SaslTest extends BrokerAdminUsingTestBase
             assertThat(saslChallenge.getChallenge(), is(notNullValue()));
 
             byte[] response = generateCramMD5ClientResponse(_username, _password,
-                                                            saslChallenge.getChallenge().getArray());
+                                                                      saslChallenge.getChallenge().getArray());
 
             final SaslOutcome saslOutcome = interaction.saslResponseResponse(new Binary(response))
                                                        .saslResponse()
@@ -323,17 +320,5 @@ public class SaslTest extends BrokerAdminUsingTestBase
 
             transport.assertNoMoreResponsesAndChannelClosed();
         }
-    }
-
-    private static byte[] generateCramMD5ClientResponse(String userName, String userPassword, byte[] challengeBytes)
-            throws Exception
-    {
-        String macAlgorithm = "HmacMD5";
-        Mac mac = Mac.getInstance(macAlgorithm);
-        mac.init(new SecretKeySpec(userPassword.getBytes(StandardCharsets.UTF_8), macAlgorithm));
-        final byte[] messageAuthenticationCode = mac.doFinal(challengeBytes);
-        String responseAsString = userName + " " + DatatypeConverter.printHexBinary(messageAuthenticationCode)
-                                                                    .toLowerCase();
-        return responseAsString.getBytes();
     }
 }
