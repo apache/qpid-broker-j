@@ -129,9 +129,4 @@ public class QueueSessionTest extends JmsTestBase
             queueConnection.close();
         }
     }
-
-    private QueueConnection getQueueConnection() throws JMSException, NamingException
-    {
-        return (QueueConnection)getConnection();
-    }
 }

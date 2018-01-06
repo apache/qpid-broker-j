@@ -32,6 +32,7 @@ import java.util.Map;
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Queue;
+import javax.jms.QueueConnection;
 import javax.jms.Session;
 import javax.jms.Topic;
 import javax.jms.TopicConnection;
@@ -313,5 +314,10 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         return Protocol.valueOf("AMQP_" + System.getProperty("broker.version", "0-9-1")
                                                 .replace('-', '_')
                                                 .replace('.', '_'));
+    }
+
+    public QueueConnection getQueueConnection() throws JMSException, NamingException
+    {
+        return (QueueConnection)getConnection();
     }
 }
