@@ -60,9 +60,6 @@ org.apache.qpid.systests.jms_2_0.*
 // Exclude 1.0 protocol tests
 org.apache.qpid.tests.protocol.v1_0.*
 
-// QPID-7948: A publish confirms defect prevents this test passing.
-org.apache.qpid.server.security.acl.MessagingACLTest#testPublishToTempTopicSuccess
-
 // Test requires ability to address the $management node.  Fails for 0-9 only as client erroneously tries to declare an exchange
 // Already fixed for next Qpid Client AMQP 0-x release (6.3.x)
 org.apache.qpid.server.stats.StatisticsReportingTest#testBrokerStatistics

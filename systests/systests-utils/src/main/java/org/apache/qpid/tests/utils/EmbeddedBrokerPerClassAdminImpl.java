@@ -24,15 +24,21 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
+import java.security.Principal;
+import java.security.PrivilegedAction;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.security.auth.Subject;
 
 import ch.qos.logback.classic.LoggerContext;
 import com.google.common.util.concurrent.Futures;
@@ -54,6 +60,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.security.auth.TaskPrincipal;
 import org.apache.qpid.server.store.MemoryConfigurationStore;
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -158,15 +165,25 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         LOGGER.info("========================= stop executing test : " + testClass.getSimpleName() + "#" + method.getName());
         setClassQualifiedTestName(testClass.getName());
         LOGGER.info("========================= cleaning up test environment for test : " + testClass.getSimpleName() + "#" + method.getName());
-        if (Boolean.getBoolean("broker.clean.between.tests"))
-        {
-            _currentVirtualHostNode.delete();
-        }
-        else
-        {
-            _currentVirtualHostNode.setAttributes(Collections.singletonMap(VirtualHostNode.DEFAULT_VIRTUAL_HOST_NODE,
-                                                                           false));
-        }
+
+        Subject deleteSubject = new Subject(true,
+                                            new HashSet<>(Arrays.asList(_systemLauncher.getSystemPrincipal(),
+                                                                        new TaskPrincipal("afterTestMethod"))),
+                                            Collections.emptySet(),
+                                            Collections.emptySet());
+        Subject.doAs(deleteSubject, (PrivilegedAction<Object>) () -> {
+            if (Boolean.getBoolean("broker.clean.between.tests"))
+            {
+                _currentVirtualHostNode.delete();
+            }
+            else
+            {
+                _currentVirtualHostNode.setAttributes(Collections.singletonMap(VirtualHostNode.DEFAULT_VIRTUAL_HOST_NODE,
+                                                                               false));
+            }
+            return null;
+        });
+
         setClassQualifiedTestName(testClass.getName());
         LOGGER.info("========================= cleaning done for test : " + testClass.getSimpleName() + "#" + method.getName());
     }

@@ -25,10 +25,10 @@ import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
 import org.apache.qpid.systest.rest.QpidRestTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
+import org.apache.qpid.test.utils.TestUtils;
 
 public class VirtualHostNodeACLTest extends QpidRestTestCase
 {
@@ -43,7 +43,7 @@ public class VirtualHostNodeACLTest extends QpidRestTestCase
         final TestBrokerConfiguration defaultBrokerConfiguration = getDefaultBrokerConfiguration();
         defaultBrokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER);
 
-        AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
+        TestUtils.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
                 "ACL ALLOW-LOG " + ALLOWED_USER + " ALL VIRTUALHOSTNODE",
                 "ACL DENY-LOG " + DENIED_USER + " ALL VIRTUALHOSTNODE",
                 "ACL DENY-LOG ALL ALL");

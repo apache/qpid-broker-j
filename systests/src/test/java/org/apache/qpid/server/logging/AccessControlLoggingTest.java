@@ -30,7 +30,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.security.acl.AbstractACLTestCase;
+import org.apache.qpid.test.utils.TestUtils;
 
 /**
  * ACL version 2/3 file testing to verify that ACL actor logging works correctly.
@@ -55,12 +55,12 @@ public class AccessControlLoggingTest extends AbstractTestLogging
     public void setUp() throws Exception
     {
         // Write out ACL for this test
-        AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW client ACCESS VIRTUALHOST",
-                "ACL ALLOW client CREATE QUEUE name='allow'",
-                "ACL ALLOW-LOG client CREATE QUEUE name='allow-log'",
-                "ACL DENY client CREATE QUEUE name='deny'",
-                "ACL DENY-LOG client CREATE QUEUE name='deny-log'",
-                "ACL ALLOW client PUBLISH EXCHANGE name='' routingkey='$management");
+        TestUtils.writeACLFileUtil(this, "ACL ALLOW client ACCESS VIRTUALHOST",
+                                   "ACL ALLOW client CREATE QUEUE name='allow'",
+                                   "ACL ALLOW-LOG client CREATE QUEUE name='allow-log'",
+                                   "ACL DENY client CREATE QUEUE name='deny'",
+                                   "ACL DENY-LOG client CREATE QUEUE name='deny-log'",
+                                   "ACL ALLOW client PUBLISH EXCHANGE name='' routingkey='$management");
 
         super.setUp();
 

@@ -30,9 +30,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 import org.apache.qpid.systest.rest.QpidRestTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
+import org.apache.qpid.test.utils.TestUtils;
 
 public class QueueRestACLTest extends QpidRestTestCase
 {
@@ -56,7 +56,7 @@ public class QueueRestACLTest extends QpidRestTestCase
         final TestBrokerConfiguration defaultBrokerConfiguration = getDefaultBrokerConfiguration();
         defaultBrokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER);
 
-        AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
+        TestUtils.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
                 "ACL ALLOW-LOG " + ALLOWED_USER + " CREATE QUEUE",
                 "ACL DENY-LOG " + DENIED_USER + " CREATE QUEUE",
                 "ACL ALLOW-LOG " + ALLOWED_USER + " UPDATE QUEUE",

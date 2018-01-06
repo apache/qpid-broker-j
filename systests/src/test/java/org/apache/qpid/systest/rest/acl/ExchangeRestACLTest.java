@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.systest.rest.acl;
 
-import static org.apache.qpid.server.security.acl.AbstractACLTestCase.writeACLFileUtil;
+import static org.apache.qpid.test.utils.TestUtils.writeACLFileUtil;
 import static org.apache.qpid.test.utils.TestBrokerConfiguration.ENTRY_NAME_ACL_FILE;
 
 import java.io.FileWriter;

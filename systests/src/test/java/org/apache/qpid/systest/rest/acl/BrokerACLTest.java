@@ -52,13 +52,13 @@ import org.apache.qpid.server.security.AllowAllAccessControlProvider;
 import org.apache.qpid.server.security.FileKeyStore;
 import org.apache.qpid.server.security.FileTrustStore;
 import org.apache.qpid.server.security.access.plugins.AclFileAccessControlProvider;
-import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.PlainPasswordDatabaseAuthenticationManager;
 import org.apache.qpid.systest.rest.QpidRestTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.TestSSLConstants;
+import org.apache.qpid.test.utils.TestUtils;
 
 public class BrokerACLTest extends QpidRestTestCase
 {
@@ -73,7 +73,7 @@ public class BrokerACLTest extends QpidRestTestCase
         final TestBrokerConfiguration defaultBrokerConfiguration = getDefaultBrokerConfiguration();
         defaultBrokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER);
 
-        AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
+        TestUtils.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
                 "ACL ALLOW-LOG " + ALLOWED_USER + " CONFIGURE BROKER",
                 "ACL DENY-LOG " + DENIED_USER + " CONFIGURE BROKER",
                 "ACL ALLOW-LOG " + ALLOWED_USER + " ACCESS_LOGS BROKER",

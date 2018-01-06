@@ -30,9 +30,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.model.Plugin;
-import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 import org.apache.qpid.systest.rest.QpidRestTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
+import org.apache.qpid.test.utils.TestUtils;
 
 public class GroupRestACLTest extends QpidRestTestCase
 {
@@ -97,7 +97,7 @@ public class GroupRestACLTest extends QpidRestTestCase
 
     public void testCreateGroup() throws Exception
     {
-        AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
+        TestUtils.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
                 "ACL ALLOW-LOG " + ALLOWED_GROUP + " CREATE GROUP",
                 "ACL DENY-LOG " + DENIED_GROUP + " CREATE GROUP");
 
@@ -124,7 +124,7 @@ public class GroupRestACLTest extends QpidRestTestCase
 
     public void testDeleteGroup() throws Exception
     {
-        AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
+        TestUtils.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
                 "ACL ALLOW-LOG " + ALLOWED_GROUP + " DELETE GROUP",
                 "ACL DENY-LOG " + DENIED_GROUP + " DELETE GROUP");
 
@@ -151,7 +151,7 @@ public class GroupRestACLTest extends QpidRestTestCase
 
     public void testUpdateGroupAddMember() throws Exception
     {
-        AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
+        TestUtils.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
                 "ACL ALLOW-LOG " + ALLOWED_GROUP + " UPDATE GROUP",
                 "ACL DENY-LOG " + DENIED_GROUP + " UPDATE GROUP");
 
@@ -171,7 +171,7 @@ public class GroupRestACLTest extends QpidRestTestCase
 
     public void testUpdateGroupDeleteMember() throws Exception
     {
-        AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
+        TestUtils.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
                 "ACL ALLOW-LOG " + ALLOWED_GROUP + " UPDATE GROUP",
                 "ACL DENY-LOG " + DENIED_GROUP + " UPDATE GROUP");
 

@@ -31,11 +31,11 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 import org.apache.qpid.server.virtualhost.ProvidedStoreVirtualHostImpl;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
 import org.apache.qpid.systest.rest.QpidRestTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
+import org.apache.qpid.test.utils.TestUtils;
 
 public class VirtualHostACLTest extends QpidRestTestCase
 {
@@ -52,7 +52,7 @@ public class VirtualHostACLTest extends QpidRestTestCase
         final TestBrokerConfiguration defaultBrokerConfiguration = getDefaultBrokerConfiguration();
         defaultBrokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER, RESTRICTED_USER);
 
-        AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
+        TestUtils.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
                 "ACL ALLOW-LOG " + ALLOWED_USER + " ALL VIRTUALHOST",
                 "ACL ALLOW-LOG " + RESTRICTED_USER + " ALL VIRTUALHOST attributes=\"description\"",
                 "ACL DENY-LOG " + DENIED_USER + " ALL VIRTUALHOST",
