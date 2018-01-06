@@ -20,18 +20,27 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
-import static org.hamcrest.CoreMatchers.both;
+import static org.apache.qpid.tests.protocol.SaslUtils.generateCramMD5ClientResponse;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseOkBody;
@@ -47,6 +56,10 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class ConnectionTest extends BrokerAdminUsingTestBase
 {
+    private static final String ANONYMOUS = "ANONYMOUS";
+    private static final String PLAIN = "PLAIN";
+    private static final String CRAM_MD5 = "CRAM-MD5";
+
     private InetSocketAddress _brokerAddress;
 
     @Before
@@ -79,11 +92,33 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateProtocol()
                        .consumeResponse(ConnectionStartBody.class)
-                       .connection().startOkMechanism("ANONYMOUS")
+                       .connection().startOkMechanism(ANONYMOUS)
                                     .startOk()
                        .consumeResponse();
 
             interaction.getLatestResponse(ConnectionTuneBody.class);
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.4.2.2",
+            description = "If the mechanism field does not contain one of the security mechanisms proposed by the "
+                          + "server in the Start method, the server MUST close the connection without sending any "
+                          + "further data.")
+    public void connectionStartOkUnsupportedMechanism() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.negotiateProtocol()
+                       .consumeResponse(ConnectionStartBody.class)
+                       .connection().startOkMechanism("NOT-A-MECHANISM")
+                                    .startOk();
+
+            final ConnectionCloseBody res = interaction.consumeResponse()
+                                                       .getLatestResponse(ConnectionCloseBody.class);
+            assertThat(res.getReplyCode(), is(equalTo(ErrorCodes.CONNECTION_FORCED)));
+
         }
     }
 
@@ -96,7 +131,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             ConnectionTuneBody response = interaction.negotiateProtocol()
                                                      .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism("ANONYMOUS")
+                                                     .connection().startOkMechanism(ANONYMOUS)
                                                      .startOk()
                                                      .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
 
@@ -110,6 +145,125 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     }
 
     @Test
+    @SpecificationTest(section = "1.4.2.3", description = "security challenge data")
+    public void connectionSecure() throws Exception
+    {
+        assumeThat(getBrokerAdmin().isSASLMechanismSupported(PLAIN), is(true));
+
+        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
+
+        try (FrameTransport transport = new FrameTransport(addr).connect())
+        {
+            final byte[] initialResponse = String.format("\0%s\0%s",
+                                                         getBrokerAdmin().getValidUsername(),
+                                                         getBrokerAdmin().getValidPassword())
+                                                 .getBytes(StandardCharsets.US_ASCII);
+
+            final Interaction interaction = transport.newInteraction();
+            final ConnectionStartBody start = interaction.negotiateProtocol()
+                                                         .consumeResponse()
+                                                         .getLatestResponse(ConnectionStartBody.class);
+
+            assertThat(Arrays.asList(new String(start.getMechanisms()).split(" ")), hasItem(PLAIN));
+
+            final ConnectionSecureBody secure = interaction.connection()
+                                                           .startOkMechanism(PLAIN)
+                                                           .startOk()
+                                                           .consumeResponse().getLatestResponse(ConnectionSecureBody.class);
+            assertThat(secure.getChallenge(), is(anyOf(nullValue(), equalTo(new byte[0]))));
+
+            final ConnectionTuneBody tune = interaction.connection().secureOk(initialResponse)
+                                                       .consumeResponse()
+                                                       .getLatestResponse(ConnectionTuneBody.class);
+
+            interaction.connection()
+                       .tuneOkChannelMax(tune.getChannelMax())
+                       .tuneOkFrameMax(tune.getFrameMax())
+                       .tuneOk()
+                       .connection().open()
+                       .consumeResponse(ConnectionOpenOkBody.class);
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.4.2.3", description = "security challenge data")
+    public void connectionSecureWithChallengeResponse() throws Exception
+    {
+        assumeThat(getBrokerAdmin().isSASLMechanismSupported(CRAM_MD5), is(true));
+
+        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
+
+        try (FrameTransport transport = new FrameTransport(addr).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            final ConnectionStartBody start = interaction.negotiateProtocol()
+                                                         .consumeResponse()
+                                                         .getLatestResponse(ConnectionStartBody.class);
+
+            assertThat(Arrays.asList(new String(start.getMechanisms()).split(" ")), hasItem(CRAM_MD5));
+
+            final ConnectionSecureBody secure = interaction.connection()
+                                                           .startOkMechanism(CRAM_MD5)
+                                                           .startOk()
+                                                           .consumeResponse()
+                                                           .getLatestResponse(ConnectionSecureBody.class);
+
+            byte[] response = generateCramMD5ClientResponse(getBrokerAdmin().getValidUsername(),
+                                                                      getBrokerAdmin().getValidPassword(),
+                                                                      secure.getChallenge());
+
+            final ConnectionTuneBody tune = interaction.connection()
+                                                       .secureOk(response)
+                                                       .consumeResponse()
+                                                       .getLatestResponse(ConnectionTuneBody.class);
+
+            interaction.connection()
+                       .tuneOkChannelMax(tune.getChannelMax())
+                       .tuneOkFrameMax(tune.getFrameMax())
+                       .tuneOk()
+                       .connection().open()
+                       .consumeResponse(ConnectionOpenOkBody.class);
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.4.2.3", description = "security challenge data")
+    public void connectionSecureUnsuccessfulAuthentication() throws Exception
+    {
+        assumeThat(getBrokerAdmin().isSASLMechanismSupported(PLAIN), is(true));
+
+        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
+
+        try (FrameTransport transport = new FrameTransport(addr).connect())
+        {
+            final byte[] initialResponse = String.format("\0%s\0%s",
+                                                         getBrokerAdmin().getValidUsername(),
+                                                         "badpassword")
+                                                 .getBytes(StandardCharsets.US_ASCII);
+
+            final Interaction interaction = transport.newInteraction();
+            final ConnectionStartBody start = interaction.negotiateProtocol()
+                                                         .consumeResponse()
+                                                         .getLatestResponse(ConnectionStartBody.class);
+
+            assertThat(Arrays.asList(new String(start.getMechanisms()).split(" ")), hasItem(PLAIN));
+
+            final ConnectionCloseBody close = interaction.connection()
+                                                         .startOkMechanism(PLAIN)
+                                                         .startOk()
+                                                         .consumeResponse(ConnectionSecureBody.class)
+                                                         .connection()
+                                                         .secureOk(initialResponse)
+                                                         .consumeResponse()
+                                                         .getLatestResponse(ConnectionCloseBody.class);
+
+            assertThat(close.getReplyCode(), is(equalTo(ErrorCodes.NOT_ALLOWED)));
+            assertThat(String.valueOf(close.getReplyText()).toLowerCase(), containsString("authentication failed"));
+
+        }
+    }
+
+    @Test
     @SpecificationTest(section = "1.4.2.6", description = "[...] the minimum negotiated value for frame-max is also"
                                                           + " frame-min-size [4096].")
     public void tooSmallFrameSize() throws Exception
@@ -119,7 +273,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             ConnectionTuneBody response = interaction.negotiateProtocol()
                                                      .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism("ANONYMOUS")
+                                                     .connection().startOkMechanism(ANONYMOUS)
                                                      .startOk()
                                                      .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
 
@@ -145,7 +299,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             ConnectionTuneBody response = interaction.negotiateProtocol()
                                                      .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism("ANONYMOUS")
+                                                     .connection().startOkMechanism(ANONYMOUS)
                                                      .startOk()
                                                      .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
 
@@ -169,7 +323,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             ConnectionTuneBody response = interaction.negotiateProtocol()
                                                      .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism("ANONYMOUS")
+                                                     .connection().startOkMechanism(ANONYMOUS)
                                                      .startOk()
                                                      .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
 
@@ -245,7 +399,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateProtocol()
                        .consumeResponse(ConnectionStartBody.class)
-                       .connection().startOkMechanism("PLAIN").startOk().consumeResponse(ConnectionSecureBody.class)
+                       .connection().startOkMechanism(PLAIN).startOk().consumeResponse(ConnectionSecureBody.class)
                        .connection().tuneOk()
                        .connection().open()
                        .consumeResponse(ConnectionCloseBody.class, ChannelClosedResponse.class);
@@ -263,7 +417,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             ConnectionTuneBody response = interaction.negotiateProtocol()
                                                      .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism("ANONYMOUS")
+                                                     .connection().startOkMechanism(ANONYMOUS)
                                                      .startOk()
                                                      .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
 
@@ -299,7 +453,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             ConnectionTuneBody response = interaction.negotiateProtocol()
                                                      .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism("ANONYMOUS")
+                                                     .connection().startOkMechanism(ANONYMOUS)
                                                      .startOk()
                                                      .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
 
@@ -337,7 +491,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             ConnectionTuneBody response = interaction.negotiateProtocol()
                                                      .consumeResponse(ConnectionStartBody.class)
-                                                     .connection().startOkMechanism("ANONYMOUS")
+                                                     .connection().startOkMechanism(ANONYMOUS)
                                                      .startOk()
                                                      .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
 
@@ -355,6 +509,36 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             // Do not reflect a heartbeat so incoming line will be silent thus
             // requiring the broker to close the connection.
             transport.assertNoMoreResponsesAndChannelClosed();
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.4.2.7", description = "The client tried to work with an unknown virtual host.")
+    public void connectionOpenUnknownVirtualHost() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            ConnectionTuneBody tune = interaction.negotiateProtocol()
+                                                 .consumeResponse(ConnectionStartBody.class)
+                                                 .connection().startOkMechanism(ANONYMOUS)
+                                                 .startOk()
+                                                 .consumeResponse().getLatestResponse(ConnectionTuneBody.class);
+
+            ConnectionCloseBody close = interaction.connection()
+                                                   .tuneOkChannelMax(tune.getChannelMax())
+                                                   .tuneOkFrameMax(tune.getFrameMax())
+                                                   .tuneOkHeartbeat(tune.getHeartbeat())
+                                                   .tuneOk()
+                                                   .connection()
+                                                   .openVirtualHost("unknown-virtualhost")
+                                                   .open()
+                                                   .consumeResponse()
+                                                   .getLatestResponse(ConnectionCloseBody.class);
+
+            // Spec requires INVALID_PATH, but implementation uses NOT_FOUND
+            assertThat(close.getReplyCode(), is(anyOf(equalTo(ErrorCodes.NOT_FOUND), equalTo(ErrorCodes.INVALID_PATH))));
+            assertThat(String.valueOf(close.getReplyText()).toLowerCase(), containsString("unknown virtual host"));
         }
     }
 }

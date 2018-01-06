@@ -29,6 +29,7 @@ import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionOpenBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionSecureOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionStartOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionTuneOkBody;
 
@@ -40,6 +41,7 @@ public class ConnectionInteraction
     private String _startOkMechanism;
     private byte[] _startOkResponse;
     private String _startOkLocale;
+
     private int _tuneOkChannelMax;
     private long _tuneOkFrameMax;
     private int _tuneOkHeartbeat;
@@ -74,6 +76,11 @@ public class ConnectionInteraction
                                                                        AMQShortString.valueOf(_startOkMechanism),
                                                                        _startOkResponse,
                                                                        AMQShortString.valueOf(_startOkLocale)));
+    }
+
+    public Interaction secureOk(final byte[] secureOkResponse) throws Exception
+    {
+        return _interaction.sendPerformative(new ConnectionSecureOkBody(secureOkResponse));
     }
 
     public ConnectionInteraction tuneOkChannelMax(final int channelMax)
