@@ -27,9 +27,6 @@ import javax.jms.ConnectionMetaData;
 import javax.jms.QueueSession;
 import javax.jms.TopicSession;
 
-import org.apache.qpid.AMQConnectionFailureException;
-import org.apache.qpid.AMQUnresolvedAddressException;
-import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.client.AMQQueue;
@@ -43,30 +40,6 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class ConnectionTest extends QpidBrokerTestCase
 {
-
-    private String _broker_NotRunning = "tcp://localhost:" + findFreePort();
-
-    private String _broker_BadDNS = "tcp://unknownhost.unknowndomain.invalid"; // RFC-2606 guarantees that .invalid address will never resolve
-
-    public void testSimpleConnection() throws Exception
-    {
-        AMQConnection conn = null;
-        try
-        {
-            conn = new AMQConnection(getBrokerDetailsFromDefaultConnectionUrl().toString(), "guest", "guest", "fred", "test");
-        }
-        catch (Exception e)
-        {
-            fail("Connection to " + getBrokerDetailsFromDefaultConnectionUrl() + " should succeed. Reason: " + e);
-        }
-        finally
-        {
-            if(conn != null)
-            {
-                conn.close();
-            }
-        }
-    }
 
     public void testDefaultExchanges() throws Exception
     {
@@ -131,125 +104,6 @@ public class ConnectionTest extends QpidBrokerTestCase
         }
     }
 
-    public void testPasswordFailureConnection() throws Exception
-    {
-        AMQConnection conn = null;
-        try
-        {
-            String broker = getBrokerDetailsFromDefaultConnectionUrl();
-            conn = new AMQConnection("amqp://guest:rubbishpassword@clientid/test?brokerlist='" + broker + "'");
-            fail("Connection should not be established password is wrong.");
-        }
-        catch (AMQConnectionFailureException amqe)
-        {
-            assertNotNull("No cause set:" + amqe.getMessage(), amqe.getCause());
-            assertTrue("Exception was wrong type", amqe.getCause() instanceof QpidException);
-        }
-        finally
-        {
-            if (conn != null)
-            {
-                conn.close();
-            }
-        }
-    }
-
-    public void testConnectionFailure() throws Exception
-    {
-        AMQConnection conn = null;
-        try
-        {
-            conn = new AMQConnection("amqp://guest:guest@clientid/testpath?brokerlist='" + _broker_NotRunning + "?retries='0''");
-            fail("Connection should not be established");
-        }
-        catch (QpidException amqe)
-        {
-            if (!(amqe instanceof AMQConnectionFailureException))
-            {
-                fail("Correct exception not thrown. Expected 'AMQConnectionException' got: " + amqe);
-            }
-        }
-        finally
-        {
-            if (conn != null)
-            {
-                conn.close();
-            }
-        }
-
-    }
-
-    public void testUnresolvedHostFailure() throws Exception
-    {
-        AMQConnection conn = null;
-        try
-        {
-            conn = new AMQConnection("amqp://guest:guest@clientid/testpath?brokerlist='" + _broker_BadDNS + "?retries='0''");
-            fail("Connection should not be established");
-        }
-        catch (QpidException amqe)
-        {
-            if (!(amqe instanceof AMQUnresolvedAddressException))
-            {
-                fail("Correct exception not thrown. Expected 'AMQUnresolvedAddressException' got: " + amqe);
-            }
-        }
-        finally
-        {
-            if (conn != null)
-            {
-                conn.close();
-            }
-        }
-
-    }
-
-    public void testUnresolvedVirtualHostFailure() throws Exception
-    {
-        AMQConnection conn = null;
-        try
-        {
-            String broker = getBrokerDetailsFromDefaultConnectionUrl();
-            conn = new AMQConnection("amqp://guest:guest@clientid/rubbishhost?brokerlist='" + broker + "'");
-            fail("Connection should not be established");
-        }
-        catch (QpidException amqe)
-        {
-            if (!(amqe instanceof AMQConnectionFailureException))
-            {
-                fail("Correct exception not thrown. Expected 'AMQConnectionFailureException' got: " + amqe);
-            }
-        }
-        finally
-        {
-            if (conn != null)
-            {
-                conn.close();
-            }
-        }
-    }
-
-    public void testClientIdCannotBeChanged() throws Exception
-    {
-        Connection connection = new AMQConnection(getBrokerDetailsFromDefaultConnectionUrl().toString(), "guest", "guest",
-                                                  "fred", "test");
-        try
-        {
-            connection.setClientID("someClientId");
-            fail("No IllegalStateException thrown when resetting clientid");
-        }
-        catch (javax.jms.IllegalStateException e)
-        {
-            // PASS
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                connection.close();
-            }
-        }
-    }
 
     public void testClientIdIsPopulatedAutomatically() throws Exception
     {

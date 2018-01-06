@@ -33,8 +33,10 @@ public class ConnectionTest extends JmsTestBase
     @Test
     public void testConnection() throws Exception
     {
-        Connection con = getConnection();
-        assertNotNull(con);
+        try (Connection con = getConnection())
+        {
+            assertNotNull(con);
+        }
 
     }
 }
