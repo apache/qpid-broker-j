@@ -53,6 +53,7 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     private String _trustStorePassword;
     private Boolean _verifyHostName;
     private String _keyAlias;
+    private String _saslMechanisms;
 
     @Override
     public ConnectionBuilder setHost(final String host)
@@ -230,6 +231,13 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
+    public ConnectionBuilder setSaslMechanisms(final String... mechanism)
+    {
+        _saslMechanisms = String.join(" ", mechanism);
+        return this;
+    }
+
+    @Override
     public Connection build() throws JMSException, NamingException
     {
         return buildConnectionFactory().createConnection(_username, _password);
@@ -303,6 +311,19 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
         else
         {
             cUrlBuilder.append(_port);
+        }
+
+        if (_saslMechanisms != null)
+        {
+            if (_enableTls)
+            {
+                cUrlBuilder.append("&");
+            }
+            else
+            {
+                cUrlBuilder.append("?");
+            }
+            cUrlBuilder.append("sasl_mechs='").append(_saslMechanisms).append('\'');
         }
 
         if (_enableFailover)

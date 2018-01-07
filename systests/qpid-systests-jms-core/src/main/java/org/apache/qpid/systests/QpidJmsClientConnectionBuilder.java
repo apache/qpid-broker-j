@@ -235,6 +235,13 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
+    public ConnectionBuilder setSaslMechanisms(final String... mechanism)
+    {
+        _options.put("amqp.saslMechanisms", String.join(",", mechanism));
+        return this;
+    }
+
+    @Override
     public Connection build() throws NamingException, JMSException
     {
         return buildConnectionFactory().createConnection();

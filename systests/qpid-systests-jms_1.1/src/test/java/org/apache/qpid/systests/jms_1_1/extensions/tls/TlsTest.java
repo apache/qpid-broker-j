@@ -66,12 +66,12 @@ import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class TlsTest extends JmsTestBase
 {
-    private static final String TEST_PROFILE_RESOURCE_BASE = System.getProperty("java.io.tmpdir") + "/";
-    private static final String BROKER_KEYSTORE =
+    public static final String TEST_PROFILE_RESOURCE_BASE = System.getProperty("java.io.tmpdir") + "/";
+    public static final String BROKER_KEYSTORE =
             TEST_PROFILE_RESOURCE_BASE + org.apache.qpid.test.utils.TestSSLConstants.BROKER_KEYSTORE;
-    private static final String BROKER_TRUSTSTORE =
+    public static final String BROKER_TRUSTSTORE =
             TEST_PROFILE_RESOURCE_BASE + org.apache.qpid.test.utils.TestSSLConstants.BROKER_TRUSTSTORE;
-    private static final String KEYSTORE =
+    public static final String KEYSTORE =
             TEST_PROFILE_RESOURCE_BASE + org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE;
     public static final String TRUSTSTORE =
             TEST_PROFILE_RESOURCE_BASE + org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE;

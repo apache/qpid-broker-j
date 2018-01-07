@@ -55,6 +55,7 @@ public interface ConnectionBuilder
     ConnectionBuilder setTrustStorePassword(String trustStorePassword);
     ConnectionBuilder setVerifyHostName(boolean verifyHostName);
     ConnectionBuilder setKeyAlias(String alias);
+    ConnectionBuilder setSaslMechanisms(String... mechanism);
 
     Connection build() throws NamingException, JMSException;
     ConnectionFactory buildConnectionFactory() throws NamingException;
