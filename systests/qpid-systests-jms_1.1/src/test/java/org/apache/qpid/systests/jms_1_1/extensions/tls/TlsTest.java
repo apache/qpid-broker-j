@@ -58,6 +58,8 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.security.FileKeyStore;
 import org.apache.qpid.server.security.FileTrustStore;
+import org.apache.qpid.systests.AmqpManagementFacade;
+import org.apache.qpid.systests.ConnectionBuilder;
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.test.utils.TestSSLConstants;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -71,7 +73,7 @@ public class TlsTest extends JmsTestBase
             TEST_PROFILE_RESOURCE_BASE + org.apache.qpid.test.utils.TestSSLConstants.BROKER_TRUSTSTORE;
     private static final String KEYSTORE =
             TEST_PROFILE_RESOURCE_BASE + org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE;
-    private static final String TRUSTSTORE =
+    public static final String TRUSTSTORE =
             TEST_PROFILE_RESOURCE_BASE + org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE;
 
     @BeforeClass
@@ -513,71 +515,142 @@ public class TlsTest extends JmsTestBase
                                  final boolean samePort) throws Exception
     {
 
-        Connection connection = getConnectionBuilder().setVirtualHost("$management").build();
+        return createTlsPort(portName,
+                             needClientAuth,
+                             wantClientAuth,
+                             samePort,
+                             getConnectionBuilder(),
+                             new AmqpManagementFacade(getProtocol()),
+                             getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP).getPort());
+    }
+
+    public static int createTlsPort(final String portName,
+                                    final boolean needClientAuth,
+                                    final boolean wantClientAuth,
+                                    final boolean plainAndSsl,
+                                    final ConnectionBuilder connectionBuilder,
+                                    final AmqpManagementFacade managementFacade,
+                                    final int brokerPort) throws Exception
+    {
+        Connection connection = connectionBuilder.setVirtualHost("$management").build();
         try
         {
             connection.start();
-            return createPort(portName, needClientAuth, wantClientAuth, samePort, connection);
+            String keyStoreName = portName + "KeyStore";
+            String trustStoreName = portName + "TrustStore";
+            String authenticationProvider = null;
+
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                List<Map<String, Object>> ports =
+                        managementFacade.managementQueryObjects(session, "org.apache.qpid.AmqpPort");
+                for (Map<String, Object> port : ports)
+                {
+                    String name = String.valueOf(port.get(Port.NAME));
+
+                    Session s = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+                    try
+                    {
+                        Map<String, Object> attributes = managementFacade.readEntityUsingAmqpManagement(s,
+                                                                                                        "org.apache.qpid.AmqpPort",
+                                                                                                        name,
+                                                                                                        false);
+                        if (attributes.get("boundPort").equals(brokerPort))
+                        {
+                            authenticationProvider = String.valueOf(attributes.get(Port.AUTHENTICATION_PROVIDER));
+                            break;
+                        }
+                    }
+                    finally
+                    {
+                        s.close();
+                    }
+                }
+            }
+            finally
+            {
+                session.close();
+            }
+
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                final Map<String, Object> keyStoreAttributes = new HashMap<>();
+                keyStoreAttributes.put("storeUrl", BROKER_KEYSTORE);
+                keyStoreAttributes.put("password", BROKER_KEYSTORE_PASSWORD);
+                managementFacade.createEntityAndAssertResponse(keyStoreName,
+                                                               FileKeyStore.class.getName(),
+                                                               keyStoreAttributes,
+                                                               session);
+            }
+            finally
+            {
+                session.close();
+            }
+
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                final Map<String, Object> trustStoreAttributes = new HashMap<>();
+                trustStoreAttributes.put("storeUrl", BROKER_TRUSTSTORE);
+                trustStoreAttributes.put("password", BROKER_TRUSTSTORE_PASSWORD);
+                managementFacade.createEntityAndAssertResponse(trustStoreName,
+                                                               FileTrustStore.class.getName(),
+                                                               trustStoreAttributes,
+                                                               session);
+            }
+            finally
+            {
+                session.close();
+            }
+
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                Map<String, Object> sslPortAttributes = new HashMap<>();
+                sslPortAttributes.put(Port.TRANSPORTS, plainAndSsl ? "[\"SSL\",\"TCP\"]" : "[\"SSL\"]");
+                sslPortAttributes.put(Port.PORT, 0);
+                sslPortAttributes.put(Port.AUTHENTICATION_PROVIDER, authenticationProvider);
+                sslPortAttributes.put(Port.NEED_CLIENT_AUTH, needClientAuth);
+                sslPortAttributes.put(Port.WANT_CLIENT_AUTH, wantClientAuth);
+                sslPortAttributes.put(Port.NAME, portName);
+                sslPortAttributes.put(Port.KEY_STORE, keyStoreName);
+                sslPortAttributes.put(Port.TRUST_STORES, "[\"" + trustStoreName + "\"]");
+
+                managementFacade.createEntityAndAssertResponse(portName,
+                                                               "org.apache.qpid.AmqpPort",
+                                                               sslPortAttributes,
+                                                               session);
+            }
+            finally
+            {
+                session.close();
+            }
+
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                Map<String, Object> portEffectiveAttributes =
+                        managementFacade.readEntityUsingAmqpManagement(session,
+                                                                       "org.apache.qpid.AmqpPort",
+                                                                       portName,
+                                                                       false);
+                if (portEffectiveAttributes.containsKey("boundPort"))
+                {
+                    return (int) portEffectiveAttributes.get("boundPort");
+                }
+                throw new RuntimeException("Bound port is not found");
+            }
+            finally
+            {
+                session.close();
+            }
         }
         finally
         {
             connection.close();
         }
-    }
-
-    private int createPort(final String portName,
-                           final boolean needClientAuth,
-                           final boolean wantClientAuth,
-                           final boolean plainAndSsl,
-                           Connection connection) throws Exception
-    {
-        String keyStoreName = portName + "KeyStore";
-        String trustStoreName = portName + "TrustStore";
-        String authenticationProvider = null;
-
-        List<Map<String, Object>> ports = queryEntitiesUsingAmqpManagement("org.apache.qpid.AmqpPort", connection);
-        for (Map<String, Object> port : ports)
-        {
-            String name = String.valueOf(port.get(Port.NAME));
-
-            Map<String, Object> attributes =
-                    readEntityUsingAmqpManagement(name, "org.apache.qpid.AmqpPort", false, connection);
-            if (attributes.get("boundPort")
-                          .equals(getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP).getPort()))
-            {
-                authenticationProvider = String.valueOf(attributes.get(Port.AUTHENTICATION_PROVIDER));
-                break;
-            }
-        }
-
-        final Map<String, Object> keyStoreAttributes = new HashMap<>();
-        keyStoreAttributes.put("storeUrl", BROKER_KEYSTORE);
-        keyStoreAttributes.put("password", BROKER_KEYSTORE_PASSWORD);
-        createEntity(keyStoreName, FileKeyStore.class.getName(), keyStoreAttributes, connection);
-
-        final Map<String, Object> trustStoreAttributes = new HashMap<>();
-        trustStoreAttributes.put("storeUrl", BROKER_TRUSTSTORE);
-        trustStoreAttributes.put("password", BROKER_TRUSTSTORE_PASSWORD);
-        createEntity(trustStoreName, FileTrustStore.class.getName(), trustStoreAttributes, connection);
-
-        Map<String, Object> sslPortAttributes = new HashMap<>();
-        sslPortAttributes.put(Port.TRANSPORTS, plainAndSsl ? "[\"SSL\",\"TCP\"]" : "[\"SSL\"]");
-        sslPortAttributes.put(Port.PORT, 0);
-        sslPortAttributes.put(Port.AUTHENTICATION_PROVIDER, authenticationProvider);
-        sslPortAttributes.put(Port.NEED_CLIENT_AUTH, needClientAuth);
-        sslPortAttributes.put(Port.WANT_CLIENT_AUTH, wantClientAuth);
-        sslPortAttributes.put(Port.NAME, portName);
-        sslPortAttributes.put(Port.KEY_STORE, keyStoreName);
-        sslPortAttributes.put(Port.TRUST_STORES, "[\"" + trustStoreName + "\"]");
-        createEntity(portName, "org.apache.qpid.AmqpPort", sslPortAttributes, connection);
-
-        Map<String, Object> portEffectiveAttributes =
-                readEntityUsingAmqpManagement(portName, "org.apache.qpid.AmqpPort", false, connection);
-        if (portEffectiveAttributes.containsKey("boundPort"))
-        {
-            return (int) portEffectiveAttributes.get("boundPort");
-        }
-        throw new RuntimeException("Bound port is not found");
     }
 
     private void setSslStoreSystemProperties()
