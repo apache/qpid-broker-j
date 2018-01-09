@@ -36,7 +36,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.Key;
 import java.security.cert.Certificate;
@@ -138,7 +141,7 @@ public class TlsTest extends JmsTestBase
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
                                                       .setOptions(Collections.singletonMap("trusted_certs_path",
-                                                                                           trustCertFile.getCanonicalPath()))
+                                                                                           encodePathOption(trustCertFile.getCanonicalPath())))
                                                       .build();
         try
         {
@@ -487,8 +490,8 @@ public class TlsTest extends JmsTestBase
         clearSslStoreSystemProperties();
         File[] certAndKeyFiles = extractResourcesFromTestKeyStore();
         final Map<String, String> options = new HashMap<>();
-        options.put("client_cert_path", certAndKeyFiles[1].getCanonicalPath());
-        options.put("client_cert_priv_key_path", certAndKeyFiles[0].getCanonicalPath());
+        options.put("client_cert_path", encodePathOption(certAndKeyFiles[1].getCanonicalPath()));
+        options.put("client_cert_priv_key_path", encodePathOption(certAndKeyFiles[0].getCanonicalPath()));
         InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         Connection connection = getConnectionBuilder().setSslPort(port)
                                                       .setHost(brokerAddress.getHostName())
@@ -763,5 +766,17 @@ public class TlsTest extends JmsTestBase
         assertNotNull("connection should be successful", connection);
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         assertNotNull("create session should be successful", session);
+    }
+
+    private String encodePathOption(final String canonicalPath)
+    {
+        try
+        {
+            return URLEncoder.encode(canonicalPath, StandardCharsets.UTF_8.name()).replace("+", "%20");
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 }
