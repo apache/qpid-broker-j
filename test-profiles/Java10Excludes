@@ -22,12 +22,8 @@ org.apache.qpid.jndi.PropertiesFileInitialContextFactoryTest#*
 
 // Exclude Address based tests
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#*
-org.apache.qpid.test.client.destination.AddressBasedDestinationTest#*
 
 // Exclude tests of AMQP 0-x features
-org.apache.qpid.test.client.ImmediateAndMandatoryPublishingTest#*
-org.apache.qpid.test.client.CloseOnNoRouteForMandatoryMessageTest#*
-org.apache.qpid.server.exchange.ReturnUnroutableMandatoryMessageTest#*
 org.apache.qpid.server.queue.ModelTest#*
 
 // Exclude tests of connection URL failover method property
