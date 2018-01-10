@@ -51,6 +51,15 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
         {
             send(ctx, byteBuffer, promise);
         }
+        else if (msg instanceof ByteBuf)
+        {
+            ByteBuf buf = (ByteBuf) msg;
+            final ByteBuffer bytes = ByteBuffer.allocate(buf.readableBytes());
+            buf.readBytes(bytes.array());
+            buf.release();
+
+            send(ctx, bytes, promise);
+        }
         else
         {
             super.write(ctx, msg, promise);

@@ -29,7 +29,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -37,23 +36,17 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.apache.qpid.server.protocol.v1_0.framing.SASLFrame;
-import org.apache.qpid.server.protocol.v1_0.framing.TransportFrame;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslChallenge;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslCode;
-import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslMechanisms;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslOutcome;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.tests.protocol.SpecificationTest;
-import org.apache.qpid.tests.protocol.v1_0.FrameEncoder;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -123,38 +116,18 @@ public class SaslTest extends BrokerAdminUsingTestBase
         final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         try (FrameTransport transport = new FrameTransport(addr, true).connect())
         {
+            final Binary initialResponse =
+                    new Binary(String.format("\0%s\0%s", _username, _password).getBytes(StandardCharsets.US_ASCII));
             final Interaction interaction = transport.newInteraction();
-            FrameEncoder frameEncoder = new FrameEncoder();
-
-            SaslInit saslInit = new SaslInit();
-            saslInit.setMechanism(PLAIN);
-            saslInit.setInitialResponse(new Binary(String.format("\0%s\0%s", _username, _password)
-                                                         .getBytes(StandardCharsets.US_ASCII)));
-            ByteBuffer saslInitByteBuffer = frameEncoder.encode(new SASLFrame(saslInit));
-
-            Open open = new Open();
-            open.setContainerId("containerId");
-            ByteBuffer openByteBuffer = frameEncoder.encode(new TransportFrame(0, open));
-
-            int initSize = saslInitByteBuffer.remaining();
-            int openSize = openByteBuffer.remaining();
-            int dataLength = SASL_AMQP_HEADER_BYTES.length + AMQP_HEADER_BYTES.length + initSize + openSize;
-            byte[] data = new byte[dataLength];
-
-            System.arraycopy(SASL_AMQP_HEADER_BYTES, 0, data, 0, SASL_AMQP_HEADER_BYTES.length);
-            saslInitByteBuffer.get(data, SASL_AMQP_HEADER_BYTES.length, initSize);
-            System.arraycopy(AMQP_HEADER_BYTES,
-                             0,
-                             data,
-                             SASL_AMQP_HEADER_BYTES.length + initSize,
-                             AMQP_HEADER_BYTES.length);
-            openByteBuffer.get(data, SASL_AMQP_HEADER_BYTES.length + AMQP_HEADER_BYTES.length + initSize, openSize);
-
-            ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
-            buffer.writeBytes(data);
-
-            transport.sendPerformative(buffer);
-
+            interaction.protocolHeader(SASL_AMQP_HEADER_BYTES)
+                       .negotiateProtocol()
+                       .saslMechanism(PLAIN)
+                       .saslInitialResponse(initialResponse)
+                       .saslInit()
+                       .protocolHeader(AMQP_HEADER_BYTES)
+                       .negotiateProtocol()
+                       .openContainerId("testContainerId")
+                       .open();
 
             final byte[] saslHeaderResponse = interaction.consumeResponse().getLatestResponse(byte[].class);
             assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
