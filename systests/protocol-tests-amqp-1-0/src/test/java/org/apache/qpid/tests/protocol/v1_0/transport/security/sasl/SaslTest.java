@@ -321,4 +321,23 @@ public class SaslTest extends BrokerAdminUsingTestBase
             transport.assertNoMoreResponsesAndChannelClosed();
         }
     }
+
+    @Test
+    @SpecificationTest(section = "5.3.1", description = "Receipt of an empty frame is an irrecoverable error.")
+    public void emptyFramesDisallowed() throws Exception
+    {
+        final InetSocketAddress addr = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
+        try (FrameTransport transport = new FrameTransport(addr, true).connect())
+        {
+            transport.newInteraction()
+                     .protocolHeader(SASL_AMQP_HEADER_BYTES)
+                     .negotiateProtocol()
+                     .saslEmptyFrame()
+                     .consumeResponse(byte[].class)
+                     .consumeResponse(SaslMechanisms.class)
+                     .sync();
+
+            transport.assertNoMoreResponsesAndChannelClosed();
+        }
+    }
 }

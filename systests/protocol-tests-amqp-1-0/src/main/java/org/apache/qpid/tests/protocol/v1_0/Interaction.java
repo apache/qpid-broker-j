@@ -86,6 +86,10 @@ public class Interaction extends AbstractInteraction<Interaction>
         throw new UnsupportedOperationException();
     };
 
+    private static final SaslFrameBody SASL_EMPTY_FRAME = (channel, conn) -> {
+        throw new UnsupportedOperationException();
+    };
+
     private static final Set<String> CONTAINER_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Begin _begin;
     private final End _end;
@@ -202,6 +206,12 @@ public class Interaction extends AbstractInteraction<Interaction>
     public Interaction saslInit() throws Exception
     {
         sendPerformativeAndChainFuture(copySaslInit(_saslInit));
+        return this;
+    }
+
+    public Interaction saslEmptyFrame() throws Exception
+    {
+        sendPerformative(SASL_EMPTY_FRAME);
         return this;
     }
 
@@ -1090,5 +1100,4 @@ public class Interaction extends AbstractInteraction<Interaction>
         sendPerformative(EMPTY_FRAME, UnsignedShort.ZERO);
         return this;
     }
-
 }
