@@ -177,7 +177,7 @@ class SelectorThread extends Thread
             List<NonBlockingConnection> toBeScheduled = new ArrayList<>();
             for (SelectionKey key : selectionKeys)
             {
-                if(key.isAcceptable())
+                if (key.attachment() instanceof NonBlockingNetworkTransport)
                 {
                     final NonBlockingNetworkTransport transport = (NonBlockingNetworkTransport) key.attachment();
                     final ServerSocketChannel channel = (ServerSocketChannel) key.channel();
@@ -198,11 +198,7 @@ class SelectorThread extends Thread
                                     + " because selector key is already cancelled", localSocketAddress, e);
                     }
 
-                    _workQueue.add(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
+                    _workQueue.add(() -> {
                             try
                             {
                                 _scheduler.incrementRunningCount();
@@ -237,7 +233,6 @@ class SelectorThread extends Thread
                                     _scheduler.decrementRunningCount();
                                 }
                             }
-                        }
                     });
                 }
                 else
