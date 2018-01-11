@@ -18,7 +18,6 @@
 //
 
 //These tests require a persistent store
-org.apache.qpid.server.store.PersistentStoreTest#*
 org.apache.qpid.server.store.SplitStoreTest#*
 org.apache.qpid.server.logging.AlertingTest#testAlertingReallyWorksWithRestart
 org.apache.qpid.server.logging.AlertingTest#testAlertingReallyWorksWithChanges
