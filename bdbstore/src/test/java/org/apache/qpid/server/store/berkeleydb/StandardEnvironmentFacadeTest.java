@@ -20,6 +20,11 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
+import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.JUL_LOGGER_LEVEL_OVERRIDE;
+import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -27,14 +32,13 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 
-import com.sleepycat.je.Transaction;
-
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.server.util.FileUtils;
-
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.je.Transaction;
+
+import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 public class StandardEnvironmentFacadeTest extends QpidTestCase
 {
@@ -147,6 +151,14 @@ public class StandardEnvironmentFacadeTest extends QpidTestCase
         when(sec.getName()).thenReturn(getTestName());
         when(sec.getParameters()).thenReturn(map);
         when(sec.getStorePath()).thenReturn(_storePath.getAbsolutePath());
+        when(sec.getFacadeParameter(eq(Integer.class),
+                                    eq(LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME),
+                                    anyInt())).thenReturn(0);
+        when(sec.getFacadeParameter(eq(Map.class),
+                                    any(),
+                                    eq(JUL_LOGGER_LEVEL_OVERRIDE),
+                                    any())).thenReturn(Collections.emptyMap());
+
 
         return new StandardEnvironmentFacade(sec);
     }

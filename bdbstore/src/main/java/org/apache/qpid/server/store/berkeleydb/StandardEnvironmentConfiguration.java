@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.store.berkeleydb;
 
+import java.lang.reflect.Type;
 import java.util.Map;
 
 import com.sleepycat.je.CacheMode;
@@ -30,5 +31,8 @@ public interface StandardEnvironmentConfiguration
     CacheMode getCacheMode();
     Map<String, String> getParameters();
 
-    int getFacadeParameter(String parameterName, int defaultValue);
+    <T> T getFacadeParameter(final Class<T> paremeterClass, String parameterName, T defaultValue);
+
+    <T> T getFacadeParameter(Class<T> paremeterClass, Type type, String parameterName, T defaultValue);
+
 }

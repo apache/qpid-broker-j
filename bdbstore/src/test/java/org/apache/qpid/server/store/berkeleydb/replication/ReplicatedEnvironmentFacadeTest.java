@@ -20,6 +20,18 @@
  */
 package org.apache.qpid.server.store.berkeleydb.replication;
 
+import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.JUL_LOGGER_LEVEL_OVERRIDE;
+import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.ENVIRONMENT_RESTART_RETRY_LIMIT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.EXECUTOR_SHUTDOWN_TIMEOUT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.MASTER_TRANSFER_TIMEOUT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.PERMITTED_NODE_LIST;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.REMOTE_NODE_MONITOR_INTERVAL_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.REMOTE_NODE_MONITOR_TIMEOUT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.ReplicationNodeImpl;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.getRemoteNodeState;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -28,6 +40,7 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -109,7 +122,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
                                                   });
         _storePath = TestFileUtils.createTestDirectory("bdb", true);
 
-        setTestSystemProperty(ReplicatedEnvironmentFacade.DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME, "100");
+        setTestSystemProperty(DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME, "100");
     }
 
     @Override
@@ -778,13 +791,13 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         permittedNodes.add("localhost:" + _portHelper.getNextAvailable());
         firstNode.setPermittedNodes(permittedNodes);
 
-        ReplicatedEnvironmentFacade.ReplicationNodeImpl replicationNode = new ReplicatedEnvironmentFacade.ReplicationNodeImpl(TEST_NODE_NAME, TEST_NODE_HOST_PORT);
-        NodeState nodeState = ReplicatedEnvironmentFacade.getRemoteNodeState(TEST_GROUP_NAME, replicationNode, 5000);
+        ReplicationNodeImpl replicationNode = new ReplicationNodeImpl(TEST_NODE_NAME, TEST_NODE_HOST_PORT);
+        NodeState nodeState = getRemoteNodeState(TEST_GROUP_NAME, replicationNode, 5000);
 
         ObjectMapper objectMapper = new ObjectMapper();
 
         Map<String, Object> settings = objectMapper.readValue(nodeState.getAppState(), Map.class);
-        Collection<String> appStatePermittedNodes =  (Collection<String>)settings.get(ReplicatedEnvironmentFacade.PERMITTED_NODE_LIST);
+        Collection<String> appStatePermittedNodes =  (Collection<String>)settings.get(PERMITTED_NODE_LIST);
         assertEquals("Unexpected permitted nodes", permittedNodes, new HashSet<String>(appStatePermittedNodes));
     }
 
@@ -1169,14 +1182,29 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         when(node.getHelperHostPort()).thenReturn(TEST_NODE_HELPER_HOST_PORT);
         when(node.getHelperNodeName()).thenReturn(TEST_NODE_NAME);
 
-        when(node.getFacadeParameter(eq(ReplicatedEnvironmentFacade.MASTER_TRANSFER_TIMEOUT_PROPERTY_NAME), anyInt())).thenReturn(60000);
-        when(node.getFacadeParameter(eq(ReplicatedEnvironmentFacade.DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME), anyInt())).thenReturn(10000);
-        when(node.getFacadeParameter(eq(ReplicatedEnvironmentFacade.REMOTE_NODE_MONITOR_INTERVAL_PROPERTY_NAME), anyInt())).thenReturn(1000);
-        when(node.getFacadeParameter(eq(ReplicatedEnvironmentFacade.REMOTE_NODE_MONITOR_TIMEOUT_PROPERTY_NAME), anyInt())).thenReturn(1000);
-        when(node.getFacadeParameter(eq(ReplicatedEnvironmentFacade.ENVIRONMENT_RESTART_RETRY_LIMIT_PROPERTY_NAME), anyInt())).thenReturn(3);
-        when(node.getFacadeParameter(eq(ReplicatedEnvironmentFacade.EXECUTOR_SHUTDOWN_TIMEOUT_PROPERTY_NAME), anyInt())).thenReturn(10000);
+        when(node.getFacadeParameter(eq(Integer.class),
+                                     eq(MASTER_TRANSFER_TIMEOUT_PROPERTY_NAME),
+                                     anyInt())).thenReturn(60000);
+        when(node.getFacadeParameter(eq(Integer.class), eq(DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME), anyInt())).thenReturn(
+                10000);
+        when(node.getFacadeParameter(eq(Integer.class),
+                                     eq(REMOTE_NODE_MONITOR_INTERVAL_PROPERTY_NAME),
+                                     anyInt())).thenReturn(1000);
+        when(node.getFacadeParameter(eq(Integer.class),
+                                     eq(REMOTE_NODE_MONITOR_TIMEOUT_PROPERTY_NAME),
+                                     anyInt())).thenReturn(1000);
+        when(node.getFacadeParameter(eq(Integer.class),
+                                     eq(ENVIRONMENT_RESTART_RETRY_LIMIT_PROPERTY_NAME),
+                                     anyInt())).thenReturn(3);
+        when(node.getFacadeParameter(eq(Integer.class),
+                                     eq(EXECUTOR_SHUTDOWN_TIMEOUT_PROPERTY_NAME),
+                                     anyInt())).thenReturn(10000);
+        when(node.getFacadeParameter(eq(Integer.class),
+                                     eq(LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME),
+                                     anyInt())).thenReturn(0);
+        when(node.getFacadeParameter(eq(Map.class), any(), eq(JUL_LOGGER_LEVEL_OVERRIDE), any())).thenReturn(Collections.emptyMap());
 
-        Map<String, String> repConfig = new HashMap<String, String>();
+        Map<String, String> repConfig = new HashMap<>();
         repConfig.put(ReplicationConfig.REPLICA_ACK_TIMEOUT, "2 s");
         repConfig.put(ReplicationConfig.INSUFFICIENT_REPLICAS_TIMEOUT, "2 s");
         when(node.getReplicationParameters()).thenReturn(repConfig);

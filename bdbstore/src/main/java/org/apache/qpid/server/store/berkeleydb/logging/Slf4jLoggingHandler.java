@@ -20,9 +20,16 @@
  */
 package org.apache.qpid.server.store.berkeleydb.logging;
 
+import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.DEFAULT_LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT;
+import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.JUL_LOGGER_LEVEL_OVERRIDE;
+import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME;
+import static org.apache.qpid.server.util.ParameterizedTypes.MAP_OF_STRING_STRING;
+
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.ErrorManager;
@@ -37,25 +44,72 @@ import com.sleepycat.je.cleaner.Cleaner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.store.berkeleydb.StandardEnvironmentConfiguration;
+
 
 public class Slf4jLoggingHandler extends Handler
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Slf4jLoggingHandler.class);
+
     private static Pattern NOT_DELETED_DUE_TO_PROTECTION = Pattern.compile("Cleaner has ([0-9]+) files not deleted because they are protected.*");
 
     private final ConcurrentMap<String,Logger> _loggers = new ConcurrentHashMap<>();
     private final int _logHandlerCleanerProtectedFilesLimit;
+    private final String _prefix;
+    private final Set<java.util.logging.Logger> _overridedenLoggers = new HashSet<>();
 
-    public Slf4jLoggingHandler(final String prefix, final int logHandlerCleanerProtectedFilesLimit)
+    public Slf4jLoggingHandler(final StandardEnvironmentConfiguration configuration)
     {
+        _prefix = configuration.getName();
         setFormatter(new Formatter()
         {
             @Override
             public String format(final LogRecord record)
             {
-                return prefix + " " + formatMessage(record);
+                return _prefix + " " + formatMessage(record);
             }
         });
-        _logHandlerCleanerProtectedFilesLimit = logHandlerCleanerProtectedFilesLimit;
+
+        _logHandlerCleanerProtectedFilesLimit = configuration.getFacadeParameter(Integer.class,
+                                                                                 LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME,
+                                                                                 DEFAULT_LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT);
+
+        final Map<String, String> levelOverrides = configuration.getFacadeParameter(Map.class,
+                                                                                    MAP_OF_STRING_STRING,
+                                                                                    JUL_LOGGER_LEVEL_OVERRIDE,
+                                                                                    Collections.emptyMap());
+        applyJulLoggerLevelOverrides(levelOverrides);
+    }
+
+    private void applyJulLoggerLevelOverrides(final Map<String, String> julLoggerLevelOverrides)
+    {
+        julLoggerLevelOverrides.forEach((julLoggerName, julDesiredLevelString) -> {
+            Level julDesiredLevel;
+            try
+            {
+                julDesiredLevel = Level.parse(julDesiredLevelString);
+            }
+            catch (IllegalArgumentException e)
+            {
+                julDesiredLevel = null;
+                LOGGER.warn("Unrecognised JUL level name '{}' in JUL override for logger name '{}'",
+                            julDesiredLevelString, julLoggerName);
+            }
+
+            if (julDesiredLevel != null)
+            {
+                java.util.logging.Logger julLogger = java.util.logging.Logger.getLogger(julLoggerName);
+                if (julLogger.getLevel() == null || !julLogger.isLoggable(julDesiredLevel))
+                {
+                    _overridedenLoggers.add(julLogger);  // Retain reference in case logger is not yet held by the class
+                    julLogger.setLevel(julDesiredLevel);
+
+                    LOGGER.warn("JUL logger {} overridden to level {}",
+                                julLogger.getName(),
+                                julLogger.getLevel());
+                }
+            }
+        });
     }
 
     private interface MappedLevel
@@ -267,6 +321,7 @@ public class Slf4jLoggingHandler extends Handler
     @Override
     public void close() throws SecurityException
     {
+        _overridedenLoggers.clear();
 
     }
 }

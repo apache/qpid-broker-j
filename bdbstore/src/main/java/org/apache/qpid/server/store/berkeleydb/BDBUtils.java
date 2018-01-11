@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.store.berkeleydb;
 
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +27,6 @@ import java.util.regex.Pattern;
 
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.CheckpointConfig;
-import com.sleepycat.je.Cursor;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
@@ -35,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
 
 public class BDBUtils
@@ -160,13 +159,29 @@ public class BDBUtils
     }
 
     public static <T> T getContextValue(final ConfiguredObject<?> parent,
-                                        Class<T> paremeterClass,
+                                        final Class<T> paremeterClass,
                                         final String parameterName,
                                         final T defaultValue)
     {
         if (parent.getContextKeys(false).contains(parameterName))
         {
             return parent.getContextValue(paremeterClass, parameterName);
+        }
+        else
+        {
+            return defaultValue;
+        }
+    }
+
+    public static <T> T getContextValue(final ConfiguredObject<?> parent,
+                                        final Class<T> paremeterClass,
+                                        final Type type,
+                                        final String parameterName,
+                                        final T defaultValue)
+    {
+        if (parent.getContextKeys(false).contains(parameterName))
+        {
+            return parent.getContextValue(paremeterClass, type, parameterName);
         }
         else
         {
