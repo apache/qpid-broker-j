@@ -54,6 +54,7 @@ public interface EnvironmentFacade
     CacheMode CACHE_MODE_DEFAULT = CacheMode.EVICT_LN;
     String LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME = "qpid.bdb.je.cleaner_protected_files_limit";
     int DEFAULT_LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT = 10;
+    String JUL_LOGGER_LEVEL_OVERRIDE = "qpid.bdb.je.jul_logger_level_override";
 
 
     void upgradeIfNecessary(ConfiguredObject<?> parent);

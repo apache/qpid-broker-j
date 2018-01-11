@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.store.berkeleydb.replication;
 
+import java.lang.reflect.Type;
 import java.util.Map;
 
 import com.sleepycat.je.CacheMode;
@@ -112,11 +113,19 @@ public class ReplicatedEnvironmentFacadeFactory implements EnvironmentFacadeFact
             }
 
             @Override
-            public int getFacadeParameter(final String parameterName, final int defaultValue)
+            public <T> T getFacadeParameter(final Class<T> paremeterClass, final String parameterName, final T defaultValue)
             {
-                return BDBUtils.getContextValue(parent, Integer.class, parameterName, defaultValue);
+                return BDBUtils.getContextValue(parent, paremeterClass, parameterName, defaultValue);
             }
 
+            @Override
+            public <T> T getFacadeParameter(final Class<T> paremeterClass,
+                                            final Type type,
+                                            final String parameterName,
+                                            final T defaultValue)
+            {
+                return BDBUtils.getContextValue(parent, paremeterClass, type, parameterName, defaultValue);
+            }
         };
         return new ReplicatedEnvironmentFacade(configuration);
     }

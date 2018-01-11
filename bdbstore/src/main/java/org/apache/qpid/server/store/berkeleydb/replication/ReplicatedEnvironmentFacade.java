@@ -253,13 +253,22 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
         _configuration = configuration;
 
-        _masterTransferTimeout = configuration.getFacadeParameter(MASTER_TRANSFER_TIMEOUT_PROPERTY_NAME, DEFAULT_MASTER_TRANSFER_TIMEOUT);
-        _dbPingSocketTimeout = configuration.getFacadeParameter(DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME, DEFAULT_DB_PING_SOCKET_TIMEOUT);
-        _remoteNodeMonitorInterval = configuration.getFacadeParameter(REMOTE_NODE_MONITOR_INTERVAL_PROPERTY_NAME, DEFAULT_REMOTE_NODE_MONITOR_INTERVAL);
-        _remoteNodeMonitorTimeout = configuration.getFacadeParameter(REMOTE_NODE_MONITOR_TIMEOUT_PROPERTY_NAME, DEFAULT_REMOTE_NODE_MONITOR_TIMEOUT);
-        _environmentRestartRetryLimit = configuration.getFacadeParameter(ENVIRONMENT_RESTART_RETRY_LIMIT_PROPERTY_NAME, DEFAULT_ENVIRONMENT_RESTART_RETRY_LIMIT);
-        _executorShutdownTimeout = configuration.getFacadeParameter(EXECUTOR_SHUTDOWN_TIMEOUT_PROPERTY_NAME, DEFAULT_EXECUTOR_SHUTDOWN_TIMEOUT);
-        _logHandlerCleanerProtectedFilesLimit = _configuration.getFacadeParameter(LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME,
+        _masterTransferTimeout = configuration.getFacadeParameter(Integer.class,
+                                                                  MASTER_TRANSFER_TIMEOUT_PROPERTY_NAME,
+                                                                  DEFAULT_MASTER_TRANSFER_TIMEOUT);
+        _dbPingSocketTimeout = configuration.getFacadeParameter(Integer.class,
+                                                                DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME, DEFAULT_DB_PING_SOCKET_TIMEOUT);
+        _remoteNodeMonitorInterval = configuration.getFacadeParameter(Integer.class,
+                                                                      REMOTE_NODE_MONITOR_INTERVAL_PROPERTY_NAME, DEFAULT_REMOTE_NODE_MONITOR_INTERVAL);
+        _remoteNodeMonitorTimeout = configuration.getFacadeParameter(Integer.class,
+                                                                     REMOTE_NODE_MONITOR_TIMEOUT_PROPERTY_NAME,
+                                                                     DEFAULT_REMOTE_NODE_MONITOR_TIMEOUT);
+        _environmentRestartRetryLimit = configuration.getFacadeParameter(Integer.class,
+                                                                         ENVIRONMENT_RESTART_RETRY_LIMIT_PROPERTY_NAME, DEFAULT_ENVIRONMENT_RESTART_RETRY_LIMIT);
+        _executorShutdownTimeout = configuration.getFacadeParameter(Integer.class,
+                                                                    EXECUTOR_SHUTDOWN_TIMEOUT_PROPERTY_NAME, DEFAULT_EXECUTOR_SHUTDOWN_TIMEOUT);
+        _logHandlerCleanerProtectedFilesLimit = _configuration.getFacadeParameter(Integer.class,
+                                                                                  LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME,
                                                                                   DEFAULT_LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT);
 
         _defaultDurability = new Durability(LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY, REMOTE_TRANSACTION_SYNCHRONIZATION_POLICY, REPLICA_REPLICA_ACKNOWLEDGMENT_POLICY);
@@ -1485,7 +1494,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         envConfig.setCacheMode(_configuration.getCacheMode());
 
 
-        envConfig.setLoggingHandler(new Slf4jLoggingHandler("[" + _configuration.getName() + "]", _logHandlerCleanerProtectedFilesLimit));
+        envConfig.setLoggingHandler(new Slf4jLoggingHandler(_configuration));
 
         LOGGER.info("Cache mode {}", envConfig.getCacheMode());
 

@@ -20,6 +20,7 @@
 package org.apache.qpid.server.store.berkeleydb;
 
 import java.io.File;
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Map;
 
@@ -76,9 +77,18 @@ public class BDBPreferenceStore extends AbstractBDBPreferenceStore
                     }
 
                     @Override
-                    public int getFacadeParameter(final String parameterName, final int defaultValue)
+                    public <T> T getFacadeParameter(final Class<T> paremeterClass, final String parameterName, final T defaultValue)
                     {
-                        return BDBUtils.getContextValue(parent, Integer.class, parameterName, defaultValue);
+                        return BDBUtils.getContextValue(parent, paremeterClass, parameterName, defaultValue);
+                    }
+
+                    @Override
+                    public <T> T getFacadeParameter(final Class<T> paremeterClass,
+                                                    final Type type,
+                                                    final String parameterName,
+                                                    final T defaultValue)
+                    {
+                        return BDBUtils.getContextValue(parent, paremeterClass, type, parameterName, defaultValue);
                     }
                 });
             }

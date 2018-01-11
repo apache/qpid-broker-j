@@ -108,10 +108,7 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         envConfig.setAllowCreate(true);
         envConfig.setTransactional(true);
         envConfig.setCacheMode(configuration.getCacheMode());
-        int logHandlerCleanerProtectedFilesLimit = configuration.getFacadeParameter(LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME,
-                                                                                    DEFAULT_LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT);
-        envConfig.setLoggingHandler(new Slf4jLoggingHandler("[" + configuration.getName() + "]",
-                                                            logHandlerCleanerProtectedFilesLimit));
+        envConfig.setLoggingHandler(new Slf4jLoggingHandler(configuration));
 
         LOGGER.debug("Cache mode {}", envConfig.getCacheMode());
 

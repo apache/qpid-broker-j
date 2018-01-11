@@ -21,11 +21,17 @@
 package org.apache.qpid.server.protocol.v1_0.store.bdb;
 
 
+import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.google.common.io.Files;
 import com.sleepycat.je.CacheMode;
@@ -33,6 +39,7 @@ import com.sleepycat.je.CacheMode;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStore;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreTestCase;
 import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
+import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
 import org.apache.qpid.server.store.berkeleydb.StandardEnvironmentConfiguration;
 import org.apache.qpid.server.store.berkeleydb.StandardEnvironmentFacade;
 import org.apache.qpid.server.util.FileUtils;
@@ -51,6 +58,13 @@ public class BDBLinkStoreTest extends LinkStoreTestCase
         when(configuration.getStorePath()).thenReturn(_storeFolder.getAbsolutePath());
         when(configuration.getCacheMode()).thenReturn(CacheMode.DEFAULT);
         when(configuration.getParameters()).thenReturn(Collections.emptyMap());
+        when(configuration.getFacadeParameter(eq(Integer.class),
+                                              eq(LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME),
+                                              anyInt())).thenReturn(0);
+        when(configuration.getFacadeParameter(eq(Map.class),
+                                              any(),
+                                              eq(JUL_LOGGER_LEVEL_OVERRIDE),
+                                              any())).thenReturn(Collections.emptyMap());
        _facade = new StandardEnvironmentFacade(configuration);
 
         BDBEnvironmentContainer environmentContainer = mock(BDBEnvironmentContainer.class);
