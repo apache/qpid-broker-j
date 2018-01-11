@@ -58,7 +58,6 @@ org.apache.qpid.server.logging.subjects.*
 org.apache.qpid.server.logging.actors.*
 
 // REST management is used in this test for validation
-org.apache.qpid.server.queue.ModelTest#*
 org.apache.qpid.server.queue.LiveQueueOperationsTest#*
 
 // QPID-2118 : JMS client for AMQP 0-10 has different error handling then 0-8 code path
