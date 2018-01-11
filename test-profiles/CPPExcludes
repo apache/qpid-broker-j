@@ -23,12 +23,6 @@ org.apache.qpid.server.queue.ConflationQueueTest#*
 // the 0-10 c++ broker does not implement DLQ
 org.apache.qpid.test.unit.client.MaxDeliveryCountTest#*
 
-// 0-10 c++ broker doesn't implement  wackhy exchanges
-org.apache.qpid.test.unit.client.connection.ConnectionTest#testDefaultExchanges
-
-// 0-10 c++ broker in cpp.testprofile is started with no auth so won't pass this test
-org.apache.qpid.test.unit.client.connection.ConnectionTest#testPasswordFailureConnection
-
 // InVM Broker tests
 org.apache.qpid.test.client.timeouts.SyncWaitDelayTest#*
 

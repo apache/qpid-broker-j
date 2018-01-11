@@ -31,16 +31,6 @@ org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#*
 org.apache.qpid.client.SynchReceiveTest#testReceiveNoWait
 org.apache.qpid.server.logging.ChannelLoggingTest#testChannelClosedOnExclusiveQueueDeclaredOnDifferentSession
 
-// Tests 0.10 client feature
-org.apache.qpid.test.unit.client.connection.ConnectionTest#testUnsupportedSASLMechanism
-
-// Verification of unique client id is 0-10 specific
-org.apache.qpid.test.unit.client.connection.ConnectionTest#testClientIDVerificationForSameUser
-org.apache.qpid.test.unit.client.connection.ConnectionTest#testClientIDVerificationForDifferentUsers
-
-// QPID-3396
-org.apache.qpid.test.unit.client.connection.ConnectionTest#testExceptionWhenUserPassIsRequired
-
 # Exclude the JMS 2.0 test suite
 org.apache.qpid.systests.jms_2_0.*
 

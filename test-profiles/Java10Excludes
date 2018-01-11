@@ -72,8 +72,7 @@ org.apache.qpid.systest.MessageCompressionTest#*
 
 // Specifically testing the 0-x ConnectionFactory
 org.apache.qpid.test.unit.client.connection.ConnectionFactoryTest#*
-// Specifically testing the 0-x Connection
-org.apache.qpid.test.unit.client.connection.ConnectionTest#*
+
 
 // Tests the interaction between the Broker's supported protocols and what the 0-x client agrees to
 org.apache.qpid.server.SupportedProtocolVersionsTest#*
