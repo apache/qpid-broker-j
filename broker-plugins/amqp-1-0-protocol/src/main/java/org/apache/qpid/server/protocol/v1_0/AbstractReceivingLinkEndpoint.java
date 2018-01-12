@@ -291,9 +291,9 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
         return _unsettled.remove(deliveryTag) != null;
     }
 
-    public void updateDisposition(final Binary deliveryTag,
-                                  final DeliveryState state,
-                                  final boolean settled)
+    void updateDisposition(final Binary deliveryTag,
+                           final DeliveryState state,
+                           final boolean settled)
     {
         if (_unsettled.containsKey(deliveryTag))
         {

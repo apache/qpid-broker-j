@@ -609,7 +609,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                && getSession().hasCreditToSend();
     }
 
-    public void updateDisposition(final Binary deliveryTag, DeliveryState state, boolean settled)
+    void updateDisposition(final Binary deliveryTag, DeliveryState state, boolean settled)
     {
         if (settled && (_unsettled.remove(deliveryTag) != null))
         {
@@ -904,6 +904,11 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             }
         }
         super.detach(error, close);
+    }
+
+    @Override
+    public void receiveComplete()
+    {
     }
 
     private static class OutgoingDelivery

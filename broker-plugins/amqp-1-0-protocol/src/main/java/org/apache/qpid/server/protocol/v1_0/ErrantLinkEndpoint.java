@@ -180,4 +180,8 @@ public class ErrantLinkEndpoint<S extends BaseSource, T extends BaseTarget> impl
         throw new UnsupportedOperationException("This Link is errant");
     }
 
+    @Override
+    public void receiveComplete()
+    {
+    }
 }

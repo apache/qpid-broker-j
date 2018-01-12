@@ -25,9 +25,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,16 +64,21 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
+import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint<Target>
+        implements AsyncAutoCommitTransaction.FutureRecorder
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardReceivingLinkEndpoint.class);
     private static final String LINK = "link";
 
     private ReceivingDestination _receivingDestination;
+
+    private final LinkedList<AsyncCommand> _unfinishedCommandsQueue = new LinkedList<>();
 
     private final PublishingLink _publishingLink = new PublishingLink()
     {
@@ -221,7 +230,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                 }
                 else
                 {
-                    transaction = new AutoCommitTransaction(getAddressSpace().getMessageStore());
+                    transaction = new AsyncAutoCommitTransaction(getAddressSpace().getMessageStore(), this);
                 }
 
                 try
@@ -295,7 +304,32 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
                     boolean settled = shouldReceiverSettleFirst(transferReceiverSettleMode);
 
-                    updateDisposition(delivery.getDeliveryTag(), resultantState, settled);
+                    if (transaction instanceof AsyncAutoCommitTransaction)
+                    {
+                        recordFuture(Futures.immediateFuture(null), new ServerTransaction.Action()
+                        {
+                            @Override
+                            public void postCommit()
+                            {
+                                updateDisposition(delivery.getDeliveryTag(), resultantState, settled);
+                            }
+
+                            @Override
+                            public void onRollback()
+                            {
+                                //TODO: if reject is not supported, check spec behaviour
+                                Rejected rejected = new Rejected();
+                                rejected.setError(new Error(AmqpError.ILLEGAL_STATE, "Store transaction unexpectedly rolled-back"));
+                                DeliveryState state = sourceSupportedOutcomes.contains(Rejected.REJECTED_SYMBOL) ? rejected : resultantState;
+                                updateDisposition(delivery.getDeliveryTag(), state, settled);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        getSession().receivedComplete();
+                        updateDisposition(delivery.getDeliveryTag(), resultantState, settled);
+                    }
 
                     getSession().getAMQPConnection().registerMessageReceived(serverMessage.getSize());
                     if (transacted)
@@ -522,4 +556,75 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
         attachReceived(attach);
     }
+
+    @Override
+    public void recordFuture(final ListenableFuture<Void> future, final ServerTransaction.Action action)
+    {
+        _unfinishedCommandsQueue.add(new AsyncCommand(future, action));
+    }
+
+    @Override
+    public void receiveComplete()
+    {
+        AsyncCommand cmd;
+        while((cmd = _unfinishedCommandsQueue.poll()) != null)
+        {
+            cmd.complete();
+        }
+    }
+
+    private static class AsyncCommand
+    {
+        private final ListenableFuture<Void> _future;
+        private ServerTransaction.Action _action;
+
+        public AsyncCommand(final ListenableFuture<Void> future, final ServerTransaction.Action action)
+        {
+            _future = future;
+            _action = action;
+        }
+
+        void complete()
+        {
+            boolean interrupted = false;
+            try
+            {
+                while (true)
+                {
+                    try
+                    {
+                        _future.get();
+                        break;
+                    }
+                    catch (InterruptedException e)
+                    {
+                        interrupted = true;
+                    }
+
+                }
+            }
+            catch(ExecutionException e)
+            {
+                if(e.getCause() instanceof RuntimeException)
+                {
+                    throw (RuntimeException)e.getCause();
+                }
+                else if(e.getCause() instanceof java.lang.Error)
+                {
+                    throw (java.lang.Error) e.getCause();
+                }
+                else
+                {
+                    throw new ServerScopedRuntimeException(e.getCause());
+                }
+            }
+            if(interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+            _action.postCommit();
+            _action = null;
+        }
+    }
+
 }
