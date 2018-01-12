@@ -31,15 +31,22 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import com.google.common.collect.Sets;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.core.Is;
 import org.junit.After;
@@ -57,6 +64,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Received;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
@@ -74,6 +82,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
+import org.apache.qpid.tests.protocol.v1_0.InteractionTransactionalState;
 import org.apache.qpid.tests.protocol.v1_0.MessageDecoder;
 import org.apache.qpid.tests.protocol.v1_0.MessageEncoder;
 import org.apache.qpid.tests.protocol.SpecificationTest;
@@ -872,6 +881,121 @@ public class TransferTest extends BrokerAdminUsingTestBase
             assertThat(detach.getError(), is(notNullValue()));
             assertThat(detach.getError().getCondition(), is(equalTo(LinkError.MESSAGE_SIZE_EXCEEDED)));
         }
+    }
+
+    @Test
+    @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
+    public void transferMultipleDeliveries() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction()
+                                                     .negotiateProtocol().consumeResponse()
+                                                     .open().consumeResponse(Open.class)
+                                                     .begin().consumeResponse(Begin.class)
+                                                     .attachRole(Role.SENDER)
+                                                     .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                                     .attach().consumeResponse(Attach.class)
+                                                     .consumeResponse(Flow.class);
+            Flow flow = interaction.getLatestResponse(Flow.class);
+            assumeThat("insufficient credit for the test", flow.getLinkCredit().intValue(), is(greaterThan(2)));
+
+            interaction.transferDeliveryId(UnsignedInteger.ZERO)
+                       .transferDeliveryTag(new Binary("A".getBytes(StandardCharsets.UTF_8)))
+                       .transferPayloadData("test")
+                       .transfer()
+                       .transferDeliveryId(UnsignedInteger.ONE)
+                       .transferDeliveryTag(new Binary("B".getBytes(StandardCharsets.UTF_8)))
+                       .transferPayloadData("test")
+                       .transfer()
+                       .transferDeliveryId(UnsignedInteger.valueOf(2))
+                       .transferDeliveryTag(new Binary("C".getBytes(StandardCharsets.UTF_8)))
+                       .transferPayloadData("test")
+                       .transfer();
+
+            TreeSet<UnsignedInteger> expectedDeliveryIds = Sets.newTreeSet(Arrays.asList(UnsignedInteger.ZERO,
+                                                                                         UnsignedInteger.ONE,
+                                                                                         UnsignedInteger.valueOf(2)));
+            assertDeliveries(interaction, expectedDeliveryIds);
+
+            // verify that no unexpected performative is received by closing
+            interaction.doCloseConnection();
+        }
+    }
+
+
+    @Test
+    @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
+    public void transferMixtureOfTransactionalAndNonTransactionalDeliveries() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction().negotiateProtocol().consumeResponse()
+                                                     .open().consumeResponse(Open.class)
+                                                     .begin().consumeResponse(Begin.class)
+                                                     .attachRole(Role.SENDER)
+                                                     .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                                     .attach().consumeResponse(Attach.class)
+                                                     .consumeResponse(Flow.class);
+
+            Flow flow = interaction.getLatestResponse(Flow.class);
+            assumeThat("insufficient credit for the test", flow.getLinkCredit().intValue(), is(greaterThan(2)));
+
+            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ONE);
+            interaction.txnAttachCoordinatorLink(txnState)
+                       .txnDeclare(txnState);
+
+            interaction.transferDeliveryId(UnsignedInteger.ONE)
+                       .transferDeliveryTag(new Binary("A".getBytes(StandardCharsets.UTF_8)))
+                       .transferPayloadData("test")
+                       .transfer()
+                       .transferDeliveryId(UnsignedInteger.valueOf(2))
+                       .transferDeliveryTag(new Binary("B".getBytes(StandardCharsets.UTF_8)))
+                       .transferPayloadData("test")
+                       .transfer()
+                       .transferDeliveryId(UnsignedInteger.valueOf(3))
+                       .transferDeliveryTag(new Binary("C".getBytes(StandardCharsets.UTF_8)))
+                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferPayloadData("test")
+                       .transfer();
+
+            final Discharge discharge = new Discharge();
+            discharge.setTxnId(txnState.getCurrentTransactionId());
+            discharge.setFail(false);
+
+            interaction.transferHandle(txnState.getHandle())
+                       .transferDeliveryId(UnsignedInteger.valueOf(4))
+                       .transferDeliveryTag(new Binary(("transaction-" + 4).getBytes(StandardCharsets.UTF_8)))
+                       .transferPayloadData(discharge).transfer();
+
+            assertDeliveries(interaction, Sets.newTreeSet(Arrays.asList(UnsignedInteger.ONE,
+                                                                        UnsignedInteger.valueOf(2),
+                                                                        UnsignedInteger.valueOf(3),
+                                                                        UnsignedInteger.valueOf(4))));
+        }
+    }
+
+    private void assertDeliveries(final Interaction interaction, final TreeSet<UnsignedInteger> expectedDeliveryIds)
+            throws Exception
+    {
+        do
+        {
+            Response<?> response = interaction.consumeResponse(Disposition.class, Flow.class).getLatestResponse();
+            if (response.getBody() instanceof Disposition)
+            {
+                Disposition disposition = (Disposition) response.getBody();
+                LongStream.rangeClosed(disposition.getFirst().longValue(),
+                                       disposition.getLast() == null
+                                               ? disposition.getFirst().longValue()
+                                               : disposition.getLast().longValue())
+                          .forEach(value -> {
+                              UnsignedInteger deliveryId = expectedDeliveryIds.first();
+                              assertThat(value, is(equalTo(deliveryId.longValue())));
+                              expectedDeliveryIds.remove(deliveryId);
+                          });
+            }
+        }
+        while (!expectedDeliveryIds.isEmpty());
     }
 
     private byte[] createTestPaload(final long payloadSize)

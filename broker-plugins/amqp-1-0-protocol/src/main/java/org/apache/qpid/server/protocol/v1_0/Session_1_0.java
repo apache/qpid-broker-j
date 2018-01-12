@@ -182,6 +182,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     public void receiveAttach(final Attach attach)
     {
+        receivedComplete();
         if(_sessionState == SessionState.ACTIVE)
         {
             UnsignedInteger inputHandle = attach.getHandle();
@@ -210,10 +211,10 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         }
     }
 
-    void updateDisposition(final Role role,
-                                  final UnsignedInteger first,
-                                  final UnsignedInteger last,
-                                  final DeliveryState state, final boolean settled)
+    private void updateDisposition(final Role role,
+                                   final UnsignedInteger first,
+                                   final UnsignedInteger last,
+                                   final DeliveryState state, final boolean settled)
     {
 
 
@@ -319,6 +320,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     public void receiveEnd(final End end)
     {
+        receivedComplete();
         switch (_sessionState)
         {
             case END_SENT:
@@ -372,6 +374,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     public void receiveFlow(final Flow flow)
     {
+        receivedComplete();
         final SequenceNumber flowNextIncomingId = new SequenceNumber(flow.getNextIncomingId() == null
                                                                              ? _initialOutgoingId.intValue()
                                                                              : flow.getNextIncomingId().intValue());
@@ -500,6 +503,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
     public void receiveDetach(final Detach detach)
     {
+        receivedComplete();
         UnsignedInteger handle = detach.getHandle();
         detach(handle, detach);
     }
@@ -1279,6 +1283,11 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     DeliveryRegistry getIncomingDeliveryRegistry()
     {
         return _incomingDeliveryRegistry;
+    }
+
+    void receivedComplete()
+    {
+        _associatedLinkEndpoints.forEach(linkedEnpoint -> linkedEnpoint.receiveComplete());
     }
 
     private class EndpointCreationCallback<T extends LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> implements FutureCallback<T>

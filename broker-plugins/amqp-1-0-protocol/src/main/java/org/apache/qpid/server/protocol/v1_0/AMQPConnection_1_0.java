@@ -84,6 +84,8 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
     ServerTransaction getTransaction(int txnId);
     void removeTransaction(int txnId);
 
+    void receivedComplete();
+
     @DerivedAttribute(description = "If true send a final SASL challenge using a SaslChallenge performative, rather than SaslOutcome.")
     boolean getSendSaslFinalChallengeAsChallenge();
 }

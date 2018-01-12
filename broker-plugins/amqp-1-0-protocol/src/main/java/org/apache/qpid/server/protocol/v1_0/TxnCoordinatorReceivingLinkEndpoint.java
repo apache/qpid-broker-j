@@ -86,6 +86,9 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
                         Object command = section.getValue();
 
                         Session_1_0 session = getSession();
+
+                        session.getConnection().receivedComplete();
+
                         if (command instanceof Declare)
                         {
                             final IdentifiedTransaction txn = session.getConnection().createIdentifiedTransaction();
@@ -258,4 +261,9 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
         setDeliveryCount(new SequenceNumber(attach.getInitialDeliveryCount().intValue()));
     }
 
+    @Override
+    public void receiveComplete()
+    {
+
+    }
 }

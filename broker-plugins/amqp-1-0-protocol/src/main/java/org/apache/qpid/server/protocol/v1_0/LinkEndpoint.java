@@ -74,4 +74,6 @@ public interface LinkEndpoint<S extends BaseSource, T extends BaseTarget>
     SenderSettleMode getSendingSettlementMode();
 
     ReceiverSettleMode getReceivingSettlementMode();
+
+    void receiveComplete();
 }

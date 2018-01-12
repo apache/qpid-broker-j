@@ -1295,35 +1295,42 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             {
                 int remaining;
 
-                do
+                try
                 {
-                    remaining = msg.remaining();
-
-                    switch (_connectionState)
+                    do
                     {
-                        case AWAIT_AMQP_OR_SASL_HEADER:
-                        case AWAIT_AMQP_HEADER:
-                            if (remaining >= 8)
-                            {
-                                processProtocolHeader(msg);
-                            }
-                            break;
-                        case AWAIT_SASL_INIT:
-                        case AWAIT_SASL_RESPONSE:
-                        case AWAIT_OPEN:
-                        case OPENED:
-                        case CLOSE_SENT:
-                            _frameHandler.parse(msg);
-                            break;
-                        case CLOSE_RECEIVED:
-                        case CLOSED:
-                            // ignore;
-                            break;
+                        remaining = msg.remaining();
+
+                        switch (_connectionState)
+                        {
+                            case AWAIT_AMQP_OR_SASL_HEADER:
+                            case AWAIT_AMQP_HEADER:
+                                if (remaining >= 8)
+                                {
+                                    processProtocolHeader(msg);
+                                }
+                                break;
+                            case AWAIT_SASL_INIT:
+                            case AWAIT_SASL_RESPONSE:
+                            case AWAIT_OPEN:
+                            case OPENED:
+                            case CLOSE_SENT:
+                                _frameHandler.parse(msg);
+                                break;
+                            case CLOSE_RECEIVED:
+                            case CLOSED:
+                                // ignore;
+                                break;
+                        }
+
+
                     }
-
-
+                    while (msg.remaining() != remaining);
                 }
-                while (msg.remaining() != remaining);
+                finally
+                {
+                    receivedComplete();
+                }
             }
             catch (IllegalArgumentException | IllegalStateException e)
             {
@@ -1343,6 +1350,26 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             return null;
         }, getAccessControllerContext());
 
+    }
+
+    @Override
+    public void receivedComplete()
+    {
+        if (_receivingSessions != null)
+        {
+            for (final Session_1_0 session : _receivingSessions)
+            {
+                if (session != null)
+                {
+                    final AccessControlContext context = session.getAccessControllerContext();
+                    AccessController.doPrivileged((PrivilegedAction<Void>) () ->
+                    {
+                        session.receivedComplete();
+                        return null;
+                    }, context);
+                }
+            }
+        }
     }
 
     private void processProtocolHeader(final QpidByteBuffer msg)
