@@ -18,7 +18,6 @@
 //
 
 // Those tests are testing 0.8..-0-9-1 specific semantics
-org.apache.qpid.test.unit.client.connection.ExceptionListenerTest#testExceptionListenerConnectionStopDeadlock
 org.apache.qpid.systest.rest.BrokerRestTest#testSetCloseOnNoRoute
 org.apache.qpid.test.unit.topic.DurableSubscriptionTest#testUnsubscribeWhenUsingSelectorMakesTopicUnreachable
 
