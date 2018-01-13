@@ -26,9 +26,6 @@ org.apache.qpid.test.unit.topic.DurableSubscriptionTest#testUnsubscribeWhenUsing
 org.apache.qpid.server.logging.ChannelLoggingTest#testChannelStartsFlowStopped
 org.apache.qpid.server.logging.ChannelLoggingTest#testChannelStartConsumerFlowStarted
 
-// QPID-3133: On 0-10, the exception listener is currently not invoked when reconnection fails to occurs.
-org.apache.qpid.server.failover.FailoverMethodTest#*
-
 // QPID-3432: These tests test the behaviour of 0-8..-0-9-1 specific system property (amqj.default_syncwrite_timeout)
 org.apache.qpid.test.client.timeouts.SyncWaitTimeoutDelayTest#*
 org.apache.qpid.test.client.timeouts.SyncWaitDelayTest#*

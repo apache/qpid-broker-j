@@ -23,9 +23,6 @@ org.apache.qpid.jndi.PropertiesFileInitialContextFactoryTest#*
 // Exclude Address based tests
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#*
 
-// Exclude tests of connection URL failover method property
-org.apache.qpid.server.failover.FailoverMethodTest#*
-
 // Uses an 0-x client API to acknowledge up to a particular message rather than the most recent
 org.apache.qpid.test.unit.ack.RecoverTest#testRecoverResendsMsgsAckOnEarlier
 // Tests the effect of setting the prefetch value
@@ -88,9 +85,6 @@ org.apache.qpid.server.logging.ConsumerLoggingTest#testSubscriptionCreateDurable
 // Tests assume BURL and/or Connection URL formats
 org.apache.qpid.server.store.berkeleydb.replication.MultiNodeTest#*
 org.apache.qpid.server.store.berkeleydb.replication.TwoNodeTest#*
-
-// Qpid JMS Client does not support the use of preestablished socket
-org.apache.qpid.client.connection.ExistingSocketTest#*
 
 // These tests assume names of queues backing durable subscriptions
 org.apache.qpid.server.store.berkeleydb.BDBUpgradeTest#testConsumptionOfUpgradedMessages
