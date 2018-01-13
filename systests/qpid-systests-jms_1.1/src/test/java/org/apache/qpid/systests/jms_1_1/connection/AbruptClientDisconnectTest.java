@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,7 +17,11 @@
  * under the License.
  *
  */
-package org.apache.qpid.server;
+package org.apache.qpid.systests.jms_1_1.connection;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -31,7 +34,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jms.Connection;
 import javax.jms.Destination;
-import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -39,18 +41,23 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.systests.JmsTestBase;
+import org.apache.qpid.systests.Utils;
 import org.apache.qpid.test.utils.TCPTunneler;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 
 /**
  * Tests the behaviour of the Broker when the client's connection is unexpectedly
  * severed.  Test uses a TCP tunneller which is halted by the test in order to
  * simulate a sudden client failure.
  */
-public class AbruptClientDisconnectTest extends QpidBrokerTestCase
+public class AbruptClientDisconnectTest extends JmsTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbruptClientDisconnectTest.class);
 
@@ -60,31 +67,40 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
     private Queue _testQueue;
     private Connection _utilityConnection;
 
-    @Override
+    @Before
     public void setUp() throws Exception
     {
-        super.setUp();
         _executorService = Executors.newFixedThreadPool(3);
 
         _utilityConnection = getConnection();
         _utilityConnection.start();
-        final Session session = _utilityConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
         // create queue
-        _testQueue = createTestQueue(session);
+        _testQueue = createQueue(getTestName());
 
-        _tcpTunneler = new TCPTunneler(getFailingPort(), "localhost", getDefaultAmqpPort(), 1);
+        final InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
+        _tcpTunneler = new TCPTunneler(0, brokerAddress.getHostName(), brokerAddress.getPort(), 1);
         _tcpTunneler.start();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception
     {
         try
         {
-            if (_tunneledConnection != null)
+            try
             {
-                _tunneledConnection.close();
+                if (_tunneledConnection != null)
+                {
+                    _tunneledConnection.close();
+                }
+            }
+            finally
+            {
+                if (_utilityConnection != null)
+                {
+                    _utilityConnection.close();
+                }
             }
         }
         finally
@@ -102,25 +118,18 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
                 {
                     _executorService.shutdown();
                 }
-                super.tearDown();
             }
         }
-
     }
 
-    public void testMessagingOnAbruptConnectivityLostWhilstPublishing() throws Exception
+    @Test
+    public void messagingOnAbruptConnectivityLostWhilstPublishing() throws Exception
     {
         final ClientMonitor clientMonitor = new ClientMonitor();
         _tunneledConnection = createTunneledConnection(clientMonitor);
         Producer producer =
-                new Producer(_tunneledConnection, _testQueue, Session.SESSION_TRANSACTED, 10, new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        _tcpTunneler.disconnect(clientMonitor.getClientAddress());
-                    }
-                }
+                new Producer(_tunneledConnection, _testQueue, Session.SESSION_TRANSACTED, 10,
+                             () -> _tcpTunneler.disconnect(clientMonitor.getClientAddress())
                 );
         _executorService.submit(producer);
         boolean disconnected = clientMonitor.awaitDisconnect(10, TimeUnit.SECONDS);
@@ -132,8 +141,8 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         consumeIgnoringLastSeenOmission(_utilityConnection, _testQueue, 0, producer.getNumberOfPublished(), -1);
     }
 
-
-    public void testMessagingOnAbruptConnectivityLostWhilstConsuming() throws Exception
+    @Test
+    public void messagingOnAbruptConnectivityLostWhilstConsuming() throws Exception
     {
         int minimumNumberOfMessagesToProduce = 40;
         int minimumNumberOfMessagesToConsume = 20;
@@ -144,14 +153,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
                                                _testQueue,
                                                Session.SESSION_TRANSACTED,
                                                minimumNumberOfMessagesToProduce,
-                                               new Runnable()
-                                               {
-                                                   @Override
-                                                   public void run()
-                                                   {
-                                                       queueDataWaiter.countDown();
-                                                   }
-                                               });
+                                               queueDataWaiter::countDown);
 
         // create tunneled connection to consume messages
         final ClientMonitor clientMonitor = new ClientMonitor();
@@ -163,19 +165,14 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
                                          _testQueue,
                                          Session.SESSION_TRANSACTED,
                                          minimumNumberOfMessagesToConsume,
-                                         new Runnable()
-                                         {
-                                             @Override
-                                             public void run()
+                                         () -> {
+                                             try
                                              {
-                                                 try
-                                                 {
-                                                     _tcpTunneler.disconnect(clientMonitor.getClientAddress());
-                                                 }
-                                                 finally
-                                                 {
-                                                     producer.stop();
-                                                 }
+                                                 _tcpTunneler.disconnect(clientMonitor.getClientAddress());
+                                             }
+                                             finally
+                                             {
+                                                 producer.stop();
                                              }
                                          }
         );
@@ -212,28 +209,18 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
                                         consumer.getNumberOfConsumed(),
                                         producer.getNumberOfPublished(),
                                         consumer.getLastSeenMessageIndex());
-
     }
 
-
-    private Connection createTunneledConnection(final ClientMonitor clientMonitor)
-            throws Exception
+    private Connection createTunneledConnection(final ClientMonitor clientMonitor) throws Exception
     {
         final int localPort = _tcpTunneler.getLocalPort();
-        setSystemProperty("test.port", String.valueOf(localPort));
-        setSystemProperty("test.port.alt", String.valueOf(localPort));
 
-        Connection tunneledConnection = getConnection();
+        Connection tunneledConnection = getConnectionBuilder().setPort(localPort).build();
         _tcpTunneler.addClientListener(clientMonitor);
         final AtomicReference<JMSException> _exception = new AtomicReference<>();
-        tunneledConnection.setExceptionListener(new ExceptionListener()
-        {
-            @Override
-            public void onException(final JMSException exception)
-            {
-                _exception.set(exception);
-                _tcpTunneler.disconnect(clientMonitor.getClientAddress());
-            }
+        tunneledConnection.setExceptionListener(exception -> {
+            _exception.set(exception);
+            _tcpTunneler.disconnect(clientMonitor.getClientAddress());
         });
         return tunneledConnection;
     }
@@ -250,7 +237,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         int expectedIndex = fromIndex;
         while (expectedIndex < toIndex)
         {
-            Message message = consumer.receive(RECEIVE_TIMEOUT);
+            Message message = consumer.receive(getReceiveTimeout());
             if (message == null && consumerLastSeenMessageIndex + 1 == toIndex)
             {
                 // this is a corner case when one remaining message is expected
@@ -264,7 +251,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
             else
             {
                 assertNotNull("Expected message with index " + expectedIndex + " but got null", message);
-                int messageIndex = message.getIntProperty(INDEX);
+                int messageIndex = message.getIntProperty(Utils.INDEX);
                 LOGGER.debug("Received message with index {}, expected index is {}", messageIndex, expectedIndex);
                 if (messageIndex != expectedIndex
                         && expectedIndex == fromIndex
@@ -282,9 +269,26 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         session.close();
     }
 
+    private void threadJoin(final Thread thread)
+    {
+        if (thread != null)
+        {
+            try
+            {
+                thread.join(2000);
+            }
+            catch (InterruptedException e)
+            {
+                thread.interrupt();
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
     private class ClientMonitor implements TCPTunneler.TunnelListener
     {
         private final CountDownLatch _closeLatch = new CountDownLatch(1);
+
         private final AtomicReference<InetSocketAddress> _clientAddress = new AtomicReference<>();
 
         @Override
@@ -302,12 +306,12 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
             }
         }
 
-        public boolean awaitDisconnect(int period, TimeUnit timeUnit) throws InterruptedException
+        boolean awaitDisconnect(int period, TimeUnit timeUnit) throws InterruptedException
         {
             return _closeLatch.await(period, timeUnit);
         }
 
-        public InetSocketAddress getClientAddress()
+        InetSocketAddress getClientAddress()
         {
             return _clientAddress.get();
         }
@@ -315,16 +319,13 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         @Override
         public void notifyClientToServerBytesDelivered(final InetAddress inetAddress, final int numberOfBytesForwarded)
         {
-
         }
 
         @Override
         public void notifyServerToClientBytesDelivered(final InetAddress inetAddress, final int numberOfBytesForwarded)
         {
-
         }
     }
-
     private class Producer implements Runnable
     {
         private final Runnable _runnable;
@@ -334,10 +335,11 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         private volatile int _publishedMessageCounter;
         private volatile Exception _exception;
         private volatile Thread _thread;
+
         private AtomicBoolean _closed = new AtomicBoolean();
 
-        public Producer(Connection connection, Destination queue, int acknowledgeMode,
-                        int numberOfMessagesToInvokeRunnableAfter, Runnable runnableToInvoke)
+        Producer(Connection connection, Destination queue, int acknowledgeMode,
+                 int numberOfMessagesToInvokeRunnableAfter, Runnable runnableToInvoke)
                 throws JMSException
         {
             _session = connection.createSession(acknowledgeMode == Session.SESSION_TRANSACTED, acknowledgeMode);
@@ -360,7 +362,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
                         _executorService.execute(_runnable);
                     }
 
-                    message.setIntProperty(INDEX, _publishedMessageCounter);
+                    message.setIntProperty(Utils.INDEX, _publishedMessageCounter);
                     _messageProducer.send(message);
                     if (_session.getTransacted())
                     {
@@ -378,26 +380,16 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
             }
         }
 
-        public void stop()
+        void stop()
         {
             if (_closed.compareAndSet(false, true))
             {
-                if (_thread != null)
-                {
-                    try
-                    {
-                        _thread.join(2000);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        _thread.interrupt();
-                        Thread.currentThread().interrupt();
-                    }
-                }
+                threadJoin(_thread);
             }
         }
 
-        public int getNumberOfPublished()
+
+        int getNumberOfPublished()
         {
             return _publishedMessageCounter;
         }
@@ -421,11 +413,11 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         private AtomicBoolean _closed = new AtomicBoolean();
         private volatile int _lastSeenMessageIndex;
 
-        public Consumer(Connection connection,
-                        Destination queue,
-                        int acknowledgeMode,
-                        int numberOfMessagesToInvokeRunnableAfter,
-                        Runnable runnableToInvoke)
+        Consumer(Connection connection,
+                 Destination queue,
+                 int acknowledgeMode,
+                 int numberOfMessagesToInvokeRunnableAfter,
+                 Runnable runnableToInvoke)
                 throws JMSException
         {
             _session = connection.createSession(acknowledgeMode == Session.SESSION_TRANSACTED, acknowledgeMode);
@@ -447,17 +439,17 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
                         _executorService.execute(_runnable);
                     }
 
-                    Message message = _messageConsumer.receive(RECEIVE_TIMEOUT);
+                    Message message = _messageConsumer.receive(getReceiveTimeout());
                     if (message != null)
                     {
-                        int messageIndex = message.getIntProperty(INDEX);
+                        int messageIndex = message.getIntProperty(Utils.INDEX);
                         _lastSeenMessageIndex = messageIndex;
                         LOGGER.debug("Received message with index {}, expected index {}",
                                      messageIndex,
                                      _consumedMessageCounter);
                         assertEquals("Unexpected message index",
-                                     _consumedMessageCounter,
-                                     messageIndex);
+                                              _consumedMessageCounter,
+                                              messageIndex);
 
                         if (_session.getTransacted())
                         {
@@ -476,26 +468,15 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
             }
         }
 
-        public void stop()
+        void stop()
         {
             if (_closed.compareAndSet(false, true))
             {
-                if (_thread != null)
-                {
-                    try
-                    {
-                        _thread.join(2000);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        _thread.interrupt();
-                        Thread.currentThread().interrupt();
-                    }
-                }
+                threadJoin(_thread);
             }
         }
 
-        public int getNumberOfConsumed()
+        int getNumberOfConsumed()
         {
             return _consumedMessageCounter;
         }
@@ -505,7 +486,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
             return _exception;
         }
 
-        public int getLastSeenMessageIndex()
+        int getLastSeenMessageIndex()
         {
             return _lastSeenMessageIndex;
         }
