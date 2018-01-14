@@ -119,7 +119,7 @@ org.apache.qpid.server.virtualhostnode.berkeleydb.*
 org.apache.qpid.server.store.derby.*
 
 # QPID-7156: Test requires a Broker with a virtualhost
-org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest#testClientCloseOnVirtualHostStop
+org.apache.qpid.systests.jms_1_1.connection.BrokerClosesClientConnectionTest#testClientCloseOnVirtualHostStop
 
 #The C++ broker does not implement AMQP management
 org.apache.qpid.systest.management.amqp.*

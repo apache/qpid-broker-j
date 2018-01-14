@@ -51,6 +51,9 @@ org.apache.qpid.test.client.ProducerFlowControlTest#*
 org.apache.qpid.client.failover.FailoverBehaviourTest#*
 org.apache.qpid.client.failover.MultipleBrokersFailoverTest#*
 org.apache.qpid.test.client.failover.FailoverTest#*
+// QPID-3133: On 0-10, the exception listener is currently not invoked when reconnection fails to occurs.
+org.apache.qpid.server.failover.FailoverMethodTest#*
+
 
 // Message encryption not currently supported by the 1.0 client
 org.apache.qpid.systest.messageencryption.MessageEncryptionTest#*
