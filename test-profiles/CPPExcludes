@@ -83,6 +83,9 @@ org.apache.qpid.server.plugins.PluginTest#*
 org.apache.qpid.server.SupportedProtocolVersionsTest#*
 org.apache.qpid.server.stats.StatisticsReportingTest#*
 
+// QPID-3133: On 0-10, the exception listener is currently not invoked when reconnection fails to occurs.
+org.apache.qpid.server.failover.FailoverMethodTest#*
+
 // passwd script is a Qpid Broker-J specific command line tool
 org.apache.qpid.scripts.QpidPasswdTest#*
 

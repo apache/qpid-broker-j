@@ -930,22 +930,47 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         {
             for(Map.Entry<Class<? extends ConfiguredObject>,ConfiguredObjectOperation<?>> entry : _associatedChildrenOperations.entrySet())
             {
-                if(ancestorCategories.contains(entry.getKey()))
+                @SuppressWarnings("unchecked")
+                ConfiguredObjectOperation<ConfiguredObject<?>> operation =
+                        (ConfiguredObjectOperation<ConfiguredObject<?>>) entry.getValue();
+
+                final Class<?> returnType = operation.getReturnType();
+                if (clazz.isAssignableFrom(returnType) || ancestorCategories.contains(returnType))
                 {
-                    @SuppressWarnings("unchecked")
-                    ConfiguredObjectOperation<ConfiguredObject<?>> operation =
-                            (ConfiguredObjectOperation<ConfiguredObject<?>>) entry.getValue();
                     @SuppressWarnings("unchecked")
                     Collection<? extends ConfiguredObject> associated =
                             (Collection<? extends ConfiguredObject>) operation
-                                                                          .perform(_managedObject,
-                                                                                   Collections.<String, Object>emptyMap());
+                                    .perform(_managedObject,
+                                             Collections.emptyMap());
                     ConfiguredObject<?> object = findDescendantById(clazz, id,
                                                                     entry.getKey(),
                                                                     associated);
-                    if(object != null)
+                    if (object != null)
                     {
                         return object;
+                    }
+                }
+                else if (returnsCollectionOfConfiguredObjects(operation))
+                {
+                    @SuppressWarnings("unchecked")
+                    Class<? extends ConfiguredObject> associatedChildCategory =
+                            getCollectionMemberType((ParameterizedType) operation.getGenericReturnType());
+
+                    if (clazz.isAssignableFrom(associatedChildCategory)
+                        || ancestorCategories.contains(associatedChildCategory))
+                    {
+                        @SuppressWarnings("unchecked")
+                        Collection<? extends ConfiguredObject> associated =
+                                (Collection<? extends ConfiguredObject>) operation
+                                        .perform(_managedObject,
+                                                 Collections.emptyMap());
+                        ConfiguredObject<?> object = findDescendantById(clazz, id,
+                                                                        entry.getKey(),
+                                                                        associated);
+                        if (object != null)
+                        {
+                            return object;
+                        }
                     }
                 }
             }
