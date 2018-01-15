@@ -43,6 +43,7 @@ public abstract class GenericAbstractJDBCMessageStore extends AbstractJDBCMessag
         {
             _parent = parent;
             super.setTablePrefix(getTablePrefix(parent));
+            initMessageStore(parent);
             doOpen(parent);
 
             createOrOpenMessageStoreDatabase();
