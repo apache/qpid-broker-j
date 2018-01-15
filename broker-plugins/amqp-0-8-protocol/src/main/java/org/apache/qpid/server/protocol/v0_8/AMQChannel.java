@@ -461,6 +461,12 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                 }
                                 else
                                 {
+                                    if (_confirmOnPublish)
+                                    {
+                                        _connection.writeFrame(new AMQFrame(_channelId,
+                                                                            new BasicAckBody(_confirmedMessageCounter,
+                                                                                             false)));
+                                    }
                                     message(ExchangeMessages.DISCARDMSG(exchangeName, routingKey));
                                 }
                             }
