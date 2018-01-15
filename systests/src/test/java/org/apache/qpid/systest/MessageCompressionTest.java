@@ -34,7 +34,6 @@ import java.util.zip.GZIPInputStream;
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.MapMessage;
-import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
@@ -43,7 +42,6 @@ import javax.jms.TextMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
 
-import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Port;
@@ -85,101 +83,6 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         {
             _restTestHelper.tearDown();
         }
-    }
-
-    public void testSenderCompressesReceiverUncompresses() throws Exception
-    {
-        doTestCompression(true, true, true);
-    }
-
-    public void testSenderCompressesOnly() throws Exception
-    {
-        doTestCompression(true, false, true);
-
-    }
-
-    public void testReceiverUncompressesOnly() throws Exception
-    {
-        doTestCompression(false, true, true);
-
-    }
-
-    public void testNoCompression() throws Exception
-    {
-        doTestCompression(false, false, true);
-
-    }
-
-
-    public void testDisablingCompressionAtBroker() throws Exception
-    {
-        doTestCompression(true, true, false);
-    }
-
-
-    private void doTestCompression(final boolean senderCompresses,
-                                   final boolean receiverUncompresses,
-                                   final boolean brokerCompressionEnabled) throws Exception
-    {
-
-        setTestSystemProperty(Broker.BROKER_MESSAGE_COMPRESSION_ENABLED, String.valueOf(brokerCompressionEnabled));
-
-        doActualSetUp();
-
-        String messageText = createMessageText();
-        Connection senderConnection = getConnection(senderCompresses);
-        Session senderSession = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue testQueue = createTestQueue(senderSession);
-
-        publishMessage(senderConnection, messageText, testQueue);
-
-        // get the number of bytes received at the broker on the connection
-        List<Map<String, Object>> connectionRestOutput = _restTestHelper.getJsonAsList("/api/latest/connection");
-        assertEquals(1, connectionRestOutput.size());
-        Map statistics = (Map) connectionRestOutput.get(0).get("statistics");
-        int bytesIn = (Integer) statistics.get("bytesIn");
-
-        // if sending compressed then the bytesIn statistic for the connection should reflect the compressed size of the
-        // message
-        if(senderCompresses && brokerCompressionEnabled)
-        {
-            assertTrue("Message was not sent compressed", bytesIn < messageText.length());
-        }
-        else
-        {
-            assertFalse("Message was incorrectly sent compressed", bytesIn < messageText.length());
-        }
-        senderConnection.close();
-
-        // receive the message
-        Connection consumerConnection = getConnection(receiverUncompresses);
-        Session session = consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        MessageConsumer consumer = session.createConsumer(getTestQueue());
-        consumerConnection.start();
-
-        TextMessage message = (TextMessage) consumer.receive(500l);
-        assertNotNull("Message was not received", message);
-        assertEquals("Message was corrupted", messageText, message.getText());
-        assertEquals("Header was corrupted", "foo", message.getStringProperty("bar"));
-
-        // get the number of bytes sent by the broker
-        connectionRestOutput = _restTestHelper.getJsonAsList("/api/latest/connection");
-        assertEquals(1, connectionRestOutput.size());
-        statistics = (Map) connectionRestOutput.get(0).get("statistics");
-        int bytesOut = (Integer) statistics.get("bytesOut");
-
-        // if receiving compressed the bytes out statistic from the connection should reflect the compressed size of the
-        // message
-        if(receiverUncompresses && brokerCompressionEnabled)
-        {
-            assertTrue("Message was not received compressed", bytesOut < messageText.length());
-        }
-        else
-        {
-            assertFalse("Message was incorrectly received compressed", bytesOut < messageText.length());
-        }
-
-        consumerConnection.close();
     }
 
     public void testGetContentViaRestForCompressedMessageWithAgentNotSupportingCompression() throws Exception
