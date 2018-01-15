@@ -22,8 +22,10 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.qpid.server.protocol.v1_0.delivery.UnsettledDelivery;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
@@ -295,7 +297,19 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                            final DeliveryState state,
                            final boolean settled)
     {
-        if (_unsettled.containsKey(deliveryTag))
+        updateDispositions(Collections.singleton(deliveryTag), state, settled);
+    }
+
+    void updateDispositions(final Set<Binary> deliveryTags,
+                           final DeliveryState state,
+                           final boolean settled)
+    {
+
+        final Set<Binary> unsettledKeys = new HashSet<>(_unsettled.keySet());
+        unsettledKeys.retainAll(deliveryTags);
+        final int settledDeliveryCount = deliveryTags.size() - unsettledKeys.size();
+
+        if (!unsettledKeys.isEmpty())
         {
             boolean outcomeUpdate = false;
             Outcome outcome = null;
@@ -310,36 +324,49 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
 
             if (outcome != null)
             {
-                if (!(_unsettled.get(deliveryTag) instanceof Outcome))
+                for (final Binary deliveryTag : unsettledKeys)
                 {
-                    Object oldOutcome = _unsettled.put(deliveryTag, outcome);
-                    outcomeUpdate = !outcome.equals(oldOutcome);
+                    if (!(_unsettled.get(deliveryTag) instanceof Outcome))
+                    {
+                        Object oldOutcome = _unsettled.put(deliveryTag, outcome);
+                        outcomeUpdate = outcomeUpdate || !outcome.equals(oldOutcome);
+                    }
                 }
             }
 
             if (outcomeUpdate || settled)
             {
-                getSession().updateDisposition(getRole(), deliveryTag, state, settled);
+                getSession().updateDisposition(getRole(), unsettledKeys, state, settled);
             }
 
             if (settled)
             {
 
-                if (settled(deliveryTag))
+                int credit = 0;
+                for (final Binary deliveryTag : unsettledKeys)
                 {
-                    if (!isDetached() && _creditWindow)
+                    if (settled(deliveryTag))
                     {
-                        setLinkCredit(getLinkCredit().add(UnsignedInteger.ONE));
-                        sendFlowConditional();
+                        if (!isDetached() && _creditWindow)
+                        {
+                            credit++;
+                        }
                     }
-                    else
-                    {
-                        getSession().sendFlowConditional();
-                    }
+                }
+
+                if (credit > 0)
+                {
+                    setLinkCredit(getLinkCredit().add(UnsignedInteger.valueOf(credit)));
+                    sendFlowConditional();
+                }
+                else
+                {
+                    getSession().sendFlowConditional();
                 }
             }
         }
-        else if (_creditWindow)
+
+        if (settledDeliveryCount > 0 && _creditWindow)
         {
             setLinkCredit(getLinkCredit().add(UnsignedInteger.ONE));
             sendFlowConditional();
