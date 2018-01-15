@@ -45,6 +45,7 @@ import javax.security.auth.Subject;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -482,9 +483,29 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                         {
                             if (_confirmOnPublish)
                             {
-                                BasicAckBody responseBody = _connection.getMethodRegistry()
-                                                                       .createBasicAckBody(_confirmedMessageCounter, false);
-                                _connection.writeFrame(responseBody.generateFrame(_channelId));
+                                recordFuture(Futures.immediateFuture(null),
+                                             new ServerTransaction.Action()
+                                             {
+                                                 private final long _deliveryTag = _confirmedMessageCounter;
+
+                                                 @Override
+                                                 public void postCommit()
+                                                 {
+                                                     BasicAckBody body = _connection.getMethodRegistry()
+                                                                                    .createBasicAckBody(
+                                                                                            _deliveryTag, false);
+                                                     _connection.writeFrame(body.generateFrame(_channelId));
+                                                 }
+
+                                                 @Override
+                                                 public void onRollback()
+                                                 {
+                                                     final BasicNackBody body = new BasicNackBody(_deliveryTag,
+                                                                                                  false,
+                                                                                                  false);
+                                                     _connection.writeFrame(new AMQFrame(_channelId, body));
+                                                 }
+                                             });
                             }
                         }
                     }
