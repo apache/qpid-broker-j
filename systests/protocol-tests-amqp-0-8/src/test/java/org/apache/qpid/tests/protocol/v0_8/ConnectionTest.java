@@ -427,16 +427,18 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                        .tuneOkChannelMax(response.getChannelMax())
                        .tuneOkFrameMax(response.getFrameMax())
                        .tuneOkHeartbeat(heartbeatPeriod.intValue())
-                       .tuneOk()
-                       .connection().open()
-                       .consumeResponse(ConnectionOpenOkBody.class);
+                       .tuneOk();
 
             final long startTime = System.currentTimeMillis();
-            interaction.consumeResponse().getLatestResponse(HeartbeatBody.class);
+            interaction.connection().open()
+                       .consumeResponse(ConnectionOpenOkBody.class)
+                       .consumeResponse().getLatestResponse(HeartbeatBody.class);
+
             final long actualHeartbeatDelay = System.currentTimeMillis() - startTime;
+            final long maximumExpectedHeartbeatDelay = heartbeatPeriod * 2 * 2; // Includes wiggle room to allow for slow boxes.
             assertThat("Heartbeat not received within expected time frame",
                        actualHeartbeatDelay / 1000,
-                       is(both(greaterThanOrEqualTo(heartbeatPeriod)).and(lessThanOrEqualTo(heartbeatPeriod * 2))));
+                       is(both(greaterThanOrEqualTo(heartbeatPeriod)).and(lessThanOrEqualTo(maximumExpectedHeartbeatDelay))));
             interaction.sendPerformative(new HeartbeatBody());
 
             interaction.consumeResponse(HeartbeatBody.class)
