@@ -31,10 +31,20 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
+import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.store.MessageDurability;
+import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreTestCase;
+import org.apache.qpid.server.store.Transaction;
+import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.jdbc.JDBCVirtualHost;
 
 public class JDBCMessageStoreTest extends MessageStoreTestCase
@@ -76,6 +86,63 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         assertTablesExist(expectedTables, true);
         getStore().onDelete(mock(JDBCVirtualHost.class));
         assertTablesExist(expectedTables, false);
+    }
+
+    public void testEnqueueTransactionCommitAsync() throws Exception
+    {
+        final String queueName = getTestName();
+        final UUID transactionalLogId = UUID.randomUUID();
+
+        final MessageStore store = getStore();
+        final TransactionLogResource transactionalLog = mockTransactionLogResource(transactionalLogId, queueName);
+        final InternalMessage message = addTestMessage(store, "test");
+
+        final Transaction transaction = store.newTransaction();
+        final MessageEnqueueRecord record = transaction.enqueueMessage(transactionalLog, message);
+
+        assertNotNull("Message enqueue record should not be null", record);
+        assertEquals("Unexpected queue id", transactionalLogId, record.getQueueId());
+        assertEquals("Unexpected message number", message.getMessageNumber(), record.getMessageNumber());
+
+        final ListenableFuture<Void> future = transaction.commitTranAsync(null);
+        future.get(1000, TimeUnit.MILLISECONDS);
+    }
+
+    public void testDequeueTransactionCommitAsync() throws Exception
+    {
+        final String queueName = getTestName();
+        final UUID transactionalLogId = UUID.randomUUID();
+
+        final MessageStore store = getStore();
+        final TransactionLogResource transactionalLog = mockTransactionLogResource(transactionalLogId, queueName);
+        final InternalMessage message = addTestMessage(store, "test2");
+
+        final Transaction enqueueTransaction = store.newTransaction();
+        MessageEnqueueRecord record = enqueueTransaction.enqueueMessage(transactionalLog, message);
+        enqueueTransaction.commitTran();
+
+        final Transaction dequeueTransaction = store.newTransaction();
+        dequeueTransaction.dequeueMessage(record);
+
+        final ListenableFuture<Void> future = dequeueTransaction.commitTranAsync(null);
+        future.get(1000, TimeUnit.MILLISECONDS);
+    }
+
+    private InternalMessage addTestMessage(final MessageStore store,
+                                           final String messageContent)
+    {
+        final AMQMessageHeader amqpHeader = mock(AMQMessageHeader.class);
+        return InternalMessage.createMessage(store, amqpHeader, messageContent, true);
+    }
+
+    private TransactionLogResource mockTransactionLogResource(final UUID transactionalLogId,
+                                                              final String transactionalLogName)
+    {
+        final TransactionLogResource transactionalLog = mock(TransactionLogResource.class);
+        when(transactionalLog.getId()).thenReturn(transactionalLogId);
+        when(transactionalLog.getName()).thenReturn(transactionalLogName);
+        when(transactionalLog.getMessageDurability()).thenReturn(MessageDurability.ALWAYS);
+        return transactionalLog;
     }
 
     @Override

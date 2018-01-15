@@ -43,6 +43,7 @@ public abstract class GenericAbstractJDBCMessageStore extends org.apache.qpid.se
         {
             _parent = parent;
             super.setTablePrefix(getTablePrefix(parent));
+            initMessageStore(parent);
             doOpen(parent);
 
             createOrOpenMessageStoreDatabase();
