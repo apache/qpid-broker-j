@@ -25,12 +25,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +83,8 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
     private ReceivingDestination _receivingDestination;
 
     private final LinkedList<AsyncCommand> _unfinishedCommandsQueue = new LinkedList<>();
+
+    private final Set<PendingDispositionHolder> _pendingDispositions = new LinkedHashSet<>();
 
     private final PublishingLink _publishingLink = new PublishingLink()
     {
@@ -306,24 +312,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
                     if (transaction instanceof AsyncAutoCommitTransaction)
                     {
-                        recordFuture(Futures.immediateFuture(null), new ServerTransaction.Action()
-                        {
-                            @Override
-                            public void postCommit()
-                            {
-                                updateDisposition(delivery.getDeliveryTag(), resultantState, settled);
-                            }
-
-                            @Override
-                            public void onRollback()
-                            {
-                                //TODO: if reject is not supported, check spec behaviour
-                                Rejected rejected = new Rejected();
-                                rejected.setError(new Error(AmqpError.ILLEGAL_STATE, "Store transaction unexpectedly rolled-back"));
-                                DeliveryState state = sourceSupportedOutcomes.contains(Rejected.REJECTED_SYMBOL) ? rejected : resultantState;
-                                updateDisposition(delivery.getDeliveryTag(), state, settled);
-                            }
-                        });
+                        _pendingDispositions.add(new PendingDispositionHolder(delivery.getDeliveryTag(), resultantState, settled));
                     }
                     else
                     {
@@ -571,6 +560,49 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         {
             cmd.complete();
         }
+
+        processPendingDispositions();
+    }
+
+    private void processPendingDispositions()
+    {
+        Iterator<PendingDispositionHolder> itr = _pendingDispositions.isEmpty() ? Collections.emptyIterator() : _pendingDispositions.iterator();
+        if (itr.hasNext())
+        {
+            try
+            {
+                PendingDispositionHolder disposition = itr.next();
+                PendingDispositionHolder current = disposition;
+
+                Set<Binary> deliveryTags = new HashSet<>();
+                deliveryTags.add(disposition.getDeliveryTag());
+
+                while (itr.hasNext())
+                {
+                    disposition = itr.next();
+
+                    if (current.isSettled() == disposition.isSettled() &&
+                        Objects.equals(current.getResultantState(), disposition.getResultantState()))
+                    {
+                        deliveryTags.add(disposition.getDeliveryTag());
+                    }
+                    else
+                    {
+                        updateDispositions(deliveryTags, current.getResultantState(), current.isSettled());
+                        deliveryTags.clear();
+                        current = disposition;
+                    }
+                }
+                if (!deliveryTags.isEmpty())
+                {
+                    updateDispositions(deliveryTags, current.getResultantState(), current.isSettled());
+                }
+            }
+            finally
+            {
+                _pendingDispositions.clear();
+            }
+        }
     }
 
     private static class AsyncCommand
@@ -627,4 +659,36 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         }
     }
 
+    private static class PendingDispositionHolder
+    {
+        private final Binary _deliveryTag;
+        private final DeliveryState _resultantState;
+        private final boolean _settled;
+
+        PendingDispositionHolder(final Binary deliveryTag,
+                                 final DeliveryState resultantState,
+                                 final boolean settled)
+        {
+            _deliveryTag = deliveryTag;
+            _resultantState = resultantState;
+            _settled = settled;
+        }
+
+        Binary getDeliveryTag()
+        {
+            return _deliveryTag;
+        }
+
+        DeliveryState getResultantState()
+        {
+            return _resultantState;
+        }
+
+        boolean isSettled()
+        {
+            return _settled;
+        }
+
+
+    }
 }

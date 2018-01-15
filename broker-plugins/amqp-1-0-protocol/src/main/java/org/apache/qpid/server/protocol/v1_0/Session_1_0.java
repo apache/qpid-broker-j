@@ -33,12 +33,16 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
 
@@ -255,6 +259,39 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                     "Delivery with tag '%s' is not found in unsettled deliveries", deliveryTag));
         }
         updateDisposition(role, deliveryId, deliveryId, state, settled);
+    }
+
+    void updateDisposition(final Role role,
+                           final Set<Binary> deliveryTags,
+                           final DeliveryState state,
+                           final boolean settled)
+    {
+        final DeliveryRegistry deliveryRegistry = role == Role.RECEIVER ? _incomingDeliveryRegistry : _outgoingDeliveryRegistry;
+        SortedSet<UnsignedInteger> deliveryIds = deliveryTags.stream()
+                                                             .map(deliveryRegistry::getDeliveryIdByTag)
+                                                             .collect(Collectors.toCollection(TreeSet::new));
+
+        final Iterator<UnsignedInteger> iterator = deliveryIds.iterator();
+        if (iterator.hasNext())
+        {
+            UnsignedInteger begin = iterator.next();
+            UnsignedInteger end = begin;
+            while (iterator.hasNext())
+            {
+                final UnsignedInteger deliveryId = iterator.next();
+                if (!end.add(UnsignedInteger.ONE).equals(deliveryId))
+                {
+                    updateDisposition(role, begin, end, state, settled);
+                    begin = deliveryId;
+                    end = begin;
+                }
+                else
+                {
+                    end = deliveryId;
+                }
+            }
+            updateDisposition(role, begin, end, state, settled);
+        }
     }
 
     public boolean hasCreditToSend()
