@@ -111,7 +111,9 @@ public class PublisherConfirmsTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    @Ignore("QPID-7948 unrouteable message sent without mandatory true is neither ack'd nor nack'd")
+    @SpecificationTest(section = "https://www.rabbitmq.com/confirms.html",
+            description = "After a channel is put into confirm mode, all subsequently published messages will be "
+                          + "confirmed or nack'd once")
     public void publishUnrouteableMessage() throws Exception
     {
         try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
