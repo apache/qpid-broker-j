@@ -49,7 +49,7 @@ import org.apache.qpid.server.virtualhost.jdbc.JDBCVirtualHost;
 
 public class JDBCMessageStoreTest extends MessageStoreTestCase
 {
-    public static final String TEST_TABLE_PREFIX = "TEST_TABLE_PREFIX_";
+    private static final String TEST_TABLE_PREFIX = "TEST_TABLE_PREFIX_";
     private String _connectionURL;
 
     @Override
@@ -148,10 +148,10 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
     @Override
     protected VirtualHost createVirtualHost()
     {
-        _connectionURL = "jdbc:derby:memory:/" + getTestName() + ";create=true";
+        _connectionURL = "jdbc:derby:memory:/" + getTestName();
 
         final JDBCVirtualHost jdbcVirtualHost = mock(JDBCVirtualHost.class);
-        when(jdbcVirtualHost.getConnectionUrl()).thenReturn(_connectionURL);
+        when(jdbcVirtualHost.getConnectionUrl()).thenReturn(_connectionURL + ";create=true");
         when(jdbcVirtualHost.getUsername()).thenReturn("test");
         when(jdbcVirtualHost.getPassword()).thenReturn("pass");
         when(jdbcVirtualHost.getTableNamePrefix()).thenReturn(TEST_TABLE_PREFIX);
@@ -177,23 +177,18 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
 
     private Set<String> getTableNames() throws SQLException
     {
-        Set<String> tableNames = new HashSet<String>();
+        Set<String> tableNames = new HashSet<>();
         Connection conn = null;
         try
         {
             conn = openConnection();
             DatabaseMetaData metaData = conn.getMetaData();
-            ResultSet tables = metaData.getTables(null, null, null, new String[] { "TABLE" });
-            try
+            try (ResultSet tables = metaData.getTables(null, null, null, new String[]{"TABLE"}))
             {
                 while (tables.next())
                 {
                     tableNames.add(tables.getString("TABLE_NAME"));
                 }
-            }
-            finally
-            {
-                tables.close();
             }
         }
         finally
@@ -211,12 +206,12 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         return DriverManager.getConnection(_connectionURL);
     }
 
-    public static void shutdownDerby(String connectionURL) throws SQLException
+    static void shutdownDerby(String connectionURL) throws SQLException
     {
         Connection connection = null;
         try
         {
-            connection = DriverManager.getConnection(connectionURL);
+            connection = DriverManager.getConnection(connectionURL + ";shutdown=true");
         }
         catch(SQLException e)
         {
