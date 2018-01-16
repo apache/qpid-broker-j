@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.security.auth.Subject;
@@ -96,10 +95,10 @@ import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
+import org.apache.qpid.server.txn.AsyncCommand;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
@@ -1635,60 +1634,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         if(_transaction instanceof LocalTransaction)
         {
             ((LocalTransaction)_transaction).sync();
-        }
-    }
-
-    private static class AsyncCommand
-    {
-        private final ListenableFuture<Void> _future;
-        private ServerTransaction.Action _action;
-
-        public AsyncCommand(final ListenableFuture<Void> future, final ServerTransaction.Action action)
-        {
-            _future = future;
-            _action = action;
-        }
-
-        void complete()
-        {
-            boolean interrupted = false;
-            try
-            {
-                while (true)
-                {
-                    try
-                    {
-                        _future.get();
-                        break;
-                    }
-                    catch (InterruptedException e)
-                    {
-                        interrupted = true;
-                    }
-
-                }
-            }
-            catch(ExecutionException e)
-            {
-                if(e.getCause() instanceof RuntimeException)
-                {
-                    throw (RuntimeException)e.getCause();
-                }
-                else if(e.getCause() instanceof Error)
-                {
-                    throw (Error) e.getCause();
-                }
-                else
-                {
-                    throw new ServerScopedRuntimeException(e.getCause());
-                }
-            }
-            if(interrupted)
-            {
-                Thread.currentThread().interrupt();
-            }
-            _action.postCommit();
-            _action = null;
         }
     }
 

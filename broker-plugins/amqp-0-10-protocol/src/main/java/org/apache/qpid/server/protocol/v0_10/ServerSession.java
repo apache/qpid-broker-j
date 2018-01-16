@@ -56,7 +56,6 @@ import java.util.SortedMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,6 +67,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.txn.AsyncCommand;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
@@ -97,7 +97,6 @@ import org.apache.qpid.server.txn.SuspendAndFailDtxException;
 import org.apache.qpid.server.txn.TimeoutDtxException;
 import org.apache.qpid.server.txn.UnknownDtxBranchException;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class ServerSession extends SessionInvoker
         implements LogSubject, AsyncAutoCommitTransaction.FutureRecorder
@@ -1634,65 +1633,6 @@ public class ServerSession extends SessionInvoker
     public void recordFuture(final ListenableFuture<Void> future, final ServerTransaction.Action action)
     {
         _unfinishedCommandsQueue.add(new AsyncCommand(future, action));
-    }
-
-    private static class AsyncCommand
-    {
-        private final ListenableFuture<Void> _future;
-        private ServerTransaction.Action _action;
-
-        public AsyncCommand(final ListenableFuture<Void> future, final ServerTransaction.Action action)
-        {
-            _future = future;
-            _action = action;
-        }
-
-        void complete()
-        {
-            boolean interrupted = false;
-            try
-            {
-                while (true)
-                {
-                    try
-                    {
-                        _future.get();
-                        break;
-                    }
-                    catch (InterruptedException e)
-                    {
-                        interrupted = true;
-                    }
-
-                }
-            }
-            catch(ExecutionException e)
-            {
-                if(e.getCause() instanceof RuntimeException)
-                {
-                    throw (RuntimeException)e.getCause();
-                }
-                else if(e.getCause() instanceof Error)
-                {
-                    throw (Error) e.getCause();
-                }
-                else
-                {
-                    throw new ServerScopedRuntimeException(e.getCause());
-                }
-            }
-            if(interrupted)
-            {
-                Thread.currentThread().interrupt();
-            }
-            _action.postCommit();
-            _action = null;
-        }
-
-        boolean isReadyForCompletion()
-        {
-            return _future.isDone();
-        }
     }
 
     public void setModelObject(final Session_0_10 session)
