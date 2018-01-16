@@ -212,7 +212,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
 
                 txn = _messageStore.newTransaction();
                 enqueueRecord = txn.enqueueMessage(queue, message);
-                future = txn.commitTranAsync((Void) null);
+                future = txn.commitTranAsync(null);
                 txn = null;
             }
             else
@@ -232,7 +232,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
                 @Override
                 public void onRollback()
                 {
-                    underlying.postCommit(enqueueRecord);
+                    underlying.onRollback();
                 }
             }, message.isPersistent());
             postTransactionAction = null;
