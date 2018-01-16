@@ -25,18 +25,21 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetSocketAddress;
+import java.util.Set;
 
+import com.google.common.collect.Sets;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicAckBody;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicNackBody;
-import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseBody;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicReturnBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConfirmSelectOkBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
+import org.apache.qpid.server.protocol.v0_8.transport.TxCommitOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.TxSelectOkBody;
+import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v0_8.FrameTransport;
 import org.apache.qpid.tests.protocol.v0_8.Interaction;
@@ -131,26 +134,82 @@ public class PublisherConfirmsTest extends BrokerAdminUsingTestBase
         }
     }
 
+    /** Qpid allows publisher confirms to be used with transactions.  This is beyond what RabbitMQ supports.  */
     @Test
-    @Ignore
-    @SpecificationTest(section = "https://www.rabbitmq.com/confirms.html",
-            description = "A transactional channel cannot be put into confirm mode and once a channel is in confirm "
-                          + "mode, it cannot be made transactional.")
-    public void transactionChannelCannotEnableConfirms() throws Exception
+    public void publishWithTransactionalConfirms() throws Exception
     {
         try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            ChannelCloseBody closeBody = interaction.openAnonymousConnection()
+            final BasicAckBody ackBody = interaction.openAnonymousConnection()
                                                     .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                     .tx().select()
                                                     .consumeResponse(TxSelectOkBody.class)
                                                     .basic()
                                                     .confirmSelect()
-                                                    .consumeResponse()
-                                                    .getLatestResponse(ChannelCloseBody.class);
-            // Check behaviour of RabbitMQ.
-            assertThat(closeBody.getReplyCode(), is(equalTo(ErrorCodes.COMMAND_INVALID)));
+                                                    .consumeResponse(ConfirmSelectOkBody.class)
+                                                    .basic().publishExchange("")
+                                                    .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
+                                                    .content("Test")
+                                                    .publishMessage()
+                                                    .consumeResponse().getLatestResponse(BasicAckBody.class);
+
+            assertThat(ackBody.getDeliveryTag(), is(equalTo(1L)));
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+
+            interaction.tx().commit().consumeResponse(TxCommitOkBody.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
+
+        }
+    }
+
+    @Test
+    public void publishUnroutableMessageWithTransactionalConfirms() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.openAnonymousConnection()
+                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                       .tx().select()
+                       .consumeResponse(TxSelectOkBody.class)
+                       .basic()
+                       .confirmSelect()
+                       .consumeResponse(ConfirmSelectOkBody.class)
+                       .basic().publishExchange("")
+                       .publishRoutingKey("unrouteable")
+                       .publishMandatory(true)
+                       .publishMessage()
+                       .basic().publishExchange("")
+                       .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
+                       .publishMandatory(true)
+                       .publishMessage();
+
+            final BasicNackBody nackBody = interaction.consumeResponse().getLatestResponse(BasicNackBody.class);
+            assertThat(nackBody.getDeliveryTag(), is(equalTo(1L)));
+
+            final BasicAckBody ackBody = interaction.consumeResponse().getLatestResponse(BasicAckBody.class);
+            assertThat(ackBody.getDeliveryTag(), is(equalTo(2L)));
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+
+            interaction.tx().commit();
+
+            final Set<Class<?>> outstanding = Sets.newHashSet(TxCommitOkBody.class, BasicReturnBody.class,
+                                                              ContentHeaderBody.class);
+
+            while (!outstanding.isEmpty())
+            {
+                final Response<?> response =
+                        interaction.consumeResponse(outstanding.toArray(new Class<?>[outstanding.size()]))
+                                   .getLatestResponse();
+                final boolean remove = outstanding.remove(response.getBody().getClass());
+                assertThat("" + response, remove, is(equalTo(true)));
+            }
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
+
         }
     }
 }
