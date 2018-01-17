@@ -242,6 +242,12 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
+    public ConnectionBuilder setCompress(final boolean compress)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Connection build() throws NamingException, JMSException
     {
         return buildConnectionFactory().createConnection();

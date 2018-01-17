@@ -56,6 +56,7 @@ public interface ConnectionBuilder
     ConnectionBuilder setVerifyHostName(boolean verifyHostName);
     ConnectionBuilder setKeyAlias(String alias);
     ConnectionBuilder setSaslMechanisms(String... mechanism);
+    ConnectionBuilder setCompress(boolean compress);
 
     Connection build() throws NamingException, JMSException;
     ConnectionFactory buildConnectionFactory() throws NamingException;

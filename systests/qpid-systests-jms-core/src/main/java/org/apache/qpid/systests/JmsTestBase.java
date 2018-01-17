@@ -92,7 +92,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         try
         {
             connection.start();
-            Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             _managementFacade.createEntityUsingAmqpManagement(entityName, session, entityType, attributes);
         }
         finally
@@ -111,7 +111,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         try
         {
             connection.start();
-            Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             return _managementFacade.performOperationUsingAmqpManagement(name, operation, session, type, arguments);
         }
         finally
@@ -216,12 +216,28 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         try
         {
             connection.start();
-            Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-            _managementFacade.updateEntityUsingAmqpManagement(entityName, session, entityType, attributes);
+            updateEntityUsingAmqpManagement(entityName, entityType, attributes, connection);
         }
         finally
         {
             connection.close();
+        }
+    }
+
+    protected void updateEntityUsingAmqpManagement(final String entityName,
+                                                 final String entityType,
+                                                 final Map<String, Object> attributes,
+                                                 final Connection connection)
+            throws JMSException
+    {
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        try
+        {
+            _managementFacade.updateEntityUsingAmqpManagement(entityName, session, entityType, attributes);
+        }
+        finally
+        {
+            session.close();
         }
     }
 
@@ -233,7 +249,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
         try
         {
             connection.start();
-            Session session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             _managementFacade.deleteEntityUsingAmqpManagement(entityName, session, entityType);
         }
         finally

@@ -23,6 +23,7 @@ package org.apache.qpid.systests;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.TreeMap;
@@ -234,6 +235,13 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     public ConnectionBuilder setSaslMechanisms(final String... mechanism)
     {
         _saslMechanisms = String.join(" ", mechanism);
+        return this;
+    }
+
+    @Override
+    public ConnectionBuilder setCompress(final boolean compress)
+    {
+        _options.put("compressMessages", compress);
         return this;
     }
 
