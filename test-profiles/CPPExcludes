@@ -106,7 +106,7 @@ org.apache.qpid.transport.ProtocolNegotiationTest#testNoProtocolHeaderSent_Broke
 org.apache.qpid.transport.ProtocolNegotiationTest#testNoConnectionOpenSent_BrokerClosesConnection
 
 // QPID-6000 : Tests Qpid Broker-J specific message compression functionality, and uses the REST API to test it
-org.apache.qpid.systest.MessageCompressionTest#*
+org.apache.qpid.systest.rest.MessageContentCompressionRestTest#*
 
 
 org.apache.qpid.test.unit.client.AMQSessionTest#testQueueDepthForQueueThatDoesNotExistLegacyBehaviour_08_091

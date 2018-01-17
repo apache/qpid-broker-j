@@ -61,7 +61,7 @@ org.apache.qpid.server.failover.FailoverMethodTest#*
 // Message encryption not currently supported by the 1.0 client
 org.apache.qpid.systest.messageencryption.MessageEncryptionTest#*
 // Message compression not currently supported by the 1.0 client
-org.apache.qpid.systest.MessageCompressionTest#*
+org.apache.qpid.systest.rest.MessageContentCompressionRestTest#*
 
 // Tests the interaction between the Broker's supported protocols and what the 0-x client agrees to
 org.apache.qpid.server.SupportedProtocolVersionsTest#*

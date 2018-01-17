@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.systest;
+package org.apache.qpid.systest.rest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -49,7 +49,7 @@ import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
-public class MessageCompressionTest extends QpidBrokerTestCase
+public class MessageContentCompressionRestTest extends QpidBrokerTestCase
 {
     private static String VIRTUAL_HOST = "test";
     private RestTestHelper _restTestHelper;
