@@ -54,7 +54,6 @@ import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
@@ -80,7 +79,8 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardReceivingLinkEndpoint.class);
     private static final String LINK = "link";
 
-    private ReceivingDestination _receivingDestination;
+    private volatile ReceivingDestination _receivingDestination;
+    private volatile boolean _rejectedOutcomeSupportedBySource;
 
     private final LinkedList<AsyncCommand> _unfinishedCommandsQueue = new LinkedList<>();
 
@@ -247,13 +247,11 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                            .checkAuthorizedMessagePrincipal(serverMessage.getMessageHeader().getUserId());
 
                     Outcome outcome;
-                    Source source = getSource();
                     if (serverMessage.isPersistent() && !getAddressSpace().getMessageStore().isPersistent())
                     {
                         final Error preconditionFailedError = new Error(AmqpError.PRECONDITION_FAILED,
                                                                         "Non-durable message store cannot accept durable message.");
-                        if (source.getOutcomes() != null && Arrays.asList(source.getOutcomes())
-                                                                  .contains(Rejected.REJECTED_SYMBOL))
+                        if (_rejectedOutcomeSupportedBySource)
                         {
                             final Rejected rejected = new Rejected();
                             rejected.setError(preconditionFailedError);
@@ -267,52 +265,44 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     }
                     else
                     {
-                        outcome = getReceivingDestination().send(serverMessage, transaction,
-                                                                 session.getSecurityToken());
+                        try
+                        {
+                            outcome = getReceivingDestination().send(serverMessage,
+                                                                     transaction,
+                                                                     session.getSecurityToken(),
+                                                                     _rejectedOutcomeSupportedBySource,
+                                                                     delivery.isSettled(),
+                                                                     delivery.getDeliveryTag());
+                        }
+                        catch (AmqpErrorException e)
+                        {
+                            return e.getError();
+                        }
                     }
 
+                    Outcome sourceDefaultOutcome = getSource().getDefaultOutcome();
+                    boolean defaultOutcome = sourceDefaultOutcome != null &&
+                                             sourceDefaultOutcome.getSymbol().equals(outcome.getSymbol());
                     DeliveryState resultantState;
-
-                    final List<Symbol> sourceSupportedOutcomes = new ArrayList<>();
-                    if (source.getOutcomes() != null)
+                    if (transactionId == null)
                     {
-                        sourceSupportedOutcomes.addAll(Arrays.asList(source.getOutcomes()));
-                    }
-                    else if (source.getDefaultOutcome() == null)
-                    {
-                        sourceSupportedOutcomes.add(Accepted.ACCEPTED_SYMBOL);
-                    }
-
-                    boolean transacted = transactionId != null && transaction instanceof LocalTransaction;
-                    if (sourceSupportedOutcomes.contains(outcome.getSymbol()))
-                    {
-                        if (transactionId == null)
-                        {
-                            resultantState = outcome;
-                        }
-                        else
-                        {
-                            TransactionalState transactionalState = new TransactionalState();
-                            transactionalState.setOutcome(outcome);
-                            transactionalState.setTxnId(transactionId);
-                            resultantState = transactionalState;
-                        }
+                        resultantState = defaultOutcome ? null : outcome;
                     }
                     else
                     {
-                        if(transacted && source.getDefaultOutcome() != null
-                           && outcome.getSymbol() != source.getDefaultOutcome().getSymbol())
-                        {
-                            ((LocalTransaction) transaction).setRollbackOnly();
-                        }
-                        resultantState = null;
+                        TransactionalState transactionalState = new TransactionalState();
+                        transactionalState.setOutcome(defaultOutcome ? null : outcome);
+                        transactionalState.setTxnId(transactionId);
+                        resultantState = transactionalState;
                     }
 
                     boolean settled = shouldReceiverSettleFirst(transferReceiverSettleMode);
 
                     if (transaction instanceof AsyncAutoCommitTransaction)
                     {
-                        _pendingDispositions.add(new PendingDispositionHolder(delivery.getDeliveryTag(), resultantState, settled));
+                        _pendingDispositions.add(new PendingDispositionHolder(delivery.getDeliveryTag(),
+                                                                              resultantState,
+                                                                              settled));
                     }
                     else
                     {
@@ -321,7 +311,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     }
 
                     getSession().getAMQPConnection().registerMessageReceived(serverMessage.getSize());
-                    if (transacted)
+                    if (transactionId != null)
                     {
                         getSession().getAMQPConnection().registerTransactedMessageReceived();
                     }
@@ -456,6 +446,8 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
             }
         }
         getLink().setTermini(source, target);
+        _rejectedOutcomeSupportedBySource =
+                source.getOutcomes() != null && Arrays.asList(source.getOutcomes()).contains(Rejected.REJECTED_SYMBOL);
     }
 
     public ReceivingDestination getReceivingDestination()

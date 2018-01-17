@@ -22,6 +22,8 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.security.SecurityToken;
@@ -29,7 +31,7 @@ import org.apache.qpid.server.txn.ServerTransaction;
 
 public interface ReceivingDestination
 {
-
+    Symbol DELIVERY_TAG = Symbol.valueOf("delivery-tag");
     Symbol REJECT_UNROUTABLE = Symbol.valueOf("REJECT_UNROUTABLE");
     Symbol DISCARD_UNROUTABLE = Symbol.valueOf("DISCARD_UNROUTABLE");
 
@@ -37,7 +39,12 @@ public interface ReceivingDestination
 
     Outcome[] getOutcomes();
 
-    Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken);
+    Outcome send(final ServerMessage<?> message,
+                 final ServerTransaction txn,
+                 final SecurityToken securityToken,
+                 final boolean rejectedOutcomeSupportedBySource,
+                 final boolean deliverySettled,
+                 final Binary deliveryTag) throws AmqpErrorException;
 
     int getCredit();
 

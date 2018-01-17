@@ -28,9 +28,11 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 
 public class MessageEncoder
 {
+    private Properties _properties;
     private Header _header;
     private List<String> _data = new LinkedList<>();
 
@@ -44,12 +46,22 @@ public class MessageEncoder
         _header = header;
     }
 
+    public void setProperties(final Properties properties)
+    {
+        _properties = properties;
+    }
+
     public QpidByteBuffer getPayload()
     {
         List<QpidByteBuffer> payload = new ArrayList<>();
         if (_header != null)
         {
             payload.add(_header.createEncodingRetainingSection().getEncodedForm());
+        }
+
+        if (_properties != null)
+        {
+            payload.add(_properties.createEncodingRetainingSection().getEncodedForm());
         }
 
         if (_data.isEmpty())
