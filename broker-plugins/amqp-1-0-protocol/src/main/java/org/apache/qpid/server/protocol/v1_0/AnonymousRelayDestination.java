@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v1_0;/*
 import static org.apache.qpid.server.protocol.v1_0.Session_1_0.DELAYED_DELIVERY;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
@@ -29,6 +30,8 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.DestinationAddress;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -37,6 +40,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 
 public class AnonymousRelayDestination implements ReceivingDestination
@@ -70,7 +74,12 @@ public class AnonymousRelayDestination implements ReceivingDestination
     }
 
     @Override
-    public Outcome send(final ServerMessage<?> message, final ServerTransaction txn, final SecurityToken securityToken)
+    public Outcome send(final ServerMessage<?> message,
+                        final ServerTransaction txn,
+                        final SecurityToken securityToken,
+                        final boolean rejectedOutcomeSupportedBySource,
+                        final boolean deliverySettled,
+                        final Binary deliveryTag) throws AmqpErrorException
     {
         final ReceivingDestination destination;
         final String routingAddress = message.getTo();
@@ -99,12 +108,41 @@ public class AnonymousRelayDestination implements ReceivingDestination
             }
             else
             {
-                outcome = createdRejectedOutcome(AmqpError.NOT_FOUND, "Unknown destination '" + routingAddress + "'");
+                final Error notFoundError = new Error(AmqpError.NOT_FOUND,
+                                                      String.format("Unknown destination '%s'", routingAddress));
+                notFoundError.setInfo(Collections.singletonMap(DELIVERY_TAG, deliveryTag));
+
+                // If the source of the link does not support the rejected outcome,
+                // or the message has already been settled by the sender,
+                // then the routing node MUST detach the link with an error.
+                // AMQP-140: When pre-settled messages are being sent within a transaction,
+                // then the behaviour defined for transactions should take precedence
+                // (essentially marking the transaction as rollback only).
+                if (!rejectedOutcomeSupportedBySource || (deliverySettled && !(txn instanceof LocalTransaction)))
+                {
+                    throw new AmqpErrorException(notFoundError);
+                }
+                else
+                {
+                    if (deliverySettled && txn instanceof LocalTransaction)
+                    {
+                        ((LocalTransaction) txn).setRollbackOnly();
+                    }
+
+                    Rejected rejected = new Rejected();
+                    rejected.setError(notFoundError);
+                    outcome = rejected;
+                }
             }
         }
         else
         {
-            outcome = destination.send(message, txn, securityToken);
+            outcome = destination.send(message,
+                                       txn,
+                                       securityToken,
+                                       rejectedOutcomeSupportedBySource,
+                                       deliverySettled,
+                                       deliveryTag);
         }
         return outcome;
     }
@@ -126,13 +164,5 @@ public class AnonymousRelayDestination implements ReceivingDestination
     public MessageDestination getMessageDestination()
     {
         return null;
-    }
-
-    private Outcome createdRejectedOutcome(AmqpError errorCode, String errorMessage)
-    {
-        Rejected rejected = new Rejected();
-        final Error notFoundError = new Error(errorCode, errorMessage);
-        rejected.setError(notFoundError);
-        return rejected;
     }
 }
