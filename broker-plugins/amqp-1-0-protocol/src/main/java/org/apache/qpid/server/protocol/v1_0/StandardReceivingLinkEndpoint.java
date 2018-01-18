@@ -53,6 +53,7 @@ import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
@@ -76,6 +77,8 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         implements AsyncAutoCommitTransaction.FutureRecorder
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardReceivingLinkEndpoint.class);
+    private static final Symbol DELIVERY_TAG = Symbol.valueOf("delivery-tag");
+    private static final Accepted ACCEPTED = new Accepted();
     private static final String LINK = "link";
 
     private volatile ReceivingDestination _receivingDestination;
@@ -266,16 +269,37 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                     {
                         try
                         {
-                            outcome = getReceivingDestination().send(serverMessage,
-                                                                     transaction,
-                                                                     session.getSecurityToken(),
-                                                                     _rejectedOutcomeSupportedBySource,
-                                                                     delivery.isSettled(),
-                                                                     delivery.getDeliveryTag());
+                            getReceivingDestination().send(serverMessage,
+                                                           transaction,
+                                                           session.getSecurityToken());
+                            outcome = ACCEPTED;
                         }
-                        catch (AmqpErrorException e)
+                        catch (UnroutableMessageException e)
                         {
-                            return e.getError();
+                            final Error error = new Error();
+                            error.setCondition(e.getErrorCondition());
+                            error.setDescription(e.getMessage());
+                            String targetAddress = getTarget().getAddress();
+                            if (targetAddress == null || "".equals(targetAddress.trim()))
+                            {
+                                error.setInfo(Collections.singletonMap(DELIVERY_TAG, delivery.getDeliveryTag()));
+                            }
+                            if (!_rejectedOutcomeSupportedBySource ||
+                                (delivery.isSettled() && !(transaction instanceof LocalTransaction)))
+                            {
+                                return error;
+                            }
+                            else
+                            {
+                                if (delivery.isSettled() && transaction instanceof LocalTransaction)
+                                {
+                                    ((LocalTransaction) transaction).setRollbackOnly();
+                                }
+
+                                Rejected rejected = new Rejected();
+                                rejected.setError(error);
+                                outcome = rejected;
+                            }
                         }
                     }
 

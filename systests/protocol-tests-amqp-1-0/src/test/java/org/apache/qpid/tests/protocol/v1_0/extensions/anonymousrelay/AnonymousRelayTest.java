@@ -70,8 +70,10 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 public class AnonymousRelayTest extends BrokerAdminUsingTestBase
 {
     private static final Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
+    private static final Symbol DELIVERY_TAG = Symbol.valueOf("delivery-tag");
     private static final String TEST_MESSAGE_CONTENT = "test";
     private InetSocketAddress _brokerAddress;
+    private Binary _deliveryTag;
 
     @Before
     public void setUp()
@@ -79,6 +81,7 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
         final BrokerAdmin brokerAdmin = getBrokerAdmin();
         brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
         _brokerAddress = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
+        _deliveryTag = new Binary("testTag".getBytes(StandardCharsets.UTF_8));
     }
 
     @SpecificationTest(section = "Using the Anonymous Terminus for Message Routing. 2.2. Sending A Message",
@@ -101,6 +104,7 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
 
                        .transferPayload(generateMessagePayloadToDestination(BrokerAdmin.TEST_QUEUE_NAME))
                        .transferSettled(Boolean.TRUE)
+                       .transferDeliveryTag(_deliveryTag)
                        .transfer()
                        .sync();
 
@@ -116,7 +120,9 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
                           + " if the address cannot be resolved to a node). In this case the routing node"
                           + " MUST communicate the error back to the sender of the message."
                           + " [...] the message has already been settled by the sender,"
-                          + " then the routing node MUST detach the link with an error.")
+                          + " then the routing node MUST detach the link with an error."
+                          + " [...] the info field of error MUST contain an entry with symbolic key delivery-tag"
+                          + " and binary value of the delivery-tag of the message which caused the failure.")
     @Test
     public void transferPreSettledToUnknownDestination() throws Exception
     {
@@ -133,12 +139,15 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
 
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
                        .transferSettled(Boolean.TRUE)
+                       .transferDeliveryTag(_deliveryTag)
                        .transfer();
 
             Detach detach = interaction.consumeResponse().getLatestResponse(Detach.class);
             Error error = detach.getError();
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
+            assertThat(error.getInfo(), is(notNullValue()));
+            assertThat(error.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
         }
     }
 
@@ -150,7 +159,9 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
                           + " MUST communicate the error back to the sender of the message."
                           + " If the source of the link supports the rejected outcome,"
                           + " and the message has not already been settled by the sender, then the routing node"
-                          + " MUST reject the message.")
+                          + " MUST reject the message."
+                          + " [...] the info field of error MUST contain an entry with symbolic key delivery-tag"
+                          + " and binary value of the delivery-tag of the message which caused the failure.")
     @Test
     public void transferUnsettledToUnknownDestinationWhenRejectedOutcomeSupportedBySource() throws Exception
     {
@@ -167,6 +178,7 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Flow.class)
 
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
+                       .transferDeliveryTag(_deliveryTag)
                        .transfer()
                        .consumeResponse();
 
@@ -181,6 +193,8 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
             Error error = rejected.getError();
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
+            assertThat(error.getInfo(), is(notNullValue()));
+            assertThat(error.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
         }
     }
 
@@ -192,7 +206,9 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
                           + " MUST communicate the error back to the sender of the message."
                           + " [...]"
                           + " If the source of the link does not support the rejected outcome,"
-                          + " [...] then the routing node MUST detach the link with an error.")
+                          + " [...] then the routing node MUST detach the link with an error."
+                          + " [...] the info field of error MUST contain an entry with symbolic key delivery-tag"
+                          + " and binary value of the delivery-tag of the message which caused the failure.")
     @Test
     public void transferUnsettledToUnknownDestinationWhenRejectedOutcomeNotSupportedBySource() throws Exception
     {
@@ -209,12 +225,15 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Flow.class)
 
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
+                       .transferDeliveryTag(_deliveryTag)
                        .transfer();
 
             Detach detach = interaction.consumeResponse().getLatestResponse(Detach.class);
             Error error = detach.getError();
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
+            assertThat(error.getInfo(), is(notNullValue()));
+            assertThat(error.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
         }
     }
 
@@ -243,6 +262,7 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
 
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination(BrokerAdmin.TEST_QUEUE_NAME))
+                       .transferDeliveryTag(_deliveryTag)
                        .transferTransactionalState(txnState.getCurrentTransactionId())
                        .transferSettled(Boolean.TRUE)
                        .transfer()
@@ -263,9 +283,12 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
                           + " [...]"
                           + " <Not in spec yet>"
                           + " AMQP-140"
+                          + " If a message cannot be routed to the destination implied in the \"to:\" field,"
+                          + " and the source does not allow for the rejected outcome"
+                          + " [...] when messages are being sent within a transaction and have been sent pre-settled."
                           + " In this case the behaviour defined for transactions (of essentially marking"
                           + " the transaction as rollback only) should take precedence. "
-                          + ""
+                            + ""
                           + " AMQP spec 4.3 Discharging a Transaction"
                           + " If the coordinator is unable to complete the discharge, the coordinator MUST convey"
                           + " the error to the controller as a transaction-error. If the source for the link to"
@@ -285,7 +308,7 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
             interaction.begin()
                        .consumeResponse(Begin.class)
 
-                       // attaching coordinator link with supported outcomes Accept and Reject
+                       // attaching coordinator link with supported outcomes Accepted and Rejected
                        .txnAttachCoordinatorLink(txnState)
                        .txnDeclare(txnState)
 
@@ -297,6 +320,7 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
 
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
+                       .transferDeliveryTag(_deliveryTag)
                        .transferTransactionalState(txnState.getCurrentTransactionId())
                        .transferSettled(Boolean.TRUE)
                        .transferDeliveryId(UnsignedInteger.valueOf(1))
@@ -351,6 +375,11 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
                           + " [...]"
                           + " <Not in spec yet>"
                           + " AMQP-140"
+                          + " If a message cannot be routed to the destination implied in the \"to:\" field,"
+                          + " and the source does not allow for the rejected outcome"
+                          + " [...] when messages are being sent within a transaction and have been sent pre-settled."
+                          + " In this case the behaviour defined for transactions (of essentially marking"
+                          + " the transaction as rollback only) should take precedence. "
                           + ""
                           + " AMQP spec 4.3 Discharging a Transaction"
                           + " If the coordinator is unable to complete the discharge, the coordinator MUST convey"
@@ -394,6 +423,7 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
 
                        .transferHandle(linkHandle)
                        .transferPayload(generateMessagePayloadToDestination("Unknown"))
+                       .transferDeliveryTag(_deliveryTag)
                        .transferTransactionalState(txnState.getCurrentTransactionId())
                        .transferSettled(Boolean.TRUE)
                        .transfer();
