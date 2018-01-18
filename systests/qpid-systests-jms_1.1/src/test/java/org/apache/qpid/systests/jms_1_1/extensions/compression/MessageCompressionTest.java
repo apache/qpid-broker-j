@@ -158,7 +158,7 @@ public class MessageCompressionTest extends JmsTestBase
     }
 
     private void publishMessage(final Connection senderConnection, final String messageText, final Queue testQueue)
-            throws JMSException, org.apache.qpid.QpidException
+            throws JMSException
     {
         Session session = senderConnection.createSession(true, Session.SESSION_TRANSACTED);
 
