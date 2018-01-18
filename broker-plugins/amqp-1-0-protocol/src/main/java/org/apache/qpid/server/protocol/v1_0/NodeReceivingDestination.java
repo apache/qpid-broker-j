@@ -34,25 +34,15 @@ import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.DestinationAddress;
 import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.security.SecurityToken;
-import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 
 public class NodeReceivingDestination implements ReceivingDestination
 {
-    private static final Accepted ACCEPTED = new Accepted();
-    private static final Rejected REJECTED = new Rejected();
-    private static final Outcome[] OUTCOMES = { ACCEPTED, REJECTED};
     private final boolean _discardUnroutable;
     private final EventLogger _eventLogger;
 
@@ -90,18 +80,9 @@ public class NodeReceivingDestination implements ReceivingDestination
     }
 
     @Override
-    public Outcome[] getOutcomes()
-    {
-        return OUTCOMES;
-    }
-
-    @Override
-    public Outcome send(final ServerMessage<?> message,
-                        final ServerTransaction txn,
-                        final SecurityToken securityToken,
-                        final boolean rejectedOutcomeSupportedBySource,
-                        final boolean deliverySettled,
-                        final Binary deliveryTag) throws AmqpErrorException
+    public void send(final ServerMessage<?> message,
+                     final ServerTransaction txn,
+                     final SecurityToken securityToken) throws UnroutableMessageException
     {
         final String routingAddress = "".equals(_routingAddress) ? getRoutingAddress(message) : _routingAddress;
         _destination.authorisePublish(securityToken, Collections.singletonMap("routingKey", routingAddress));
@@ -136,10 +117,10 @@ public class NodeReceivingDestination implements ReceivingDestination
         {
             if (!_discardUnroutable)
             {
-                final Error error;
+                final String errorMessage;
+                final AmqpError errorCode;
                 if (result.isRejected())
                 {
-                    AmqpError errorCode;
                     if (result.containsReject(RejectType.LIMIT_EXCEEDED))
                     {
                         errorCode = AmqpError.RESOURCE_LIMIT_EXCEEDED;
@@ -152,37 +133,20 @@ public class NodeReceivingDestination implements ReceivingDestination
                     {
                         errorCode = AmqpError.ILLEGAL_STATE;
                     }
-                    error = new Error(errorCode, result.getRejectReason());
+                    errorMessage = result.getRejectReason();
                 }
                 else
                 {
-                    error = new Error(AmqpError.NOT_FOUND,
-                                      String.format("Unknown destination '%s'", routingAddress));
+                    errorCode = AmqpError.NOT_FOUND;
+                    errorMessage = String.format("Unknown destination '%s'", routingAddress);
                 }
-                error.setInfo(Collections.singletonMap(DELIVERY_TAG, deliveryTag));
-
-                if (!rejectedOutcomeSupportedBySource || (deliverySettled && !(txn instanceof LocalTransaction)))
-                {
-                    throw new AmqpErrorException(error);
-                }
-                else
-                {
-                    if (deliverySettled && txn instanceof LocalTransaction)
-                    {
-                        ((LocalTransaction) txn).setRollbackOnly();
-                    }
-
-                    Rejected rejected = new Rejected();
-                    rejected.setError(error);
-                    return rejected;
-                }
+                throw new UnroutableMessageException(errorCode, errorMessage);
             }
             else
             {
                 _eventLogger.message(ExchangeMessages.DISCARDMSG(_destination.getName(), routingAddress));
             }
         }
-        return ACCEPTED;
     }
 
     private String getRoutingAddress(final ServerMessage<?> message)
@@ -197,14 +161,6 @@ public class NodeReceivingDestination implements ReceivingDestination
             initialRoutingAddress = initialRoutingAddress.substring(_address.length() + 1);
         }
         return initialRoutingAddress;
-    }
-
-    private Outcome createdRejectedOutcome(AmqpError errorCode, String errorMessage)
-    {
-        Rejected rejected = new Rejected();
-        final Error notFoundError = new Error(errorCode, errorMessage);
-        rejected.setError(notFoundError);
-        return rejected;
     }
 
     @Override

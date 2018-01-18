@@ -20,26 +20,20 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
-import org.apache.qpid.server.security.SecurityToken;
-import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
 
-public interface ReceivingDestination
+public class UnroutableMessageException extends Exception
 {
-    Symbol REJECT_UNROUTABLE = Symbol.valueOf("REJECT_UNROUTABLE");
-    Symbol DISCARD_UNROUTABLE = Symbol.valueOf("DISCARD_UNROUTABLE");
+    private final ErrorCondition _errorCondition;
 
-    Symbol[] getCapabilities();
+    public UnroutableMessageException(final ErrorCondition errorCondition, final String message)
+    {
+        super(message);
+        _errorCondition = errorCondition;
+    }
 
-    void send(final ServerMessage<?> message,
-              final ServerTransaction txn,
-              final SecurityToken securityToken) throws UnroutableMessageException;
-
-    int getCredit();
-
-    String getAddress();
-
-    MessageDestination getMessageDestination();
+    public ErrorCondition getErrorCondition()
+    {
+        return _errorCondition;
+    }
 }
