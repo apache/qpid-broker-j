@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.tests.protocol.v1_0.extensions.anonymousrelay;
+package org.apache.qpid.tests.protocol.v1_0.extensions.anonymousterminus;
 
 
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -48,6 +48,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
@@ -67,7 +68,7 @@ import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
-public class AnonymousRelayTest extends BrokerAdminUsingTestBase
+public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
 {
     private static final Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
     private static final Symbol DELIVERY_TAG = Symbol.valueOf("delivery-tag");
@@ -89,7 +90,7 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
                           + " forwarded to the node referenced in the to field of properties of the message"
                           + " just as if a direct link has been established to that node.")
     @Test
-    public void transferPreSettledToExistingDestination() throws Exception
+    public void transferPreSettledToKnownDestination() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -242,7 +243,7 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
                           + " forwarded to the node referenced in the to field of properties of the message"
                           + " just as if a direct link has been established to that node.")
     @Test
-    public void transferPreSettledInTransactionToExistingDestination() throws Exception
+    public void transferPreSettledInTransactionToKnownDestination() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -271,6 +272,95 @@ public class AnonymousRelayTest extends BrokerAdminUsingTestBase
 
             Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
             assertThat(receivedMessage, is(equalTo(TEST_MESSAGE_CONTENT)));
+        }
+    }
+
+    @Test
+    public void transferUnsettledInTransactionToKnownDestination() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
+            final UnsignedInteger linkHandle = UnsignedInteger.ONE;
+            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
+            interaction.begin()
+                       .consumeResponse(Begin.class)
+
+                       .txnAttachCoordinatorLink(txnState)
+                       .txnDeclare(txnState)
+
+                       .attachRole(Role.SENDER)
+                       .attachHandle(linkHandle)
+                       .attach().consumeResponse(Attach.class)
+                       .consumeResponse(Flow.class)
+
+                       .transferHandle(linkHandle)
+                       .transferPayload(generateMessagePayloadToDestination(BrokerAdmin.TEST_QUEUE_NAME))
+                       .transferDeliveryTag(_deliveryTag)
+                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferSettled(Boolean.FALSE)
+                       .transfer();
+
+            Disposition disposition = interaction.consumeResponse().getLatestResponse(Disposition.class);
+
+            assertThat(disposition.getSettled(), is(true));
+
+            DeliveryState dispositionState = disposition.getState();
+            assertThat(dispositionState, is(instanceOf(TransactionalState.class)));
+
+            final TransactionalState receivedTxnState = (TransactionalState) dispositionState;
+            assertThat(receivedTxnState.getOutcome(), is(instanceOf(Accepted.class)));
+
+            interaction.txnDischarge(txnState, false);
+
+            Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
+            assertThat(receivedMessage, is(equalTo(TEST_MESSAGE_CONTENT)));
+        }
+    }
+
+    @Test
+    public void transferUnsettledInTransactionToUnknownDestinationRejectedOutcomeSupportedBySource() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
+            final UnsignedInteger linkHandle = UnsignedInteger.ONE;
+            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
+            interaction.begin()
+                       .consumeResponse(Begin.class)
+
+                       .txnAttachCoordinatorLink(txnState)
+                       .txnDeclare(txnState)
+
+                       .attachRole(Role.SENDER)
+                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL)
+                       .attachHandle(linkHandle)
+                       .attach().consumeResponse(Attach.class)
+                       .consumeResponse(Flow.class)
+
+                       .transferHandle(linkHandle)
+                       .transferPayload(generateMessagePayloadToDestination("Unknown"))
+                       .transferDeliveryTag(_deliveryTag)
+                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferSettled(Boolean.FALSE)
+                       .transfer();
+
+            Disposition disposition = interaction.consumeResponse().getLatestResponse(Disposition.class);
+
+            assertThat(disposition.getSettled(), is(true));
+
+            DeliveryState dispositionState = disposition.getState();
+            assertThat(dispositionState, is(instanceOf(TransactionalState.class)));
+
+            final TransactionalState receivedTxnState = (TransactionalState) dispositionState;
+            assertThat(receivedTxnState.getOutcome(), is(instanceOf(Rejected.class)));
+
+            final Error rejectedError = ((Rejected) receivedTxnState.getOutcome()).getError();
+            assertThat(rejectedError.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
+            assertThat(rejectedError.getInfo(), is(notNullValue()));
+            assertThat(rejectedError.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
+
+            interaction.txnDischarge(txnState, false);
         }
     }
 
