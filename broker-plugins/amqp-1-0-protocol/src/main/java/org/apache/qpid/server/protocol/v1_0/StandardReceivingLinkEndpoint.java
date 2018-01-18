@@ -581,17 +581,14 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                 {
                     disposition = itr.next();
 
-                    if (current.isSettled() == disposition.isSettled() &&
-                        Objects.equals(current.getResultantState(), disposition.getResultantState()))
-                    {
-                        deliveryTags.add(disposition.getDeliveryTag());
-                    }
-                    else
+                    if (current.isSettled() != disposition.isSettled() ||
+                        !Objects.equals(current.getResultantState(), disposition.getResultantState()))
                     {
                         updateDispositions(deliveryTags, current.getResultantState(), current.isSettled());
                         deliveryTags.clear();
                         current = disposition;
                     }
+                    deliveryTags.add(disposition.getDeliveryTag());
                 }
                 if (!deliveryTags.isEmpty())
                 {
