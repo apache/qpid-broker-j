@@ -20,11 +20,6 @@
 // Exclude client test of initial context factory, as the 1.0 profile uses the 1.0 context factory
 org.apache.qpid.jndi.PropertiesFileInitialContextFactoryTest#*
 
-// Uses an 0-x client API to acknowledge up to a particular message rather than the most recent
-org.apache.qpid.test.unit.ack.RecoverTest#testRecoverResendsMsgsAckOnEarlier
-// Tests the effect of setting the prefetch value
-org.apache.qpid.test.unit.ack.RecoverTest#testRecoverSessionAfterCreditExhausted
-
 // The binding logging tests focus on the behaviour of the old client with regard to creating (and binding) queues on
 // the creation of consumers.
 org.apache.qpid.server.logging.BindingLoggingTest#*
