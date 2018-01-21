@@ -17,12 +17,3 @@
 // under the License.
 //
 
-#These tests use external spawned brokers
-
-#=============================
-# In the java-mms.0-10 profile
-#=============================
-org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#*
-org.apache.qpid.client.failover.FailoverBehaviourTest#*
-org.apache.qpid.client.failover.MultipleBrokersFailoverTest#*
-org.apache.qpid.test.client.failover.FailoverTest#*

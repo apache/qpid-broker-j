@@ -60,11 +60,6 @@ org.apache.qpid.test.client.ProducerFlowControlTest#*
 
 //QPID-3986 : Flow control invoked on total store disk usage
 org.apache.qpid.server.store.StoreOverfullTest#*
-// 0-8/0-9/0-9-1 and/or Qpid Broker-J specific failover tests related to the above Producer Flow Control mechanisms
-org.apache.qpid.client.failover.FailoverBehaviourTest#testFailoverHandlerTimeoutExpires
-org.apache.qpid.client.failover.FailoverBehaviourTest#testFlowControlFlagResetOnFailover
-org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testFailoverHandlerTimeoutExpires
-org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testFlowControlFlagResetOnFailover
 
 // Excluded because plugins from Qpid Broker-J are not used in CPP broker
 org.apache.qpid.server.virtualhost.plugin.*
@@ -83,9 +78,6 @@ org.apache.qpid.server.plugins.PluginTest#*
 org.apache.qpid.server.SupportedProtocolVersionsTest#*
 org.apache.qpid.server.stats.StatisticsReportingTest#*
 
-// QPID-3133: On 0-10, the exception listener is currently not invoked when reconnection fails to occurs.
-org.apache.qpid.server.failover.FailoverMethodTest#*
-
 // passwd script is a Qpid Broker-J specific command line tool
 org.apache.qpid.scripts.QpidPasswdTest#*
 
@@ -98,8 +90,6 @@ org.apache.qpid.systest.disttest.endtoend.*
 org.apache.qpid.systest.rest.*
 org.apache.qpid.systest.rest.acl.*
 
-// Exclude failover tests requiring virtual host functionality
-org.apache.qpid.client.failover.MultipleBrokersFailoverTest#*
 
 // CPP Broker does not timeout connections with no activity like the Qpid Broker-J
 org.apache.qpid.transport.ProtocolNegotiationTest#testNoProtocolHeaderSent_BrokerClosesConnection

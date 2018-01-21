@@ -34,7 +34,3 @@ org.apache.qpid.systest.rest.VirtualHostRestTest#testMutateStateOfVirtualHostWit
 
 org.apache.qpid.systest.rest.VirtualHostNodeRestTest#testCreateAndDeleteVirtualHostNode
 
-org.apache.qpid.client.failover.FailoverBehaviourTest#testFlowControlFlagResetOnFailover
-org.apache.qpid.client.failover.FailoverBehaviourTest#testFailoverHandlerTimeoutReconnected
-org.apache.qpid.server.failover.FailoverMethodTest#testNoFailover
-

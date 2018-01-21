@@ -24,9 +24,6 @@
 // These tests requires a broker capable of 0-8/0-9/0-9-1 and 0-10 concurrently
 org.apache.qpid.test.client.message.JMSDestinationTest#testReceiveResend
 
-// The new addressing based syntax is not supported for AMQP 0-8/0-9 versions
-org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#*
-
 // Those tests are written against the 0.10 path
 org.apache.qpid.client.SynchReceiveTest#testReceiveNoWait
 org.apache.qpid.server.logging.ChannelLoggingTest#testChannelClosedOnExclusiveQueueDeclaredOnDifferentSession
