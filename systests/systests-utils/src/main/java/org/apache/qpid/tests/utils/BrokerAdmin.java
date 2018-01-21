@@ -62,6 +62,7 @@ public interface BrokerAdmin extends Pluggable
     {
         ANONYMOUS_AMQP,
         ANONYMOUS_AMQPWS,
-        AMQP
+        AMQP,
+        HTTP
     }
 }
