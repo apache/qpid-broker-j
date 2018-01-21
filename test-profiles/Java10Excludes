@@ -39,9 +39,6 @@ org.apache.qpid.transport.ProtocolNegotiationTest#testProtocolNegotiationFromUns
 // Tests are tests of the 0-x client behaviour
 org.apache.qpid.test.client.ProducerFlowControlTest#*
 
-
-// Message encryption not currently supported by the 1.0 client
-org.apache.qpid.systest.messageencryption.MessageEncryptionTest#*
 // Message compression not currently supported by the 1.0 client
 org.apache.qpid.systest.rest.MessageContentCompressionRestTest#*
 

@@ -160,7 +160,12 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 
     protected Queue createQueue(final String queueName) throws Exception
     {
-        Connection connection = getConnection();
+        return createQueue(getVirtualHostName(), queueName);
+    }
+
+    protected Queue createQueue(final String virtualHostName, final String queueName) throws Exception
+    {
+        Connection connection = getConnectionBuilder().setVirtualHost(virtualHostName).build();
         try
         {
             connection.start();
