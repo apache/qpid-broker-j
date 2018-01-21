@@ -17,5 +17,3 @@
 // under the License.
 //
 
-org.apache.qpid.test.unit.topic.DurableSubscriptionTest#testDurabilityNOACK
-org.apache.qpid.test.unit.topic.DurableSubscriptionTest#testDurabilityNOACKSessionPerConnection

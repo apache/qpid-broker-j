@@ -30,6 +30,4 @@ org.apache.qpid.systest.rest.PublishMessageRestTest#testPublishListMessage
 // this test fails - likely a client bug with the modification racing the send
 org.apache.qpid.test.unit.basic.BytesMessageTest#testModificationAfterSend
 
-// Test uses AMQP 0-x ack modes and assumes the name of the queues backing subscriptions
-org.apache.qpid.test.unit.topic.DurableSubscriptionTest#*
 
