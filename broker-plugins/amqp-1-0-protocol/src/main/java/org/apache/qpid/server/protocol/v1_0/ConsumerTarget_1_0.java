@@ -58,7 +58,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -427,7 +426,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
             else if (state instanceof Outcome)
             {
                 outcome = (Outcome) state;
-                txn = new AutoCommitTransaction(getSession().getConnection().getAddressSpace().getMessageStore());
+                txn = _linkEndpoint.getAsyncAutoCommitTransaction();
             }
             else
             {
