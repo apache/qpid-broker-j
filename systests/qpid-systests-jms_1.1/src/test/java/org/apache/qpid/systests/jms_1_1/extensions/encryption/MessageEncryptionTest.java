@@ -67,10 +67,7 @@ public class MessageEncryptionTest extends JmsTestBase
             "ADDR: %s ;  {x-send-encrypted : true, x-encrypted-recipients : " + ENCRYPTED_RECIPIENTS + "}";
     private static final String QUEUE_BURL_WITH_SEND_ENCRYPTED =
             "BURL:direct:///%s/%s?sendencrypted='true'&encryptedrecipients=" + ENCRYPTED_RECIPIENTS;
-    private static final String BROKER_PEERSTORE = TEST_PROFILE_RESOURCE_BASE
-                                                   + "${file.separator}test-profiles${file.separator}"
-                                                   + "test_resources${file.separator}ssl${file.separator}"
-                                                   + "java_broker_peerstore.jks";
+    private static final String BROKER_PEERSTORE = TEST_PROFILE_RESOURCE_BASE + TestSSLConstants.BROKER_PEERSTORE;
 
     @Before
     public void setUp() throws Exception
@@ -88,7 +85,7 @@ public class MessageEncryptionTest extends JmsTestBase
     {
         Queue queue = createQueue(getTestName());
         Connection producerConnection =
-                getConnectionBuilder().setEncryptionTrustStore(TestSSLConstants.BROKER_PEERSTORE)
+                getConnectionBuilder().setEncryptionTrustStore(BROKER_PEERSTORE)
                                       .setEncryptionTrustStorePassword(BROKER_PEERSTORE_PASSWORD)
                                       .build();
         try
@@ -139,7 +136,7 @@ public class MessageEncryptionTest extends JmsTestBase
         String queueName = getTestName();
         Queue queue = createQueue(queueName);
         Connection producerConnection =
-                getConnectionBuilder().setEncryptionTrustStore(TestSSLConstants.BROKER_PEERSTORE)
+                getConnectionBuilder().setEncryptionTrustStore(BROKER_PEERSTORE)
                                       .setEncryptionTrustStorePassword(BROKER_PEERSTORE_PASSWORD)
                                       .build();
         try
@@ -188,7 +185,7 @@ public class MessageEncryptionTest extends JmsTestBase
         String queueName = getTestName();
         Queue queue = createQueue(queueName);
         Connection producerConnection =
-                getConnectionBuilder().setEncryptionTrustStore(TestSSLConstants.BROKER_PEERSTORE)
+                getConnectionBuilder().setEncryptionTrustStore(BROKER_PEERSTORE)
                                       .setEncryptionTrustStorePassword(BROKER_PEERSTORE_PASSWORD)
                                       .build();
         try

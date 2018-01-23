@@ -23,7 +23,6 @@ package org.apache.qpid.systests;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.TreeMap;
@@ -255,7 +254,7 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     @Override
     public ConnectionBuilder setEncryptionTrustStore(final String encryptionTrustStoreLocation)
     {
-        _options.put("encryption_trust_store", encryptionTrustStoreLocation);
+        _options.put("encryption_trust_store", encodeConnectionOption(encryptionTrustStoreLocation));
         return this;
     }
 
@@ -269,7 +268,7 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     @Override
     public ConnectionBuilder setEncryptionKeyStore(final String encryptionKeyStoreLocation)
     {
-        _options.put("encryption_key_store", encryptionKeyStoreLocation);
+        _options.put("encryption_key_store", encodeConnectionOption(encryptionKeyStoreLocation));
         return this;
     }
 
@@ -328,7 +327,7 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
             cUrlBuilder.append(_sslPort).append("?ssl='true'");
             if (_keyStoreLocation != null)
             {
-                cUrlBuilder.append("&key_store='").append(encodePathOption(_keyStoreLocation)).append('\'');
+                cUrlBuilder.append("&key_store='").append(encodeBrokerOption(_keyStoreLocation)).append('\'');
             }
             if (_keyStorePassword != null)
             {
@@ -336,7 +335,7 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
             }
             if (_trustStoreLocation != null)
             {
-                cUrlBuilder.append("&trust_store='").append(encodePathOption(_trustStoreLocation)).append('\'');
+                cUrlBuilder.append("&trust_store='").append(encodeBrokerOption(_trustStoreLocation)).append('\'');
             }
             if (_trustStorePassword != null)
             {
@@ -411,12 +410,23 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
         }
     }
 
-    private String encodePathOption(final String canonicalPath)
+    private String encodeBrokerOption(final String canonicalPath)
     {
         try
         {
-            return URLEncoder.encode(URLEncoder.encode(canonicalPath, StandardCharsets.UTF_8.name()).replace("+", "%20"),
-                                     StandardCharsets.UTF_8.name());
+            return URLEncoder.encode(encodeConnectionOption(canonicalPath), StandardCharsets.UTF_8.name());
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String encodeConnectionOption(final String canonicalPath)
+    {
+        try
+        {
+            return URLEncoder.encode(canonicalPath, StandardCharsets.UTF_8.name()).replace("+", "%20");
         }
         catch (UnsupportedEncodingException e)
         {
