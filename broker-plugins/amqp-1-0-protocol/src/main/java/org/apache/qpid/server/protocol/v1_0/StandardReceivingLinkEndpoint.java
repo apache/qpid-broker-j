@@ -28,11 +28,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
@@ -81,12 +81,12 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
     private static final Accepted ACCEPTED = new Accepted();
     private static final String LINK = "link";
 
+    private final java.util.Queue<AsyncCommand> _unfinishedCommandsQueue = new ConcurrentLinkedQueue<>();
+    private final Set<PendingDispositionHolder> _pendingDispositions =
+            Collections.synchronizedSet(new LinkedHashSet<>());
+
     private volatile ReceivingDestination _receivingDestination;
     private volatile boolean _rejectedOutcomeSupportedBySource;
-
-    private final LinkedList<AsyncCommand> _unfinishedCommandsQueue = new LinkedList<>();
-
-    private final Set<PendingDispositionHolder> _pendingDispositions = new LinkedHashSet<>();
 
     private final PublishingLink _publishingLink = new PublishingLink()
     {
