@@ -37,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.SequenceNumber;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -319,7 +320,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    public void transferUnsettledInTransactionToUnknownDestinationRejectedOutcomeSupportedBySource() throws Exception
+    public void transferUnsettledInTransactionToUnknownDestinationWhenRejectedOutcomeSupportedBySource() throws Exception
     {
         try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
         {
@@ -361,6 +362,65 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             assertThat(rejectedError.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
 
             interaction.txnDischarge(txnState, false);
+        }
+    }
+
+    @Test
+    public void transferUnsettledInTransactionToUnknownDestinationWhenRejectedOutcomeNotSupportedBySource() throws Exception
+    {
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = openInteractionWithAnonymousRelayCapability(transport);
+            final UnsignedInteger linkHandle = UnsignedInteger.ONE;
+            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
+            interaction.begin()
+                       .consumeResponse(Begin.class)
+
+                       .txnAttachCoordinatorLink(txnState)
+                       .txnDeclare(txnState)
+
+                       .attachRole(Role.SENDER)
+                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
+                       .attachHandle(linkHandle)
+                       .attach().consumeResponse(Attach.class)
+                       .consumeResponse(Flow.class)
+
+                       .transferHandle(linkHandle)
+                       .transferPayload(generateMessagePayloadToDestination("Unknown"))
+                       .transferDeliveryId(UnsignedInteger.valueOf(1))
+                       .transferDeliveryTag(_deliveryTag)
+                       .transferTransactionalState(txnState.getCurrentTransactionId())
+                       .transferSettled(Boolean.FALSE)
+                       .transfer();
+
+            Detach senderLinkDetach = interaction.consumeResponse().getLatestResponse(Detach.class);
+            Error senderLinkDetachError = senderLinkDetach.getError();
+            assertThat(senderLinkDetachError, is(notNullValue()));
+            assertThat(senderLinkDetachError.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
+            assertThat(senderLinkDetachError.getInfo(), is(notNullValue()));
+            assertThat(senderLinkDetachError.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
+
+            final Discharge discharge = new Discharge();
+            discharge.setTxnId(txnState.getCurrentTransactionId());
+            discharge.setFail(false);
+
+            interaction.transferHandle(txnState.getHandle())
+                       .transferSettled(Boolean.FALSE)
+                       .transferDeliveryId(UnsignedInteger.valueOf(2))
+                       .transferDeliveryTag(new Binary(("transaction-" + 2).getBytes(StandardCharsets.UTF_8)))
+                       .transferPayloadData(discharge).transfer();
+
+            Disposition dischargeTransactionDisposition =
+                    getDispositionForDeliveryId(interaction, UnsignedInteger.valueOf(2));
+
+            assertThat(dischargeTransactionDisposition.getSettled(), is(equalTo(true)));
+            assertThat(dischargeTransactionDisposition.getState(), is(instanceOf(Rejected.class)));
+
+            Rejected rejected = (Rejected) dischargeTransactionDisposition.getState();
+            Error error = rejected.getError();
+
+            assertThat(error, is(notNullValue()));
+            assertThat(error.getCondition(), is(equalTo(TransactionError.TRANSACTION_ROLLBACK)));
         }
     }
 
@@ -425,25 +485,8 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .transferDeliveryTag(new Binary(("transaction-" + 2).getBytes(StandardCharsets.UTF_8)))
                        .transferPayloadData(discharge).transfer();
 
-            Disposition dischargeTransactionDisposition = null;
-            Flow coordinatorFlow = null;
-            do
-            {
-                interaction.consumeResponse(Disposition.class, Flow.class);
-                Response<?> response = interaction.getLatestResponse();
-                if (response.getBody() instanceof Disposition)
-                {
-                    dischargeTransactionDisposition = (Disposition) response.getBody();
-                }
-                if (response.getBody() instanceof Flow)
-                {
-                    final Flow flowResponse = (Flow) response.getBody();
-                    if (flowResponse.getHandle().equals(txnState.getHandle()))
-                    {
-                        coordinatorFlow = flowResponse;
-                    }
-                }
-            } while (dischargeTransactionDisposition == null || coordinatorFlow == null);
+            Disposition dischargeTransactionDisposition =
+                    getDispositionForDeliveryId(interaction, UnsignedInteger.valueOf(2));
 
             assertThat(dischargeTransactionDisposition.getSettled(), is(equalTo(true)));
             assertThat(dischargeTransactionDisposition.getState(), is(instanceOf(Rejected.class)));
@@ -535,6 +578,28 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
         }
     }
 
+    private Disposition getDispositionForDeliveryId(final Interaction interaction,
+                                                    final UnsignedInteger deliveryId) throws Exception
+    {
+        Disposition dischargeTransactionDisposition = null;
+
+        SequenceNumber id = new SequenceNumber(deliveryId.intValue());
+        do
+        {
+            Response<?> response = interaction.consumeResponse(Disposition.class, Flow.class).getLatestResponse();
+            if (response.getBody() instanceof Disposition)
+            {
+                Disposition disposition = (Disposition) response.getBody();
+                UnsignedInteger first = disposition.getFirst();
+                UnsignedInteger last = disposition.getLast() == null ? disposition.getFirst() : disposition.getLast();
+                if (new SequenceNumber(first.intValue()).compareTo(id) >= 0 && new SequenceNumber(last.intValue()).compareTo(id) <=0)
+                {
+                    dischargeTransactionDisposition = disposition;
+                }
+            }
+        } while (dischargeTransactionDisposition == null);
+        return dischargeTransactionDisposition;
+    }
 
     private Interaction openInteractionWithAnonymousRelayCapability(final FrameTransport transport) throws Exception
     {
