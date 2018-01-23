@@ -20,9 +20,6 @@
 // the 0-10 c++ broker does not implement the extended LVQ semantics which the Qpid Broker-J does
 org.apache.qpid.server.queue.ConflationQueueTest#*
 
-// the 0-10 c++ broker does not implement DLQ
-org.apache.qpid.test.unit.client.MaxDeliveryCountTest#*
-
 // InVM Broker tests
 org.apache.qpid.test.client.timeouts.SyncWaitDelayTest#*
 

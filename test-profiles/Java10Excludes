@@ -63,9 +63,4 @@ org.apache.qpid.server.logging.DurableQueueLoggingTest#*
 org.apache.qpid.server.logging.QueueLoggingTest#*
 org.apache.qpid.server.logging.TransientQueueLoggingTest#*
 
-// Tests call Session#recover() to redeliver messages from broker which is not applicable to new client
-org.apache.qpid.test.unit.client.MaxDeliveryCountTest#testSynchronousClientAckSession
-org.apache.qpid.test.unit.client.MaxDeliveryCountTest#testAsynchronousClientAckSession
-org.apache.qpid.test.unit.client.MaxDeliveryCountTest#testAsynchronousDupsOkSession
-org.apache.qpid.test.unit.client.MaxDeliveryCountTest#testAsynchronousAutoAckSession
 
