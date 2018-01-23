@@ -28,7 +28,9 @@ import static org.hamcrest.Matchers.is;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -872,6 +874,13 @@ public class Interaction extends AbstractInteraction<Interaction>
         return this;
     }
 
+
+    public Interaction dispositionLast(final UnsignedInteger last)
+    {
+        _disposition.setLast(last);
+        return this;
+    }
+
     public Interaction dispositionFirstFromLatestDelivery()
     {
         _disposition.setFirst(_latestDeliveryId);
@@ -1040,12 +1049,17 @@ public class Interaction extends AbstractInteraction<Interaction>
         return UnsignedInteger.valueOf(_deliveryIdCounter++);
     }
 
-    public Interaction receiveDelivery() throws Exception
+    public Interaction receiveDelivery(Class<?>... ignore) throws Exception
     {
         sync();
-        _latestDelivery = receiveAllTransfers();
+        _latestDelivery = receiveAllTransfers(ignore);
         _latestDeliveryId = _latestDelivery.size() > 0 ? _latestDelivery.get(0).getDeliveryId() : null;
         return this;
+    }
+
+    public UnsignedInteger getLatestDeliveryId()
+    {
+        return _latestDeliveryId;
     }
 
     public Interaction decodeLatestDelivery() throws AmqpErrorException
@@ -1071,15 +1085,22 @@ public class Interaction extends AbstractInteraction<Interaction>
         return _decodedLatestDelivery;
     }
 
-    private List<Transfer> receiveAllTransfers() throws Exception
+    private List<Transfer> receiveAllTransfers(final Class<?>... ignore) throws Exception
     {
         List<Transfer> transfers = new ArrayList<>();
-        boolean hasMore;
+        boolean hasMore = true;
         do
         {
-            Transfer responseTransfer = consumeResponse().getLatestResponse(Transfer.class);
-            hasMore = Boolean.TRUE.equals(responseTransfer.getMore());
-            transfers.add(responseTransfer);
+            Set<Class<?>> responseTypesSet = new HashSet<>(Arrays.asList(ignore));
+            responseTypesSet.add(Transfer.class);
+            Class<?>[] responseTypes = responseTypesSet.toArray(new Class<?>[responseTypesSet.size()]);
+            Response<?> latestResponse = consumeResponse(responseTypes).getLatestResponse();
+            if (latestResponse.getBody() instanceof Transfer)
+            {
+                Transfer responseTransfer = (Transfer) latestResponse.getBody();
+                hasMore = Boolean.TRUE.equals(responseTransfer.getMore());
+                transfers.add(responseTransfer);
+            }
         }
         while (hasMore);
 
