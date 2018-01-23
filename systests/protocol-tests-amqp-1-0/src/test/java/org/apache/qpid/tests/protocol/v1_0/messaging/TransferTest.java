@@ -85,6 +85,7 @@ import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.InteractionTransactionalState;
 import org.apache.qpid.tests.protocol.v1_0.MessageDecoder;
 import org.apache.qpid.tests.protocol.v1_0.MessageEncoder;
+import org.apache.qpid.tests.protocol.v1_0.Utils;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
@@ -536,6 +537,8 @@ public class TransferTest extends BrokerAdminUsingTestBase
 
             interaction.consumeResponse(null, Flow.class);
 
+
+
         }
     }
 
@@ -971,6 +974,164 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                                         UnsignedInteger.valueOf(3),
                                                                         UnsignedInteger.valueOf(4))));
         }
+    }
+
+    @Test
+    @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
+    public void receiveMultipleDeliveries() throws Exception
+    {
+        int numberOfMessages = 4;
+        for (int i = 0; i < numberOfMessages; i++)
+        {
+            getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA + "_" + i);
+        }
+
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction()
+                                                     .negotiateProtocol().consumeResponse()
+                                                     .open().consumeResponse()
+                                                     .begin().consumeResponse()
+                                                     .attachRole(Role.RECEIVER)
+                                                     .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                                     .attachRcvSettleMode(ReceiverSettleMode.FIRST)
+                                                     .attach().consumeResponse()
+                                                     .flowIncomingWindow(UnsignedInteger.valueOf(numberOfMessages))
+                                                     .flowNextIncomingId(UnsignedInteger.ZERO)
+                                                     .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                                     .flowNextOutgoingId(UnsignedInteger.ZERO)
+                                                     .flowLinkCredit(UnsignedInteger.valueOf(numberOfMessages))
+                                                     .flowHandleFromLinkHandle()
+                                                     .flow();
+
+            for (int i = 0; i < numberOfMessages; i++)
+            {
+                interaction.receiveDelivery(Flow.class).decodeLatestDelivery();
+                Object data = interaction.getDecodedLatestDelivery();
+                assertThat(data, Is.is(CoreMatchers.equalTo(TEST_MESSAGE_DATA + "_" + i)));
+                assertThat(interaction.getLatestDeliveryId(), Is.is(equalTo(UnsignedInteger.valueOf(i))));
+            }
+
+            interaction.dispositionSettled(true)
+                       .dispositionRole(Role.RECEIVER)
+                       .dispositionFirst(UnsignedInteger.ZERO)
+                       .dispositionLast(interaction.getLatestDeliveryId())
+                       .dispositionState(new Accepted())
+                       .disposition();
+
+            // make sure sure the disposition is handled by making drain request
+            interaction.flowLinkCredit(UnsignedInteger.ZERO)
+                       .flowDrain(Boolean.TRUE)
+                       .flow()
+                       .consumeResponse(Flow.class);
+
+            if (getBrokerAdmin().isQueueDepthSupported())
+            {
+                assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+            }
+        }
+
+        String messageText = TEST_MESSAGE_DATA + "_" + 4;
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageText);
+        Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
+        assertThat(receivedMessage, is(equalTo(messageText)));
+    }
+
+    @Test
+    @SpecificationTest(section = "2.6.12", description = "Transferring A Message.")
+    public void receiveMixtureOfTransactionalAndNonTransactionalDeliveries() throws Exception
+    {
+        int numberOfMessages = 4;
+        for (int i = 0; i < numberOfMessages; i++)
+        {
+            getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_DATA + "_" + i);
+        }
+
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction()
+                                                     .negotiateProtocol().consumeResponse()
+                                                     .open().consumeResponse()
+                                                     .begin().consumeResponse()
+                                                     .attachRole(Role.RECEIVER)
+                                                     .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                                     .attachRcvSettleMode(ReceiverSettleMode.FIRST)
+                                                     .attachHandle(UnsignedInteger.ZERO)
+                                                     .attach().consumeResponse()
+                                                     .flowIncomingWindow(UnsignedInteger.valueOf(numberOfMessages))
+                                                     .flowNextIncomingId(UnsignedInteger.ZERO)
+                                                     .flowOutgoingWindow(UnsignedInteger.ZERO)
+                                                     .flowNextOutgoingId(UnsignedInteger.ZERO)
+                                                     .flowLinkCredit(UnsignedInteger.valueOf(numberOfMessages))
+                                                     .flowHandleFromLinkHandle()
+                                                     .flow();
+
+            for (int i = 0; i < numberOfMessages; i++)
+            {
+                interaction.receiveDelivery(Flow.class).decodeLatestDelivery();
+                Object data = interaction.getDecodedLatestDelivery();
+                assertThat(data, Is.is(CoreMatchers.equalTo(TEST_MESSAGE_DATA + "_" + i)));
+                assertThat(interaction.getLatestDeliveryId(), Is.is(equalTo(UnsignedInteger.valueOf(i))));
+            }
+
+            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ONE);
+            interaction.txnAttachCoordinatorLink(txnState)
+                       .txnDeclare(txnState);
+
+            interaction.dispositionSettled(true)
+                       .dispositionRole(Role.RECEIVER)
+                       .dispositionFirst(UnsignedInteger.ZERO)
+                       .dispositionLast(UnsignedInteger.ONE)
+                       .dispositionState(new Accepted())
+                       .disposition()
+                       .dispositionSettled(true)
+                       .dispositionRole(Role.RECEIVER)
+                       .dispositionFirst(UnsignedInteger.valueOf(2))
+                       .dispositionLast(UnsignedInteger.valueOf(3))
+                       .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
+                       .disposition();
+
+
+            final Discharge discharge = new Discharge();
+            discharge.setTxnId(txnState.getCurrentTransactionId());
+            discharge.setFail(false);
+
+            interaction.transferHandle(txnState.getHandle())
+                       .transferDeliveryId(UnsignedInteger.valueOf(4))
+                       .transferDeliveryTag(new Binary(("transaction-" + 4).getBytes(StandardCharsets.UTF_8)))
+                       .transferPayloadData(discharge)
+                       .transfer();
+
+            Disposition declareTransactionDisposition = null;
+            Flow coordinatorFlow = null;
+            do
+            {
+                interaction.consumeResponse(Disposition.class, Flow.class);
+                Response<?> response = interaction.getLatestResponse();
+                if (response.getBody() instanceof Disposition)
+                {
+                    declareTransactionDisposition = (Disposition) response.getBody();
+                }
+                if (response.getBody() instanceof Flow)
+                {
+                    final Flow flowResponse = (Flow) response.getBody();
+                    if (flowResponse.getHandle().equals(txnState.getHandle()))
+                    {
+                        coordinatorFlow = flowResponse;
+                    }
+                }
+            } while(declareTransactionDisposition == null || coordinatorFlow == null);
+
+            if (getBrokerAdmin().isQueueDepthSupported())
+            {
+                assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+            }
+        }
+
+        String messageText = TEST_MESSAGE_DATA + "_" + 4;
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageText);
+        Object receivedMessage = Utils.receiveMessage(_brokerAddress, BrokerAdmin.TEST_QUEUE_NAME);
+        assertThat(receivedMessage, is(equalTo(messageText)));
     }
 
     private void assertDeliveries(final Interaction interaction, final TreeSet<UnsignedInteger> expectedDeliveryIds)
