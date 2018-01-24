@@ -45,16 +45,17 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -109,6 +110,7 @@ public class ServerSession extends SessionInvoker
     private static final int UNFINISHED_COMMAND_QUEUE_THRESHOLD = 500;
 
     private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<>());
+    private final Deque<AsyncCommand> _unfinishedCommandsQueue = new ConcurrentLinkedDeque<>();
 
     private final AtomicBoolean _blocking = new AtomicBoolean(false);
     private final AtomicInteger _outstandingCredit = new AtomicInteger(UNLIMITED_CREDIT);
@@ -1595,8 +1597,6 @@ public class ServerSession extends SessionInvoker
     {
         return _blocking.get();
     }
-
-    private final LinkedList<AsyncCommand> _unfinishedCommandsQueue = new LinkedList<AsyncCommand>();
 
     public void completeAsyncCommands()
     {
