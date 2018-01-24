@@ -35,7 +35,6 @@ import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.security.AccessControl;
 
 
 public abstract class AbstractAccessControlProvider<X extends AbstractAccessControlProvider<X,Y,T>, Y extends CommonAccessControlProvider<Y>, T extends EventLoggerProvider & ConfiguredObject<?>>
@@ -82,23 +81,12 @@ public abstract class AbstractAccessControlProvider<X extends AbstractAccessCont
         return Futures.immediateFuture(null);
     }
 
-    @StateTransition(currentState = {State.ACTIVE, State.QUIESCED, State.ERRORED}, desiredState = State.DELETED)
-    @SuppressWarnings("unused")
-    private ListenableFuture<Void> doDelete()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
-        return doAfterAlways(closeAsync(),
-                             new Runnable()
-                             {
-                                 @Override
-                                 public void run()
-                                 {
-                                     setState(State.DELETED);
-                                     deleted();
-                                     getEventLogger().message(AccessControlMessages.DELETE(getName()));
-                                 }
-                             });
+        getEventLogger().message(AccessControlMessages.DELETE(getName()));
+        return super.onDelete();
     }
-
 
     @Override
     protected void logOperation(final String operation)

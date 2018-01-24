@@ -107,6 +107,62 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
         return _eventLogger;
     }
 
+
+    @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+
+        if (changedAttributes.contains(ConfiguredObject.DESIRED_STATE)
+            && proxyForValidation.getDesiredState() == State.DELETED)
+        {
+            // verify that it is not in use
+            String storeName = getName();
+
+            Collection<Port<?>> ports = new ArrayList<>(_broker.getPorts());
+            for (Port<?> port : ports)
+            {
+                Collection<TrustStore> trustStores = port.getTrustStores();
+                if (trustStores != null)
+                {
+                    for (TrustStore store : trustStores)
+                    {
+                        if (storeName.equals(store.getAttribute(TrustStore.NAME)))
+                        {
+                            throw new IntegrityViolationException(String.format(
+                                    "Trust store '%s' can't be deleted as it is in use by a port: %s",
+                                    storeName,
+                                    port.getName()));
+                        }
+                    }
+                }
+            }
+
+            Collection<AuthenticationProvider> authenticationProviders =
+                    new ArrayList<>(_broker.getAuthenticationProviders());
+            for (AuthenticationProvider authProvider : authenticationProviders)
+            {
+                TrustStore otherTrustStore = null;
+                if (authProvider instanceof SimpleLDAPAuthenticationManager)
+                {
+                    otherTrustStore = ((SimpleLDAPAuthenticationManager) authProvider).getTrustStore();
+                }
+                else if (authProvider instanceof OAuth2AuthenticationProvider)
+                {
+                    otherTrustStore = ((OAuth2AuthenticationProvider) authProvider).getTrustStore();
+                }
+
+                if (otherTrustStore == this)
+                {
+                    throw new IntegrityViolationException(String.format(
+                            "Trust store '%s' can't be deleted as it is in use by an authentication manager: '%s'",
+                            getName(),
+                            authProvider.getName()));
+                }
+            }
+        }
+    }
+
     @Override
     protected ListenableFuture<Void> onClose()
     {
@@ -152,55 +208,11 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
         }
     }
 
-    final ListenableFuture<Void> deleteIfNotInUse()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
-        // verify that it is not in use
-        String storeName = getName();
-
-        Collection<Port<?>> ports = new ArrayList<>(_broker.getPorts());
-        for (Port<?> port : ports)
-        {
-            Collection<TrustStore> trustStores = port.getTrustStores();
-            if(trustStores != null)
-            {
-                for (TrustStore store : trustStores)
-                {
-                    if(storeName.equals(store.getAttribute(TrustStore.NAME)))
-                    {
-                        throw new IntegrityViolationException("Trust store '"
-                                                              + storeName
-                                                              + "' can't be deleted as it is in use by a port: "
-                                                              + port.getName());
-                    }
-                }
-            }
-        }
-
-        Collection<AuthenticationProvider> authenticationProviders = new ArrayList<>(_broker.getAuthenticationProviders());
-        for (AuthenticationProvider authProvider : authenticationProviders)
-        {
-            TrustStore otherTrustStore = null;
-            if (authProvider instanceof SimpleLDAPAuthenticationManager)
-            {
-                otherTrustStore = ((SimpleLDAPAuthenticationManager) authProvider).getTrustStore();
-            }
-            else if (authProvider instanceof OAuth2AuthenticationProvider)
-            {
-                otherTrustStore = ((OAuth2AuthenticationProvider) authProvider).getTrustStore();
-            }
-
-            if (otherTrustStore == this)
-            {
-                throw new IntegrityViolationException(String.format(
-                        "Trust store '%s' can't be deleted as it is in use by an authentication manager: '%s'",
-                        getName(),
-                        authProvider.getName()));
-            }
-        }
-        deleted();
-        setState(State.DELETED);
         _eventLogger.message(TrustStoreMessages.DELETE(getName()));
-        return Futures.immediateFuture(null);
+        return super.onDelete();
     }
 
     private void checkCertificateExpiry()

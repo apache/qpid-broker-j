@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.security.auth.Subject;
 
 import com.google.common.base.Supplier;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -54,7 +53,6 @@ import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -99,7 +97,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
             public void performAction(final S object)
             {
                 removeDeleteTask(this);
-                deleteAsync();
+                deleteNoChecks();
             }
         };
         _subject = new Subject(false, _connection.getSubject().getPrincipals(),
@@ -186,13 +184,11 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
         _taskList.remove(task);
     }
 
-    @StateTransition(currentState = State.ACTIVE, desiredState = State.DELETED)
-    private ListenableFuture<Void> doDelete()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
-        deleted();
-        setState(State.DELETED);
         removeDeleteTask(_deleteModelTask);
-        return Futures.immediateFuture(null);
+        return super.onDelete();
     }
 
     @Override

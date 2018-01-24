@@ -110,12 +110,6 @@ public class NonJavaTrustStoreImpl
         validateTrustStoreAttributes(this);
     }
 
-    @StateTransition(currentState = {State.ACTIVE, State.ERRORED}, desiredState = State.DELETED)
-    protected ListenableFuture<Void> doDelete()
-    {
-        return deleteIfNotInUse();
-    }
-
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     protected ListenableFuture<Void> doActivate()
     {

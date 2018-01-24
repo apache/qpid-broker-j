@@ -233,17 +233,17 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     }
 
     @Override
-    @StateTransition( currentState = { State.ACTIVE, State.QUIESCED, State.ERRORED, State.UNINITIALIZED}, desiredState = State.DELETED)
-    public ListenableFuture<Void> doDelete()
+    protected ListenableFuture<Void> onDelete()
     {
-        File file = new File(_path);
-        if (file.exists() && file.isFile())
-        {
-            file.delete();
-        }
-        deleted();
-        setState(State.DELETED);
-        return Futures.immediateFuture(null);
+        // We manage the storage children so we close (so they may free any resources) them rather than deleting them
+        return doAfterAlways(closeChildren(),
+                             () -> {
+                                 File file = new File(_path);
+                                 if (file.exists() && file.isFile())
+                                 {
+                                     file.delete();
+                                 }
+                             });
     }
 
     @Override
@@ -331,7 +331,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
             }
             catch (RuntimeException e)
             {
-                principalAdapter.deleteAsync();
+                principalAdapter.deleteNoChecks();
                 throw e;
             }
             _userMap.put(p, principalAdapter);
@@ -450,8 +450,8 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
             return Futures.immediateFuture(null);
         }
 
-        @StateTransition(currentState = State.ACTIVE, desiredState = State.DELETED)
-        private ListenableFuture<Void> doDelete()
+        @Override
+        protected ListenableFuture<Void> onDelete()
         {
             try
             {
@@ -462,9 +462,13 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
             {
                 // pass
             }
-            deleted();
-            setState(State.DELETED);
-            return Futures.immediateFuture(null);
+            return super.onDelete();
+        }
+
+        @Override
+        protected ListenableFuture<Void> deleteNoChecks()
+        {
+            return super.deleteNoChecks();
         }
     }
 

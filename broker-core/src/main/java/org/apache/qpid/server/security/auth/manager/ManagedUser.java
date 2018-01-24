@@ -24,9 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.security.auth.login.AccountNotFoundException;
-
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.messages.AuthenticationProviderMessages;
@@ -36,7 +33,6 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.User;
 
 @ManagedObject( category = false, type = ManagedUser.MANAGED_USER_TYPE)
@@ -75,12 +71,11 @@ class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<
         }
     }
 
-    @StateTransition(currentState = {State.ACTIVE}, desiredState = State.DELETED)
-    private ListenableFuture<Void> doDelete()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
         _authenticationManager.getUserMap().remove(getName());
-        deleted();
-        return Futures.immediateFuture(null);
+        return super.onDelete();
     }
 
     @Override

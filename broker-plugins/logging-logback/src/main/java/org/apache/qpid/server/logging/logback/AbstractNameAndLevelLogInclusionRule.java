@@ -68,6 +68,7 @@ public abstract class AbstractNameAndLevelLogInclusionRule<X extends AbstractNam
         return _level;
     }
 
+    @SuppressWarnings("unused")
     private void logLevelAfterSet()
     {
         if (_filter != null)
@@ -82,20 +83,11 @@ public abstract class AbstractNameAndLevelLogInclusionRule<X extends AbstractNam
         return _filter;
     }
 
-    @StateTransition( currentState = { State.ACTIVE, State.ERRORED, State.UNINITIALIZED }, desiredState = State.DELETED )
-    private ListenableFuture<Void> doDelete()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
-        return doAfterAlways(closeAsync(), new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                deleted();
-                QpidLoggerTurboFilter.filterRemovedFromRootContext(_filter);
-                setState(State.DELETED);
-
-            }
-        });
+        QpidLoggerTurboFilter.filterRemovedFromRootContext(_filter);
+        return super.onDelete();
     }
 
     @StateTransition( currentState = { State.ERRORED, State.UNINITIALIZED }, desiredState = State.ACTIVE )

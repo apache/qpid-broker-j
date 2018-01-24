@@ -41,42 +41,23 @@ import org.apache.qpid.server.store.preferences.PreferenceStore;
 @ManagedObject( category = false,
                 type = TestStandardCarImpl.TEST_STANDARD_CAR_TYPE,
                 validChildTypes = "org.apache.qpid.server.model.testmodels.hierarchy.TestStandardCarImpl#getSupportedChildTypes()")
-public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCarImpl>
+public class TestStandardCarImpl extends TestAbstractCarImpl<TestStandardCarImpl>
         implements TestStandardCar<TestStandardCarImpl>
 {
     public static final String TEST_STANDARD_CAR_TYPE = "testpertrolcar";
     private final PreferenceStore _preferenceStore;
 
-    @ManagedAttributeField
-    private Colour _bodyColour;
-
-    @ManagedAttributeField
-    private Colour _interiorColour;
-
     @ManagedObjectFactoryConstructor
     public TestStandardCarImpl(final Map<String, Object> attributes)
     {
-        this(attributes, TestModel.getInstance());
-    }
-
-    public TestStandardCarImpl(final Map<String, Object> attributes, Model model)
-    {
-        super(null, attributes, newTaskExecutor(), model);
+        super(attributes);
         _preferenceStore = new NoopPreferenceStoreFactoryService().createInstance(this, null);
     }
 
-
-    private static CurrentThreadTaskExecutor newTaskExecutor()
+    public TestStandardCarImpl(final Map<String, Object> stringObjectMap, final TestModel model)
     {
-        CurrentThreadTaskExecutor currentThreadTaskExecutor = new CurrentThreadTaskExecutor();
-        currentThreadTaskExecutor.start();
-        return currentThreadTaskExecutor;
-    }
-
-    @Override
-    protected void logOperation(final String operation)
-    {
-
+        super(stringObjectMap, model);
+        _preferenceStore = new NoopPreferenceStoreFactoryService().createInstance(this, null);
     }
 
     @SuppressWarnings("unused")
@@ -84,29 +65,6 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
     {
         Collection<String> types = Arrays.asList(TestPetrolEngineImpl.TEST_PETROL_ENGINE_TYPE, TestHybridEngineImpl.TEST_HYBRID_ENGINE_TYPE);
         return Collections.singletonMap(TestEngine.class.getSimpleName(), types);
-    }
-
-    @Override
-    public Door openDoor(final Door door)
-    {
-        return door;
-    }
-
-    @Override
-    public void startEngine(final String keyCode)
-    {
-    }
-
-    @Override
-    public Colour getBodyColour()
-    {
-        return _bodyColour;
-    }
-
-    @Override
-    public Colour getInteriorColour()
-    {
-        return _interiorColour;
     }
 
     @Override

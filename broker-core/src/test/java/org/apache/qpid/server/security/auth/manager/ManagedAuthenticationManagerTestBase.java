@@ -20,11 +20,13 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -36,7 +38,10 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.IntegrityViolationException;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.User;
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
@@ -264,4 +269,23 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
         assertNull("Should not be able to create SASL negotiator for unsupported mechanism", negotiator);
     }
 
+    public void testDeleteInUseDisallowed() throws Exception
+    {
+        AmqpPort port = mock(AmqpPort.class);
+        when(port.getAuthenticationProvider()).thenReturn(_authManager);
+        when(port.getName()).thenReturn("mockPort");
+
+        final List<AmqpPort> portList = Collections.singletonList(port);
+        when(_broker.getChildren(eq(Port.class))).thenReturn(portList);
+
+        try
+        {
+            _authManager.delete();
+            fail("Exception not thrown");
+        }
+        catch (IntegrityViolationException e)
+        {
+            // PASS
+        }
+    }
 }

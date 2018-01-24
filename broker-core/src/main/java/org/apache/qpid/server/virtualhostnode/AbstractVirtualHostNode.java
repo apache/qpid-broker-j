@@ -284,75 +284,18 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         return _configurationStoreLogSubject;
     }
 
-    @StateTransition( currentState = { State.ACTIVE, State.STOPPED, State.ERRORED}, desiredState = State.DELETED )
-    protected ListenableFuture<Void> doDelete()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
-        final SettableFuture<Void> futureResult = SettableFuture.create();
-
-        // Delete the node only if deletion of the virtualhost succeeds.
-        addFutureCallback(deleteVirtualHostIfExists(), new FutureCallback<Void>()
-        {
-            @Override
-            public void onSuccess(final Void result)
-            {
-                addFutureCallback(closeAsync(), new FutureCallback<Void>()
-                {
-                    @Override
-                    public void onSuccess(final Void result)
-                    {
-                        try
-                        {
-                            delete();
-                            futureResult.set(null);
-                        }
-                        catch (Throwable t)
-                        {
-                            futureResult.setException(t);
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(final Throwable t)
-                    {
-                        try
-                        {
-                            delete();
-                        }
-                        finally
-                        {
-                            futureResult.setException(t);
-                        }
-                    }
-
-                    private void delete()
-                    {
-                        deleted();
-                        setState(State.DELETED);
-                        DurableConfigurationStore configurationStore = getConfigurationStore();
-                        if (configurationStore != null)
-                        {
-                            configurationStore.onDelete(AbstractVirtualHostNode.this);
-                        }
-                    }
-                }, getTaskExecutor());
-            }
-
-            @Override
-            public void onFailure(final Throwable t)
-            {
-                futureResult.setException(t);
-            }
-        }, getTaskExecutor());
-
-        return futureResult;
+        throw new UnsupportedOperationException("Sub-classes must override");
     }
 
-    protected ListenableFuture<Void> deleteVirtualHostIfExists()
+    protected ListenableFuture<Void> closeVirtualHostIfExists()
     {
-        VirtualHost<?> virtualHost = getVirtualHost();
+        final VirtualHost<?> virtualHost = getVirtualHost();
         if (virtualHost != null)
         {
-            return virtualHost.deleteAsync();
+            return virtualHost.closeAsync();
         }
         else
         {

@@ -24,6 +24,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -32,6 +34,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
@@ -442,6 +445,56 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         doDuplicateChildCheck(ConfiguredObject.ID);
     }
 
+    public void testParentDeletePropagatesToChild()
+    {
+        TestCar car = _model.getObjectFactory().create(TestCar.class,
+                                                       Collections.singletonMap(ConfiguredObject.NAME, "car"), null);
+
+        TestEngine engine = (TestEngine) car.createChild(TestEngine.class,
+                                                         Collections.singletonMap(ConfiguredObject.NAME, "engine"));
+
+        final StateChangeCapturingListener listener = new StateChangeCapturingListener();
+        engine.addChangeListener(listener);
+
+        assertEquals("Unexpected child state before parent delete", State.ACTIVE, engine.getState());
+
+        car.delete();
+
+        assertEquals("Unexpected child state after parent delete", State.DELETED, engine.getState());
+        final List<State> newStates = listener.getNewStates();
+        assertEquals("Child heard an unexpected number of state chagnes", 1, newStates.size());
+        assertEquals("Child heard listener has unexpected state", State.DELETED, newStates.get(0));
+    }
+
+    public void testParentDeleteValidationFailureLeavesChildreIntact()
+    {
+        TestCar car = _model.getObjectFactory().create(TestCar.class,
+                                                       Collections.singletonMap(ConfiguredObject.NAME, "car"), null);
+
+        TestEngine engine = (TestEngine) car.createChild(TestEngine.class,
+                                                         Collections.singletonMap(ConfiguredObject.NAME, "engine"));
+
+        final StateChangeCapturingListener listener = new StateChangeCapturingListener();
+        engine.addChangeListener(listener);
+
+        assertEquals("Unexpected child state before parent delete", State.ACTIVE, engine.getState());
+
+        car.setRejectStateChange(true);
+        try
+        {
+            car.delete();
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // PASS
+        }
+
+        assertEquals("Unexpected child state after failed parent deletion", State.ACTIVE, engine.getState());
+        final List<State> newStates = listener.getNewStates();
+        assertEquals("Child heard an unexpected number of state changes", 0, newStates.size());
+    }
+
     private void doDuplicateChildCheck(final String attrToDuplicate)
     {
         final String carName = "myCar";
@@ -577,4 +630,20 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
     }
 
 
+    private static class StateChangeCapturingListener extends AbstractConfigurationChangeListener
+    {
+        private final List<State> _newStates = new LinkedList<>();
+
+        @Override
+        public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
+        {
+            super.stateChanged(object, oldState, newState);
+            _newStates.add(newState);
+        }
+
+        public List<State> getNewStates()
+        {
+            return new LinkedList<>(_newStates);
+        }
+    }
 }

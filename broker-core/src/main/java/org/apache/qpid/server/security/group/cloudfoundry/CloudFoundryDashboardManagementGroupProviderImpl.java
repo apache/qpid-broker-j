@@ -271,13 +271,6 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
         return Futures.immediateFuture(null);
     }
 
-    @StateTransition(currentState = {State.ACTIVE}, desiredState = State.DELETED)
-    private ListenableFuture<Void> doDelete()
-    {
-        deleted();
-        return Futures.immediateFuture(null);
-    }
-
     @Override
     public URI getCloudFoundryEndpointURI()
     {

@@ -1548,14 +1548,37 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     protected ListenableFuture<Void> beforeClose()
     {
+        return beforeDeleteOrClose();
+    }
+
+    @Override
+    protected ListenableFuture<Void> onClose()
+    {
+        return onCloseOrDelete();
+    }
+
+    @Override
+    protected ListenableFuture<Void> beforeDelete()
+    {
+        return beforeDeleteOrClose();
+    }
+
+    @Override
+    protected ListenableFuture<Void> onDelete()
+    {
+        _deleteRequested  = true;
+        return onCloseOrDelete();
+    }
+
+    private ListenableFuture<Void> beforeDeleteOrClose()
+    {
         setState(State.UNAVAILABLE);
         _virtualHostLoggersToClose = new ArrayList<>(getChildren(VirtualHostLogger.class));
         //Stop Connections
         return closeConnections();
     }
 
-    @Override
-    protected ListenableFuture<Void> onClose()
+    private ListenableFuture<Void> onCloseOrDelete()
     {
         _dtxRegistry.close();
         shutdownHouseKeeping();
@@ -2323,20 +2346,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             logger.stopLogging();
         }
-    }
-
-    @SuppressWarnings("ignore")
-    @StateTransition( currentState = { State.ACTIVE, State.ERRORED }, desiredState = State.DELETED )
-    private ListenableFuture<Void> doDelete()
-    {
-        _deleteRequested = true;
-
-        return doAfterAlways(closeAsync(),
-                             () ->
-                             {
-                                 setState(State.DELETED);
-                                 deleted();
-                             });
     }
 
     private void deleteLinkRegistry()

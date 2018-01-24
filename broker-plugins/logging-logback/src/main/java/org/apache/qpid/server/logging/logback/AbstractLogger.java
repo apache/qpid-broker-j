@@ -108,19 +108,11 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
         return Futures.immediateFuture(null);
     }
 
-    @StateTransition(currentState = {State.ACTIVE, State.UNINITIALIZED, State.ERRORED, State.STOPPED}, desiredState = State.DELETED)
-    private ListenableFuture<Void> doDelete()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
-        return doAfterAlways(closeAsync(), new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                deleted();
-                setState(State.DELETED);
-                stopLogging();
-            }
-        });
+        stopLogging();
+        return super.onDelete();
     }
 
     public final long getErrorCount()

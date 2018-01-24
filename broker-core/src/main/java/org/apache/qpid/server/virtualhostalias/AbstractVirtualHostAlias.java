@@ -23,14 +23,11 @@ package org.apache.qpid.server.virtualhostalias;
 
 import java.util.Map;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.VirtualHostAlias;
 
 abstract class AbstractVirtualHostAlias<X extends AbstractVirtualHostAlias<X>>
@@ -57,19 +54,4 @@ abstract class AbstractVirtualHostAlias<X extends AbstractVirtualHostAlias<X>>
     {
         return _priority;
     }
-
-    @StateTransition(currentState = {State.ACTIVE, State.ERRORED}, desiredState = State.DELETED )
-    private ListenableFuture<Void> doDelete()
-    {
-        return doAfterAlways(closeAsync(), new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                deleted();
-                setState(State.DELETED);
-            }
-        });
-    }
-
 }

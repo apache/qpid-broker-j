@@ -84,21 +84,11 @@ public class AllowAllAccessControlProviderImpl extends AbstractConfiguredObject<
         return Futures.immediateFuture(null);
     }
 
-    @StateTransition(currentState = {State.ACTIVE, State.QUIESCED, State.ERRORED}, desiredState = State.DELETED)
-    @SuppressWarnings("unused")
-    private ListenableFuture<Void> doDelete()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
-        return doAfterAlways(closeAsync(),
-                             new Runnable()
-                             {
-                                 @Override
-                                 public void run()
-                                 {
-                                     setState(State.DELETED);
-                                     deleted();
-                                     _broker.getEventLogger().message(AccessControlMessages.DELETE(getName()));
-                                 }
-                             });
+        _broker.getEventLogger().message(AccessControlMessages.DELETE(getName()));
+        return super.onDelete();
     }
 
     @Override

@@ -86,21 +86,11 @@ public abstract class AbstractPredicateLogInclusionRule<X extends AbstractPredic
         return _filter;
     }
 
-    @SuppressWarnings("unused")
-    @StateTransition( currentState = { State.ACTIVE, State.ERRORED, State.UNINITIALIZED }, desiredState = State.DELETED )
-    private ListenableFuture<Void> doDelete()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
-        return doAfterAlways(closeAsync(), new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                deleted();
-                QpidLoggerTurboFilter.filterRemovedFromRootContext(_filter);
-                setState(State.DELETED);
-
-            }
-        });
+        QpidLoggerTurboFilter.filterRemovedFromRootContext(_filter);
+        return super.onDelete();
     }
 
     @SuppressWarnings("unused")

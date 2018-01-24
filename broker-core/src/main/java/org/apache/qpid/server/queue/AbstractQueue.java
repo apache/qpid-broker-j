@@ -196,7 +196,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private AtomicBoolean _stopped = new AtomicBoolean(false);
 
     private final AtomicBoolean _deleted = new AtomicBoolean(false);
-    private final SettableFuture<Integer> _deleteFuture = SettableFuture.create();
+    private final SettableFuture<Integer> _deleteQueueDepthFuture = SettableFuture.create();
 
     private final List<Action<? super X>> _deleteTaskList = new CopyOnWriteArrayList<>();
 
@@ -1787,16 +1787,20 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public ListenableFuture<Integer> deleteAndReturnCountAsync()
     {
-        // Check access
-        authorise(Operation.DELETE);
+        return Futures.transformAsync(deleteAsync(), v -> _deleteQueueDepthFuture, getTaskExecutor());
+    }
 
-        if(hasReferrers())
-        {
-            throw new MessageDestinationIsAlternateException(getName());
-        }
-
+    private ListenableFuture<Integer> performDelete()
+    {
         if (_deleted.compareAndSet(false, true))
         {
+            if (getState() == State.UNINITIALIZED)
+            {
+                preSetAlternateBinding();
+                _deleteQueueDepthFuture.set(0);
+                return _deleteQueueDepthFuture;
+            }
+
             final int queueDepthMessages = getQueueDepthMessages();
 
             for(MessageSender sender : _linkedSenders.keySet())
@@ -1829,21 +1833,17 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 _queueHouseKeepingTask.cancel();
 
                 performQueueDeleteTasks();
-                deleted();
 
                 //Log Queue Deletion
                 getEventLogger().message(_logSubject, QueueMessages.DELETED(getId().toString()));
-
-                _deleteFuture.set(queueDepthMessages);
-                setState(State.DELETED);
+                _deleteQueueDepthFuture.set(queueDepthMessages);
             }
             catch(Throwable e)
             {
-                _deleteFuture.setException(e);
+                _deleteQueueDepthFuture.setException(e);
             }
-
         }
-        return _deleteFuture;
+        return _deleteQueueDepthFuture;
     }
 
     private void routeToAlternate(List<QueueEntry> entries)
@@ -2958,29 +2958,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return Futures.immediateFuture(null);
     }
 
-    @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.DELETED)
-    private ListenableFuture<Void> doDeleteBeforeInitialize()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
-        preSetAlternateBinding();
-        setState(State.DELETED);
-        return Futures.immediateFuture(null);
+        return Futures.transform(performDelete(), i -> null, getTaskExecutor());
     }
-
-    @StateTransition(currentState = State.ACTIVE, desiredState = State.DELETED)
-    private ListenableFuture<Void> doDelete()
-    {
-        ListenableFuture<Integer> removeFuture = deleteAndReturnCountAsync();
-        return doAfter(removeFuture, new Runnable()
-        {
-            @Override
-            public void run()
-            {
-
-            }
-        });
-
-    }
-
 
     @Override
     public ExclusivityPolicy getExclusive()
@@ -3115,6 +3097,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         if (changedAttributes.contains(ALTERNATE_BINDING))
         {
             validateOrCreateAlternateBinding(queue, false);
+        }
+
+        if (changedAttributes.contains(ConfiguredObject.DESIRED_STATE) && proxyForValidation.getDesiredState() == State.DELETED)
+        {
+            if(hasReferrers())
+            {
+                throw new MessageDestinationIsAlternateException(getName());
+            }
         }
     }
 

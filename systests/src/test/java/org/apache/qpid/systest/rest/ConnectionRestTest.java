@@ -93,7 +93,7 @@ public class ConnectionRestTest extends QpidRestTestCase
         getRestTestHelper().submitRequest(connectionUrl, "DELETE", HttpServletResponse.SC_OK);
 
         connections = getRestTestHelper().getJsonAsList("connection/" + portName);
-        assertEquals("Unexpected number of connections before deletion", 0, connections.size());
+        assertEquals("Unexpected number of connections after deletion", 0, connections.size());
 
         try
         {
@@ -103,6 +103,18 @@ public class ConnectionRestTest extends QpidRestTestCase
         catch (JMSException je)
         {
             // PASS
+        }
+        finally
+        {
+            try
+            {
+                _connection.close();
+            }
+            catch (JMSException e)
+            {
+                // PASS
+            }
+            _connection = null;
         }
     }
 

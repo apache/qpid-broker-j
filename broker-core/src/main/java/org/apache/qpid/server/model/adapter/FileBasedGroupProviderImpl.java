@@ -264,28 +264,23 @@ public class FileBasedGroupProviderImpl
         return Futures.immediateFuture(null);
     }
 
-    @StateTransition( currentState = { State.QUIESCED, State.ACTIVE, State.ERRORED}, desiredState = State.DELETED )
-    private ListenableFuture<Void> doDelete()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
-        return doAfterAlways(closeAsync(),
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        File file = new File(getPath());
-                        if (file.exists())
-                        {
-                            if (!file.delete())
-                            {
-                                throw new IllegalConfigurationException("Cannot delete group file");
-                            }
-                        }
-
-                        deleted();
-                        setState(State.DELETED);
-                    }
-                });
+        // We manage the storage children so we close (so they may free any resources) them rather than deleting them
+        return doAfterAlways(closeChildren(),
+                             () -> {
+                                 File file = new File(getPath());
+                                 if (file.exists())
+                                 {
+                                     if (!file.delete())
+                                     {
+                                         throw new IllegalConfigurationException(String.format(
+                                                 "Cannot delete group file '%s'",
+                                                 file));
+                                     }
+                                 }
+                             });
     }
 
     @StateTransition( currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
@@ -382,13 +377,12 @@ public class FileBasedGroupProviderImpl
             }
         }
 
-        @StateTransition( currentState = State.ACTIVE, desiredState = State.DELETED )
-        private ListenableFuture<Void> doDelete()
+        @Override
+        protected ListenableFuture<Void> onDelete()
         {
             _groupDatabase.removeGroup(getName());
-            deleted();
-            setState(State.DELETED);
-            return Futures.immediateFuture(null);
+            return super.onDelete();
+
         }
 
         private class GroupMemberAdapter extends AbstractConfiguredObject<GroupMemberAdapter> implements
@@ -424,13 +418,11 @@ public class FileBasedGroupProviderImpl
                 return Futures.immediateFuture(null);
             }
 
-            @StateTransition(currentState = State.ACTIVE, desiredState = State.DELETED)
-            private ListenableFuture<Void> doDelete()
+            @Override
+            protected ListenableFuture<Void> onDelete()
             {
                 _groupDatabase.removeUserFromGroup(getName(), GroupAdapter.this.getName());
-                deleted();
-                setState(State.DELETED);
-                return Futures.immediateFuture(null);
+                return super.onDelete();
             }
         }
     }

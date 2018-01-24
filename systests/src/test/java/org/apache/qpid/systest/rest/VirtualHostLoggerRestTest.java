@@ -32,6 +32,7 @@ import org.apache.qpid.server.logging.logback.VirtualHostFileLogger;
 import org.apache.qpid.server.logging.logback.VirtualHostNameAndLevelLogInclusionRule;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.util.LogMonitor;
 
@@ -100,4 +101,41 @@ public class VirtualHostLoggerRestTest extends QpidRestTestCase
         getRestTestHelper().submitRequest(loggerRestUrl, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
+    public void testDeleteVirtualHostLoggerAndRule_QPID_8066() throws Exception
+    {
+        final String hostRestUrl = "virtualhost/" + TEST1_VIRTUALHOST + "/" + TEST1_VIRTUALHOST;
+        final String loggerRestUrlBase = "virtualhostlogger/" + TEST1_VIRTUALHOST + "/" + TEST1_VIRTUALHOST;
+
+        String loggerName = "testLogger1";
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(VirtualHostLogger.NAME, loggerName);
+        attributes.put(ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE);
+        getRestTestHelper().submitRequest(loggerRestUrlBase, "PUT", attributes, HttpServletResponse.SC_CREATED);
+
+        final String loggerRuleRestUrlBase = "virtualhostloginclusionrule/" + TEST1_VIRTUALHOST + "/" + TEST1_VIRTUALHOST + "/" + loggerName;
+
+        String loggerRuleName = "loggerRuleName";
+        Map<String, Object> virtualHostRuleAttributes = new HashMap<>();
+        virtualHostRuleAttributes.put("name", loggerRuleName);
+        virtualHostRuleAttributes.put("type", VirtualHostNameAndLevelLogInclusionRule.TYPE);
+        getRestTestHelper().submitRequest(loggerRuleRestUrlBase, "PUT", virtualHostRuleAttributes, HttpServletResponse.SC_CREATED);
+
+
+        Map<String, Object> host = getRestTestHelper().getJsonAsMap(hostRestUrl);
+        assertEquals("Unexpected state before restart",
+                     State.ACTIVE.name(), host.get(ConfiguredObject.STATE));
+        assertEquals("Unexpected number of loggers before restart",
+                     1, getRestTestHelper().getJsonAsList(loggerRestUrlBase).size());
+
+        getRestTestHelper().submitRequest(loggerRestUrlBase, "DELETE", null, HttpServletResponse.SC_OK);
+
+        restartDefaultBroker();
+
+        host = getRestTestHelper().getJsonAsMap(hostRestUrl);
+        assertEquals("Unexpected state after restart",
+                     State.ACTIVE.name(), host.get(ConfiguredObject.STATE));
+
+        assertEquals("Unexpected number of loggers after restart",
+                     0, getRestTestHelper().getJsonAsList(loggerRestUrlBase).size());
+    }
 }

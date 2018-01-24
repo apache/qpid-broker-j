@@ -119,33 +119,6 @@ public class RedirectingVirtualHostNodeImpl
         return resultFuture;
     }
 
-    @StateTransition( currentState = { State.ACTIVE, State.STOPPED, State.ERRORED}, desiredState = State.DELETED )
-    private ListenableFuture<Void> doDelete()
-    {
-        final ListenableFuture<Void> future = Futures.immediateFuture(null);
-        final RedirectingVirtualHostImpl virtualHost = _virtualHost;
-        if (virtualHost != null)
-        {
-            return doAfter(virtualHost.closeAsync(), new Callable<ListenableFuture<Void>>()
-            {
-                @Override
-                public ListenableFuture<Void> call() throws Exception
-                {
-                    _virtualHost = null;
-                    deleted();
-                    setState(State.DELETED);
-                    return future;
-                }
-            });
-        }
-        else
-        {
-            setState(State.DELETED);
-            deleted();
-            return future;
-        }
-    }
-
     @StateTransition( currentState = { State.ACTIVE, State.ERRORED, State.UNINITIALIZED }, desiredState = State.STOPPED )
     private ListenableFuture<Void> doStop()
     {
@@ -175,17 +148,24 @@ public class RedirectingVirtualHostNodeImpl
     protected ListenableFuture<Void> beforeClose()
     {
         final ListenableFuture<Void> superFuture = super.beforeClose();
+        return closeVirtualHost(superFuture);
+    }
+
+    @Override
+    protected ListenableFuture<Void> beforeDelete()
+    {
+        final ListenableFuture<Void> superFuture = super.beforeDelete();
+        return closeVirtualHost(superFuture);
+    }
+
+    private ListenableFuture<Void> closeVirtualHost(final ListenableFuture<Void> superFuture)
+    {
         final RedirectingVirtualHostImpl virtualHost = _virtualHost;
         if (virtualHost != null)
         {
-            return doAfter(virtualHost.closeAsync(), new Callable<ListenableFuture<Void>>()
-            {
-                @Override
-                public ListenableFuture<Void> call() throws Exception
-                {
-                    _virtualHost = null;
-                    return superFuture;
-                }
+            return doAfter(virtualHost.closeAsync(), () -> {
+                _virtualHost = null;
+                return superFuture;
             });
         }
         else

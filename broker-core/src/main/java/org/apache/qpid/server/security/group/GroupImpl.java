@@ -52,13 +52,4 @@ public class GroupImpl extends AbstractConfiguredObject<GroupImpl> implements Gr
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
     }
-
-
-    @StateTransition(currentState = {State.ACTIVE}, desiredState = State.DELETED)
-    private ListenableFuture<Void> doDelete()
-    {
-        deleted();
-        return Futures.immediateFuture(null);
-    }
-
 }

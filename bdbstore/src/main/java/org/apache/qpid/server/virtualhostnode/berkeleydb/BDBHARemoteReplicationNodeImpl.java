@@ -30,8 +30,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +45,6 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -69,6 +68,7 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
     private BDBHAVirtualHostNodeLogSubject _virtualHostNodeLogSubject;
     private GroupLogSubject _groupLogSubject;
     private volatile NodeRole _lastKnownRole;
+    private volatile  boolean _nodeLeft = false;
 
     public BDBHARemoteReplicationNodeImpl(BDBHAVirtualHostNode<?> virtualHostNode, Map<String, Object> attributes, ReplicatedEnvironmentFacade replicatedEnvironmentFacade)
     {
@@ -117,52 +117,58 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
     }
 
     @Override
-    public void deleted()
-    {
-        super.deleted();
-    }
-
-    @Override
     public String toString()
     {
         return getClass().getSimpleName() + "[id=" + getId() + ", name=" + getName() + ", address=" + getAddress()
                + ", state=" + getState() + ", role=" + getRole() + "]";
     }
 
-    @StateTransition(currentState = {State.ACTIVE, State.UNAVAILABLE}, desiredState = State.DELETED)
-    private ListenableFuture<Void> doDelete()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
-        String nodeName = getName();
+        if (!_nodeLeft)
+        {
+            SettableFuture<Void> future = SettableFuture.create();
 
-        getEventLogger().message(_virtualHostNodeLogSubject, HighAvailabilityMessages.DELETED());
+            String nodeName = getName();
 
-        boolean deletionAllowed;
-        try
-        {
-            deletionAllowed = _replicatedEnvironmentFacade.removeNodeFromGroup(nodeName);
-        }
-        catch (ServerScopedRuntimeException e)
-        {
-            throw e;
-        }
-        catch (RuntimeException e)
-        {
-            throw new IllegalStateTransitionException("Unexpected exception on node '" + nodeName + "' deletion", e);
-        }
+            boolean deletionAllowed;
+            try
+            {
+                getEventLogger().message(_virtualHostNodeLogSubject, HighAvailabilityMessages.DELETED());
+                deletionAllowed = _replicatedEnvironmentFacade.removeNodeFromGroup(nodeName);
+                if (deletionAllowed)
+                {
+                    future.set(null);
+                }
+                else
+                {
+                    future.setException(new IllegalStateTransitionException(String.format(
+                            "Node '%s' cannot be deleted when role is a master",
+                            nodeName)));
+                }
+            }
+            catch (ServerScopedRuntimeException e)
+            {
+                future.setException(e);
+                throw e;
+            }
+            catch (RuntimeException e)
+            {
+                future.setException(new IllegalStateTransitionException(String.format(
+                        "Unexpected exception on node '%s' deletion",
+                        nodeName), e));
+            }
 
-        if (deletionAllowed)
-        {
-            setState(State.DELETED);
-            deleted();
+            return future;
         }
         else
         {
-            throw new IllegalStateTransitionException("Node '" + nodeName + "' cannot be deleted when role is a master");
+            return super.onDelete();
         }
-
-        return Futures.immediateFuture(null);
     }
 
+    @SuppressWarnings("unchecked")
     protected void afterSetRole()
     {
         try
@@ -269,5 +275,16 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
     private EventLogger getEventLogger()
     {
         return _broker.getEventLogger();
+    }
+
+    void setNodeLeft(final boolean nodeLeft)
+    {
+        _nodeLeft = nodeLeft;
+    }
+
+    @Override
+    protected ListenableFuture<Void> deleteNoChecks()
+    {
+        return super.deleteNoChecks();
     }
 }

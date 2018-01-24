@@ -31,4 +31,5 @@ org.apache.qpid.systest.rest.VirtualHostRestTest#testRecoverVirtualHostInDesired
 org.apache.qpid.systest.rest.VirtualHostRestTest#testMutateStateOfVirtualHostWithQueuesAndMessages
 
 org.apache.qpid.systest.rest.VirtualHostNodeRestTest#testCreateAndDeleteVirtualHostNode
+org.apache.qpid.systest.rest.VirtualHostLoggerRestTest#testDeleteVirtualHostLoggerAndRule_QPID_8066
 

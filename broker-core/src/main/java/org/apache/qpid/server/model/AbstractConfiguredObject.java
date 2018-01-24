@@ -1697,49 +1697,17 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 }
                 else
                 {
-                    Map<String, Object> attributes = Collections.singletonMap(ConfiguredObject.DESIRED_STATE, desiredState);
-                    ConfiguredObject<?> proxyForValidation = createProxyForValidation(attributes);
-                    authoriseSetAttributes(proxyForValidation, attributes);
-                    validateChange(proxyForValidation, attributes.keySet());
-
                     if (desiredState == State.DELETED)
                     {
-                        // for DELETED state we should invoke transition method first to make sure that object can be deleted.
-                        // If method results in exception being thrown due to various integrity violations
-                        // then object cannot be deleted without prior resolving of integrity violations.
-                        // The state transition should be disallowed.
-                        if (desiredState != currentDesiredState)
-                        {
-                            if(_parent instanceof AbstractConfiguredObject)
-                            {
-                                ((AbstractConfiguredObject<?>)_parent).validateChildDelete(AbstractConfiguredObject.this);
-                            }
-                            else if (_parent instanceof AbstractConfiguredObjectProxy)
-                            {
-                                ((AbstractConfiguredObjectProxy)_parent).validateChildDelete(AbstractConfiguredObject.this);
-                            }
-
-
-                            return doAfter(attainState(desiredState), new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    // state transition notification should be already issued.
-                                    // changing attribute value and notifying listeners about attribute change
-                                    // in case when any listener relies on attribute change rather then on state change
-                                    changeAttribute(ConfiguredObject.DESIRED_STATE, desiredState);
-                                    attributeSet(ConfiguredObject.DESIRED_STATE, currentDesiredState, desiredState);
-                                }
-                            });
-                        }
-                        else
-                        {
-                            return Futures.immediateFuture(null);
-                        }
+                        return deleteAsync();
                     }
                     else
                     {
+                        Map<String, Object> attributes = Collections.singletonMap(ConfiguredObject.DESIRED_STATE, desiredState);
+                        ConfiguredObject<?> proxyForValidation = createProxyForValidation(attributes);
+                        authoriseSetAttributes(proxyForValidation, attributes);
+                        validateChange(proxyForValidation, attributes.keySet());
+
                         if (changeAttribute(ConfiguredObject.DESIRED_STATE, desiredState))
                         {
                             attributeSet(ConfiguredObject.DESIRED_STATE, currentDesiredState, desiredState);
@@ -2246,7 +2214,133 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public final ListenableFuture<Void> deleteAsync()
     {
-        return setDesiredState(State.DELETED);
+        final State currentDesiredState = getDesiredState();
+
+        if (currentDesiredState == State.DELETED)
+        {
+            return Futures.immediateFuture(null);
+        }
+
+        Map<String, Object> attributes = Collections.singletonMap(ConfiguredObject.DESIRED_STATE, State.DELETED);
+        ConfiguredObject<?> proxyForValidation = createProxyForValidation(attributes);
+        authoriseSetAttributes(proxyForValidation, attributes);
+        validateChange(proxyForValidation, attributes.keySet());
+
+        // for DELETED state we should invoke transition method first to make sure that object can be deleted.
+        // If method results in exception being thrown due to various integrity violations
+        // then object cannot be deleted without prior resolving of integrity violations.
+        // The state transition should be disallowed.
+
+        if(_parent instanceof AbstractConfiguredObject<?>)
+        {
+            ((AbstractConfiguredObject<?>)_parent).validateChildDelete(AbstractConfiguredObject.this);
+        }
+        else if (_parent instanceof AbstractConfiguredObjectProxy)
+        {
+            ((AbstractConfiguredObjectProxy)_parent).validateChildDelete(AbstractConfiguredObject.this);
+        }
+
+        return deleteNoChecks();
+    }
+
+    protected ListenableFuture<Void> deleteNoChecks()
+    {
+        final String simpleClassName = AbstractConfiguredObject.this.getClass().getSimpleName();
+        final SettableFuture<Void> returnFuture = SettableFuture.create();
+        final State currentDesiredState = getDesiredState();
+
+        final ChainedListenableFuture<Void> future =
+                doAfter(beforeDelete(), this::deleteChildren).then(this::onDelete)
+                                                             .then(() -> {
+                                                                 final State currentState = getState();
+                                                                 setState(State.DELETED);
+                                                                 notifyStateChanged(currentState, State.DELETED);
+                                                                 changeAttribute(ConfiguredObject.DESIRED_STATE, State.DELETED);
+                                                                 attributeSet(ConfiguredObject.DESIRED_STATE, currentDesiredState, State.DELETED);
+                                                                 unregister(true);
+
+                                                                 LOGGER.debug("Delete {} : {}",
+                                                                              simpleClassName,
+                                                                              getName());
+                                                                 return Futures.immediateFuture(null);
+                                                                       });
+        addFutureCallback(future, new FutureCallback<Void>()
+        {
+            @Override
+            public void onSuccess(final Void result)
+            {
+                returnFuture.set(null);
+            }
+
+            @Override
+            public void onFailure(final Throwable t)
+            {
+                returnFuture.setException(t);
+            }
+        }, MoreExecutors.directExecutor());
+
+        return returnFuture;
+    }
+
+    protected final ListenableFuture<Void> deleteChildren()
+    {
+        // If this object manages its own child-storage then don't propagate the delete.  The rationale
+        // is that deleting the object will delete the storage that contains the children.  Telling each
+        // child and their children to delete themselves would generate unnecessary 'delete' work in the
+        // child-storage (which also might fail).
+        if (managesChildStorage())
+        {
+            return Futures.immediateFuture(null);
+        }
+
+        final List<ListenableFuture<Void>> childDeleteFutures = new ArrayList<>();
+
+        applyToChildren(child -> {
+
+            final ListenableFuture<Void> childDeleteFuture;
+            if (child instanceof AbstractConfiguredObject<?>)
+            {
+                 childDeleteFuture = ((AbstractConfiguredObject<?>) child).deleteNoChecks();
+            }
+            else if (child instanceof AbstractConfiguredObjectProxy)
+            {
+                childDeleteFuture = ((AbstractConfiguredObjectProxy) child).deleteNoChecks();
+            }
+            else
+            {
+                childDeleteFuture = Futures.immediateFuture(null);
+            }
+
+            addFutureCallback(childDeleteFuture, new FutureCallback<Void>()
+            {
+                @Override
+                public void onSuccess(final Void result)
+                {
+                }
+
+                @Override
+                public void onFailure(final Throwable t)
+                {
+                    LOGGER.error("Exception occurred while deleting {} : {}",
+                                 child.getClass().getSimpleName(), child.getName(), t);
+                }
+            }, getTaskExecutor());
+            childDeleteFutures.add(childDeleteFuture);
+        });
+
+        ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(childDeleteFutures);
+
+        return Futures.transform(combinedFuture, input -> null, getTaskExecutor());
+    }
+
+    protected ListenableFuture<Void> beforeDelete()
+    {
+        return Futures.immediateFuture(null);
+    }
+
+    protected ListenableFuture<Void> onDelete()
+    {
+        return Futures.immediateFuture(null);
     }
 
     public final void start()
@@ -2259,8 +2353,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return setDesiredState(State.ACTIVE);
     }
 
-
-    protected void deleted()
+    private void deleted()
     {
         unregister(true);
     }
@@ -3677,7 +3770,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         @Override
         public void handleException(RuntimeException exception, ConfiguredObject<?> source)
         {
-            if(source instanceof AbstractConfiguredObject)
+            if(source instanceof AbstractConfiguredObject<?>)
             {
                 ((AbstractConfiguredObject)source).handleExceptionOnOpen(exception);
             }
@@ -3710,7 +3803,19 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 if (source.getState() != State.DELETED)
                 {
                     // TODO - RG - This isn't right :-(
-                    source.deleteAsync();
+                    if (source instanceof AbstractConfiguredObject)
+                    {
+                        ((AbstractConfiguredObject) source).deleteNoChecks();
+                    }
+                    else if (source instanceof AbstractConfiguredObjectProxy)
+                    {
+                        ((AbstractConfiguredObjectProxy) source).deleteNoChecks();
+                    }
+                    else
+                    {
+                        source.deleteAsync();
+                    }
+
                 }
             }
             finally
@@ -3760,5 +3865,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         ListenableFuture getAttainStateFuture();
 
         void forceUpdateAllSecureAttributes();
+
+        ListenableFuture<Void> deleteNoChecks();
     }
 }

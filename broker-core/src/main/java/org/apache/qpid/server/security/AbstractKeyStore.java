@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -76,6 +77,31 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
     final EventLogger getEventLogger()
     {
         return _eventLogger;
+    }
+
+    @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+
+        if (changedAttributes.contains(ConfiguredObject.DESIRED_STATE) && proxyForValidation.getDesiredState() == State.DELETED)
+        {
+            // verify that it is not in use
+            String storeName = getName();
+
+            Collection<Port> ports = new ArrayList<>(getBroker().getPorts());
+            for (Port port : ports)
+            {
+                if (port.getKeyStore() == this)
+                {
+                    throw new IntegrityViolationException(String.format(
+                            "Key store '%s' can't be deleted as it is in use by a port: %s",
+                            storeName,
+                            port.getName()));
+                }
+            }
+        }
+
     }
 
     @Override
@@ -129,25 +155,6 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
         }
     }
 
-    protected final ListenableFuture<Void> deleteIfNotInUse()
-    {
-        // verify that it is not in use
-        String storeName = getName();
-
-        Collection<Port> ports = new ArrayList<>(getBroker().getPorts());
-        for (Port port : ports)
-        {
-            if (port.getKeyStore() == this)
-            {
-                throw new IntegrityViolationException("Key store '" + storeName + "' can't be deleted as it is in use by a port:" + port.getName());
-            }
-        }
-        deleted();
-        setState(State.DELETED);
-        getEventLogger().message(KeyStoreMessages.DELETE(getName()));
-        return Futures.immediateFuture(null);
-    }
-
     protected abstract void checkCertificateExpiry();
 
     protected void checkCertificatesExpiry(final long currentTime,
@@ -175,6 +182,13 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
                 }
             }
         }
+    }
+
+    @Override
+    protected ListenableFuture<Void> onDelete()
+    {
+        getEventLogger().message(KeyStoreMessages.DELETE(getName()));
+        return super.onDelete();
     }
 
     @Override

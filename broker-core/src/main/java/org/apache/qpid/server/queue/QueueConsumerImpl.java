@@ -37,13 +37,13 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.filter.SelectorParsingException;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.server.filter.MessageFilter;
+import org.apache.qpid.server.filter.SelectorParsingException;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.SubscriptionMessages;
@@ -242,16 +242,9 @@ class QueueConsumerImpl<T extends ConsumerTarget>
             _waitingOnCreditMessageListener.remove();
 
             return doAfter(_target.consumerRemoved(this),
-                           new Runnable()
-                           {
-                               @Override
-                               public void run()
-                               {
-                                   _queue.unregisterConsumer(QueueConsumerImpl.this);
-
-                                   deleted();
-                               }
-                           });
+                           () -> {
+                               _queue.unregisterConsumer(QueueConsumerImpl.this);
+                           }).then(this::deleteNoChecks);
         }
         else
         {

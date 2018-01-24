@@ -70,7 +70,6 @@ import org.apache.qpid.server.transport.AcceptingTransport;
 import org.apache.qpid.server.transport.PortBindFailureException;
 import org.apache.qpid.server.transport.TransportProvider;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
-import org.apache.qpid.server.util.PortUtil;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort<AmqpPortImpl>
@@ -95,7 +94,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     private final AtomicBoolean _connectionCountWarningGiven = new AtomicBoolean();
 
     private final Container<?> _container;
-    private final AtomicBoolean _closing = new AtomicBoolean();
+    private final AtomicBoolean _closingOrDeleting = new AtomicBoolean();
 
     private AcceptingTransport _transport;
     private SSLContext _sslContext;
@@ -276,12 +275,32 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     @Override
     protected ListenableFuture<Void> beforeClose()
     {
-        _closing.set(true);
+        _closingOrDeleting.set(true);
         return Futures.immediateFuture(null);
     }
 
     @Override
     protected ListenableFuture<Void> onClose()
+    {
+        closeTransport();
+        return Futures.immediateFuture(null);
+    }
+
+    @Override
+    protected ListenableFuture<Void> beforeDelete()
+    {
+        _closingOrDeleting.set(true);
+        return super.beforeDelete();
+    }
+
+    @Override
+    protected ListenableFuture<Void> onDelete()
+    {
+        closeTransport();
+        return super.onDelete();
+    }
+
+    private void closeTransport()
     {
         if (_transport != null)
         {
@@ -292,7 +311,6 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
 
             _transport.close();
         }
-        return Futures.immediateFuture(null);
     }
 
     @Override
@@ -551,7 +569,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     public boolean canAcceptNewConnection(final SocketAddress remoteSocketAddress)
     {
         String addressString = remoteSocketAddress.toString();
-        if (_closing.get())
+        if (_closingOrDeleting.get())
         {
             _container.getEventLogger().message(new PortLogSubject(this),
                                                 PortMessages.CONNECTION_REJECTED_CLOSED(addressString));

@@ -230,15 +230,16 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         String modelVersion = (String) getActualAttributes().get(Broker.MODEL_VERSION);
         if (modelVersion == null)
         {
-            deleted();
-            throw new IllegalConfigurationException("Broker " + Broker.MODEL_VERSION + " must be specified");
+            deleteNoChecks();
+            throw new IllegalConfigurationException(String.format("Broker %s must be specified", Broker.MODEL_VERSION));
         }
 
         if (!MODEL_VERSION_PATTERN.matcher(modelVersion).matches())
         {
-            deleted();
-            throw new IllegalConfigurationException("Broker " + Broker.MODEL_VERSION + " is specified in incorrect format: "
-                                                    + modelVersion);
+            deleteNoChecks();
+            throw new IllegalConfigurationException(String.format("Broker %s is specified in incorrect format: %s",
+                                                                  Broker.MODEL_VERSION,
+                                                                  modelVersion));
         }
 
         int versionSeparatorPosition = modelVersion.indexOf(".");
@@ -248,15 +249,17 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
         if (majorModelVersion != BrokerModel.MODEL_MAJOR_VERSION || minorModelVersion > BrokerModel.MODEL_MINOR_VERSION)
         {
-            deleted();
-            throw new IllegalConfigurationException("The model version '" + modelVersion
-                                                    + "' in configuration is incompatible with the broker model version '" + BrokerModel.MODEL_VERSION + "'");
+            deleteNoChecks();
+            throw new IllegalConfigurationException(String.format(
+                    "The model version '%s' in configuration is incompatible with the broker model version '%s'",
+                    modelVersion,
+                    BrokerModel.MODEL_VERSION));
         }
 
         if(!isDurable())
         {
-            deleted();
-            throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
+            deleteNoChecks();
+            throw new IllegalArgumentException(String.format("%s must be durable", getClass().getSimpleName()));
         }
 
     }

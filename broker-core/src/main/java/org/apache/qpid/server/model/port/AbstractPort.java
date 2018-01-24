@@ -368,19 +368,11 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
         return getChildren(Connection.class);
     }
 
-    @StateTransition(currentState = { State.ACTIVE, State.QUIESCED, State.ERRORED}, desiredState = State.DELETED )
-    private ListenableFuture<Void> doDelete()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
-        return doAfterAlways(closeAsync(), new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                deleted();
-                setState(State.DELETED);
-                _eventLogger.message(PortMessages.DELETE(getType(), getName()));
-            }
-        });
+        _eventLogger.message(PortMessages.DELETE(getType(), getName()));
+        return super.onDelete();
     }
 
     @StateTransition( currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE )

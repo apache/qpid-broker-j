@@ -106,15 +106,7 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
         {
             throw stateChangeException;
         }
+        setState(State.ACTIVE);
         return (ListenableFuture<Void>) _stateChangeFuture;
     }
-
-    @StateTransition(currentState = {State.ACTIVE, State.UNINITIALIZED, State.ERRORED}, desiredState = State.DELETED)
-    private ListenableFuture<Void> doDelete()
-    {
-        // to invoke ACO#unregisterChild as part of delete
-        deleted();
-        return Futures.immediateFuture(null);
-    }
-
 }

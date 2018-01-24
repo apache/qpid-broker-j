@@ -51,13 +51,4 @@ public class GroupMemberImpl extends AbstractConfiguredObject<GroupMemberImpl> i
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
     }
-
-
-    @StateTransition(currentState = {State.ACTIVE}, desiredState = State.DELETED)
-    private ListenableFuture<Void> doDelete()
-    {
-        deleted();
-        return Futures.immediateFuture(null);
-    }
-
 }

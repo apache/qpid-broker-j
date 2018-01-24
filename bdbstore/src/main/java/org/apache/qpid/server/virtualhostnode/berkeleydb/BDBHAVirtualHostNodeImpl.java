@@ -153,7 +153,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     @ManagedAttributeField(afterSet = "postSetPermittedNodes")
     private List<String> _permittedNodes;
 
-    private boolean _isClosed;
+    private volatile boolean _isClosedOrDeleted;
 
     @ManagedObjectFactoryConstructor(conditionallyAvailable = true, condition = "org.apache.qpid.server.JECheck#isAvailable()")
     public BDBHAVirtualHostNodeImpl(Map<String, Object> attributes, Broker<?> broker)
@@ -435,54 +435,45 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     }
 
     @Override
-    @StateTransition( currentState = { State.ACTIVE, State.STOPPED, State.ERRORED}, desiredState = State.DELETED )
-    protected ListenableFuture<Void> doDelete()
+    protected ListenableFuture<Void> beforeDelete()
     {
-
-        // get helpers before close. on close all children are closed and not available anymore
-        final Set<InetSocketAddress> helpers = getRemoteNodeAddresses();
-        return doAfter(super.doDelete(),new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                    if (getConfigurationStore() != null)
-                    {
-                        getEventLogger().message(getVirtualHostNodeLogSubject(), HighAvailabilityMessages.DELETED());
-                    }
-
-                    if (getState() == State.DELETED && !helpers.isEmpty())
-                    {
-                        try
-                        {
-                            new ReplicationGroupAdmin(_groupName, helpers).removeMember(getName());
-                        }
-                        catch(DatabaseException e)
-                        {
-                            LOGGER.warn("The deletion of node " + this + " on remote nodes failed due to: " + e.getMessage()
-                                        + ". To finish deletion a removal of the node from any of remote nodes (" + helpers + ") is required.");
-                        }
-                    }
-
-            }
-        });
-
-
+        _isClosedOrDeleted = true;
+        return super.beforeDelete();
     }
 
     @Override
-    protected ListenableFuture<Void> deleteVirtualHostIfExists()
+    protected ListenableFuture<Void> onDelete()
     {
-        ReplicatedEnvironmentFacade replicatedEnvironmentFacade = getReplicatedEnvironmentFacade();
-        if (replicatedEnvironmentFacade != null && replicatedEnvironmentFacade.isMaster()
-                && replicatedEnvironmentFacade.getNumberOfElectableGroupMembers() == 1)
-        {
-            return super.deleteVirtualHostIfExists();
-        }
-        else
-        {
-            return closeVirtualHostIfExist();
-        }
+        final Set<InetSocketAddress> helpers = getRemoteNodeAddresses();
+
+        return doAfterAlways(closeVirtualHostIfExists(),
+                             () -> {
+
+                                 closeEnvironment();
+
+                                 DurableConfigurationStore configurationStore = getConfigurationStore();
+                                 if (configurationStore != null)
+                                 {
+                                     configurationStore.closeConfigurationStore();
+                                     configurationStore.onDelete(BDBHAVirtualHostNodeImpl.this);
+                                     getEventLogger().message(getVirtualHostNodeLogSubject(), HighAvailabilityMessages.DELETED());
+                                 }
+
+                                 if (!helpers.isEmpty())
+                                 {
+                                     try
+                                     {
+                                         new ReplicationGroupAdmin(_groupName, helpers).removeMember(getName());
+                                     }
+                                     catch(DatabaseException e)
+                                     {
+                                         LOGGER.warn(String.format(
+                                                 "The deletion of node %s on remote nodes failed due to: %s. To finish deletion a "
+                                                 + "removal of the node from any of remote nodes (%s) is required.",
+                                                 this, e.getMessage(), helpers));
+                                     }
+                                 }
+                             });
     }
 
     private Set<InetSocketAddress> getRemoteNodeAddresses()
@@ -759,7 +750,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     @Override
     protected ListenableFuture<Void> beforeClose()
     {
-        _isClosed = true;
+        _isClosedOrDeleted = true;
         return super.beforeClose();
     }
 
@@ -784,7 +775,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         @Override
         public void stateChange(StateChangeEvent stateChangeEvent) throws RuntimeException
         {
-            if (_isClosed)
+            if (_isClosedOrDeleted)
             {
                 LOGGER.debug("Ignoring state transition into state {} because VHN is already closed or closing", stateChangeEvent.getState());
             }
@@ -797,7 +788,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 catch (RuntimeException e)
                 {
                     // Ignore exception when VHN is closed or closing
-                    if (!_isClosed)
+                    if (!_isClosedOrDeleted)
                     {
                         throw e;
                     }
@@ -1118,8 +1109,11 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
             BDBHARemoteReplicationNodeImpl remoteNode = getChildByName(BDBHARemoteReplicationNodeImpl.class, node.getName());
             if (remoteNode != null)
             {
-                remoteNode.deleted();
-                getEventLogger().message(getGroupLogSubject(), HighAvailabilityMessages.REMOVED(remoteNode.getName(), remoteNode.getAddress()));
+                remoteNode.setNodeLeft(true);
+                doAfter(remoteNode.deleteNoChecks(),
+                        () -> getEventLogger().message(getGroupLogSubject(),
+                                                 HighAvailabilityMessages.REMOVED(remoteNode.getName(),
+                                                                                  remoteNode.getAddress())));
             }
         }
 

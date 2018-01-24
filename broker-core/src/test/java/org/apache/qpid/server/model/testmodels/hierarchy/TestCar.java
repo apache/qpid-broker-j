@@ -53,9 +53,11 @@ public interface TestCar<X extends TestCar<X>> extends ConfiguredObject<X>
 
     enum Door { DRIVER, PASSENGER }
 
-    @ManagedOperation(changesConfiguredObjectState = false)
     Door openDoor(@Param(name = "door") Door door);
 
     @ManagedOperation(changesConfiguredObjectState = false)
     void startEngine(@Param(name = "keyCode", mandatory = true) String keyCode);
+
+    void setRejectStateChange(boolean b);
+
 }

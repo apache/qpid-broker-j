@@ -168,6 +168,12 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         super.validateChange(proxyForValidation, changedAttributes);
 
         validateOrCreateAlternateBinding(((Exchange<?>) proxyForValidation), false);
+
+        if (changedAttributes.contains(ConfiguredObject.DESIRED_STATE) && proxyForValidation.getDesiredState() == State.DELETED)
+        {
+            doChecks();
+        }
+
     }
 
     private boolean isReservedExchangeName(String name)
@@ -291,18 +297,8 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         _deleteTaskList.add(new DeleteDeleteTask(lifetimeObject, deleteExchangeTask));
     }
 
-    private void deleteWithChecks()
+    private void performDelete()
     {
-        if(hasReferrers())
-        {
-            throw new MessageDestinationIsAlternateException(getName());
-        }
-
-        if(isReservedExchangeName(getName()))
-        {
-            throw new RequiredExchangeException(getName());
-        }
-
         if(_closed.compareAndSet(false,true))
         {
             performDeleteTasks();
@@ -326,14 +322,19 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             }
 
             getEventLogger().message(_logSubject, ExchangeMessages.DELETED());
-
-            deleted();
-
-
         }
-        else
+    }
+
+    private void doChecks()
+    {
+        if(hasReferrers())
         {
-            deleted();
+            throw new MessageDestinationIsAlternateException(getName());
+        }
+
+        if(isReservedExchangeName(getName()))
+        {
+            throw new RequiredExchangeException(getName());
         }
     }
 
@@ -906,32 +907,15 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         return Futures.immediateFuture(null);
     }
 
-    @SuppressWarnings("unused")
-    @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.DELETED)
-    private ListenableFuture<Void>  doDeleteBeforeInitialize()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
+        if (getState() != State.UNINITIALIZED)
+        {
+            performDelete();
+        }
         preSetAlternateBinding();
-        setState(State.DELETED);
-        return Futures.immediateFuture(null);
-    }
-
-    @SuppressWarnings("unused")
-    @StateTransition(currentState = State.ACTIVE, desiredState = State.DELETED)
-    private ListenableFuture<Void> doDelete()
-    {
-        try
-        {
-            deleteWithChecks();
-            preSetAlternateBinding();
-            setState(State.DELETED);
-            return Futures.immediateFuture(null);
-        }
-        catch(MessageDestinationIsAlternateException | RequiredExchangeException e)
-        {
-            // let management know about constraint violations
-            // in order to report error back to caller
-            return Futures.immediateFailedFuture(e);
-        }
+        return super.onDelete();
     }
 
     public static final class BindingIdentifier

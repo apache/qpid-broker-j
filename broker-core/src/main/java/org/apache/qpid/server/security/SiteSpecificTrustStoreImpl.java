@@ -164,12 +164,6 @@ public class SiteSpecificTrustStoreImpl
         return x509Certificate == null ? new Certificate[0] : new Certificate[]{x509Certificate};
     }
 
-    @StateTransition(currentState = {State.ACTIVE, State.ERRORED}, desiredState = State.DELETED)
-    protected ListenableFuture<Void> doDelete()
-    {
-        return deleteIfNotInUse();
-    }
-
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     protected ListenableFuture<Void> doActivate()
     {

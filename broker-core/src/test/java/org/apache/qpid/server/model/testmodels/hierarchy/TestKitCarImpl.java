@@ -20,24 +20,16 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import java.util.Map;
 
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
 @ManagedObject( category = false,
                 type = TestKitCarImpl.TEST_KITCAR_TYPE)
-public class TestKitCarImpl extends AbstractConfiguredObject<TestKitCarImpl>
+public class TestKitCarImpl extends TestAbstractCarImpl<TestKitCarImpl>
         implements TestKitCar<TestKitCarImpl>
 {
     public static final String TEST_KITCAR_TYPE = "testkitcar";
-
-    @ManagedAttributeField
-    private Colour _bodyColour;
-
-    @ManagedAttributeField
-    private Colour _interiorColour;
 
     @ManagedAttributeField
     private Map<String,Object> _parameters;
@@ -48,31 +40,7 @@ public class TestKitCarImpl extends AbstractConfiguredObject<TestKitCarImpl>
     @ManagedObjectFactoryConstructor
     public TestKitCarImpl(final Map<String, Object> attributes)
     {
-        super(null, attributes, newTaskExecutor(), TestModel.getInstance());
-    }
-
-    @Override
-    protected void logOperation(final String operation)
-    {
-
-    }
-
-    private static CurrentThreadTaskExecutor newTaskExecutor()
-    {
-        CurrentThreadTaskExecutor currentThreadTaskExecutor = new CurrentThreadTaskExecutor();
-        currentThreadTaskExecutor.start();
-        return currentThreadTaskExecutor;
-    }
-
-    @Override
-    public Door openDoor(final Door door)
-    {
-        return door;
-    }
-
-    @Override
-    public void startEngine(final String keyCode)
-    {
+        super(attributes);
     }
 
     @Override
@@ -86,17 +54,4 @@ public class TestKitCarImpl extends AbstractConfiguredObject<TestKitCarImpl>
     {
         return _alternateEngine;
     }
-
-    @Override
-    public Colour getBodyColour()
-    {
-        return _bodyColour;
-    }
-
-    @Override
-    public Colour getInteriorColour()
-    {
-        return _interiorColour;
-    }
-
 }

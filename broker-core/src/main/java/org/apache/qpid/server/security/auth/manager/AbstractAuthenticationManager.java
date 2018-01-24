@@ -27,10 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +36,7 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.AuthenticationProviderMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -78,6 +77,28 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
         if(!isDurable())
         {
             throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
+        }
+    }
+
+    @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+
+        if (changedAttributes.contains(ConfiguredObject.DESIRED_STATE) && proxyForValidation.getDesiredState() == State.DELETED)
+        {
+            String providerName = getName();
+            // verify that provider is not in use
+            Collection<Port> ports = new ArrayList<>(_container.getChildren(Port.class));
+            for (Port<?> port : ports)
+            {
+                if (port.getAuthenticationProvider() == this)
+                {
+                    throw new IntegrityViolationException(String.format("Authentication provider '%s' is set on port %s",
+                                                                        providerName,
+                                                                        port.getName()));
+                }
+            }
         }
     }
 
@@ -130,66 +151,11 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
         return Futures.immediateFuture(null);
     }
 
-    @StateTransition( currentState = { State.ACTIVE, State.QUIESCED, State.ERRORED}, desiredState = State.DELETED)
-    protected ListenableFuture<Void> doDelete()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
-
-        String providerName = getName();
-
-        // verify that provider is not in use
-        Collection<Port> ports = new ArrayList<>(_container.getChildren(Port.class));
-        for (Port<?> port : ports)
-        {
-            if(port.getAuthenticationProvider() == this)
-            {
-                throw new IntegrityViolationException("Authentication provider '" + providerName + "' is set on port " + port.getName());
-            }
-        }
-
-        return performDelete();
-    }
-
-    private ListenableFuture<Void> performDelete()
-    {
-        final SettableFuture<Void> futureResult = SettableFuture.create();
-        addFutureCallback(closeAsync(), new FutureCallback<Void>()
-        {
-            @Override
-            public void onSuccess(final Void result)
-            {
-                try
-                {
-                    tidyUp();
-                    futureResult.set(null);
-                }
-                catch (Exception e)
-                {
-                    futureResult.setException(e);
-                }
-            }
-
-            @Override
-            public void onFailure(final Throwable t)
-            {
-                try
-                {
-                    tidyUp();
-                }
-                finally
-                {
-                    futureResult.setException(t);
-                }
-            }
-
-            private void tidyUp()
-            {
-                deleted();
-                setState(State.DELETED);
-                _eventLogger.message(AuthenticationProviderMessages.DELETE(getName()));
-            }
-        }, getTaskExecutor());
-
-        return futureResult;
+        _eventLogger.message(AuthenticationProviderMessages.DELETE(getName()));
+        return super.onDelete();
     }
 
     @Override

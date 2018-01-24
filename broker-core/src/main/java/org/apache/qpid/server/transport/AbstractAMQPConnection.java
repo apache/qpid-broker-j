@@ -34,7 +34,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
@@ -63,7 +62,6 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.TaskExecutorProvider;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -119,8 +117,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     private final AtomicLong _localTransactionOpens = new AtomicLong();
 
     private final SettableFuture<Void> _transportClosedFuture = SettableFuture.create();
-    private final SettableFuture<Void> _modelClosedFuture = SettableFuture.create();
-    private final AtomicBoolean _modelClosing = new AtomicBoolean();
+    private final SettableFuture<Void> _modelTransportRendezvousFuture = SettableFuture.create();
     private volatile NamedAddressSpace _addressSpace;
     private volatile long _lastReadTime;
     private volatile long _lastWriteTime;
@@ -160,22 +157,9 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         updateAccessControllerContext();
 
         _transportClosedFuture.addListener(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            deleted();
-                            setState(State.DELETED);
-                            logConnectionClose();
-                        }
-                        finally
-                        {
-                            _modelClosedFuture.set(null);
-                        }
-                    }
+                () -> {
+                    _modelTransportRendezvousFuture.set(null);
+                    doAfter(closeAsync(), this::logConnectionClose);
                 }, getTaskExecutor());
 
         setState(State.ACTIVE);
@@ -601,9 +585,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         return getChildren(Session.class);
     }
 
-    @SuppressWarnings("unused")
-    @StateTransition( currentState = State.ACTIVE, desiredState = State.DELETED)
-    private ListenableFuture<Void> doDelete()
+    @Override
+    protected ListenableFuture<Void> onDelete()
     {
         getEventLogger().message(_logSubject, ConnectionMessages.MODEL_DELETE());
         return closeAsyncIfNotAlreadyClosing();
@@ -627,11 +610,11 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     private ListenableFuture<Void> closeAsyncIfNotAlreadyClosing()
     {
-        if (_modelClosing.compareAndSet(false, true))
+        if (!_modelTransportRendezvousFuture.isDone())
         {
             sendConnectionCloseAsync(CloseReason.MANAGEMENT, "Connection closed by external action");
         }
-        return _modelClosedFuture;
+        return _modelTransportRendezvousFuture;
     }
 
     @Override

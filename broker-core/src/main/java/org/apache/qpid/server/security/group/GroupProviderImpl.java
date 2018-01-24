@@ -96,13 +96,4 @@ public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImp
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
     }
-
-
-    @StateTransition(currentState = {State.ACTIVE}, desiredState = State.DELETED)
-    private ListenableFuture<Void> doDelete()
-    {
-        deleted();
-        return Futures.immediateFuture(null);
-    }
-
 }
