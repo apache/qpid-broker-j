@@ -245,41 +245,6 @@ public class QpidJmsClient0xConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
-    public ConnectionBuilder setEncryptionRemoteTrustStore(final String encryptionTrustStore)
-    {
-        _options.put("encryption_remote_trust_store", encryptionTrustStore);
-        return this;
-    }
-
-    @Override
-    public ConnectionBuilder setEncryptionTrustStore(final String encryptionTrustStoreLocation)
-    {
-        _options.put("encryption_trust_store", encodeConnectionOption(encryptionTrustStoreLocation));
-        return this;
-    }
-
-    @Override
-    public ConnectionBuilder setEncryptionTrustStorePassword(final String password)
-    {
-        _options.put("encryption_trust_store_password", password);
-        return this;
-    }
-
-    @Override
-    public ConnectionBuilder setEncryptionKeyStore(final String encryptionKeyStoreLocation)
-    {
-        _options.put("encryption_key_store", encodeConnectionOption(encryptionKeyStoreLocation));
-        return this;
-    }
-
-    @Override
-    public ConnectionBuilder setEncryptionKeyStorePassword(final String password)
-    {
-        _options.put("encryption_key_store_password", password);
-        return this;
-    }
-
-    @Override
     public Connection build() throws JMSException, NamingException
     {
         return buildConnectionFactory().createConnection(_username, _password);

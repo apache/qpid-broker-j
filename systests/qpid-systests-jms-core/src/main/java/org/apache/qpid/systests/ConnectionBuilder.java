@@ -57,11 +57,6 @@ public interface ConnectionBuilder
     ConnectionBuilder setKeyAlias(String alias);
     ConnectionBuilder setSaslMechanisms(String... mechanism);
     ConnectionBuilder setCompress(boolean compress);
-    ConnectionBuilder setEncryptionRemoteTrustStore(String encryptionTrustStore);
-    ConnectionBuilder setEncryptionTrustStore(String encryptionTrustStoreLocation);
-    ConnectionBuilder setEncryptionTrustStorePassword(String password);
-    ConnectionBuilder setEncryptionKeyStore(String encryptionKeyStoreLocation);
-    ConnectionBuilder setEncryptionKeyStorePassword(String password);
 
     Connection build() throws NamingException, JMSException;
     ConnectionFactory buildConnectionFactory() throws NamingException;

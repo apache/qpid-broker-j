@@ -248,36 +248,6 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
     }
 
     @Override
-    public ConnectionBuilder setEncryptionRemoteTrustStore(final String encryptionTrustStore)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ConnectionBuilder setEncryptionTrustStore(final String encryptionTrustStoreLocation)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ConnectionBuilder setEncryptionTrustStorePassword(final String password)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ConnectionBuilder setEncryptionKeyStore(final String encryptionKeyStoreLocation)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ConnectionBuilder setEncryptionKeyStorePassword(final String password)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Connection build() throws NamingException, JMSException
     {
         return buildConnectionFactory().createConnection();
