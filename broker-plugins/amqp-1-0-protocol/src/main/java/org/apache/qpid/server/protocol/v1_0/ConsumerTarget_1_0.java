@@ -470,7 +470,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                             {
                                 _linkEndpoint.updateDisposition(_deliveryTag, outcome, true);
                             }
-                            _linkEndpoint.sendFlowConditional();
                         }
 
                         @Override

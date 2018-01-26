@@ -1020,7 +1020,8 @@ public class TransferTest extends BrokerAdminUsingTestBase
                        .disposition();
 
             // make sure sure the disposition is handled by making drain request
-            interaction.flowLinkCredit(UnsignedInteger.ZERO)
+            interaction.flowLinkCredit(UnsignedInteger.ONE)
+                       .flowNextIncomingId(UnsignedInteger.valueOf(numberOfMessages))
                        .flowDrain(Boolean.TRUE)
                        .flow()
                        .consumeResponse(Flow.class);
