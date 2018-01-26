@@ -286,6 +286,11 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
     {
         setAvailable(flow.getAvailable());
         setDeliveryCount(new SequenceNumber(flow.getDeliveryCount().intValue()));
+
+        if (Boolean.TRUE.equals(flow.getEcho()))
+        {
+            sendFlow();
+        }
     }
 
     private boolean settled(final Binary deliveryTag)

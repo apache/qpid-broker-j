@@ -494,8 +494,17 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                 setLinkCredit(limit.subtract(getDeliveryCount().unsignedIntegerValue()));
             }
         }
+
+        // send flow when echo=true or drain=true but link credit is zero
+        boolean sendFlow = Boolean.TRUE.equals(flow.getEcho()) ||
+                ( Boolean.TRUE.equals(flow.getDrain()) && getLinkCredit().equals(UnsignedInteger.ZERO));
+
         flowStateChanged();
 
+        if (sendFlow)
+        {
+            sendFlow();
+        }
     }
 
     @Override

@@ -446,11 +446,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 else
                 {
                     endpoint.receiveFlow(flow);
-
-                    if (Boolean.TRUE.equals(flow.getEcho()))
-                    {
-                        endpoint.sendFlow();
-                    }
                 }
             }
             else

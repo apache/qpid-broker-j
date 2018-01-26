@@ -431,4 +431,43 @@ public class FlowTest extends BrokerAdminUsingTestBase
         }
     }
 
+    @Test
+    @SpecificationTest(section = "2.6.7",
+            description = "The drain flag indicates how the sender SHOULD behave when insufficient messages are"
+                          + " available to consume the current link-credit. If set, the sender will"
+                          + " (after sending all available messages) advance the delivery-count as much as possible,"
+                          + " consuming all link-credit, and send the flow state to the receiver.")
+    public void drainWithZeroCredits() throws Exception
+    {
+        BrokerAdmin brokerAdmin = getBrokerAdmin();
+        brokerAdmin.createQueue(BrokerAdmin.TEST_QUEUE_NAME);
+        brokerAdmin.putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "Test1");
+
+        final InetSocketAddress addr = brokerAdmin.getBrokerAddress(BrokerAdmin.PortType.ANONYMOUS_AMQP);
+        try (FrameTransport transport = new FrameTransport(addr).connect())
+        {
+            Interaction interaction = transport.newInteraction()
+                                               .negotiateProtocol().consumeResponse()
+                                               .open().consumeResponse(Open.class)
+                                               .begin().consumeResponse(Begin.class)
+                                               .attachRole(Role.RECEIVER)
+                                               .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                                               .attach().consumeResponse(Attach.class);
+
+            Attach remoteAttach = interaction.getLatestResponse(Attach.class);
+            UnsignedInteger remoteHandle = remoteAttach.getHandle();
+            assertThat(remoteHandle, is(notNullValue()));
+
+            Flow responseFlow = interaction.flowIncomingWindow(UnsignedInteger.valueOf(2))
+                                           .flowNextIncomingId(UnsignedInteger.ZERO)
+                                           .flowLinkCredit(UnsignedInteger.ZERO)
+                                           .flowDrain(Boolean.TRUE)
+                                           .flowHandleFromLinkHandle()
+                                           .flow()
+                                           .consumeResponse().getLatestResponse(Flow.class);
+
+            assertThat(responseFlow.getHandle(), is(equalTo(remoteHandle)));
+            assertThat(responseFlow.getLinkCredit(), is(equalTo(UnsignedInteger.ZERO)));
+        }
+    }
 }
