@@ -54,14 +54,13 @@ public class OrphanConfigurationRecordPurger
 {
     private static final String USAGE_STRING =
             "usage: " + (String.format("java %s\n"
-                                       + "       -dryRun                  # Dry run mode\n"
-                                       + "       -storePath <dir>         # Store path\n"
-                                       + "       [-ha                     # HA mode\n"
-                                       + "        -nodeName <nodename>    # HA node name\n"
-                                       + "        -nodeHost <nodehost>    # HA node host\n"
-                                       + "        -groupName <groupName>] # HA group name\n"
-                                       + "       -targetUuid <uuid1>      # UUID to delete\n"
-                                       + "       [-targetUuid <uuid2>...] # UUID to delete\n",
+                                       + "       -dryRun                   # Dry run mode\n"
+                                       + "       -parentRootCategory <dir> # Parent root category\n"
+                                       + "       -storePath <dir>          # Store path\n"
+                                       + "       [-ha                      # HA mode\n"
+                                       + "        -nodeName <nodename>     # HA node name\n"
+                                       + "        -nodeHost <nodehost>     # HA node host\n"
+                                       + "        -groupName <groupName>]  # HA group name\n",
                                        OrphanConfigurationRecordPurger.class.getName()));
 
     private static final String VERSION_DB_NAME = "DB_VERSION";
@@ -73,8 +72,8 @@ public class OrphanConfigurationRecordPurger
     private static final DatabaseConfig READ_ONLY_DB_CONFIG = DatabaseConfig.DEFAULT.setAllowCreate(false).setReadOnly(true).setTransactional(true);
     private static final DatabaseConfig READ_WRITE_DB_CONFIG = READ_ONLY_DB_CONFIG.setReadOnly(false);
 
+    private String _parentRootCategory;
     private String _storePath;
-    private Set<UUID> _uuids = new HashSet<>();
     private boolean _dryRun;
     private boolean _ha;
     private String _nodeName;
@@ -100,34 +99,32 @@ public class OrphanConfigurationRecordPurger
             if (!ALLOWED_VERSIONS.contains(version))
             {
                 throw new IllegalStateException(String.format("Store has unexpected version. Found %d expected %s",
-                                                              version,
-                                                              ALLOWED_VERSIONS));
+                                                              version, ALLOWED_VERSIONS));
             }
 
-            final Transaction tx = env.beginTransaction(null,
-                                                        TransactionConfig.DEFAULT.setReadOnly(_dryRun));
+            final Transaction tx = env.beginTransaction(null, TransactionConfig.DEFAULT);
             boolean success = false;
-            int configChanges = 0;
             try
             {
-                for (final UUID uuid : _uuids)
-                {
-                    configChanges += purgeOrphans(env, tx, uuid);
-                }
-
+                purgeOrphans(env, tx);
                 success = true;
             }
             finally
             {
-                if (!_dryRun && success && configChanges > 0)
-                {
-                    tx.commit();
-                    System.out.format("%d config records(s) and associated hierarchy records purged.", configChanges);
-                }
-                else
+                if (!success)
                 {
                     System.out.println("No config or config hierarchy records purged.");
                     tx.abort();
+                }
+                else if (_dryRun)
+                {
+                    System.out.println("No config or config hierarchy records purged - -dryRun flag specified.");
+                    tx.abort();
+                }
+                else
+                {
+                    tx.commit();
+                    System.out.format("Config records(s) and associated hierarchy records purged.");
                 }
             }
         }
@@ -159,7 +156,6 @@ public class OrphanConfigurationRecordPurger
         try (Database versionDb = env.openDatabase(null, VERSION_DB_NAME, dbConfig);
              Cursor cursor = versionDb.openCursor(null, null))
         {
-
             DatabaseEntry key = new DatabaseEntry();
             DatabaseEntry value = new DatabaseEntry();
 
@@ -178,60 +174,105 @@ public class OrphanConfigurationRecordPurger
         }
     }
 
-    private int purgeOrphans(Environment env, final Transaction tx, UUID uuid) throws Exception
+    private void purgeOrphans(Environment env, final Transaction tx) throws Exception
     {
         try(Database configDb = env.openDatabase(tx, CONFIGURED_OBJECTS_DB_NAME, READ_WRITE_DB_CONFIG))
         {
-            DatabaseEntry key = new DatabaseEntry();
-            DatabaseEntry value = new DatabaseEntry();
 
-            TupleOutput output = new TupleOutput();
-            output.writeLong(uuid.getMostSignificantBits());
-            output.writeLong(uuid.getLeastSignificantBits());
-            TupleBase.outputToEntry(output, key);
+            final Set<UUID> records = new HashSet<>();
 
-            OperationStatus status =
-                    _dryRun ? configDb.get(tx, key, value, LockMode.DEFAULT) : configDb.delete(tx, key);
-
-            if (status == OperationStatus.SUCCESS)
+            try (Cursor configCursor = configDb.openCursor(tx, null))
             {
-                System.out.format("Config record for UUID %s found\n", uuid);
+                final DatabaseEntry key = new DatabaseEntry();
+                final DatabaseEntry value = new DatabaseEntry();
 
-                try (Database hierarchyDb = env.openDatabase(null, CONFIGURED_OBJECT_HIERARCHY_DB_NAME,
-                                                             READ_WRITE_DB_CONFIG);
-                     Cursor hierarchyCursor = hierarchyDb.openCursor(tx, null))
+                while (configCursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS)
                 {
-
-                    DatabaseEntry hkey = new DatabaseEntry();
-                    DatabaseEntry hvalue = new DatabaseEntry();
-
-                    int count = 0;
-                    while (hierarchyCursor.getNext(hkey, hvalue, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-                    {
-                        TupleInput dis = new TupleInput(hkey.getData());
-                        final long mostSigBits = dis.readLong();
-                        final long leastSigBits = dis.readLong();
-                        final UUID recId = new UUID(mostSigBits, leastSigBits);
-                        if (recId.equals(uuid))
-                        {
-                            if (!_dryRun)
-                            {
-                                hierarchyCursor.delete();
-                            }
-                            count++;
-                        }
-                    }
-
-                    System.out.format("%d config hierarchy record(s) found\n", count);
-                    return 1;
+                    final UUID recId = entryToUuid(new TupleInput(key.getData()));
+                    records.add(recId);
                 }
             }
-            else
+
+            int configRecordDeleted = 0;
+            int configHierarchyRecordsDeleted = 0;
+
+            try (Database hierarchyDb = env.openDatabase(null, CONFIGURED_OBJECT_HIERARCHY_DB_NAME,
+                                                         READ_WRITE_DB_CONFIG))
             {
-                System.out.format("Config object record for UUID %s NOT found\n", uuid);
-                return 0;
+                boolean loopAgain;
+                do
+                {
+                    loopAgain = false;
+                    try (Cursor hierarchyCursor = hierarchyDb.openCursor(tx, null))
+                    {
+
+                        DatabaseEntry key = new DatabaseEntry();
+                        DatabaseEntry value = new DatabaseEntry();
+
+                        boolean parentReferencingRecordFound = false;
+                        while (hierarchyCursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+                        {
+                            final TupleInput keyInput = new TupleInput(key.getData());
+                            final UUID childId = entryToUuid(keyInput);
+                            final String parentType = keyInput.readString();
+                            final UUID parentId = entryToUuid(new TupleInput(value.getData()));
+
+                            if (_parentRootCategory.equals(parentType))
+                            {
+                                parentReferencingRecordFound = true;
+                            }
+                            else if (!records.contains(parentId))
+                            {
+                                System.out.format("Orphan UUID : %s (has unknown parent with UUID %s of type %s)\n",
+                                                  childId, parentId, parentType);
+                                hierarchyCursor.delete();
+                                configHierarchyRecordsDeleted++;
+                                loopAgain = true;
+
+                                DatabaseEntry uuidKey = new DatabaseEntry();
+                                final TupleOutput tupleOutput = uuidToKey(childId);
+                                TupleBase.outputToEntry(tupleOutput, uuidKey);
+
+                                final OperationStatus delete = configDb.delete(tx, uuidKey);
+                                if (delete == OperationStatus.SUCCESS)
+                                {
+                                    records.remove(childId);
+                                    configRecordDeleted++;
+                                }
+                            }
+                        }
+
+                        if (!parentReferencingRecordFound)
+                        {
+                            throw new IllegalStateException(String.format(
+                                    "No hierarchy record found with root category type (%s)."
+                                    + " Cannot modify store.", _parentRootCategory));
+                        }
+                    }
+                }
+                while(loopAgain);
+
+                System.out.format("Identified %d orphaned configured object record(s) "
+                                  + "and %d hierarchy records for purging\n",
+                                   configRecordDeleted, configHierarchyRecordsDeleted);
             }
         }
+    }
+
+    private TupleOutput uuidToKey(final UUID uuid)
+    {
+        DatabaseEntry key = new DatabaseEntry();
+        TupleOutput output = new TupleOutput();
+        output.writeLong(uuid.getMostSignificantBits());
+        output.writeLong(uuid.getLeastSignificantBits());
+        return output;
+    }
+
+    private UUID entryToUuid(final TupleInput input)
+    {
+        final long mostSigBits = input.readLong();
+        final long leastSigBits = input.readLong();
+        return new UUID(mostSigBits, leastSigBits);
     }
 
     private void parseArgs(final String[] argv)
@@ -249,6 +290,16 @@ public class OrphanConfigurationRecordPurger
             String thisArg = argv[argc++];
             switch (thisArg)
             {
+                case "-parentRootCategory":
+                    if (argc < argCount)
+                    {
+                        _parentRootCategory = argv[argc++];
+                    }
+                    else
+                    {
+                        printUsage("-parentRootCategory requires an argument");
+                    }
+                    break;
                 case "-storePath":
                     if (argc < argCount)
                     {
@@ -259,17 +310,6 @@ public class OrphanConfigurationRecordPurger
                         printUsage("-storePath requires an argument");
                     }
                     break;
-                case "-targetUuid":
-                    if (argc < argCount)
-                    {
-                        String uuid = argv[argc++];
-                        _uuids.add(UUID.fromString(uuid));
-                    }
-                    else
-                    {
-                        printUsage("-targetUuid requires an argument");
-                    }
-                break;
                 case "-ha":
                     _ha = true;
                     break;
@@ -316,10 +356,12 @@ public class OrphanConfigurationRecordPurger
         {
             printUsage("-storePath is a required argument");
         }
-        if (_uuids.isEmpty())
+
+        if (_parentRootCategory == null)
         {
-            printUsage("-targetUuid is a required argument");
+            printUsage("-parentRootCategory is a required argument");
         }
+
         if (_ha)
         {
             if (_nodeName == null)
@@ -347,5 +389,4 @@ public class OrphanConfigurationRecordPurger
         System.err.println(USAGE_STRING);
         System.exit(-1);
     }
-
 }
