@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.tests.rest;
+package org.apache.qpid.tests.authentication;
 
 import static javax.servlet.http.HttpServletResponse.SC_EXPECTATION_FAILED;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
@@ -46,6 +46,7 @@ import org.apache.qpid.server.security.auth.manager.ScramSHA1AuthenticationManag
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5Negotiator;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
+import org.apache.qpid.tests.rest.RestTestHelper;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class SaslRestTest extends BrokerAdminUsingTestBase
