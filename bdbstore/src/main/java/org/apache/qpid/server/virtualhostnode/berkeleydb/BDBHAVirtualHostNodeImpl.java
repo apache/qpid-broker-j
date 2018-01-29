@@ -614,6 +614,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
 
     private void onMaster()
     {
+        boolean success = false;
         try
         {
             boolean firstOpening = false;
@@ -679,17 +680,31 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                     }
                 });
             }
+            success = true;
 
         }
         catch (Exception e)
         {
             LOGGER.error("Failed to activate on hearing MASTER change event", e);
         }
+        finally
+        {
+            setState(success ? State.ACTIVE : State.ERRORED);
+        }
     }
 
     private void onReplica()
     {
-        createReplicaVirtualHost();
+        boolean success = false;
+        try
+        {
+            createReplicaVirtualHost();
+            success = true;
+        }
+        finally
+        {
+            setState(success ? State.ACTIVE : State.ERRORED);
+        }
     }
 
     private void createReplicaVirtualHost()
