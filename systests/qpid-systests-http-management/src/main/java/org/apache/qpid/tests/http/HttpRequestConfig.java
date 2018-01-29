@@ -18,34 +18,14 @@
  * under the License.
  *
  */
-package org.apache.qpid.tests.rest;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+package org.apache.qpid.tests.http;
 
-import java.util.Map;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-import org.junit.Before;
-import org.junit.Test;
-
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
-
-public class BrokerRestTest extends BrokerAdminUsingTestBase
+@Retention(RetentionPolicy.RUNTIME)
+public @interface HttpRequestConfig
 {
-    private RestTestHelper _helper;
-
-    @Before
-    public void setUp()
-    {
-        _helper = new RestTestHelper(getBrokerAdmin());
-    }
-
-    @Test
-    public void get() throws Exception
-    {
-        Map<String, Object> brokerDetails = _helper.getJsonAsMap("broker");
-        assertThat("Unexpected value of attribute " + Broker.NAME,  brokerDetails.get(Broker.NAME), is(equalTo("Broker")));
-    }
+    boolean useVirtualHostAsHost() default true;
 }

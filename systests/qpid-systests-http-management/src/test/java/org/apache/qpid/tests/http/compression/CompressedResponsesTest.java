@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.tests.compression;
+package org.apache.qpid.tests.http.compression;
 
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.junit.Assert.assertEquals;
@@ -36,43 +36,33 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
-import org.junit.Before;
 import org.junit.Test;
 
-import org.apache.qpid.tests.rest.RestTestHelper;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
+import org.apache.qpid.tests.http.HttpTestBase;
 
-public class CompressedResponsesRestTest extends BrokerAdminUsingTestBase
+public class CompressedResponsesTest extends HttpTestBase
 {
 
-    private RestTestHelper _helper;
-
-    @Before
-    public void setUp()
-    {
-        _helper = new RestTestHelper(getBrokerAdmin());
-    }
-
     @Test
-    public void testCompressionOffAcceptOff() throws Exception
+    public void compressionOffAcceptOff() throws Exception
     {
         doCompressionTest(false, false);
     }
 
     @Test
-    public void testCompressionOffAcceptOn() throws Exception
+    public void compressionOffAcceptOn() throws Exception
     {
         doCompressionTest(false, true);
     }
 
     @Test
-    public void testCompressionOnAcceptOff() throws Exception
+    public void compressionOnAcceptOff() throws Exception
     {
         doCompressionTest(true, false);
     }
 
     @Test
-    public void testCompressionOnAcceptOn() throws Exception
+    public void compressionOnAcceptOn() throws Exception
     {
         doCompressionTest(true, true);
 
@@ -83,10 +73,10 @@ public class CompressedResponsesRestTest extends BrokerAdminUsingTestBase
     {
         final boolean expectCompression = allowCompression && acceptCompressed;
 
-        _helper.submitRequest("plugin/httpManagement", "POST", Collections.singletonMap("compressResponses", expectCompression), SC_OK);
+        getHelper().submitRequest("plugin/httpManagement", "POST", Collections.singletonMap("compressResponses", expectCompression), SC_OK);
 
 
-        HttpURLConnection conn = _helper.openManagementConnection("/service/metadata", "GET");
+        HttpURLConnection conn = getHelper().openManagementConnection("/service/metadata", "GET");
         try
         {
             if (acceptCompressed)

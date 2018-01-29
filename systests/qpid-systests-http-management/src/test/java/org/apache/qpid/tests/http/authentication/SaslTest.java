@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.tests.authentication;
+package org.apache.qpid.tests.http.authentication;
 
 import static javax.servlet.http.HttpServletResponse.SC_EXPECTATION_FAILED;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
@@ -46,21 +46,18 @@ import org.apache.qpid.server.security.auth.manager.ScramSHA1AuthenticationManag
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5Negotiator;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
-import org.apache.qpid.tests.rest.RestTestHelper;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
+import org.apache.qpid.tests.http.HttpTestBase;
 
-public class SaslRestTest extends BrokerAdminUsingTestBase
+public class SaslTest extends HttpTestBase
 {
     private static final String SASL_SERVICE = "/service/sasl";
     private static final String SET_COOKIE_HEADER = "Set-Cookie";
-    private RestTestHelper _helper;
     private String _userName;
     private String _userPassword;
 
     @Before
     public void setUp()
     {
-        _helper = new RestTestHelper(getBrokerAdmin());
         _userName = getBrokerAdmin().getValidUsername();
         _userPassword = getBrokerAdmin().getValidPassword();
     }
@@ -68,7 +65,7 @@ public class SaslRestTest extends BrokerAdminUsingTestBase
     @Test
     public void requestSASLMechanisms() throws Exception
     {
-        Map<String, Object> saslData = _helper.getJsonAsMap(SASL_SERVICE);
+        Map<String, Object> saslData = getHelper().getJsonAsMap(SASL_SERVICE);
         assertNotNull("mechanisms attribute is not found", saslData.get("mechanisms"));
 
         @SuppressWarnings("unchecked")
@@ -122,7 +119,7 @@ public class SaslRestTest extends BrokerAdminUsingTestBase
         String responseData = DatatypeConverter.printBase64Binary(responseBytes);
         String parameters = String.format("mechanism=%s&response=%s", PlainNegotiator.MECHANISM, responseData);
 
-        HttpURLConnection connection = _helper.openManagementConnection(SASL_SERVICE, "POST");
+        HttpURLConnection connection = getHelper().openManagementConnection(SASL_SERVICE, "POST");
         try
         {
             try (OutputStream os = connection.getOutputStream())
@@ -195,7 +192,7 @@ public class SaslRestTest extends BrokerAdminUsingTestBase
         HttpURLConnection connection = requestSASLAuthentication(CramMd5Negotiator.MECHANISM);
         try
         {
-            Map<String, Object> response = _helper.readJsonResponseAsMap(connection);
+            Map<String, Object> response = getHelper().readJsonResponseAsMap(connection);
             String challenge = (String) response.get("challenge");
             assertNotNull("Challenge is not found", challenge);
 
@@ -218,7 +215,7 @@ public class SaslRestTest extends BrokerAdminUsingTestBase
         HttpURLConnection connection = requestSASLAuthentication(CramMd5Negotiator.MECHANISM);
         try
         {
-            Map<String, Object> response = _helper.readJsonResponseAsMap(connection);
+            Map<String, Object> response = getHelper().readJsonResponseAsMap(connection);
             String challenge = (String) response.get("challenge");
             assertNotNull("Challenge is not found", challenge);
 
@@ -243,7 +240,7 @@ public class SaslRestTest extends BrokerAdminUsingTestBase
         HttpURLConnection connection = requestSASLAuthentication(CramMd5Negotiator.MECHANISM);
         try
         {
-            Map<String, Object> response = _helper.readJsonResponseAsMap(connection);
+            Map<String, Object> response = getHelper().readJsonResponseAsMap(connection);
             String challenge = (String) response.get("challenge");
             assertNotNull("Challenge is not found", challenge);
 
@@ -273,7 +270,7 @@ public class SaslRestTest extends BrokerAdminUsingTestBase
         String responseData = DatatypeConverter.printBase64Binary(responseBytes);
         String parameters = String.format("mechanism=%s&response=%s", PlainNegotiator.MECHANISM, responseData);
 
-        HttpURLConnection connection = _helper.openManagementConnection(SASL_SERVICE, "POST");
+        HttpURLConnection connection = getHelper().openManagementConnection(SASL_SERVICE, "POST");
         try
         {
             try (OutputStream os = connection.getOutputStream())
@@ -317,7 +314,7 @@ public class SaslRestTest extends BrokerAdminUsingTestBase
                                                 final int expectedResponseCode)
             throws Exception
     {
-        Map<String, Object> response = _helper.readJsonResponseAsMap(requestChallengeConnection);
+        Map<String, Object> response = getHelper().readJsonResponseAsMap(requestChallengeConnection);
         String challenge = (String) response.get("challenge");
         assertNotNull("Challenge is not found", challenge);
 
@@ -335,7 +332,7 @@ public class SaslRestTest extends BrokerAdminUsingTestBase
                               final String requestParameters,
                               final int expectedResponseCode) throws IOException
     {
-        HttpURLConnection authenticateConnection = _helper.openManagementConnection(SASL_SERVICE, "POST");
+        HttpURLConnection authenticateConnection = getHelper().openManagementConnection(SASL_SERVICE, "POST");
         try
         {
             applyCookiesToConnection(cookies, authenticateConnection);
@@ -384,7 +381,7 @@ public class SaslRestTest extends BrokerAdminUsingTestBase
 
     private HttpURLConnection requestSASLAuthentication(String mechanism) throws IOException
     {
-        HttpURLConnection connection = _helper.openManagementConnection(SASL_SERVICE, "POST");
+        HttpURLConnection connection = getHelper().openManagementConnection(SASL_SERVICE, "POST");
         OutputStream os = connection.getOutputStream();
         os.write(String.format("mechanism=%s", mechanism).getBytes());
         os.flush();
@@ -393,11 +390,11 @@ public class SaslRestTest extends BrokerAdminUsingTestBase
 
     private void assertAuthenticatedUser(final String userName, final List<String> cookies) throws IOException
     {
-        HttpURLConnection connection = _helper.openManagementConnection(SASL_SERVICE, "GET");
+        HttpURLConnection connection = getHelper().openManagementConnection(SASL_SERVICE, "GET");
         try
         {
             applyCookiesToConnection(cookies, connection);
-            Map<String, Object> response = _helper.readJsonResponseAsMap(connection);
+            Map<String, Object> response = getHelper().readJsonResponseAsMap(connection);
             assertEquals("Unexpected user", userName, response.get("user"));
         }
         finally

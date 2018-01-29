@@ -18,13 +18,12 @@
  * under the License.
  *
  */
-package org.apache.qpid.tests.rest;
+package org.apache.qpid.tests.http;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -48,9 +47,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.tests.utils.BrokerAdmin;
 
-public class RestTestHelper
+public class HttpTestHelper
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RestTestHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpTestHelper.class);
 
     private static final TypeReference<List<LinkedHashMap<String, Object>>> TYPE_LIST_OF_LINKED_HASH_MAPS = new TypeReference<List<LinkedHashMap<String, Object>>>()
     {
@@ -64,18 +63,25 @@ public class RestTestHelper
     private final int _httpPort;
     private final String _username;
     private final String _password;
+    private final String _requestHostName;
 
     private final int _connectTimeout = Integer.getInteger("qpid.resttest_connection_timeout", 30000);
 
     private String _acceptEncoding;
     private boolean _useSsl = false;
 
-    public RestTestHelper(BrokerAdmin admin)
+    public HttpTestHelper(final BrokerAdmin admin)
+    {
+        this(admin, null);
+    }
+
+    public HttpTestHelper(BrokerAdmin admin, final String requestHostName)
     {
         _admin = admin;
         _httpPort = _admin.getBrokerAddress(BrokerAdmin.PortType.HTTP).getPort();
         _username = admin.getValidUsername();
         _password = admin.getValidPassword();
+        _requestHostName = requestHostName;
     }
 
     public int getHttpPort()
@@ -112,7 +118,10 @@ public class RestTestHelper
         URL url = getManagementURL(path);
         HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
         httpCon.setConnectTimeout(_connectTimeout);
-
+        if (_requestHostName != null)
+        {
+            httpCon.setRequestProperty("Host", _requestHostName);
+        }
 
         if(_username != null)
         {
