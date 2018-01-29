@@ -260,9 +260,16 @@ public class RestTestHelper
     public Map<String, Object> getJsonAsMap(String path) throws IOException
     {
         HttpURLConnection connection = openManagementConnection(path, "GET");
-        connection.connect();
-        Map<String, Object> response = readJsonResponseAsMap(connection);
-        return response;
+        try
+        {
+            connection.connect();
+            Map<String, Object> response = readJsonResponseAsMap(connection);
+            return response;
+        }
+        finally
+        {
+            connection.disconnect();
+        }
     }
 
     public <T> T getJson(String path, final Class<T> valueType) throws IOException
@@ -289,17 +296,23 @@ public class RestTestHelper
     public int submitRequest(String url, String method, Object data, Map<String, List<String>> responseHeadersToCapture) throws IOException
     {
         HttpURLConnection connection = openManagementConnection(url, method);
-        if (data != null)
+        try
         {
-            writeJsonRequest(connection, data);
+            if (data != null)
+            {
+                writeJsonRequest(connection, data);
+            }
+            int responseCode = connection.getResponseCode();
+            if (responseHeadersToCapture != null)
+            {
+                responseHeadersToCapture.putAll(connection.getHeaderFields());
+            }
+            return responseCode;
         }
-        int responseCode = connection.getResponseCode();
-        if (responseHeadersToCapture!= null)
+        finally
         {
-            responseHeadersToCapture.putAll(connection.getHeaderFields());
+            connection.disconnect();
         }
-        connection.disconnect();
-        return responseCode;
     }
 
     public int submitRequest(String url, String method) throws IOException
