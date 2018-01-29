@@ -53,6 +53,7 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
     String TRUST_STORES                         = "trustStores";
     String CLIENT_CERT_RECORDER                 = "clientCertRecorder";
 
+    String DEFAULT_BINDING_ADDRESS = "*";
 
 
     String CONNECTION_MAXIMUM_AUTHENTICATION_DELAY = "connection.maximumAuthenticationDelay";
@@ -98,6 +99,11 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
 
     @DerivedAttribute
     List<String> getTlsCipherSuiteBlackList();
+
+    @ManagedAttribute(defaultValue = "*",
+                      description = "The network interface this port binds to expressed as an IP address or a"
+                                    + "hostname.  If null or * then bind to all interfaces.")
+    String getBindingAddress();
 
     @ManagedAttribute
     boolean getNeedClientAuth();

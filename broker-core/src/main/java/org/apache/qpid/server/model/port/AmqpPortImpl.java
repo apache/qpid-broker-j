@@ -78,14 +78,9 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AmqpPortImpl.class);
 
-    public static final String DEFAULT_BINDING_ADDRESS = "*";
-
 
     @ManagedAttributeField
     private boolean _tcpNoDelay;
-
-    @ManagedAttributeField
-    private String _bindingAddress;
 
     @ManagedAttributeField
     private int _maxOpenConnections;
@@ -138,12 +133,6 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     public SSLContext getSSLContext()
     {
         return _sslContext;
-    }
-
-    @Override
-    public String getBindingAddress()
-    {
-        return _bindingAddress;
     }
 
     @Override
@@ -322,18 +311,6 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     public int getBoundPort()
     {
         return _boundPort;
-    }
-
-    @Override
-    public void validateOnCreate()
-    {
-        super.validateOnCreate();
-        String bindingAddress = getBindingAddress();
-        if (!PortUtil.isPortAvailable(bindingAddress, getPort()))
-        {
-            throw new IllegalConfigurationException(String.format("Cannot bind to port %d and binding address '%s'. Port is already is use.",
-                    getPort(), bindingAddress == null || "".equals(bindingAddress) ? "*" : bindingAddress));
-        }
     }
 
     @Override

@@ -72,9 +72,6 @@ public interface HttpPort<X extends HttpPort<X>> extends Port<X>
     @ManagedContextDefault(name = TLS_SESSION_CACHE_SIZE, description = "TLS session cache size for HTTP ports.")
     int DEFAULT_TLS_SESSION_CACHE_SIZE = 1000;
 
-    @ManagedAttribute(defaultValue = "*")
-    String getBindingAddress();
-
     @Override
     @ManagedAttribute( defaultValue = DEFAULT_HTTP_NEED_CLIENT_AUTH)
     boolean getNeedClientAuth();

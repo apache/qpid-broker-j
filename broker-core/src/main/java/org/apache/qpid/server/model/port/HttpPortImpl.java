@@ -29,14 +29,10 @@ import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.util.PortUtil;
 
 public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort<HttpPortImpl>
 {
     private PortManager _portManager;
-
-    @ManagedAttributeField
-    private String _bindingAddress;
 
     @ManagedAttributeField
     private int _threadPoolMaximum;
@@ -71,12 +67,6 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
     public int getBoundPort()
     {
         return _portManager == null ? -1 : _portManager.getBoundPort(this);
-    }
-
-    @Override
-    public String getBindingAddress()
-    {
-        return _bindingAddress;
     }
 
     @Override
@@ -177,18 +167,6 @@ public class HttpPortImpl extends AbstractPort<HttpPortImpl> implements HttpPort
             throw new IllegalConfigurationException(String.format(
                     "The size of accept backlog %d is too small. Must be greater than zero.",
                     acceptsBacklogSize));
-        }
-    }
-
-    @Override
-    public void validateOnCreate()
-    {
-        super.validateOnCreate();
-        String bindingAddress = getBindingAddress();
-        if (!PortUtil.isPortAvailable(bindingAddress, getPort()))
-        {
-            throw new IllegalConfigurationException(String.format("Cannot bind to port %d and binding address '%s'. Port is already is use.",
-                    getPort(), bindingAddress == null || "".equals(bindingAddress) ? "*" : bindingAddress));
         }
     }
 

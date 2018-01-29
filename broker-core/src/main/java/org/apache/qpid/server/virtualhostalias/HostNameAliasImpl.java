@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.model.HostNameAlias;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Port;
-import org.apache.qpid.server.model.port.AmqpPort;
 
 public class HostNameAliasImpl
         extends AbstractFixedVirtualHostNodeAlias<HostNameAliasImpl>
@@ -66,7 +65,7 @@ public class HostNameAliasImpl
     protected void onOpen()
     {
         super.onOpen();
-        String bindingAddress = ((AmqpPort) getPort()).getBindingAddress();
+        String bindingAddress = getPort().getBindingAddress();
         Thread thread = new Thread(new NetworkAddressResolver(),
                                    "Network Address Resolver (Port: "
                                    + (useAllAddresses(bindingAddress) ? "" : bindingAddress)
@@ -121,7 +120,7 @@ public class HostNameAliasImpl
             Lock lock = _addressLock;
 
             lock.lock();
-            String bindingAddress = ((AmqpPort<?>)getPort()).getBindingAddress();
+            String bindingAddress = getPort().getBindingAddress();
             try
             {
                 Collection<InetAddress> inetAddresses;

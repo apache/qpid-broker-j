@@ -41,6 +41,7 @@ import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.util.ParameterizedTypes;
+import org.apache.qpid.server.util.PortUtil;
 
 public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractConfiguredObject<X> implements Port<X>
 {
@@ -79,6 +80,9 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     @ManagedAttributeField
     private boolean _allowConfidentialOperationsOnInsecureChannels;
 
+    @ManagedAttributeField
+    private String _bindingAddress;
+
     private List<String> _tlsProtocolBlackList;
     private List<String> _tlsProtocolWhiteList;
 
@@ -96,6 +100,12 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     }
 
     @Override
+    public String getBindingAddress()
+    {
+        return _bindingAddress;
+    }
+
+    @Override
     protected void onOpen()
     {
         super.onOpen();
@@ -103,6 +113,18 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
         _tlsProtocolBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
         _tlsCipherSuiteWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
         _tlsCipherSuiteBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
+    }
+
+    @Override
+    public void validateOnCreate()
+    {
+        super.validateOnCreate();
+        String bindingAddress = getBindingAddress();
+        if (!PortUtil.isPortAvailable(bindingAddress, getPort()))
+        {
+            throw new IllegalConfigurationException(String.format("Cannot bind to port %d and binding address '%s'. Port is already is use.",
+                    getPort(), bindingAddress == null || "".equals(bindingAddress) ? "*" : bindingAddress));
+        }
     }
 
     @Override

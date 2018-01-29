@@ -134,9 +134,6 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
 
     SSLContext getSSLContext();
 
-    @ManagedAttribute(defaultValue = "*")
-    String getBindingAddress();
-
     @ManagedAttribute( defaultValue = AmqpPort.DEFAULT_AMQP_TCP_NO_DELAY )
     boolean isTcpNoDelay();
 
