@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
+import org.apache.qpid.server.logging.LogLevel;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -55,6 +56,7 @@ import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostLogInclusionRule;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
@@ -181,6 +183,31 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         assertNull("Appender should be detached on logger deletion", appender);
     }
 
+    public void testDeleteLoggerWithRules()
+    {
+        VirtualHostLogger logger = createVirtualHostLogger();
+        assertEquals("Unexpected state on creation", State.ACTIVE, logger.getState());
+
+        Appender<ILoggingEvent> appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
+                .getAppender(logger.getName());
+        assertTrue("Appender is not started", appender.isStarted());
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(VirtualHostNameAndLevelLogInclusionRule.LOGGER_NAME, "org.apache.qpid.test");
+        attributes.put(VirtualHostNameAndLevelLogInclusionRule.LEVEL, LogLevel.INFO);
+        attributes.put(ConfiguredObject.NAME, "test");
+        attributes.put(ConfiguredObject.TYPE, VirtualHostNameAndLevelLogInclusionRule.TYPE);
+
+        VirtualHostLogInclusionRule<?> rule =
+                ((VirtualHostLogger<?>) logger).createChild(VirtualHostLogInclusionRule.class, attributes);
+
+        logger.delete();
+
+        appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)).getAppender(logger.getName());
+        assertNull("Appender should be detached on logger deletion", appender);
+
+        assertEquals("Unexpected rule state", State.DELETED, rule.getState());
+    }
 
     public void testLoggersRemovedOnVirtualHostStop()
     {
@@ -259,5 +286,4 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         attributes.put(VirtualHostFileLogger.FILE_NAME, _logFile.getPath());
         return _virtualHost.createChild(VirtualHostLogger.class, attributes);
     }
-
 }

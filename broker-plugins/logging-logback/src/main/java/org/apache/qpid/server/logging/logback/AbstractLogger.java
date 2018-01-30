@@ -20,16 +20,20 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
+import com.google.common.base.Function;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
@@ -111,7 +115,14 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
     @StateTransition(currentState = {State.ACTIVE, State.UNINITIALIZED, State.ERRORED, State.STOPPED}, desiredState = State.DELETED)
     private ListenableFuture<Void> doDelete()
     {
-        return doAfterAlways(closeAsync(), new Runnable()
+        return doAfter(deleteLogInclusionRules(), new Callable<ListenableFuture<Void>>()
+        {
+            @Override
+            public ListenableFuture<Void> call() throws Exception
+            {
+                return closeAsync();
+            }
+        }).then(new Runnable()
         {
             @Override
             public void run()
@@ -121,6 +132,27 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
                 stopLogging();
             }
         });
+    }
+
+    private ListenableFuture<Void> deleteLogInclusionRules()
+    {
+        List<ListenableFuture<Void>> deleteRuleFutures = new ArrayList<>();
+        for (LogInclusionRule logInclusionRule : getLogInclusionRules())
+        {
+            if (logInclusionRule instanceof ConfiguredObject<?>)
+            {
+                deleteRuleFutures.add(((ConfiguredObject<?>) logInclusionRule).deleteAsync());
+            }
+        }
+        ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(deleteRuleFutures);
+        return Futures.transform(combinedFuture, new Function<List<Void>, Void>()
+        {
+            @Override
+            public Void apply(List<Void> voids)
+            {
+                return null;
+            }
+        }, getTaskExecutor());
     }
 
     @Override
