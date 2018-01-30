@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,34 +16,42 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
 
-package org.apache.qpid.systest.rest;
+package org.apache.qpid.tests.http.query;
 
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
+import org.junit.Test;
 
-public class QueryRestTest extends QpidRestTestCase
+import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
+import org.apache.qpid.tests.http.HttpTestBase;
+
+public class QueryBrokerTest extends HttpTestBase
 {
+    @Test
     public void testInvalidOrderBy() throws Exception
     {
-        getRestTestHelper().submitRequest("querybroker/port?select=id&orderBy=0", "GET", AbstractServlet.SC_UNPROCESSABLE_ENTITY);
+        getHelper().submitRequest("querybroker/port?select=id&orderBy=0", "GET", AbstractServlet.SC_UNPROCESSABLE_ENTITY);
     }
 
+    @Test
     public void testInvalidSelectSyntax() throws Exception
     {
-        getRestTestHelper().submitRequest("querybroker/port?select=,,(", "GET", HttpServletResponse.SC_BAD_REQUEST);
+        getHelper().submitRequest("querybroker/port?select=,,(", "GET", HttpServletResponse.SC_BAD_REQUEST);
     }
 
+    @Test
     public void testInvalidWhereSyntax() throws Exception
     {
-        getRestTestHelper().submitRequest("querybroker/port?where=id in(", "GET", HttpServletResponse.SC_BAD_REQUEST);
+        getHelper().submitRequest("querybroker/port?where=id in(", "GET", HttpServletResponse.SC_BAD_REQUEST);
     }
 
+    @Test
     public void testInvalidWhere() throws Exception
     {
-        getRestTestHelper().submitRequest("querybroker/port?where=transports>1", "GET", AbstractServlet.SC_UNPROCESSABLE_ENTITY);
+        getHelper().submitRequest("querybroker/port?where=transports>1", "GET", AbstractServlet.SC_UNPROCESSABLE_ENTITY);
     }
 }
