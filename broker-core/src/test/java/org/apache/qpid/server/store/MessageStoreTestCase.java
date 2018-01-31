@@ -51,7 +51,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 public abstract class MessageStoreTestCase extends QpidTestCase
 {
     private MessageStore _store;
-    private ConfiguredObject<?> _parent;
+    private VirtualHost<?> _parent;
     private MessageStore.MessageStoreReader _storeReader;
     private static final int BUFFER_SIZE = 10;
     private static final int POOL_SIZE = 20;
@@ -79,6 +79,11 @@ public abstract class MessageStoreTestCase extends QpidTestCase
     {
         QpidByteBuffer.deinitialisePool();
         super.tearDown();
+    }
+
+    protected VirtualHost<?> getVirtualHost()
+    {
+        return _parent;
     }
 
     protected abstract VirtualHost createVirtualHost();

@@ -21,6 +21,8 @@
 package org.apache.qpid.server.store.jdbc;
 
 
+import static org.apache.qpid.server.store.jdbc.JdbcUtils.createConnectionProvider;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
@@ -28,10 +30,6 @@ import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,40 +76,7 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
         _varBinaryType = details.getVarBinaryType();
         _useBytesMethodsForBlob = details.isUseBytesMethodsForBlob();
         _bigIntType = details.getBigintType();
-
-        String connectionPoolType = settings.getConnectionPoolType() == null ? DefaultConnectionProviderFactory.TYPE : settings.getConnectionPoolType();
-
-        JDBCConnectionProviderFactory connectionProviderFactory =
-                JDBCConnectionProviderFactory.FACTORIES.get(connectionPoolType);
-        if(connectionProviderFactory == null)
-        {
-            LOGGER.warn("Unknown connection pool type: " + connectionPoolType + ".  No connection pooling will be used");
-            connectionProviderFactory = new DefaultConnectionProviderFactory();
-        }
-
-        try
-        {
-            Map<String, String> providerAttributes = new HashMap<>();
-            Set<String> providerAttributeNames = new HashSet<>(connectionProviderFactory.getProviderAttributeNames());
-            providerAttributeNames.retainAll(parent.getContextKeys(false));
-            for(String attr : providerAttributeNames)
-            {
-                providerAttributes.put(attr, parent.getContextValue(String.class, attr));
-            }
-
-            _connectionProvider = connectionProviderFactory.getConnectionProvider(_connectionURL,
-                                                                                  settings.getUsername(),
-                                                                                  settings.getPassword(),
-                                                                                  providerAttributes);
-        }
-        catch (SQLException e)
-        {
-            throw new StoreException(String.format(
-                    "Failed to create connection provider for connectionUrl: '%s' and username: '%s'",
-                    _connectionURL,
-                    settings.getUsername()), e);
-        }
-
+        _connectionProvider = createConnectionProvider(parent, LOGGER);
     }
 
     @Override
@@ -191,4 +156,37 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
         return null;
     }
 
+    @Override
+    public void onDelete(final ConfiguredObject<?> parent)
+    {
+        if (isMessageStoreOpen())
+        {
+            throw new IllegalStateException("Cannot delete the store as the provided message store is still open");
+        }
+
+        ConnectionProvider connectionProvider = JdbcUtils.createConnectionProvider(parent, LOGGER);
+        try
+        {
+            try (Connection conn = connectionProvider.getConnection())
+            {
+                conn.setAutoCommit(true);
+                onDelete(conn);
+            }
+            catch (SQLException e)
+            {
+                getLogger().error("Exception while deleting store tables", e);
+            }
+        }
+        finally
+        {
+            try
+            {
+                connectionProvider.close();
+            }
+            catch (SQLException e)
+            {
+                LOGGER.warn("Unable to close connection provider ", e);
+            }
+        }
+    }
 }

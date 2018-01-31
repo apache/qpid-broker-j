@@ -231,6 +231,19 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
         }
 
         @Override
+        public void onDelete(final ConfiguredObject<?> parent)
+        {
+            try(Connection connection = DerbyConfigurationStore.this.getConnection())
+            {
+                onDelete(connection);
+            }
+            catch (SQLException e)
+            {
+                throw new StoreException("Cannot get connection to perform deletion", e);
+            }
+        }
+
+        @Override
         protected Logger getLogger()
         {
             return DerbyConfigurationStore.this.getLogger();

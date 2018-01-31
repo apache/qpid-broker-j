@@ -21,8 +21,15 @@
 package org.apache.qpid.server.store.jdbc;
 
 
+import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.assertTablesExistence;
+import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.getTableNames;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collection;
 
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.VirtualHost;
@@ -47,8 +54,23 @@ public class GenericJDBCConfigurationStoreTest extends AbstractDurableConfigurat
         {
             if (_connectionURL != null)
             {
-                JDBCMessageStoreTest.shutdownDerby(_connectionURL);
+                TestJdbcUtils.shutdownDerby(_connectionURL);
             }
+        }
+    }
+
+    public void testOnDelete() throws Exception
+    {
+        try(Connection connection = openConnection())
+        {
+            GenericJDBCConfigurationStore store = (GenericJDBCConfigurationStore) getConfigurationStore();
+            Collection<String> expectedTables = Arrays.asList(store.getConfiguredObjectHierarchyTableName(),
+                                                              store.getConfiguredObjectsTableName());
+            assertTablesExistence(expectedTables, getTableNames(connection), true);
+            store.closeConfigurationStore();
+            assertTablesExistence(expectedTables, getTableNames(connection), true);
+            store.onDelete(getVirtualHostNode());
+            assertTablesExistence(expectedTables, getTableNames(connection), false);
         }
     }
 
@@ -65,5 +87,10 @@ public class GenericJDBCConfigurationStoreTest extends AbstractDurableConfigurat
     protected DurableConfigurationStore createConfigStore() throws Exception
     {
         return new GenericJDBCConfigurationStore(VirtualHost.class);
+    }
+
+    private Connection openConnection() throws SQLException
+    {
+        return TestJdbcUtils.openConnection(_connectionURL);
     }
 }

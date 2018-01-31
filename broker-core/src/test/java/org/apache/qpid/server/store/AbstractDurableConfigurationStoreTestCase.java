@@ -80,7 +80,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
     private DurableConfigurationStore _configStore;
     private ConfiguredObjectFactoryImpl _factory;
 
-    private ConfiguredObject<?> _parent;
+    private VirtualHostNode<?> _parent;
 
     private ConfiguredObjectRecord _rootRecord;
 
@@ -118,6 +118,16 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         });
         _rootRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), VirtualHost.class.getSimpleName(), Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "vhost"));
         _configStore.create(_rootRecord);
+    }
+
+    protected VirtualHostNode<?> getVirtualHostNode()
+    {
+        return _parent;
+    }
+
+    protected DurableConfigurationStore getConfigurationStore()
+    {
+        return _configStore;
     }
 
     protected abstract VirtualHostNode createVirtualHostNode(String storeLocation, ConfiguredObjectFactory factory);

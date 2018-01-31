@@ -20,17 +20,14 @@
  */
 package org.apache.qpid.server.store.jdbc;
 
+import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.assertTablesExistence;
+import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.getTableNames;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -72,7 +69,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         {
             if (_connectionURL != null)
             {
-                shutdownDerby(_connectionURL);
+                TestJdbcUtils.shutdownDerby(_connectionURL);
             }
         }
         finally
@@ -89,17 +86,24 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         {
             assertTrue(String.format("Table '%s' does not start with expected prefix '%s'", expectedTable, TEST_TABLE_PREFIX), expectedTable.startsWith(TEST_TABLE_PREFIX));
         }
-        assertTablesExist(expectedTables, true);
+        try(Connection connection = openConnection())
+        {
+            assertTablesExistence(expectedTables, getTableNames(connection), true);
+        }
     }
 
     public void testOnDelete() throws Exception
     {
-        Collection<String> expectedTables = ((GenericJDBCMessageStore)getStore()).getTableNames();
-        assertTablesExist(expectedTables, true);
-        getStore().closeMessageStore();
-        assertTablesExist(expectedTables, true);
-        getStore().onDelete(mock(JDBCVirtualHost.class));
-        assertTablesExist(expectedTables, false);
+        try(Connection connection = openConnection())
+        {
+            GenericJDBCMessageStore store = (GenericJDBCMessageStore) getStore();
+            Collection<String> expectedTables = store.getTableNames();
+            assertTablesExistence(expectedTables, getTableNames(connection), true);
+            store.closeMessageStore();
+            assertTablesExistence(expectedTables, getTableNames(connection), true);
+            store.onDelete(getVirtualHost());
+            assertTablesExistence(expectedTables, getTableNames(connection), false);
+        }
     }
 
     public void testEnqueueTransactionCommitAsync() throws Exception
@@ -180,71 +184,8 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         return new GenericJDBCMessageStore();
     }
 
-    private void assertTablesExist(Collection<String> expectedTables, boolean exists) throws SQLException
-    {
-        Set<String> existingTables = getTableNames();
-        for (String tableName : expectedTables)
-        {
-            assertEquals("Table " + tableName + (exists ? " is not found" : " actually exist"), exists,
-                    existingTables.contains(tableName));
-        }
-    }
-
-    private Set<String> getTableNames() throws SQLException
-    {
-        Set<String> tableNames = new HashSet<>();
-        Connection conn = null;
-        try
-        {
-            conn = openConnection();
-            DatabaseMetaData metaData = conn.getMetaData();
-            try (ResultSet tables = metaData.getTables(null, null, null, new String[]{"TABLE"}))
-            {
-                while (tables.next())
-                {
-                    tableNames.add(tables.getString("TABLE_NAME"));
-                }
-            }
-        }
-        finally
-        {
-            if (conn != null)
-            {
-                conn.close();
-            }
-        }
-        return tableNames;
-    }
-
     private Connection openConnection() throws SQLException
     {
-        return DriverManager.getConnection(_connectionURL);
-    }
-
-    static void shutdownDerby(String connectionURL) throws SQLException
-    {
-        Connection connection = null;
-        try
-        {
-            connection = DriverManager.getConnection(connectionURL + ";shutdown=true");
-        }
-        catch(SQLException e)
-        {
-            if (e.getSQLState().equalsIgnoreCase("08006"))
-            {
-                //expected and represents a clean shutdown of this database only, do nothing.
-            }
-            else
-            {
-                throw e;
-            }
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                connection.close();
-            }
-        }
+        return TestJdbcUtils.openConnection(_connectionURL);
     }
 }

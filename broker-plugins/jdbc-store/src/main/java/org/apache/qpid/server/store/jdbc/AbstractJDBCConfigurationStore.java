@@ -139,12 +139,12 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
         return _tableNamePrefix + CONFIGURATION_VERSION_TABLE_NAME_SUFFIX;
     }
 
-    private String getConfiguredObjectsTableName()
+    String getConfiguredObjectsTableName()
     {
         return _tableNamePrefix + CONFIGURED_OBJECTS_TABLE_NAME_SUFFIX;
     }
 
-    private String getConfiguredObjectHierarchyTableName()
+    String getConfiguredObjectHierarchyTableName()
     {
         return _tableNamePrefix + CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME_SUFFIX;
     }
@@ -819,44 +819,11 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
     protected abstract String getBlobAsString(ResultSet rs, int col) throws SQLException;
 
-    @Override
-    public void onDelete(ConfiguredObject<?> parent)
+    void onDelete(final Connection conn) throws SQLException
     {
-        // TODO should probably check we are closed
-        try
-        {
-            Connection conn = newAutoCommitConnection();
-            try
-            {
-
-                for (String tableName : Arrays.asList(
-                        getConfiguredObjectsTableName(),
-                        getConfiguredObjectHierarchyTableName()))
-                {
-                    Statement stmt = conn.createStatement();
-                    try
-                    {
-                        stmt.execute("DROP TABLE " +  tableName);
-                    }
-                    catch(SQLException e)
-                    {
-                        getLogger().warn("Failed to drop table '" + tableName + "' :" + e);
-                    }
-                    finally
-                    {
-                        stmt.close();
-                    }
-                }
-            }
-            finally
-            {
-                conn.close();
-            }
-        }
-        catch(SQLException e)
-        {
-            getLogger().error("Exception while deleting store tables", e);
-        }
+        JdbcUtils.dropTables(conn,
+                             getLogger(),
+                             Arrays.asList(getConfiguredObjectsTableName(), getConfiguredObjectHierarchyTableName()));
     }
 
     private static final class ConfiguredObjectRecordImpl implements ConfiguredObjectRecord
@@ -913,7 +880,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
         }
     }
 
-    private final void assertState(State state)
+    protected final void assertState(State state)
     {
         synchronized (_lock)
         {

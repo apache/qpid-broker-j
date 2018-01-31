@@ -700,10 +700,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     }
 
-    public void onOpen(final ConfiguredObject<?> parent)
-    {
-    }
-
     protected void setTablePrefix(final String tablePrefix)
     {
         _tablePrefix = tablePrefix == null ? "" : tablePrefix;
@@ -1818,29 +1814,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     protected abstract void storedSizeChange(int storeSizeIncrease);
 
-    @Override
-    public void onDelete(ConfiguredObject<?> parent)
+    protected void onDelete(final Connection conn)
     {
-        // TODO should probably check we are closed
-        try (Connection conn = newAutoCommitConnection())
-        {
-
-            for (String tableName : getTableNames())
-            {
-                try (Statement stmt = conn.createStatement())
-                {
-                    stmt.execute("DROP TABLE " + tableName);
-                }
-                catch (SQLException e)
-                {
-                    getLogger().warn("Failed to drop table '{}'", tableName, e);
-                }
-            }
-        }
-        catch (SQLException e)
-        {
-            getLogger().error("Exception while deleting store tables", e);
-        }
+        JdbcUtils.dropTables(conn, getLogger(), getTableNames());
     }
 
     public List<String> getTableNames()

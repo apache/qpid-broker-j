@@ -30,10 +30,6 @@ import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,43 +92,7 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
                              + " Using settings : " + details);
         }
 
-        String connectionPoolType = settings.getConnectionPoolType() == null
-                ? DefaultConnectionProviderFactory.TYPE
-                : settings.getConnectionPoolType();
-
-        JDBCConnectionProviderFactory connectionProviderFactory =
-                JDBCConnectionProviderFactory.FACTORIES.get(connectionPoolType);
-        if (connectionProviderFactory == null)
-        {
-            LOGGER.warn("Unknown connection pool type: "
-                        + connectionPoolType
-                        + ".  no connection pooling will be used");
-            connectionProviderFactory = new DefaultConnectionProviderFactory();
-        }
-
-        try
-        {
-            Map<String, String> providerAttributes = new HashMap<>();
-            Set<String> providerAttributeNames =
-                    new HashSet<String>(connectionProviderFactory.getProviderAttributeNames());
-            providerAttributeNames.retainAll(parent.getContextKeys(false));
-            for (String attr : providerAttributeNames)
-            {
-                providerAttributes.put(attr, parent.getContextValue(String.class, attr));
-            }
-
-            _connectionProvider = connectionProviderFactory.getConnectionProvider(_connectionURL,
-                                                                                  settings.getUsername(),
-                                                                                  settings.getPassword(),
-                                                                                  providerAttributes);
-        }
-        catch (SQLException e)
-        {
-            throw new StoreException(String.format(
-                    "Failed to create connection provider for connectionUrl: '%s' and username: '%s'",
-                    _connectionURL,
-                    settings.getUsername()), e);
-        }
+        _connectionProvider = JdbcUtils.createConnectionProvider(parent, LOGGER);
         _blobType = details.getBlobType();
         _varBinaryType = details.getVarBinaryType();
         _useBytesMethodsForBlob = details.isUseBytesMethodsForBlob();
@@ -166,6 +126,36 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
             throw new StoreException("Unable to close connection provider ", e);
         }
         setState(State.CLOSED);
+    }
+
+    @Override
+    public void onDelete(final ConfiguredObject<?> parent)
+    {
+        assertState(CLOSED);
+        ConnectionProvider connectionProvider = JdbcUtils.createConnectionProvider(parent, LOGGER);
+        try
+        {
+            try (Connection conn = connectionProvider.getConnection())
+            {
+                conn.setAutoCommit(true);
+                onDelete(conn);
+            }
+            catch (SQLException e)
+            {
+                getLogger().error("Exception while deleting store tables", e);
+            }
+        }
+        finally
+        {
+            try
+            {
+                connectionProvider.close();
+            }
+            catch (SQLException e)
+            {
+                LOGGER.warn("Unable to close connection provider ", e);
+            }
+        }
     }
 
     @Override
@@ -274,6 +264,19 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
         public File getStoreLocationAsFile()
         {
             return null;
+        }
+
+        @Override
+        public void onDelete(final ConfiguredObject<?> parent)
+        {
+            try(Connection connection = GenericJDBCConfigurationStore.this.getConnection())
+            {
+                onDelete(connection);
+            }
+            catch (SQLException e)
+            {
+                throw new StoreException("Cannot get connection to perform deletion", e);
+            }
         }
 
         @Override
