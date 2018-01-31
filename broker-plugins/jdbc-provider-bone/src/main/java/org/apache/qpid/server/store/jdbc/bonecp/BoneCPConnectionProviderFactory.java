@@ -20,13 +20,16 @@
  */
 package org.apache.qpid.server.store.jdbc.bonecp;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
 
+import java.lang.reflect.Modifier;
 import java.sql.SQLException;
-import java.util.HashSet;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.jolbox.bonecp.BoneCPConfig;
 
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.store.jdbc.ConnectionProvider;
@@ -35,11 +38,30 @@ import org.apache.qpid.server.store.jdbc.JDBCConnectionProviderFactory;
 @PluggableService
 public class BoneCPConnectionProviderFactory implements JDBCConnectionProviderFactory
 {
-    public static final String PARTITION_COUNT = "qpid.jdbcstore.bonecp.partitionCount";
-    public static final String MAX_CONNECTIONS_PER_PARTITION = "qpid.jdbcstore.bonecp.maxConnectionsPerPartition";
-    public static final String MIN_CONNECTIONS_PER_PARTITION = "qpid.jdbcstore.bonecp.minConnectionsPerPartition";
+    static final String JDBCSTORE_PREFIX = "qpid.jdbcstore.";
+    static final String BONECP_SETTING_PREFIX = JDBCSTORE_PREFIX + "bonecp.";
+    static final String PARTITION_COUNT = BONECP_SETTING_PREFIX + "partitionCount";
+    static final String MAX_CONNECTIONS_PER_PARTITION = BONECP_SETTING_PREFIX + "maxConnectionsPerPartition";
+    static final String MIN_CONNECTIONS_PER_PARTITION = BONECP_SETTING_PREFIX + "minConnectionsPerPartition";
 
-    private final Set<String> _supportedAttributes = unmodifiableSet(new HashSet<String>(asList(PARTITION_COUNT, MAX_CONNECTIONS_PER_PARTITION, MIN_CONNECTIONS_PER_PARTITION)));
+    private final Set<String> _supportedAttributes;
+
+    public BoneCPConnectionProviderFactory()
+    {
+        Set<String> names = Arrays.stream(BoneCPConfig.class.getMethods())
+                                  .filter(m -> m.getName().startsWith("set")
+                                               && m.getName().length() > 3
+                                               && Modifier.isPublic(m.getModifiers())
+                                               && m.getParameterCount() == 1
+                                               && (m.getParameterTypes()[0].isPrimitive()
+                                                   || m.getParameterTypes()[0] == String.class))
+                                  .map(m -> {
+                                      String n = m.getName().substring(3);
+                                      n = BONECP_SETTING_PREFIX + Character.toLowerCase(n.charAt(0)) + n.substring(1);
+                                      return n;
+                                  }).collect(Collectors.toSet());
+        _supportedAttributes = unmodifiableSet(names);
+    }
 
     @Override
     public String getType()
