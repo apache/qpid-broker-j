@@ -49,7 +49,7 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
         System.clearProperty("sun.net.http.allowRestrictedHeaders");
     }
 
-    private String getVirtualHost()
+    protected String getVirtualHost()
     {
         return getClass().getSimpleName() + "_" + _testName.getMethodName();
     }
