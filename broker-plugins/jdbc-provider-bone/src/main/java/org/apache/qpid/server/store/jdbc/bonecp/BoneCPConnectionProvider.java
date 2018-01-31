@@ -20,17 +20,23 @@
  */
 package org.apache.qpid.server.store.jdbc.bonecp;
 
+import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProviderFactory.JDBCSTORE_PREFIX;
 import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProviderFactory.MAX_CONNECTIONS_PER_PARTITION;
 import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProviderFactory.MIN_CONNECTIONS_PER_PARTITION;
 import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProviderFactory.PARTITION_COUNT;
 
-import com.jolbox.bonecp.BoneCP;
-import com.jolbox.bonecp.BoneCPConfig;
-import org.apache.qpid.server.store.jdbc.ConnectionProvider;
-
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
+import java.util.stream.Collectors;
+
+import com.jolbox.bonecp.BoneCP;
+import com.jolbox.bonecp.BoneCPConfig;
+
+import org.apache.qpid.server.store.jdbc.ConnectionProvider;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class BoneCPConnectionProvider implements ConnectionProvider
 {
@@ -42,6 +48,14 @@ public class BoneCPConnectionProvider implements ConnectionProvider
 
     public BoneCPConnectionProvider(String connectionUrl, String username, String password, Map<String, String> providerAttributes) throws SQLException
     {
+        _connectionPool = new BoneCP(createBoneCPConfig(connectionUrl, username, password, providerAttributes));
+    }
+
+    static BoneCPConfig createBoneCPConfig(final String connectionUrl,
+                                           final String username,
+                                           final String password,
+                                           final Map<String, String> providerAttributes)
+    {
         BoneCPConfig config = new BoneCPConfig();
         config.setJdbcUrl(connectionUrl);
         if (username != null)
@@ -50,31 +64,31 @@ public class BoneCPConnectionProvider implements ConnectionProvider
             config.setPassword(password);
         }
 
-        config.setMinConnectionsPerPartition(convertToIntWithDefault(MIN_CONNECTIONS_PER_PARTITION, providerAttributes, DEFAULT_MIN_CONNECTIONS_PER_PARTITION));
-        config.setMaxConnectionsPerPartition(convertToIntWithDefault(MAX_CONNECTIONS_PER_PARTITION, providerAttributes, DEFAULT_MAX_CONNECTIONS_PER_PARTITION));
-        config.setPartitionCount(convertToIntWithDefault(PARTITION_COUNT, providerAttributes, DEFAULT_PARTITION_COUNT));
+        Map<String, String> attributes = new HashMap<>(providerAttributes);
+        attributes.putIfAbsent(MIN_CONNECTIONS_PER_PARTITION, String.valueOf(DEFAULT_MIN_CONNECTIONS_PER_PARTITION));
+        attributes.putIfAbsent(MAX_CONNECTIONS_PER_PARTITION, String.valueOf(DEFAULT_MAX_CONNECTIONS_PER_PARTITION));
+        attributes.putIfAbsent(PARTITION_COUNT, String.valueOf(DEFAULT_PARTITION_COUNT));
 
-        _connectionPool = new BoneCP(config);
+        Map<String, String> propertiesMap =
+                attributes.entrySet()
+                          .stream()
+                          .collect(Collectors.toMap(p -> p.getKey().substring(JDBCSTORE_PREFIX.length()),
+                                                    Map.Entry::getValue));
+
+        Properties properties = new Properties();
+        properties.putAll(propertiesMap);
+
+        try
+        {
+            config.setProperties(properties);
+        }
+        catch (Exception e)
+        {
+            throw new ServerScopedRuntimeException("Unexpected exception on applying BoneCP configuration", e);
+        }
+        return config;
     }
 
-    private int convertToIntWithDefault(String key, Map<String, String> context, int defaultValue)
-    {
-        if (context.containsKey(key))
-        {
-            try
-            {
-                return Integer.parseInt(context.get(key));
-            }
-            catch (NumberFormatException e)
-            {
-               return defaultValue;
-            }
-        }
-        else
-        {
-            return defaultValue;
-        }
-    }
     @Override
     public Connection getConnection() throws SQLException
     {
