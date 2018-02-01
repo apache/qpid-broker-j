@@ -79,7 +79,6 @@ public class ArrivalTimeFilterTest extends JmsTestBase
         }
     }
 
-    @Ignore("QPID-8067")
     @Test
     public void testQueueDefaultFilterArrivalTime1000() throws Exception
     {
