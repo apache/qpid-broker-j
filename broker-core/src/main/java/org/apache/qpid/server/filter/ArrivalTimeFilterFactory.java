@@ -36,10 +36,8 @@ public final class ArrivalTimeFilterFactory implements MessageFilterFactory
         {
             throw new IllegalArgumentException("Cannot create a filter from these arguments: " + arguments);
         }
-        String arg = arguments.get(0);
-        long startingFrom= Long.parseLong(arg);
-
-        return new ArrivalTimeFilter(System.currentTimeMillis() + startingFrom, startingFrom==0l);
+        long periodInSeconds = Long.parseLong(arguments.get(0));
+        return new ArrivalTimeFilter(System.currentTimeMillis() - periodInSeconds * 1000L, periodInSeconds == 0L);
     }
 
     @Override
