@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 import com.jolbox.bonecp.BoneCP;
 import com.jolbox.bonecp.BoneCPConfig;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.store.jdbc.ConnectionProvider;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
@@ -84,7 +85,7 @@ public class BoneCPConnectionProvider implements ConnectionProvider
         }
         catch (Exception e)
         {
-            throw new ServerScopedRuntimeException("Unexpected exception on applying BoneCP configuration", e);
+            throw new IllegalConfigurationException("Unexpected exception on applying BoneCP configuration", e);
         }
         return config;
     }
