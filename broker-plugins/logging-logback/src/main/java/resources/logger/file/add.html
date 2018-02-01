@@ -49,11 +49,18 @@
             <div class="clear">
                 <div class="formLabel-labelCell tableContainer-labelCell">Roll Daily:</div>
                 <div class="formLabel-controlCell tableContainer-valueCell">
-                    <input type="checkbox" id="addLogger.rollDaily"
+                    <div type="checkbox" id="addLogger.rollDaily"
                            data-dojo-type="dijit/form/CheckBox"
                            data-dojo-props="
                                   name: 'rollDaily',
-                                  required: false"/>
+                                  required: false">
+                    <script type="dojo/on" data-dojo-event="change" data-dojo-args="checked">
+require(["dijit/registry", "dojo/dom"], function(registry, dom){
+dom.byId("addLogger.maxHistory.label").style.display = checked ? 'none' : '';
+dom.byId("addLogger.maxHistory.label.roll_daily").style.display = checked ? '' : 'none';
+        });
+    </script>
+                    </div>
                     <div data-dojo-type="dijit/Tooltip"
                          data-dojo-props="connectId: ['addLogger.rollDaily'],
                                       label: 'If selected, files will be rolled over daily'">
@@ -89,15 +96,17 @@
                 </div>
             </div>
             <div class="clear">
-                <div class="formLabel-labelCell tableContainer-labelCell">Maximum Number of Rolled Files:</div>
+                <div class="formLabel-labelCell tableContainer-labelCell">
+                    <span id="addLogger.maxHistory.label">Maximum Number of Rolled Files</span>
+                    <span id="addLogger.maxHistory.label.roll_daily" style="display: none">Maximum Number of Days to Keep Rolled Files</span>:</div>
                 <div class="formLabel-controlCell tableContainer-valueCell">
                     <input type="text" id="addLogger.maxHistory"
                            data-dojo-type="dijit/form/NumberTextBox"
                            data-dojo-props="
                               name: 'maxHistory',
-                              placeHolder: 'maximum number of files to keep in history',
-                              promptMessage: 'Enter the maximum number of files to keep in history',
-                              title: 'Enter the maximum number of files to keep in history'"/>
+                              placeHolder: 'maximum history limit for rolled files',
+                              promptMessage: 'Enter maximum history limit for rolled files',
+                              title: 'Enter maximum history limit for rolled files'"/>
                 </div>
             </div>
             <div class="clear">
