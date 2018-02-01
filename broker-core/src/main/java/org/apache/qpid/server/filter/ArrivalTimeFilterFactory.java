@@ -34,10 +34,20 @@ public final class ArrivalTimeFilterFactory implements MessageFilterFactory
     {
         if(arguments == null || arguments.size() != 1)
         {
-            throw new IllegalArgumentException("Cannot create a filter from these arguments: " + arguments);
+            throw new IllegalArgumentException(String.format("Cannot create a %s filter from these arguments: %s",
+                                                             getType(), arguments));
         }
-        long periodInSeconds = Long.parseLong(arguments.get(0));
-        return new ArrivalTimeFilter(System.currentTimeMillis() - periodInSeconds * 1000L, periodInSeconds == 0L);
+        final String periodArgument = arguments.get(0);
+        try
+        {
+            long periodInSeconds = Long.parseLong(periodArgument);
+            return new ArrivalTimeFilter(System.currentTimeMillis() - (periodInSeconds * 1000L), periodInSeconds == 0L);
+        }
+        catch (NumberFormatException e)
+        {
+            throw new IllegalArgumentException(String.format("Cannot create a %s filter.  Period value '%s' does not contain a parsable long value",
+                                                             getType(), periodArgument), e);
+        }
     }
 
     @Override
