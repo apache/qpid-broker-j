@@ -126,13 +126,12 @@ public class AppenderUtils
         }
 
         @Override
-        protected void computeNextCheck()
+        public void start()
         {
-            super.computeNextCheck();
-            if (_rollOnRestart && _isFirst)
+            super.start();
+            if (_rollOnRestart)
             {
-                _isFirst = false;
-                nextCheck = 0l;
+                nextCheck = 0L;
             }
         }
 
@@ -142,12 +141,14 @@ public class AppenderUtils
             if (_rollOnRestart && _isFirst)
             {
                 _isFirst = false;
-                return activeFile.exists() && activeFile.length() != 0l;
+                if (activeFile.exists() && activeFile.length() == 0)
+                {
+                    computeNextCheck();
+                    return false;
+                }
             }
-            else
-            {
-                return super.isTriggeringEvent(activeFile, event);
-            }
+
+            return super.isTriggeringEvent(activeFile, event);
         }
 
         public FileSize getMaxFileSize()
