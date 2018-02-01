@@ -19,10 +19,11 @@
  *
  */
 define(["qpid/common/util",
+        "dojo/query",
         "dojo/text!logger/file/show.html",
         "qpid/common/TypeTabExtension",
         "qpid/management/logger/FileBrowser",
-        "dojo/domReady!"], function (util, template, TypeTabExtension, FileBrowser)
+        "dojo/domReady!"], function (util, query, template, TypeTabExtension, FileBrowser)
 {
     function BrokerFileLogger(params)
     {
@@ -39,6 +40,7 @@ define(["qpid/common/util",
             "File",
             params.metadata,
             params.data);
+        this.containerNode = params.containerNode;
     }
 
     util.extend(BrokerFileLogger, TypeTabExtension);
@@ -47,7 +49,11 @@ define(["qpid/common/util",
     {
         TypeTabExtension.prototype.update.call(this, restData);
         this.fileBrowser.update(restData);
-    }
+        query(".maxHistoryLabel", this.containerNode)[0].style.display =
+            restData && restData['rollDaily'] ? 'none' : '';
+        query(".maxHistoryRollDailyLabel", this.containerNode)[0].style.display =
+            restData && restData['rollDaily'] ? '' : 'none';
+    };
 
     return BrokerFileLogger;
 });
