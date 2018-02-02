@@ -116,7 +116,7 @@ public class AppenderUtils
     {
         private final boolean _rollOnRestart;
         private final FileSize _maxFileSize;
-        private boolean _isFirst = true;
+        private volatile boolean _isFirst = true;
 
         public DailyTriggeringPolicy(boolean isRollOnRestart, String maxFileSize)
         {
@@ -141,7 +141,7 @@ public class AppenderUtils
             if (_rollOnRestart && _isFirst)
             {
                 _isFirst = false;
-                if (activeFile.exists() && activeFile.length() == 0)
+                if (activeFile != null && activeFile.exists() && activeFile.length() == 0)
                 {
                     computeNextCheck();
                     return false;
@@ -161,7 +161,7 @@ public class AppenderUtils
     {
         private final boolean _rollOnRestart;
         private final FileSize _maxFileSize;
-        private boolean _isFirst = true;
+        private volatile boolean _isFirst = true;
 
         public SizeTriggeringPolicy(boolean isRollOnRestart, String maxFileSize)
         {
@@ -177,7 +177,7 @@ public class AppenderUtils
             if (_rollOnRestart && _isFirst)
             {
                 _isFirst = false;
-                return activeFile.exists() && activeFile.length() != 0l;
+                return activeFile != null && activeFile.exists() && activeFile.length() != 0;
             }
             else
             {
@@ -193,7 +193,7 @@ public class AppenderUtils
 
     static class SimpleRollingPolicy extends FixedWindowRollingPolicy
     {
-        private int _maxFiles;
+        private final int _maxFiles;
 
         public SimpleRollingPolicy(int maxHistory)
         {
