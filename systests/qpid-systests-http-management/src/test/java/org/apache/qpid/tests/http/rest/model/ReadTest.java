@@ -21,6 +21,7 @@
 package org.apache.qpid.tests.http.rest.model;
 
 import static java.util.Collections.singletonMap;
+import static javax.servlet.http.HttpServletResponse.SC_CREATED;
 import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -29,7 +30,10 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.isOneOf;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,11 +43,12 @@ import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.apache.qpid.server.logging.logback.VirtualHostFileLogger;
+import org.apache.qpid.server.logging.logback.VirtualHostNameAndLevelLogInclusionRule;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.tests.http.HttpRequestConfig;
 import org.apache.qpid.tests.http.HttpTestBase;
 
-/** KWTODO wildcards, actuals */
 @HttpRequestConfig
 public class ReadTest extends HttpTestBase
 {
@@ -132,13 +137,13 @@ public class ReadTest extends HttpTestBase
     {
         final String hostContextKey = "myvhcontextvar";
         final String hostContextValue = UUID.randomUUID().toString();
-        final Map<String, Object> hostUpdateAttrs = singletonMap("context",
+        final Map<String, Object> hostUpdateAttrs = singletonMap(ConfiguredObject.CONTEXT,
                                                                  singletonMap(hostContextKey, hostContextValue));
         getHelper().submitRequest("virtualhost", "POST", hostUpdateAttrs, SC_OK);
 
         final String queueContextKey = "myqueuecontextvar";
         final String queueContextValue = UUID.randomUUID().toString();
-        final Map<String, Object> queueUpdateAttrs = singletonMap("context",
+        final Map<String, Object> queueUpdateAttrs = singletonMap(ConfiguredObject.CONTEXT,
                                                                   singletonMap(queueContextKey, queueContextValue));
         getHelper().submitRequest(QUEUE1_URL, "POST", queueUpdateAttrs, SC_OK);
 
@@ -154,5 +159,78 @@ public class ReadTest extends HttpTestBase
         assertThat(context2.size(), is(greaterThanOrEqualTo(2)));
         assertThat(context2.get(queueContextKey), is(equalTo(queueContextValue)));
         assertThat(context2.get(hostContextKey), is(equalTo(hostContextValue)));
+    }
+
+    @Test
+    public void actuals() throws Exception
+    {
+        final String queueContextKey = "myqueuecontextvar";
+        final String queueContextValue = UUID.randomUUID().toString();
+
+        final Map<String, Object> queueUpdateAttrs = new HashMap<>();
+        queueUpdateAttrs.put(ConfiguredObject.DESCRIPTION, "${myqueuecontextvar}");
+        queueUpdateAttrs.put(ConfiguredObject.CONTEXT, singletonMap(queueContextKey, queueContextValue));
+        getHelper().submitRequest(QUEUE1_URL, "POST", queueUpdateAttrs, SC_OK);
+
+
+        final Map<String, Object> queue = getHelper().getJsonAsMap(QUEUE1_URL);
+        assertThat(queue.get(ConfiguredObject.DESCRIPTION), is(equalTo(queueContextValue)));
+
+        final Map<String, Object> queueActuals = getHelper().getJsonAsMap(QUEUE1_URL + "?actuals=true");
+        assertThat(queueActuals.get(ConfiguredObject.DESCRIPTION), is(equalTo("${myqueuecontextvar}")));
+    }
+
+    @Test
+    public void wildcards() throws Exception
+    {
+        String rule1A = createLoggerAndRule("mylogger1", "myinclusionruleA");
+        String rule1B = createLoggerAndRule("mylogger1", "myinclusionruleB");
+        String rule2A = createLoggerAndRule("mylogger2", "myinclusionruleA");
+
+        {
+            List<Map<String, Object>> rules = getHelper().getJsonAsList("virtualhostloginclusionrule/*");
+            assertThat(rules.size(), is(equalTo(3)));
+
+            Set<String> ids = rules.stream().map(ReadTest::getId).collect(Collectors.toSet());
+            assertThat(ids, containsInAnyOrder(rule1A, rule1B, rule2A));
+        }
+
+        {
+            List<Map<String, Object>> rules = getHelper().getJsonAsList("virtualhostloginclusionrule/mylogger1/*");
+            assertThat(rules.size(), is(equalTo(2)));
+
+            Set<String> ids = rules.stream().map(ReadTest::getId).collect(Collectors.toSet());
+            assertThat(ids, containsInAnyOrder(rule1A, rule1B));
+        }
+
+        {
+            List<Map<String, Object>> rules = getHelper().getJsonAsList("virtualhostloginclusionrule/*/myinclusionruleA");
+            assertThat(rules.size(), is(equalTo(2)));
+
+            Set<String> ids = rules.stream().map(ReadTest::getId).collect(Collectors.toSet());
+            assertThat(ids, containsInAnyOrder(rule1A, rule2A));
+        }
+    }
+
+    private String createLoggerAndRule(final String loggerName, final String inclusionRuleName) throws Exception
+    {
+        final String parentUrl = String.format("virtualhostlogger/%s", loggerName);
+        Map<String, Object> parentAttrs = Collections.singletonMap(ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE);
+
+        int response = getHelper().submitRequest(parentUrl, "PUT", parentAttrs);
+        assertThat(response, is(isOneOf(SC_CREATED, SC_OK)));
+
+        final String childUrl = String.format("virtualhostloginclusionrule/%s/%s", loggerName, inclusionRuleName);
+        Map<String, Object> childAttrs = Collections.singletonMap(ConfiguredObject.TYPE, VirtualHostNameAndLevelLogInclusionRule.TYPE);
+        getHelper().submitRequest(childUrl, "PUT", childAttrs, SC_CREATED);
+
+        final Map<String, Object> child = getHelper().getJsonAsMap(childUrl);
+        return (String) child.get(ConfiguredObject.ID);
+
+    }
+
+    private static String getId(Map<String, Object> object)
+    {
+        return ((String) object.get(ConfiguredObject.ID));
     }
 }

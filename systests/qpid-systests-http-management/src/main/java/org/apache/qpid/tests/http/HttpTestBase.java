@@ -23,6 +23,8 @@ package org.apache.qpid.tests.http;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.internal.runners.TestMethod;
+import org.junit.rules.MethodRule;
 import org.junit.rules.TestName;
 
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
@@ -31,14 +33,16 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
 {
     @Rule
     public final TestName _testName = new TestName();
+
     private HttpTestHelper _helper;
 
     @Before
-    public void setUpTestBase()
+    public void setUpTestBase() throws Exception
     {
         System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
 
-        HttpRequestConfig config = getClass().getAnnotation(HttpRequestConfig.class);
+        HttpRequestConfig config = getHttpRequestConfig();
+
         _helper = new HttpTestHelper(getBrokerAdmin(),
                                      config != null && config.useVirtualHostAsHost() ? getVirtualHost() : null);
     }
@@ -57,5 +61,16 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
     public HttpTestHelper getHelper()
     {
         return _helper;
+    }
+
+    private HttpRequestConfig getHttpRequestConfig() throws Exception
+    {
+        HttpRequestConfig config = getClass().getMethod(_testName.getMethodName(), new Class[]{}).getAnnotation(HttpRequestConfig.class);
+        if (config == null)
+        {
+            config = getClass().getAnnotation(HttpRequestConfig.class);
+        }
+
+        return config;
     }
 }

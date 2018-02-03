@@ -54,6 +54,7 @@ public class HttpTestHelper
     private static final TypeReference<List<LinkedHashMap<String, Object>>> TYPE_LIST_OF_LINKED_HASH_MAPS = new TypeReference<List<LinkedHashMap<String, Object>>>()
     {
     };
+
     private static final TypeReference<LinkedHashMap<String, Object>> TYPE_LINKED_HASH_MAPS = new TypeReference<LinkedHashMap<String, Object>>()
     {
     };
@@ -281,19 +282,25 @@ public class HttpTestHelper
         }
     }
 
-    public <T> T getJson(String path, final Class<T> valueType) throws IOException
+    public <T> T getJson(String path, final TypeReference valueTypeRef, int expectedResponseCode) throws IOException
     {
         HttpURLConnection connection = openManagementConnection(path, "GET");
         connection.connect();
-        return readJsonResponse(connection, valueType);
+        int responseCode = connection.getResponseCode();
+        Assert.assertEquals(String.format("Unexpected response code from : %s", path), expectedResponseCode, responseCode);
+
+        return new ObjectMapper().readValue(new ByteArrayInputStream(readConnectionInputStream(connection)), valueTypeRef);
     }
 
-    public <T> T postJson(String path, final Object data , final Class<T> valueType) throws IOException
+    public <T> T postJson(String path, final Object data, final TypeReference valueTypeRef, int expectedResponseCode) throws IOException
     {
         HttpURLConnection connection = openManagementConnection(path, "POST");
         connection.connect();
         writeJsonRequest(connection, data);
-        return readJsonResponse(connection, valueType);
+        int responseCode = connection.getResponseCode();
+        Assert.assertEquals(String.format("Unexpected response code from : %s", path), expectedResponseCode, responseCode);
+
+        return new ObjectMapper().readValue(new ByteArrayInputStream(readConnectionInputStream(connection)), valueTypeRef);
     }
 
 
