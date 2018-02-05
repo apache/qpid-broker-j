@@ -277,9 +277,9 @@ public class UserPreferencesImpl implements UserPreferences
             }
         }
 
-        _preferenceStore.replace(Collections.singleton(existingPreferenceId),
+        _preferenceStore.replace(existingPreferenceId != null ? Collections.singleton(existingPreferenceId) : Collections.emptyList(),
                                  augmentedPreference == null
-                                         ? Collections.<PreferenceRecord>emptyList()
+                                         ? Collections.emptyList()
                                          : Collections.singleton(PreferenceRecordImpl.fromPreference(augmentedPreference)));
 
         if (existingPreferenceId != null)
