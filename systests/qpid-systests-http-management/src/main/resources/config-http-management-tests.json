@@ -19,75 +19,107 @@
  *
  */
 {
-  "name" : "${broker.name}",
-  "modelVersion" : "7.0",
-  "authenticationproviders" : [ {
-    "name" : "anon",
-    "type" : "Anonymous"
-  }, {
-    "name" : "plain",
-    "type" : "Plain",
-    "secureOnlyMechanisms" : [],
-    "users" : [ {
-      "name" : "admin",
-      "type" : "managed",
-      "password" : "admin"
-    }, {
-      "name" : "guest",
-      "type" : "managed",
-      "password" : "guest"
-    } ]
-  } ],
-  "ports" : [ {
-    "name" : "AMQP",
-    "type" : "AMQP",
-    "authenticationProvider" : "plain",
-    "port" : "0",
-    "virtualhostaliases" : [ {
-      "name" : "defaultAlias",
-      "type" : "defaultAlias"
-    }, {
-      "name" : "hostnameAlias",
-      "type" : "hostnameAlias"
-    }, {
-      "name" : "nameAlias",
-      "type" : "nameAlias"
-    } ]
-  }, {
-    "name" : "ANONYMOUS_AMQP",
-    "type" : "AMQP",
-    "authenticationProvider" : "anon",
-    "port" : "0",
-    "virtualhostaliases" : [ {
-      "name" : "defaultAlias",
-      "type" : "defaultAlias",
-      "durable" : true
-    }, {
-      "name" : "hostnameAlias",
-      "type" : "hostnameAlias",
-      "durable" : true
-    }, {
-      "name" : "nameAlias",
-      "type" : "nameAlias",
-      "durable" : true
-    } ]
-  }, {
-    "name": "HTTP",
-    "authenticationProvider": "plain",
-    "port": "0",
-    "protocols": [
-      "HTTP"
-    ],
-    "virtualhostaliases" : [ {
-      "name" : "nameAlias",
-      "type" : "nameAlias"
-    } ]
-
-  }],
-  "plugins" : [ {
-    "type" : "MANAGEMENT-HTTP",
-    "name" : "httpManagement",
-    "httpBasicAuthenticationEnabled" : true
-  } ],
-  "virtualhostnodes" : []
+  "name": "${broker.name}",
+  "modelVersion": "7.0",
+  "keystores": [
+    {
+      "name": "systestsKeyStore",
+      "storeUrl": "classpath:java_broker_keystore.jks",
+      "password": "password"
+    }
+  ],
+  "authenticationproviders": [
+    {
+      "name": "anon",
+      "type": "Anonymous"
+    },
+    {
+      "name": "plain",
+      "type": "Plain",
+      "secureOnlyMechanisms": [],
+      "users": [
+        {
+          "name": "admin",
+          "type": "managed",
+          "password": "admin"
+        },
+        {
+          "name": "guest",
+          "type": "managed",
+          "password": "guest"
+        }
+      ]
+    }
+  ],
+  "ports": [
+    {
+      "name": "AMQP",
+      "type": "AMQP",
+      "authenticationProvider": "plain",
+      "port": "0",
+      "virtualhostaliases": [
+        {
+          "name": "defaultAlias",
+          "type": "defaultAlias"
+        },
+        {
+          "name": "hostnameAlias",
+          "type": "hostnameAlias"
+        },
+        {
+          "name": "nameAlias",
+          "type": "nameAlias"
+        }
+      ]
+    },
+    {
+      "name": "ANONYMOUS_AMQP",
+      "type": "AMQP",
+      "authenticationProvider": "anon",
+      "port": "0",
+      "virtualhostaliases": [
+        {
+          "name": "defaultAlias",
+          "type": "defaultAlias",
+          "durable": true
+        },
+        {
+          "name": "hostnameAlias",
+          "type": "hostnameAlias",
+          "durable": true
+        },
+        {
+          "name": "nameAlias",
+          "type": "nameAlias",
+          "durable": true
+        }
+      ]
+    },
+    {
+      "name": "HTTP",
+      "authenticationProvider": "plain",
+      "keyStore": "systestsKeyStore",
+      "port": "0",
+      "protocols": [
+        "HTTP"
+      ],
+      "transports": [
+        "TCP", "SSL"
+      ],
+      "virtualhostaliases": [
+        {
+          "name": "nameAlias",
+          "type": "nameAlias"
+        }
+      ]
+    }
+  ],
+  "plugins": [
+    {
+      "type": "MANAGEMENT-HTTP",
+      "name": "httpManagement",
+      "httpBasicAuthenticationEnabled": true
+    }
+  ],
+  "virtualhostnodes": []
 }

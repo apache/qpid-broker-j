@@ -85,6 +85,11 @@
 
         <dependency>
             <groupId>org.apache.qpid</groupId>
+            <artifactId>qpid-systests-jms-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-plugins-derby-store</artifactId>
             <optional>true</optional>
             <scope>test</scope>
@@ -117,7 +122,58 @@
 
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>addQpidJmsClientIfNecessary</id>
+            <activation>
+                <property>
+                    <name>!enableAmqp0-x</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.qpid</groupId>
+                    <artifactId>qpid-jms-client</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>addJms11IfNecessary</id>
+            <activation>
+                <property>
+                    <name>enableAmqp0-x</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.qpid</groupId>
+                    <artifactId>qpid-client</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
     <build>
+        <testResources>
+            <testResource>
+                <directory>${basedir}/src/test/java</directory>
+                <excludes>
+                    <exclude>**/*.java/</exclude>
+                </excludes>
+            </testResource>
+            <testResource>
+                <directory>${basedir}/src/test/resources</directory>
+            </testResource>
+            <testResource>
+                <directory>${basedir}/../../test-profiles/test_resources/ssl</directory>
+                <includes>
+                    <include>*.jks</include>
+                </includes>
+            </testResource>
+        </testResources>
+
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

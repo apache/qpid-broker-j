@@ -32,11 +32,20 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -69,7 +78,7 @@ public class HttpTestHelper
     private final int _connectTimeout = Integer.getInteger("qpid.resttest_connection_timeout", 30000);
 
     private String _acceptEncoding;
-    private boolean _useSsl = false;
+    private boolean _tls = false;
 
     public HttpTestHelper(final BrokerAdmin admin)
     {
@@ -85,7 +94,12 @@ public class HttpTestHelper
         _requestHostName = requestHostName;
     }
 
-    public int getHttpPort()
+    public void setTls(final boolean tls)
+    {
+        _tls = tls;
+    }
+
+    private int getHttpPort()
     {
         return _httpPort;
     }
@@ -95,17 +109,12 @@ public class HttpTestHelper
         return "localhost";
     }
 
-    private String getProtocol()
+    private String getManagementURL()
     {
-        return _useSsl ? "https" : "http";
+        return (_tls ? "https" : "http") + "://" + getHostName() + ":" + getHttpPort();
     }
 
-    public String getManagementURL()
-    {
-        return getProtocol() + "://" + getHostName() + ":" + getHttpPort();
-    }
-
-    public URL getManagementURL(String path) throws MalformedURLException
+    private URL getManagementURL(String path) throws MalformedURLException
     {
         return new URL(getManagementURL() + path);
     }
@@ -118,6 +127,42 @@ public class HttpTestHelper
         }
         URL url = getManagementURL(path);
         HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
+        if (httpCon instanceof HttpsURLConnection)
+        {
+            HttpsURLConnection httpsCon = (HttpsURLConnection) httpCon;
+            try
+            {
+                SSLContext sslContext = SSLContext.getInstance("TLS");
+                TrustManager[] trustAllCerts = new TrustManager[] {
+                        new X509TrustManager()
+                        {
+                            public X509Certificate[] getAcceptedIssuers()
+                            {
+                                X509Certificate[] issuers = new X509Certificate[0];
+                                return issuers;
+                            }
+
+                            @Override
+                            public void checkClientTrusted(X509Certificate[] certs, String authType)
+                            {
+                            }
+
+                            @Override
+                            public void checkServerTrusted(X509Certificate[] certs, String authType)
+                            {
+                            }
+                        }
+                };
+
+                sslContext.init(null, trustAllCerts, null);
+                httpsCon.setSSLSocketFactory(sslContext.getSocketFactory());
+                httpsCon.setHostnameVerifier((s, sslSession) -> true);
+            }
+            catch (KeyManagementException | NoSuchAlgorithmException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
         httpCon.setConnectTimeout(_connectTimeout);
         if (_requestHostName != null)
         {
@@ -388,4 +433,5 @@ public class HttpTestHelper
     {
         _acceptEncoding = acceptEncoding;
     }
+
 }

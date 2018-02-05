@@ -20,13 +20,24 @@
 
 package org.apache.qpid.tests.http;
 
+import java.net.InetSocketAddress;
+
+import javax.jms.Connection;
+import javax.jms.JMSException;
+import javax.naming.NamingException;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.internal.runners.TestMethod;
-import org.junit.rules.MethodRule;
 import org.junit.rules.TestName;
 
+import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.systests.AmqpManagementFacade;
+import org.apache.qpid.systests.ConnectionBuilder;
+import org.apache.qpid.systests.JmsProvider;
+import org.apache.qpid.systests.QpidJmsClient0xProvider;
+import org.apache.qpid.systests.QpidJmsClientProvider;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public abstract class HttpTestBase extends BrokerAdminUsingTestBase
@@ -35,6 +46,8 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
     public final TestName _testName = new TestName();
 
     private HttpTestHelper _helper;
+
+    private JmsProvider _jmsProvider;
 
     @Before
     public void setUpTestBase() throws Exception
@@ -45,6 +58,18 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
 
         _helper = new HttpTestHelper(getBrokerAdmin(),
                                      config != null && config.useVirtualHostAsHost() ? getVirtualHost() : null);
+
+        Protocol protocol = getProtocol();
+        AmqpManagementFacade managementFacade = new AmqpManagementFacade(protocol);
+        if (protocol == Protocol.AMQP_1_0)
+        {
+            _jmsProvider = new QpidJmsClientProvider(managementFacade);
+        }
+        else
+        {
+            _jmsProvider = new QpidJmsClient0xProvider();
+        }
+
     }
 
     @After
@@ -63,6 +88,21 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
         return _helper;
     }
 
+    protected Connection getConnection() throws JMSException, NamingException
+    {
+        return getConnectionBuilder().build();
+    }
+
+    protected ConnectionBuilder getConnectionBuilder()
+    {
+        InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
+        return _jmsProvider.getConnectionBuilder()
+                           .setHost(brokerAddress.getHostName())
+                           .setPort(brokerAddress.getPort())
+                           .setUsername(getBrokerAdmin().getValidUsername())
+                           .setPassword(getBrokerAdmin().getValidPassword());
+    }
+
     private HttpRequestConfig getHttpRequestConfig() throws Exception
     {
         HttpRequestConfig config = getClass().getMethod(_testName.getMethodName(), new Class[]{}).getAnnotation(HttpRequestConfig.class);
@@ -73,4 +113,17 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
 
         return config;
     }
+
+    protected static long getReceiveTimeout()
+    {
+        return Long.getLong("qpid.test_receive_timeout", 1000L);
+    }
+
+    protected static Protocol getProtocol()
+    {
+        return Protocol.valueOf("AMQP_" + System.getProperty("broker.version", "0-9-1")
+                                                .replace('-', '_')
+                                                .replace('.', '_'));
+    }
+
 }
