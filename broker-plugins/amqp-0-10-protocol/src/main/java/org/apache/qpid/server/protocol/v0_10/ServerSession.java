@@ -68,6 +68,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.txn.AsyncCommand;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
@@ -1147,6 +1148,8 @@ public class ServerSession extends SessionInvoker
             }
             amqpConnection.decrementTransactionOpenCounter();
             _transaction.rollback();
+
+            amqpConnection.unregisterTransactionTickers(_transaction);
         }
         else if(_transaction instanceof DistributedTransaction)
         {
@@ -1240,7 +1243,21 @@ public class ServerSession extends SessionInvoker
 
     public void selectTx()
     {
-        _transaction = getConnection().getAmqpConnection().createLocalTransaction();
+        ServerTransaction txn = _transaction;
+        AMQPConnection_0_10 amqpConnection = getAMQPConnection();
+        if (txn instanceof LocalTransaction)
+        {
+            amqpConnection.unregisterTransactionTickers(_transaction);
+        }
+
+        _transaction = amqpConnection.createLocalTransaction();
+        long notificationRepeatPeriod =
+                getModelObject().getContextValue(Long.class, Session.TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD);
+        amqpConnection.registerTransactionTickers(_transaction,
+                                                  message -> amqpConnection.closeSessionAsync(_modelObject,
+                                                                                              AMQPConnection.CloseReason.TRANSACTION_TIMEOUT,
+                                                                                              (String) message),
+                                                  notificationRepeatPeriod);
     }
 
     public void selectDtx()
@@ -1669,12 +1686,6 @@ public class ServerSession extends SessionInvoker
         {
             return 0L;
         }
-    }
-
-    public void doTimeoutAction(final String reason)
-    {
-        getAMQPConnection().closeSessionAsync(_modelObject,
-                                              AMQPConnection.CloseReason.TRANSACTION_TIMEOUT, reason);
     }
 
     private class ResultFuture<T> implements Future<T>

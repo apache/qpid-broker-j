@@ -21,7 +21,6 @@
 package org.apache.qpid.server.session;
 
 import java.security.AccessControlContext;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -32,7 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
 
-import com.google.common.base.Supplier;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -51,25 +49,20 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.LifetimePolicy;
-import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.transport.TransactionTimeoutTicker;
 import org.apache.qpid.server.transport.network.Ticker;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
                                           X extends ConsumerTarget<X>>
         extends AbstractConfiguredObject<S>
         implements AMQPSession<S, X>, EventLoggerProvider
 {
-    private static final String OPEN_TRANSACTION_TIMEOUT_ERROR = "Open transaction timed out";
-    private static final String IDLE_TRANSACTION_TIMEOUT_ERROR = "Idle transaction timed out";
     private final Action _deleteModelTask;
     private final AMQPConnection<?> _connection;
     private final int _sessionId;
@@ -144,13 +137,6 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     }
 
     @Override
-    protected void postResolveChildren()
-    {
-        super.postResolveChildren();
-        registerTransactionTimeoutTickers(_connection);
-    }
-
-    @Override
     public int getChannelId()
     {
         return _sessionId;
@@ -199,117 +185,6 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     public EventLogger getEventLogger()
     {
         return _connection.getEventLogger();
-    }
-
-    private void registerTransactionTimeoutTickers(Connection<?> amqpConnection)
-    {
-        NamedAddressSpace addressSpace = amqpConnection.getAddressSpace();
-        if (addressSpace instanceof QueueManagingVirtualHost)
-        {
-            final EventLogger eventLogger = getEventLogger();
-            final QueueManagingVirtualHost<?> virtualhost = (QueueManagingVirtualHost<?>) addressSpace;
-            final List<Ticker> tickers = new ArrayList<>(4);
-
-            final Supplier<Long> transactionStartTimeSupplier = new Supplier<Long>()
-            {
-                @Override
-                public Long get()
-                {
-                    return getTransactionStartTimeLong();
-                }
-            };
-            final Supplier<Long> transactionUpdateTimeSupplier = new Supplier<Long>()
-            {
-                @Override
-                public Long get()
-                {
-                    return getTransactionUpdateTimeLong();
-                }
-            };
-
-            long notificationRepeatPeriod =
-                    getContextValue(Long.class, Session.TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD);
-
-            if (virtualhost.getStoreTransactionOpenTimeoutWarn() > 0)
-            {
-                tickers.add(new TransactionTimeoutTicker(
-                        virtualhost.getStoreTransactionOpenTimeoutWarn(),
-                        notificationRepeatPeriod, transactionStartTimeSupplier,
-                        new Action<Long>()
-                        {
-                            @Override
-                            public void performAction(Long age)
-                            {
-                                eventLogger.message(getLogSubject(), ChannelMessages.OPEN_TXN(age));
-                            }
-                        }
-                ));
-            }
-            if (virtualhost.getStoreTransactionOpenTimeoutClose() > 0)
-            {
-                tickers.add(new TransactionTimeoutTicker(
-                        virtualhost.getStoreTransactionOpenTimeoutClose(),
-                        notificationRepeatPeriod, transactionStartTimeSupplier,
-                        new Action<Long>()
-                        {
-                            @Override
-                            public void performAction(Long age)
-                            {
-                                doTimeoutAction(OPEN_TRANSACTION_TIMEOUT_ERROR);
-                            }
-                        }
-                ));
-            }
-            if (virtualhost.getStoreTransactionIdleTimeoutWarn() > 0)
-            {
-                tickers.add(new TransactionTimeoutTicker(
-                        virtualhost.getStoreTransactionIdleTimeoutWarn(),
-                        notificationRepeatPeriod, transactionUpdateTimeSupplier,
-                        new Action<Long>()
-                        {
-                            @Override
-                            public void performAction(Long age)
-                            {
-                                eventLogger.message(getLogSubject(), ChannelMessages.IDLE_TXN(age));
-                            }
-                        }
-                ));
-            }
-            if (virtualhost.getStoreTransactionIdleTimeoutClose() > 0)
-            {
-                tickers.add(new TransactionTimeoutTicker(
-                        virtualhost.getStoreTransactionIdleTimeoutClose(),
-                        notificationRepeatPeriod, transactionUpdateTimeSupplier,
-                        new Action<Long>()
-                        {
-                            @Override
-                            public void performAction(Long age)
-                            {
-                                doTimeoutAction(IDLE_TRANSACTION_TIMEOUT_ERROR);
-                            }
-                        }
-                ));
-            }
-
-            for (Ticker ticker : tickers)
-            {
-                addTicker(ticker);
-            }
-
-            Action deleteTickerTask = new Action()
-            {
-                @Override
-                public void performAction(Object o)
-                {
-                    removeDeleteTask(this);
-                    for (Ticker ticker : tickers)
-                    {
-                        removeTicker(ticker);
-                    }
-                }
-            };
-            addDeleteTask(deleteTickerTask);
-        }
     }
 
     @Override

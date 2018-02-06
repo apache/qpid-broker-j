@@ -45,8 +45,6 @@ public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSessio
 
     LogSubject getLogSubject();
 
-    void doTimeoutAction(String reason);
-
     void block(Queue<?> queue);
 
     void unblock(Queue<?> queue);

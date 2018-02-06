@@ -37,6 +37,7 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.Deletable;
 
 public interface AMQPConnection<C extends AMQPConnection<C>>
@@ -103,6 +104,11 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
     void incrementTransactionBeginCounter();
 
     Iterator<ServerTransaction> getOpenTransactions();
+
+    void registerTransactionTickers(ServerTransaction serverTransaction,
+                                    final Action<String> closeAction, final long notificationRepeatPeriod);
+
+    void unregisterTransactionTickers(ServerTransaction serverTransaction);
 
     enum CloseReason
     {

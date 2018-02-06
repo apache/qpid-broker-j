@@ -1203,12 +1203,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     }
 
     @Override
-    public void doTimeoutAction(final String reason)
-    {
-        getAMQPConnection().closeSessionAsync(this, AMQPConnection.CloseReason.TRANSACTION_TIMEOUT, reason);
-    }
-
-    @Override
     public String toString()
     {
         return "Session_1_0[" + _connection + ": " + _sendingChannel + ']';
