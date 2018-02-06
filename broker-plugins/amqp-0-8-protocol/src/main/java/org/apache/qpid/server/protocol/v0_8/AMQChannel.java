@@ -235,12 +235,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     }
 
-    @Override
-    public void doTimeoutAction(String reason)
-    {
-        _connection.sendConnectionCloseAsync(AMQPConnection.CloseReason.TRANSACTION_TIMEOUT, reason);
-    }
-
     private void message(final LogMessage message)
     {
         getEventLogger().message(message);
@@ -286,12 +280,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         while (canCallSendNextMessageAgain && !getDeliveryMethod.hasDeliveredMessage());
         target.close();
         return getDeliveryMethod.hasDeliveredMessage();
-    }
-
-    /** Sets this channel to be part of a local transaction */
-    private void setLocalTransactional()
-    {
-        _transaction = _connection.createLocalTransaction();
     }
 
     boolean isTransactional()
@@ -789,6 +777,8 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                     _connection.incrementTransactionRollbackCounter();
                 }
                 _connection.decrementTransactionOpenCounter();
+
+                _connection.unregisterTransactionTickers(_transaction);
             }
 
             _transaction.rollback();
@@ -3309,7 +3299,19 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             LOGGER.debug("RECV[" + _channelId + "] TxSelect");
         }
 
-        setLocalTransactional();
+        ServerTransaction txn = _transaction;
+        if (txn instanceof LocalTransaction)
+        {
+            getConnection().unregisterTransactionTickers(_transaction);
+        }
+
+        _transaction = _connection.createLocalTransaction();
+        long notificationRepeatPeriod = getContextValue(Long.class,
+                                                 TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD);
+        getConnection().registerTransactionTickers(_transaction,
+                                                   message -> _connection.sendConnectionCloseAsync(AMQPConnection.CloseReason.TRANSACTION_TIMEOUT,
+                                                                                                   message),
+                                                   notificationRepeatPeriod);
 
         MethodRegistry methodRegistry = _connection.getMethodRegistry();
         TxSelectOkBody responseBody = methodRegistry.createTxSelectOkBody();

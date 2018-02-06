@@ -21,11 +21,12 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
@@ -50,7 +51,7 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint<Coordinator>
 {
-    private final LinkedHashMap<Integer, ServerTransaction> _createdTransactions = new LinkedHashMap<>();
+    private final Map<Integer, ServerTransaction> _createdTransactions = new ConcurrentHashMap<>();
 
     public TxnCoordinatorReceivingLinkEndpoint(final Session_1_0 session, final Link_1_0<Source, Coordinator> link)
     {
@@ -87,12 +88,18 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
 
                         Session_1_0 session = getSession();
 
-                        session.getConnection().receivedComplete();
+                        AMQPConnection_1_0<?> connection = session.getConnection();
+                        connection.receivedComplete();
 
                         if (command instanceof Declare)
                         {
-                            final IdentifiedTransaction txn = session.getConnection().createIdentifiedTransaction();
+                            final IdentifiedTransaction txn = connection.createIdentifiedTransaction();
                             _createdTransactions.put(txn.getId(), txn.getServerTransaction());
+                            long notificationRepeatPeriod =
+                                    getSession().getContextValue(Long.class, Session.TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD);
+                            connection.registerTransactionTickers(txn.getServerTransaction(),
+                                                                  this::doTimeoutAction,
+                                                                  notificationRepeatPeriod);
 
                             Declared state = new Declared();
 
@@ -188,6 +195,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
                 error.setDescription("The transaction was marked as rollback only due to an earlier issue (e.g. a published message was sent settled but could not be enqueued)");
             }
             _createdTransactions.remove(transactionId);
+            connection.unregisterTransactionTickers(txn);
             connection.removeTransaction(transactionId);
             connection.decrementTransactionOpenCounter();
         }
@@ -204,14 +212,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
     protected void remoteDetachedPerformDetach(Detach detach)
     {
         // force rollback of open transactions
-        for(Map.Entry<Integer, ServerTransaction> entry : _createdTransactions.entrySet())
-        {
-            entry.getValue().rollback();
-            AMQPConnection_1_0<?> connection = getSession().getConnection();
-            connection.decrementTransactionOpenCounter();
-            connection.incrementTransactionRollbackCounter();
-            connection.removeTransaction(entry.getKey());
-        }
+        rollbackOpenTransactions();
         close();
     }
 
@@ -265,5 +266,25 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
     public void receiveComplete()
     {
 
+    }
+
+    private void doTimeoutAction(final String message)
+    {
+        rollbackOpenTransactions();
+        Error error = new Error(TransactionError.TRANSACTION_TIMEOUT, message);
+        getSession().getConnection().close(error);
+    }
+
+    private void rollbackOpenTransactions()
+    {
+        for(Map.Entry<Integer, ServerTransaction> entry : _createdTransactions.entrySet())
+        {
+            entry.getValue().rollback();
+            AMQPConnection_1_0<?> connection = getSession().getConnection();
+            connection.decrementTransactionOpenCounter();
+            connection.incrementTransactionRollbackCounter();
+            connection.removeTransaction(entry.getKey());
+        }
+        _createdTransactions.clear();
     }
 }

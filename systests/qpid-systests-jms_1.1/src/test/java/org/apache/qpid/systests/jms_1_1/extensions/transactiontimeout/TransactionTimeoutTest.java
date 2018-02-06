@@ -25,7 +25,6 @@ import static org.apache.qpid.server.virtualhost.QueueManagingVirtualHost.STORE_
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
@@ -57,11 +56,9 @@ public class TransactionTimeoutTest extends JmsTestBase
     private final ExceptionCatchingListener _listener = new ExceptionCatchingListener();
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         assumeThat(getBrokerAdmin().isManagementSupported(), is(true));
-        assumeThat("AMQP 1.0 does not support producer transaction timeout",
-                   getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
     }
 
     @Test
@@ -95,7 +92,13 @@ public class TransactionTimeoutTest extends JmsTestBase
         }
         finally
         {
-            connection.close();
+            try
+            {
+                connection.close();
+            }
+            catch (JMSException ignore)
+            {
+            }
         }
     }
 
@@ -150,7 +153,13 @@ public class TransactionTimeoutTest extends JmsTestBase
         }
         finally
         {
-            connection.close();
+            try
+            {
+                connection.close();
+            }
+            catch (JMSException ignore)
+            {
+            }
         }
     }
 

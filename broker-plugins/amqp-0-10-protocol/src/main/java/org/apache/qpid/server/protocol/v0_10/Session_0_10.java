@@ -113,12 +113,6 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     }
 
     @Override
-    public void doTimeoutAction(final String idleTransactionTimeoutError)
-    {
-        _serverSession.doTimeoutAction(idleTransactionTimeoutError);
-    }
-
-    @Override
     public long getTransactionUpdateTimeLong()
     {
         return _serverSession.getTransactionUpdateTimeLong();
