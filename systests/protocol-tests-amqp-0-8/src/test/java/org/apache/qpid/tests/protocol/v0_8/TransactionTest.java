@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
+import static org.apache.qpid.tests.utils.BrokerAdmin.KIND_BROKER_J;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,6 +38,7 @@ import org.apache.qpid.server.protocol.v0_8.transport.*;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
+import org.apache.qpid.tests.utils.BrokerSpecific;
 
 public class TransactionTest extends BrokerAdminUsingTestBase
 {
@@ -366,4 +368,84 @@ public class TransactionTest extends BrokerAdminUsingTestBase
                        .channel().close().consumeResponse(ChannelCloseOkBody.class);
         }
     }
+
+
+    @Test
+    @BrokerSpecific(kind = KIND_BROKER_J)
+    public void publishTransactionTimeout() throws Exception
+    {
+        int transactionTimeout = 1000;
+        getBrokerAdmin().configure("storeTransactionOpenTimeoutClose", transactionTimeout);
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.openAnonymousConnection()
+                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                       .tx().select().consumeResponse(TxSelectOkBody.class)
+                       .basic().contentHeaderPropertiesContentType("text/plain")
+                       .contentHeaderPropertiesHeaders(Collections.singletonMap("test", "testValue"))
+                       .contentHeaderPropertiesDeliveryMode((byte)1)
+                       .contentHeaderPropertiesPriority((byte)1)
+                       .publishExchange("")
+                       .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
+                       .content("Test")
+                       .publishMessage()
+                       .exchange().declarePassive(true).declare().consumeResponse(ExchangeDeclareOkBody.class);
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+
+            Thread.sleep(transactionTimeout + 1000);
+
+            interaction.consumeResponse(ConnectionCloseBody.class);
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+        }
+    }
+
+    @Test
+    @BrokerSpecific(kind = KIND_BROKER_J)
+    public void consumeTransactionTimeout() throws Exception
+    {
+        int transactionTimeout = 1000;
+        getBrokerAdmin().configure("storeTransactionOpenTimeoutClose", transactionTimeout);
+
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, "message");
+
+        try(FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
+
+            interaction.openAnonymousConnection()
+                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
+                       .tx().select().consumeResponse(TxSelectOkBody.class)
+                       .basic().qosPrefetchCount(1)
+                       .qos()
+                       .consumeResponse(BasicQosOkBody.class)
+                       .channel().flow(true)
+                       .consumeResponse(ChannelFlowOkBody.class)
+                       .basic()
+                       .consumeConsumerTag("A")
+                       .consumeQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                       .consume()
+                       .consumeResponse(BasicConsumeOkBody.class)
+                       .consumeResponse(BasicDeliverBody.class);
+
+            BasicDeliverBody delivery = interaction.getLatestResponse(BasicDeliverBody.class);
+            interaction.consumeResponse(ContentHeaderBody.class)
+                       .consumeResponse(ContentBody.class);
+
+            interaction.basic().ackDeliveryTag(delivery.getDeliveryTag())
+                       .ack()
+                       .exchange().declarePassive(true).declare().consumeResponse(ExchangeDeclareOkBody.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
+
+            Thread.sleep(transactionTimeout + 1000);
+
+            interaction.consumeResponse(ConnectionCloseBody.class);
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
+        }
+    }
+
 }

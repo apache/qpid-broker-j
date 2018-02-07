@@ -29,6 +29,7 @@ import org.apache.qpid.server.plugin.Pluggable;
 
 public interface BrokerAdmin extends Pluggable
 {
+    String KIND_BROKER_J = "broker-j";
     String TEST_QUEUE_NAME = "testQueue";
     Long RESTART_TIMEOUT = Long.getLong("brokerAdmin.restart_timeout", 10000);
 
@@ -56,6 +57,9 @@ public interface BrokerAdmin extends Pluggable
     String getValidUsername();
     String getValidPassword();
 
+    String getKind();
+
+    void configure(String settingName, Object settingValue);
 
 
     enum PortType

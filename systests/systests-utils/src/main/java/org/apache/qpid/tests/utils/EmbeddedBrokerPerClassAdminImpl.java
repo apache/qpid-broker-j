@@ -24,7 +24,6 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
-import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -396,6 +395,18 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     public String getValidPassword()
     {
         return "guest";
+    }
+
+    @Override
+    public String getKind()
+    {
+        return KIND_BROKER_J;
+    }
+
+    @Override
+    public void configure(final String settingName, final Object settingValue)
+    {
+        _currentVirtualHostNode.getVirtualHost().setAttributes(Collections.singletonMap(settingName, settingValue));
     }
 
     @Override
