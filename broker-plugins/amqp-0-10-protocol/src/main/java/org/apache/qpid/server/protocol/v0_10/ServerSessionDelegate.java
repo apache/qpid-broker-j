@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.util.concurrent.Futures;
 import org.slf4j.Logger;
@@ -91,6 +92,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 public class ServerSessionDelegate extends MethodDelegate<ServerSession> implements ProtocolDelegate<ServerSession>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerSessionDelegate.class);
+    private final AtomicBoolean _closed = new AtomicBoolean();
 
     public ServerSessionDelegate()
     {
@@ -1803,10 +1805,12 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
 
     public void closed(ServerSession session)
     {
-
-        session.stopSubscriptions();
-        session.onClose();
-        session.unregisterSubscriptions();
+        if (_closed.compareAndSet(false, true))
+        {
+            session.stopSubscriptions();
+            session.onClose();
+            session.unregisterSubscriptions();
+        }
     }
 
     public void detached(ServerSession session)
