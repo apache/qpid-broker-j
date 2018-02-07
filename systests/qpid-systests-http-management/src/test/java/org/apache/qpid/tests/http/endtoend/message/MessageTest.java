@@ -23,30 +23,41 @@ package org.apache.qpid.tests.http.endtoend.message;
 
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.typeCompatibleWith;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.MapMessage;
 import javax.jms.Message;
+import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
+import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.StreamMessage;
+import javax.jms.TextMessage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
-import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -57,26 +68,30 @@ import org.apache.qpid.tests.http.HttpTestBase;
 @HttpRequestConfig
 public class MessageTest extends HttpTestBase
 {
-
     private static final String QUEUE_NAME = "myqueue";
     private static final TypeReference<List<Map<String, Object>>> LIST_MAP_TYPE_REF =
-            new TypeReference<List<Map<String, Object>>>() {};
+            new TypeReference<List<Map<String, Object>>>()
+            {
+            };
     private static final TypeReference<Map<String, Object>> MAP_TYPE_REF =
-            new TypeReference<Map<String, Object>>() {};
+            new TypeReference<Map<String, Object>>()
+            {
+            };
     private static final TypeReference<List<Object>> LIST_TYPE_REF =
-            new TypeReference<List<Object>>() {};
+            new TypeReference<List<Object>>()
+            {
+            };
 
     @Before
     public void setUp()
     {
         getBrokerAdmin().createQueue(QUEUE_NAME);
+        getHelper().setTls(true);
     }
 
     @Test
     public void getJmsMessage() throws Exception
     {
-        getHelper().setTls(true);
-
         final String messageProperty = "myProp";
         final String messagePropertyValue = "myValue";
 
@@ -95,7 +110,8 @@ public class MessageTest extends HttpTestBase
         }
 
         List<Map<String, Object>> messages = getHelper().postJson("queue/myqueue/getMessageInfo",
-                                                                  Collections.singletonMap("includeHeaders", Boolean.TRUE),
+                                                                  Collections.singletonMap("includeHeaders",
+                                                                                           Boolean.TRUE),
                                                                   LIST_MAP_TYPE_REF, SC_OK);
         assertThat(messages.size(), is(equalTo(1)));
 
@@ -108,7 +124,6 @@ public class MessageTest extends HttpTestBase
     @Test
     public void getJmsMapMessage() throws Exception
     {
-        getHelper().setTls(true);
         final String mapKey = "key";
         final String mapKeyValue = "value";
 
@@ -127,7 +142,8 @@ public class MessageTest extends HttpTestBase
         }
 
         List<Map<String, Object>> messages = getHelper().postJson("queue/myqueue/getMessageInfo",
-                                                                  Collections.singletonMap("includeHeaders", Boolean.TRUE),
+                                                                  Collections.singletonMap("includeHeaders",
+                                                                                           Boolean.TRUE),
                                                                   LIST_MAP_TYPE_REF, SC_OK);
         assertThat(messages.size(), is(equalTo(1)));
         Map<String, Object> message = messages.get(0);
@@ -138,8 +154,8 @@ public class MessageTest extends HttpTestBase
         contentParams.put("returnJson", Boolean.TRUE);
 
         Map<String, Object> content = getHelper().postJson("queue/myqueue/getMessageContent",
-                                                                  contentParams,
-                                                                  MAP_TYPE_REF, SC_OK);
+                                                           contentParams,
+                                                           MAP_TYPE_REF, SC_OK);
         assertThat(content.size(), is(equalTo(1)));
         assertThat(content.get(mapKey), is(equalTo(mapKeyValue)));
     }
@@ -147,8 +163,6 @@ public class MessageTest extends HttpTestBase
     @Test
     public void getJmsStreamMessage() throws Exception
     {
-        getHelper().setTls(true);
-
         Connection connection = getConnection();
         try
         {
@@ -166,7 +180,8 @@ public class MessageTest extends HttpTestBase
         }
 
         List<Map<String, Object>> messages = getHelper().postJson("queue/myqueue/getMessageInfo",
-                                                                  Collections.singletonMap("includeHeaders", Boolean.TRUE),
+                                                                  Collections.singletonMap("includeHeaders",
+                                                                                           Boolean.TRUE),
                                                                   LIST_MAP_TYPE_REF, SC_OK);
         assertThat(messages.size(), is(equalTo(1)));
         Map<String, Object> message = messages.get(0);
@@ -177,8 +192,8 @@ public class MessageTest extends HttpTestBase
         contentParams.put("returnJson", Boolean.TRUE);
 
         List<Object> content = getHelper().postJson("queue/myqueue/getMessageContent",
-                                                                  contentParams,
-                                                                  LIST_TYPE_REF, SC_OK);
+                                                    contentParams,
+                                                    LIST_TYPE_REF, SC_OK);
         assertThat(content.size(), is(equalTo(3)));
         assertThat(content.get(0), is(equalTo(Long.MAX_VALUE)));
         assertThat(content.get(1), is(equalTo(Boolean.TRUE)));
@@ -188,8 +203,6 @@ public class MessageTest extends HttpTestBase
     @Test
     public void getJmsBytesMessage() throws Exception
     {
-        getHelper().setTls(true);
-
         final byte[] content = new byte[512];
         IntStream.range(0, content.length).forEachOrdered(i -> content[i] = (byte) (i % 256));
 
@@ -208,7 +221,8 @@ public class MessageTest extends HttpTestBase
         }
 
         List<Map<String, Object>> messages = getHelper().postJson("queue/myqueue/getMessageInfo",
-                                                                  Collections.singletonMap("includeHeaders", Boolean.TRUE),
+                                                                  Collections.singletonMap("includeHeaders",
+                                                                                           Boolean.TRUE),
                                                                   LIST_MAP_TYPE_REF, SC_OK);
         assertThat(messages.size(), is(equalTo(1)));
         Map<String, Object> message = messages.get(0);
@@ -219,7 +233,7 @@ public class MessageTest extends HttpTestBase
         httpCon.connect();
 
         byte[] receivedContent;
-        try(InputStream is = httpCon.getInputStream())
+        try (InputStream is = httpCon.getInputStream())
         {
             receivedContent = ByteStreams.toByteArray(is);
         }
@@ -230,5 +244,180 @@ public class MessageTest extends HttpTestBase
         assertThat(receivedContent, is(equalTo(content)));
     }
 
+    @Test
+    public void publishEmptyMessage() throws Exception
+    {
+        Map<String, Object> messageBody = new HashMap<>();
+        messageBody.put("address", QUEUE_NAME);
 
+        getHelper().submitRequest("virtualhost/publishMessage",
+                                  "POST",
+                                  Collections.singletonMap("message", messageBody),
+                                  SC_OK);
+
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            Queue queue = session.createQueue(QUEUE_NAME);
+            MessageConsumer consumer = session.createConsumer(queue);
+            Message message = consumer.receive(getReceiveTimeout());
+            assertThat(message, is(notNullValue()));
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    @Test
+    public void publishMessageApplicationHeaders() throws Exception
+    {
+        final String stringPropValue = "mystring";
+        final String longStringPropValue = Strings.repeat("*", 256);
+        final Map<String, Object> headers = new HashMap<>();
+        headers.put("stringprop", stringPropValue);
+        headers.put("longstringprop", longStringPropValue);
+        headers.put("intprop", Integer.MIN_VALUE);
+        headers.put("longprop", Long.MAX_VALUE);
+        headers.put("boolprop", Boolean.TRUE);
+
+        final Map<String, Object> messageBody = new HashMap<>();
+        messageBody.put("address", QUEUE_NAME);
+        messageBody.put("headers", headers);
+
+        getHelper().submitRequest("virtualhost/publishMessage",
+                                  "POST",
+                                  Collections.singletonMap("message", messageBody),
+                                  SC_OK);
+
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            Queue queue = session.createQueue(QUEUE_NAME);
+            MessageConsumer consumer = session.createConsumer(queue);
+            Message message = consumer.receive(getReceiveTimeout());
+            assertThat(message, is(notNullValue()));
+            assertThat(message.getStringProperty("stringprop"), is(equalTo(stringPropValue)));
+            assertThat(message.getIntProperty("intprop"), is(equalTo(Integer.MIN_VALUE)));
+            assertThat(message.getLongProperty("longprop"), is(equalTo(Long.MAX_VALUE)));
+            assertThat(message.getBooleanProperty("boolprop"), is(equalTo(Boolean.TRUE)));
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    @Test
+    public void publishMessageHeaders() throws Exception
+    {
+        final String messageId = "ID:" + UUID.randomUUID().toString();
+        final long expiration = TimeUnit.DAYS.toMillis(1) + System.currentTimeMillis();
+
+        Map<String, Object> messageBody = new HashMap<>();
+        messageBody.put("address", QUEUE_NAME);
+        messageBody.put("messageId", messageId);
+        messageBody.put("expiration", expiration);
+
+        getHelper().submitRequest("virtualhost/publishMessage",
+                                  "POST",
+                                  Collections.singletonMap("message", messageBody),
+                                  SC_OK);
+
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            Queue queue = session.createQueue(QUEUE_NAME);
+            MessageConsumer consumer = session.createConsumer(queue);
+            Message message = consumer.receive(getReceiveTimeout());
+            assertThat(message, is(notNullValue()));
+            assertThat(message.getJMSMessageID(), is(equalTo(messageId)));
+            assertThat(message.getJMSExpiration(), is(greaterThanOrEqualTo(expiration)));
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    @Test
+    public void publishStringMessage() throws Exception
+    {
+        final String content = "Hello world";
+        TextMessage message = publishMessageWithContent(content, TextMessage.class);
+        assertThat("Unexpected message content", message.getText(), is(equalTo(content)));
+    }
+
+    @Test
+    public void publishMapMessage() throws Exception
+    {
+        final Map<String, Object> content = new HashMap<>();
+        content.put("key1", "astring");
+        content.put("key2", Integer.MIN_VALUE);
+        content.put("key3", Long.MAX_VALUE);
+        content.put("key4", null);
+        MapMessage message = publishMessageWithContent(content, MapMessage.class);
+        final Enumeration mapNames = message.getMapNames();
+        int entryCount = 0;
+        while(mapNames.hasMoreElements())
+        {
+            String key = (String) mapNames.nextElement();
+            assertThat("Unexpected map content for key : " + key, message.getObject(key), is(equalTo(content.get(key))));
+            entryCount++;
+        }
+        assertThat("Unexpected number of key/value pairs in map message", entryCount, is(equalTo(content.size())));
+    }
+
+    @Test
+    public void publishListMessage() throws Exception
+    {
+        final List<Object> content = new ArrayList<>();
+        content.add("astring");
+        content.add(Integer.MIN_VALUE);
+        content.add(Long.MAX_VALUE);
+        content.add(null);
+        StreamMessage message = publishMessageWithContent(content, StreamMessage.class);
+        assertThat(message.readString(), is(equalTo("astring")));
+        assertThat(message.readInt(), is(equalTo((Integer.MIN_VALUE))));
+        assertThat(message.readLong(), is(equalTo(Long.MAX_VALUE)));
+        assertThat(message.readObject(), is(nullValue()));
+    }
+
+    private <M extends Message> M publishMessageWithContent(final Object content, final Class<M> expectedMessageClass)
+            throws Exception
+    {
+        Map<String, Object> messageBody = new HashMap<>();
+        messageBody.put("address", QUEUE_NAME);
+        messageBody.put("content", content);
+
+        getHelper().submitRequest("virtualhost/publishMessage",
+                                  "POST",
+                                  Collections.singletonMap("message", messageBody),
+                                  SC_OK);
+
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            Queue queue = session.createQueue(QUEUE_NAME);
+            MessageConsumer consumer = session.createConsumer(queue);
+
+            @SuppressWarnings("unchecked")
+            M message = (M) consumer.receive(getReceiveTimeout());
+            assertThat(message, is(notNullValue()));
+            assertThat(message.getClass(), is(typeCompatibleWith(expectedMessageClass)));
+            return message;
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
 }
