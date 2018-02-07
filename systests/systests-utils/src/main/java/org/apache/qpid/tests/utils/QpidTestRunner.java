@@ -63,14 +63,22 @@ public class QpidTestRunner extends BlockJUnit4ClassRunner
     @Override
     protected void runChild(final FrameworkMethod method, final RunNotifier notifier)
     {
-        _brokerAdmin.beforeTestMethod(_testClass, method.getMethod());
-        try
+        BrokerSpecific brokerSpecific = method.getAnnotation(BrokerSpecific.class);
+        if (brokerSpecific != null && !brokerSpecific.kind().equalsIgnoreCase(_brokerAdmin.getKind()))
         {
-            super.runChild(method, notifier);
+            notifier.fireTestIgnored(describeChild(method));
         }
-        finally
+        else
         {
-            _brokerAdmin.afterTestMethod(_testClass, method.getMethod());
+            _brokerAdmin.beforeTestMethod(_testClass, method.getMethod());
+            try
+            {
+                super.runChild(method, notifier);
+            }
+            finally
+            {
+                _brokerAdmin.afterTestMethod(_testClass, method.getMethod());
+            }
         }
     }
 }
