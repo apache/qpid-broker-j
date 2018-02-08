@@ -106,6 +106,8 @@ public class ServerConnection extends ConnectionInvoker
     private String locale;
     private SocketAddress _remoteAddress;
     private int _heartBeatDelay;
+    private volatile int _connectionCloseCode;
+    private volatile String _connectionCloseMessage;
 
     public ServerConnection(final long connectionId,
                             Broker<?> broker,
@@ -874,4 +876,31 @@ public class ServerConnection extends ConnectionInvoker
         return _ignoreFutureInput;
     }
 
+    void setConnectionCloseCause(final AMQPConnection.CloseReason reason, final String description)
+    {
+        final int cause;
+        switch (reason)
+        {
+            case MANAGEMENT:
+                cause = ErrorCodes.CONNECTION_FORCED;
+                break;
+            case TRANSACTION_TIMEOUT:
+                cause = ErrorCodes.RESOURCE_ERROR;
+                break;
+            default:
+                cause = ErrorCodes.INTERNAL_ERROR;
+        }
+        _connectionCloseCode = cause;
+        _connectionCloseMessage = description;
+    }
+
+    int getConnectionCloseCode()
+    {
+        return _connectionCloseCode;
+    }
+
+    String getConnectionCloseMessage()
+    {
+        return _connectionCloseMessage;
+    }
 }

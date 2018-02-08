@@ -33,19 +33,15 @@ import java.net.InetSocketAddress;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.apache.qpid.server.protocol.v0_10.transport.ExecutionErrorCode;
-import org.apache.qpid.server.protocol.v0_10.transport.ExecutionException;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionClose;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionCloseCode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcceptMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcquireMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageCreditUnit;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
 import org.apache.qpid.server.protocol.v0_10.transport.Range;
 import org.apache.qpid.server.protocol.v0_10.transport.RangeSet;
-import org.apache.qpid.server.protocol.v0_10.transport.SessionCommandPoint;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionCompleted;
-import org.apache.qpid.server.protocol.v0_10.transport.SessionConfirmed;
-import org.apache.qpid.server.protocol.v0_10.transport.SessionDetach;
-import org.apache.qpid.server.protocol.v0_10.transport.SessionFlush;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -142,12 +138,9 @@ public class TransactionTest extends BrokerAdminUsingTestBase
 
             Thread.sleep(transactionTimeout + 1000);
 
-            ExecutionException e = receiveResponse(interaction, ExecutionException.class);
-            assertThat(e.getErrorCode(), is(equalTo(ExecutionErrorCode.RESOURCE_LIMIT_EXCEEDED)));
-            assertThat(e.getDescription(), containsString("transaction timed out"));
-
-            SessionDetach detach = receiveResponse(interaction, SessionDetach.class);
-            assertThat(detach.getName(), is(equalTo(sessionName)));
+            ConnectionClose close = receiveResponse(interaction, ConnectionClose.class);
+            assertThat(close.getReplyCode(), is(equalTo(ConnectionCloseCode.CONNECTION_FORCED)));
+            assertThat(close.getReplyText(), containsString("transaction timed out"));
 
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
         }
@@ -208,12 +201,9 @@ public class TransactionTest extends BrokerAdminUsingTestBase
 
             Thread.sleep(transactionTimeout + 1000);
 
-            ExecutionException e = receiveResponse(interaction, ExecutionException.class);
-            assertThat(e.getErrorCode(), is(equalTo(ExecutionErrorCode.RESOURCE_LIMIT_EXCEEDED)));
-            assertThat(e.getDescription(), containsString("transaction timed out"));
-
-            SessionDetach detach = receiveResponse(interaction, SessionDetach.class);
-            assertThat(detach.getName(), is(equalTo(sessionName)));
+            ConnectionClose close = receiveResponse(interaction, ConnectionClose.class);
+            assertThat(close.getReplyCode(), is(equalTo(ConnectionCloseCode.CONNECTION_FORCED)));
+            assertThat(close.getReplyText(), containsString("transaction timed out"));
         }
     }
 
