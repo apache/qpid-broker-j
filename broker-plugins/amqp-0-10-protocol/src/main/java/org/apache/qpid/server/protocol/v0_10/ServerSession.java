@@ -1168,6 +1168,11 @@ public class ServerSession extends SessionInvoker
         }
 
         LogMessage operationalLoggingMessage = _forcedCloseLogMessage.get();
+        if (operationalLoggingMessage == null && getConnection().getConnectionCloseMessage() != null)
+        {
+            operationalLoggingMessage = ChannelMessages.CLOSE_FORCED(getConnection().getConnectionCloseCode(),
+                                                                     getConnection().getConnectionCloseMessage());
+        }
         if (operationalLoggingMessage == null)
         {
             operationalLoggingMessage = ChannelMessages.CLOSE();
@@ -1254,8 +1259,7 @@ public class ServerSession extends SessionInvoker
         long notificationRepeatPeriod =
                 getModelObject().getContextValue(Long.class, Session.TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD);
         amqpConnection.registerTransactionTickers(_transaction,
-                                                  message -> amqpConnection.closeSessionAsync(_modelObject,
-                                                                                              AMQPConnection.CloseReason.TRANSACTION_TIMEOUT,
+                                                  message -> amqpConnection.sendConnectionCloseAsync(AMQPConnection.CloseReason.TRANSACTION_TIMEOUT,
                                                                                               (String) message),
                                                   notificationRepeatPeriod);
     }

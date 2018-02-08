@@ -53,8 +53,8 @@ public abstract class TransactionTimeoutTestCase extends QpidBrokerTestCase impl
 {
     private static final int ALERT_MESSAGE_TOLERANCE = 6;
     public static final String TEXT = "0123456789abcdefghiforgettherest";
-    public static final String CHN_OPEN_TXN = "CHN-1007";
-    public static final String CHN_IDLE_TXN = "CHN-1008";
+    public static final String OPEN_TXN = "CON-1010";
+    public static final String IDLE_TXN = "CHN-1011";
     public static final String IDLE = "Idle";
     public static final String OPEN = "Open";
     
@@ -165,8 +165,8 @@ public abstract class TransactionTimeoutTestCase extends QpidBrokerTestCase impl
      */
     protected void monitor(int idle, int open) throws Exception
     {
-        List<String> idleMsgs = _monitor.findMatches(CHN_IDLE_TXN);
-        List<String> openMsgs = _monitor.findMatches(CHN_OPEN_TXN);
+        List<String> idleMsgs = _monitor.findMatches(IDLE_TXN);
+        List<String> openMsgs = _monitor.findMatches(OPEN_TXN);
         
         String idleErr = "Expected " + idle + " but found " + idleMsgs.size() + " txn idle messages";
         String openErr = "Expected " + open + " but found " + openMsgs.size() + " txn open messages";
@@ -218,8 +218,6 @@ public abstract class TransactionTimeoutTestCase extends QpidBrokerTestCase impl
         assertNotNull("Linked exception message should not be null", _linkedExceptionMessage);
         assertTrue("Linked exception message '" + _linkedExceptionMessage + "' should contain '" + reason + "'",
                    _linkedExceptionMessage.contains(reason + " transaction timed out"));
-        assertTrue("Linked exception should have an error code", _linkedExceptionCode != 0);
-        assertEquals("Linked exception error code should be 506", ErrorCodes.RESOURCE_ERROR, _linkedExceptionCode);
     }
 
     /** @see javax.jms.ExceptionListener#onException(javax.jms.JMSException) */
