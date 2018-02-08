@@ -85,7 +85,7 @@ public class ConnectionMessagesTest extends AbstractTestMessages
 
     public void testConnectionClose()
     {
-        _logMessage = ConnectionMessages.CLOSE();
+        _logMessage = ConnectionMessages.CLOSE(null, false);
         List<Object> log = performLog();
 
         String[] expected = {"Close"};
@@ -93,4 +93,13 @@ public class ConnectionMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "CON-1002", expected);
     }
 
+    public void testConnectionCloseWithCause()
+    {
+        _logMessage = ConnectionMessages.CLOSE("Test", true);
+        List<Object> log = performLog();
+
+        String[] expected = {"Close : Test"};
+
+        validateLogMessage(log, "CON-1002", expected);
+    }
 }
