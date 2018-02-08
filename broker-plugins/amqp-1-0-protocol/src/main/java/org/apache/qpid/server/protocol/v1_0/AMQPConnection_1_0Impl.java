@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Sets;
@@ -59,15 +58,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Protocol;
-import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ConnectionPropertyEnricher;
@@ -128,15 +124,12 @@ import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
-import org.apache.qpid.server.transport.TransactionTimeoutTicker;
-import org.apache.qpid.server.transport.network.Ticker;
 import org.apache.qpid.server.transport.util.Functions;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
 public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnection_1_0Impl, ConnectionHandler>
@@ -243,6 +236,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     // Multi session transactions
     private volatile ServerTransaction[] _openTransactions = new ServerTransaction[16];
     private volatile boolean _sendSaslFinalChallengeAsChallenge;
+    private volatile String _closeCause;
 
     AMQPConnection_1_0Impl(final Broker<?> broker,
                            final ServerNetworkConnection network,
@@ -1172,6 +1166,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     private void closeConnection(final Error error)
     {
+        _closeCause = error.getDescription();
         Close close = new Close();
         close.setError(error);
         switch (_connectionState)
@@ -1707,6 +1702,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     public boolean isOrderlyClose()
     {
         return _orderlyClose.get();
+    }
+
+    @Override
+    protected String getCloseCause()
+    {
+        return _closeCause;
     }
 
     @Override

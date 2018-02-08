@@ -72,6 +72,7 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
 
     private final Set<AMQPSession<?,?>> _sessionsWithWork =
             Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?,?>, Boolean>());
+    private volatile String _closeCause;
 
 
     public AMQPConnection_0_10Impl(final Broker<?> broker,
@@ -301,6 +302,7 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     @Override
     public void sendConnectionCloseAsync(final CloseReason reason, final String description)
     {
+        _closeCause = description;
         stopConnection();
         // Best mapping for all reasons is "forced"
         _connection.sendConnectionCloseAsync(ConnectionCloseCode.CONNECTION_FORCED, description);
@@ -358,6 +360,12 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     protected boolean isOrderlyClose()
     {
         return !_connection.isConnectionLost();
+    }
+
+    @Override
+    protected String getCloseCause()
+    {
+        return _closeCause;
     }
 
     @Override

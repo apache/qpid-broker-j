@@ -211,16 +211,44 @@ public class ConnectionMessages
 
     /**
      * Log a Connection message of the Format:
-     * <pre>CON-1002 : Close</pre>
+     * <pre>CON-1002 : Close[ : {0}]</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE()
+    public static LogMessage CLOSE(String param1, boolean opt1)
     {
         String rawMessage = _messages.getString("CLOSE");
+        StringBuffer msg = new StringBuffer();
 
-        final String message = rawMessage;
+        // Split the formatted message up on the option values so we can
+        // rebuild the message based on the configured options.
+        String[] parts = rawMessage.split("\\[");
+        msg.append(parts[0]);
+
+        int end;
+        if (parts.length > 1)
+        {
+
+            // Add Option : : {0}.
+            end = parts[1].indexOf(']');
+            if (opt1)
+            {
+                msg.append(parts[1].substring(0, end));
+            }
+
+            // Use 'end + 1' to remove the ']' from the output
+            msg.append(parts[1].substring(end + 1));
+        }
+
+        rawMessage = msg.toString();
+
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {

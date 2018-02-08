@@ -728,8 +728,9 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
             @Override
             public Void run()
             {
+                String closeCause = getCloseCause();
                 getEventLogger().message(isOrderlyClose()
-                                                 ? ConnectionMessages.CLOSE()
+                                                 ? ConnectionMessages.CLOSE(closeCause, closeCause != null)
                                                  : ConnectionMessages.DROPPED_CONNECTION());
                 return null;
             }
@@ -752,6 +753,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     }
 
     protected abstract boolean isOrderlyClose();
+
+    protected abstract String getCloseCause();
 
     @Override
     public int getSessionCount()

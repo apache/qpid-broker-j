@@ -163,6 +163,9 @@ public class AMQPConnection_0_8Impl
             Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?,?>, Boolean>());
 
     private volatile int _heartBeatDelay;
+    private volatile String _closeCause;
+    private volatile int _closeCauseCode;
+
 
     public AMQPConnection_0_8Impl(Broker<?> broker,
                                   ServerNetworkConnection network,
@@ -486,7 +489,7 @@ public class AMQPConnection_0_8Impl
             {
                 try
                 {
-                    channel.close();
+                    channel.close(_closeCauseCode, _closeCause);
                 }
                 catch (RuntimeException re)
                 {
@@ -699,6 +702,16 @@ public class AMQPConnection_0_8Impl
     }
 
     @Override
+    protected String getCloseCause()
+    {
+        if (_closeCause == null)
+        {
+            return null;
+        }
+        return _closeCauseCode + " - " + _closeCause;
+    }
+
+    @Override
     public void encryptedTransport()
     {
     }
@@ -794,6 +807,8 @@ public class AMQPConnection_0_8Impl
             default:
                 cause = ErrorCodes.INTERNAL_ERROR;
         }
+        _closeCauseCode = cause;
+        _closeCause = description;
         Action<AMQPConnection_0_8Impl> action = new Action<AMQPConnection_0_8Impl>()
         {
             @Override
