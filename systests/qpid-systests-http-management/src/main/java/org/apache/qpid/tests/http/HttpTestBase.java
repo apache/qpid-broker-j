@@ -83,6 +83,11 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
         return getClass().getSimpleName() + "_" + _testName.getMethodName();
     }
 
+    protected String getVirtualHostNode()
+    {
+        return getClass().getSimpleName() + "_" + _testName.getMethodName();
+    }
+
     public HttpTestHelper getHelper()
     {
         return _helper;

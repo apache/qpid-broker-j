@@ -35,9 +35,6 @@ org.apache.qpid.test.unit.close.FlowToDiskBackingQueueDeleteTest#*
 // QPID-1730: the C++ server has a totally different logging mechanism. We should split this file differently
 org.apache.qpid.server.AlertingTest#*
 
-// The C++ server has a totally different persistence mechanism
-org.apache.qpid.server.store.SplitStoreTest#*
-
 // CPP Broker does not follow the same Logging convention as the Qpid Broker-J
 org.apache.qpid.server.BrokerStartupTest#*
 org.apache.qpid.server.logging.*

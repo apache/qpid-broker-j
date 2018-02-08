@@ -22,17 +22,21 @@ package org.apache.qpid.tests.http.rest.model;
 import static javax.servlet.http.HttpServletResponse.SC_CREATED;
 import static javax.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
 import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
+import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet.SC_UNPROCESSABLE_ENTITY;
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Test;
 
 import org.apache.qpid.server.logging.logback.VirtualHostFileLogger;
@@ -44,6 +48,8 @@ import org.apache.qpid.tests.http.HttpRequestConfig;
 @HttpRequestConfig
 public class CreateTest extends HttpTestBase
 {
+    private static final String UTF_8 = StandardCharsets.UTF_8.toString();
+
     @Test
     public void create() throws Exception
     {
@@ -127,6 +133,27 @@ public class CreateTest extends HttpTestBase
         final String childUrl = "virtualhostloginclusionrule/unknown/myrule";
         Map<String, Object> childAttrs = Collections.singletonMap(ConfiguredObject.TYPE, VirtualHostNameAndLevelLogInclusionRule.TYPE);
         getHelper().submitRequest(childUrl, "PUT", childAttrs, SC_UNPROCESSABLE_ENTITY);
+    }
+
+    @Test
+    public void objectsWithSlashes() throws Exception
+    {
+        String queueName = "testQueue/with/slashes";
+        String queueNameEncoded = URLEncoder.encode(queueName, UTF_8);
+        String queueNameDoubleEncoded = URLEncoder.encode(queueNameEncoded, UTF_8);
+        String queueUrl = "queue/" + queueNameDoubleEncoded;
+
+        Map<String, List<String>> headers = new HashMap<>();
+        int responseCode = getHelper().submitRequest(queueUrl, "PUT", Collections.emptyMap(), headers);
+        assertThat(responseCode, is(equalTo(SC_CREATED)));
+        List<String> location = headers.get("Location");
+        assertThat(location.size(), is(equalTo(1)));
+        assertThat(location.get(0), endsWith(queueUrl));
+
+        final Map<String, Object> queue = getHelper().getJson(queueUrl,
+                                                              new TypeReference<Map<String, Object>>() {}, SC_OK);
+
+        assertThat(queue.get(ConfiguredObject.NAME), is(equalTo(queueName)));
     }
 
     private void createToParent(final String method) throws Exception
