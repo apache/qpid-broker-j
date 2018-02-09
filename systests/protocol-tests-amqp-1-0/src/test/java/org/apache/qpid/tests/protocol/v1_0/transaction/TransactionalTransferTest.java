@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.tests.protocol.v1_0.transaction;
 
-import static org.apache.qpid.tests.utils.BrokerAdmin.KIND_BROKER_J;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,7 +32,6 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
 
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -56,15 +54,14 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.tests.protocol.Response;
+import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.protocol.v1_0.InteractionTransactionalState;
-import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.Utils;
-import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
-import org.apache.qpid.tests.utils.BrokerSpecific;
 
 public class TransactionalTransferTest extends BrokerAdminUsingTestBase
 {
@@ -646,121 +643,6 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             assertUnknownTransactionIdError(response);
         }
     }
-
-    @Test
-    @BrokerSpecific(kind = KIND_BROKER_J)
-    public void transactionalPostingTimeout() throws Exception
-    {
-        int transactionTimeout = 1000;
-            getBrokerAdmin().configure("storeTransactionOpenTimeoutClose", transactionTimeout);
-
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
-        {
-            final UnsignedInteger linkHandle = UnsignedInteger.ONE;
-
-            final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
-            Disposition responseDisposition = interaction.negotiateProtocol()
-                                                         .consumeResponse()
-                                                         .open()
-                                                         .consumeResponse(Open.class)
-                                                         .begin()
-                                                         .consumeResponse(Begin.class)
-
-                                                         .txnAttachCoordinatorLink(txnState)
-                                                         .txnDeclare(txnState)
-
-                                                         .attachRole(Role.SENDER)
-                                                         .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                                                         .attachHandle(linkHandle)
-                                                         .attach().consumeResponse(Attach.class)
-                                                         .consumeResponse(Flow.class)
-
-                                                         .transferHandle(linkHandle)
-                                                         .transferPayloadData(TEST_MESSAGE_CONTENT)
-                                                         .transferTransactionalState(txnState.getCurrentTransactionId())
-                                                         .transfer()
-                                                         .consumeResponse(Disposition.class)
-                                                         .getLatestResponse(Disposition.class);
-
-            assertThat(responseDisposition.getRole(), is(Role.RECEIVER));
-            assertThat(responseDisposition.getSettled(), is(Boolean.TRUE));
-            assertThat(responseDisposition.getState(), is(instanceOf(TransactionalState.class)));
-            assertThat(((TransactionalState) responseDisposition.getState()).getOutcome(), is(instanceOf(Accepted.class)));
-
-            Thread.sleep(transactionTimeout + 1000);
-
-            Close responseClose = interaction.consumeResponse().getLatestResponse(Close.class);
-            assertThat(responseClose.getError(), is(Matchers.notNullValue()));
-            assertThat(responseClose.getError().getCondition(), equalTo(TransactionError.TRANSACTION_TIMEOUT));
-        }
-    }
-
-    @Test
-    @BrokerSpecific(kind = KIND_BROKER_J)
-    public void transactionalRetirementTimeout() throws Exception
-    {
-        int transactionTimeout = 1000;
-        getBrokerAdmin().configure("storeTransactionOpenTimeoutClose", transactionTimeout);
-
-        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, TEST_MESSAGE_CONTENT);
-        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
-        {
-            final Interaction interaction = transport.newInteraction();
-            final InteractionTransactionalState txnState = interaction.createTransactionalState(UnsignedInteger.ZERO);
-            interaction.negotiateProtocol()
-                       .consumeResponse()
-                       .open()
-                       .consumeResponse(Open.class)
-                       .begin()
-                       .consumeResponse(Begin.class)
-
-                       .txnAttachCoordinatorLink(txnState)
-                       .txnDeclare(txnState)
-
-                       .attachRole(Role.RECEIVER)
-                       .attachHandle(UnsignedInteger.ONE)
-                       .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                       .attachRcvSettleMode(ReceiverSettleMode.FIRST)
-                       .attach()
-                       .consumeResponse(Attach.class)
-
-                       .flowIncomingWindow(UnsignedInteger.MAX_VALUE)
-                       .flowNextIncomingId(UnsignedInteger.ZERO)
-                       .flowOutgoingWindow(UnsignedInteger.ZERO)
-                       .flowNextOutgoingId(UnsignedInteger.ZERO)
-                       .flowLinkCredit(UnsignedInteger.MAX_VALUE)
-                       .flowHandleFromLinkHandle()
-                       .flow()
-
-                       .receiveDelivery()
-                       .decodeLatestDelivery();
-
-            Object data = interaction.getDecodedLatestDelivery();
-            assertThat(data, is(equalTo(TEST_MESSAGE_CONTENT)));
-
-            interaction.dispositionSettled(true)
-                       .dispositionRole(Role.RECEIVER)
-                       .dispositionTransactionalState(txnState.getCurrentTransactionId(), new Accepted())
-                       .disposition()
-                       .sync();
-
-            Thread.sleep(transactionTimeout + 1000);
-            Response<?> response = interaction.consumeResponse(Close.class, Flow.class).getLatestResponse();
-            Close responseClose;
-            if (response.getBody() instanceof Close)
-            {
-                responseClose = (Close) response.getBody();
-            }
-            else
-            {
-                responseClose = interaction.consumeResponse().getLatestResponse(Close.class);
-            }
-            assertThat(responseClose.getError(), is(Matchers.notNullValue()));
-            assertThat(responseClose.getError().getCondition(), equalTo(TransactionError.TRANSACTION_TIMEOUT));
-        }
-    }
-
 
     private void assertUnknownTransactionIdError(final Response<?> response)
     {

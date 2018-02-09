@@ -162,12 +162,6 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     }
 
     @Override
-    public void configure(final String settingName, final Object settingValue)
-    {
-        throw new UnsupportedOperationException("External Qpid Broker does not support configuring");
-    }
-
-    @Override
     public String getType()
     {
         return "EXTERNAL_BROKER";

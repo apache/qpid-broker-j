@@ -25,9 +25,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionOpenBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionSecureOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionStartOkBody;
@@ -36,6 +38,7 @@ import org.apache.qpid.server.protocol.v0_8.transport.ConnectionTuneOkBody;
 public class ConnectionInteraction
 {
     private final Interaction _interaction;
+    private final ConnectionCloseOkBody _closeOkBody;
 
     private Map<String, Object> _startOkClientProperties = new HashMap<>();
     private String _startOkMechanism;
@@ -55,6 +58,9 @@ public class ConnectionInteraction
     public ConnectionInteraction(final Interaction interaction)
     {
         _interaction = interaction;
+        _closeOkBody = interaction.getProtocolVersion() == ProtocolVersion.v0_8
+                ? ConnectionCloseOkBody.CONNECTION_CLOSE_OK_0_8
+                : ConnectionCloseOkBody.CONNECTION_CLOSE_OK_0_9;
     }
 
 
@@ -128,5 +134,10 @@ public class ConnectionInteraction
                                                                      AMQShortString.valueOf(_closeReplyText),
                                                                      _closeClassId,
                                                                      _closeMethodId));
+    }
+
+    public Interaction closeOk() throws Exception
+    {
+        return _interaction.sendPerformative(_closeOkBody);
     }
 }

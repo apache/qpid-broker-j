@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
 
@@ -88,7 +89,11 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             String timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date(System.currentTimeMillis()));
             _currentWorkDirectory = Files.createTempDirectory(String.format("qpid-work-%s-%s-", timestamp, testClass.getSimpleName())).toString();
 
-            Map<String,String> context = new HashMap<>();
+            Map<String, String> context = new HashMap<>();
+            context.putAll(Arrays.stream((ConfigItem[]) testClass.getAnnotationsByType(ConfigItem.class))
+                                 .collect(Collectors.toMap(ConfigItem::name,
+                                                           ConfigItem::value,
+                                                           (name, value) -> value)));
             context.put("qpid.work_dir", _currentWorkDirectory);
             context.put("qpid.port.protocol_handshake_timeout", "1000000");
 
@@ -401,12 +406,6 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     public String getKind()
     {
         return KIND_BROKER_J;
-    }
-
-    @Override
-    public void configure(final String settingName, final Object settingValue)
-    {
-        _currentVirtualHostNode.getVirtualHost().setAttributes(Collections.singletonMap(settingName, settingValue));
     }
 
     @Override
