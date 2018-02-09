@@ -17,7 +17,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.tests.protocol.v0_10.extenstions.transactiontimeout;
+package org.apache.qpid.tests.protocol.v0_10.extensions.transactiontimeout;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.tests.utils.BrokerAdmin.KIND_BROKER_J;
