@@ -61,11 +61,24 @@ public class CreateTest extends HttpTestBase
     }
 
     @Test
-    public void locationHeader() throws Exception
+    public void putToUriLocationHeader() throws Exception
     {
         final String queueUrl = "queue/myqueue";
         Map<String, List<String>> headers = new HashMap<>();
         int responseCode = getHelper().submitRequest(queueUrl, "PUT", Collections.emptyMap(), headers);
+        assertThat(responseCode, is(equalTo(SC_CREATED)));
+        List<String> location = headers.get("Location");
+        assertThat(location.size(), is(equalTo(1)));
+        assertThat(location.get(0), endsWith(queueUrl));
+    }
+
+    @Test
+    public void putToParentUriLocationHeader() throws Exception
+    {
+        final String parentUrl = "queue";
+        final String queueUrl = "queue/myqueue";
+        Map<String, List<String>> headers = new HashMap<>();
+        int responseCode = getHelper().submitRequest(parentUrl, "PUT", Collections.singletonMap(ConfiguredObject.NAME, "myqueue"), headers);
         assertThat(responseCode, is(equalTo(SC_CREATED)));
         List<String> location = headers.get("Location");
         assertThat(location.size(), is(equalTo(1)));
