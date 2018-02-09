@@ -95,7 +95,7 @@
         </listitem>
         <listitem>
           <para><emphasis>Store transaction timeouts</emphasis>. Warns of long running producer
-            transactions. See <xref linkend="Java-Broker-Runtime-Producer-Transaction-Timeout"/></para>
+            transactions. See <xref linkend="Java-Broker-Runtime-Transaction-Timeout"/></para>
         </listitem>
         <listitem>
           <para><emphasis>Synchronization policy</emphasis>. HA only. See <xref linkend="Java-Broker-High-Availability-Behaviour-SynchronizationPolicy"/></para>

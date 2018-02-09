@@ -820,6 +820,29 @@
             </para>
           </entry>
         </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1010">
+          <entry morerows="1">CON-1010</entry>
+          <entry>Open Transaction : <replaceable>time</replaceable> ms</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a messaging transaction has been open for longer than that
+              permitted. See <xref linkend="Java-Broker-Runtime-Transaction-Timeout"/> for
+              more details.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CON-1011">
+          <entry morerows="1">CON-1011</entry>
+          <entry>Idle Transaction : <replaceable>time</replaceable> ms</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a messaging transaction has been idle for longer than that
+              permitted. See <xref linkend="Java-Broker-Runtime-Transaction-Timeout"/> for
+              more details.</para>
+          </entry>
+        </row>
+
 
       </tbody>
     </tgroup>
@@ -894,28 +917,6 @@
           <entry>
             <para>Indicates that producer flow control has been removed from a channel.
               See <xref linkend="Java-Broker-Concepts-Queue-OverflowPolicy"/> for more details.</para>
-          </entry>
-        </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1007">
-          <entry morerows="1">CHN-1007</entry>
-          <entry>Open Transaction : <replaceable>time</replaceable> ms</entry>
-        </row>
-        <row>
-          <entry>
-            <para>Indicates that a producer transaction has been open for longer than that
-              permitted. See <xref linkend="Java-Broker-Runtime-Producer-Transaction-Timeout"/> for
-              more details.</para>
-          </entry>
-        </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1008">
-          <entry morerows="1">CHN-1008</entry>
-          <entry>Idle Transaction : <replaceable>time</replaceable> ms</entry>
-        </row>
-        <row>
-          <entry>
-            <para>Indicates that a producer transaction has been idle for longer than that
-              permitted. See <xref linkend="Java-Broker-Runtime-Producer-Transaction-Timeout"/> for
-              more details.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1009">
