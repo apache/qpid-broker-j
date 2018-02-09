@@ -54,7 +54,6 @@ import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogSubject;
-import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.logging.subjects.ConnectionLogSubject;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -920,7 +919,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
                 tickers.add(new TransactionTimeoutTicker(
                         virtualhost.getStoreTransactionOpenTimeoutWarn(),
                         notificationRepeatPeriod, serverTransaction::getTransactionStartTime,
-                        age -> eventLogger.message(getLogSubject(), ChannelMessages.OPEN_TXN(age))
+                        age -> eventLogger.message(getLogSubject(), ConnectionMessages.OPEN_TXN(age))
                 ));
             }
             if (virtualhost.getStoreTransactionOpenTimeoutClose() > 0)
@@ -935,7 +934,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
                 tickers.add(new TransactionTimeoutTicker(
                         virtualhost.getStoreTransactionIdleTimeoutWarn(),
                         notificationRepeatPeriod, serverTransaction::getTransactionUpdateTime,
-                        age -> eventLogger.message(getLogSubject(), ChannelMessages.IDLE_TXN(age))
+                        age -> eventLogger.message(getLogSubject(), ConnectionMessages.IDLE_TXN(age))
                 ));
             }
             if (virtualhost.getStoreTransactionIdleTimeoutClose() > 0)

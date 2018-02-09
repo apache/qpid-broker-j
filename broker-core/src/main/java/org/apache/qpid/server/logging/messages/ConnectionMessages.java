@@ -68,9 +68,11 @@ public class ConnectionMessages
     public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection.close";
     public static final String DROPPED_CONNECTION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection.dropped_connection";
     public static final String IDLE_CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection.idle_close";
+    public static final String IDLE_TXN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection.idle_txn";
     public static final String LARGE_TRANSACTION_WARN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection.large_transaction_warn";
     public static final String MODEL_DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection.model_delete";
     public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection.open";
+    public static final String OPEN_TXN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection.open_txn";
     public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection.operation";
 
     static
@@ -81,9 +83,11 @@ public class ConnectionMessages
         LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
         LoggerFactory.getLogger(DROPPED_CONNECTION_LOG_HIERARCHY);
         LoggerFactory.getLogger(IDLE_CLOSE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(IDLE_TXN_LOG_HIERARCHY);
         LoggerFactory.getLogger(LARGE_TRANSACTION_WARN_LOG_HIERARCHY);
         LoggerFactory.getLogger(MODEL_DELETE_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPEN_TXN_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Connection_logmessages", _currentLocale);
@@ -432,6 +436,66 @@ public class ConnectionMessages
 
     /**
      * Log a Connection message of the Format:
+     * <pre>CHN-1011 : Idle Transaction : {0,number} ms</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage IDLE_TXN(Number param1)
+    {
+        String rawMessage = _messages.getString("IDLE_TXN");
+
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return IDLE_TXN_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Connection message of the Format:
      * <pre>CON-1009 : Uncommitted transaction(s) contains {0,number} bytes of incoming message data exceeding {1,number} bytes limit. Messages will be flowed to disk.</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
@@ -628,6 +692,66 @@ public class ConnectionMessages
             public String getLogHierarchy()
             {
                 return OPEN_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Connection message of the Format:
+     * <pre>CON-1010 : Open Transaction : {0,number} ms</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage OPEN_TXN(Number param1)
+    {
+        String rawMessage = _messages.getString("OPEN_TXN");
+
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return OPEN_TXN_LOG_HIERARCHY;
             }
 
             @Override
