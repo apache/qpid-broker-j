@@ -59,9 +59,6 @@ public interface BrokerAdmin extends Pluggable
 
     String getKind();
 
-    void configure(String settingName, Object settingValue);
-
-
     enum PortType
     {
         ANONYMOUS_AMQP,
