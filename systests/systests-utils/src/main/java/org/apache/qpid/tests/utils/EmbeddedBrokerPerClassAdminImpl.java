@@ -35,6 +35,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -49,8 +53,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.SystemLauncher;
 import org.apache.qpid.server.SystemLauncherListener;
 import org.apache.qpid.server.logging.logback.LogbackLoggingSystemLauncherListener;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.ManageableMessage;
@@ -74,10 +78,11 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddedBrokerPerClassAdminImpl.class);
     private final Map<String, Integer> _ports = new HashMap<>();
     private SystemLauncher _systemLauncher;
-    private Container<?> _broker;
+    private Broker<?> _broker;
     private VirtualHostNode<?> _currentVirtualHostNode;
     private String _currentWorkDirectory;
     private boolean _isPersistentStore;
+    private Map<String, String> _preservedContext;
 
     @Override
     public void beforeTestClass(final Class testClass)
@@ -90,12 +95,12 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             _currentWorkDirectory = Files.createTempDirectory(String.format("qpid-work-%s-%s-", timestamp, testClass.getSimpleName())).toString();
 
             Map<String, String> context = new HashMap<>();
+            context.put("qpid.work_dir", _currentWorkDirectory);
+            context.put("qpid.port.protocol_handshake_timeout", "1000000");
             context.putAll(Arrays.stream((ConfigItem[]) testClass.getAnnotationsByType(ConfigItem.class))
                                  .collect(Collectors.toMap(ConfigItem::name,
                                                            ConfigItem::value,
                                                            (name, value) -> value)));
-            context.put("qpid.work_dir", _currentWorkDirectory);
-            context.put("qpid.port.protocol_handshake_timeout", "1000000");
 
             Map<String,Object> systemConfigAttributes = new HashMap<>();
             //systemConfigAttributes.put(SystemConfig.INITIAL_CONFIGURATION_LOCATION, "classpath:config-protocol-tests.json");
@@ -458,7 +463,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
                 throw new IllegalStateException("System config is required");
             }
 
-            _broker = _systemConfig.getContainer();
+            _broker = (Broker<?>) _systemConfig.getContainer();
             Collection<Port> ports = _broker.getChildren(Port.class);
             for (Port port : ports)
             {
