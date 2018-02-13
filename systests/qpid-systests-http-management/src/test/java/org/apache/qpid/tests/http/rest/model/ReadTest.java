@@ -31,7 +31,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.isOneOf;
+import static org.junit.Assume.assumeThat;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +51,15 @@ import org.junit.Test;
 
 import org.apache.qpid.server.logging.logback.VirtualHostFileLogger;
 import org.apache.qpid.server.logging.logback.VirtualHostNameAndLevelLogInclusionRule;
+import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.User;
+import org.apache.qpid.server.security.NonJavaKeyStore;
+import org.apache.qpid.server.security.NonJavaTrustStore;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.transport.network.security.ssl.SSLUtil.KeyCertPair;
+import org.apache.qpid.server.util.DataUrlUtils;
+import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.tests.http.HttpRequestConfig;
 import org.apache.qpid.tests.http.HttpTestBase;
 
@@ -212,6 +226,89 @@ public class ReadTest extends HttpTestBase
         }
     }
 
+    @Test
+    @HttpRequestConfig(useVirtualHostAsHost = false)
+    public void secureAttributes() throws Exception
+    {
+        final String validUsername = getBrokerAdmin().getValidUsername();
+        final Map<String, Object> user = getHelper().getJsonAsMap("user/plain/" + validUsername);
+        assertThat(user.get(User.NAME), is(equalTo(validUsername)));
+        assertThat(user.get(User.PASSWORD), is(equalTo(AbstractConfiguredObject.SECURED_STRING_VALUE)));
+    }
+
+    @Test
+    @HttpRequestConfig(useVirtualHostAsHost = false)
+    public void valueFilteredSecureAttributes() throws Exception
+    {
+        assumeThat(SSLUtil.canGenerateCerts(), is(equalTo(true)));
+
+        final KeyCertPair keyCertPair = generateCertKeyPair();
+        final byte[] privateKey = keyCertPair.getPrivateKey().getEncoded();
+        final byte[] cert = keyCertPair.getCertificate().getEncoded();
+        final String privateKeyUrl = DataUrlUtils.getDataUrlForBytes(privateKey);
+        final String certUrl = DataUrlUtils.getDataUrlForBytes(cert);
+
+        final File privateKeyFile = File.createTempFile("foo" + System.currentTimeMillis(), "key");
+        privateKeyFile.deleteOnExit();
+        FileUtils.copy(new ByteArrayInputStream(privateKey), privateKeyFile);
+
+        Map<String, Object> base = new HashMap<>();
+        base.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
+        base.put(NonJavaKeyStore.CERTIFICATE_URL, certUrl);
+
+        try
+        {
+            {
+                final String storeUrl = "keystore/mystoreDataUrl";
+                final Map<String, Object> attrs = new HashMap<>(base);
+                attrs.put(NonJavaKeyStore.PRIVATE_KEY_URL, privateKeyUrl);
+                getHelper().submitRequest(storeUrl, "PUT", attrs, SC_CREATED);
+
+                final Map<String, Object> store = getHelper().getJsonAsMap(storeUrl);
+                assertThat(store.get(NonJavaKeyStore.PRIVATE_KEY_URL),
+                           is(equalTo(AbstractConfiguredObject.SECURED_STRING_VALUE)));
+            }
+
+            {
+                final String privateKeyFileUrl = privateKeyFile.toURI().toString();
+                final String storeUrl = "keystore/mystoreFileUrl";
+                final Map<String, Object> attrs = new HashMap<>(base);
+                attrs.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
+                attrs.put(NonJavaKeyStore.PRIVATE_KEY_URL, privateKeyFileUrl);
+                getHelper().submitRequest(storeUrl, "PUT", attrs, SC_CREATED);
+
+                final Map<String, Object> store = getHelper().getJsonAsMap(storeUrl);
+                assertThat(store.get(NonJavaKeyStore.PRIVATE_KEY_URL), is(equalTo(privateKeyFileUrl)));
+            }
+        }
+        finally
+        {
+            privateKeyFile.delete();
+        }
+    }
+
+    @Test
+    @HttpRequestConfig(useVirtualHostAsHost = false)
+    public void oversizeAttribute() throws Exception
+    {
+        assumeThat(SSLUtil.canGenerateCerts(), is(equalTo(true)));
+
+        final byte[] encodedCert = generateCertKeyPair().getCertificate().getEncoded();
+        final String dataUrl = DataUrlUtils.getDataUrlForBytes(encodedCert);
+
+        final String storeUrl = "truststore/mystore";
+        final Map<String, Object> attrs = new HashMap<>();
+        attrs.put(NonJavaTrustStore.TYPE, "NonJavaTrustStore");
+        attrs.put(NonJavaTrustStore.CERTIFICATES_URL, dataUrl);
+        getHelper().submitRequest(storeUrl, "PUT", attrs, SC_CREATED);
+
+        final Map<String, Object> store = getHelper().getJsonAsMap(storeUrl);
+        assertThat(store.get(NonJavaTrustStore.CERTIFICATES_URL), is(equalTo(AbstractConfiguredObject.OVER_SIZED_ATTRIBUTE_ALTERNATIVE_TEXT)));
+
+        final Map<String, Object> full = getHelper().getJsonAsMap(storeUrl +  String.format("?oversize=%d", dataUrl.length()));
+        assertThat(full.get(NonJavaTrustStore.CERTIFICATES_URL), is(equalTo(dataUrl)));
+    }
+
     private String createLoggerAndRule(final String loggerName, final String inclusionRuleName) throws Exception
     {
         final String parentUrl = String.format("virtualhostlogger/%s", loggerName);
@@ -232,5 +329,15 @@ public class ReadTest extends HttpTestBase
     private static String getId(Map<String, Object> object)
     {
         return ((String) object.get(ConfiguredObject.ID));
+    }
+
+    private KeyCertPair generateCertKeyPair() throws Exception
+    {
+        return SSLUtil.generateSelfSignedCertificate("RSA", "SHA256WithRSA",
+                                                     2048, Instant.now().toEpochMilli(),
+                                                     Duration.of(365, ChronoUnit.DAYS).getSeconds(),
+                                                     "CN=foo",
+                                                     Collections.emptySet(),
+                                                     Collections.emptySet());
     }
 }

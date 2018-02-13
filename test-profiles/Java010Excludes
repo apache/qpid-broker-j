@@ -17,9 +17,6 @@
 // under the License.
 //
 
-// Those tests are testing 0.8..-0-9-1 specific semantics
-org.apache.qpid.systest.rest.BrokerRestTest#testSetCloseOnNoRoute
-
 // 0-10 and 0-9 connections dont generate the exact same logging due to protocol differences
 org.apache.qpid.server.logging.ChannelLoggingTest#testChannelStartsFlowStopped
 org.apache.qpid.server.logging.ChannelLoggingTest#testChannelStartConsumerFlowStarted
