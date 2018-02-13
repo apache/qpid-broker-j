@@ -33,9 +33,6 @@ org.apache.qpid.server.logging.ChannelLoggingTest#testChannelClosedOnExclusiveQu
 // This test is checking features of the 0-x client specific implementation of Session
 org.apache.qpid.test.unit.client.AMQSessionTest#*
 
-// Message compression not currently supported by the 1.0 client
-org.apache.qpid.systest.rest.MessageContentCompressionRestTest#*
-
 // Tests the interaction between the Broker's supported protocols and what the 0-x client agrees to
 org.apache.qpid.server.SupportedProtocolVersionsTest#*
 
