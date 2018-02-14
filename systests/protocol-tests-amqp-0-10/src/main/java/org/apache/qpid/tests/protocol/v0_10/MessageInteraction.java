@@ -25,6 +25,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.Header;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAccept;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcceptMode;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageAcquire;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcquireMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageCancel;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageCreditUnit;
@@ -42,6 +43,7 @@ public class MessageInteraction
     private MessageCancel _cancel;
     private MessageFlow _flow;
     private MessageAccept _accept;
+    private MessageAcquire _acquire;
 
     public MessageInteraction(final Interaction interaction)
     {
@@ -51,6 +53,7 @@ public class MessageInteraction
         _cancel = new MessageCancel();
         _flow = new MessageFlow();
         _accept = new MessageAccept();
+        _acquire = new MessageAcquire();
     }
 
     public MessageInteraction transferId(final int id)
@@ -197,6 +200,23 @@ public class MessageInteraction
     public MessageInteraction acceptTransfers(final RangeSet transfers)
     {
         _accept.setTransfers(transfers);
+        return this;
+    }
+
+    public Interaction acquire() throws Exception
+    {
+        return _interaction.sendPerformative(_acquire);
+    }
+
+    public MessageInteraction acquireId(final int id)
+    {
+        _acquire.setId(id);
+        return this;
+    }
+
+    public MessageInteraction acquireTransfers(final RangeSet transfers)
+    {
+        _acquire.setTransfers(transfers);
         return this;
     }
 }

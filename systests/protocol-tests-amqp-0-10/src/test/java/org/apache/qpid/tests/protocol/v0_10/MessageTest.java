@@ -35,6 +35,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v0_10.transport.Acquired;
+import org.apache.qpid.server.protocol.v0_10.transport.ExecutionResult;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcceptMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcquireMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageCreditUnit;
@@ -230,6 +232,75 @@ public class MessageTest extends BrokerAdminUsingTestBase
 
             assertThat(completed.getCommands(), is(notNullValue()));
             assertThat(completed.getCommands().includes(3), is(equalTo(true)));
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "10.message.acquire",
+            description = "Acquires previously transferred messages for consumption. The acquired ids (if any) are "
+                          + "sent via message.acquired.")
+    public void acquireTransfer() throws Exception
+    {
+        String testMessageBody = "testMessage";
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, testMessageBody);
+        try (FrameTransport transport = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            byte[] sessionName = "testSession".getBytes(UTF_8);
+            final String subscriberName = "testSubscriber";
+            interaction.openAnonymousConnection()
+                       .channelId(1)
+                       .attachSession(sessionName)
+                       .message()
+                       .subscribeAcceptMode(MessageAcceptMode.EXPLICIT)
+                       .subscribeAcquireMode(MessageAcquireMode.NOT_ACQUIRED)
+                       .subscribeDestination(subscriberName)
+                       .subscribeQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                       .subscribeId(0)
+                       .subscribe()
+                       .message()
+                       .flowId(1)
+                       .flowDestination(subscriberName)
+                       .flowUnit(MessageCreditUnit.MESSAGE)
+                       .flowValue(1)
+                       .flow()
+                       .message()
+                       .flowId(2)
+                       .flowDestination(subscriberName)
+                       .flowUnit(MessageCreditUnit.BYTE)
+                       .flowValue(-1)
+                       .flow();
+
+            MessageTransfer transfer = consumeResponse(interaction,
+                                                       MessageTransfer.class,
+                                                       SessionCompleted.class,
+                                                       SessionCommandPoint.class,
+                                                       SessionConfirmed.class,
+                                                       SessionFlush.class);
+
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(1)));
+
+            RangeSet transfers = Range.newInstance(transfer.getId());
+            final ExecutionResult result = interaction.message().acquireId(3).acquireTransfers(transfers).acquire()
+                                                      .consumeResponse(SessionFlush.class)
+                                                      .consumeResponse().getLatestResponse(ExecutionResult.class);
+            final Acquired acquired = (Acquired) result.getValue();
+            assertThat(acquired.getTransfers().includes(transfer.getId()), is(equalTo(true)));
+
+            interaction.message().acceptId(4).acceptTransfers(transfers).accept()
+                       .session().flushCompleted()
+                                 .flush();
+
+            SessionCompleted completed = consumeResponse(interaction,
+                                                         SessionCompleted.class,
+                                                         SessionCommandPoint.class,
+                                                         SessionConfirmed.class,
+                                                         SessionFlush.class);
+
+            assertThat(completed.getCommands(), is(notNullValue()));
+            assertThat(completed.getCommands().includes(4), is(equalTo(true)));
 
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
         }
