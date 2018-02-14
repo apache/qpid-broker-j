@@ -267,6 +267,8 @@ public class ReadTest extends HttpTestBase
                 final Map<String, Object> store = getHelper().getJsonAsMap(storeUrl);
                 assertThat(store.get(NonJavaKeyStore.PRIVATE_KEY_URL),
                            is(equalTo(AbstractConfiguredObject.SECURED_STRING_VALUE)));
+
+                getHelper().submitRequest(storeUrl, "DELETE", SC_OK);
             }
 
             {
@@ -279,6 +281,8 @@ public class ReadTest extends HttpTestBase
 
                 final Map<String, Object> store = getHelper().getJsonAsMap(storeUrl);
                 assertThat(store.get(NonJavaKeyStore.PRIVATE_KEY_URL), is(equalTo(privateKeyFileUrl)));
+
+                getHelper().submitRequest(storeUrl, "DELETE", SC_OK);
             }
         }
         finally
@@ -307,6 +311,8 @@ public class ReadTest extends HttpTestBase
 
         final Map<String, Object> full = getHelper().getJsonAsMap(storeUrl +  String.format("?oversize=%d", dataUrl.length()));
         assertThat(full.get(NonJavaTrustStore.CERTIFICATES_URL), is(equalTo(dataUrl)));
+
+        getHelper().submitRequest(storeUrl, "DELETE", SC_OK);
     }
 
     private String createLoggerAndRule(final String loggerName, final String inclusionRuleName) throws Exception
