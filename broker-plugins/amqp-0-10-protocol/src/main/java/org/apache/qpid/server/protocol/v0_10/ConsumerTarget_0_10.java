@@ -305,6 +305,13 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
 
 
         _postIdSettingAction.setXfr(xfr);
+        _postIdSettingAction.setAction(null);
+
+        if (_acquireMode == MessageAcquireMode.PRE_ACQUIRED)
+        {
+            entry.incrementDeliveryCount();
+        }
+
         if(_acceptMode == MessageAcceptMode.EXPLICIT)
         {
             _postIdSettingAction.setAction(new ExplicitAcceptDispositionChangeListener(entry, this, consumer));
@@ -313,11 +320,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         {
             _postIdSettingAction.setAction(new ImplicitAcceptDispositionChangeListener(entry, this, consumer));
         }
-        else
-        {
-            _postIdSettingAction.setAction(null);
-        }
-
 
         _session.sendMessage(xfr, _postIdSettingAction);
         xfr.dispose();
@@ -328,7 +330,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         _postIdSettingAction.setAction(null);
         _postIdSettingAction.setXfr(null);
 
-        entry.incrementDeliveryCount();
         if(_acceptMode == MessageAcceptMode.NONE && _acquireMode == MessageAcquireMode.PRE_ACQUIRED)
         {
             forceDequeue(entry, false);
@@ -403,27 +404,14 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
 
     void reject(final MessageInstanceConsumer consumer, final MessageInstance entry)
     {
-        entry.setRedelivered();
         if (entry.makeAcquisitionUnstealable(consumer))
         {
             entry.routeToAlternate(null, null);
         }
     }
 
-    void release(final MessageInstanceConsumer consumer,
-                 final MessageInstance entry,
-                 final boolean setRedelivered)
+    void release(final MessageInstanceConsumer consumer, final MessageInstance entry)
     {
-        if (setRedelivered)
-        {
-            entry.setRedelivered();
-        }
-
-        if (getSession().isClosing() || !setRedelivered)
-        {
-            entry.decrementDeliveryCount();
-        }
-
         if (isMaxDeliveryLimitReached(entry))
         {
             sendToDLQOrDiscard(consumer, entry);
@@ -434,7 +422,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         }
     }
 
-    protected void sendToDLQOrDiscard(final MessageInstanceConsumer consumer, MessageInstance entry)
+    private void sendToDLQOrDiscard(final MessageInstanceConsumer consumer, MessageInstance entry)
     {
         final ServerMessage msg = entry.getMessage();
 
@@ -625,4 +613,102 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         }
     }
 
+    static abstract class AbstractDispositionChangeListener implements ServerSession.MessageDispositionChangeListener
+    {
+        final MessageInstance _entry;
+        final ConsumerTarget_0_10 _target;
+        final MessageInstanceConsumer _consumer;
+
+        AbstractDispositionChangeListener(final MessageInstance entry,
+                                          final ConsumerTarget_0_10 target,
+                                          final MessageInstanceConsumer consumer)
+        {
+            _entry = entry;
+            _target = target;
+            _consumer = consumer;
+        }
+
+        @Override
+        public final void onRelease(boolean setRedelivered, final boolean closing)
+        {
+            _target.release(_consumer, _entry);
+
+            if (setRedelivered)
+            {
+                _entry.setRedelivered();
+            }
+
+            if (closing || !setRedelivered)
+            {
+                _entry.decrementDeliveryCount();
+            }
+        }
+
+        @Override
+        public final void onReject()
+        {
+            _entry.setRedelivered();
+            _target.reject(_consumer, _entry);
+        }
+    }
+
+    static class ImplicitAcceptDispositionChangeListener extends AbstractDispositionChangeListener
+    {
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(ImplicitAcceptDispositionChangeListener.class);
+
+
+        ImplicitAcceptDispositionChangeListener(final MessageInstance entry,
+                                                final ConsumerTarget_0_10 target,
+                                                final MessageInstanceConsumer consumer)
+        {
+            super(entry, target, consumer);
+        }
+
+        @Override
+        public void onAccept()
+        {
+            LOGGER.warn("MessageAccept received for message which is using NONE as the accept mode (likely client error)");
+        }
+
+        @Override
+        public boolean acquire()
+        {
+            boolean acquired = _entry.acquire(_consumer);
+            if(acquired)
+            {
+                _entry.incrementDeliveryCount();
+                _target.addUnacknowledgedMessage(_entry);
+            }
+            return acquired;
+        }
+    }
+
+    static class ExplicitAcceptDispositionChangeListener extends AbstractDispositionChangeListener
+    {
+
+        ExplicitAcceptDispositionChangeListener(MessageInstance entry,
+                                                ConsumerTarget_0_10 target,
+                                                final MessageInstanceConsumer consumer)
+        {
+            super(entry, target, consumer);
+        }
+
+        @Override
+        public void onAccept()
+        {
+            _target.acknowledge(_consumer, _entry);
+        }
+        @Override
+        public boolean acquire()
+        {
+            final boolean acquired = _entry.acquire(_consumer);
+            if (acquired)
+            {
+                _entry.incrementDeliveryCount();
+            }
+            return acquired;
+        }
+
+    }
 }
