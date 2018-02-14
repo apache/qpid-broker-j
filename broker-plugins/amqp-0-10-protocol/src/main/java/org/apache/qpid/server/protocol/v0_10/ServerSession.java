@@ -860,7 +860,7 @@ public class ServerSession extends SessionInvoker
     {
         void onAccept();
 
-        void onRelease(boolean setRedelivered);
+        void onRelease(boolean setRedelivered, final boolean closing);
 
         void onReject();
 
@@ -1012,7 +1012,7 @@ public class ServerSession extends SessionInvoker
                                           @Override
                                           public void performAction(MessageDispositionChangeListener listener)
                                           {
-                                              listener.onRelease(setRedelivered);
+                                              listener.onRelease(setRedelivered, false);
                                           }
                                       });
     }
@@ -1158,7 +1158,7 @@ public class ServerSession extends SessionInvoker
 
         for(MessageDispositionChangeListener listener : _messageDispositionListenerMap.values())
         {
-            listener.onRelease(true);
+            listener.onRelease(true, true);
         }
         _messageDispositionListenerMap.clear();
 
