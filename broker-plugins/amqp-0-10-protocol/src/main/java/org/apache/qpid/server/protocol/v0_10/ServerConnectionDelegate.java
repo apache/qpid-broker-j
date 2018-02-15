@@ -401,17 +401,19 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     {
         assertState(serverConnection, ConnectionState.OPEN);
 
-        ServerSessionDelegate serverSessionDelegate = new ServerSessionDelegate();
-
-        final ServerSession serverSession =
-                new ServerSession(serverConnection, serverSessionDelegate, new Binary(atc.getName()), 0);
-        final Session_0_10 session = new Session_0_10(serverConnection.getAmqpConnection(), atc.getChannel(),
-                                                      serverSession);
-        session.create();
-        serverSession.setModelObject(session);
+        // We ignore the force flag
 
         if(isSessionNameUnique(atc.getName(), serverConnection))
         {
+            ServerSessionDelegate serverSessionDelegate = new ServerSessionDelegate();
+
+            final ServerSession serverSession =
+                    new ServerSession(serverConnection, serverSessionDelegate, new Binary(atc.getName()), 0);
+            final Session_0_10 session = new Session_0_10(serverConnection.getAmqpConnection(), atc.getChannel(),
+                                                          serverSession);
+            session.create();
+            serverSession.setModelObject(session);
+
             serverConnection.map(serverSession, atc.getChannel());
             serverConnection.registerSession(serverSession);
             serverSession.sendSessionAttached(atc.getName());
@@ -419,8 +421,9 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
         }
         else
         {
-            serverSession.invoke(new SessionDetached(atc.getName(), SessionDetachCode.SESSION_BUSY));
-            serverSession.closed();
+            final SessionDetached detached = new SessionDetached(atc.getName(), SessionDetachCode.SESSION_BUSY);
+            detached.setChannel(atc.getChannel());
+            serverConnection.invoke(detached);
         }
     }
 

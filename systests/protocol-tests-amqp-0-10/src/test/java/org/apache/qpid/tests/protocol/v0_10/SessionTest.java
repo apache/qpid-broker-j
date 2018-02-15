@@ -31,6 +31,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.apache.qpid.server.protocol.v0_10.transport.SessionAttached;
+import org.apache.qpid.server.protocol.v0_10.transport.SessionDetachCode;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionDetached;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -55,14 +56,16 @@ public class SessionTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction = transport.newInteraction();
             byte[] sessionName = "test".getBytes(StandardCharsets.UTF_8);
+            final int channelId = 1;
             SessionAttached sessionAttached = interaction.openAnonymousConnection()
-                                                         .channelId(1)
+                                                         .channelId(channelId)
                                                          .session()
                                                          .attachName(sessionName)
                                                          .attach()
                                                          .consumeResponse()
                                                          .getLatestResponse(SessionAttached.class);
             assertThat(sessionAttached.getName(), IsEqual.equalTo(sessionName));
+            assertThat(sessionAttached.getChannel(), IsEqual.equalTo(channelId));
         }
     }
 
@@ -76,8 +79,9 @@ public class SessionTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction = transport.newInteraction();
             byte[] sessionName = "test".getBytes(StandardCharsets.UTF_8);
+            final int channelId = 1;
             SessionDetached sessionDetached = interaction.openAnonymousConnection()
-                                                         .channelId(1)
+                                                         .channelId(channelId)
                                                          .session()
                                                          .attachName(sessionName)
                                                          .attach()
@@ -89,6 +93,7 @@ public class SessionTest extends BrokerAdminUsingTestBase
                                                          .getLatestResponse(SessionDetached.class);
 
             assertThat(sessionDetached.getName(), IsEqual.equalTo(sessionName));
+            assertThat(sessionDetached.getChannel(), IsEqual.equalTo(channelId));
         }
     }
 
@@ -104,8 +109,9 @@ public class SessionTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction = transport.newInteraction();
             byte[] sessionName = "test".getBytes(StandardCharsets.UTF_8);
+            final int channelId = 1;
             SessionDetached sessionDetached = interaction.openAnonymousConnection()
-                                                         .channelId(1)
+                                                         .channelId(channelId)
                                                          .session()
                                                          .detachName(sessionName)
                                                          .detach()
@@ -113,9 +119,48 @@ public class SessionTest extends BrokerAdminUsingTestBase
                                                          .getLatestResponse(SessionDetached.class);
 
             assertThat(sessionDetached.getName(), IsEqual.equalTo(sessionName));
+            assertThat(sessionDetached.getChannel(), IsEqual.equalTo(channelId));
         }
     }
 
+    @Test
+    @SpecificationTest(section = "9.session",
+            description = "A session MUST NOT be attached to more than one transport at a time.")
+    public void attachSameSessionTwiceDisallowed() throws Exception
+    {
+        try (FrameTransport transport1 = new FrameTransport(_brokerAddress).connect())
+        {
+            final Interaction interaction1 = transport1.newInteraction();
+            byte[] sessionName = "test".getBytes(StandardCharsets.UTF_8);
+            final int channelId1 = 1;
+            SessionAttached sessionAttached = interaction1.openAnonymousConnection()
+                                                          .channelId(channelId1)
+                                                          .session()
+                                                          .attachName(sessionName)
+                                                          .attach()
+                                                          .consumeResponse()
+                                                          .getLatestResponse(SessionAttached.class);
+
+            assertThat(sessionAttached.getName(), IsEqual.equalTo(sessionName));
+            assertThat(sessionAttached.getChannel(), IsEqual.equalTo(channelId1));
 
 
+            try (FrameTransport transport2 = new FrameTransport(_brokerAddress).connect())
+            {
+                final Interaction interaction2 = transport2.newInteraction();
+                final int channelId2 = 2;
+                SessionDetached sessionDetached = interaction2.openAnonymousConnection()
+                                                              .channelId(channelId2)
+                                                              .session()
+                                                              .attachName(sessionName)
+                                                              .attach()
+                                                              .consumeResponse()
+                                                              .getLatestResponse(SessionDetached.class);
+
+                assertThat(sessionDetached.getName(), IsEqual.equalTo(sessionName));
+                assertThat(sessionDetached.getCode(), IsEqual.equalTo(SessionDetachCode.SESSION_BUSY));
+                assertThat(sessionDetached.getChannel(), IsEqual.equalTo(channelId2));
+            }
+        }
+    }
 }

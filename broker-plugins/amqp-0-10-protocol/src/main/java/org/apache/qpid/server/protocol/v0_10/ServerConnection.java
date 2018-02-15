@@ -136,7 +136,10 @@ public class ServerConnection extends ConnectionInvoker
     @Override
     protected void invoke(Method method)
     {
-        method.setChannel(0);
+        if (method.isConnectionControl())
+        {
+            method.setChannel(0);
+        }
         send(method);
         if (!method.isBatch())
         {
