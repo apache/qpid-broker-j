@@ -21,13 +21,20 @@
 package org.apache.qpid.systests.jms_1_1.extensions.maxdelivery;
 
 import static org.apache.qpid.systests.Utils.INDEX;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +45,7 @@ import javax.jms.Connection;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.Queue;
+import javax.jms.QueueBrowser;
 import javax.jms.Session;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,6 +58,7 @@ import org.apache.qpid.systests.Utils;
 public class MaxDeliveryTest extends JmsTestBase
 {
     private static final int MAX_DELIVERY_ATTEMPTS = 2;
+    private static final String JMSX_DELIVERY_COUNT = "JMSXDeliveryCount";
 
     @Test
     public void maximumDelivery() throws Exception
@@ -197,6 +206,40 @@ public class MaxDeliveryTest extends JmsTestBase
         }
     }
 
+    @Test
+    public void browsingDoesNotIncrementDeliveryCount() throws Exception
+    {
+        assumeThat(getBrokerAdmin().isManagementSupported(), is(true));
+
+        final String queueName = getTestName();
+        getBrokerAdmin().createQueue(queueName);
+
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            final Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+            final Queue queue = session.createQueue(queueName);
+
+            Utils.sendMessages(connection, queue, 1);
+
+            final Map<String, Object> messageInfoBefore = getMessageInfo(queueName, 0);
+            assertThat("Unexpected delivery count before browse", messageInfoBefore.get("deliveryCount"), is(equalTo(0)));
+
+            browseQueueAndValidationDeliveryHeaders(session, queue);
+
+            final Map<String, Object> messageInfoAfter = getMessageInfo(queueName, 0);
+            assertThat("Unexpected delivery count after first browse", messageInfoAfter.get("deliveryCount"), is(equalTo(0)));
+
+            browseQueueAndValidationDeliveryHeaders(session, queue);
+
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
     private void verifyDeadLetterQueueMessages(final Connection connection,
                                                final String dlqName,
                                                final int numberOfEvenMessages) throws Exception
@@ -212,7 +255,7 @@ public class MaxDeliveryTest extends JmsTestBase
         for (int i = 0; i < numberOfEvenMessages; i++)
         {
             Message message = consumer.receive(getReceiveTimeout());
-            assertEquals("Unexpected DQL message index", i * 2, message.getIntProperty(INDEX));
+            assertEquals("Unexpected DLQ message index", i * 2, message.getIntProperty(INDEX));
         }
     }
 
@@ -233,5 +276,33 @@ public class MaxDeliveryTest extends JmsTestBase
         createEntityUsingAmqpManagement(queueName,
                                         "org.apache.qpid.StandardQueue",
                                         attributes);
+    }
+
+    private Map<String, Object> getMessageInfo(String queueName, final int index) throws Exception
+    {
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> messages = (List<Map<String, Object>>) performOperationUsingAmqpManagement(queueName,
+                                                                                                             "getMessageInfo",
+                                                                                                             "org.apache.qpid.Queue",
+                                                                                                             Collections.emptyMap());
+        assertThat("Too few messsages on the queue", messages.size(), is(greaterThan(index)));
+        return messages.get(index);
+    }
+
+    private void browseQueueAndValidationDeliveryHeaders(final Session session, final Queue queue) throws Exception
+    {
+        final QueueBrowser browser = session.createBrowser(queue);
+        @SuppressWarnings("unchecked")
+        final List<Message> messages = (List<Message>) new ArrayList(Collections.list(browser.getEnumeration()));
+        assertThat("Unexpected number of messages seen by browser", messages.size(), is(equalTo(1)));
+        final Message browsedMessage = messages.get(0);
+        assertThat(browsedMessage.getJMSRedelivered(), is(equalTo(false)));
+
+        if (browsedMessage.propertyExists(JMSX_DELIVERY_COUNT))
+        {
+            assertThat(browsedMessage.getIntProperty(JMSX_DELIVERY_COUNT), is(equalTo(1)));
+
+        }
+        browser.close();
     }
 }

@@ -34,10 +34,12 @@ import javax.jms.JMSException;
 import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
+import javax.jms.MessageEOFException;
 import javax.jms.MessageProducer;
 import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.Session;
+import javax.jms.StreamMessage;
 import javax.jms.TemporaryQueue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -264,7 +266,7 @@ public class AmqpManagementFacade
             else
             {
                 ObjectMapper objectMapper = new ObjectMapper();
-                String jsonifiedValue = null;
+                String jsonifiedValue;
                 try
                 {
                     jsonifiedValue = objectMapper.writeValueAsString(value);
@@ -293,7 +295,27 @@ public class AmqpManagementFacade
             {
                 throw new OperationUnsuccessfulException(response.getStringProperty("statusDescription"), statusCode);
             }
-            if (response instanceof MapMessage)
+            if (response instanceof StreamMessage)
+            {
+                StreamMessage bodyStream = (StreamMessage) response;
+                List<Object> result = new ArrayList<>();
+                boolean done = false;
+                do
+                {
+                    try
+                    {
+                        result.add(bodyStream.readObject());
+                    }
+                    catch (MessageEOFException mfe)
+                    {
+                        // Expected - end of stream
+                        done = true;
+                    }
+                }
+                while (!done);
+                return result;
+            }
+            else if (response instanceof MapMessage)
             {
                 MapMessage bodyMap = (MapMessage) response;
                 Map<String, Object> result = new TreeMap<>();
