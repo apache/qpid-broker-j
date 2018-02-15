@@ -33,9 +33,11 @@ import javax.jms.JMSException;
 import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
+import javax.jms.MessageEOFException;
 import javax.jms.MessageProducer;
 import javax.jms.ObjectMessage;
 import javax.jms.Session;
+import javax.jms.StreamMessage;
 import javax.jms.TemporaryQueue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -159,7 +161,7 @@ public class AmqpManagementFacade
             else
             {
                 ObjectMapper objectMapper = new ObjectMapper();
-                String jsonifiedValue = null;
+                String jsonifiedValue;
                 try
                 {
                     jsonifiedValue = objectMapper.writeValueAsString(value);
@@ -182,7 +184,34 @@ public class AmqpManagementFacade
         Message response = consumer.receive(5000);
         try
         {
-            if (response instanceof MapMessage)
+            int statusCode = response.getIntProperty("statusCode");
+            if (statusCode < 200 || statusCode > 299)
+            {
+                throw new RuntimeException(String.format("Unexpected operation status %d : %s",
+                                                         statusCode,
+                                                         response.getStringProperty("statusDescription")));
+            }
+            if (response instanceof StreamMessage)
+            {
+                StreamMessage bodyStream = (StreamMessage) response;
+                List<Object> result = new ArrayList<>();
+                boolean done = false;
+                do
+                {
+                    try
+                    {
+                        result.add(bodyStream.readObject());
+                    }
+                    catch (MessageEOFException mfe)
+                    {
+                        // Expected - end of stream
+                        done = true;
+                    }
+                }
+                while (!done);
+                return result;
+            }
+            else if (response instanceof MapMessage)
             {
                 MapMessage bodyMap = (MapMessage) response;
                 Map<String, Object> result = new TreeMap<>();

@@ -36,6 +36,7 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
+import javax.jms.QueueBrowser;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
@@ -69,6 +70,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
     private String _failMsg;
     private static final int MSG_COUNT = 15;
     private static final int MAX_DELIVERY_COUNT = 2;
+    private static final String JMSX_DELIVERY_COUNT = "JMSXDeliveryCount";
     private CountDownLatch _awaitCompletion;
 
     private long _awaitEmptyQueue;
@@ -170,6 +172,78 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
         restartDefaultBroker();
 
         doTest(Session.SESSION_TRANSACTED, _redeliverMsgs, true);
+    }
+
+    public void testBrowsingDoesNotIncrementDeliveryCount() throws Exception
+    {
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+            final Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+            final Map<String, Object> messageInfoBefore = getMessageInfo(_testQueueName, 0);
+            assertEquals("Unexpected delivery count before browse", 0, messageInfoBefore.get("deliveryCount"));
+
+            browseQueueAndValidationDeliveryHeaders(session, _testQueue);
+
+            final Map<String, Object> messageInfoAfter = getMessageInfo(_testQueueName, 0);
+            assertEquals("Unexpected delivery count after first browse", 0, messageInfoAfter.get("deliveryCount"));
+
+            browseQueueAndValidationDeliveryHeaders(session, _testQueue);
+
+            final Map<String, Object> messageInfoAfterSecondBrowse = getMessageInfo(_testQueueName, 0);
+            assertEquals("Unexpected delivery count after second browse",
+                         0,
+                         messageInfoAfterSecondBrowse.get("deliveryCount"));
+
+            browseQueueAndValidationDeliveryHeaders(session, _testQueue);
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    private Map<String, Object> getMessageInfo(String queueName, final int index) throws Exception
+    {
+        List<Map<String, Object>> messages;
+        Connection connection = getConnection();
+        try
+        {
+            connection.start();
+
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            messages = (List<Map<String, Object>>) performOperationUsingAmqpManagement(queueName,
+                                                                                       "getMessageInfo",
+                                                                                       session,
+                                                                                       "org.apache.qpid.Queue",
+                                                                                       Collections.emptyMap());
+        }
+        finally
+        {
+            connection.close();
+        }
+        assertTrue("Too few messsages on the queue: " + messages.size(), messages.size()>index);
+        return messages.get(index);
+    }
+
+    private void browseQueueAndValidationDeliveryHeaders(final Session session, final Queue queue) throws Exception
+    {
+        final QueueBrowser browser = session.createBrowser(queue);
+        @SuppressWarnings("unchecked")
+        final List<Message> messages = (List<Message>) new ArrayList(Collections.list(browser.getEnumeration()));
+        assertEquals("Unexpected number of messages seen by browser", MSG_COUNT, messages.size());
+        for (Message browsedMessage: messages)
+        {
+            assertFalse(browsedMessage.getJMSRedelivered());
+
+            if (browsedMessage.propertyExists(JMSX_DELIVERY_COUNT))
+            {
+                assertEquals(1, browsedMessage.getIntProperty(JMSX_DELIVERY_COUNT));
+            }
+        }
+        browser.close();
     }
 
     private void doTest(final int deliveryMode,
