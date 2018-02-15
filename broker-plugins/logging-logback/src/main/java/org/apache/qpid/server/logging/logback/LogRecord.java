@@ -21,10 +21,12 @@
 package org.apache.qpid.server.logging.logback;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
+
+import org.apache.qpid.server.model.ManagedAttributeValue;
 import org.apache.qpid.server.model.ManagedAttributeValueType;
 
 @ManagedAttributeValueType
-public class LogRecord
+public class LogRecord implements ManagedAttributeValue
 {
     private final ILoggingEvent _event;
     private final long _id;
