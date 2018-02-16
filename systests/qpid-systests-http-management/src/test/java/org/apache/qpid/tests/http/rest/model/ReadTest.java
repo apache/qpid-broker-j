@@ -277,9 +277,9 @@ public class ReadTest extends HttpTestBase
                 final Map<String, Object> attrs = new HashMap<>(base);
                 attrs.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
                 attrs.put(NonJavaKeyStore.PRIVATE_KEY_URL, privateKeyFileUrl);
-                getHelper().submitRequest(String.format("%s?oversize=%d", storeUrl, storeUrl.length()), "PUT", attrs, SC_CREATED);
+                getHelper().submitRequest(storeUrl, "PUT", attrs, SC_CREATED);
 
-                final Map<String, Object> store = getHelper().getJsonAsMap(storeUrl);
+                final Map<String, Object> store = getHelper().getJsonAsMap(String.format("%s?oversize=%d", storeUrl, privateKeyFileUrl.length()));
                 assertThat(store.get(NonJavaKeyStore.PRIVATE_KEY_URL), is(equalTo(privateKeyFileUrl)));
 
                 getHelper().submitRequest(storeUrl, "DELETE", SC_OK);
