@@ -26,8 +26,5 @@ org.apache.qpid.server.store.berkeleydb.replication.*
 org.apache.qpid.server.store.berkeleydb.upgrade.*
 org.apache.qpid.server.virtualhostnode.berkeleydb.*
 
-org.apache.qpid.systest.rest.VirtualHostRestTest#testRecoverVirtualHostInDesiredStateStoppedWithDescription
-org.apache.qpid.systest.rest.VirtualHostRestTest#testMutateStateOfVirtualHostWithQueuesAndMessages
-
 org.apache.qpid.systest.rest.VirtualHostNodeRestTest#testCreateAndDeleteVirtualHostNode
 

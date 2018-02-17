@@ -35,6 +35,7 @@ import static org.mockito.Mockito.when;
 import java.security.AccessControlException;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,11 +51,11 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListener;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.Operation;
@@ -68,6 +69,7 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 import org.apache.qpid.server.virtualhost.NoopConnectionEstablishmentPolicy;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
@@ -196,7 +198,7 @@ public class VirtualHostTest extends QpidTestCase
         final ConfiguredObjectRecord virtualHostCor = virtualHost.asObjectRecord();
 
         // Give virtualhost a queue and an exchange
-        Queue queue = virtualHost.createChild(Queue.class, Collections.<String, Object>singletonMap(Queue.NAME, "myQueue"));
+        Queue queue = virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, "myQueue"));
         final ConfiguredObjectRecord queueCor = queue.asObjectRecord();
 
         Map<String, Object> exchangeArgs = new HashMap<>();
@@ -230,7 +232,7 @@ public class VirtualHostTest extends QpidTestCase
             final Iterator<ConfiguredObjectRecord> corIterator = allObjects.iterator();
 
             @Override
-            public Object answer(final InvocationOnMock invocation) throws Throwable
+            public Object answer(final InvocationOnMock invocation)
             {
                 ConfiguredObjectRecordHandler handler = (ConfiguredObjectRecordHandler) invocation.getArguments()[0];
                 boolean handlerContinue = true;
@@ -275,7 +277,7 @@ public class VirtualHostTest extends QpidTestCase
             final Iterator<ConfiguredObjectRecord> corIterator = allObjects.iterator();
 
             @Override
-            public Object answer(final InvocationOnMock invocation) throws Throwable
+            public Object answer(final InvocationOnMock invocation)
             {
                 ConfiguredObjectRecordHandler handler = (ConfiguredObjectRecordHandler) invocation.getArguments()[0];
                 while (corIterator.hasNext())
@@ -470,11 +472,11 @@ public class VirtualHostTest extends QpidTestCase
         verify(connection).block();
     }
 
-    public void testCreateValidation() throws Exception
+    public void testCreateValidation()
     {
         try
         {
-            createVirtualHost(getTestName(), Collections.<String, Object>singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, "-1"));
+            createVirtualHost(getTestName(), Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, "-1"));
             fail("Exception not thrown for negative number of selectors");
         }
         catch (IllegalConfigurationException e)
@@ -483,7 +485,7 @@ public class VirtualHostTest extends QpidTestCase
         }
         try
         {
-            createVirtualHost(getTestName(), Collections.<String, Object>singletonMap(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE, "-1"));
+            createVirtualHost(getTestName(), Collections.singletonMap(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE, "-1"));
             fail("Exception not thrown for negative connection thread pool size");
         }
         catch (IllegalConfigurationException e)
@@ -501,7 +503,7 @@ public class VirtualHostTest extends QpidTestCase
         }
     }
 
-    public void testChangeValidation() throws Exception
+    public void testChangeValidation()
     {
         QueueManagingVirtualHost<?> virtualHost = createVirtualHost(getTestName());
         try
@@ -515,8 +517,8 @@ public class VirtualHostTest extends QpidTestCase
         }
         try
         {
-            virtualHost.setAttributes(Collections.<String, Object>singletonMap(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE,
-                                                                               "-1"));
+            virtualHost.setAttributes(Collections.singletonMap(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE,
+                                                               "-1"));
             fail("Exception not thrown for negative connection thread pool size");
         }
         catch (IllegalConfigurationException e)
@@ -525,7 +527,7 @@ public class VirtualHostTest extends QpidTestCase
         }
         try
         {
-            virtualHost.setAttributes(Collections.<String, Object>singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, QueueManagingVirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE));
+            virtualHost.setAttributes(Collections.singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, QueueManagingVirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE));
             fail("Exception not thrown for number of selectors equal to connection thread pool size");
         }
         catch (IllegalConfigurationException e)
@@ -534,7 +536,7 @@ public class VirtualHostTest extends QpidTestCase
         }
     }
 
-    public void testRegisterConnection() throws Exception
+    public void testRegisterConnection()
     {
         QueueManagingVirtualHost<?> vhost = createVirtualHost("sdf");
         AMQPConnection<?> connection = getMockConnection();
@@ -545,7 +547,7 @@ public class VirtualHostTest extends QpidTestCase
         assertEquals("unexpected connection object", Collections.singleton(connection), vhost.getConnections());
     }
 
-    public void testStopVirtualhostClosesConnections() throws Exception
+    public void testStopVirtualhostClosesConnections()
     {
         QueueManagingVirtualHost<?> vhost = createVirtualHost("sdf");
         AMQPConnection<?> connection = getMockConnection();
@@ -558,7 +560,7 @@ public class VirtualHostTest extends QpidTestCase
         verify(connection).closeAsync();
     }
 
-    public void testRegisterConnectionOnStoppedVirtualhost() throws Exception
+    public void testRegisterConnectionOnStoppedVirtualhost()
     {
         QueueManagingVirtualHost<?> vhost = createVirtualHost("sdf");
         AMQPConnection<?> connection = getMockConnection();
@@ -577,6 +579,148 @@ public class VirtualHostTest extends QpidTestCase
         ((AbstractConfiguredObject<?>)vhost).start();
         vhost.registerConnection(connection, new NoopConnectionEstablishmentPolicy());
         assertEquals("unexpected number of connections", 1, vhost.getConnectionCount());
+    }
+
+    public void testAddValidAutoCreationPolicies()
+    {
+        NodeAutoCreationPolicy[] policies = new NodeAutoCreationPolicy[] {
+                new NodeAutoCreationPolicy()
+                {
+                    @Override
+                    public String getPattern()
+                    {
+                        return "fooQ*";
+                    }
+
+                    @Override
+                    public boolean isCreatedOnPublish()
+                    {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean isCreatedOnConsume()
+                    {
+                        return true;
+                    }
+
+                    @Override
+                    public String getNodeType()
+                    {
+                        return "Queue";
+                    }
+
+                    @Override
+                    public Map<String, Object> getAttributes()
+                    {
+                        return Collections.emptyMap();
+                    }
+                },
+                new NodeAutoCreationPolicy()
+                {
+                    @Override
+                    public String getPattern()
+                    {
+                        return "barE*";
+                    }
+
+                    @Override
+                    public boolean isCreatedOnPublish()
+                    {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean isCreatedOnConsume()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public String getNodeType()
+                    {
+                        return "Exchange";
+                    }
+
+                    @Override
+                    public Map<String, Object> getAttributes()
+                    {
+                        return Collections.singletonMap(Exchange.TYPE, "amq.fanout");
+                    }
+                }
+        };
+
+        QueueManagingVirtualHost<?> vhost = createVirtualHost("host");
+
+
+        Map<String, Object> newAttributes = Collections.singletonMap(QueueManagingVirtualHost.NODE_AUTO_CREATION_POLICIES,
+                                                                     Arrays.asList(policies));
+
+        vhost.setAttributes(newAttributes);
+
+        List<NodeAutoCreationPolicy> retrievedPoliciesList = vhost.getNodeAutoCreationPolicies();
+        assertEquals("Retrieved node policies list has incorrect size", 2, retrievedPoliciesList.size());
+        NodeAutoCreationPolicy firstPolicy =  retrievedPoliciesList.get(0);
+        NodeAutoCreationPolicy secondPolicy = retrievedPoliciesList.get(1);
+        assertEquals("fooQ*", firstPolicy.getPattern());
+        assertEquals("barE*", secondPolicy.getPattern());
+        assertEquals(true, firstPolicy.isCreatedOnConsume());
+        assertEquals(false, secondPolicy.isCreatedOnConsume());
+    }
+
+    public void testAddInvalidAutoCreationPolicies()
+    {
+        NodeAutoCreationPolicy[] policies = new NodeAutoCreationPolicy[] {
+                new NodeAutoCreationPolicy()
+                {
+                    @Override
+                    public String getPattern()
+                    {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean isCreatedOnPublish()
+                    {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean isCreatedOnConsume()
+                    {
+                        return true;
+                    }
+
+                    @Override
+                    public String getNodeType()
+                    {
+                        return "Queue";
+                    }
+
+                    @Override
+                    public Map<String, Object> getAttributes()
+                    {
+                        return Collections.emptyMap();
+                    }
+                }
+        };
+
+        QueueManagingVirtualHost<?> vhost = createVirtualHost("host");
+        Map<String, Object> newAttributes = Collections.singletonMap(QueueManagingVirtualHost.NODE_AUTO_CREATION_POLICIES,
+                                                                     Arrays.asList(policies));
+
+        try
+        {
+            vhost.setAttributes(newAttributes);
+            fail("Exception not thrown");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // PASS
+        }
+
+        List<NodeAutoCreationPolicy> retrievedPoliciesList = vhost.getNodeAutoCreationPolicies();
+        assertTrue("Retrieved node policies is not empty", ((List) retrievedPoliciesList).isEmpty());
     }
 
     private AMQPConnection<?> getMockConnection()
@@ -617,7 +761,7 @@ public class VirtualHostTest extends QpidTestCase
         Answer answer = new Answer()
         {
             @Override
-            public Object answer(final InvocationOnMock invocation) throws Throwable
+            public Object answer(final InvocationOnMock invocation)
             {
                 return tasks.add(deleteTaskCaptor.getValue());
             }
@@ -627,7 +771,7 @@ public class VirtualHostTest extends QpidTestCase
         doAnswer(new Answer()
         {
             @Override
-            public Object answer(final InvocationOnMock invocation) throws Throwable
+            public Object answer(final InvocationOnMock invocation)
             {
                 for(Action action : tasks)
                 {
