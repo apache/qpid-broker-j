@@ -107,10 +107,6 @@
                                      promptMessage="Number of threads used to perform housekeeping"/>
                           </div>
                       </div>
-                  </fieldset>
-              </div>
-              <div class="clear"></div>
-
                 <div class="clear">
                     <div class="formLabel-labelCell tableContainer-labelCell">Number of connection threads:</div>
                     <div class="tableContainer-valueCell formLabel-controlCell">
@@ -135,6 +131,22 @@
                               promptMessage: 'Period with which statistics are reported to the log.'" />
                     </div>
                 </div>
+                  </fieldset>
+              </div>
+              <div class="clear"></div>
+              <div data-dojo-type="dijit/TitlePane"
+                 data-dojo-props="title: 'Node Auto-Creation Policies',  open: false"
+                 class="sequentialPanel">
+                <div id="editVirtualHost.policies"></div>
+                <button data-dojo-type="dijit.form.Button"
+                        data-dojo-props="promptMessage:'Add Node Auto Creation Policy'"
+                        id="editVirtualHost.addAutoCreationPolicy">+
+                </button>
+                <button data-dojo-type="dijit.form.Button"
+                        data-dojo-props="promptMessage:'Delete Node Auto Creation Policy', disabled: true"
+                        id="editVirtualHost.deleteAutoCreationPolicy">-
+                </button>
+              </div>
               <div class="clear"></div>
 
               <div data-dojo-type="dijit/TitlePane" data-dojo-props="title: 'Context variables',  open: false">

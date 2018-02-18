@@ -789,3 +789,24 @@ td.advancedSearchField, col.autoWidth {
 {
     margin-bottom: 10px !important;
 }
+
+#editVirtualHostDialog
+{
+    width: 550px;
+}
+.nodeAutoCreationPolicies .field-selected { width: 2em; }
+.nodeAutoCreationPolicies .field-nodeType { width: 10%; }
+.nodeAutoCreationPolicies .field-pattern { width: 10%; }
+.nodeAutoCreationPolicies .field-createdOnPublish { width: 10%; }
+.nodeAutoCreationPolicies .field-createdOnConsume { width: 10% }
+.nodeAutoCreationPolicies .field-attributes { width: auto }
+
+.nodeAutoCreationPolicyAttributes { height: 100px;}
+.keyValuePair {
+    overflow: auto;
+}
+
+.sequentialPanel
+{
+    margin-bottom: 0.2em !important;
+}

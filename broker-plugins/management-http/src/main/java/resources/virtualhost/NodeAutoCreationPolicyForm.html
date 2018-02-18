@@ -1,0 +1,129 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+<div class="dijitHidden">
+    <div data-dojo-type="dijit/Dialog"
+         data-dojo-props="title:'Node Auto-Creation Policy'"
+         data-dojo-attach-point="nodeAutoCreationPolicyDialog">
+        <div>
+            <form data-dojo-attach-point="nodeAutoCreationPolicyForm"
+                  data-dojo-type="dijit/form/Form"
+                  id="${id}_nodeAutoCreationPolicyForm"
+                  class="nodeAutoCreationPolicyForm">
+                <div>
+                    <div class="clear">
+                        <label class="formLabel-labelCell tableContainer-labelCell"
+                               for="${id}_pattern">Pattern*: </label>
+                        <input id="${id}_pattern"
+                               type="text"
+                               class="formLabel-controlCell tableContainer-valueCell"
+                               data-dojo-attach-point="pattern"
+                               data-dojo-type="dijit/form/ValidationTextBox"
+                               data-dojo-props="name: 'pattern',
+                        required: true,
+                        intermediateChanges: true,
+                        placeHolder: 'Name matching regular expression',
+                        title: 'Enter name matching regular expression'"/>
+                    </div>
+                    <div class="clear">
+                        <label class="formLabel-labelCell tableContainer-labelCell" for="${id}_nodeType"
+                               id="${id}_nodeTypeLabel">Node Type*: </label>
+                        <select id="${id}_nodeType" class="formLabel-controlCell tableContainer-valueCell"
+                                data-dojo-attach-point="type"
+                                data-dojo-type='dijit/form/ComboBox'
+                                data-dojo-props=" name: 'type',
+                                          placeHolder: 'Type of Node',
+                                          required: true,
+                                          value: 'Queue',
+                                          title: 'Type of node to create.',
+                                          promptMessage: 'Select type of node to create.',
+                                          intermediateChanges: true">
+                            <option value="Queue" selected="true">Queue</option>
+                            <option value="Exchange">Exchange</option>
+                        </select>
+                    </div>
+                    <div class="clear formBox">
+                        <fieldset>
+                            <legend>Create On*:</legend>
+                            <div class="clear">
+                                <label class="formLabel-labelCell tableContainer-labelCell"
+                                       for="${id}_createdOnPublish">Create On Publish:</label>
+                                <input id="${id}_createdOnPublish"
+                                       class="formLabel-controlCell tableContainer-valueCell"
+                                       type="checkbox"
+                                       data-dojo-type="dijit/form/CheckBox"
+                                       data-dojo-attach-point="createdOnPublish"
+                                       data-dojo-props="name: 'createdOnPublish', intermediateChanges: true"/>
+                                <div data-dojo-type="dijit/Tooltip"
+                                     data-dojo-props="connectId: ['${id}_createdOnPublish'],
+                              label: 'If selected, node is created by publisher'">
+                                </div>
+                            </div>
+                            <div class="clear">
+                                <label class="formLabel-labelCell tableContainer-labelCell"
+                                       for="${id}_createdOnConsume">Create On Consume:</label>
+                                <input id="${id}_createdOnConsume"
+                                       class="formLabel-controlCell tableContainer-valueCell"
+                                       type="checkbox"
+                                       data-dojo-type="dijit/form/CheckBox"
+                                       data-dojo-attach-point="createdOnConsume"
+                                       data-dojo-props="name: 'createdOnConsume',intermediateChanges: true"/>
+                                <div data-dojo-type="dijit/Tooltip"
+                                     data-dojo-props="connectId: ['${id}_createdOnConsume'],
+                              label: 'If selected, node is created by consumer'">
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                    <div class="clear formBox">
+                        <fieldset>
+                            <legend>Attributes:</legend>
+                            <div data-dojo-attach-point="attributes" id="${id}_attributes"
+                                 class="nodeAutoCreationPolicyAttributes"></div>
+                            <div>
+                                <button data-dojo-type="dijit/form/Button"
+                                        id="${id}_addAttributeButton"
+                                        type="button"
+                                        data-dojo-props="title:'Add new attribute'"
+                                        data-dojo-attach-point="addAttributeButton">+</button>
+                                <button data-dojo-type="dijit/form/Button"
+                                        id="${id}_deleteAttributeButton"
+                                        type="button"
+                                        data-dojo-props="title:'Remove selected attribute(s)'"
+                                        data-dojo-attach-point="deleteAttributeButton">-</button>
+                            </div>
+                        </fieldset>
+                    </div>
+                    <div class="clear"></div>
+                </div>
+                <div class="dijitDialogPaneActionBar">
+                    <input id="${id}_cancelButton"
+                           type="button"
+                           data-dojo-attach-point="cancelButton"
+                           data-dojo-type="dijit/form/Button"
+                           data-dojo-props="label: 'Cancel'"/>
+                    <input id="${id}_okButton"
+                           type="submit"
+                           data-dojo-attach-point="okButton"
+                           data-dojo-type="dijit/form/Button"
+                           data-dojo-props="label: 'Ok'"/>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
