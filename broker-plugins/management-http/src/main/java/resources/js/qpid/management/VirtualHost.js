@@ -33,8 +33,18 @@ define(["dojo/parser",
         "qpid/management/query/QueryGrid",
         "qpid/management/editVirtualHost",
         "qpid/common/StatisticsWidget",
-        "dgrid/Selector",
         "dojo/text!showVirtualHost.html",
+        "dijit/Dialog",
+        "dgrid/Grid",
+        "dgrid/Selector",
+        "dgrid/Keyboard",
+        "dgrid/Selection",
+        "dgrid/extensions/Pagination",
+        "dgrid/extensions/ColumnResizer",
+        "dgrid/extensions/DijitRegistry",
+        "dstore/Memory",
+        "dstore/Trackable",
+        "dojo/aspect",
         "dojo/domReady!"],
     function (parser,
               query,
@@ -51,8 +61,18 @@ define(["dojo/parser",
               QueryGrid,
               editVirtualHost,
               StatisticsWidget,
+              template,
+              Dialog,
+              Grid,
               Selector,
-              template)
+              Keyboard,
+              Selection,
+              Pagination,
+              ColumnResizer,
+              DijitRegistry,
+              MemoryStore,
+              TrackableStore,
+              aspect)
     {
 
         function VirtualHost(kwArgs)
@@ -447,6 +467,72 @@ define(["dojo/parser",
             }, findNode("loggers"));
             this.virtualHostLoggersGrid.on('rowBrowsed', function(event){controller.showById(event.id);});
             this.virtualHostLoggersGrid.startup();
+
+            var Store = MemoryStore.createSubclass(TrackableStore);
+            this._policyStore = new Store({
+                data: [],
+                idProperty: "pattern"
+            });
+
+            var PolicyGrid = declare([Grid, Keyboard, Selection, Pagination, ColumnResizer, DijitRegistry]);
+            this._policyGrid = new PolicyGrid({
+                rowsPerPage: 10,
+                selectionMode: 'none',
+                deselectOnRefresh: false,
+                allowSelectAll: true,
+                cellNavigation: true,
+                className: 'dgrid-autoheight',
+                pageSizeOptions: [10, 20, 30, 40, 50, 100],
+                adjustLastColumn: true,
+                collection: this._policyStore,
+                highlightRow: function (){},
+                columns: [
+                    {
+                        label: 'Node Type',
+                        field: "nodeType"
+                    }, {
+                        label: "Pattern",
+                        field: "pattern"
+                    }, {
+                        label: "Create On Publish",
+                        field: "createdOnPublish",
+                        selector: 'checkbox'
+                    }, {
+                        label: "Create On Consume",
+                        field: "createdOnConsume",
+                        selector: 'checkbox'
+                    }, {
+                        label: "Attributes",
+                        field: "attributes",
+                        sortable: false,
+                        formatter: function(value, object)
+                        {
+                            var markup = "";
+                            if (value)
+                            {
+                                markup = "<div class='keyValuePair'>";
+                                for(var key in value)
+                                {
+                                    markup += "<div>" + key + "=" + value[key] + "</div>";
+                                }
+                                markup += "</div>"
+                            }
+                            return markup;
+                        }
+                    }
+                ]
+            }, findNode("policies"));
+
+            this._policyGrid.startup();
+            this._nodeAutoCreationPolicies = registry.byNode(findNode("nodeAutoCreationPolicies"));
+
+            aspect.after(this._nodeAutoCreationPolicies, "toggle", lang.hitch(this, function() {
+                if (this._nodeAutoCreationPolicies.get("open") === true)
+                {
+                    this._policyGrid.refresh();
+                }
+            }));
+
         }
 
         Updater.prototype.update = function (callback)
@@ -549,6 +635,7 @@ define(["dojo/parser",
                         thisObj.details.update(thisObj.vhostData);
                     });
             }
+            this._updateDStore(this._policyStore, this.vhostData.nodeAutoCreationPolicies || [], "pattern");
         };
 
         Updater.prototype._updateHeader = function ()
@@ -617,6 +704,29 @@ define(["dojo/parser",
             return connections;
         };
 
+        Updater.prototype._updateDStore = function (dstore, data, idProperty) {
+            if (data)
+            {
+                for (var i = 0; i < data.length; i++)
+                {
+                    dstore.put(data[i]);
+                }
+            }
+            dstore.fetch()
+                .forEach(function (object) {
+                    if (data)
+                    {
+                        for (var i = 0; i < data.length; i++)
+                        {
+                            if (data[i][idProperty] === object[idProperty])
+                            {
+                                return;
+                            }
+                        }
+                    }
+                    dstore.remove(object[idProperty]);
+                });
+        };
 
         return VirtualHost;
     });

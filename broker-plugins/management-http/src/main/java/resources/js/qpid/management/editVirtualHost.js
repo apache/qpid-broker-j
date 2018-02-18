@@ -20,6 +20,7 @@
  */
 define(["dojox/html/entities",
         "dojo/_base/array",
+        "dojo/_base/declare",
         "dojo/_base/event",
         "dojo/_base/lang",
         "dojo/_base/window",
@@ -33,6 +34,16 @@ define(["dojox/html/entities",
         "dojo/data/ObjectStore",
         "qpid/common/util",
         "dojo/text!editVirtualHost.html",
+        "dgrid/OnDemandGrid",
+        "dgrid/Selector",
+        "dgrid/Keyboard",
+        "dgrid/Selection",
+        "dgrid/extensions/Pagination",
+        "dgrid/extensions/ColumnResizer",
+        "dgrid/extensions/DijitRegistry",
+        "dstore/Memory",
+        "dstore/Trackable",
+        "dojo/keys",
         "qpid/common/ContextVariablesEditor",
         "dijit/Dialog",
         "dijit/form/CheckBox",
@@ -45,6 +56,7 @@ define(["dojox/html/entities",
         "dojo/domReady!"],
     function (entities,
               array,
+              declare,
               event,
               lang,
               win,
@@ -57,7 +69,17 @@ define(["dojox/html/entities",
               Memory,
               ObjectStore,
               util,
-              template)
+              template,
+              Grid,
+              Selector,
+              Keyboard,
+              Selection,
+              Pagination,
+              ColumnResizer,
+              DijitRegistry,
+              MemoryStore,
+              TrackableStore,
+              keys)
     {
         var fields = ["name",
                       "connectionThreadPoolSize",
@@ -112,6 +134,7 @@ define(["dojox/html/entities",
                 {
                     return false;
                 });
+                this._createNodeAutoCreationPolicyUI();
             },
             show: function (management, modelObj)
             {
@@ -158,6 +181,7 @@ define(["dojox/html/entities",
                     {
                         data["context"] = context;
                     }
+                    data.nodeAutoCreationPolicies = this._getNodeAutoCreationPolicies();
                     var that = this;
                     this.management.update(that.modelObj, data)
                         .then(function (x)
@@ -234,13 +258,171 @@ define(["dojox/html/entities",
                     }
                 });
 
+                this._initNodeAutoCreationPolicies(data);
                 this.dialog.startup();
                 this.dialog.show();
+                this.dialog.reset();
                 if (!this.resizeEventRegistered)
                 {
                     this.resizeEventRegistered = true;
                     util.resizeContentAreaAndRepositionDialog(dom.byId("editVirtualHost.contentPane"), this.dialog);
                 }
+                this._policyGrid.startup();
+                this._policyGrid.refresh();
+            },
+            _createNodeAutoCreationPolicyUI: function () {
+                this.addNodeAutoCreationPolicyButton =
+                    registry.byId("editVirtualHost.addAutoCreationPolicy");
+                this.addNodeAutoCreationPolicyButton.on("click",
+                    lang.hitch(this, this._addNodeAutoCreationPolicy));
+
+                this.deleteNodeAutoCreationPolicyButton =
+                    registry.byId("editVirtualHost.deleteAutoCreationPolicy");
+                this.deleteNodeAutoCreationPolicyButton.on("click",
+                    lang.hitch(this, this._deleteNodeAutoCreationPolicy));
+                this._policies = [];
+                var Store = MemoryStore.createSubclass(TrackableStore);
+                this._policyStore = new Store({
+                    data: this._policies,
+                    idProperty: "pattern"
+                });
+                var PolicyGrid = declare([Grid, Keyboard, Selector, Selection, ColumnResizer, DijitRegistry]);
+                this._policyGrid = new PolicyGrid({
+                    rowsPerPage: 10,
+                    selectionMode: 'none',
+                    deselectOnRefresh: false,
+                    allowSelectAll: true,
+                    cellNavigation: true,
+                    className: 'dgrid-autoheight',
+                    pageSizeOptions: [10, 20, 30, 40, 50, 100],
+                    adjustLastColumn: true,
+                    collection: this._policyStore,
+                    highlightRow: function (){},
+                    columns: {
+                        selected: {
+                            label: 'All',
+                            selector: 'checkbox'
+                        },
+                        nodeType: {
+                            label: "Node Type"
+                        },
+                        pattern: {
+                            label: "Pattern"
+                        },
+                        createdOnPublish: {
+                            label: "Create On Publish"
+                        },
+                        createdOnConsume: {
+                            label: "Create On Consume"
+                        },
+                        attributes: {
+                            label: "Attributes",
+                            sortable: false,
+                            formatter: function(value, object)
+                            {
+                                var markup = "";
+                                if (value)
+                                {
+                                    markup = "<div class='keyValuePair'>";
+                                    for(var key in value)
+                                    {
+                                        markup += "<div>" + key + "=" + value[key] + "</div>";
+                                    }
+                                    markup +="</div>"
+                                }
+                                return markup;
+                            }
+                        }
+                    }
+                }, dom.byId("editVirtualHost.policies"));
+
+                this._policyGrid.on('.dgrid-row:dblclick', lang.hitch(this, this._policySelected));
+                this._policyGrid.on('.dgrid-row:keypress', lang.hitch(this, function (event) {
+                    if (event.keyCode === keys.ENTER)
+                    {
+                        this._policySelected(event);
+                    }
+                }));
+                this._policyGrid.on('dgrid-select', lang.hitch(this, this._policySelectionChanged));
+                this._policyGrid.on('dgrid-deselect', lang.hitch(this, this._policySelectionChanged));
+
+            },
+            _initNodeAutoCreationPolicies: function (data) {
+                this._policies =
+                    data.actual && data.actual.nodeAutoCreationPolicies ? data.actual.nodeAutoCreationPolicies : [];
+                var Store = MemoryStore.createSubclass(TrackableStore);
+                this._policyStore = new Store({
+                    data: this._policies,
+                    idProperty: "pattern"
+                });
+                this._policyGrid.set("collection", this._policyStore);
+            },
+            _addNodeAutoCreationPolicy: function () {
+                this._showNodeAutoCreationPolicyForm({});
+            },
+            _showNodeAutoCreationPolicyForm: function (item) {
+                if (this.nodeAutoCreationPolicyForm)
+                {
+                    this.nodeAutoCreationPolicyForm.show(item, this._getNodeAutoCreationPolicies());
+                }
+                else
+                {
+                    require(["qpid/management/virtualhost/NodeAutoCreationPolicyForm"],
+                        lang.hitch(this, function (NodeAutoCreationPolicyForm) {
+                            this.nodeAutoCreationPolicyForm =
+                                new NodeAutoCreationPolicyForm({management: this.management});
+                            this.nodeAutoCreationPolicyForm.on("create", lang.hitch(this, function (e) {
+                                try
+                                {
+                                    this._policyStore.putSync(e.data);
+                                }
+                                catch (e)
+                                {
+                                    console.warn("Unexpected error" + e);
+                                }
+                                this._policyGrid.refresh({keepScrollPosition: true});
+                            }));
+                            this.nodeAutoCreationPolicyForm.show(item, this._getNodeAutoCreationPolicies());
+                        }));
+                }
+            },
+            _policySelected: function (event) {
+                var row = this._policyGrid.row(event);
+                this._showNodeAutoCreationPolicyForm(row.data);
+            },
+            _deleteNodeAutoCreationPolicy: function () {
+                var selected = this._getSelectedPolicies();
+                if (selected.length > 0)
+                {
+                    for (var s in selected)
+                    {
+                        this._policyStore.removeSync(selected[s]);
+                    }
+                    this._policyGrid.clearSelection();
+                }
+            },
+            _getSelectedPolicies: function () {
+                var selected = [];
+                var selection = this._policyGrid.selection;
+                for (var item in selection)
+                {
+                    if (selection.hasOwnProperty(item) && selection[item])
+                    {
+                        selected.push(item);
+                    }
+                }
+                return selected;
+            },
+            _policySelectionChanged: function () {
+                var selected = this._getSelectedPolicies();
+                this.deleteNodeAutoCreationPolicyButton.set("disabled", selected.length === 0);
+            },
+            _getNodeAutoCreationPolicies: function () {
+                var policies = [];
+                this._policyStore.fetchSync().forEach(function (policy) {
+                    policies.push(policy);
+                });
+                return policies;
             }
         };
 
