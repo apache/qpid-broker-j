@@ -97,15 +97,9 @@ CON-1002 : Close : Open transaction timed out
    <para>It is impossible to give suggested values, due to the large variation in usage depending on
     the applications using a broker. However, clearly transactions should not span the expected
     lifetime of any client application as this would indicate a hung client.</para>
-   <para>When configuring warning and closure timeouts, it should be noted that these only apply to
-    message producers that are connected to the broker, but that a timeout will cause the connection
-    to be closed - this disconnecting all producers and consumers created on that connection.</para>
-   <para>This should not be an issue for environments using Mule or Spring, where connection
-    factories can be configured appropriately to manage a single MessageProducer object per JMS
-    Session and Connection. Clients that use the JMS API directly should be aware that sessions
-    managing both consumers and producers, or multiple producers, will be affected by a single
-    producer hanging or leaving a transaction idle or open, and closed, and must take appropriate
-    action to handle that scenario.</para>
+   <para>When configuring closure timeouts, it should be noted that a timeout on any producer
+    or consumer will cause the connection to be closed - this disconnecting all producers and consumers
+    created on that connection.</para>
   </section>
  </section>
 </section>
