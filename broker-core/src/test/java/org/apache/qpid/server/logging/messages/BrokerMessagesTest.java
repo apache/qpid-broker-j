@@ -130,8 +130,8 @@ public class BrokerMessagesTest extends AbstractTestMessages
         List<Object> log = performLog();
 
         String[] expected = {"Maximum Memory :",
-                             "Heap", NumberFormat.getNumberInstance().format(oneGiga), "bytes",
-                             "Direct", NumberFormat.getNumberInstance().format(twoGiga), "bytes"
+                             "Heap", NumberFormat.getNumberInstance(BrokerMessages._currentLocale).format(oneGiga), "bytes",
+                             "Direct", NumberFormat.getNumberInstance(BrokerMessages._currentLocale).format(twoGiga), "bytes"
         };
 
         validateLogMessage(log, "BRK-1011", expected);

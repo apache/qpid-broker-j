@@ -41,7 +41,7 @@ import org.apache.qpid.server.logging.LogMessage;
 public class BrokerMessages
 {
     private static ResourceBundle _messages;
-    private static Locale _currentLocale;
+    static Locale _currentLocale;
 
     static
     {

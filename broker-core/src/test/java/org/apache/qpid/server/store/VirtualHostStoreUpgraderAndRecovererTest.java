@@ -23,6 +23,7 @@ package org.apache.qpid.server.store;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,7 +32,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -80,7 +80,7 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
 
         assertEquals("Unexpected maximumQueueDepthBytes", 1000, upgradedAttributes.get("maximumQueueDepthBytes"));
         assertEquals("Unexpected queue.queueFlowResumeLimit",
-                     "70.00",
+                     String.format("70%c00", DecimalFormatSymbols.getInstance().getDecimalSeparator()),
                      ((Map<String, String>) upgradedAttributes.get("context")).get("queue.queueFlowResumeLimit"));
 
         assertEquals("Unexpected overflowPolicy",

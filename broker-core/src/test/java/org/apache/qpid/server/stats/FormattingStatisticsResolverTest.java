@@ -24,6 +24,7 @@ package org.apache.qpid.server.stats;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.text.DecimalFormatSymbols;
 import java.util.Date;
 import java.util.Map;
 
@@ -42,6 +43,7 @@ public class FormattingStatisticsResolverTest extends QpidTestCase
     private static final String SMALLER_NEGATIVE_VALUE_STAT_NAME = "smallerNegativeValue";
     private static final String SMALLEST_NEGATIVE_VALUE_STAT_NAME = "smallestNegativeValue";
     private static final String EPOCH_DATE_STAT_NAME = "epochDateStatName";
+    private static final char DECIMAL_SEPARATOR = DecimalFormatSymbols.getInstance().getDecimalSeparator();
 
     private FormattingStatisticsResolver _resolver;
 
@@ -88,13 +90,13 @@ public class FormattingStatisticsResolverTest extends QpidTestCase
 
     public void testIEC80000BinaryPrefixed() throws Exception
     {
-        assertEquals("1.0 MiB", _resolver.resolve(LARGEST_POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
-        assertEquals("1.0 KiB", _resolver.resolve(LARGER_POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
+        assertEquals(String.format("1%c0 MiB", DECIMAL_SEPARATOR), _resolver.resolve(LARGEST_POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
+        assertEquals(String.format("1%c0 KiB", DECIMAL_SEPARATOR), _resolver.resolve(LARGER_POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
         assertEquals("10 B", _resolver.resolve(POSITIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
         assertEquals("0 B", _resolver.resolve(ZERO_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
         assertEquals("-1 B", _resolver.resolve(NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
-        assertEquals("-1.0 KiB", _resolver.resolve(SMALLER_NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
-        assertEquals("-1.0 MiB", _resolver.resolve(SMALLEST_NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
+        assertEquals(String.format("-1%c0 KiB", DECIMAL_SEPARATOR), _resolver.resolve(SMALLER_NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
+        assertEquals(String.format("-1%c0 MiB", DECIMAL_SEPARATOR), _resolver.resolve(SMALLEST_NEGATIVE_VALUE_STAT_NAME + ":" + FormattingStatisticsResolver.BYTEUNIT, null));
     }
 
 }
