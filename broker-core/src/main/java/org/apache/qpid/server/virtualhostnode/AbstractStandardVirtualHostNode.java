@@ -31,6 +31,7 @@ import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.qpid.server.model.State;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,19 +103,15 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
         if (host != null)
         {
             final QueueManagingVirtualHost<?> recoveredHost = host;
-            final ListenableFuture<Void> openFuture;
             recoveredHost.setFirstOpening(isNew && initialRecords.length == 0);
-            openFuture = Subject.doAs(getSubjectWithAddedSystemRights(),
-                                      new PrivilegedAction<ListenableFuture<Void>>()
-                                      {
-                                          @Override
-                                          public ListenableFuture<Void> run()
-                                          {
-                                              return recoveredHost.openAsync();
-
-                                          }
-                                      });
-            return openFuture;
+            
+            final ListenableFuture<Void> openFuture = Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<ListenableFuture<Void>>) recoveredHost::openAsync);
+            return doAfter(openFuture, () -> {
+                if (getVirtualHost().getState() == State.ERRORED ) 
+                {
+                    throw new IllegalStateException(String.format("This virtual host node has %s children", State.ERRORED));
+                }
+            });
         }
         else
         {
